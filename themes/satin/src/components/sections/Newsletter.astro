@@ -60,7 +60,7 @@ const inlineTextBtnCls =
 // перебил бы токен-утилиты (background: var(--satin-black)) и сломал смену
 // схемы из конструктора.
 const stackedBtnCls =
-	"inline-flex min-h-12 w-fit items-center justify-center self-start rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Канон formLayout: canon-default 'inline-submit' (совпадает с отсутствием
 // пропа) = форма подвала VERBATIM (контейнер h-10 border muted pl-3 pr-2.5,
@@ -76,14 +76,17 @@ const showAgreement = p.agreement === "true";
 // заголовок-над-формой max-w-[320px] слева, F:70); center/right двигают
 // колонку; alignment правит выключку текста внутри колонки.
 const position = p.position === "center" || p.position === "right" ? p.position : "left";
-const alignment = p.alignment === "center" || p.alignment === "right" ? p.alignment : "left";
 const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
+// «Выравнивание» (position) рулит И блоком (posCls), И содержимым (alignCls), И
+// stacked-кнопкой (selfCls): «слева-слева»/«центр-центр»/«право-право». Раньше
+// alignCls читал p.alignment (конструктор его не пишет) → текст застревал слева.
 const alignCls =
-	alignment === "center"
+	position === "center"
 		? " items-center text-center"
-		: alignment === "right"
+		: position === "right"
 			? " items-end text-right"
 			: "";
+const selfCls = position === "center" ? "self-center" : position === "right" ? "self-end" : "self-start";
 const colCls = `flex w-full max-w-[320px] flex-col gap-3 ${posCls}${alignCls}`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
@@ -176,7 +179,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							aria-label="Email"
 							class="h-10 w-full rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] bg-transparent px-3 font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]"
 						/>
-						<button type="submit" class={stackedBtnCls}>
+						<button type="submit" class={`${stackedBtnCls} ${selfCls}`}>
 							{buttonText || "Подписаться"}
 						</button>
 					</form>

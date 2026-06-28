@@ -80,6 +80,9 @@ const alignCls =
 		: alignment === "right"
 			? "items-end text-right"
 			: "items-start text-left";
+// «Выравнивание» (position через alignment-фолбэк) рулит и stacked-кнопкой —
+// раньше у неё был хардкод self-start → кнопка застревала слева при center/right.
+const selfCls = alignment === "center" ? "self-center" : alignment === "right" ? "self-end" : "self-start";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -161,7 +164,7 @@ const titleId = id ? `${id}-title` : undefined;
 					/>
 					<button
 						type="submit"
-						class="inline-flex h-12 min-h-12 items-center justify-center self-start bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
+						class={`inline-flex h-12 min-h-12 items-center justify-center ${selfCls} bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80`}
 					>
 						{buttonText}
 					</button>

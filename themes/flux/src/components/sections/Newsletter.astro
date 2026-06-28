@@ -32,15 +32,18 @@ const headingSizeCls =
 			? "text-[19px] md:text-[22px]"
 			: "text-[16px] md:text-[18px]";
 const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
-// Выравнивание (heading.alignment / headingAlignment) — на текстовой колонке,
-// чтобы заголовок и описание двигались вместе; отсутствие = литерал (слева).
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
-const textAlignCls =
-	headingAlignment === "center"
-		? " text-center"
-		: headingAlignment === "right"
-			? " text-right"
-			: "";
+// «Выравнивание» (конструктор пишет position) рулит И позицией содержимого в
+// контейнере (items-* двигает форму max-w-460 и текст-колонку), И выключкой
+// заголовка/текста (text-*): «слева-слева»/«центр-центр»/«право-право». Раньше
+// выравнивания по position не было вовсе (только headingAlignment, который
+// конструктор не пишет) → «выравнивание не работает».
+const position = p.position === "center" || p.position === "right" ? p.position : "left";
+const alignCls =
+	position === "center"
+		? "items-center text-center"
+		: position === "right"
+			? "items-end text-right"
+			: "items-start text-left";
 
 // Канон description (string) + text {content, size} (pupa-дубль). ПУСТОЕ состояние:
 // дословный Figma-плейсхолдер 1:19335 «Узнавайте первыми о новых коллекциях и
@@ -93,8 +96,8 @@ const titleId = id ? `${id}-title` : undefined;
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-4">
-		<div class={`flex flex-col gap-1${textAlignCls}`}>
+	<div class={`mx-auto flex w-full max-w-[1320px] flex-col gap-4 ${alignCls}`}>
+		<div class="flex flex-col gap-1">
 			<h2
 				id={titleId}
 				class={headingCls}

@@ -58,21 +58,21 @@ const inlineSubmit = p.formLayout === "inline-submit";
 // согласия под формой (манера rose: Manrope мелкий muted); иначе ничего.
 const showAgreement = p.agreement === "true";
 
-// Канон position — позиция блока в контейнере; alignment — выравнивание текста.
-// Отсутствие = left (манера блока подписки подвала).
-// alignment живёт в под-панели «Заголовок» (heading.alignment); top-level p.alignment
-// скрыт (type:'hidden') — читаем его лишь как fallback для обратной совместимости.
-const alignmentValue = p.heading?.alignment ?? p.alignment;
+// Канон «Выравнивание» = ЕДИНЫЙ контрол (конструктор пишет position): рулит И
+// позицией блока в контейнере (posCls), И выключкой содержимого внутри
+// (alignCls: заголовок/текст/форма), И выравниванием stacked-кнопки (selfCls).
+// «слева-слева», «центр-по центру», «право-право». Раньше alignCls читал
+// отдельный heading.alignment (конструктор его не пишет) → блок двигался, а
+// текст и кнопка застревали слева = «выравнивается только часть».
 const position = p.position === "center" || p.position === "right" ? p.position : "left";
-const alignment =
-	alignmentValue === "center" || alignmentValue === "right" ? alignmentValue : "left";
 const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
 const alignCls =
-	alignment === "center"
+	position === "center"
 		? "items-center text-center"
-		: alignment === "right"
+		: position === "right"
 			? "items-end text-right"
 			: "items-start text-left";
+const selfCls = position === "center" ? "self-center" : position === "right" ? "self-end" : "self-start";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
@@ -155,7 +155,7 @@ const titleId = id ? `${id}-title` : undefined;
 						/>
 						<button
 							type="submit"
-							class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center self-start !rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} !rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`}
 						>
 							{buttonText}
 						</button>

@@ -65,17 +65,21 @@ const showAgreement = p.agreement === "true";
 // в одну колонку и двигают её по контейнеру.
 // alignment живёт в под-панели «Заголовок» (heading.alignment); top-level
 // p.alignment скрыт (type:'hidden') — читаем его лишь как fallback (как rose T17).
-const alignmentValue = p.heading?.alignment ?? p.alignment;
+// «Выравнивание» (position) рулит И блоком (posCls), И содержимым (alignCls), И
+// stacked-кнопкой (selfCls). left = фирменная 2-колоночная раскладка подвала
+// (заголовок + форма рядом на lg); center/right складывают в одну колонку и
+// выравнивают всё содержимое. Раньше alignCls читал heading.alignment, который
+// конструктор не пишет → текст/кнопка застревали слева = «только часть».
 const position = p.position === "center" || p.position === "right" ? p.position : "left";
-const alignment = alignmentValue === "center" || alignmentValue === "right" ? alignmentValue : "left";
-const isDefaultLayout = position === "left" && alignment === "left";
+const isDefaultLayout = position === "left";
 const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
 const alignCls =
-	alignment === "center"
+	position === "center"
 		? "items-center text-center"
-		: alignment === "right"
+		: position === "right"
 			? "items-end text-right"
 			: "items-start text-left";
+const selfCls = position === "center" ? "self-center" : position === "right" ? "self-end" : "self-start";
 const wrapCls = isDefaultLayout
 	? "flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
 	: `flex w-full max-w-[430px] flex-col gap-6 ${posCls} ${alignCls}`;
@@ -160,7 +164,7 @@ const titleId = id ? `${id}-title` : undefined;
 							/>
 							<button
 								type="submit"
-								class="inline-flex h-12 w-auto items-center justify-center self-start rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+								class={`inline-flex h-12 w-auto items-center justify-center ${selfCls} rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95`}
 							>
 								{buttonText}
 							</button>

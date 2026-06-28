@@ -698,10 +698,17 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 		if (!isSidebarDrawer()) positionBurger();
 	};
 
-	let headerDelegatesBound = false;
+	// Гард на WINDOW, а не module-scope: контентные страницы получают ДВЕ копии
+	// этого скрипта — Astro-hoisted (в обёртке __merfy_hoisted) и инлайн-копию из
+	// renderBlock(Header) при сборке хрома (chrome-assembler.injectChromeIntoHtml),
+	// у которой hoisted-обёртки нет. При module-scope `headerDelegatesBound` у копий
+	// разный → ОБЕ вешали document-делегат click, и toggle-поиск срабатывал дважды
+	// за один клик (открыть → сразу закрыть) — панель «не открывалась» (напр. /wishlist).
+	// Общий window-флаг дедуплицирует биндинг (зеркало __roseWishlistBound).
+	const headerWin = window as unknown as { __roseHeaderBound?: boolean };
 	const bindHeaderDelegatedClicks = () => {
-		if (headerDelegatesBound) return;
-		headerDelegatesBound = true;
+		if (headerWin.__roseHeaderBound) return;
+		headerWin.__roseHeaderBound = true;
 
 		document.addEventListener("click", (event: MouseEvent) => {
 			const raw = event.target;

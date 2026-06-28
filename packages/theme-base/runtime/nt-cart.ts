@@ -275,6 +275,16 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			renderBadges();
 			renderDrawer();
 		});
+		// View Transitions: модульный init-скрипт НЕ перезапускается после client-side
+		// навигации, а DOM шапки/дровера на новой странице — другой. Без перерисовки на
+		// astro:page-load бейдж корзины сбрасывается к SSR-дефолту (0 → data-empty="true",
+		// скрыт) на КАЖДОЙ не-перезагруженной странице, и счётчик «живёт» лишь на той
+		// странице, что грузилась полностью. Бейдж избранного переживает навигацию именно
+		// потому, что initWishlistUI слушает astro:page-load — зеркалим это здесь.
+		document.addEventListener("astro:page-load", () => {
+			renderBadges();
+			renderDrawer();
+		});
 
 		renderBadges();
 		renderDrawer();

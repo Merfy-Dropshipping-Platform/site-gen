@@ -40,7 +40,8 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			<slot />
 		</main>
 		{showNewsletter && <FooterNewsletter />}
-		<Footer />
+		{/* Чекаут — без футера (header="checkout"), паритет с rose. */}
+		{header !== "checkout" && <Footer />}
 		<LoginDrawer />
 		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
 		<script>

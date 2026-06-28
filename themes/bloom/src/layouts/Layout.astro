@@ -37,7 +37,8 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<main>
 			<slot />
 		</main>
-		<Footer />
+		{/* Чекаут — без футера (header="checkout"), паритет с rose. */}
+		{header !== "checkout" && <Footer />}
 		<NtCartDrawer rootId="bloom-cart-drawer-root" eventPrefix="bloom:cart" />
 		<BloomCartAddedModal />
 		<script>

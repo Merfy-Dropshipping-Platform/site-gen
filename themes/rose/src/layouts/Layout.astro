@@ -5,7 +5,7 @@ import Header from "../components/Header.astro";
 import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
 import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
-import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+import StorefrontRuntime from "../components/StorefrontRuntime.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -57,62 +57,7 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 				<CheckoutFooterStrip siteTitle={SITE_TITLE} />
 			</div>
 		)}
-		<NtCartDrawer rootId="cart-drawer-root" eventPrefix="rose:cart" />
-		<script>
-			import { initCartUI } from "../lib/cart";
-			import { initWishlistUI } from "../lib/wishlist";
-			import { initAuthUI } from "../lib/auth";
-			initCartUI();
-			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
-			initWishlistUI();
-			// Аккаунт покупателя — красит [data-auth-link] (/account vs /login),
-			// auth/guest-only элементы; фоновая подгрузка профиля при наличии токена.
-			initAuthUI();
-
-				// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
-				// сбрасывает express «Купить сейчас» (sessionStorage rose:buynow) — чтобы
-				// чекаут показал корзину покупателя, а не залипший buy-now товар. Сам
-				// buy-now (data-action=buy-now) ставит express заново при следующем клике.
-				document.addEventListener(
-					"click",
-					(e) => {
-						const el = e.target as Element | null;
-						if (el && el.closest("[data-action='checkout']")) {
-							try { sessionStorage.removeItem("rose:buynow"); } catch (err) {}
-						}
-					},
-					true,
-				);
-
-				// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
-				// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик
-				// панели (DS NtCartDrawer). page → /cart (live: переход; превью: <a> →
-				// nav-агент → postMessage navigate). drawer (дефолт) → панель открывается сама.
-				document.addEventListener(
-					"click",
-					(e) => {
-						const el = e.target as Element | null;
-						if (!el || !el.closest("[data-cart-open]")) return;
-						const cartType = getComputedStyle(document.documentElement)
-							.getPropertyValue("--cart-type")
-							.trim()
-							.replace(/['"]/g, "");
-						if (cartType !== "page") return;
-						e.preventDefault();
-						e.stopImmediatePropagation();
-						if (window.self === window.top) {
-							window.location.assign("/cart");
-						} else {
-							const a = document.createElement("a");
-							a.href = "/cart";
-							document.body.appendChild(a);
-							a.click();
-							a.remove();
-						}
-					},
-					true,
-				);
-		</script>
+		<StorefrontRuntime />
 
 		<script>
 			// Scroll-triggered анимации для секций

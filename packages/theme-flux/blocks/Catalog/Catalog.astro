@@ -921,12 +921,38 @@ const skeletons = Array.from({ length: skeletonCount });
     }
 
     // ── Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0) ──
-    if (res === null || (filters.page === 1 && res.total === 0)) {
+    // Активные фильтры пользователя: если что-то выбрано, пустой результат —
+    // это «ничего не найдено», а НЕ «магазин пуст». Демо-моки оставляем только
+    // для реально пустого магазина (без фильтров) либо когда API недоступен.
+    const hasActiveFilters =
+      filters.stock !== "all" ||
+      filters.priceMin !== null ||
+      filters.priceMax !== null ||
+      (Array.isArray(filters.colors) && filters.colors.length > 0) ||
+      !!(new URLSearchParams(window.location.search).get("collection") || "").trim();
+
+    // Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0,
+    // без активных фильтров) — красивая заглушка нового сайта; кнопку прячем.
+    if (res === null || (filters.page === 1 && res.total === 0 && !hasActiveFilters)) {
       const demoTpl = document.querySelector('[data-nt="catalog-demo"]');
       const demoHtml = demoTpl ? demoTpl.innerHTML : "";
       const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
       for (const grid of grids) grid.innerHTML = demoHtml;
       updateCount('[data-nt="catalog-count"]', demoN);
+      for (const btn of loadMoreBtns) {
+        btn.style.display = "none";
+        btn.disabled = false;
+      }
+      return;
+    }
+
+    // Пустой результат ПРИ активном фильтре (page=1, total=0) → «Ничего не
+    // найдено», а НЕ demo-моки (баг: «Распродано» подтягивал demo-сумки).
+    if (filters.page === 1 && res.total === 0) {
+      for (const grid of grids)
+        grid.innerHTML =
+          '<li style="grid-column:1 / -1"><p style="padding:48px 0;text-align:center;color:rgb(var(--color-muted,153 153 153));font-family:var(--font-body,inherit)">По выбранным фильтрам ничего не найдено</p></li>';
+      updateCount('[data-nt="catalog-count"]', 0);
       for (const btn of loadMoreBtns) {
         btn.style.display = "none";
         btn.disabled = false;

@@ -22,8 +22,6 @@ const safe = rawContent ? sanitizePageContent(rawContent) : '';
 const hSize: 'small' | 'medium' | 'large' =
   headingSize === 'small' || headingSize === 'large' ? headingSize : 'medium';
 
-const isEmpty = !heading && !safe;
-
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
     ? `color-scheme-${colorScheme.replace('scheme-', '')}`
@@ -39,19 +37,21 @@ const paddingStyle = padding
 >
   <div class={C.container}>
     <div class={C.column}>
-      {isEmpty ? (
-        <>
-          <p class={C.placeholderHeading}>Страница</p>
-          <p class={C.placeholder}>Текст</p>
-        </>
-      ) : (
-        <>
-          {heading && (
-            <h2 class:list={[C.heading, C.headingSize[hSize]]}>{heading}</h2>
-          )}
-          {safe && <div class={C.content} set:html={safe} />}
-        </>
-      )}
+      {/* Heading + content ВСЕГДА рендерятся как inline-editable элементы
+          (Spec 101 WYSIWYG прямо в секции). Пустое состояние = пустой
+          :empty-элемент → плейсхолдер рисует preview-агент через CSS
+          (data-edit-placeholder). На live (без агента) пусто = просто пусто. */}
+      <h2
+        class:list={[C.heading, C.headingSize[hSize]]}
+        data-edit-field="heading"
+        data-edit-placeholder="Заголовок"
+      >{heading}</h2>
+      <div
+        class={C.content}
+        data-edit-field="content"
+        data-edit-placeholder="Текст"
+        set:html={safe}
+      ></div>
     </div>
   </div>
 </section>

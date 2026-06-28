@@ -37,11 +37,10 @@ export const PagePuckConfig: BlockPuckConfig<PageProps> = {
   label: 'Страница',
   category: 'content',
   fields: {
-    // Свободный режим: заголовок + текст редактируются прямо в панели секции
-    // (WYSIWYG) — основной способ наполнения контент-страниц (О нас/Доставка/
-    // Контакты).
-    heading: { type: 'text', label: 'Заголовок' } as any,
-    content: { type: 'wysiwyg', label: 'Текст' } as any,
+    // heading/content РЕДАКТИРУЮТСЯ ИНЛАЙН прямо в секции (WYSIWYG в превью-
+    // канвасе): клик по заголовку/тексту в превью → правка на месте → синк в
+    // Puck props на blur (Spec 101). Поэтому полей heading/content в этой
+    // панели НЕТ (остаются в Zod-схеме/defaults как валидные props).
     // «Выбор страницы» — пикер: привязка подгружает (transclude) заголовок+контент
     // выбранной страницы (bound-режим). Для самой контент-страницы не нужен.
     pageId: { type: 'pageContentPicker', label: 'Выбор страницы' } as any,
@@ -56,8 +55,9 @@ export const PagePuckConfig: BlockPuckConfig<PageProps> = {
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
-    // heading/content редактируются в полях выше (свободный режим). В bound-режиме
-    // (pageId задан) их перезапишет build-side transclude из выбранной страницы.
+    // heading/content редактируются инлайн в самой секции (см. комментарий выше).
+    // В bound-режиме (pageId задан) их перезапишет build-side transclude из
+    // выбранной страницы.
   },
   defaults: {
     pageId: '',

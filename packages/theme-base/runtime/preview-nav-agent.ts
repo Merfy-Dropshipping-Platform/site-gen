@@ -94,4 +94,79 @@ export function installPreviewNavAgent(options: PreviewNavAgentOptions): void {
       formId: form?.id ?? null,
     }, origin);
   }, true);
+
+  // ── Inline (in-canvas) editing (Spec 101 «WYSIWYG прямо в секции») ──────────
+  // Only wired in the constructor preview (this agent is never injected on live).
+  // Elements marked `data-edit-field` (Page block heading/content) become
+  // contenteditable; на blur их значение постится в конструктор → Puck props.
+
+  // Empty-placeholder hint via :empty:before. pointer-events:none so the caret
+  // still places when клик по пустому полю. Injected once.
+  const EDIT_STYLE_ID = 'merfy-inline-edit-style';
+  if (document.head && !document.getElementById(EDIT_STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = EDIT_STYLE_ID;
+    style.textContent =
+      '[data-edit-field][contenteditable]:empty:before{content:attr(data-edit-placeholder);color:rgb(var(--color-muted));opacity:.55;pointer-events:none;}';
+    document.head.appendChild(style);
+  }
+
+  // Mark every [data-edit-field] editable. Idempotent — safe to re-run after
+  // re-render (update-block / reconcile swaps nodes, losing the attribute).
+  const applyEditable = () => {
+    document.querySelectorAll('[data-edit-field]').forEach((el) => {
+      if (el.getAttribute('contenteditable') !== 'true') {
+        el.setAttribute('contenteditable', 'true');
+      }
+    });
+  };
+  applyEditable();
+
+  // Re-apply after DOM mutations (re-rendered blocks). Microtask-debounced so a
+  // burst of mutations coalesces into one applyEditable pass (avoid thrash).
+  let editableScheduled = false;
+  const scheduleApplyEditable = () => {
+    if (editableScheduled) return;
+    editableScheduled = true;
+    queueMicrotask(() => {
+      editableScheduled = false;
+      // Guard: the microtask can fire after the document is torn down (iframe
+      // navigating away / test teardown) — querySelectorAll would throw on a
+      // null document. Swallow so we never crash the host.
+      try {
+        applyEditable();
+      } catch {
+        /* document unavailable — nothing to mark */
+      }
+    });
+  };
+  new MutationObserver(scheduleApplyEditable).observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // On blur of an editable field → sync its value back to the constructor.
+  // content → innerHTML (rich); heading → trimmed text. blockId from the closest
+  // Puck component host. Capture phase so it fires before any re-render.
+  document.addEventListener(
+    'focusout',
+    (e) => {
+      const target = e.target as Element | null;
+      const el = target?.closest?.('[data-edit-field]') as HTMLElement | null;
+      if (!el) return;
+      const field = el.getAttribute('data-edit-field');
+      const value =
+        field === 'content' ? el.innerHTML : (el.textContent || '').trim();
+      const blockId = el
+        .closest('[data-puck-component-id]')
+        ?.getAttribute('data-puck-component-id');
+      if (blockId && field) {
+        window.parent.postMessage(
+          { type: 'edit-field', blockId, field, value },
+          origin,
+        );
+      }
+    },
+    true,
+  );
 }

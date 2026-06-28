@@ -82,7 +82,6 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       type: 'radio',
       label: 'Позиция рядов',
       options: [
-        { label: 'Чередовать', value: 'alternate' },
         { label: 'Слева', value: 'left' },
         { label: 'Справа', value: 'right' },
       ],
@@ -197,10 +196,9 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     } as any,
   },
   defaults: {
-    // rowsPosition 'alternate' (по умолчанию) — ряды чередуют сторону медиа строго
-    // по индексу (0 слева, 1 справа, 2 слева…). per-row imagePosition НЕ задаём,
-    // чтобы чередование шло от индекса, а не от зафиксированной стороны ряда.
-    rowsPosition: 'alternate',
+    // rowsPosition: ряды ВСЕГДА чередуют сторону медиа по индексу; свитчер
+    // Слева/Справа задаёт сторону ПЕРВОГО ряда. Дефолт 'left' (ряд 0 слева).
+    rowsPosition: 'left',
     // Figma 1:19335 — плейсхолдер пустого состояния (ряды без своей картинки → landscape-плейсхолдер).
     rows: [
       {

@@ -57,13 +57,11 @@ const PLACEHOLDER_ROWS = [
 ];
 const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : PLACEHOLDER_ROWS;
 
-// Канон rowsPosition: left | right — все картинки принудительно с одной стороны;
-// alternate / отсутствие (дефолт) — СТРОГОЕ чередование по индексу (чётный → фото
-// слева, нечётный → справа), при этом явный per-item imagePosition перебивает
-// только свой ряд. left/right ниже нормализуем, всё прочее (включая 'alternate' и
-// undefined) → undefined = режим чередования.
-const rowsPosition =
-	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
+// Канон «Позиция рядов»: ряды ВСЕГДА чередуют сторону медиа по индексу. Свитчер
+// (Слева/Справа) задаёт сторону ТОЛЬКО первого ряда (i=0): «Справа» → ряд 0 фото
+// справа, иначе (Слева/умолчание/legacy 'alternate') → ряд 0 слева. Дальше строгое
+// чередование 0,1,0,1… — per-item imagePosition больше не учитываем (нет в UI).
+const firstRowRight = p.rowsPosition === "right";
 
 // Канон size (s/m/l) — высота/аспект медиа ряда (топ-уровень, per-item size
 // приоритетнее). Аспекты — литералы манеры §4 (паттерн T15 ImageWithText).
@@ -88,10 +86,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
 			PLACEHOLDER_ROW_IMAGE,
-		right:
-			rowsPosition === "right" ||
-			(rowsPosition !== "left" &&
-				(r.imagePosition === "right" || (r.imagePosition !== "left" && i % 2 === 1))),
+		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(r.size ?? p.size),
 		headingSizeCls:
 			(r.headingSize ?? undefined) === "small"

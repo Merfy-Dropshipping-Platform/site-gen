@@ -65,10 +65,10 @@ const PLACEHOLDER_ROWS = [
 ];
 const rawRows = hasManualRows ? p.rows : PLACEHOLDER_ROWS;
 
-// Канон rowsPosition: left | right — все картинки с одной стороны; alternate /
-// отсутствие — per-item imagePosition, иначе чередование по индексу.
-const rowsPosition =
-	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
+// Канон «Позиция рядов»: ряды ВСЕГДА чередуют сторону медиа по индексу. Свитчер
+// (Слева/Справа) задаёт сторону ТОЛЬКО первого ряда (i=0). per-item imagePosition
+// больше не учитываем (нет в UI).
+const firstRowRight = p.rowsPosition === "right";
 
 // Канон size (s/m/l) — аспект медиа ряда (топ-уровень, per-item приоритетнее).
 // Лестница как у ImageWithText: medium/отсутствие = фото care-бэнда 652/366
@@ -107,10 +107,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			// несут PLACEHOLDER_ROW_IMAGE (берётся первой веткой выше), поэтому
 			// сюда в пустом состоянии не попадают.
 			(hasManualRows ? ROW_FALLBACKS[i % ROW_FALLBACKS.length] : PLACEHOLDER_ROW_IMAGE),
-		right:
-			rowsPosition === "right" ||
-			(rowsPosition !== "left" &&
-				(r.imagePosition === "right" || (r.imagePosition !== "left" && i % 2 === 1))),
+		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(r.size ?? p.size),
 		headingCls: rowHeadingSizeCls(r.headingSize),
 		textCls: rowTextSizeCls(r.textSize),

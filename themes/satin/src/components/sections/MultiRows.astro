@@ -76,12 +76,10 @@ const PLACEHOLDER_ROWS = [
 // изменений; иначе — плейсхолдер выше.
 const rawRows = hasRealRows ? p.rows : PLACEHOLDER_ROWS;
 
-// Канон rowsPosition: left | right — ВСЕ фото с одной стороны;
-// alternate/отсутствие — per-item imagePosition (legacy imageRight), иначе
-// чередование по индексу (нечётный ряд — фото справа; паттерн дефолт-веток
-// верстальщика).
-const rowsPosition =
-	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
+// Канон «Позиция рядов»: ряды ВСЕГДА чередуют сторону медиа по индексу. Свитчер
+// (Слева/Справа) задаёт сторону ТОЛЬКО первого ряда (i=0). per-item imagePosition/
+// imageRight больше не учитываем (нет в UI).
+const firstRowRight = p.rowsPosition === "right";
 
 // Канон size (s/m/l) — аспект медиа ряда (per-item приоритетнее top-level):
 // medium/отсутствие = aspect-square ЛИТЕРАЛ (CollectionRows.astro:55), small =
@@ -128,12 +126,6 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			].filter(Boolean);
 	const headingText =
 		(typeof r.heading === "string" && r.heading) || (typeof r.title === "string" && r.title) || "";
-	// Фото справа: per-item imagePosition приоритетнее legacy imageRight;
-	// без обоих — чередование по индексу.
-	const itemRight =
-		r.imagePosition === "right" ||
-		(r.imagePosition !== "left" &&
-			(r.imageRight === true || (r.imageRight === undefined && i % 2 === 1)));
 	const btnText =
 		(typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined) ??
 		(typeof r.ctaLabel === "string" && r.ctaLabel.trim() ? r.ctaLabel : undefined);
@@ -145,7 +137,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			(typeof r.image === "string" && r.image.trim()) ||
 			PLACEHOLDER_MULTIROWS_IMAGE,
 		alt: (typeof r.alt === "string" && r.alt.trim()) || headingText || "Ряд",
-		right: rowsPosition === "right" || (rowsPosition !== "left" && itemRight),
+		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(r.size ?? p.size),
 		headingCls: rowHeadingCls(r.headingSize),
 		textCls: rowTextCls(r.textSize),

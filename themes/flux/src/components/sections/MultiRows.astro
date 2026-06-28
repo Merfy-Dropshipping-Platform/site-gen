@@ -59,10 +59,10 @@ const PLACEHOLDER_ROWS = [
 ];
 const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : PLACEHOLDER_ROWS;
 
-// Канон rowsPosition: left | right — все картинки с одной стороны; alternate /
-// отсутствие — per-item imagePosition, иначе чередование по индексу.
-const rowsPosition =
-	p.rowsPosition === "left" || p.rowsPosition === "right" ? p.rowsPosition : undefined;
+// Канон «Позиция рядов»: ряды ВСЕГДА чередуют сторону медиа по индексу. Свитчер
+// (Слева/Справа) задаёт сторону ТОЛЬКО первого ряда (i=0). per-item imagePosition
+// больше не учитываем (нет в UI).
+const firstRowRight = p.rowsPosition === "right";
 
 // Канон size (s/m/l) — аспект медиа ряда (топ-уровень, per-item приоритетнее).
 // Лестница манеры §4: medium/отсутствие = aspect-square (левая плитка галереи,
@@ -104,10 +104,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
 			"/placeholders/landscape-multirows-image.png",
-		right:
-			rowsPosition === "right" ||
-			(rowsPosition !== "left" &&
-				(r.imagePosition === "right" || (r.imagePosition !== "left" && i % 2 === 1))),
+		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(r.size ?? p.size),
 		headingCls: rowHeadingSizeCls(r.headingSize),
 		textCls: rowTextSizeCls(r.textSize),

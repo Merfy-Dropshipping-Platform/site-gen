@@ -62,7 +62,7 @@ export const ImagePuckConfig: BlockPuckConfig<ImageProps> = {
   category: 'media',
   fields: {
     imageUrl: { type: 'text', label: 'Изображение (URL)' },
-    imageAlt: { type: 'text', label: 'Alt' },
+    imageAlt: { type: 'hidden', label: '' },
     variant: {
       type: 'select',
       label: 'Макет',
@@ -79,7 +79,7 @@ export const ImagePuckConfig: BlockPuckConfig<ImageProps> = {
       ],
     },
     imageUrl2: { type: 'text', label: 'Второе изображение (split)' },
-    imageAlt2: { type: 'text', label: 'Alt второго' },
+    imageAlt2: { type: 'hidden', label: '' },
     heading: { type: 'text', label: 'Заголовок (overlay)' },
     text: { type: 'textarea', label: 'Текст (overlay)' },
     button: {

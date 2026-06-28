@@ -66,7 +66,9 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       label: 'Изображения',
       objectFields: {
         url: { type: 'image', label: 'Фото' },
-        alt: { type: 'text', label: 'Alt текст' },
+        // alt-текст убран из сайдбара (по требованию тестера). Поле скрыто,
+        // значение image.alt сохраняется в схеме для совместимости/SEO рендера.
+        alt: { type: 'hidden', label: '' },
       },
     },
     size: {

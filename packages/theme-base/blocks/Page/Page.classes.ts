@@ -1,6 +1,10 @@
 export const PageClasses = {
   root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
-  container: 'mx-auto max-w-[var(--container-max-width)] px-4',
+  // Side padding matches the chrome container (Header/Footer responsive scale)
+  // so content-page sections align with the page's content margin (вровень с
+  // лого/навигацией), not hugging the far-left edge. См. themes/*/Header.astro.
+  container:
+    'mx-auto max-w-[var(--container-max-width)] px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]',
   // Left-aligned constrained content column (Figma 1:19953 — ~768px, left).
   column: 'max-w-[768px]',
   // Section heading (free-mode `heading` / bound page title). Size via headingSize.

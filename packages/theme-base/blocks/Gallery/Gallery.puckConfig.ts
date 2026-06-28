@@ -106,7 +106,9 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
           ],
         },
         url: { type: 'image', label: 'Изображение' },
-        alt: { type: 'text', label: 'Alt текст' },
+        // alt-текст убран из сайдбара Галереи (по требованию тестера). Значение
+        // item.alt сохраняется в схеме для рендера <img alt> (SEO).
+        alt: { type: 'hidden', label: '' },
         productId: { type: 'productPicker', label: 'Товар' },
         collectionId: { type: 'collectionPicker', label: 'Коллекция' },
       },

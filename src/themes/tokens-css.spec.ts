@@ -142,6 +142,23 @@ describe('buildTokensCss merchant precedence', () => {
     );
   });
 
+  it('всегда инжектит sticky-footer правило (все темы, live+preview)', () => {
+    const css = buildTokensCss({}, 'rose');
+    // body → flex-колонка ≥ вьюпорт; <main> растягивается, толкая футер вниз.
+    expect(css).toContain(
+      'body:has(footer):not(:has(main main)){min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}',
+    );
+    expect(css).toContain(
+      'body:has(footer):not(:has(main main))>main{flex:1 0 auto}',
+    );
+  });
+
+  it('sticky-footer правило не зависит от темы (есть и без манифеста)', () => {
+    expect(buildTokensCss({}, null)).toContain(
+      'body:has(footer):not(:has(main main))>main{flex:1 0 auto}',
+    );
+  });
+
   it(':root эмитит button-2 алиасы ≡ secondary (T9)', () => {
     const css = buildTokensCss({}, 'rose');
     // Rose manifest: secondaryButton text=#000000, border=#000000

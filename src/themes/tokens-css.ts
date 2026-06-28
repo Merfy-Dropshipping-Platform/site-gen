@@ -312,7 +312,35 @@ export function buildTokensCss(
       ? 'a[href$="/wishlist"],[data-wishlist-toggle]{display:none !important}'
       : '';
 
-  return [rootRules, rootColorRules, schemeRules, wishlistHideRule]
+  // Sticky footer — прижать подвал к низу вьюпорта на коротких страницах.
+  // Во всех темах Layout.astro рендерит <body> обычным блочным потоком
+  // (Header + <main> + Footer, без flex-обёртки) → на страницах ниже экрана
+  // (пустая корзина, аккаунт, контентные, 404) футер «всплывал» в середину.
+  // Единое правило (live + preview — эта функция единый источник tokens.css
+  // для обоих, как wishlistHideRule):
+  //   - <body> → flex-колонка высотой ≥ вьюпорт;
+  //   - <main> (прямой ребёнок) растягивается (flex-grow), толкая всё после
+  //     себя (футер-обёртку) вниз. Cart-drawer (position:fixed) и <script>
+  //     (display:none) вне потока — не мешают.
+  // Scope:
+  //   :has(footer)          — только полностраничный рендер. Одиночный
+  //                           preview/block (без футера) не трогаем — блок
+  //                           должен сайзиться по контенту, не на 100vh.
+  //   :not(:has(main main)) — исключаем /checkout (React: Layout-<main>
+  //                           оборачивает собственный <main class="flex-1">).
+  //                           Память: checkout-флоу/хром ведёт его автор.
+  // Unlayered → перебивает @layer base { body, main } из global.css тем.
+  const stickyFooterRule =
+    'body:has(footer):not(:has(main main)){min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}' +
+    'body:has(footer):not(:has(main main))>main{flex:1 0 auto}';
+
+  return [
+    rootRules,
+    rootColorRules,
+    schemeRules,
+    wishlistHideRule,
+    stickyFooterRule,
+  ]
     .filter(Boolean)
     .join('\n');
 }

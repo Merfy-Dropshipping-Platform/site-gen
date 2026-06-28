@@ -46,7 +46,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<main>
 			<slot />
 		</main>
-		<Footer />
+		{/* Чекаут — без футера (рассылка/меню/копирайт): чистое оформление без
+		    отвлекающих ссылок. Только эта страница использует header="checkout".
+		    Хром чекаута (CheckoutHeader) правит unifyChromeInDist — его не трогаем. */}
+		{header !== "checkout" && <Footer />}
 		<NtCartDrawer rootId="cart-drawer-root" eventPrefix="rose:cart" />
 		<script>
 			import { initCartUI } from "../lib/cart";

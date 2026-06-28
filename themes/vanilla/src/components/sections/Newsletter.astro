@@ -71,9 +71,10 @@ const showAgreement = p.agreement === "true";
 // center/right двигают колонку по контейнеру. Выравнивание живёт в под-панели
 // «Заголовок» (heading.alignment) — основной контрол (как rose T17); top-level
 // p.alignment скрыт (type:'hidden'), p.position — pupa-дубль; оба как fallback.
-const alignmentValue = p.heading?.alignment ?? p.alignment ?? p.position;
-const alignment =
-	alignmentValue === "center" || alignmentValue === "right" ? alignmentValue : "left";
+// «Выравнивание» = position (единый контрол конструктора), ПРИОРИТЕТ над
+// heading.alignment/p.alignment: blockDefaults vanilla сидит alignment:'left',
+// из-за чего `?? p.alignment` короткозамыкал → center/right не применялись.
+const alignment = p.position === "center" || p.position === "right" ? p.position : "left";
 const alignCls =
 	alignment === "center"
 		? "items-center text-center"

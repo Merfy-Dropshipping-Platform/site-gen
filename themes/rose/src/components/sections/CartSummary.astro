@@ -1,0 +1,111 @@
+---
+// Секция «Промежуточный итог» (rose-порт, Spec 110) — примечание о налогах/доставке,
+// строка «Итого» и кнопка «Оформить заказ». Разбита из монолита CartSection.astro
+// (логика не изменена: тот же мост checkout → cartStore → /checkout). Под-элементы
+// «Итоговая цена» / «Кнопка оформления заказа» — это узлы дерева конструктора
+// (NAMED_SUBSECTIONS.CartSummary), у них нет настроек («Настройка недоступна»).
+// Сводка показывается только при непустой корзине: на live прячется (как в Figma —
+// пустое состояние без сводки), в превью конструктора видна всегда для стилизации.
+// Рантайм корзины (cart-store/cart-api) грузит соседний CartBody; здесь только getCart().
+interface Props {
+	id?: string;
+	padding?: { top: number; bottom: number };
+	colorScheme?: number | string;
+}
+const { id, padding, colorScheme } = Astro.props as Props;
+
+// Отступы из конструктора (px, 0..160). Дефолт «Промежуточный итог»: сверху 0, снизу 80.
+const pad = padding ?? { top: 0, bottom: 80 };
+const padStyle = `padding-top:${Math.min(Number(pad.top) || 0, 160)}px;padding-bottom:${Math.min(Number(pad.bottom) || 0, 160)}px;`;
+const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
+---
+
+<section
+	data-puck-component-id={id}
+	data-block="cart-summary"
+	data-cart-summary
+	class:list={[
+		"hidden w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]",
+		schemeClass,
+	]}
+	style={padStyle}
+>
+	<div class="mx-auto flex w-full max-w-[1320px] flex-col items-end gap-4 sm:gap-5">
+		<p class="max-w-md text-right font-manrope text-[12px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]">
+			Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
+		</p>
+		<div class="flex w-full flex-wrap items-baseline justify-end gap-x-3 gap-y-1 sm:gap-x-4">
+			<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[16px] md:text-[18px]">Итого</span>
+			<span data-cart-summary-total class="font-manrope text-[18px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[20px] md:text-[24px]">0 ₽</span>
+		</div>
+		<button
+			type="button"
+			data-action="checkout"
+			class="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:w-auto sm:min-w-[200px] sm:text-[16px]"
+		>
+			Оформить заказ
+		</button>
+	</div>
+</section>
+
+<script>
+	import { getCart, getCartTotal, formatCartPrice } from "../../lib/cart";
+
+	const sectionEl = document.querySelector<HTMLElement>("[data-cart-summary]");
+	const totalEl = document.querySelector<HTMLElement>("[data-cart-summary-total]");
+	// В превью конструктора (iframe) сводку показываем всегда — чтобы мерчант видел
+	// и мог стилизовать схему/отступы даже при пустой корзине. На live (top-level)
+	// при пустой корзине прячем (как в Figma: пустое состояние без сводки).
+	const inPreview = (() => {
+		try {
+			return window.self !== window.top;
+		} catch {
+			return true;
+		}
+	})();
+
+	const render = () => {
+		if (!sectionEl || !totalEl) return;
+		const lines = getCart();
+		if (lines.length === 0 && !inPreview) {
+			sectionEl.classList.add("hidden");
+			return;
+		}
+		sectionEl.classList.remove("hidden");
+		totalEl.textContent = formatCartPrice(getCartTotal(lines));
+	};
+
+	render();
+	document.addEventListener("astro:page-load", render);
+	window.addEventListener("rose:cart:updated", render);
+
+	document.addEventListener("click", (event) => {
+		const target = event.target as HTMLElement;
+		const checkout = target.closest<HTMLButtonElement>("[data-action='checkout']");
+		if (!checkout) return;
+		void (async () => {
+			const cs = (window as any).cartStore;
+			const lines = getCart();
+			if (!cs) {
+				window.alert("Корзина ещё загружается. Обновите страницу и попробуйте снова.");
+				return;
+			}
+			if (lines.length) {
+				let ok = true;
+				try {
+					cs.clear();
+					for (const l of lines) {
+						if ((await cs.addItem(l.productId, l.variant?.variantCombinationId ?? null, l.quantity)) === false) ok = false;
+					}
+				} catch (e) {
+					ok = false;
+				}
+				if (!ok) {
+					window.alert("Не удалось перенести товары в оформление. Обновите страницу и попробуйте снова.");
+					return;
+				}
+			}
+			window.location.href = "/checkout";
+		})();
+	});
+</script>

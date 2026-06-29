@@ -16,14 +16,14 @@ export const CartBodySchema = z.object({
 export type CartBodyProps = z.infer<typeof CartBodySchema>;
 
 export const CartBodyPuckConfig: BlockPuckConfig<CartBodyProps> = {
-  label: 'Товары',
+  label: 'Корзина',
   category: 'content',
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
-    colorScheme: 'scheme-1',
+    colorScheme: 'scheme-2',
     padding: { top: 80, bottom: 40 },
   },
   schema: CartBodySchema,

@@ -14,5 +14,7 @@
   "CollapsibleSection": "src/components/sections/CollapsibleSection.astro",
   "Newsletter": "src/components/sections/Newsletter.astro",
   "Slideshow": "src/components/sections/Slideshow.astro",
-  "CartSection": "src/components/sections/CartSection.astro"
+  "CartSection": "src/components/sections/CartSection.astro",
+  "CartBody": "src/components/sections/CartBody.astro",
+  "CartSummary": "src/components/sections/CartSummary.astro"
 }

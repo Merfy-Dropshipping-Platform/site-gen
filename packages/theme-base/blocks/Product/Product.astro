@@ -438,7 +438,9 @@ const cartImage = view.gallery.hero?.src ?? '';
     function isActiveAvailable() {
       const v = getActiveVariant();
       if (!v) return true;
-      return v.available !== false && (v.quantity == null || Number(v.quantity) > 0);
+      // allowBackorder («продавать когда закончился») keeps a 0-stock variant
+      // buyable; undefined/false → unchanged (quantity gate still applies).
+      return v.available !== false && (v.quantity == null || Number(v.quantity) > 0 || v.allowBackorder === true);
     }
     // Фото под выбранный вариант: опция (напр. «Цвет») несёт images[] → меняем
     // hero. Нет медиа у опции → null (оставляем текущее фото товара).

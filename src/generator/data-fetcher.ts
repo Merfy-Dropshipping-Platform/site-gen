@@ -48,6 +48,10 @@ export interface FetchedProduct {
   metaDescription?: string | null;
   isPhysicalProduct?: boolean;
   quantity?: number;
+  /** «Продавать когда закончился» — base (no-variant) level. Default false. */
+  allowBackorder?: boolean;
+  /** Computed availability (quantity>0 || allowBackorder). */
+  available?: boolean;
   hasVariants?: boolean;
   /** Full variant group tree (with `swatchHex` per option). */
   variantGroups?: FetchedVariantGroup[];

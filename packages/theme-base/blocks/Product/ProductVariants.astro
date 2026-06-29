@@ -160,45 +160,64 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
             </svg>
           </div>
         ) : isListShaped ? (
-          <ul class="flex flex-col gap-2 w-full m-0 p-0 list-none">
-            {g.options.map((opt, optIdx) => {
-              const active = optIdx === 0 && opt.available;
-              // «Только для цвета»: реальный цвет платформы (swatchHex, фолбэк
-              // имя→hex). null → не-цвет (размер) → строка-текст без свотча.
-              const fill = opt.swatch ?? resolveColor(opt.value);
-              const hasColor = fill != null;
-              return (
-                <li class="w-full">
-                  <button
-                    type="button"
-                    data-variant-chip
-                    data-variant-swatch
-                    data-variant-key={g.key}
-                    data-variant-value={opt.value}
-                    data-variant-available={opt.available ? 'true' : 'false'}
-                    data-variant-active={active ? 'true' : 'false'}
-                    disabled={!opt.available}
-                    class:list={[
-                      'flex items-center gap-3 w-full h-12 px-3 text-left border-2 border-solid rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] cursor-pointer transition-colors',
-                      !opt.available ? 'cursor-not-allowed opacity-60 line-through' : '',
-                    ]}
-                    style={swatchBorderStyle(opt, active)}
-                  >
-                    {hasColor && (
-                      <span class:list={['block h-6 w-6 shrink-0 overflow-hidden border border-[rgb(var(--color-text)/0.15)]', shapeRadius]}>
-                        <span
-                          class:list={['block w-full h-full', shapeRadius]}
-                          data-variant-swatch-fill
-                          style={`background:${fill};`}
-                        />
-                      </span>
-                    )}
-                    <span class="flex-1">{opt.value}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          /* «Закрытый список» (M$rkul): дропдаун на нативном <details> —
+             свёрнут по умолчанию, клик по summary раскрывает список опций со
+             свотчами. Закрытое состояние = выбранный вариант (свотч+название
+             у цвета, текст у размера); JS-остров обновляет его при выборе и
+             закрывает дропдаун. «Цвет из платформы» = opt.swatch (swatchHex). */
+          <details class="mfy-variant-dd group/dd relative w-full" data-variant-dd data-variant-key={g.key}>
+            <summary
+              class="flex items-center gap-3 w-full h-12 px-3 list-none cursor-pointer select-none border-2 border-solid rounded-[var(--radius-button)] bg-[rgb(var(--color-surface,var(--color-bg)))] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] [&::-webkit-details-marker]:hidden"
+              style="border-color:rgb(var(--color-text)/0.2);"
+            >
+              {g.options[0] && (g.options[0].swatch ?? resolveColor(g.options[0].value)) && (
+                <span class:list={['block h-6 w-6 shrink-0 overflow-hidden border border-[rgb(var(--color-text)/0.15)]', shapeRadius]} data-variant-dd-swatch>
+                  <span
+                    class:list={['block w-full h-full', shapeRadius]}
+                    data-variant-dd-swatch-fill
+                    style={`background:${g.options[0].swatch ?? resolveColor(g.options[0].value)};`}
+                  />
+                </span>
+              )}
+              <span class="flex-1 text-left" data-variant-dd-label>{g.options[0]?.value}</span>
+              <svg aria-hidden="true" class="w-6 h-6 shrink-0 text-[rgb(var(--color-text))] transition-transform group-open/dd:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 12 15 18 9" /></svg>
+            </summary>
+            <ul class="absolute left-0 right-0 top-full z-20 mt-1 flex flex-col gap-1 p-1 m-0 list-none rounded-[var(--radius-button)] border border-[rgb(var(--color-text)/0.12)] bg-[rgb(var(--color-surface,var(--color-bg)))] shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
+              {g.options.map((opt, optIdx) => {
+                const active = optIdx === 0 && opt.available;
+                // «Только для цвета»: реальный цвет платформы (swatchHex, фолбэк
+                // имя→hex). null → не-цвет (размер) → строка-текст без свотча.
+                const fill = opt.swatch ?? resolveColor(opt.value);
+                const hasColor = fill != null;
+                return (
+                  <li class="w-full">
+                    <button
+                      type="button"
+                      data-variant-chip
+                      data-variant-swatch
+                      data-variant-dd-option
+                      data-variant-key={g.key}
+                      data-variant-value={opt.value}
+                      data-variant-available={opt.available ? 'true' : 'false'}
+                      data-variant-active={active ? 'true' : 'false'}
+                      disabled={!opt.available}
+                      class:list={[
+                        'flex items-center gap-3 w-full h-11 px-2 text-left rounded-[calc(var(--radius-button)*0.75)] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] cursor-pointer transition-colors hover:bg-[rgb(var(--color-text)/0.05)] data-[variant-active=true]:bg-[rgb(var(--color-text)/0.08)]',
+                        !opt.available ? 'cursor-not-allowed opacity-50 line-through' : '',
+                      ]}
+                    >
+                      {hasColor && (
+                        <span class:list={['block h-6 w-6 shrink-0 overflow-hidden border border-[rgb(var(--color-text)/0.15)]', shapeRadius]}>
+                          <span class:list={['block w-full h-full', shapeRadius]} data-variant-swatch-fill style={`background:${fill};`} />
+                        </span>
+                      )}
+                      <span class="flex-1">{opt.value}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
         ) : (
           <div class="flex flex-wrap gap-2">
             {g.options.map((opt, optIdx) => {

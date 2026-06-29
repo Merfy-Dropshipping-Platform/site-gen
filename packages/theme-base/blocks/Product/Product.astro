@@ -611,6 +611,18 @@ const cartImage = view.gallery.hero?.src ?? '';
       const val = chip.getAttribute('data-variant-value');
       if (!key || val == null) return;
       selectedOptions[key] = val;
+      // «Закрытый список»: опция выбрана внутри дропдауна (<details
+      // data-variant-dd>) → обновить закрытое состояние (свотч+название
+      // выбранного) и свернуть дропдаун.
+      var dd = chip.closest && chip.closest('details[data-variant-dd]');
+      if (dd) {
+        var ddLabel = dd.querySelector('[data-variant-dd-label]');
+        if (ddLabel) ddLabel.textContent = val;
+        var ddFill = dd.querySelector('[data-variant-dd-swatch-fill]');
+        var chipFill = chip.querySelector('[data-variant-swatch-fill]');
+        if (ddFill && chipFill) ddFill.setAttribute('style', chipFill.getAttribute('style') || '');
+        dd.open = false;
+      }
       root.querySelectorAll('[data-variant-chip][data-variant-key="' + key + '"]').forEach(function (c) {
         const isActive = c === chip;
         c.setAttribute('data-variant-active', isActive ? 'true' : 'false');
@@ -624,6 +636,14 @@ const cartImage = view.gallery.hero?.src ?? '';
         );
       });
       refreshPriceFromVariant();
+    });
+
+    // «Закрытый список»: свернуть открытый дропдаун при клике вне него
+    // (нативный <details> сам не закрывается по внешнему клику).
+    document.addEventListener('click', function (ev) {
+      root.querySelectorAll('details[data-variant-dd][open]').forEach(function (d) {
+        if (!d.contains(ev.target)) d.removeAttribute('open');
+      });
     });
 
     // Variant dropdown select.

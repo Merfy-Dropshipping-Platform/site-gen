@@ -345,6 +345,15 @@ export class PreviewController {
       // getChromeKind('checkout')==='checkout' → пропуск. Изолировано: пустой/
       // упавший рендер → {null,null} → injectChromeIntoHtml = no-op (блоб как был).
       let chromedHtml = builtThemeHtml;
+      // Checkout (verbatim blob): мегаблоки CheckoutForm/CheckoutSummary рендерятся
+      // из dist (checkout.astro зовёт их БЕЗ id) → их секции без data-puck-component-id,
+      // а у внутренних блоков id есть (Spec 102 hydration «checkout-*») → превью-агент
+      // цеплял внутренние блоки. Впрыскиваем id мегаблоков из ревизии на их секции →
+      // resolveSection в агенте выделяет «Оформление заказа»/«Сводка заказа» целиком,
+      // и клик из левого дерева находит секцию по data-puck-component-id.
+      if (route.split('/')[0] === 'checkout') {
+        chromedHtml = this.injectCheckoutBlockIds(chromedHtml, loaded.data);
+      }
       if (getChromeKind(route) === 'full') {
         try {
           const chrome = await assembleChrome({
@@ -834,6 +843,36 @@ export class PreviewController {
     const productBlock = content.find((b) => b?.type === 'Product');
     const id = productBlock?.props?.id;
     return typeof id === 'string' && id.trim() ? id.trim() : null;
+  }
+
+  /**
+   * Checkout (verbatim blob) — впрыснуть data-puck-component-id мегаблоков
+   * CheckoutForm («Оформление заказа») / CheckoutSummary («Сводка заказа») из id
+   * ревизии на их секции (data-block=checkout-form/summary). checkout.astro зовёт
+   * блоки БЕЗ id → в dist у секций нет data-puck-component-id, и превью-агент
+   * цеплял внутренние блоки (их id хардкод «checkout-*» для __merfyRoot). С id на
+   * контейнере resolveSection выделяет 2 секции целиком + клик из дерева их
+   * находит. Идемпотентно (lookahead на уже присутствующий id).
+   */
+  private injectCheckoutBlockIds(html: string, data: unknown): string {
+    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { id?: unknown } }> }> } | null)?.pagesData ?? {};
+    const content = (pages['page-checkout'] ?? pages['checkout'])?.content;
+    if (!Array.isArray(content)) return html;
+    const idOf = (type: string): string | null => {
+      const found = content.find((b) => b?.type === type)?.props?.id;
+      return typeof found === 'string' && found.trim() ? found.trim() : null;
+    };
+    const patch = (h: string, block: string, id: string | null): string => {
+      if (!id) return h;
+      const re = new RegExp(
+        `<section\\b(?![^>]*\\bdata-puck-component-id)([^>]*\\bdata-block="${block}")`,
+      );
+      return h.replace(re, `<section data-puck-component-id="${id}"$1`);
+    };
+    let out = html;
+    out = patch(out, 'checkout-form', idOf('CheckoutForm'));
+    out = patch(out, 'checkout-summary', idOf('CheckoutSummary'));
+    return out;
   }
 
   /**

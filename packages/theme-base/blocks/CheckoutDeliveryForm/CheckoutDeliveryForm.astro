@@ -107,26 +107,43 @@ const paddingStyle = padding
       </div>
     </div>
 
-    {/* Адрес — full row, до квартиры. */}
-    <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
+    {/* Улица — full row, DaData. При выборе подсказки раскладываем дом/квартиру/
+        индекс в ОТДЕЛЬНЫЕ поля ниже (1:1 как поля админки заказа), поэтому
+        CheckoutSubmit читает street/building/apartment напрямую — без хрупкого
+        позиционного split(',') одной строки, который путал порядок при ручном
+        вводе (город уезжал в улицу, и т.д.). */}
+    <div class={C.field} data-checkout-field="street" data-dadata={String(addressDadata)}>
       <input
         class={addressDadata ? C.inputWithIcon : C.input}
-        id="checkout-address"
-        name="address"
+        id="checkout-street"
+        name="street"
         type="text"
         autocomplete="off"
         placeholder=" "
-        data-checkout-dadata-input="address"
+        data-checkout-dadata-input="street"
       />
-      <label class={C.label} for="checkout-address">Полный адрес</label>
+      <label class={C.label} for="checkout-street">Улица</label>
       {addressDadata && (
         <span class={C.searchIcon}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
         </span>
       )}
       {addressDadata && (
-        <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
+        <ul class={C.dropdown} data-checkout-dadata-list="street" hidden></ul>
       )}
+    </div>
+
+    {/* Дом + Кв./офис — отдельные поля (50/50), как в админке заказа. Хранятся
+        «сырыми» (дом «19», кв «5») — как ждёт ShippingAddressDto. */}
+    <div class={C.fieldRow2}>
+      <div class={C.field} data-checkout-field="building">
+        <input class={C.input} id="checkout-building" name="building" type="text" autocomplete="off" placeholder=" " />
+        <label class={C.label} for="checkout-building">Дом</label>
+      </div>
+      <div class={C.field} data-checkout-field="apartment">
+        <input class={C.input} id="checkout-apartment" name="apartment" type="text" autocomplete="off" placeholder=" " />
+        <label class={C.label} for="checkout-apartment">Кв./офис</label>
+      </div>
     </div>
   </div>
 </section>
@@ -214,7 +231,7 @@ const paddingStyle = padding
     // dispatchAddressChange имеет внутренний debounce 150ms + universal
     // resolver fiasId, поэтому даже ручные правки без клика на DaData
     // suggestion заставляют recalculate отработать.
-    var trackFields = ['postalCode', 'city', 'address'];
+    var trackFields = ['postalCode', 'city', 'street'];
     for (var ti = 0; ti < trackFields.length; ti++) {
       var fEl = section.querySelector('[data-checkout-field="' + trackFields[ti] + '"] input')
         || section.querySelector('[data-checkout-dadata-input="' + trackFields[ti] + '"]');
@@ -323,7 +340,7 @@ const paddingStyle = padding
           body.from_bound = { value: 'city' };
           body.to_bound = { value: 'settlement' };
         }
-        if (kind === 'address') {
+        if (kind === 'street') {
           // Подсказки от улицы до квартиры — точная адресная навигация.
           body.from_bound = { value: 'street' };
           body.to_bound = { value: 'flat' };
@@ -361,7 +378,7 @@ const paddingStyle = padding
               var v = (s && s.value) || '';
               var d = (s && s.data) || {};
               var setVal = v;
-              if (kind === 'address') {
+              if (kind === 'street') {
                 var sa = shortAddrFromData(d);
                 if (sa) setVal = sa;
               }
@@ -520,22 +537,33 @@ const paddingStyle = padding
           dispatchAddressChange();
         }
 
-        if (kind === 'address') {
-          // Сохраняем структурированный адрес из DaData (street, house, flat)
-          // в data-* атрибуты на section — CheckoutSubmit прочитает их и
-          // отправит в PATCH /cart/:id/address с правильными полями (не
-          // одним fullAddress, который backend DTO дропает).
+        if (kind === 'street') {
+          // DaData вернул структурированный адрес — раскладываем его по
+          // ОТДЕЛЬНЫМ полям (улица / дом / квартира), 1:1 как поля админки
+          // заказа. CheckoutSubmit читает street/building/apartment напрямую,
+          // поэтому дом/кв пишем «сырыми» (дом «19», кв «5») — без префиксов
+          // «д»/«кв», как ждёт ShippingAddressDto.
           var dStreet = li.getAttribute('data-street') || '';
-          var dHouseType = li.getAttribute('data-house-type') || 'д';
           var dHouse = li.getAttribute('data-house') || '';
-          var dFlatType = li.getAttribute('data-flat-type') || 'кв';
           var dFlat = li.getAttribute('data-flat') || '';
-          if (dStreet) section.setAttribute('data-addr-street', dStreet);
-          else section.removeAttribute('data-addr-street');
-          if (dHouse) section.setAttribute('data-addr-building', (dHouseType + ' ' + dHouse).trim());
-          else section.removeAttribute('data-addr-building');
-          if (dFlat) section.setAttribute('data-addr-apartment', (dFlatType + ' ' + dFlat).trim());
-          else section.removeAttribute('data-addr-apartment');
+
+          // Поле «Улица» показывает только название улицы (а не собранную
+          // строку val «улица, д X, кв Y») — иначе при сабмите street дублировал
+          // бы дом/квартиру.
+          if (dStreet) {
+            input.value = dStreet;
+            lastQuery = dStreet;
+          }
+          var buildingInput = section.querySelector('[data-checkout-field="building"] input');
+          if (buildingInput && dHouse) {
+            buildingInput.value = dHouse;
+            buildingInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          var apartmentInput = section.querySelector('[data-checkout-field="apartment"] input');
+          if (apartmentInput && dFlat) {
+            apartmentInput.value = dFlat;
+            apartmentInput.dispatchEvent(new Event('change', { bubbles: true }));
+          }
 
           // Postal autofill ТОЛЬКО при выборе полного адреса.
           var indexField = section.querySelector('[data-checkout-field="postalCode"]');
@@ -566,7 +594,7 @@ const paddingStyle = padding
     }
 
     setupDadata('city');
-    setupDadata('address');
+    setupDadata('street');
   }
 
   // Запускаем сразу + на готовность DOM + на astro:page-load (ViewTransitions /

@@ -83,12 +83,15 @@ const initialLabel = buttonText.replace('{total}', '—');
       if (items.length === 0) return false;
       if (!getShopId()) return false;
       if (!getField('email') || !getField('phone')) return false;
-      if (!getField('city') || !getField('address')) return false;
+      if (!getField('city') || !getField('street')) return false;
       if (!state.deliveryMethod) return false;
       // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
       // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
       // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
       if (state.deliveryMethod.type === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
+      // Курьер/до двери (cdek_door): «Дом» обязателен — иначе CDEK получит адрес
+      // без номера дома (doorAddress = только улица) → реджект/недоставка после оплаты.
+      if (state.deliveryMethod.type === 'cdek_door' && !getField('building')) return false;
       if (!state.paymentMethod) return false;
       return true;
     }
@@ -130,7 +133,7 @@ const initialLabel = buttonText.replace('{total}', '—');
       if (m) { state.paymentMethod = m; refresh(); }
     });
 
-    ['email','phone','firstName','lastName','fullName','city','postalCode','address'].forEach(function (f) {
+    ['email','phone','firstName','lastName','fullName','city','postalCode','street','building','apartment'].forEach(function (f) {
       var el = document.querySelector('[data-checkout-field="' + f + '"] input'); // merfy-root-allow: cross-block, поля Contact/Delivery форм, page-singleton checkout
       if (!el) return;
       el.addEventListener('input', refresh);
@@ -196,21 +199,24 @@ const initialLabel = buttonText.replace('{total}', '—');
           body: JSON.stringify({ email: email, phone: phone, name: fullName }),
         });
 
-        // 2. PATCH cart с address (backend DTO ожидает street/building/apartment
-        // ОТДЕЛЬНО, не fullAddress). Структурированный адрес сохранён в
-        // data-addr-* атрибутах после выбора DaData address suggestion.
-        var deliveryForm = document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: cross-block, читает data-addr-* CheckoutDeliveryForm, page-singleton checkout
-        var addrStreet = deliveryForm ? (deliveryForm.getAttribute('data-addr-street') || '') : '';
-        var addrBuilding = deliveryForm ? (deliveryForm.getAttribute('data-addr-building') || '') : '';
-        var addrApartment = deliveryForm ? (deliveryForm.getAttribute('data-addr-apartment') || '') : '';
-        var addrFull = getField('address');
-        // Fallback parse если juzер ввёл руками: "ул X, д Y, кв Z"
-        if (!addrStreet && addrFull) {
-          var parts = addrFull.split(',').map(function (s) { return s.trim(); });
-          addrStreet = parts[0] || '';
-          addrBuilding = parts[1] || '';
-          addrApartment = parts[2] || '';
-        }
+        // 2. PATCH cart с address. CheckoutDeliveryForm теперь держит ОТДЕЛЬНЫЕ
+        // поля street/building/apartment (улица / дом / квартира) — backend DTO
+        // (ShippingAddressDto) ждёт их раздельно. Читаем поля напрямую; НИКАКОГО
+        // позиционного split(',') — он раскладывал ручной ввод неверно
+        // («Москва, г Реутов, ул Новая, д 19» → street='Москва', building='г
+        // Реутов», apartment='ул Новая'), что и ломало адрес получателя.
+        var addrStreet = getField('street');
+        var addrBuilding = getField('building');
+        var addrApartment = getField('apartment');
+        // Полная строка адреса (для метаданных / отображения), как в React
+        // DeliverySection: «улица, д. дом, кв. квартира». В PATCH /address её НЕ
+        // шлём (RPC order.cart.setAddress её игнорирует; door-адрес СДЭК orders
+        // собирает из street/building/apartment).
+        var addrFullParts = [];
+        if (addrStreet) addrFullParts.push(addrStreet);
+        if (addrBuilding) addrFullParts.push('д. ' + addrBuilding);
+        if (addrApartment) addrFullParts.push('кв. ' + addrApartment);
+        var addrFull = addrFullParts.join(', ');
         await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -242,7 +248,7 @@ const initialLabel = buttonText.replace('{total}', '—');
               apartment: addrApartment,
               postalCode: getField('postalCode'),
               fiasId: getFiasId(),
-              fullAddress: getField('address'),
+              fullAddress: addrFull,
             },
           };
           if (dm.tariffCode != null) selectBody.tariffCode = dm.tariffCode;
@@ -268,7 +274,7 @@ const initialLabel = buttonText.replace('{total}', '—');
             deliveryAddress: {
               country: getField('country') || 'Россия',
               city: getField('city'),
-              fullAddress: getField('address'),
+              fullAddress: addrFull,
               postalCode: getField('postalCode'),
               fiasId: getFiasId(),
               firstName: firstName,

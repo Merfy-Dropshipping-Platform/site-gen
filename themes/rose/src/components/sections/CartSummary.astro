@@ -34,7 +34,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	     а контент сводки пропускается → итог/видимость не сбрасываются и не мигают.
 	     Видимость самой секции (hidden при пустой на live) ставит JS, а не SSR — иначе
 	     морф сбросил бы её к hidden и сводка исчезла бы в превью при смене настроек. -->
-	<div data-rc-preserve class="mx-auto flex w-full max-w-[1320px] flex-col items-end gap-4 sm:gap-5">
+	<div id="rc-cart-summary-content" data-rc-preserve class="mx-auto flex w-full max-w-[1320px] flex-col items-end gap-4 sm:gap-5">
 		<p class="max-w-md text-right font-manrope text-[12px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]">
 			Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
 		</p>

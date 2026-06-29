@@ -22,7 +22,7 @@ const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
 	: undefined;
 // Цветовая схема секции: пусто → наследует :root сайта.
-const schemeClass = `color-scheme-${String(colorScheme ?? 1).replace("scheme-", "")}`;
+const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
 ---
 
 <section

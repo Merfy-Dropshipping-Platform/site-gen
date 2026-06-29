@@ -21,7 +21,7 @@ export const CartSectionPuckConfig: BlockPuckConfig<CartSectionProps> = {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
   },
   defaults: {
-    colorScheme: 1,
+    colorScheme: 2,
     padding: { top: 80, bottom: 80 },
   },
   schema: CartSectionSchema,

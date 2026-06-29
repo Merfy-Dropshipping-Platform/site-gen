@@ -1590,6 +1590,20 @@ const PREVIEW_NAV_AGENT_INLINE = `
     for (var i = 0; i < subs.length; i++) subs[i].removeAttribute('data-puck-subsection-hover');
   }
 
+  // Checkout-мегаблоки (CheckoutForm «Оформление заказа» / CheckoutSummary
+  // «Сводка заказа») содержат ВНУТРЕННИЕ блоки со своими data-puck-component-id
+  // (нужны для __merfyRoot-гидрации DaData/СДЭК/оплаты, Spec 102). В дереве
+  // конструктора это ОДНА секция → hover/select резолвим к КОНТЕЙНЕРУ мегаблока
+  // (у него тоже есть свой data-puck-component-id), иначе цепляется внутренний
+  // блок и пилюля показывает «checkout». Прочие страницы не затронуты — вложенные
+  // data-puck-component-id есть только в checkout-мегаблоках.
+  function resolveSection(t) {
+    if (!t || !t.closest) return null;
+    var mega = t.closest('[data-block="checkout-form"],[data-block="checkout-summary"]');
+    if (mega && mega.getAttribute('data-puck-component-id')) return mega;
+    return t.closest('[data-puck-component-id]');
+  }
+
   document.addEventListener('mouseover', function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
@@ -1612,7 +1626,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       refreshPills();
       return;
     }
-    var sec = t.closest('[data-puck-component-id]');
+    var sec = resolveSection(t);
     if (sec !== hoveredSection) {
       if (hoveredSection) {
         hoveredSection.removeAttribute('data-puck-section-hover');
@@ -1734,7 +1748,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       }
       return;
     }
-    var block = e.target && e.target.closest ? e.target.closest('[data-puck-component-id]') : null;
+    var block = resolveSection(e.target);
     if (block) {
       post({ type: 'select-block', blockId: block.getAttribute('data-puck-component-id') });
     }

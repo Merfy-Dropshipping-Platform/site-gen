@@ -9,6 +9,7 @@ export const CheckoutHeaderSchema = z.object({
   accountLink: z.string(),
   backLink: z.string(),
   cartLink: z.string(),
+  colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -17,34 +18,22 @@ export const CheckoutHeaderSchema = z.object({
 
 export type CheckoutHeaderProps = z.infer<typeof CheckoutHeaderSchema>;
 
+// Sidebar per Figma 1:19998 (узел «Header» страницы checkout): только
+// «Цветовая схема» + «Отступы». Бренд/лого/иконка/ссылки задаются на уровне
+// темы и переносятся из home-шапки в unifyChromeInDist → в панели узла скрыты.
 export const CheckoutHeaderPuckConfig: BlockPuckConfig<CheckoutHeaderProps> = {
   label: 'Шапка оформления',
   category: 'navigation',
   fields: {
-    siteTitle: { type: 'text', label: 'Название магазина' },
-    logoMode: {
-      type: 'radio',
-      label: 'Тип лого',
-      options: [
-        { label: 'Текст', value: 'text' },
-        { label: 'Картинка', value: 'image' },
-      ],
-    },
-    logoImage: { type: 'mediaSlot', label: 'Картинка лого' },
-    rightIcon: {
-      type: 'radio',
-      label: 'Иконка справа',
-      options: [
-        { label: 'Корзина', value: 'cart' },
-        { label: 'Аккаунт', value: 'account' },
-        { label: 'Назад', value: 'back' },
-        { label: 'Нет', value: 'none' },
-      ],
-    },
-    accountLink: { type: 'text', label: 'Ссылка на личный кабинет' },
-    backLink: { type: 'text', label: 'Куда ведёт иконка «Назад»' },
-    cartLink: { type: 'text', label: 'Ссылка на корзину' },
-    padding: { type: 'object', label: 'Отступы' },
+    colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
+    padding: { type: 'padding', label: 'Отступы' },
+    siteTitle: { type: 'hidden', label: '' },
+    logoMode: { type: 'hidden', label: '' },
+    logoImage: { type: 'hidden', label: '' },
+    rightIcon: { type: 'hidden', label: '' },
+    accountLink: { type: 'hidden', label: '' },
+    backLink: { type: 'hidden', label: '' },
+    cartLink: { type: 'hidden', label: '' },
   },
   defaults: {
     siteTitle: 'Мой магазин',
@@ -54,6 +43,7 @@ export const CheckoutHeaderPuckConfig: BlockPuckConfig<CheckoutHeaderProps> = {
     accountLink: '/account',
     backLink: '/cart',
     cartLink: '/cart',
+    colorScheme: 'scheme-2',
     padding: { top: 24, bottom: 24 },
   },
   schema: CheckoutHeaderSchema,

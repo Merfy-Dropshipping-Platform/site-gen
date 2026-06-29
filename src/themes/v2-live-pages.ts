@@ -428,6 +428,31 @@ const findBlockProps = (
 };
 
 /**
+ * Figma 1:19998 — применить «Цветовую схему» узла checkout (CheckoutForm /
+ * CheckoutSummary) к verbatim-дисту. checkout.astro рендерит блоки БЕЗ пропсов
+ * мерчанта → их `<section data-block="checkout-*">` без класса схемы (наследует
+ * общий color-scheme-2). Дописываем `color-scheme-N` в class секции — секция
+ * сама красит bg/text из `--color-*` (CheckoutForm/Summary.classes несут
+ * `bg-[rgb(var(--color-bg))]`), значит независимая перекраска формы и сводки.
+ * Идемпотентно: класс не дублируется. `class` идёт ДО `data-block` (порядок
+ * атрибутов в CheckoutForm/Summary.astro).
+ */
+export function patchCheckoutBlockScheme(
+  html: string,
+  block: 'checkout-form' | 'checkout-summary',
+  scheme: unknown,
+): string {
+  if (typeof scheme !== 'string' || !scheme) return html;
+  const cls = `color-scheme-${scheme.replace('scheme-', '')}`;
+  const re = new RegExp(
+    `(<section\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-block="${block}")`,
+  );
+  return html.replace(re, (m, p1: string, classes: string, p3: string) =>
+    classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
+  );
+}
+
+/**
  * Spec 109 — sticky-хедер на verbatim-страницах (корзина).
  *
  * Verbatim-страница (cart) рендерит ДЕФОЛТНЫЙ Header без пропсов мерчанта →
@@ -573,6 +598,21 @@ export async function unifyChromeInDist(
     logger.warn('[v2-chrome] CheckoutHeader render empty — checkout keeps theme header');
   }
 
+  // Figma 1:19998 — независимые «Цветовые схемы» узлов «Оформление заказа»
+  // (CheckoutForm) и «Сводка заказа» (CheckoutSummary). Verbatim-dist рендерит
+  // их без пропсов мерчанта → схему дописываем в class секций (см.
+  // patchCheckoutBlockScheme).
+  const formScheme = (
+    findBlockProps(pagesData['page-checkout'], 'CheckoutForm') ??
+    findBlockProps(pagesData['checkout'], 'CheckoutForm') ??
+    {}
+  )['colorScheme'];
+  const summaryScheme = (
+    findBlockProps(pagesData['page-checkout'], 'CheckoutSummary') ??
+    findBlockProps(pagesData['checkout'], 'CheckoutSummary') ??
+    {}
+  )['colorScheme'];
+
   for (const file of await listIndexHtmlFiles(ctx.distDir)) {
     const route = distRoute(ctx.distDir, file);
     if (route === '') continue; // home — источник канона
@@ -581,17 +621,24 @@ export async function unifyChromeInDist(
     const isCheckout = route.split('/')[0] === 'checkout';
 
     if (isCheckout) {
-      if (!checkoutHeader) continue;
-      // Тема рендерит CheckoutHeader (data-checkout-slot) внутри своей scheme/
-      // token-обёртки — её и подменяем; до раскатки theme-edit fallback на data-nt.
-      const re = HEADER_CHECKOUT_RE.test(html)
-        ? HEADER_CHECKOUT_RE
-        : HEADER_NT_RE.test(html)
-          ? HEADER_NT_RE
-          : null;
-      if (!re) continue;
-      if (re.exec(html)?.[0] === checkoutHeader) continue;
-      const next = html.replace(re, () => checkoutHeader as string);
+      let next = html;
+      // 1) CheckoutHeader: бренд мерчанта + его scheme/padding (props уже в
+      //    checkoutProps через page-checkout). Тема рендерит CheckoutHeader
+      //    (data-checkout-slot) внутри своей token-обёртки — её подменяем;
+      //    fallback на data-nt до раскатки theme-edit.
+      if (checkoutHeader) {
+        const re = HEADER_CHECKOUT_RE.test(next)
+          ? HEADER_CHECKOUT_RE
+          : HEADER_NT_RE.test(next)
+            ? HEADER_NT_RE
+            : null;
+        if (re && re.exec(next)?.[0] !== checkoutHeader) {
+          next = next.replace(re, () => checkoutHeader as string);
+        }
+      }
+      // 2) Цветовая схема «Оформление заказа» / «Сводка заказа» (независимо).
+      next = patchCheckoutBlockScheme(next, 'checkout-form', formScheme);
+      next = patchCheckoutBlockScheme(next, 'checkout-summary', summaryScheme);
       if (next !== html) {
         await fs.writeFile(file, next, 'utf8');
         checkout++;

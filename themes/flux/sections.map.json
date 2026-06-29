@@ -15,5 +15,6 @@
   "Newsletter": "src/components/sections/Newsletter.astro",
   "Slideshow": "src/components/sections/Slideshow.astro",
   "Publications": "src/components/sections/Publications.astro",
-  "Video": "src/components/sections/Video.astro"
+  "Video": "src/components/sections/Video.astro",
+  "CartSection": "src/components/sections/CartSection.astro"
 }

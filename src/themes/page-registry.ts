@@ -126,7 +126,7 @@ export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['ros
  * пересадка) и `preview.controller` (превью-путь: composableCart снимает
  * complex-гейт, как unifiedProduct для товара).
  */
-export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>(['rose']);
+export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'vanilla', 'bloom', 'satin', 'flux']);
 
 /**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,

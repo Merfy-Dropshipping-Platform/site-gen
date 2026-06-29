@@ -10,8 +10,9 @@ import { withBase } from "../../lib/with-base";
 interface Props {
 	id?: string;
 	padding?: { top: number; bottom: number };
+	colorScheme?: number | string;
 }
-const { id, padding } = Astro.props as Props;
+const { id, padding, colorScheme } = Astro.props as Props;
 
 const deleteIconSrc = withBase("/icons/delete.svg");
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
@@ -21,6 +22,10 @@ const apiUrl = "https://gateway.merfy.ru/api";
 const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
 	: undefined;
+// Цветовая схема секции (как Newsletter): пусто → наследует :root сайта.
+const schemeClass = colorScheme
+	? `color-scheme-${String(colorScheme).replace("scheme-", "")}`
+	: "";
 ---
 
 <section
@@ -28,6 +33,7 @@ const padStyle = padding
 	data-block="cart-section"
 	class:list={[
 		"w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]",
+		schemeClass,
 		padStyle ? "" : "pb-16 pt-12 sm:pb-20 sm:pt-16 md:pb-[120px] md:pt-20 lg:pb-[140px] lg:pt-24 xl:pb-[140px] xl:pt-28",
 	]}
 	style={padStyle}

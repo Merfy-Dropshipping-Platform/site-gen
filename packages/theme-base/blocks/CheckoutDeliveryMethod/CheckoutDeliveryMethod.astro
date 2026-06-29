@@ -57,12 +57,17 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   {/* Error state — CDEK ответил ошибкой / нет тарифов. */}
   <div
     data-checkout-delivery-error
-    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(220,38,38)]"
+    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-error))]"
     hidden
   ></div>
 
   {/* Live cards — заполняется inline-script'ом из ответа логистики. */}
   <div class={C.list} data-checkout-delivery-list hidden></div>
+
+  {/* CDEK ПВЗ/постамат picker — раскрывается под выбранной cdek_pickup карточкой.
+      Сиблинг списка (НЕ внутри [data-checkout-delivery-list]): render() перетирает
+      innerHTML списка на каждом пересчёте и снёс бы пикер. */}
+  <div data-cdek-pvz-picker hidden></div>
 </section>
 
 <script is:inline define:vars={{ blockId: id }}>
@@ -84,6 +89,20 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
     var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
 
+    // ── CDEK ПВЗ-picker state ──────────────────────────────────────────────
+    // Раскрывается под выбранной cdek_pickup карточкой. Точки тянем из того же
+    // gateway-эндпоинта, что и rose React-чекаут (/delivery/pickup-points).
+    var pickerEl = section.querySelector('[data-cdek-pvz-picker]');
+    var pvzCache = {};            // fiasId → точки (кэш на сессию)
+    var pvzPoints = null;         // текущие точки (null = ещё грузим/loading)
+    var pvzError = false;
+    var pvzQuery = '';
+    var selectedPvzCode = null;
+    var selectedPvzAddress = null;
+    var lastOpt = null;           // последняя выбранная опция доставки (для re-emit при выборе точки)
+    var pvzListenersBound = false;
+    var pvzFias = null;           // город, для которого загружены/выбраны точки (смена → сброс выбора)
+
     // Lazy — конфиг инжектится ПОСЛЕ блоков. Считываем при каждом вызове.
     function getApiBase() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl) || 'https://gateway.merfy.ru/api';
@@ -103,6 +122,18 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var RADIO_OUTER_SELECTED = 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]';
     var RADIO_OUTER_UNSELECTED = 'border-[rgb(var(--color-input-border))]';
     var RADIO_DOT = 'block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]';
+
+    // ── PVZ-picker classes (только rgb(var(--color-*)) — без сырых hex/rgb) ──
+    var PVZ_BOX_CLS = 'mt-2 flex flex-col gap-2 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] bg-[rgb(var(--color-bg))] p-3';
+    var PVZ_SEARCH_CLS = 'w-full h-10 px-3 [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))] bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] outline-none focus:border-[rgb(var(--color-text)/.4)]';
+    var PVZ_LIST_CLS = 'max-h-[240px] overflow-y-auto flex flex-col';
+    var PVZ_ROW_CLS = 'w-full text-left px-3 py-2 flex flex-col gap-0.5 rounded-[var(--radius-input)] cursor-pointer transition-colors hover:bg-[rgb(var(--color-text)/.04)]';
+    var PVZ_ROW_SEL_CLS = 'w-full text-left px-3 py-2 flex flex-col gap-0.5 rounded-[var(--radius-input)] cursor-pointer bg-[rgb(var(--color-text)/.06)] outline outline-1 outline-[rgb(var(--color-text))]';
+    var PVZ_ROW_ADDR_CLS = 'flex-1 [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
+    var PVZ_BADGE_CLS = 'flex-shrink-0 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] uppercase tracking-wider';
+    var PVZ_TIME_CLS = 'text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]';
+    var PVZ_MSG_CLS = 'px-3 py-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]';
+    var PVZ_RETRY_CLS = 'underline underline-offset-2 hover:no-underline text-[rgb(var(--color-error))]';
 
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';
@@ -149,6 +180,144 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       loadingEl && (loadingEl.hidden = true);
       errorEl && (errorEl.hidden = true);
       listEl && (listEl.hidden = false);
+    }
+
+    // ── CDEK ПВЗ-picker ────────────────────────────────────────────────────
+    // GET /store/carts/:id/delivery/pickup-points?store_id&cityFiasId — тот же
+    // эндпоинт, что и rose React-чекаут. Точка = {code,name,address,workTime,type}.
+    async function fetchPickupPoints(fias) {
+      var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+      var shopId = getShopId();
+      if (!fias || !cartId || !shopId) return [];
+      var url = getApiBase() + '/store/carts/' + encodeURIComponent(cartId)
+        + '/delivery/pickup-points?store_id=' + encodeURIComponent(shopId)
+        + '&cityFiasId=' + encodeURIComponent(fias);
+      var res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('http ' + res.status);
+      var json = await res.json().catch(function () { return null; });
+      return (json && Array.isArray(json.data)) ? json.data : [];
+    }
+
+    // loading / error+retry / empty / shell(input+list)
+    function renderPvzState() {
+      if (!pickerEl) return;
+      if (pvzError) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Не удалось загрузить пункты выдачи. '
+          + '<button type="button" data-pvz-retry class="' + PVZ_RETRY_CLS + '">Повторить</button></div>';
+        return;
+      }
+      if (pvzPoints === null) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Загружаем пункты выдачи…</div>';
+        return;
+      }
+      if (pvzPoints.length === 0) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Нет доступных пунктов выдачи в этом городе.</div>';
+        return;
+      }
+      pickerEl.innerHTML = '<div class="' + PVZ_BOX_CLS + '">'
+        + '<input type="text" data-pvz-search value="' + esc(pvzQuery) + '" placeholder="Поиск пункта выдачи…" class="' + PVZ_SEARCH_CLS + '" />'
+        + '<div data-pvz-list class="' + PVZ_LIST_CLS + '"></div>'
+        + '</div>';
+      renderPvzRows();
+    }
+
+    // Только список (search-input не перерисовываем — иначе теряется фокус при вводе).
+    function renderPvzRows() {
+      var listC = pickerEl && pickerEl.querySelector('[data-pvz-list]');
+      if (!listC) return;
+      var q = pvzQuery.trim().toLowerCase();
+      var sorted = (pvzPoints || []).slice().sort(function (a, b) {
+        // ПВЗ перед постаматами, затем по адресу
+        if (a.type !== b.type) return a.type === 'POSTAMAT' ? 1 : -1;
+        return String(a.address || '').localeCompare(String(b.address || ''), 'ru');
+      });
+      var filtered = q ? sorted.filter(function (p) {
+        return String(p.address || '').toLowerCase().indexOf(q) >= 0
+          || String(p.name || '').toLowerCase().indexOf(q) >= 0
+          || String(p.code || '').toLowerCase().indexOf(q) >= 0;
+      }) : sorted;
+      if (filtered.length === 0) {
+        listC.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Ничего не найдено</div>';
+        return;
+      }
+      listC.innerHTML = filtered.map(function (p) {
+        var sel = selectedPvzCode === p.code;
+        var badge = p.type === 'POSTAMAT' ? 'постамат' : 'пвз';
+        return '<button type="button" data-pvz-row data-pvz-code="' + esc(p.code) + '" data-pvz-address="' + esc(p.address) + '" class="' + (sel ? PVZ_ROW_SEL_CLS : PVZ_ROW_CLS) + '">'
+          + '<span class="flex items-center gap-2">'
+          + '<span class="' + PVZ_ROW_ADDR_CLS + '">' + esc(p.address) + '</span>'
+          + '<span class="' + PVZ_BADGE_CLS + '">' + esc(badge) + '</span>'
+          + '</span>'
+          + (p.workTime ? '<span class="' + PVZ_TIME_CLS + '">' + esc(p.workTime) + '</span>' : '')
+          + '</button>';
+      }).join('');
+    }
+
+    // Делегируем input(поиск) / click(выбор точки, retry) на host пикера (Spec 102).
+    function ensurePvzListeners() {
+      if (pvzListenersBound || !pickerEl) return;
+      pvzListenersBound = true;
+      pickerEl.addEventListener('input', function (e) {
+        var s = e.target.closest && e.target.closest('[data-pvz-search]');
+        if (!s) return;
+        pvzQuery = s.value || '';
+        renderPvzRows();
+      });
+      pickerEl.addEventListener('click', function (e) {
+        var retry = e.target.closest && e.target.closest('[data-pvz-retry]');
+        if (retry) {
+          var fias = section.getAttribute('data-last-fias-id') || '';
+          delete pvzCache[fias];
+          openPickerFor(fias);
+          return;
+        }
+        var row = e.target.closest && e.target.closest('[data-pvz-row]');
+        if (!row) return;
+        selectedPvzCode = row.getAttribute('data-pvz-code') || null;
+        selectedPvzAddress = row.getAttribute('data-pvz-address') || null;
+        renderPvzRows(); // обновить подсветку выбранной строки
+        // re-emit без повторного syncPicker (пикер уже открыт) → enable кнопки оплаты
+        if (lastOpt) emitSelection(lastOpt);
+      });
+    }
+
+    async function openPickerFor(fias) {
+      if (!pickerEl) return;
+      ensurePvzListeners();
+      if (fias !== pvzFias) {
+        // Город сменился → точка из старого города больше не валидна (СДЭК
+        // отклонит). Сбрасываем выбор и поиск; guard снова заблокирует оплату,
+        // пока покупатель не выберет точку в новом городе.
+        pvzFias = fias;
+        selectedPvzCode = null;
+        selectedPvzAddress = null;
+        pvzQuery = '';
+      }
+      if (!fias) { pvzPoints = []; pvzError = false; renderPvzState(); return; }
+      if (pvzCache[fias]) { pvzPoints = pvzCache[fias]; pvzError = false; renderPvzState(); return; }
+      pvzPoints = null; pvzError = false; renderPvzState(); // loading
+      try {
+        var list = await fetchPickupPoints(fias);
+        pvzCache[fias] = list;
+        pvzPoints = list; pvzError = false;
+      } catch (e) {
+        pvzError = true;
+      }
+      renderPvzState();
+    }
+
+    // Показать/скрыть пикер под выбранной опцией доставки.
+    function syncPicker(opt) {
+      if (!pickerEl) return;
+      if (opt && opt.type === 'cdek_pickup') {
+        pickerEl.hidden = false;
+        openPickerFor(section.getAttribute('data-last-fias-id') || '');
+      } else {
+        pickerEl.hidden = true;
+        // ушли с pickup-метода → сбрасываем точку, чтобы не уехал устаревший код
+        selectedPvzCode = null;
+        selectedPvzAddress = null;
+      }
     }
 
     /**
@@ -292,7 +461,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       if (addressKnown) dispatchSelection(options[0]);
     }
 
-    function dispatchSelection(opt) {
+    // Только отправка события (без управления пикером) — для re-emit при выборе
+    // точки, когда пикер уже открыт. pickupPointCode непуст только для cdek_pickup
+    // и только когда точка реально выбрана.
+    function emitSelection(opt) {
+      var isPvz = opt.type === 'cdek_pickup';
       document.dispatchEvent(new CustomEvent('checkout:delivery-changed', {
         detail: {
           type: opt.type,
@@ -303,8 +476,16 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           periodMin: opt.periodMin || null,
           periodMax: opt.periodMax || null,
           label: opt.label,
+          pickupPointCode: isPvz ? selectedPvzCode : null,
+          pickupPointAddress: isPvz ? selectedPvzAddress : null,
         },
       }));
+    }
+
+    function dispatchSelection(opt) {
+      lastOpt = opt;
+      syncPicker(opt);
+      emitSelection(opt);
     }
 
     // Click handler — переключение selected состояния (radio + border)

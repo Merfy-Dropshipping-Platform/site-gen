@@ -10,5 +10,8 @@ export const CheckoutDeliveryMethodTokens = [
   '--size-h3',
   '--size-body',
   '--size-small',
+  '--size-tiny',
   '--radius-input',
+  '--color-bg',
+  '--color-error',
 ] as const satisfies readonly `--${string}`[];

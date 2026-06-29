@@ -14,7 +14,7 @@ const initialLabel = buttonText.replace('{total}', '—');
   data-block="checkout-submit"
   style={paddingStyle}
 >
-  <div data-checkout-submit-error role="alert" hidden style="color:rgb(220 38 38);font-size:14px;margin-bottom:8px;"></div>
+  <div data-checkout-submit-error role="alert" hidden style="color:rgb(var(--color-error));font-size:14px;margin-bottom:8px;"></div>
   <button type="button" class={cls} data-checkout-submit disabled>
     {initialLabel}
   </button>
@@ -85,6 +85,10 @@ const initialLabel = buttonText.replace('{total}', '—');
       if (!getField('email') || !getField('phone')) return false;
       if (!getField('city') || !getField('address')) return false;
       if (!state.deliveryMethod) return false;
+      // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
+      // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
+      // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
+      if (state.deliveryMethod.type === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
       if (!state.paymentMethod) return false;
       return true;
     }
@@ -112,6 +116,10 @@ const initialLabel = buttonText.replace('{total}', '—');
         tariffCode: d.tariffCode != null ? d.tariffCode : null,
         customTariffId: d.customTariffId || null,
         pickupPointId: d.pickupPointId || null,
+        // Код выбранного ПВЗ/постамата СДЭК (для cdek_pickup). Доедет до заказа
+        // через Step 0 /delivery/select → orders.cdekPickupPointCode.
+        pickupPointCode: d.pickupPointCode || null,
+        pickupPointAddress: d.pickupPointAddress || null,
         periodMin: d.periodMin != null ? d.periodMin : null,
         periodMax: d.periodMax != null ? d.periodMax : null,
       };
@@ -216,6 +224,42 @@ const initialLabel = buttonText.replace('{total}', '—');
             postalCode: getField('postalCode'),
           }),
         });
+
+        // 2.5 — CDEK самовывоз (ПВЗ/постамат): пробрасываем код точки на заказ
+        // через /delivery/select. Это ЕДИНСТВЕННЫЙ путь, по которому
+        // cdekPickupPointCode доезжает до logistics.producer → delivery_point;
+        // metadata.deliveryMethod при checkout код точки НЕ переносит. Падение
+        // НЕ глотаем — иначе СДЭК отклонит отправление уже после оплаты.
+        var dm = state.deliveryMethod;
+        if (dm && dm.type === 'cdek_pickup') {
+          var selectBody = {
+            type: dm.type,
+            deliveryCostCents: dm.costCents || 0,
+            address: {
+              city: getField('city'),
+              street: addrStreet,
+              house: addrBuilding,
+              apartment: addrApartment,
+              postalCode: getField('postalCode'),
+              fiasId: getFiasId(),
+              fullAddress: getField('address'),
+            },
+          };
+          if (dm.tariffCode != null) selectBody.tariffCode = dm.tariffCode;
+          if (dm.periodMin != null) selectBody.periodMin = dm.periodMin;
+          if (dm.periodMax != null) selectBody.periodMax = dm.periodMax;
+          if (dm.pickupPointCode) selectBody.pickupPointCode = dm.pickupPointCode;
+          if (dm.pickupPointAddress) selectBody.pickupPointAddress = dm.pickupPointAddress;
+          var selRes = await fetch(apiBase + '/store/carts/' + cartId + '/delivery/select', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(selectBody),
+          });
+          if (!selRes.ok) {
+            throw new Error('Не удалось сохранить пункт выдачи. Выберите точку заново.');
+          }
+        }
 
         // 3. POST checkout (теперь cart содержит customerEmail/Phone)
         var checkoutBody = {

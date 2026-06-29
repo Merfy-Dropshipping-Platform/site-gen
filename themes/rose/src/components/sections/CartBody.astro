@@ -89,12 +89,14 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		gray: "Серый",
 	};
 
-	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
-	const filledBlock = document.querySelector<HTMLElement>("[data-cart-page-filled]");
-	const itemsEl = document.querySelector<HTMLElement>("[data-cart-page-items]");
-
 	const render = () => {
 		const lines = getCart();
+		// Перезапрашиваем узлы каждый раз: после reconcile-морфа превью (смена
+		// настроек) idiomorph мог пересоздать DOM секции — захваченные один раз
+		// ссылки стали бы «битыми», и тоггл пусто/товары не применился бы.
+		const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
+		const filledBlock = document.querySelector<HTMLElement>("[data-cart-page-filled]");
+		const itemsEl = document.querySelector<HTMLElement>("[data-cart-page-items]");
 		if (!emptyBlock || !filledBlock || !itemsEl) return;
 		if (lines.length === 0) {
 			emptyBlock.classList.remove("hidden");

@@ -1167,6 +1167,13 @@ const PREVIEW_NAV_AGENT_INLINE = `
       return;
     }
     RC_APPLIED_VERSION = rcVersion;
+    // 110-fix: после reconcile-морфа ре-гидрируем блоки тем же сигналом, что
+    // одиночная замена (выше) и Astro ClientRouter после навигации —
+    // astro:after-swap + astro:page-load. Без этого блоки с КЛИЕНТСКИМ состоянием
+    // (корзина: пусто↔товары, слайдеры, header-sync) после смены настроек (US2
+    // re-fetch перезапекает блок в SSR-дефолт) застревают на дефолте: напр. CartBody
+    // показывает пустую корзину при наличии товаров. Дебаунс коалесит пачку reconcile.
+    dispatchAstroNavEventsDebounced();
     // Хром (Header/Footer/PromoBanner вне <main>) — только hide/show (не reorder/
     // add/delete). Единый CSS-toggle по тому же видимому target: блок вне target →
     // скрыть (data-rc-hidden), в target → показать. Body-секции уже сведены morph.

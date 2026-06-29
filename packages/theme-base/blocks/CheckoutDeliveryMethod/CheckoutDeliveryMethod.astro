@@ -16,6 +16,7 @@ const {
   cdekEnabled,
   cdekDoorLabel,
   cdekPvzLabel,
+  cdekPostamatLabel,
   pickupEnabled,
   pickupLabel,
   freeShippingThresholdCents,
@@ -30,6 +31,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   data-cdek-enabled={String(cdekEnabled)}
   data-cdek-door-label={cdekDoorLabel}
   data-cdek-pvz-label={cdekPvzLabel}
+  data-cdek-postamat-label={cdekPostamatLabel}
   data-pickup-enabled={String(pickupEnabled)}
   data-pickup-label={pickupLabel}
   data-free-shipping-threshold={freeShippingThresholdCents != null ? String(freeShippingThresholdCents) : ''}
@@ -84,8 +86,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
     var pickupEnabled = section.getAttribute('data-pickup-enabled') === 'true';
     var pickupLabel = section.getAttribute('data-pickup-label') || 'Самовывоз';
-    var cdekDoorLabel = section.getAttribute('data-cdek-door-label') || 'Курьер до двери';
-    var cdekPvzLabel = section.getAttribute('data-cdek-pvz-label') || 'До пункта выдачи';
+    var cdekDoorLabel = section.getAttribute('data-cdek-door-label') || 'Курьер СДЭК до двери';
+    var cdekPvzLabel = section.getAttribute('data-cdek-pvz-label') || 'Пункт выдачи СДЭК';
+    var cdekPostamatLabel = section.getAttribute('data-cdek-postamat-label') || 'Постамат СДЭК';
     var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
     var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
 
@@ -117,6 +120,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var BODY_CLS = 'flex-1 flex flex-col min-w-0';
     var LABEL_CLS = '[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
     var META_CLS = 'mt-0.5 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]';
+    var BADGE_CLS = 'mt-1 self-start inline-flex items-center px-2 py-0.5 rounded-full [font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-bg))] bg-[rgb(var(--color-text))]';
     var PRICE_CLS = '[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-text))] flex-shrink-0';
     // Radio button (паритет с CheckoutPayment): outer circle + inner dot когда selected
     var RADIO_OUTER_BASE = 'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border';
@@ -389,32 +393,73 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         }
       }
 
-      // Опции доставки: PARTNER (CDEK) → дверь/ПВЗ, OWN → свой тариф магазина.
+      // Опции доставки.
+      // • OWN — собственный тариф магазина: каждый своей карточкой.
+      // • PARTNER (CDEK) — группируем по «методу покупателя» (дверь / ПВЗ /
+      //   постамат) и оставляем по ОДНОЙ карточке. СДЭК отдаёт дубли-тарифы,
+      //   отличающиеся лишь внутренним плечом отправки (склад-склад vs
+      //   дверь-склад) при одной точке назначения, — для покупателя это один и
+      //   тот же способ, поэтому держим самый дешёвый. Разные ТИПЫ точки
+      //   (ПВЗ ↔ постамат) НЕ мержим: контракт СДЭК привязывает delivery_point и
+      //   фильтр пикера к типу точки тарифа.
+      var cdekGroups = {}; // methodKey → лучший (самый дешёвый) кандидат
+      var cdekOrder = [];  // порядок появления методов (стабильность до сортировки)
+
+      // Кандидат дешевле/быстрее: цена, затем меньший maxDays, затем minDays.
+      function cdekBetter(a, b) {
+        if (a.priceCents !== b.priceCents) return a.priceCents < b.priceCents;
+        var am = a.periodMax == null ? Infinity : a.periodMax;
+        var bm = b.periodMax == null ? Infinity : b.periodMax;
+        if (am !== bm) return am < bm;
+        var an = a.periodMin == null ? Infinity : a.periodMin;
+        var bn = b.periodMin == null ? Infinity : b.periodMin;
+        return an < bn;
+      }
+      // Понятное описание метода (если магазин не задал своё в тарифе).
+      function cdekDefaultDesc(methodKey) {
+        if (methodKey === 'door') return 'Привезём по вашему адресу';
+        if (methodKey === 'POSTAMAT') return 'Ячейка по коду из СМС, круглосуточно';
+        return 'Заберёте в офисе СДЭК, с сотрудником';
+      }
+
       for (var i = 0; i < deliveryOptions.length; i++) {
         var o = deliveryOptions[i];
         var priceCents = Math.round((o.price || 0) * 100);
         var period = (o.minDays != null && o.maxDays != null)
           ? 'от ' + o.minDays + ' до ' + o.maxDays + ' рабочих дней'
-          : (o.description || '');
+          : '';
 
         if (o.type === 'PARTNER') {
           // CDEK (PARTNER) — адрес-зависимая служба. Без адреса не показываем,
           // появится сама после ввода адреса (checkout:address-changed).
           if (!addressKnown) continue;
           var isDoor = o.deliveryMode === 'door';
-          // Заголовок карточки — настройка темы (cdekDoorLabel / cdekPvzLabel),
-          // срок/описание — meta.
-          options.push({
-            type: isDoor ? 'cdek_door' : 'cdek_pickup',
+          // Метод покупателя: дверь / постамат / ПВЗ. Тип точки (postamat/pvz)
+          // разводит карточки — постамат больше не маскируется под ПВЗ.
+          var methodKey = isDoor
+            ? 'door'
+            : (o.pickupPointKind === 'POSTAMAT' ? 'POSTAMAT' : 'PVZ');
+          var cand = {
+            cardType: isDoor ? 'cdek_door' : 'cdek_pickup',
+            methodKey: methodKey,
             tariffCode: (o.cdekTariffCode != null ? o.cdekTariffCode : null),
-            label: isDoor ? cdekDoorLabel : cdekPvzLabel,
-            meta: period,
+            label: isDoor
+              ? cdekDoorLabel
+              : (methodKey === 'POSTAMAT' ? cdekPostamatLabel : cdekPvzLabel),
             priceCents: priceCents,
             periodMin: o.minDays,
             periodMax: o.maxDays,
+            period: period,
+            description: o.description || '',
             // Тип точки тарифа (ПВЗ/постамат) — пикер по нему фильтрует список.
             pickupPointKind: o.pickupPointKind || null,
-          });
+          };
+          if (!cdekGroups[methodKey]) {
+            cdekGroups[methodKey] = cand;
+            cdekOrder.push(methodKey);
+          } else if (cdekBetter(cand, cdekGroups[methodKey])) {
+            cdekGroups[methodKey] = cand;
+          }
         } else {
           // OWN — собственный тариф магазина (бывшие customProfiles).
           options.push({
@@ -426,6 +471,24 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             priceCents: priceCents,
           });
         }
+      }
+
+      // Материализуем дедуплицированные CDEK-карточки. Подзаголовок = понятное
+      // описание метода (приоритет — текст магазина) + срок.
+      for (var ci = 0; ci < cdekOrder.length; ci++) {
+        var best = cdekGroups[cdekOrder[ci]];
+        var desc = best.description || cdekDefaultDesc(best.methodKey);
+        var bestMeta = best.period ? (desc + ' · ' + best.period) : desc;
+        options.push({
+          type: best.cardType,
+          tariffCode: best.tariffCode,
+          label: best.label,
+          meta: bestMeta,
+          priceCents: best.priceCents,
+          periodMin: best.periodMin,
+          periodMax: best.periodMax,
+          pickupPointKind: best.pickupPointKind,
+        });
       }
 
       // Free shipping override — если cart total >= threshold, все платные → бесплатно.
@@ -440,6 +503,14 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
       // Сортировка: бесплатные первыми, потом по цене.
       options.sort(function (a, b) { return a.priceCents - b.priceCents; });
+
+      // «Дешевле всего» — только на единственной самой дешёвой ПЛАТНОЙ карточке
+      // (строго дешевле следующей; «Бесплатно» уже само себя продаёт, поэтому
+      // на нулевой цене бейдж не вешаем).
+      if (options.length > 1 && options[0].priceCents > 0
+          && options[0].priceCents < options[1].priceCents) {
+        options[0].cheapest = true;
+      }
       return options;
     }
 
@@ -480,6 +551,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + '</span>'
           + '<div class="' + BODY_CLS + '">'
           + '<span class="' + LABEL_CLS + '" data-delivery-label>' + esc(opt.label) + '</span>'
+          + (opt.cheapest ? '<span class="' + BADGE_CLS + '" data-delivery-cheapest>дешевле всего</span>' : '')
           + (opt.meta ? '<span class="' + META_CLS + '">' + esc(opt.meta) + '</span>' : '')
           + '</div>'
           + '<span class="' + PRICE_CLS + '">' + priceText + '</span>'

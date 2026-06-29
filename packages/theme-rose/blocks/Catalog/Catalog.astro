@@ -335,7 +335,7 @@ const skeletons = Array.from({ length: skeletonCount });
             <details class="relative [&[open]]:z-30">
               <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                 <span class="flex items-center gap-2">
-                  <span>По популярности</span>
+                  <span>По новизне</span>
                   <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                 </span>
               </summary>
@@ -808,7 +808,7 @@ const skeletons = Array.from({ length: skeletonCount });
     priceMin: null,
     priceMax: null,
     colors: [],
-    sort: "popularity",
+    sort: "new",
     page: 1,
   };
 
@@ -1219,7 +1219,7 @@ const skeletons = Array.from({ length: skeletonCount });
       const labelSpan = details && details.querySelector("summary span span");
       if (labelSpan) {
         const idx = SORT_PANEL_BY_INDEX.indexOf(filters.sort);
-        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По популярности";
+        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По новизне";
       }
     }
     // side: radio. value: popularity/new/price-desc/price-asc

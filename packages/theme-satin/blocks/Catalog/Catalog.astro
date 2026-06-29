@@ -279,7 +279,7 @@ const skeletons = Array.from({ length: skeletonCount });
           {sortVisible && (
             <details class="group relative">
               <summary class="flex h-8 min-w-[150px] cursor-pointer list-none items-center justify-end gap-2 bg-[rgb(var(--color-bg,255_255_255))] px-0 font-manrope text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-                <span>По популярности</span>
+                <span>По новизне</span>
                 <NtIcon name="dropdown-chevron" sizeClass="size-6" class="transition-transform group-open:rotate-180" />
               </summary>
               <div class="absolute right-0 top-full z-40 mt-1 w-[180px]">
@@ -715,7 +715,7 @@ const skeletons = Array.from({ length: skeletonCount });
     priceMin: null,
     priceMax: null,
     colors: [],
-    sort: "popularity",
+    sort: "new",
     page: 1,
   };
 
@@ -1094,7 +1094,7 @@ const skeletons = Array.from({ length: skeletonCount });
       const labelSpan = details && details.querySelector("summary span");
       if (labelSpan) {
         const idx = SORT_PANEL_BY_INDEX.indexOf(filters.sort);
-        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По популярности";
+        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По новизне";
       }
     }
     for (const input of Array.from(

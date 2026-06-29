@@ -168,7 +168,7 @@ interface RadioOption {
 	checked?: boolean;
 }
 const rowSortOptions: RadioOption[] = [
-	{ value: "popularity", label: "По популярности", checked: true },
+	{ value: "new", label: "По новизне", checked: true },
 	{ value: "price-desc", label: "По убыванию цены" },
 	{ value: "price-asc", label: "По возрастанию цены" },
 ];
@@ -316,7 +316,7 @@ const rowStockOptions: RadioOption[] = [
 					{sortVisible && (
 						<details class="relative [&[open]]:z-30">
 							<summary class={rowSummaryClass}>
-								<span>По популярности</span>
+								<span>По новизне</span>
 								<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
 							</summary>
 							<div class={`${rowPanelClass} right-0`}>
@@ -645,7 +645,7 @@ const rowStockOptions: RadioOption[] = [
 		// availability/collection). Клиент НЕ держит весь каталог и НЕ слайсит.
 		// У vanilla НЕТ фильтра по цвету — variant-параметр не отправляем.
 		let catalogCollections = null;
-		const filters = { stock: "all", priceMin: null, priceMax: null, sort: "popularity", page: 1 };
+		const filters = { stock: "all", priceMin: null, priceMax: null, sort: "new", page: 1 };
 
 		function getPageSize() {
 			const root = document.querySelector("[data-catalog-layout]");
@@ -832,7 +832,7 @@ const rowStockOptions: RadioOption[] = [
 		}
 
 		// ─────────── Сортировка (top: name=vanilla-top-sort; side: name=vanilla-sort) ───────────
-		const SORT_LABELS = { popularity: "По популярности", "price-desc": "По убыванию цены", "price-asc": "По возрастанию цены" };
+		const SORT_LABELS = { new: "По новизне", "price-desc": "По убыванию цены", "price-asc": "По возрастанию цены" };
 		function syncSortUi() {
 			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {
 				input.checked = input.value === filters.sort;
@@ -840,7 +840,7 @@ const rowStockOptions: RadioOption[] = [
 			// лейбл триггера дропдауна top
 			const det = document.querySelector('input[name="vanilla-top-sort"]');
 			const summarySpan = det && det.closest("details") && det.closest("details").querySelector("summary > span:first-child");
-			if (summarySpan) summarySpan.textContent = SORT_LABELS[filters.sort] ?? "По популярности";
+			if (summarySpan) summarySpan.textContent = SORT_LABELS[filters.sort] ?? "По новизне";
 		}
 		function bindSort() {
 			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {

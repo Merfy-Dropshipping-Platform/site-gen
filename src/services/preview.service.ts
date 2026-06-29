@@ -1335,6 +1335,35 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return patched;
       }
     },
+    // 110 — корзина: отступы/схема патчатся ТОЧЕЧНО (без re-fetch/replace). Иначе
+    // слайдер отступов перефетчивал блок и пересоздавал список товаров → сдвиг/моргание.
+    // Меняем только padding/класс самой секции → реактивно, двигается лишь корзина.
+    CartBody: {
+      padding: function (el, _oldVal, newVal) {
+        var v = newVal || { top: 0, bottom: 0 };
+        el.style.paddingTop = Math.min(Number(v.top) || 0, 160) + 'px';
+        el.style.paddingBottom = Math.min(Number(v.bottom) || 0, 160) + 'px';
+        return true;
+      },
+      colorScheme: function (el, _oldVal, newVal) {
+        el.className = el.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
+        return true;
+      }
+    },
+    CartSummary: {
+      padding: function (el, _oldVal, newVal) {
+        var v = newVal || { top: 0, bottom: 0 };
+        el.style.paddingTop = Math.min(Number(v.top) || 0, 160) + 'px';
+        el.style.paddingBottom = Math.min(Number(v.bottom) || 0, 160) + 'px';
+        return true;
+      },
+      colorScheme: function (el, _oldVal, newVal) {
+        el.className = el.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
+        return true;
+      }
+    },
     // 091 — Hero local-patch: heading/text text changes БЕЗ outerHTML replace.
     // Это предотвращает re-load <img> при правке заголовка (картинка не «крашится»).
     // Size change → false (fallback на server fetch чтобы CSS класс пересчитался).

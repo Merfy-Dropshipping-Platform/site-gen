@@ -63,127 +63,82 @@ function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Blo
 }
 
 /**
- * Cart page Puck-driven с 5 секциями (Figma 1:20818):
- *   CartBody / CartSummary / CartTotals / CartCheckoutButton / PopularProducts
- * (Раньше было 3: CartBody + CartSummary + Collections — но Figma требует
- * split CartSummary на 3 блока + cross-sell через PopularProducts.)
+ * Cart page = Puck-managed ОДНОЙ секцией CartSection (вся ванильная логика корзины:
+ * пусто/наполнено/итог/«Оформить»/cart-store). Мерчант может добавлять вокруг другие
+ * секции, как на главной. Заменяет прежний 081-layout (CartBody/CartSummary/CartTotals/
+ * CartCheckoutButton — был на React-островах, от React отказались).
  *
- *   - Seeds default 5-block layout when `page-cart` is missing.
- *   - Idempotent: уже-мигрированные сайты получают патч добавляющий новые блоки
- *     CartTotals + CartCheckoutButton если их нет, и заменяет Collections
- *     на PopularProducts если только legacy seed (Collections с heading
- *     "Возможно вам понравится").
- *   - Has page-cart но нет CartBody → inserts 5 blocks before Footer.
- *   - Legacy CartSection всегда удаляется (preview ≡ live parity).
+ *   - Seeds [Header, CartSection, Footer] когда page-cart отсутствует.
+ *   - Мигрирует существующие сайты: старые cart-блоки → ОДНА CartSection в их позиции;
+ *     прочие секции (PopularProducts cross-sell и т.п.) сохраняются.
+ *   - Идемпотентна: page-cart с CartSection и без старых блоков — no-op (только chrome).
  */
-function migrateCartPage(pagesData: Record<string, unknown>): Record<string, unknown> {
+const OLD_CART_BLOCK_TYPES = new Set([
+  'CartBody',
+  'CartSummary',
+  'CartTotals',
+  'CartCheckoutButton',
+]);
+
+function migrateCartPage(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
   const existing = pagesData['page-cart'] as PageData | undefined;
   const ts = Date.now();
+  const makeCartSection = (): Block => ({
+    type: 'CartSection',
+    props: { id: `CartSection-${ts}`, padding: { top: 80, bottom: 80 } },
+  });
 
-  // Идемпотентный путь: уже есть CartBody — patch недостающие новые блоки.
-  if (existing?.content?.some((b) => b?.type === 'CartBody')) {
-    let content = (existing.content ?? []).filter((b) => b?.type !== 'CartSection');
-
-    // Заменяем legacy Collections (cross-sell на cart) → PopularProducts
-    // только если это типовой seed: heading "Возможно вам понравится" + cards=4.
-    content = content.map((b) => {
-      if (b?.type !== 'Collections') return b;
-      const p = (b.props ?? {}) as Record<string, unknown>;
-      const isLegacyCartSeed = p.heading === 'Возможно вам понравится' || p.id === 'Collections-cart' || String(p.id ?? '').startsWith('Collections-') && p.cards === 4;
-      if (!isLegacyCartSeed) return b;
-      return {
-        type: 'PopularProducts',
-        props: {
-          id: `PopularProducts-cart-${ts}`,
-          heading: 'Возможно вам понравится',
-          cards: 4,
-          columns: 4,
-          colorScheme: 'scheme-2',
-          padding: { top: 80, bottom: 80 },
-        },
-      };
-    });
-
-    // Insert CartTotals + CartCheckoutButton если ещё нет — после CartSummary.
-    const hasTotals = content.some((b) => b?.type === 'CartTotals');
-    const hasCheckoutBtn = content.some((b) => b?.type === 'CartCheckoutButton');
-    if (!hasTotals || !hasCheckoutBtn) {
-      const summaryIdx = content.findIndex((b) => b?.type === 'CartSummary');
-      const insertAt = summaryIdx >= 0 ? summaryIdx + 1 : 1;
-      const toInsert: Block[] = [];
-      if (!hasTotals) {
-        toInsert.push({
-          type: 'CartTotals',
-          props: { id: `CartTotals-${ts + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 8 } },
-        });
-      }
-      if (!hasCheckoutBtn) {
-        toInsert.push({
-          type: 'CartCheckoutButton',
-          props: { id: `CartCheckoutButton-${ts + 2}`, colorScheme: 'scheme-2', padding: { top: 8, bottom: 80 } },
-        });
-      }
-      content = [...content.slice(0, insertAt), ...toInsert, ...content.slice(insertAt)];
-    }
-
-    const patched = ensureChrome(content, pagesData);
-    if (patched.length === (existing.content ?? []).length && patched.every((b, i) => b === (existing.content ?? [])[i])) {
-      return pagesData;
-    }
-    return { ...pagesData, 'page-cart': { ...existing, content: patched } };
-  }
-
-  // Полный seed (новый сайт ИЛИ существующий без CartBody)
-  const seedBlocks: Block[] = [
-    {
-      type: 'CartBody',
-      props: { id: `CartBody-${ts}`, colorScheme: 'scheme-2', padding: { top: 80, bottom: 40 } },
-    },
-    {
-      type: 'CartSummary',
-      props: { id: `CartSummary-${ts + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 0 } },
-    },
-    {
-      type: 'CartTotals',
-      props: { id: `CartTotals-${ts + 2}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 8 } },
-    },
-    {
-      type: 'CartCheckoutButton',
-      props: { id: `CartCheckoutButton-${ts + 3}`, colorScheme: 'scheme-2', padding: { top: 8, bottom: 80 } },
-    },
-    {
-      type: 'PopularProducts',
-      props: {
-        id: `PopularProducts-cart-${ts + 4}`,
-        heading: 'Возможно вам понравится',
-        cards: 4,
-        columns: 4,
-        colorScheme: 'scheme-2',
-        padding: { top: 80, bottom: 80 },
-      },
-    },
-  ];
-
+  // Нет page-cart → полный seed [Header, CartSection, Footer].
   if (!existing || !Array.isArray(existing.content)) {
     const chrome = getHomeChrome(pagesData);
     return {
       ...pagesData,
       'page-cart': {
-        content: [chrome.headerBlock, ...seedBlocks, chrome.footerBlock],
+        content: [chrome.headerBlock, makeCartSection(), chrome.footerBlock],
         root: { props: { title: 'Корзина' } },
         zones: {},
       } as PageData,
     };
   }
 
-  const cleaned = existing.content.filter((b) => b?.type !== 'CartSection');
-  const footerIdx = cleaned.findIndex((b) => b?.type === 'Footer');
-  const next = [...cleaned];
-  if (footerIdx >= 0) {
-    next.splice(footerIdx, 0, ...seedBlocks);
-  } else {
-    next.push(...seedBlocks);
+  const content = existing.content.filter(
+    (b): b is Block => !!b && typeof b?.type === 'string',
+  );
+  const isCartLike = (b: Block): boolean =>
+    OLD_CART_BLOCK_TYPES.has(b.type ?? '') || b.type === 'CartSection';
+  const hasCartSection = content.some((b) => b.type === 'CartSection');
+  const hasOldCart = content.some((b) => OLD_CART_BLOCK_TYPES.has(b.type ?? ''));
+
+  // Уже мигрирована (CartSection есть, старых блоков нет) → только chrome.
+  if (hasCartSection && !hasOldCart) {
+    const patched = ensureChrome(content, pagesData);
+    if (
+      patched.length === content.length &&
+      patched.every((b, i) => b === content[i])
+    ) {
+      return pagesData;
+    }
+    return { ...pagesData, 'page-cart': { ...existing, content: patched } };
   }
+
+  // Миграция: старые cart-блоки → ОДНА CartSection в позиции первого старого блока.
+  // Прочие блоки (chrome, PopularProducts cross-sell) сохраняются; дубль CartSection убираем.
+  const firstOldIdx = content.findIndex((b) => OLD_CART_BLOCK_TYPES.has(b.type ?? ''));
+  const kept = content.filter((b) => !isCartLike(b));
+  const keptBefore =
+    firstOldIdx >= 0
+      ? content.slice(0, firstOldIdx).filter((b) => !isCartLike(b)).length
+      : (() => {
+          const fi = kept.findIndex((b) => b.type === 'Footer');
+          return fi >= 0 ? fi : kept.length;
+        })();
+  const next = [
+    ...kept.slice(0, keptBefore),
+    makeCartSection(),
+    ...kept.slice(keptBefore),
+  ];
   const withChrome = ensureChrome(next, pagesData);
   return { ...pagesData, 'page-cart': { ...existing, content: withChrome } };
 }

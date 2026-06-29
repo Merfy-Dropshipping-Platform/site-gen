@@ -157,7 +157,10 @@ describe('composeContentPagesIntoDist', () => {
 
     const data = revisionData() as Record<string, unknown>;
     // Прод-реальность: системные страницы в pages[] с role:null/isCustom:false,
-    // и их pagesData СУЩЕСТВУЕТ (migrateRevisionData сеет cart/checkout).
+    // и их pagesData СУЩЕСТВУЕТ (migrateRevisionData сеет cart как
+    // [Header, CartSection, Footer]). page-cart для rose (CART_SECTION_THEMES)
+    // теперь composable → пересаживается через РЕЕСТР (push, свой шелл), а НЕ
+    // через кастомный цикл (home-шелл): кастомный цикл role=null не трогает.
     (data as { pages: unknown[] }).pages = [
       { id: 'page-cart', slug: '/cart', role: null, isCustom: false, name: 'Корзина' },
       { id: 'page-delivery', slug: '/delivery', isCustom: true, name: 'Доставка' },
@@ -165,7 +168,7 @@ describe('composeContentPagesIntoDist', () => {
       { id: 'page-evil', slug: '/checkout', isCustom: true, name: 'Злая' },
     ];
     (data as { pagesData: Record<string, unknown> }).pagesData['page-cart'] = {
-      content: [{ type: 'CartBody', props: { id: 'CartBody-1' } }],
+      content: [{ type: 'CartSection', props: { id: 'CartSection-1' } }],
     };
     (data as { pagesData: Record<string, unknown> }).pagesData['page-delivery'] = {
       content: [{ type: 'MainText', props: { id: 'MainText-1' } }],
@@ -182,11 +185,14 @@ describe('composeContentPagesIntoDist', () => {
     } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
 
     const n = await composeContentPagesIntoDist(ctx, 'rose');
-    // home + page-delivery; cart и evil-checkout — НЕ тронуты.
-    expect(n).toBe(2);
+    // home + page-delivery + page-cart (composable для rose); evil-checkout отсечён.
+    expect(n).toBe(3);
 
     const cartHtml = await fs.readFile(path.join(dist, 'cart', 'index.html'), 'utf8');
-    expect(cartHtml).toBe(CART_SHELL); // дист корзины verbatim
+    // Корзина composable (rose): CartSection пересажена в шелл корзины (путь
+    // реестра/push, requireOwnShell) — больше НЕ verbatim.
+    expect(cartHtml).not.toBe(CART_SHELL);
+    expect(cartHtml).toContain('data-puck-component-id="CartSection-1"');
     await expect(
       fs.readFile(path.join(dist, 'checkout', 'index.html'), 'utf8'),
     ).rejects.toThrow(); // злой checkout не создан

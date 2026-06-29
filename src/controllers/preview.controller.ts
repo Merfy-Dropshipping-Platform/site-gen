@@ -30,7 +30,7 @@ import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
-import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_SECTION_THEMES } from '../themes/page-registry';
 import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
@@ -217,6 +217,12 @@ export class PreviewController {
     const bareThemeKey = PreviewService.bareThemeKey(loaded.themeId ?? '');
     const isProductPage = route === 'product' || match?.id === 'page-product';
     const unifiedProduct = isProductPage && PRODUCT_UNIFIED_THEMES.has(bareThemeKey);
+    // Composable-корзина (CART_SECTION_THEMES, зеркало unifiedProduct): для тем
+    // с CartSection-портом страница /cart идёт по v2-секционному пути (корзина =
+    // секция + добавленные секции), снимая complex-гейт ниже. Темы без порта —
+    // verbatim (блоб-путь cart.astro), иначе CartSection упал бы на скаффолд.
+    const isCartPage = route === 'cart' || match?.id === 'page-cart';
+    const composableCart = isCartPage && CART_SECTION_THEMES.has(bareThemeKey);
 
     // The product page's slug is `/product`, but the theme builds per-product
     // pages at <template>/products/<id>/index.html. Resolve to the first built
@@ -233,7 +239,8 @@ export class PreviewController {
     // на v2-пути для unified-тем (unifiedProduct снимает complex-гейт).
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
-    const isComplexRoute = isV2ComplexRoute(route) && !unifiedProduct;
+    const isComplexRoute =
+      isV2ComplexRoute(route) && !unifiedProduct && !composableCart;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют

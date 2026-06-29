@@ -5,7 +5,7 @@ import { PreviewService } from '../services/preview.service';
 import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
-import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES } from './page-registry';
+import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_SECTION_THEMES } from './page-registry';
 import { assembleChrome, injectChromeIntoHtml } from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
@@ -76,6 +76,15 @@ export async function composeContentPagesIntoDist(
   // не затронуты (страница остаётся verbatim).
   if (PRODUCT_UNIFIED_THEMES.has(theme)) {
     pages.push({ key: 'page-product', route: 'product', requireOwnShell: true, title: pageName('page-product') });
+  }
+
+  // Composable-корзина (CART_SECTION_THEMES, зеркало page-product выше):
+  // страница /cart собирается из Puck-секций (CartSection + добавленные
+  // мерчантом), а не verbatim-портом cart.astro. Свой шелл — cart/index.html
+  // (rose cart.astro = Layout-обёртка) → composeV2Page заменяет тело
+  // секциями. Темы без CartSection-порта тут НЕ затронуты (корзина verbatim).
+  if (CART_SECTION_THEMES.has(theme)) {
+    pages.push({ key: 'page-cart', route: 'cart', requireOwnShell: true, title: pageName('page-cart') });
   }
 
   // Кастомные страницы мерчанта — ТОЛЬКО позитивный opt-in. В прод-ревизиях

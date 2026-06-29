@@ -84,12 +84,14 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
     kind: 'content',
     chrome: 'full',
   },
-  // page-cart — composable (kind:content): корзина = секция CartSection +
-  // мерчант добавляет другие секции, как на главной. Дефолт [CartSection]
-  // приходит из packages/theme-rose/pages/cart.json через lazy-seed (без
-  // миграции ревизий существующих сайтов). Шелл — cart.astro (Layout).
-  { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
   // ── Verbatim системные страницы (есть id в SYSTEM_PAGE_ROUTES) ──────────
+  // page-cart — verbatim ПО УМОЛЧАНИЮ (порт темы cart.astro со всей логикой
+  // корзины), НО для тем из CART_SECTION_THEMES рендерится composable —
+  // корзина = секция CartSection + мерчант добавляет другие секции, как на
+  // главной (зеркало page-product/PRODUCT_UNIFIED_THEMES). Темы без
+  // CartSection-порта остаются verbatim, иначе renderBlock('CartSection')
+  // упал бы на theme-base-скаффолд «Загрузка корзины».
+  { id: 'page-cart', route: 'cart', kind: 'verbatim', chrome: 'full' },
   { id: 'page-product', route: 'product', kind: 'verbatim', chrome: 'full' },
   {
     id: 'page-checkout',
@@ -110,6 +112,21 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
  * (per-slug /product/<slug>).
  */
 export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'vanilla', 'bloom', 'flux', 'satin']);
+
+/**
+ * Темы, чья страница КОРЗИНЫ (/cart) — composable: корзина рендерится Puck-
+ * секцией `CartSection` (вся ванильная логика корзины: пусто/наполнено/итог/
+ * «Оформить»/cart-store), а мерчант добавляет вокруг другие секции, как на
+ * главной. Тема обязана иметь СВОЙ CartSection-порт
+ * (themes/<тема>/src/components/sections/CartSection.astro в sections.map.json),
+ * иначе renderBlock('CartSection') упадёт на theme-base-скаффолд «Загрузка».
+ * Раскатка по темам — расширять множество по мере добавления порта. Тема НЕ в
+ * множестве → page-cart остаётся verbatim (cart.astro). Зеркало
+ * PRODUCT_UNIFIED_THEMES. Гейт читают `composeContentPagesIntoDist` (live-
+ * пересадка) и `preview.controller` (превью-путь: composableCart снимает
+ * complex-гейт, как unifiedProduct для товара).
+ */
+export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>(['rose']);
 
 /**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,

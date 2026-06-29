@@ -19,23 +19,45 @@ import type { VariantGroupView, VariantOptionView } from '../Product.types';
 interface Props {
   groups: VariantGroupView[];
   type?: 'chips' | 'dropdown';
+  /** Legacy single-field (back-compat для старых вызовов/ревизий). */
   mode?: 'button' | 'circle' | 'square' | 'list';
+  /** «Стиль»: button (чипы/свотчи в ряд, без лейбла) / list (лейбл + dropdown|свотчи). */
+  displayStyle?: 'button' | 'list';
+  /** «Вариации»: форма свотча circle/square, либо none. */
+  shape?: 'circle' | 'square' | 'none';
 }
 
-const { groups, type = 'chips', mode = 'button' } = Astro.props as Props;
+const {
+  groups,
+  type = 'chips',
+  mode = 'button',
+  displayStyle,
+  shape,
+} = Astro.props as Props;
 
-const isDropdown = type === 'dropdown' || mode === 'list';
-// Figma 1:21387 «Кнопка -- Нет»: при mode='button' (Вариации=Нет) ВСЕ значения —
-// цвета И размеры — рендерятся ТЕКСТ-КНОПКАМИ (имя цвета текстом; fill=выбран,
-// outline=остальные), БЕЗ свотчей. Свотч (реальный назначенный цвет) — ТОЛЬКО при
-// Круг/Квадрат. Список = dropdown. `isShaped` драйвит и свотч-решение, и форму чипа.
-const isShaped = mode === 'circle' || mode === 'square';
-// Форма чипа = mode: Кнопка = скруглённый прямоугольник (--radius-button),
+// Раздельная модель displayStyle×shape. Fallback на legacy `mode` (один enum,
+// который коллапсил поля): list→list, circle/square→shape, иначе button/none.
+const ds: 'button' | 'list' = displayStyle ?? (mode === 'list' ? 'list' : 'button');
+const sh: 'circle' | 'square' | 'none' =
+  shape ?? (mode === 'circle' || mode === 'square' ? mode : 'none');
+
+// Figma 1:21387 «Кнопка -- Нет»: при shape='none' значения — ТЕКСТ-КНОПКИ
+// (имя цвета текстом; fill=выбран, outline=остальные), БЕЗ свотчей. Свотч
+// (реальный назначенный цвет) — ТОЛЬКО при Круг/Квадрат. `isShaped` драйвит
+// и свотч-решение, и форму чипа.
+const isShaped = sh === 'circle' || sh === 'square';
+// Dropdown ТОЛЬКО когда: тема форсит (flux type='dropdown') ИЛИ Список+Нет.
+// Список+Круг/Квадрат → свотчи «внутри списка» (лейбл группы сверху + чипы),
+// НЕ dropdown (раньше list форсил dropdown и терял форму — это и был баг).
+const isDropdown = type === 'dropdown' || (ds === 'list' && !isShaped);
+// Список показывает лейбл группы (над dropdown И над свотчами); Кнопка — без лейбла.
+const showLabel = ds === 'list';
+// Форма чипа = shape: Кнопка/Нет = скруглённый прямоугольник (--radius-button),
 // Круг = полный круг, Квадрат = острый угол.
 const shapeRadius =
-  mode === 'circle'
+  sh === 'circle'
     ? 'rounded-full'
-    : mode === 'square'
+    : sh === 'square'
       ? 'rounded-none'
       : 'rounded-[var(--radius-button)]';
 
@@ -106,7 +128,7 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
   >
     {groups.map((g) => (
       <div class="w-full flex flex-col gap-3" data-variant-group data-variant-key={g.key}>
-        {isDropdown && (
+        {showLabel && (
           <label
             class="[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide shrink-0"
             for={`variant-${g.key}`}

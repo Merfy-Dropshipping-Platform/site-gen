@@ -157,6 +157,21 @@ const variantsMode: 'button' | 'circle' | 'square' | 'list' =
             ? (vShape as 'circle' | 'square')
             : 'button';
 
+// Раздельные поля для ProductVariants. variantsMode (выше) коллапсит
+// displayStyle+shape в один enum и теряет форму при list → Список всегда был
+// dropdown, игнорируя Круг/Квадрат. Передаём поля отдельно: list+circle/square
+// рисует свотчи «внутри списка». variantsMode оставлен для back-compat-атрибута.
+const variantsDisplayStyle: 'button' | 'list' =
+  vDisplayStyle === 'list' || (!vDisplayStyle && vStyle === 'list') ? 'list' : 'button';
+const variantsShape: 'circle' | 'square' | 'none' =
+  vShape === 'circle' || vShape === 'square'
+    ? (vShape as 'circle' | 'square')
+    : vShape === 'none'
+      ? 'none'
+      : vStyle === 'circle' || vStyle === 'square'
+        ? (vStyle as 'circle' | 'square')
+        : 'none';
+
 // — Resolve product → ProductView (single source of truth). —
 //
 // Path 1 (live SSG): products.json snapshot is baked at build time; resolve
@@ -297,6 +312,8 @@ const cartImage = view.gallery.hero?.src ?? '';
               groups={view.variantGroups}
               type={visual.variantsType}
               mode={variantsMode}
+              displayStyle={variantsDisplayStyle}
+              shape={variantsShape}
             />
           </div>
         )}

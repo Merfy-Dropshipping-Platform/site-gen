@@ -11,6 +11,10 @@ import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/
 // MANNER.md §7). Скролл-анимаций нет — манера flux статична (MANNER.md §6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Иконка-плейсхолдер пустого медиа-бокса (паритет rose Collections + flux ProductCard):
+// внятная image-иконка по центру surface-плитки вместо пустого серого бокса.
+const PH_MEDIA_ICON =
+	'<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>';
 // Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
 // «Список коллекций» (без подзаголовка), а НЕ дефолт-копирайт верстальщика
 // («Категории» / «Смартфоны, наушники, ноутбуки…»). Эталон — rose Collections.astro.
@@ -227,13 +231,15 @@ const paddingStyle = p.padding
 							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]`}
 							aria-hidden={c.image ? undefined : "true"}
 						>
-							{c.image && (
+							{c.image ? (
 								<img
 									src={c.image}
 									alt={c.name}
 									loading="lazy"
 									class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
 								/>
+							) : (
+								<Fragment set:html={PH_MEDIA_ICON} />
 							)}
 						</div>
 						<h3
@@ -253,7 +259,9 @@ const paddingStyle = p.padding
 						<div
 							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,251_251_251))] rounded-[var(--radius-media,8px)]`}
 							aria-hidden="true"
-						></div>
+						>
+							<Fragment set:html={PH_MEDIA_ICON} />
+						</div>
 						<h3
 							class={`flux-collection-name font-manrope text-[14px] ${nameWeightCls} leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
 						>
@@ -324,7 +332,7 @@ const paddingStyle = p.padding
 				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "");
 				const media = cover
 					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />`
-					: "";
+					: PH_MEDIA_ICON;
 				return `<li><a href="${href}" class="group flex cursor-pointer flex-col gap-4 md:gap-5" aria-label="${name}" data-nt="flux-collection-card">
 			<div class="aspect-[430/500] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
 			<h3 class="flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${name}</h3>

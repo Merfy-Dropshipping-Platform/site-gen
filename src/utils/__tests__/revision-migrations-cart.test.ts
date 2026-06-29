@@ -49,6 +49,29 @@ describe('migrateCartPage', () => {
     expect(types).toEqual(['Header', 'CartSection', 'Collections', 'Footer']);
   });
 
+  it('дропает PopularProducts старого сида (демо-кросс-селл) → чистая корзина', () => {
+    const result = migrateRevisionData({
+      pagesData: {
+        'page-cart': {
+          content: [
+            { type: 'Header', props: {} },
+            { type: 'CartBody', props: { id: 'cb' } },
+            { type: 'CartSummary', props: {} },
+            { type: 'CartTotals', props: {} },
+            { type: 'CartCheckoutButton', props: {} },
+            { type: 'PopularProducts', props: { heading: 'Возможно вам понравится' } },
+            { type: 'Footer', props: {} },
+          ],
+        },
+      },
+    }) as { pagesData: Record<string, any> };
+    const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
+    // Полный старый сид (5 cart-блоков + демо-PopularProducts) → чистый
+    // [Header, CartSection, Footer]. Мерчант добавит кросс-селл сам, если нужен.
+    expect(types).toEqual(['Header', 'CartSection', 'Footer']);
+    expect(types).not.toContain('PopularProducts');
+  });
+
   it('is idempotent (running twice = no-op)', () => {
     const initial = { pagesData: {} };
     const first = migrateRevisionData(initial);

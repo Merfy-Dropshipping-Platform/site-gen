@@ -124,12 +124,19 @@ function migrateCartPage(
   }
 
   // Миграция: старые cart-блоки → ОДНА CartSection в позиции первого старого блока.
-  // Прочие блоки (chrome, PopularProducts cross-sell) сохраняются; дубль CartSection убираем.
+  // Дропаем и PopularProducts: старый сид клал «Возможно вам понравится» как
+  // демо-кросс-селл (моки example.com / демо-цены — ровно та хардкод-верстка,
+  // что просили убрать). Дефолт корзины чистый [Header, CartSection, Footer];
+  // мерчант сам добавит кросс-селл-секцию, если нужен. Дубль CartSection убираем.
+  // (Дроп ТОЛЬКО в migration-ветке old→new; добавленные мерчантом после миграции
+  // блоки сохраняет no-op ветка hasCartSection && !hasOldCart.)
+  const isDroppable = (b: Block): boolean =>
+    isCartLike(b) || b.type === 'PopularProducts';
   const firstOldIdx = content.findIndex((b) => OLD_CART_BLOCK_TYPES.has(b.type ?? ''));
-  const kept = content.filter((b) => !isCartLike(b));
+  const kept = content.filter((b) => !isDroppable(b));
   const keptBefore =
     firstOldIdx >= 0
-      ? content.slice(0, firstOldIdx).filter((b) => !isCartLike(b)).length
+      ? content.slice(0, firstOldIdx).filter((b) => !isDroppable(b)).length
       : (() => {
           const fi = kept.findIndex((b) => b.type === 'Footer');
           return fi >= 0 ? fi : kept.length;

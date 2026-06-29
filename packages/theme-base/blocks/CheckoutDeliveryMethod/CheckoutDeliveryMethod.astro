@@ -102,6 +102,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     var lastOpt = null;           // последняя выбранная опция доставки (для re-emit при выборе точки)
     var pvzListenersBound = false;
     var pvzFias = null;           // город, для которого загружены/выбраны точки (смена → сброс выбора)
+    var selectedPickupKind = null; // 'PVZ'|'POSTAMAT' выбранного тарифа — фильтр точек
 
     // Lazy — конфиг инжектится ПОСЛЕ блоков. Считываем при каждом вызове.
     function getApiBase() {
@@ -198,6 +199,21 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       return (json && Array.isArray(json.data)) ? json.data : [];
     }
 
+    // Подпись типа точки для пустого состояния/плейсхолдера.
+    function pvzKindLabel(plural) {
+      return selectedPickupKind === 'POSTAMAT'
+        ? (plural ? 'постаматов' : 'постамата')
+        : (plural ? 'пунктов выдачи' : 'пункта выдачи');
+    }
+    // Точки только нужного тарифу типа (ПВЗ-тариф → ПВЗ, постамат → постамат).
+    // Без kind (старый бэк/неизвестный тариф) — все точки (обратная совместимость).
+    function kindFilteredPoints() {
+      if (!pvzPoints) return pvzPoints; // null → null (loading)
+      return selectedPickupKind
+        ? pvzPoints.filter(function (p) { return p.type === selectedPickupKind; })
+        : pvzPoints;
+    }
+
     // loading / error+retry / empty / shell(input+list)
     function renderPvzState() {
       if (!pickerEl) return;
@@ -210,12 +226,13 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Загружаем пункты выдачи…</div>';
         return;
       }
-      if (pvzPoints.length === 0) {
-        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Нет доступных пунктов выдачи в этом городе.</div>';
+      var pool = kindFilteredPoints();
+      if (!pool || pool.length === 0) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Нет доступных ' + pvzKindLabel(true) + ' в этом городе.</div>';
         return;
       }
       pickerEl.innerHTML = '<div class="' + PVZ_BOX_CLS + '">'
-        + '<input type="text" data-pvz-search value="' + esc(pvzQuery) + '" placeholder="Поиск пункта выдачи…" class="' + PVZ_SEARCH_CLS + '" />'
+        + '<input type="text" data-pvz-search value="' + esc(pvzQuery) + '" placeholder="Поиск ' + pvzKindLabel(false) + '…" class="' + PVZ_SEARCH_CLS + '" />'
         + '<div data-pvz-list class="' + PVZ_LIST_CLS + '"></div>'
         + '</div>';
       renderPvzRows();
@@ -226,7 +243,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       var listC = pickerEl && pickerEl.querySelector('[data-pvz-list]');
       if (!listC) return;
       var q = pvzQuery.trim().toLowerCase();
-      var sorted = (pvzPoints || []).slice().sort(function (a, b) {
+      var sorted = (kindFilteredPoints() || []).slice().sort(function (a, b) {
         // ПВЗ перед постаматами, затем по адресу
         if (a.type !== b.type) return a.type === 'POSTAMAT' ? 1 : -1;
         return String(a.address || '').localeCompare(String(b.address || ''), 'ru');
@@ -310,6 +327,17 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     function syncPicker(opt) {
       if (!pickerEl) return;
       if (opt && opt.type === 'cdek_pickup') {
+        var newKind = opt.pickupPointKind || null; // ПВЗ-тариф → ПВЗ, постамат → постамат
+        // Сменился тип точки тарифа (ПВЗ↔постамат) в том же городе → ранее
+        // выбранная точка другого типа невалидна (СДЭК отклонит). Сбрасываем,
+        // чтобы guard снова заблокировал оплату до выбора точки нужного типа.
+        // Сравнение (а не безусловный сброс) сохраняет выбор при ре-рендере того
+        // же типа (cart:updated / повторный авто-селект той же опции).
+        if (newKind !== selectedPickupKind) {
+          selectedPvzCode = null;
+          selectedPvzAddress = null;
+        }
+        selectedPickupKind = newKind;
         pickerEl.hidden = false;
         openPickerFor(section.getAttribute('data-last-fias-id') || '');
       } else {
@@ -317,6 +345,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         // ушли с pickup-метода → сбрасываем точку, чтобы не уехал устаревший код
         selectedPvzCode = null;
         selectedPvzAddress = null;
+        selectedPickupKind = null;
       }
     }
 
@@ -383,6 +412,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             priceCents: priceCents,
             periodMin: o.minDays,
             periodMax: o.maxDays,
+            // Тип точки тарифа (ПВЗ/постамат) — пикер по нему фильтрует список.
+            pickupPointKind: o.pickupPointKind || null,
           });
         } else {
           // OWN — собственный тариф магазина (бывшие customProfiles).
@@ -440,6 +471,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + ' data-delivery-price-cents="' + esc(String(opt.priceCents)) + '"'
           + ' data-delivery-period-min="' + esc(opt.periodMin != null ? String(opt.periodMin) : '') + '"'
           + ' data-delivery-period-max="' + esc(opt.periodMax != null ? String(opt.periodMax) : '') + '"'
+          + ' data-delivery-pvz-kind="' + esc(opt.pickupPointKind || '') + '"'
           + (selected ? ' data-selected="true"' : '')
           + '>'
           + '<input type="radio" name="deliveryOption" value="' + esc(opt.type) + '"' + (selected ? ' checked' : '') + ' class="sr-only" data-delivery-radio />'
@@ -529,6 +561,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         periodMin: card.getAttribute('data-delivery-period-min') ? parseInt(card.getAttribute('data-delivery-period-min'), 10) : null,
         periodMax: card.getAttribute('data-delivery-period-max') ? parseInt(card.getAttribute('data-delivery-period-max'), 10) : null,
         label: labelEl ? labelEl.textContent : '',
+        pickupPointKind: card.getAttribute('data-delivery-pvz-kind') || null,
       });
     });
 

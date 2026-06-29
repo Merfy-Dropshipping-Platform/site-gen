@@ -82,17 +82,31 @@ const POINTS = {
 
 describe('CheckoutDeliveryMethod — CDEK ПВЗ picker', () => {
   let lastDelivery: any;
+  let calcKind: string | null; // pickupPointKind тарифа из calculate (null = старый бэк)
+  let calcOptionsOverride: any[] | null; // явный список опций (для мульти-тарифных кейсов)
 
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('merfy:cartId', 'cart1');
     (window as any).__MERFY_CONFIG__ = { shopId: 'shop1', apiUrl: 'https://gateway.test/api' };
     (window as any).cartStore = { getTotal: () => 100000 };
+    calcKind = null;
+    calcOptionsOverride = null;
     (window as any).fetch = jest.fn((url: string) => {
       if (/\/delivery\/pickup-points/.test(url))
         return Promise.resolve({ ok: true, json: async () => POINTS });
       if (/\/delivery\/calculate/.test(url))
-        return Promise.resolve({ ok: true, json: async () => CALC });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: {
+              deliveryOptions:
+                calcOptionsOverride || [{ ...CALC.data.deliveryOptions[0], pickupPointKind: calcKind }],
+              pickupPoints: [],
+            },
+          }),
+        });
       return Promise.resolve({ ok: true, json: async () => ({}) });
     });
     lastDelivery = undefined;
@@ -168,6 +182,72 @@ describe('CheckoutDeliveryMethod — CDEK ПВЗ picker', () => {
       new CustomEvent('checkout:address-changed', { detail: { cityFiasId: 'fias2', postalCode: '190000' } }),
     );
     await flush();
+    await flush();
+
+    expect(lastDelivery.type).toBe('cdek_pickup');
+    expect(lastDelivery.pickupPointCode).toBeNull();
+  });
+
+  it('PVZ-тариф показывает только ПВЗ (постаматы скрыты)', async () => {
+    calcKind = 'PVZ';
+    const section = mountDom();
+    runScript(section);
+    section.setAttribute('data-last-fias-id', 'fias1');
+    document.dispatchEvent(
+      new CustomEvent('checkout:address-changed', { detail: { cityFiasId: 'fias1', postalCode: '101000' } }),
+    );
+    await flush();
+    await flush();
+
+    const picker = section.querySelector('[data-cdek-pvz-picker]') as HTMLElement;
+    const rows = picker.querySelectorAll('[data-pvz-row]');
+    expect(rows.length).toBe(1);
+    expect(rows[0].getAttribute('data-pvz-code')).toBe('P1'); // ПВЗ
+    expect(picker.textContent).not.toContain('постамат');
+  });
+
+  it('постамат-тариф показывает только постаматы (ПВЗ скрыты)', async () => {
+    calcKind = 'POSTAMAT';
+    const section = mountDom();
+    runScript(section);
+    section.setAttribute('data-last-fias-id', 'fias1');
+    document.dispatchEvent(
+      new CustomEvent('checkout:address-changed', { detail: { cityFiasId: 'fias1', postalCode: '101000' } }),
+    );
+    await flush();
+    await flush();
+
+    const picker = section.querySelector('[data-cdek-pvz-picker]') as HTMLElement;
+    const rows = picker.querySelectorAll('[data-pvz-row]');
+    expect(rows.length).toBe(1);
+    expect(rows[0].getAttribute('data-pvz-code')).toBe('M1'); // постамат
+  });
+
+  it('переключение ПВЗ-тариф → постамат-тариф в одном городе сбрасывает точку', async () => {
+    // Две pickup-опции разного типа; дешёвая (ПВЗ, 510) автоселектится первой.
+    calcOptionsOverride = [
+      { id: 'o138', name: 'дверь-склад', type: 'PARTNER', price: 510, minDays: 1, maxDays: 2, description: '', cdekTariffCode: 138, deliveryMode: 'pickup', pickupPointKind: 'PVZ' },
+      { id: 'o366', name: 'дверь-постамат', type: 'PARTNER', price: 520, minDays: 1, maxDays: 2, description: '', cdekTariffCode: 366, deliveryMode: 'pickup', pickupPointKind: 'POSTAMAT' },
+    ];
+    const section = mountDom();
+    runScript(section);
+    section.setAttribute('data-last-fias-id', 'fias1');
+    document.dispatchEvent(
+      new CustomEvent('checkout:address-changed', { detail: { cityFiasId: 'fias1', postalCode: '101000' } }),
+    );
+    await flush();
+    await flush();
+
+    // Выбираем ПВЗ-точку под ПВЗ-тарифом
+    const picker = section.querySelector('[data-cdek-pvz-picker]') as HTMLElement;
+    (picker.querySelector('[data-pvz-row]') as HTMLElement).click();
+    expect(lastDelivery.pickupPointCode).toBe('P1');
+
+    // Переключаемся на постамат-тариф (тот же город) → старый ПВЗ-код невалиден
+    const list = section.querySelector('[data-checkout-delivery-list]') as HTMLElement;
+    const postamatCard = list.querySelector('[data-delivery-tariff-code="366"]') as HTMLElement;
+    expect(postamatCard).not.toBeNull();
+    postamatCard.click();
     await flush();
 
     expect(lastDelivery.type).toBe('cdek_pickup');

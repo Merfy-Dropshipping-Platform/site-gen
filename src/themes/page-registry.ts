@@ -84,8 +84,12 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
     kind: 'content',
     chrome: 'full',
   },
+  // page-cart — composable (kind:content): корзина = секция CartSection +
+  // мерчант добавляет другие секции, как на главной. Дефолт [CartSection]
+  // приходит из packages/theme-rose/pages/cart.json через lazy-seed (без
+  // миграции ревизий существующих сайтов). Шелл — cart.astro (Layout).
+  { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
   // ── Verbatim системные страницы (есть id в SYSTEM_PAGE_ROUTES) ──────────
-  { id: 'page-cart', route: 'cart', kind: 'verbatim', chrome: 'full' },
   { id: 'page-product', route: 'product', kind: 'verbatim', chrome: 'full' },
   {
     id: 'page-checkout',

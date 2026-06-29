@@ -1,11 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import RoseProductCard from "../components/products/RoseProductCard.astro";
-import RosePagination from "../components/ui/RosePagination.astro";
-import { catalogProducts } from "../data/products";
 import { withBase } from "../lib/with-base";
 
-const recommended = catalogProducts.slice(0, 4);
 const deleteIconSrc = withBase("/icons/delete.svg");
 
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
@@ -74,21 +70,6 @@ const apiUrl = "https://gateway.merfy.ru/api";
 						Оформить заказ
 					</button>
 				</div>
-			</div>
-
-			<!-- Рекомендации -->
-			<div class="flex flex-col gap-8 lg:gap-10">
-				<h2 class="rose-title">
-					Возможно вам понравится
-				</h2>
-				<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4 md:gap-6" role="list">
-					{recommended.map((product) => (
-						<li>
-							<RoseProductCard product={product} />
-						</li>
-					))}
-				</ul>
-				<RosePagination currentPage={1} totalPages={3} totalCount={catalogProducts.length} baseHref="/catalog?" />
 			</div>
 		</div>
 	</section>

@@ -1,10 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import BloomProductCard from "../components/products/BloomProductCard.astro";
 import { DEFAULT_CATEGORY_HREF } from "../data/categories";
-import { catalogProducts } from "../data/products";
-
-const recommended = catalogProducts.slice(0, 4);
 
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
@@ -69,20 +65,6 @@ const apiUrl = "https://gateway.merfy.ru/api";
 						Оформить заказ
 					</button>
 				</div>
-			</div>
-
-			<!-- Рекомендации -->
-			<div class="flex flex-col gap-8" data-animate>
-				<h2 class="font-comfortaa text-[24px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[28px]">
-					Возможно вам понравится
-				</h2>
-				<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" role="list">
-					{recommended.map((product) => (
-						<li>
-							<BloomProductCard product={product} />
-						</li>
-					))}
-				</ul>
 			</div>
 		</div>
 	</section>

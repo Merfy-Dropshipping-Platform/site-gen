@@ -1079,8 +1079,8 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 
   // ─────────── Сортировка (top: <p> в NtFilterPanel[sort]; side: radio) ───────────
-  const SORT_PANEL_BY_INDEX = ["new", "price-asc", "price-desc"];
-  const SORT_PANEL_LABELS = ["По новизне", "Сначала дешевые", "Сначала дорогие"];
+  const SORT_PANEL_BY_INDEX = ["price-asc", "price-desc"];
+  const SORT_PANEL_LABELS = ["Сначала дешевые", "Сначала дорогие"];
 
   function syncSortUi() {
     for (const panel of Array.from(

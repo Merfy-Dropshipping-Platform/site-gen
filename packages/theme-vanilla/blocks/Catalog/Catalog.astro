@@ -169,7 +169,6 @@ interface RadioOption {
 }
 const rowSortOptions: RadioOption[] = [
 	{ value: "popularity", label: "По популярности", checked: true },
-	{ value: "new", label: "По новизне" },
 	{ value: "price-desc", label: "По убыванию цены" },
 	{ value: "price-asc", label: "По возрастанию цены" },
 ];
@@ -833,7 +832,7 @@ const rowStockOptions: RadioOption[] = [
 		}
 
 		// ─────────── Сортировка (top: name=vanilla-top-sort; side: name=vanilla-sort) ───────────
-		const SORT_LABELS = { popularity: "По популярности", new: "По новизне", "price-desc": "По убыванию цены", "price-asc": "По возрастанию цены" };
+		const SORT_LABELS = { popularity: "По популярности", "price-desc": "По убыванию цены", "price-asc": "По возрастанию цены" };
 		function syncSortUi() {
 			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {
 				input.checked = input.value === filters.sort;

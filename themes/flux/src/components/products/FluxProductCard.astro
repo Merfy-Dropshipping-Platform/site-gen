@@ -9,11 +9,16 @@ interface Props {
 
 const { product, priority = false } = Astro.props;
 const href = `/products/${product.id}`;
+// Бейджи эталона: «Новинка» (isNew) + процент скидки (salePercent). Legacy
+// demo-флаг discount сохранён как третий бейдж «Скидка» (его несут
+// catalogProducts), чтобы не потерять пустое состояние demo-сборки.
+const showBadges = product.isNew || product.salePercent || product.discount;
 
 // Outline-сердце flux для SSR-карточки. Геометрия зеркалит wishlist.ts
 // heartSvg(false) + storefront-hydrate WISHLIST_OUTLINE_SVG (единый вид сердца
 // темы). Начальное состояние всегда outline/aria-pressed=false — делегат
 // initWishlistUI (Layout) перекрасит [data-wishlist-icon] по факту на load.
+// Сердце — фича Merfy (эталон верстальщиков его не имел), сохраняем оверлеем.
 const wishlistOutlineSvg =
 	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
 	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
@@ -22,22 +27,25 @@ const wishlistOutlineSvg =
 ---
 
 <article
-	class="group flex flex-col gap-3 md:gap-4"
+	class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
 	data-nt="flux-product-card"
 	aria-label={product.name}
 >
+	{/* Обёртка .relative — позиционный контекст для оверлей-сердца (фича Merfy);
+	    сам медиа-<a> тоже relative (бейджи привязаны к нему). */}
 	<div class="relative w-full">
 		<a
 			href={href}
-			class="relative block aspect-[318/444] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]"
+			data-nt="flux-card-media"
+			class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
 			aria-label={product.name}
 		>
 			{product.image ? (
 				<FluxPicture
 					src={product.image}
 					alt={product.name}
-					width="318"
-					height="444"
+					width="600"
+					height="600"
 					loading="eager"
 					fetchpriority={priority ? "high" : undefined}
 					class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -47,12 +55,24 @@ const wishlistOutlineSvg =
 					<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
 				</span>
 			)}
-			{product.discount && (
-				<span
-					class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[4px] bg-[#FA5109] px-1.5 font-roboto-flex text-[11px] font-light leading-none text-[#000000] md:text-[12px]"
-				>
-					Скидка
-				</span>
+			{showBadges && (
+				<div class="absolute left-2 top-2 flex flex-col items-start gap-1">
+					{product.isNew && (
+						<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+							Новинка
+						</span>
+					)}
+					{product.salePercent && (
+						<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+							{product.salePercent}
+						</span>
+					)}
+					{!product.isNew && !product.salePercent && product.discount && (
+						<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+							Скидка
+						</span>
+					)}
+				</div>
 			)}
 		</a>
 		<button
@@ -66,22 +86,74 @@ const wishlistOutlineSvg =
 			<span data-wishlist-icon class="block size-[18px]" set:html={wishlistOutlineSvg}></span>
 		</button>
 	</div>
-	<div class="flex flex-col gap-1">
-		<a
-			href={href}
-			class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] hover:opacity-80 md:text-[16px]"
-		>
-			{product.name}
-		</a>
-		<div class="flex flex-wrap items-baseline gap-2">
-			<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[#000000] md:text-[16px]">
-				{product.price}
-			</span>
-			{product.oldPrice && (
-				<span class="font-manrope text-[12px] font-normal leading-[1.366] text-[#999999] line-through md:text-[14px]">
-					{product.oldPrice}
-				</span>
+
+	<div class="flex flex-1 flex-col gap-4">
+		<div class="flex flex-col gap-4">
+			{product.swatches && product.swatches.length > 0 && (
+				<div class="flex items-center gap-1">
+					{product.swatches.map((color) => (
+						<span class="size-5 rounded-[2px]" style={`background:${color}`} aria-hidden="true"></span>
+					))}
+					{product.swatchDisabled && (
+						<span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true">
+							<span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span>
+						</span>
+					)}
+				</div>
 			)}
+
+			<div class="flex flex-col gap-1">
+				<a
+					href={href}
+					class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]"
+				>
+					{product.name}
+				</a>
+				<div class="flex items-center gap-2">
+					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+						{product.price}
+					</span>
+					{product.oldPrice && (
+						<span class="font-roboto-flex text-[12px] font-light leading-normal text-[#CCCCCC] line-through md:text-[14px]">
+							{product.oldPrice}
+						</span>
+					)}
+				</div>
+			</div>
 		</div>
+
+		{product.memory && product.memory.length > 0 && (
+			<div class="flex flex-wrap items-start gap-1">
+				{product.memory.map((mem, i) => {
+					const disabled = product.memoryDisabledIndex === i;
+					return (
+						<span
+							class:list={[
+								"inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none",
+								disabled
+									? "border-[#F5F5F5] bg-[#F5F5F5] text-[#CCCCCC]"
+									: "border-[#F5F5F5] text-[#000000]",
+							]}
+						>
+							{mem}
+						</span>
+					);
+				})}
+			</div>
+		)}
+
+		<button
+			type="button"
+			data-add-to-cart
+			data-product-id={product.id}
+			data-name={product.name}
+			data-price={product.price}
+			data-old-price={product.oldPrice ?? ""}
+			data-image={product.image}
+			data-quantity="1"
+			class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+		>
+			В корзину
+		</button>
 	</div>
 </article>

@@ -40,6 +40,13 @@ export interface RawProduct {
   variants?: RawVariant[];
   /** Storefront-data API name (preview path). Same shape as `variants`. */
   variantCombinations?: RawVariant[];
+  /** Дерево групп с реальным цветом опции (`swatchHex`) — присутствует и в
+   *  products.json (build), и в storefront-data (preview). Источник свотча
+   *  «цвет из платформы» для секции вариантов. */
+  variantGroups?: Array<{
+    name?: string;
+    options?: Array<{ value: string; swatchHex?: string | null }>;
+  }>;
   hasVariants?: boolean;
   metaTitle?: string | null;
   metaDescription?: string | null;
@@ -56,6 +63,9 @@ export interface PriceView {
 export interface VariantOptionView {
   value: string;
   available: boolean;
+  /** Реальный цвет опции из платформы (`variant_options.swatchHex`); null для
+   *  не-цветовых (размер). Свотч заливается им; имя-резолв — лишь фолбэк. */
+  swatch?: string | null;
 }
 
 export interface VariantGroupView {

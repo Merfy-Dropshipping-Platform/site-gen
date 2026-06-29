@@ -64,7 +64,10 @@ function normaliseGallery(p: RawProduct, productName: string): GalleryView {
 
 // — Variants —
 
-function buildVariantGroups(variants: RawVariant[]): VariantGroupView[] {
+function buildVariantGroups(
+  variants: RawVariant[],
+  swatchByValue: Map<string, string> = new Map(),
+): VariantGroupView[] {
   // Each option-key collects unique values; "available" is true when at
   // least one variant carrying that value is in stock.
   const groupMap = new Map<string, Map<string, boolean>>();
@@ -80,7 +83,11 @@ function buildVariantGroups(variants: RawVariant[]): VariantGroupView[] {
   }
   return Array.from(groupMap.entries()).map(([key, valMap]) => ({
     key,
-    options: Array.from(valMap.entries()).map(([value, available]) => ({ value, available })),
+    options: Array.from(valMap.entries()).map(([value, available]) => ({
+      value,
+      available,
+      swatch: swatchByValue.get(value) ?? null,
+    })),
   }));
 }
 
@@ -144,7 +151,18 @@ export function normaliseProduct(
     productVariants.length > 0 &&
     (raw.hasVariants !== false ||
       productVariants.some((v) => v.options && Object.keys(v.options).length > 0));
-  const variantGroups = hasVariants ? buildVariantGroups(productVariants) : [];
+  // «Цвет из платформы»: реальный swatchHex опции из дерева `variantGroups`
+  // (присутствует и в products.json, и в storefront-data). Имя→hex резолв в
+  // рендере — лишь фолбэк, когда swatchHex не задан мерчантом.
+  const swatchByValue = new Map<string, string>();
+  for (const g of raw.variantGroups ?? []) {
+    for (const o of g.options ?? []) {
+      if (o.swatchHex) swatchByValue.set(o.value, o.swatchHex);
+    }
+  }
+  const variantGroups = hasVariants
+    ? buildVariantGroups(productVariants, swatchByValue)
+    : [];
 
   const view: ProductView = {
     id: raw.id ?? raw.slug ?? raw.handle ?? '',

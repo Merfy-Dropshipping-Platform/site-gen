@@ -52,6 +52,10 @@ const isShaped = sh === 'circle' || sh === 'square';
 const isDropdown = type === 'dropdown' || (ds === 'list' && !isShaped);
 // Список показывает лейбл группы (над dropdown И над свотчами); Кнопка — без лейбла.
 const showLabel = ds === 'list';
+// Список + Круг/Квадрат → варианты ВЕРТИКАЛЬНЫМ списком строк: у цвета — строка
+// со свотчем (реальный цвет платформы) + название; не-цвет (размер) — строка-текст.
+// (Кнопка = горизонтальные чипы; Список+Нет = выпадашка.)
+const isListShaped = !isDropdown && ds === 'list' && isShaped;
 // Форма чипа = shape: Кнопка/Нет = скруглённый прямоугольник (--radius-button),
 // Круг = полный круг, Квадрат = острый угол.
 const shapeRadius =
@@ -155,13 +159,53 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
+        ) : isListShaped ? (
+          <ul class="flex flex-col gap-2 w-full m-0 p-0 list-none">
+            {g.options.map((opt, optIdx) => {
+              const active = optIdx === 0 && opt.available;
+              // «Только для цвета»: реальный цвет платформы (swatchHex, фолбэк
+              // имя→hex). null → не-цвет (размер) → строка-текст без свотча.
+              const fill = opt.swatch ?? resolveColor(opt.value);
+              const hasColor = fill != null;
+              return (
+                <li class="w-full">
+                  <button
+                    type="button"
+                    data-variant-chip
+                    data-variant-swatch
+                    data-variant-key={g.key}
+                    data-variant-value={opt.value}
+                    data-variant-available={opt.available ? 'true' : 'false'}
+                    data-variant-active={active ? 'true' : 'false'}
+                    disabled={!opt.available}
+                    class:list={[
+                      'flex items-center gap-3 w-full h-12 px-3 text-left border-2 border-solid rounded-[var(--radius-button)] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] cursor-pointer transition-colors',
+                      !opt.available ? 'cursor-not-allowed opacity-60 line-through' : '',
+                    ]}
+                    style={swatchBorderStyle(opt, active)}
+                  >
+                    {hasColor && (
+                      <span class:list={['block h-6 w-6 shrink-0 overflow-hidden border border-[rgb(var(--color-text)/0.15)]', shapeRadius]}>
+                        <span
+                          class:list={['block w-full h-full', shapeRadius]}
+                          data-variant-swatch-fill
+                          style={`background:${fill};`}
+                        />
+                      </span>
+                    )}
+                    <span class="flex-1">{opt.value}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <div class="flex flex-wrap gap-2">
             {g.options.map((opt, optIdx) => {
               const active = optIdx === 0 && opt.available;
-              // Цвет → свотч (реальный назначенный цвет) во всех чип-режимах;
-              // не-цвет (размер) → текст-чип. shapeRadius задаёт форму.
-              const colorHex = isShaped ? resolveColor(opt.value) : null;
+              // Цвет → свотч (реальный цвет платформы swatchHex, фолбэк имя→hex)
+              // во всех чип-режимах; не-цвет (размер) → текст-чип.
+              const colorHex = isShaped ? (opt.swatch ?? resolveColor(opt.value)) : null;
               const asSwatch = colorHex != null;
 
               if (asSwatch) {

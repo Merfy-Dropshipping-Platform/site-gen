@@ -36,7 +36,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	style={padStyle}
 	aria-labelledby="cart-title"
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col">
+	<!-- data-rc-preserve: контент рендерится на клиенте (getCart) и его нет в SSR.
+	     При reconcile-морфе превью обёртка секции обновляется (отступы/схема), а этот
+	     контейнер пропускается → товары/пустое состояние не сбрасываются и не мигают. -->
+	<div data-rc-preserve class="mx-auto flex w-full max-w-[1320px] flex-col">
 		<!-- Пустое состояние -->
 		<div
 			data-cart-page-empty

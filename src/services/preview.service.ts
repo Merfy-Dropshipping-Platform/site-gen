@@ -1157,6 +1157,16 @@ const PREVIEW_NAV_AGENT_INLINE = `
       Idiomorph.morph(rcMain, rcParts.join(''), {
         morphStyle: 'innerHTML',
         callbacks: {
+          // 110-fix: поддеревья с data-rc-preserve — клиент-управляемый контент
+          // (список товаров корзины / тоггл пусто↔наполнено), которого НЕТ в SSR
+          // (рендерится на клиенте из getCart()). Морф обновляет ТОЛЬКО обёртку
+          // секции (padding/scheme), такой контент пропускает (return false) →
+          // смена настроек реактивна (CSS-апдейт), товары не пересоздаются и не
+          // мигают, состояние пусто/наполнено не сбрасывается в SSR-дефолт.
+          beforeNodeMorphed: function (oldNode) {
+            if (oldNode && oldNode.nodeType === 1 && oldNode.hasAttribute && oldNode.hasAttribute('data-rc-preserve')) return false;
+            return true;
+          },
           beforeNodeRemoved: function (n) { __rcStash(n, rcMain); },
           afterNodeAdded: function (n) { __rcAfterAdd(n); }
         }
@@ -1167,13 +1177,6 @@ const PREVIEW_NAV_AGENT_INLINE = `
       return;
     }
     RC_APPLIED_VERSION = rcVersion;
-    // 110-fix: после reconcile-морфа ре-гидрируем блоки тем же сигналом, что
-    // одиночная замена (выше) и Astro ClientRouter после навигации —
-    // astro:after-swap + astro:page-load. Без этого блоки с КЛИЕНТСКИМ состоянием
-    // (корзина: пусто↔товары, слайдеры, header-sync) после смены настроек (US2
-    // re-fetch перезапекает блок в SSR-дефолт) застревают на дефолте: напр. CartBody
-    // показывает пустую корзину при наличии товаров. Дебаунс коалесит пачку reconcile.
-    dispatchAstroNavEventsDebounced();
     // Хром (Header/Footer/PromoBanner вне <main>) — только hide/show (не reorder/
     // add/delete). Единый CSS-toggle по тому же видимому target: блок вне target →
     // скрыть (data-rc-hidden), в target → показать. Body-секции уже сведены morph.

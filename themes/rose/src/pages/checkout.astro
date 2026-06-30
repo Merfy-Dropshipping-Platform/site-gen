@@ -33,14 +33,19 @@ const dadataToken = "";
   {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
     <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* 50/50 по ширине: форма и сводка — равные колонки, заполняют контейнер (без
-          фикс-ширин, иначе справа оставался белый прогал при цветных схемах блоков).
-          items-stretch → колонки равной высоты (короткая сводка тянется под форму). */}
-      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 gap-y-8 items-stretch">
-        <div data-checkout-column="form" class="min-w-0">
-          <CheckoutForm />
+      {/* Figma 183-27866: половина-на-половину на ВСЮ ширину (без max-w-центрирования,
+          иначе справа белый прогал). Левая половина — белая (scheme страницы), форма
+          прижата к центру с max-w. Правая половина — серый scheme-фон СВОДКИ на всю
+          высоту и до правого края вьюпорта (items-stretch + [&>section]:h-full → секция
+          CheckoutSummary с её scheme-bg заполняет всю правую половину; смена схемы красит
+          всю половину, без белых прогалов). Внутренние отступы сводки — через [&>section]:p-*. */}
+      <div class="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+        <div data-checkout-column="form" class="min-w-0 flex justify-center lg:justify-end">
+          <div class="w-full max-w-[600px] px-4 sm:px-6 lg:px-10 xl:px-14 py-12">
+            <CheckoutForm />
+          </div>
         </div>
-        <div data-checkout-column="summary" class="min-w-0 h-full [&>section]:h-full">
+        <div data-checkout-column="summary" class="min-w-0 [&>section]:h-full [&>section]:p-6 lg:[&>section]:p-10 xl:[&>section]:p-14">
           <CheckoutSummary />
         </div>
       </div>

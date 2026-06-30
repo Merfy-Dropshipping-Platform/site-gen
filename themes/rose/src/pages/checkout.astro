@@ -30,49 +30,20 @@ const apiUrl = "https://gateway.merfy.ru/api";
 const dadataToken = "";
 ---
 <Layout title="Оформление заказа" description="Оформление заказа" header="checkout">
-  {/* Figma 1:13398 — checkout по умолчанию светлая схема (color-scheme-2).
-      Мерчантскую «Цветовую схему» КАЖДОЙ панели (форма/сводка) красит её ФОН:
-      на live её патчит unifyChromeInDist (data-checkout-column → color-scheme-N),
-      в превью — injectCheckoutBlockIds. */}
+  {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
-    {/* Figma 1:19998 split-checkout: левая половина (форма) и правая (сводка) —
-        две панели 50/50 во всю ширину, каждая заливается ФОНОМ своей схемы, без
-        прогалов; контент прижат к середине (форма справа, сводка слева). */}
-    <main class="mfy-checkout-split" style="color: rgb(var(--color-text));">
-      <div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-column="form">
-        <div class="mfy-checkout-pane__inner">
+    <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
+      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
+      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
+        <div data-checkout-column="form" class="min-w-0">
           <CheckoutForm />
         </div>
-      </div>
-      <div class="mfy-checkout-pane mfy-checkout-pane--summary" data-checkout-column="summary">
-        <div class="mfy-checkout-pane__inner">
+        <div data-checkout-column="summary" class="min-w-0">
           <CheckoutSummary />
         </div>
       </div>
     </main>
   </div>
-
-  {/* Split-checkout CSS. Панель заливает фон своей схемы (--color-bg) во всю
-      ширину половины; align-items:stretch уравнивает высоты → короткая сводка
-      тянется до низа формы (нет белого просвета). Контент панелей ограничен и
-      прижат к центральному стыку — как в Figma 1:19998.
-      Покраска (запрос мерчанта): «Фон → инпуты» — `--color-input-bg` следует за
-      фоном схемы панели (checkout-scoped alias; иначе инпуты остаются дефолтным
-      белым из theme.json и не перекрашиваются). Текст инпутов уже идёт через
-      --color-text; кнопки — через --color-button-* (основная кнопка). */}
-  <style is:global>
-    .mfy-checkout-split { display: flex; flex-direction: column; width: 100%; align-items: stretch; }
-    .mfy-checkout-pane { width: 100%; box-sizing: border-box; background: rgb(var(--color-bg)); color: rgb(var(--color-text)); --color-input-bg: var(--color-bg); }
-    .mfy-checkout-pane__inner { width: 100%; max-width: 560px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
-    @media (min-width: 1024px) {
-      .mfy-checkout-split { flex-direction: row; }
-      .mfy-checkout-pane { width: 50%; display: flex; }
-      .mfy-checkout-pane--form { justify-content: flex-end; }
-      .mfy-checkout-pane--summary { justify-content: flex-start; }
-      .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 480px; padding: 56px 32px 56px 24px; }
-      .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 520px; padding: 56px 24px 56px 40px; }
-    }
-  </style>
 
   {/* --- Live checkout plumbing (checkout page only) --- */}
   {/* Config injection (templates pattern). build.service.ts patches shopId +

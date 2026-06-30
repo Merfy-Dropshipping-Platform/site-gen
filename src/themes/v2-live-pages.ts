@@ -428,23 +428,24 @@ const findBlockProps = (
 };
 
 /**
- * Figma 1:19998 — применить «Цветовую схему» панели checkout (form/summary) к
- * verbatim-дисту. checkout.astro рендерит панели (`<div data-checkout-column>`)
- * под общей color-scheme-2; мерчантскую схему КАЖДОЙ панели дописываем здесь.
- * Класс color-scheme-N вешается на ПАНЕЛЬ (она заливает `bg-[rgb(var(--color-bg))]`
- * во всю ширину половины) → форма и сводка красятся своими схемами независимо,
- * без прогалов. Внутренняя карточка наследует схему панели. Идемпотентно;
- * `class` идёт ДО `data-checkout-column` (порядок атрибутов в checkout.astro).
+ * Figma 1:19998 — применить «Цветовую схему» узла checkout (CheckoutForm /
+ * CheckoutSummary) к verbatim-дисту. checkout.astro рендерит блоки БЕЗ пропсов
+ * мерчанта → их `<section data-block="checkout-*">` без класса схемы (наследует
+ * общий color-scheme-2). Дописываем `color-scheme-N` в class секции — секция
+ * сама красит bg/text из `--color-*` (CheckoutForm/Summary.classes несут
+ * `bg-[rgb(var(--color-bg))]`), значит независимая перекраска формы и сводки.
+ * Идемпотентно: класс не дублируется. `class` идёт ДО `data-block` (порядок
+ * атрибутов в CheckoutForm/Summary.astro).
  */
 export function patchCheckoutBlockScheme(
   html: string,
-  column: 'form' | 'summary',
+  block: 'checkout-form' | 'checkout-summary',
   scheme: unknown,
 ): string {
   if (typeof scheme !== 'string' || !scheme) return html;
   const cls = `color-scheme-${scheme.replace('scheme-', '')}`;
   const re = new RegExp(
-    `(<div\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-checkout-column="${column}")`,
+    `(<section\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-block="${block}")`,
   );
   return html.replace(re, (m, p1: string, classes: string, p3: string) =>
     classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
@@ -636,8 +637,8 @@ export async function unifyChromeInDist(
         }
       }
       // 2) Цветовая схема «Оформление заказа» / «Сводка заказа» (независимо).
-      next = patchCheckoutBlockScheme(next, 'form', formScheme);
-      next = patchCheckoutBlockScheme(next, 'summary', summaryScheme);
+      next = patchCheckoutBlockScheme(next, 'checkout-form', formScheme);
+      next = patchCheckoutBlockScheme(next, 'checkout-summary', summaryScheme);
       if (next !== html) {
         await fs.writeFile(file, next, 'utf8');
         checkout++;

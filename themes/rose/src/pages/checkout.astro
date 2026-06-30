@@ -33,12 +33,14 @@ const dadataToken = "";
   {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
     <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
-      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
+      {/* 50/50 по ширине: форма и сводка — равные колонки, заполняют контейнер (без
+          фикс-ширин, иначе справа оставался белый прогал при цветных схемах блоков).
+          items-stretch → колонки равной высоты (короткая сводка тянется под форму). */}
+      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 gap-y-8 items-stretch">
         <div data-checkout-column="form" class="min-w-0">
           <CheckoutForm />
         </div>
-        <div data-checkout-column="summary" class="min-w-0">
+        <div data-checkout-column="summary" class="min-w-0 h-full [&>section]:h-full">
           <CheckoutSummary />
         </div>
       </div>

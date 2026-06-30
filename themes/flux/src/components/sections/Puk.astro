@@ -1,178 +1,127 @@
 ---
-// Секция «Puk» — НЕ каноническая секция конструктора (не регистрируется в
-// puckConfig). Тематическая доп-секция → ближайший тип контракта Figma 1:19335 =
-// PopularProducts «Коллекция товаров» (эталон flux Popular.astro / rose
-// Popular.astro). Пустое состояние = ДОСЛОВНЫЙ Figma-плейсхолдер, НЕ мок-демо
-// верстальщика «АКЦИЯ ПУКНИ» с pukItems.
+// Секция «Puk» = «Основной текст» / CTA верстальщиков flux (репо flux-theme
+// src/components/sections/Puk.astro, Figma 905:19320). ВЁРСТКА — дословный канон
+// репо: заголовок Roboto Flex uppercase 19/md:23 #000, абзац Roboto Flex light
+// 16 #999, чёрная CTA h-14 rounded-6 px-4 uppercase #fff. Шрифт ВСЕЙ секции —
+// font-roboto-flex (репо целиком roboto-flex; прежние comfortaa/manrope — наследие
+// разошедшегося product-grid порта, удалены). Рендерится в демо темы
+// (pages/index.astro <Puk/>).
 //
-// Гейт как у PopularProducts: коллекция ВЫБРАНА → реальные товары через SSR-фетч
-// storefront-data (как эталон); выбора НЕТ → дефолт-заголовок «Коллекция
-// товаров» + N карточек-плейсхолдеров с цветной курткой циклом
-// blue→yellow→red→green, подпись «Товар», цена «2 500 ₽».
-import FluxPicture from "../img/FluxPicture.astro";
-
+// НАСТРОЙКИ — как канон-CTA темы (эталон flux MainText.astro): читаем поля
+// heading/text/button(+ legacy cta)/headingSize/textSize/buttonStyle/padding —
+// «применяй как другие flux-секции» (паттерн Popular/Collections). Цвета → токены
+// с пиксель-фоллбеком родных литералов репо (MANNER §7) → colorScheme перекрашивает
+// (навешивается обёрткой composeV2Page). headingSize/textSize — ступени small/
+// medium(=эталон)/large на базе эталонных размеров (19/23, 16). Пустое состояние =
+// дефолт-контент верстальщика (title/paragraph/cta репо).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
-// заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
-// карточки-куртки). Дефолт-текст верстальщика заменён на Figma-текст. Когда
-// мерчант задал свой heading/text/subtitle — рендерим ЕГО (?? fallback
-// срабатывает только при пустых данных).
+// Заголовок: string | { text, size } (канон-union). Пусто → дефолт верстальщика.
 const heading =
-  (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Коллекция товаров";
-const subtitle =
-  (typeof p.text === "string" ? p.text : p.text?.content) ??
-  (typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
-  undefined;
+	typeof p.heading === "string"
+		? p.heading
+		: (p.heading?.text ?? "Следующее поколение уже с вами!");
+// Ступени headingSize (эталон 19/md:23; паритет Collections.astro): medium/
+// отсутствие = эталон, small меньше, large крупнее. top-level hidden приоритетнее
+// heading.size сабпанели.
+const headingSize = p.heading?.size ?? p.headingSize;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[16px] md:text-[19px]"
+		: headingSize === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]"; // medium (эталон) + absent
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 
-// Количество карточек-плейсхолдеров (дефолт 4 — паритет PopularProducts).
-const cardsN =
-  typeof p.cards === "number" && p.cards > 0
-    ? Math.max(1, Math.min(24, Math.round(p.cards)))
-    : 4;
+// Текст-абзац: string | { content, size }. Пусто → дефолт верстальщика.
+const text =
+	typeof p.text === "string"
+		? p.text
+		: (p.text?.content ??
+			"Они здесь. Устройства, которые изменят завтра, уже сегодня в нашем потоке новинок. Смотрите, тестируйте, погружайтесь в будущее, которое стало реальностью. Только в Flux.");
+// Ступени textSize (эталон 16; паритет rose MainText): medium/отсутствие = 16,
+// small 14, large 19. Тело — Roboto Flex light, мут-цвет (#999 фоллбек).
+const textSize = p.textSize ?? p.text?.size;
+const textSizeCls =
+	textSize === "small" ? "text-[14px]" : textSize === "large" ? "text-[19px]" : "text-[16px]";
+const textCls = `max-w-[1320px] font-roboto-flex font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
 
-// Ассеты курток-плейсхолдеров: лежат в packages/theme-base/public/placeholders/
-// и копируются в корень сайта (доступны как /placeholders/sweater-<color>.png).
-// Паритет с FluxProductDetail.astro / storefront-hydrate.ts (root-relative URL).
-const SWEATERS = [
-  "/placeholders/sweater-blue.svg",
-  "/placeholders/sweater-yellow.svg",
-  "/placeholders/sweater-red.svg",
-  "/placeholders/sweater-green.svg",
-];
+// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
+// Пустой текст ЗАДАННОГО пропа скрывает кнопку; ничего не задано → дефолт
+// верстальщика «Смотреть новинки» → /catalog.
+const btnProvided = p.button !== undefined || p.cta !== undefined;
+const btnTextProp =
+	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
+	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
+const btnText = btnTextProp ?? (btnProvided ? undefined : "Смотреть новинки");
+const btnHref =
+	p.button?.link?.href ??
+	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.cta?.href === "string" && p.cta.href ? p.cta.href : undefined) ??
+	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
+	"/catalog";
+// buttonStyle: solid (default) = чёрная CTA репо дословно (h-14 rounded-6 px-4
+// uppercase, roboto-flex 16, hover:opacity-90); в схемах flux чёрная = кнопка-2
+// (MANNER §7). outlined = бордер/текст цвета заливки на прозрачном.
+const btnBase =
+	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none transition-opacity hover:opacity-90";
+const btnCls =
+	p.buttonStyle === "outlined"
+		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
+		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))]`;
 
-// Канон collection (collectionPicker, id или slug): носитель для SSR-фетча.
-const collectionRef =
-  typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
+// Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
+// (иначе эталонные py-10 md:py-16 на контейнере). colorScheme — обёрткой
+// composeV2Page; фон секции = bg-токен с пиксель-фоллбеком #FBFBFB репо.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 
-// SSR-фетч реальных товаров выбранной коллекции (Figma-цель, эталон flux/rose
-// Popular.astro): коллекция ВЫБРАНА → реальные товары ПРЯМО в статике, чтобы их
-// видело и ПРЕВЬЮ конструктора (Astro Container не исполняет клиентскую
-// гидрацию). siteId инжектит рендер-пайплайн (preview.service / build). Нет
-// коллекции / siteId / ошибка → realItems пуст → секция рендерит
-// плейсхолдер-куртки Figma.
-const siteId = typeof p.siteId === "string" ? p.siteId : "";
-const fmtPrice = (v: unknown): string => {
-  const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
-  return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
-};
-type RealItem = { id: string; title: string; image: string; price: string };
-let realItems: RealItem[] = [];
-if (collectionRef && siteId) {
-  try {
-    const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
-    const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
-    if (res && res.ok) {
-      const data: any = await res.json();
-      const all: any[] = Array.isArray(data?.products) ? data.products : [];
-      const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
-      const matched = cols.find(
-        (c) =>
-          c &&
-          (c.id === collectionRef ||
-            c.slug === collectionRef ||
-            c.name === collectionRef ||
-            c.handle === collectionRef),
-      );
-      const ids =
-        matched && Array.isArray(matched.productIds) && matched.productIds.length
-          ? new Set(matched.productIds)
-          : null;
-      const picked = (ids ? all.filter((pr) => pr?.id && ids.has(pr.id)) : all).slice(0, cardsN);
-      realItems = picked.map((pr) => {
-        const img =
-          Array.isArray(pr?.images) && pr.images[0]
-            ? typeof pr.images[0] === "string"
-              ? pr.images[0]
-              : pr.images[0]?.url ?? ""
-            : pr?.image ?? "";
-        return {
-          id: String(pr?.id ?? ""),
-          title: String(pr?.name ?? pr?.title ?? "Товар"),
-          image: String(img ?? ""),
-          price: fmtPrice(pr?.basePrice ?? pr?.price),
-        };
-      });
-    }
-  } catch {
-    realItems = [];
-  }
-}
-
-// Гейт по реальным данным: коллекция выбрана И есть реальные товары → рендер
-// реальных карточек. Иначе — плейсхолдер-куртки циклом по цветам (НЕ мок-товары
-// верстальщика).
-const hasRealData = realItems.length > 0;
-
-const cards = hasRealData
-  ? realItems.map((it) => ({
-      title: it.title || "Товар",
-      price: it.price || "",
-      image: it.image || SWEATERS[0],
-      isPlaceholder: false,
-    }))
-  : Array.from({ length: cardsN }, (_, i) => ({
-      title: "Товар",
-      price: "2 500 ₽",
-      image: SWEATERS[i % SWEATERS.length],
-      isPlaceholder: true,
-    }));
+const titleId = id ? `${id}-title` : "cta-title";
 ---
 
 <section
-  class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
-  data-puck-component-id={id}
+	class="w-full bg-[rgb(var(--color-bg,251_251_251))]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
 >
-  <div class="mx-auto w-full max-w-[1320px]">
-    {/* Figma 1:19335: заголовок «Коллекция товаров» рендерится ВСЕГДА (дефолт в
-        frontmatter), подзаголовок — только если задан мерчантом. */}
-    <div class="mb-12 flex flex-col items-center gap-1 text-center md:mb-16">
-      <h2 class="font-comfortaa text-[24px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[28px]">
-        {heading}
-      </h2>
-      {subtitle && (
-        <p class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]">
-          {subtitle}
-        </p>
-      )}
-    </div>
+	<div
+		class="flux-container flex flex-col items-start gap-10 py-10 md:py-16"
+		data-reveal
+		style={paddingStyle}
+	>
+		<div class="flex flex-col gap-2">
+			<h2
+				id={titleId}
+				class={headingCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
+			>
+				{heading}
+			</h2>
+			<p
+				class={textCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={text}
+			/>
+		</div>
 
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
-      {cards.map((card) => (
-        <div class="flex flex-col gap-4 md:gap-5">
-          <div class="aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-[rgb(var(--color-surface,251_251_251))]">
-            {card.isPlaceholder ? (
-              // Плейсхолдер-куртка: сырой <img>, НЕ FluxPicture — у ассетов
-              // /placeholders/sweater-*.png НЕТ соимённого .webp, а <picture>
-              // не откатывается на <img> при 404 webp-source (баг корзины).
-              <img
-                src={card.image}
-                alt={card.title}
-                class="h-full w-full object-contain p-[15%]"
-                loading="lazy"
-              />
-            ) : (
-              <FluxPicture
-                src={card.image}
-                alt={card.title}
-                class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                loading="lazy"
-              />
-            )}
-          </div>
-          <div class="flex flex-col items-start gap-1">
-            <p class="font-manrope text-[18px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">
-              {card.title}
-            </p>
-            {card.price && (
-              <p class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[18px]">
-                {card.price}
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
+		{
+			btnText && (
+				<a
+					href={btnHref}
+					class={btnCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="button"
+				>
+					{btnText}
+				</a>
+			)
+		}
+	</div>
 </section>

@@ -1,5 +1,6 @@
 ---
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { withBase } from "../lib/with-base";
 import { SITE_TITLE } from "../consts";
 
 // Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
@@ -9,6 +10,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
 const today = new Date();
 
+// Дефолтные ссылки навигации = литерал верстальщика flux-theme/src/components/Footer.astro (F:7-12).
 const navColumnDefault = [
 	{ label: "Смартфоны", href: "/catalog?collection=Смартфоны" },
 	{ label: "Наушники", href: "/catalog?collection=Наушники" },
@@ -16,13 +18,17 @@ const navColumnDefault = [
 	{ label: "Аксессуары", href: "/catalog?collection=Аксессуары" },
 ];
 
-// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Footer): канон-схема theme-base Footer.puckConfig —
-// siteTitle, phone, email/socialColumn.email, newsletter, navigationColumn,
-// informationColumn, socialColumn.socialLinks, copyright, bottomStrip, padding.
-// Тело ниже — verbatim верстальщика (F:33-148); дефолтные ветки = прежним строкам
-// байт-в-байт (цвета → токены с пиксель-фоллбеком §7). blockDefaults flux в theme.json
-// местами расходятся с литералами (тексты рассылки, hrefs колонок, порядок соцсетей) —
-// canon-значения трактуются как «не задано» → литерал (правило canon-default → пиксель).
+// ВЁРСТКА = flux-theme/src/components/Footer.astro (verstal'shchik) точь-в-точь:
+//   Roboto Flex (копирайт — Inter, фикс-роль Figma flux); newsletter «Подпишитесь на нашу
+//   рассылку»; 3 колонки НАВИГАЦИЯ / ИНФОРМАЦИЯ / СОЦИАЛЬНЫЕ СЕТИ (flex, по 318px,
+//   justify-between); чёрная копирайт-полоса 80/100px.
+// НАСТРОЙКИ = как оживлены в rose Footer (themes/rose/.../Footer.astro): siteTitle, phone,
+//   email/socialColumn.email, newsletter(enabled/heading/description/placeholder),
+//   navigationColumn, informationColumn, socialColumn(socialLinks/contactFields), copyright,
+//   bottomStrip, padding, paymentEnabled, colorScheme — rgb(var(--color-*)) с пиксель-фоллбеком.
+// Демо-данные репо (хардкод /legal/*, flux@example.ru, фейк-соцсети) НЕ хардкодим — по rose
+//   их заполняет build (site_policy / контакты) и Theme Settings; info/social-колонки
+//   гейтятся по контенту (пустое состояние = колонка скрыта, без битых ссылок/фейк-данных).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Flux».
@@ -31,38 +37,37 @@ const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
 
-// Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
-// (булево может прийти строкой). Отсутствие пропа → блок показан = пиксель.
+// Платёжные бейджи — только при подключённой кассе (build ставит paymentEnabled).
+const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
+
+// «Информация о компании» (адрес/часы/ИНН/любая инфа) — build кладёт сюда поля КРОМЕ
+// телефона/почты. Выводим label/value в социальной колонке.
+const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
+	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
+	: [];
+
+// newsletter.enabled — скрыть блок ТОЛЬКО при явном false/'false' (булево может прийти
+// строкой). blockDefaults flux {enabled:true, heading/description/placeholder} == литералу
+// верстальщика → проп-с-фолбэком на литерал даёт пиксель без canon-стриппинга.
 const newsletterEnabled = !(
-	p.newsletter &&
-	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
+	p.newsletter && (p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
-// Тексты рассылки: canon-default blockDefaults («Введите электронную почту…») ≠
-// литералу верстальщика — решаем в пользу литералов для дефолт-ветки.
-const CANON_NL_DESCRIPTION = "Введите электронную почту и получайте информацию нашего бренда";
 const nlHeading =
 	typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
 		? p.newsletter.heading
 		: "Подпишитесь на нашу рассылку";
-const nlDescriptionRaw =
+const nlDescription =
 	typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
 		? p.newsletter.description
-		: undefined;
-const nlDescription =
-	nlDescriptionRaw && nlDescriptionRaw !== CANON_NL_DESCRIPTION
-		? nlDescriptionRaw
-		: "Получайте информацию от нашего бренда";
-const nlPlaceholderRaw =
+		: "Введите электронную почту и получайте информацию нашего бренда";
+const nlPlaceholder =
 	typeof p.newsletter?.placeholder === "string" && p.newsletter.placeholder.trim()
 		? p.newsletter.placeholder
-		: undefined;
-const nlPlaceholder =
-	nlPlaceholderRaw && nlPlaceholderRaw !== "flux@example.ru" ? nlPlaceholderRaw : "flux@example.ru";
+		: "flux@example.ru";
 
-// Канон-колонки {title, links[]}: ссылки из пропсов с fallback на литералы; canon-набор
-// blockDefaults (те же label, hrefs '/catalog' и '/legal/returns') → литеральные hrefs.
-// Заголовок колонки — НОВЫЙ элемент (в вёрстке верстальщика заголовков нет), рендерится
-// только при непустом НЕ-canon title.
+// Канон-колонки {title, links[]}: ссылки из пропсов с fallback на литерал верстальщика.
+// blockDefaults flux nav (href '/catalog') трактуем как «не задано» → литерал верстальщика
+// (href '/catalog?collection=…') — правило canon-default → пиксель.
 const coerceColumnLinks = (
 	col: any,
 	fallback: Array<{ label: string; href: string }>,
@@ -82,37 +87,35 @@ const CANON_NAV: Array<[string, string]> = [
 	["Ноутбуки", "/catalog"],
 	["Аксессуары", "/catalog"],
 ];
-const CANON_INFO: Array<[string, string]> = [
-	["Политика доставки", "/legal/delivery"],
-	["Политика возврата", "/legal/returns"],
-	["Условия обслуживания", "/legal/terms"],
-	["Политика конфиденциальности", "/legal/privacy"],
-];
 const navLinksRaw = coerceColumnLinks(p.navigationColumn, navColumnDefault);
 const navLinks = isCanonColumn(navLinksRaw, CANON_NAV) ? navColumnDefault : navLinksRaw;
-const infoLinksRaw = coerceColumnLinks(p.informationColumn, []);
-const infoLinks = isCanonColumn(infoLinksRaw, CANON_INFO) ? [] : infoLinksRaw;
-const columnTitle = (col: any, canon: string): string | undefined => {
-	const t = typeof col?.title === "string" ? col.title.trim() : "";
-	return t && t !== canon ? t : undefined;
-};
-const navColTitle = columnTitle(p.navigationColumn, "Навигация");
-const infoColTitle = columnTitle(p.informationColumn, "Информация");
-const columnTitleCls =
-	"font-comfortaa text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[16px]";
+const infoLinks = coerceColumnLinks(p.informationColumn, []);
 
-// Канон socialColumn.socialLinks (enum платформ) → подписи + NtIcon-глифы верстальщика;
-// canon-набор blockDefaults (тот же состав в другом порядке) и пустой массив → литеральный
-// порядок верстальщика дословно (Telegram VK TikTok YouTube Дзен, F:24-30).
+// Заголовки колонок: дефолт = литерал верстальщика (репо ВСЕГДА показывает «Навигация» /
+// «Информация» / «Социальные сети»). Непустой title пропа перебивает.
+const columnTitleOf = (col: any): string | undefined =>
+	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
+const navColTitle = columnTitleOf(p.navigationColumn) ?? "Навигация";
+const infoColTitle = columnTitleOf(p.informationColumn) ?? "Информация";
+const socialColTitle = columnTitleOf(p.socialColumn) ?? "Социальные сети";
+
+const columnTitleCls =
+	"font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]";
+// Ссылка футера (нав/инфо/email/телефон): Roboto Flex 16 light, muted → hover чёрный
+// (репо #cccccc→black; токенизировано в --color-muted/--color-text для colorScheme как rose).
+const linkCls =
+	"font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[rgb(var(--color-text,0_0_0))]";
+
+// socialColumn.socialLinks (enum платформ) → подписи + NtIcon-глифы верстальщика; пустой
+// массив → пусто (без фейк-демо, как rose). Порядок верстальщика: Telegram VK YouTube Дзен TikTok.
 const SOCIAL_PLATFORMS: Record<string, { platform: string; icon: string }> = {
 	telegram: { platform: "Telegram", icon: "social-telegram" },
 	vk: { platform: "VK", icon: "social-vk" },
-	tiktok: { platform: "TikTok", icon: "social-tiktok" },
 	youtube: { platform: "YouTube", icon: "social-youtube" },
 	dzen: { platform: "Дзен", icon: "social-yandex-dzen" },
+	tiktok: { platform: "TikTok", icon: "social-tiktok" },
 };
-const socialsRaw = Array.isArray(p.socialColumn?.socialLinks) ? p.socialColumn.socialLinks : [];
-const socials = socialsRaw
+const socials = (Array.isArray(p.socialColumn?.socialLinks) ? p.socialColumn.socialLinks : [])
 	.map((s: any) => {
 		const meta = SOCIAL_PLATFORMS[String(s?.platform ?? "")];
 		const href = String(s?.href ?? "").trim();
@@ -120,12 +123,14 @@ const socials = socialsRaw
 	})
 	.filter((s: any) => s !== null);
 
-// Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
-// Дефолтная сборка = литерал чёрной полосы верстальщика байт-в-байт:
-// «© {год} {siteTitle} Theme. Все права защищены. Powered by Merfy» (F:146) — у flux
-// хвост Powered by Merfy В литерале (инверсия bloom). canon-default blockDefaults
-// {poweredBy 'Powered by Merfy', showYear true} = литерал и так; явная пустая строка
-// poweredBy скрывает хвост.
+// Социальная колонка показывается ТОЛЬКО при контенте (контакты/соцсети/оплата) — rose-стиль
+// пустого состояния (без одинокого заголовка и фейк-данных верстальщика).
+const socialColumnHasContent =
+	Boolean(phone) || Boolean(email) || contactFields.length > 0 || socials.length > 0 || paymentEnabled;
+
+// copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком). Дефолт = литерал
+// чёрной полосы верстальщика байт-в-байт: «© {год} {siteTitle} Theme Все права защищены.
+// Powered by Merfy» (F:142) — формула rose (без точки после companyPart).
 const copyrightProp = p.copyright;
 const copyrightOverride =
 	typeof copyrightProp === "string" && copyrightProp.trim() ? copyrightProp : undefined;
@@ -135,222 +140,194 @@ const companyPart =
 	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
 		? copyrightObj.companyName
 		: `${siteTitle} Theme`;
-const poweredByTail =
+const poweredBy =
 	typeof copyrightObj.poweredBy === "string" ? copyrightObj.poweredBy.trim() : "Powered by Merfy";
 const copyrightText =
 	copyrightOverride ??
-	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart}. Все права защищены.${poweredByTail ? ` ${poweredByTail}` : ""}`;
+	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredBy ? ` ${poweredBy}` : ""}`;
 
-// Канон bottomStrip {enabled, text} — у flux копирайт ЖИВЁТ в чёрной полосе (блок 3
-// верстальщика = одна полоса на оба канона): strip = носитель (subsection 992),
-// текст в ней = copyright (993). enabled false/'false' скрывает полосу; непустой
-// text перебивает сборку copyright.
+// bottomStrip {enabled, text} — чёрная копирайт-полоса = носитель (отдельной полосы у
+// верстальщика нет). enabled false/'false' скрывает; непустой text перебивает собранный copyright.
 const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
 const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
-const stripText =
-	typeof strip?.text === "string" && strip.text.trim() ? strip.text : copyrightText;
+const stripText = typeof strip?.text === "string" && strip.text.trim() ? strip.text : copyrightText;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при не-canon пропе. {64,64} =
-// canon-default theme.json flux (его впрыскивает коэрсер) → литерал pt-12 md:pt-16 +
-// pb-12 md:pb-16 секции ссылок (правило canon-default → пиксель). При override
-// контейнер несёт обе стороны inline, низ секции ссылок снимается.
+// padding {top,bottom} — inline-стиль ТОЛЬКО при не-canon пропе. canon {64,64} (theme.json
+// flux, впрыск коэрсера) → литерал py-12 md:py-16 верстальщика (правило canon-default → пиксель).
 const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
 const isCanonPad = pad && Number(pad.top) === 64 && Number(pad.bottom) === 64;
 const footerPadStyle =
 	pad && !isCanonPad
 		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
 		: undefined;
+// flux-container эталона = mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80 (носитель темы).
 const footerContainerCls = footerPadStyle
-	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80"
-	: "mx-auto w-full max-w-[1920px] px-4 pt-12 md:px-20 md:pt-16 2xl:px-80";
-const linksSectionCls = footerPadStyle
-	? "mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-8 md:grid-cols-4 md:gap-6"
-	: "mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-8 pb-12 md:grid-cols-4 md:gap-6 md:pb-16";
-
-// Платёжные бейджи (Mastercard/VISA/МИР) — рендерим только при подключённой кассе.
-const paymentEnabled = p.paymentEnabled === true || p.paymentEnabled === "true";
-
-// Произвольные контакт-поля «Информация о компании» (адрес/часы/ИНН/…). Build кладёт
-// сюда все контакт-поля КРОМЕ телефона/почты (те рендерятся как tel:/mailto: выше).
-const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
-	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
-	: [];
+	? "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 md:px-20 2xl:px-80"
+	: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 py-12 md:px-20 md:py-16 2xl:px-80";
 ---
 
 <footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle}>
-	<!-- Newsletter -->
-	{newsletterEnabled && (
-	<section class="mx-auto flex w-full max-w-[1320px] flex-col gap-4 pb-12 md:pb-16" aria-labelledby="newsletter-heading">
-		<div class="flex flex-col gap-1">
-			<h2
-				id="newsletter-heading"
-				class="font-comfortaa text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[18px]"
+		<!-- Newsletter «Подпишитесь на нашу рассылку» -->
+		{newsletterEnabled && (
+		<section class="flex w-full flex-col gap-6" aria-labelledby="newsletter-heading">
+			<div class="flex flex-col gap-2">
+				<h2
+					id="newsletter-heading"
+					class="font-roboto-flex text-[18px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="newsletter"
+				>
+					{nlHeading}
+				</h2>
+				<p class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]">
+					{nlDescription}
+				</p>
+			</div>
+
+			<form
+				class="flex h-14 w-full max-w-[652px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-4 md:h-16"
+				data-newsletter-form
 				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
+				data-puck-subsection-index="997"
 				data-puck-subsection-field="newsletter"
 			>
-				{nlHeading}
-			</h2>
-			<p class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
-				{nlDescription}
-			</p>
-		</div>
-
-		<form
-			class="flex h-11 w-full max-w-[460px] items-center justify-between gap-2 rounded-[var(--radius-field,4px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white pl-3 pr-1 md:h-12"
-			data-newsletter-form
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="997"
-			data-puck-subsection-field="newsletter"
-		>
-			<input
-				type="email"
-				name="email"
-				required
-				placeholder={nlPlaceholder}
-				aria-label="Email"
-				class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none md:text-[14px]"
-			/>
-			<button
-				type="submit"
-				aria-label="Подписаться"
-				class="flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
-			>
-				<NtIcon name="arrow-right" sizeClass="size-5" />
-			</button>
-		</form>
-		<p
-			data-newsletter-status
-			role="status"
-			class="hidden font-roboto-flex text-[12px] font-light text-[#4AD300] md:text-[14px]"
-		></p>
-	</section>
-	)}
-
-	<!-- Links -->
-	<section
-		class={linksSectionCls}
-		aria-label="Навигация по сайту"
-	>
-		<ul
-			class="flex flex-col gap-2"
-			role="list"
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="996"
-			data-puck-subsection-field="navigationColumn"
-		>
-			{navColTitle && (
-				<li>
-					<h3 class={columnTitleCls}>{navColTitle}</h3>
-				</li>
-			)}
-			{navLinks.map((link) => (
-				<li>
-					<a
-						href={link.href}
-						class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[14px]"
-					>
-						{link.label}
-					</a>
-				</li>
-			))}
-		</ul>
-
-		{(infoColTitle || infoLinks.length > 0) && (
-		<ul
-			class="flex flex-col gap-2"
-			role="list"
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="995"
-			data-puck-subsection-field="informationColumn"
-		>
-			{infoColTitle && (
-				<li>
-					<h3 class={columnTitleCls}>{infoColTitle}</h3>
-				</li>
-			)}
-			{infoLinks.map((link) => (
-				<li>
-					<a
-						href={link.href}
-						class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[14px]"
-					>
-						{link.label}
-					</a>
-				</li>
-			))}
-		</ul>
+				<input
+					type="email"
+					name="email"
+					required
+					placeholder={nlPlaceholder}
+					aria-label="Email"
+					class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none md:text-[20px]"
+				/>
+				<button
+					type="submit"
+					aria-label="Подписаться"
+					class="flex size-8 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+				>
+					<NtIcon name="arrow-right" sizeClass="size-8" />
+				</button>
+			</form>
+			<p
+				data-newsletter-status
+				role="status"
+				class="hidden font-roboto-flex text-[12px] font-light text-[#4AD300] md:text-[14px]"
+			></p>
+		</section>
 		)}
 
-		{(phone || email || contactFields.length > 0) && (
-		<div
-			class="flex flex-col gap-2"
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="994"
-			data-puck-subsection-field="socialColumn"
+		<!-- Links: НАВИГАЦИЯ / ИНФОРМАЦИЯ / СОЦИАЛЬНЫЕ СЕТИ -->
+		<section
+			class="flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between"
+			aria-label="Навигация по сайту"
 		>
-			{phone && (
-			<a
-				href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-				class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[14px]"
-			>
-				{phone}
-			</a>
-			)}
-			{email && (
-			<a
-				href={`mailto:${email}`}
-				class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[14px]"
-			>
-				{email}
-			</a>
-			)}
-			{contactFields.map((f) => (
-			<div class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
-				<span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}
-			</div>
-			))}
-		</div>
-		)}
+			<div class="flex flex-col gap-10 sm:flex-row sm:gap-4">
+				<div
+					class="flex flex-col gap-4 md:w-[318px]"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="996"
+					data-puck-subsection-field="navigationColumn"
+				>
+					{navColTitle && <h3 class={columnTitleCls}>{navColTitle}</h3>}
+					<ul class="flex flex-col gap-3" role="list">
+						{navLinks.map((link) => (
+							<li>
+								<a href={link.href} class={linkCls}>
+									{link.label}
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
 
-		<div class="flex flex-col items-start gap-3 md:items-end">
-			{socials.length > 0 && (
-			<div class="flex flex-wrap items-center gap-2">
-				{socials.map((s) => (
-					<a
-						href={s.href}
-						target="_blank"
-						rel="noopener noreferrer"
-						aria-label={s.platform}
-						class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
-					>
-						<NtIcon name={s.icon as any} sizeClass="size-5" />
-					</a>
-				))}
+				{infoLinks.length > 0 && (
+				<div
+					class="flex flex-col gap-4 md:w-[318px]"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="995"
+					data-puck-subsection-field="informationColumn"
+				>
+					{infoColTitle && <h3 class={columnTitleCls}>{infoColTitle}</h3>}
+					<ul class="flex flex-col gap-3" role="list">
+						{infoLinks.map((link) => (
+							<li>
+								<a href={link.href} class={linkCls}>
+									{link.label}
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+				)}
+			</div>
+
+			{socialColumnHasContent && (
+			<div
+				class="flex flex-col gap-4 md:w-[318px] md:items-end"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="994"
+				data-puck-subsection-field="socialColumn"
+			>
+				{socialColTitle && <h3 class={columnTitleCls}>{socialColTitle}</h3>}
+				<div class="flex flex-1 flex-col items-start gap-6 md:items-end">
+					{(phone || email || contactFields.length > 0) && (
+					<div class="flex flex-col gap-3 md:items-end">
+						{phone && (
+						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={`${linkCls} md:text-right`}>
+							{phone}
+						</a>
+						)}
+						{email && (
+						<a href={`mailto:${email}`} class={`${linkCls} md:text-right`}>
+							{email}
+						</a>
+						)}
+						{contactFields.map((f) => (
+						<div class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-right">
+							<span class="text-[rgb(var(--color-heading,0_0_0))]">{f.label}:</span> {f.value}
+						</div>
+						))}
+					</div>
+					)}
+					{socials.length > 0 && (
+					<div class="flex items-center gap-4">
+						{socials.map((s: any) => (
+							<a
+								href={s.href}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label={s.platform}
+								class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
+							>
+								<NtIcon name={s.icon as any} sizeClass="size-6" />
+							</a>
+						))}
+					</div>
+					)}
+					{paymentEnabled && (
+					<div class="flex flex-wrap items-center gap-3 md:justify-end" aria-label="Способы оплаты">
+						<img src={withBase("/icons/MasterCard.svg")} alt="Mastercard" class="h-6 w-auto shrink-0" decoding="async" />
+						<img src={withBase("/icons/Visa.png")} alt="Visa" class="h-6 w-auto shrink-0" decoding="async" />
+						<img src={withBase("/icons/MIR.png")} alt="МИР" class="h-6 w-auto shrink-0" decoding="async" />
+					</div>
+					)}
+				</div>
 			</div>
 			)}
-			{paymentEnabled && (
-			<div class="flex items-center gap-2">
-				<span class="font-roboto-flex text-[10px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[12px]">Mastercard</span>
-				<span class="font-roboto-flex text-[10px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[12px]">VISA</span>
-				<span class="font-roboto-flex text-[10px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[12px]">МИР</span>
-			</div>
-			)}
-		</div>
-	</section>
+		</section>
 	</div>
 
-	<!-- Copyright -->
+	<!-- Copyright — чёрная полоса (Inter, фикс-роль Figma flux) -->
 	{bottomStripVisible && (
 		<div
-			class="w-full bg-[rgb(var(--color-bg,0_0_0))] py-4 md:py-5"
+			class="flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] md:h-[100px]"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"
 		>
 			<p
-				class="text-center font-manrope text-[11px] font-normal leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[12px]"
+				class="px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-bg,255_255_255))] md:text-[20px]"
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="993"
 				data-puck-subsection-field="copyright"
@@ -362,10 +339,10 @@ const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.s
 </footer>
 
 <script is:inline define:vars={{ shopId, apiUrl }}>
-	// Реальная отправка подписки на gateway (была demo-заглушка — фейковое
-	// «Спасибо» без запроса). store_id — из пропатченного shopId (деплой) либо
-	// window.__MERFY_SITE_ID__ (превью). Гард __merfyNewsletterWired исключает
-	// двойную привязку, если на странице есть и эта форма, и секция Newsletter.
+	// Реальная отправка подписки на gateway (была demo-заглушка — фейковое «Спасибо» без
+	// запроса). store_id — из пропатченного shopId (деплой) либо window.__MERFY_SITE_ID__
+	// (превью). Гард __merfyNewsletterWired исключает двойную привязку, если на странице
+	// есть и эта форма, и секция Newsletter; статус ищем в пределах своей секции.
 	(function () {
 		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
 			shopId: shopId || "",
@@ -378,7 +355,8 @@ const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.s
 		function wire(form) {
 			if (!form || form.__merfyNewsletterWired) return;
 			form.__merfyNewsletterWired = true;
-			var status = document.querySelector("[data-newsletter-status]");
+			var section = form.closest("section") || document;
+			var status = section.querySelector("[data-newsletter-status]");
 			var btn = form.querySelector('button[type="submit"]');
 
 			function show(msg, isError) {

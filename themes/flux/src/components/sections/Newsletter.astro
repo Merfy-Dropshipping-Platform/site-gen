@@ -1,14 +1,18 @@
 ---
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
-
-// Фаза B (flux, группа misc): новая канон-секция Newsletter в манере flux (см.
-// themes/flux/MANNER.md; эталоны — bloom Newsletter, rose T17). Схема полей =
-// packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts. Тело = КОПИЯ
-// блока подписки подвала верстальщика (Footer.astro:36-74 — подвал не тронут):
-// заголовок Comfortaa 16/18 uppercase, описание Roboto Flex 300 12/14 muted,
-// форма h-11/12 c бордером #F5F5F5 и кнопкой-иконкой arrow-right, статус
-// #4AD300. ⚠️ Радиус формы — через --radius-field (4px в theme.json), НЕ через
-// --radius-input (8px — увёл бы литерал, §5). Скролл-анимаций нет (§6).
+// Канон-секция Newsletter в манере flux. Схема полей = packages/theme-base/blocks/
+// Newsletter/Newsletter.puckConfig.ts; настройки применяются КАК rose T17
+// (heading/headingSize · text/textSize · position-«Выравнивание» · formLayout ·
+// padding · colorScheme), но визуал — чистый flux.
+//
+// Стиль (строго flux): font-roboto-flex ВЕЗДЕ (роль заголовка/описания/формы
+// подписки — см. обновлённый Footer.astro и панель поиска Header.astro:451-461).
+// Email-форма = живой канон панели поиска flux: h-14/16 rounded-[8px]
+// border-[#FA5109] bg-white, input roboto-flex 16 light, кнопка bg-[#FA5109]
+// text-white roboto-flex uppercase (акцент #FA5109 — фирменный flux). Секционные
+// цвета — токены (на scheme-1 секция ТЁМНАЯ: bg #000 / heading #fff / muted #ccc),
+// форма всегда белая коробка с оранжевым акцентом. Манера статична — скролл-
+// анимаций нет (MANNER §6). Радиус формы — литерал 8px (канон панели поиска
+// Header:451), НЕ var(--radius-field) (4px).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -17,41 +21,43 @@ const id = p.id;
 const shopId = "";
 const apiUrl = "https://gateway.merfy.ru/api";
 
-// Канон heading: string | { text, alignment, size }; canon-default = литерал
-// подвала «Подпишитесь на нашу рассылку» (F:42). Роль F:40 — Comfortaa 16/18
-// uppercase leading-normal, цвет — токен heading с фоллбеком чёрного.
+// Канон heading: string | { text, alignment, size }; canon-default = «Подпишитесь
+// на нашу рассылку» (Figma 1:19335 / Footer flux). Роль flux рассылки — roboto-flex
+// uppercase, цвет — токен heading (на scheme-1 = белый). Заданный мерчантом
+// heading рендерим (?? срабатывает лишь при пустых данных).
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
-// Лестница §9 заголовка рассылки (дефолт роли — medium): отсутствие пропа и
-// medium = литерал 16/md:18; small 11/13, large 19/22.
+// Лестница headingSize (дефолт роли — medium = текст секции рассылки flux
+// 19/md:23): отсутствие пропа и medium = 19/23; small 15/18, large 24/30.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
-		? "text-[11px] md:text-[13px]"
+		? "text-[15px] md:text-[18px]"
 		: headingSize === "large"
-			? "text-[19px] md:text-[22px]"
-			: "text-[16px] md:text-[18px]";
-const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
-// «Выравнивание» (конструктор пишет position) рулит И позицией содержимого в
-// контейнере (items-* двигает форму max-w-460 и текст-колонку), И выключкой
-// заголовка/текста (text-*): «слева-слева»/«центр-центр»/«право-право». Раньше
-// выравнивания по position не было вовсе (только headingAlignment, который
-// конструктор не пишет) → «выравнивание не работает».
+			? "text-[24px] md:text-[30px]"
+			: "text-[19px] md:text-[23px]";
+const headingCls = `font-roboto-flex ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+
+// Канон «Выравнивание» = ЕДИНЫЙ контрол (конструктор пишет position): рулит И
+// позицией блока в контейнере (posCls), И выключкой содержимого внутри
+// (alignCls: заголовок/текст/форма), И выравниванием stacked-кнопки (selfCls).
+// «слева-слева», «центр-по центру», «право-право». Зеркало rose T17.
 const position = p.position === "center" || p.position === "right" ? p.position : "left";
+const posCls = position === "center" ? "mx-auto" : position === "right" ? "ml-auto" : "mr-auto";
 const alignCls =
 	position === "center"
 		? "items-center text-center"
 		: position === "right"
 			? "items-end text-right"
 			: "items-start text-left";
+const selfCls = position === "center" ? "self-center" : position === "right" ? "self-end" : "self-start";
 
 // Канон description (string) + text {content, size} (pupa-дубль). ПУСТОЕ состояние:
 // дословный Figma-плейсхолдер 1:19335 «Узнавайте первыми о новых коллекциях и
-// эксклюзивных предложениях.» (НЕ литерал подвала верстальщика «Получайте
-// информацию от нашего бренда»). Когда мерчант задал description/text.content —
-// рендерим ЕГО (?? fallback срабатывает только при пустых данных). Roboto Flex
-// 300 12/14 #999999 → токен muted. Лестница §9 текста рассылки: small 10/11,
-// medium/отсутствие = литерал 12/14, large 14/17.
+// эксклюзивных предложениях.». Когда мерчант задал description/text.content —
+// рендерим ЕГО (?? fallback срабатывает только при пустых данных). Роль flux —
+// roboto-flex font-light, цвет токен muted (на scheme-1 = #ccc). Лестница textSize:
+// small 14, medium/отсутствие = 16, large 18/20.
 const description =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
@@ -59,27 +65,28 @@ const description =
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small"
-		? "text-[10px] md:text-[11px]"
+		? "text-[14px]"
 		: descSize === "large"
-			? "text-[14px] md:text-[17px]"
-			: "text-[12px] md:text-[14px]";
+			? "text-[18px] md:text-[20px]"
+			: "text-[16px]";
 
 // Канон placeholder. ПУСТОЕ состояние: дословный Figma-плейсхолдер 1:19335
-// «email@example.com» (как канон theme-base Newsletter.astro), НЕ литерал подвала
-// верстальщика «flux@example.ru». Заданный мерчантом placeholder — рендерим его.
+// «email@example.com». Заданный мерчантом placeholder — рендерим его.
 const placeholder =
 	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 
 // Канон buttonText. ПУСТОЕ состояние: дословный Figma-плейсхолдер 1:19335 —
-// текстовая кнопка «Кнопка» (НЕ иконка arrow-right верстальщика F:61-67).
-// Текстовая чёрная кнопка манеры §3 (токены кнопки-2: в схемах flux чёрная
-// кнопка = кнопка-2). Заданный мерчантом buttonText — рендерим его текстом.
-// Иконка-ветка ниже остаётся фолбэком, если data явно зануляет buttonText.
+// текстовая кнопка «Кнопка». Заданный мерчантом buttonText — рендерим его.
 const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
 
+// Канон formLayout: stacked (canon-default rose/puckConfig) — поле + оранжевая
+// CTA под ним; inline-submit — форма-панель flux дословно (input + кнопка в
+// одной оранжевой рамке, как панель поиска Header:451).
+const inlineSubmit = p.formLayout === "inline-submit";
+
 // Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
-// согласия под формой (манера flux: Roboto Flex 300 мелкий muted, акцент
-// кнопки-2 чёрный); иначе ничего.
+// согласия под формой (манера flux: roboto-flex мелкий muted, акцент #FA5109);
+// иначе ничего.
 const showAgreement = p.agreement === "true";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
@@ -91,83 +98,100 @@ const titleId = id ? `${id}-title` : undefined;
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-16 md:px-20 md:py-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 md:px-20 md:py-16 2xl:px-80"
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full max-w-[1320px] flex-col gap-4 ${alignCls}`}>
-		<div class="flex flex-col gap-1">
-			<h2
-				id={titleId}
-				class={headingCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="heading"
-			>
-				{heading}
-			</h2>
-			<p
-				class={`font-roboto-flex ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="text"
-			>
-				{description}
-			</p>
-		</div>
+	<div class="mx-auto w-full max-w-[1920px]">
+		<div class={`flex w-full max-w-[652px] flex-col gap-6 ${posCls} ${alignCls}`}>
+			<div class="flex w-full flex-col gap-2">
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+				<p
+					class={`font-roboto-flex ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+				>
+					{description}
+				</p>
+			</div>
 
-		<form
-			class="flex h-11 w-full max-w-[460px] items-center justify-between gap-2 rounded-[var(--radius-field,4px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white pl-3 pr-1 md:h-12"
-			data-newsletter-form
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="997"
-			data-puck-subsection-field="placeholder"
-		>
-			<input
-				type="email"
-				name="email"
-				required
-				placeholder={placeholder}
-				aria-label="Email"
-				class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[rgb(var(--color-muted,153_153_153))] outline-none md:text-[14px]"
-			/>
 			{
-				buttonText ? (
-					<button
-						type="submit"
-						class="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-3 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[14px]"
+				inlineSubmit ? (
+					<form
+						class="flex h-14 w-full items-center justify-between gap-2 rounded-[8px] border border-[#FA5109] bg-white pl-4 pr-2 md:h-16"
+						data-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="placeholder"
 					>
-						{buttonText}
-					</button>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={placeholder}
+							aria-label="Email"
+							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
+						/>
+						<button
+							type="submit"
+							class="flex h-10 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95 md:h-12 md:px-5 md:text-[16px]"
+						>
+							{buttonText}
+						</button>
+					</form>
 				) : (
-					<button
-						type="submit"
-						aria-label="Подписаться"
-						class="flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+					<form
+						class="flex w-full flex-col gap-4"
+						data-newsletter-form
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="placeholder"
 					>
-						<NtIcon name="arrow-right" sizeClass="size-5" />
-					</button>
+						<input
+							type="email"
+							name="email"
+							required
+							placeholder={placeholder}
+							aria-label="Email"
+							class="h-14 w-full rounded-[8px] border border-[#FA5109] bg-white px-4 font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none md:h-16"
+						/>
+						<button
+							type="submit"
+							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} rounded-[8px] bg-[#FA5109] px-8 font-roboto-flex text-[14px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]`}
+						>
+							{buttonText}
+						</button>
+					</form>
 				)
 			}
-		</form>
-		{
-			showAgreement && (
-				<label class="flex w-full max-w-[460px] cursor-pointer items-start gap-2 font-roboto-flex text-[12px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))] md:text-[13px]">
-					<input
-						type="checkbox"
-						required
-						class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-2-bg,0_0_0))]"
-					/>
-					<span>Согласен на обработку персональных данных</span>
-				</label>
-			)
-		}
-		<p
-			data-newsletter-status
-			role="status"
-			class="hidden font-roboto-flex text-[12px] font-light text-[#4AD300] md:text-[14px]"
-		></p>
+			{
+				showAgreement && (
+					<label class="flex w-full cursor-pointer items-start gap-2 font-roboto-flex text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<input
+							type="checkbox"
+							required
+							class="mt-0.5 size-4 shrink-0 accent-[#FA5109]"
+						/>
+						<span>Согласен на обработку персональных данных</span>
+					</label>
+				)
+			}
+			<p
+				data-newsletter-status
+				role="status"
+				class="hidden w-full font-roboto-flex text-[12px] font-light text-[#4AD300] md:text-[14px]"
+			></p>
+		</div>
 	</div>
 </section>
 

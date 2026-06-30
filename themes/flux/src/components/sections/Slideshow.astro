@@ -1,14 +1,13 @@
 ---
-// Фаза B: новая канон-секция Slideshow в манере flux (см. themes/flux/MANNER.md;
-// эталоны — bloom Slideshow и rose T17). Схема полей = packages/theme-base/
-// blocks/Slideshow/Slideshow.puckConfig.ts. Полотно = Hero flux:
-// min-height clamp(500px,80vh,1080px) (Hero.astro:29), фото absolute inset-0
-// object-cover, контент-блок max-w-[432px] слева сверху (поля героя), CTA =
-// кнопка-1 героя (белая заливка, оранжевый текст). Переключение — простой
-// fade transition-opacity: hero-каскада и data-animate у flux НЕТ (MANNER §6).
-// Параметры скрипту — ТОЛЬКО data-атрибуты (define:vars компилятором секций
-// не поддерживается); идемпотентность — data-slideshow-hydrated;
-// реинициализация — astro:page-load (его шлёт превью-агент после hot-replace).
+// Канон-секция Slideshow в манере flux (см. themes/flux/MANNER.md). Полотно =
+// Hero flux (full-bleed фото; заголовок Roboto Flex uppercase §1; текст Roboto
+// Flex 300; чёрная CTA героя §3 / outlined-вариант); 9-grid позиция слайда как
+// Hero; навигация — currentColor + активный маркер #FA5109 (акцент §7). Шрифт
+// ВЕЗДЕ Roboto Flex (Hero на фото — единственный заголовок темы на Roboto Flex,
+// не Comfortaa; §1). Переключение — простой fade (анимаций сверх нет, MANNER §6).
+// Параметры скрипту — ТОЛЬКО data-атрибуты (define:vars компилятором секций не
+// поддерживается); идемпотентность — data-slideshow-hydrated; реинициализация —
+// astro:page-load (его шлёт превью-агент после hot-replace).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -18,11 +17,10 @@ const id = p.id;
 //
 // Figma 1:19335 — ПУСТОЕ состояние секции «Слайд-шоу». Пока мерчант НЕ добавил
 // слайды (slides пуст), секция показывает ДОСЛОВНЫЙ Figma-плейсхолдер: один
-// пустой image-rect (surface) + заголовок «Слайд-шоу» + хелпер «Добавь несколько
-// изображений с информацией о своём бренде» + кнопка «Кнопка» + точки навигации.
-// Это НЕ дефолт-контент верстальщика (прежние 2 слайда-болванки темы «Технологии
-// без паузы» / «Следующее поколение уже с вами» с CTA «В каталог»/«Смотреть ещё»)
-// — он удалён. Когда слайды ЗАДАНЫ — рендерим их (поведение ниже не меняется).
+// слайд с дизайн-ассетом /placeholders/landscape-slideshow.png + заголовок
+// «Слайд-шоу» + хелпер «Добавь несколько изображений с информацией о своём
+// бренде» + кнопка «Кнопка» + точки навигации. Это НЕ дефолт-контент верстальщика
+// (прежние 2 слайда-болванки удалены). Когда слайды ЗАДАНЫ — рендерим их.
 const PLACEHOLDER_SLIDES = [
 	{
 		id: "slide-placeholder",
@@ -40,30 +38,67 @@ const PLACEHOLDER_SLIDES = [
 const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
 const rawSlides = hasSlides ? p.slides : PLACEHOLDER_SLIDES;
 
-// Заголовок слайда — лестница hero h1 манеры (§9): 'large' (canon-носитель) и
-// отсутствие = литерал верстальщика 32/40/48 Comfortaa БЕЗ uppercase;
-// medium 27/34/41, small 22/28/34. Цвета — токены с фоллбеком родного белого
-// (текст героя на фото — white, Hero.astro:54).
+// Заголовок слайда — лестница Hero flux (§9, база-литерал 20/24 = Hero large,
+// Hero.astro:94). defaultItemProps пишет heading.size='medium' → medium И
+// отсутствие = база 20/24; small ≈0.85× (17/20), large ≈1.2× (24/28). Roboto
+// Flex uppercase, цвет — токен с фоллбеком родного белого (текст героя на фото —
+// white, Hero.astro:91).
 const slideHeadingCls = (s: string | undefined) =>
 	s === "small"
-		? "font-comfortaa text-[22px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[28px] lg:text-[34px]"
-		: s === "medium"
-			? "font-comfortaa text-[27px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[34px] lg:text-[41px]"
-			: "font-comfortaa text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,255_255_255))] md:text-[40px] lg:text-[48px]";
-// Текст слайда — лестница hero-подзаголовка (§9): 16/18 литерал (Roboto Flex
-// 300, Hero.astro:58) → medium 14/15 → small 11/13.
+		? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
+		: s === "large"
+			? "font-roboto-flex text-[24px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[28px]"
+			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]";
+// Текст слайда — параллельная лестница Hero-подзаголовка (§9, база-литерал 14/16
+// = Hero large, Hero.astro:101). medium И отсутствие = 14/16; small 12/14, large
+// 16/18. Roboto Flex 300 (font-light), цвет — токен/родной белый.
 const slideTextCls = (s: string | undefined) =>
 	s === "small"
-		? "font-roboto-flex text-[11px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[13px]"
-		: s === "medium"
-			? "font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[15px]"
-			: "font-roboto-flex text-[16px] font-light leading-[1.5] text-[rgb(var(--color-text,255_255_255))] md:text-[18px]";
+		? "font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[14px]"
+		: s === "large"
+			? "font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[18px]"
+			: "font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]";
+
+// Per-slide раскладка = мини-Hero (паттерн Hero.astro / rose Slideshow). Каждый
+// слайд несёт position (РАЗМЕЩЕНИЕ блока по сетке 3×3) + alignment (выравнивание
+// КОНТЕНТА внутри блока, независимо) + container (плашка-подложка boxed).
+//   Позиция: вертикаль top / center(=середина) / bottom; горизонталь left/center/
+//   right. defaultItemProps пишет position:'center' → дефолтный слайд = середина-
+//   центр. Пустой проп (legacy) = низ. Legacy left/right → center-left/center-right.
+// Контейнер слайда — flex-col (как Hero.astro:325 / rose): vJustify = вертикаль
+// (justify-* по main-axis), hItems = горизонталь (items-* по cross-axis).
+const slideLayoutCls = (s: any) => {
+	const posRaw = typeof s.position === "string" && s.position ? s.position : "";
+	// legacy одиночные left/right (без вертикали) → середина по вертикали.
+	const norm = posRaw === "left" ? "center-left" : posRaw === "right" ? "center-right" : posRaw;
+	const vPos = norm.startsWith("top")
+		? "top"
+		: norm.startsWith("bottom")
+			? "bottom"
+			: norm === "center" || norm.startsWith("center")
+				? "middle"
+				: ""; // пусто = дефолт верстальщика (низ)
+	const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
+	const vJustifyCls =
+		vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+	const hItemsCls =
+		hPos === "left" || (!norm && p.contentAlign === "left")
+			? "items-start"
+			: hPos === "right"
+				? "items-end"
+				: "items-center";
+	// alignment — НЕЗАВИСИМОЕ выравнивание контента внутри блока (items + text-align).
+	const alignItemsCls =
+		s.alignment === "left" ? "items-start" : s.alignment === "right" ? "items-end" : "items-center";
+	const textAlignCls =
+		s.alignment === "left" ? "text-left" : s.alignment === "right" ? "text-right" : "text-center";
+	return { vJustifyCls, hItemsCls, alignItemsCls, textAlignCls };
+};
 
 // Пустое/некурированное состояние слайда (Figma 1:19335, ветка image): слайд
-// без своего фото получает дизайн-ассет /placeholders/landscape-slideshow.png
-// (PLACEHOLDER_SLIDES выше) — НЕ мок верстальщика и НЕ пустой surface; рендер
-// ниже даёт <img> (ветка s.image) + лейбл «Слайд-шоу»/текст/кнопку поверх.
-// Реальный слайд без фото (мерчант не загрузил) остаётся image="" → surface-rect.
+// без своего фото получает дизайн-ассет landscape-slideshow.png (PLACEHOLDER_SLIDES
+// выше) — НЕ мок верстальщика и НЕ пустой surface. Реальный слайд без фото
+// (мерчант не загрузил) остаётся image="" → surface-rect.
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -78,7 +113,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		subtitle:
 			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
 			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined),
-		textCls: slideTextCls(s.text?.size),
+		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),
 		ctaText,
 		ctaHref:
 			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
@@ -90,39 +125,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			typeof s.colorScheme === "string" && s.colorScheme
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
-		// position per-slide (приоритет) | top-level contentAlign; 'left' и
-		// отсутствие = контент-блок героя слева (Hero.astro:50).
-		// 9-grid позиция слайда: hPos → justify (горизонталь main-axis flex-row),
-		// vPos → items (вертикаль cross-axis). Раньше вертикаль терялась (items-start).
-		posCls: (() => {
-			const raw = typeof s.position === "string" && s.position ? s.position : "";
-			const norm = raw === "left" ? "center-left" : raw === "right" ? "center-right" : raw;
-			const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
-			return hPos === "left" || (!norm && p.contentAlign === "left")
-				? "justify-start"
-				: hPos === "right"
-					? "justify-end"
-					: "justify-center";
-		})(),
-		vItemsCls: (() => {
-			const raw = typeof s.position === "string" && s.position ? s.position : "";
-			const norm = raw === "left" ? "center-left" : raw === "right" ? "center-right" : raw;
-			const vPos = norm.startsWith("top")
-				? "top"
-				: norm.startsWith("bottom")
-					? "bottom"
-					: norm === "center" || norm.startsWith("center")
-						? "middle"
-						: "";
-			return vPos === "top" ? "items-start" : vPos === "middle" ? "items-center" : "items-end";
-		})(),
-		// alignment per-slide; 'left' и отсутствие = items-start героя.
-		alignCls:
-			s.alignment === "center"
-				? "items-center text-center"
-				: s.alignment === "right"
-					? "items-end text-right"
-					: "items-start text-left",
+		...slideLayoutCls(s),
 		active: i === 0,
 	};
 });
@@ -134,8 +137,8 @@ const intervalMs = String(
 const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "true";
 
 // Канон size (s/m/l): medium и отсутствие = полотно героя flux
-// (min-height clamp(500px,80vh,1080px) — Hero.astro:29); small/large — шаг
-// лестницы от него (≈0.8× / ≈1.15×, форма clamp манеры сохранена).
+// (min-height clamp(500px,80vh,1080px)); small/large — шаг лестницы от него
+// (≈0.8× / ≈1.15×, форма clamp манеры сохранена).
 const canvasMinH =
 	p.size === "small"
 		? "clamp(400px, 64vh, 864px)"
@@ -144,19 +147,33 @@ const canvasMinH =
 			: "clamp(500px, 80vh, 1080px)";
 
 // Канон imagePosition: fullscreen (canon-default; полотно во всю ширину секции,
-// как герой) | contained (+legacy left/right) — внутри контейнера манеры с
-// полями главной (§2) и радиусом медиа. imageFullBleed=true возвращает full-bleed.
+// как герой) | contained (+legacy left/right) — внутри контейнера манеры с полями
+// главной (§2) и радиусом медиа. imageFullBleed=true возвращает full-bleed.
 const contained =
 	(p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right") &&
 	p.imageFullBleed !== true &&
 	p.imageFullBleed !== "true";
 
-// Канон overlay 0-100 — затемнение между фото и контентом (паттерн bloom).
+// Контейнер (§2): contained = обёртка манеры главной (max-w-1920 + поля
+// px-4 md:px-20 2xl:px-80 + вертикальное дыхание py-10 md:py-16), внутри рамка
+// max-w-1320 со скруглением медиа. fullscreen = full-bleed во всю ширину секции.
+const wrapperCls = contained
+	? "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80"
+	: "w-full";
+const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : "";
+// Поля контент-блока: fullscreen = сетка главной (Hero.astro:325); contained =
+// карточный инсет (поля внутри рамки скромнее, чем поля секции).
+const contentPadCls = contained
+	? "px-6 py-10 md:px-12 md:py-14"
+	: "px-4 py-8 md:px-20 md:py-10 2xl:px-80";
+// Навигация (точки/числа/счётчик) — низ-право; в fullscreen выровнена по сетке
+// секции, в contained — скромный отступ от края рамки.
+const navEdgeCls = contained ? "right-5 md:right-8" : "right-4 md:right-20 2xl:right-80";
+
+// Канон overlay 0-100 — затемнение между фото и контентом (паттерн Hero).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
-// Канон pagination: 'dots' (канон-вид flux — точки-индикаторы по
-// bloom-прецеденту, на фото белые) и отсутствие = точки h-2 w-2 rounded-full;
-// numbers/counter/lines/none — по канону.
+// Канон pagination: 'numbers' (отсутствие = numbers) | dots | counter | lines | none.
 const pagination =
 	p.pagination === "numbers" ||
 	p.pagination === "counter" ||
@@ -166,14 +183,14 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: solid (canon-default) = CTA героя дословно — белая
-// заливка с оранжевым текстом, токены кнопки-1 (Hero.astro:66, MANNER §7);
-// outlined = вторая кнопка героя (контур на прозрачном, Hero.astro:72).
-// active:scale в манере не используется.
+// Канон buttonStyle: solid (canon-default) = CTA героя flux дословно — ЧЁРНАЯ
+// заливка h-14, белый текст, Roboto Flex uppercase (Hero.astro:198, MANNER §3);
+// outlined = чёрный контур того же языка (Hero.astro:197). active:scale в манере
+// не используется; чёрная CTA читается и на фото, и на светлой плашке boxed.
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-bg,255_255_255))] transition-colors hover:bg-[rgb(var(--color-button-bg,255_255_255))]/10 md:text-[16px]"
-		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-text,250_81_9))] transition-opacity hover:opacity-90 md:text-[16px]";
+		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-black transition-colors hover:bg-black/5"
+		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -189,9 +206,9 @@ const paddingStyle = p.padding
 	data-autoplay={autoplay}
 	style={paddingStyle}
 >
-	<div class={contained ? "w-full px-4 md:px-20 2xl:px-80" : "w-full"}>
+	<div class={wrapperCls}>
 		<div
-			class={`relative mx-auto w-full overflow-hidden${contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : ""}`}
+			class={`relative mx-auto w-full overflow-hidden${frameCls}`}
 			style={`min-height:${canvasMinH}`}
 		>
 			{
@@ -220,16 +237,18 @@ const paddingStyle = p.padding
 								aria-hidden="true"
 							/>
 						)}
-						{/* Контент-блок героя flux: max-w-[432px] слева сверху, поля
-						    px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80
-						    (Hero.astro:47-50); внутренний зазор текст→кнопка gap-8. */}
+						{/* Контент-блок мини-Hero (Hero.astro:323-346): flex-col, внешний
+						    контейнер РАЗМЕЩАЕТ блок по сетке 3×3 (vJustify=вертикаль,
+						    hItems=горизонталь), внутри alignItems+textAlign = НЕЗАВИСИМОЕ
+						    выравнивание контента. boxed — плашка-подложка (порт Hero
+						    boxedCls: фон схемы + радиус + тёмный текст на светлой плашке). */}
 						<div
-							class={`relative z-10 flex h-full w-full ${s.vItemsCls} px-4 pb-6 pt-32 md:px-20 md:pb-10 md:pt-40 lg:pt-52 2xl:px-80 ${s.posCls}`}
+							class={`relative z-10 flex h-full w-full flex-col ${s.hItemsCls} ${s.vJustifyCls} ${contentPadCls}`}
 						>
 							<div
-								class={`flex max-w-[432px] flex-col gap-8 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
+								class={`flex max-w-[432px] flex-col gap-6 ${s.alignItemsCls} ${s.textAlignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
 							>
-								<div class={`flex flex-col gap-2 ${s.alignCls}`}>
+								<div class={`flex flex-col gap-2 ${s.alignItemsCls} ${s.textAlignCls}`}>
 									{s.heading && <h2 class={s.headingCls}>{s.heading}</h2>}
 									{s.subtitle && <p class={s.textCls}>{s.subtitle}</p>}
 								</div>
@@ -247,26 +266,43 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<>
-						{/* Стрелки — иконки верстальщика public/icons/arrow-slide-*.svg
-						    (чёрный глиф) на белой подложке-круге для контраста на фото. */}
+						{/* Стрелки — инлайн-SVG chevron (path = public/icons/arrow-slide-*.svg),
+						    stroke=currentColor → наследует цвет от родителя (чёрный глиф на
+						    белом круге, контраст на фото). */}
 						<button
 							type="button"
 							data-slide-prev
 							aria-label="Предыдущий слайд"
-							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 transition-opacity hover:opacity-90"
+							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90"
 						>
-							<img src="/icons/arrow-slide-left.svg" alt="" class="size-6" aria-hidden="true" />
+							<svg class="size-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M15 7l-6 5 6 5"
+									stroke="currentColor"
+									stroke-width="1.2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
 						</button>
 						<button
 							type="button"
 							data-slide-next
 							aria-label="Следующий слайд"
-							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 transition-opacity hover:opacity-90"
+							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90"
 						>
-							<img src="/icons/arrow-slide-right.svg" alt="" class="size-6" aria-hidden="true" />
+							<svg class="size-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M9 7l6 5-6 5"
+									stroke="currentColor"
+									stroke-width="1.2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
 						</button>
 						{pagination !== "none" && (
-							<div class="absolute bottom-5 right-4 z-20 flex items-center gap-2 md:right-20 2xl:right-80">
+							<div class={`absolute bottom-5 ${navEdgeCls} z-20 flex items-center gap-2`}>
 								{pagination === "dots" &&
 									slides.map((_, i) => (
 										<button
@@ -274,7 +310,7 @@ const paddingStyle = p.padding
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
 											aria-label={`Слайд ${i + 1}`}
-											class="h-2 w-2 !rounded-full !bg-white/50 transition-colors data-[active=true]:!bg-white"
+											class="h-2 w-2 !rounded-full !bg-white/50 transition-colors data-[active=true]:!bg-[rgb(var(--color-accent,250_81_9))]"
 										/>
 									))}
 								{pagination === "numbers" &&
@@ -284,7 +320,7 @@ const paddingStyle = p.padding
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
 											aria-label={`Слайд ${i + 1}`}
-											class="font-manrope text-[14px] font-normal leading-none !text-white/60 transition-colors data-[active=true]:!text-white"
+											class="font-roboto-flex text-[14px] font-normal leading-none !text-white/60 transition-colors data-[active=true]:!text-[rgb(var(--color-accent,250_81_9))]"
 										>
 											{i + 1}
 										</button>
@@ -296,7 +332,7 @@ const paddingStyle = p.padding
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
 											aria-label={`Слайд ${i + 1}`}
-											class="h-0.5 w-6 !bg-white/50 transition-colors data-[active=true]:!bg-white"
+											class="h-0.5 w-6 !bg-white/50 transition-colors data-[active=true]:!bg-[rgb(var(--color-accent,250_81_9))]"
 										/>
 									))}
 								{pagination === "counter" &&
@@ -304,7 +340,7 @@ const paddingStyle = p.padding
 										<span
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
-											class="font-manrope text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
+											class="font-roboto-flex text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
 										>
 											{i + 1} / {slides.length}
 										</span>
@@ -316,19 +352,19 @@ const paddingStyle = p.padding
 			}
 
 			{/* Figma 1:19335 — пустое состояние: декоративные точки навигации поверх
-			    пустой surface-карточки (реальных слайдов для пролистывания нет, поэтому
-			    статичные, без data-slide-dot). Позиция — как у реальной навигации flux
-			    (низ-право секции). Цвет — текст темы на поверхности (белые точки реальной
-			    навигации не читались бы на светлом surface). */}
+			    слайда-плейсхолдера с фоном landscape-slideshow.png (реальных слайдов
+			    для пролистывания нет, поэтому статичные, без data-slide-dot). Белые
+			    точки на фото-фоне; активная (первая) — акцент #FA5109 (как реальная
+			    навигация поверх слайда с изображением). */}
 			{
 				!hasSlides && (
 					<div
-						class="absolute bottom-5 right-4 z-20 flex items-center gap-2 md:right-20 2xl:right-80"
+						class={`absolute bottom-5 ${navEdgeCls} z-20 flex items-center gap-2`}
 						aria-hidden="true"
 					>
-						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-text,0_0_0))]/70" />
-						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-text,0_0_0))]/25" />
-						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-text,0_0_0))]/25" />
+						<span class="h-2 w-2 !rounded-full bg-[rgb(var(--color-accent,250_81_9))]" />
+						<span class="h-2 w-2 !rounded-full bg-white/50" />
+						<span class="h-2 w-2 !rounded-full bg-white/50" />
 					</div>
 				)
 			}

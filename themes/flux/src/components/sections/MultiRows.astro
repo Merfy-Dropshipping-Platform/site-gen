@@ -1,95 +1,100 @@
 ---
-// Фаза B (flux): новая канон-секция MultiRows в манере flux (см.
-// themes/flux/MANNER.md). Секции нет у верстальщика — ряды «картинка + текст»
-// в чередующейся раскладке по паттерну ImageWithText: сетка секций §2
-// (px-4 md:px-20 2xl:px-80, вертикаль 64/96, контейнер 1320), зазор грида
-// галереи (Gallery.astro:20: gap-6 md:gap-8), медиа §4 (rounded-8 / surface
-// #F5F5F5 / hover-zoom 1.03 duration-500 ease-out, Gallery.astro:67,74),
-// типографика §1, чёрная CTA §3. Скролл-анимаций НЕТ — манера flux статична
-// (§6; у bloom ряды с data-animate, у flux НЕ добавлять). Схема полей =
-// packages/theme-base/blocks/MultiRows/MultiRows.puckConfig.ts;
-// процесс-эталон — bloom MultiRows.
+// Канон-секция MultiRows («Мультиряды») в ЧИСТОМ стиле flux. Секции нет у
+// верстальщика (MANNER §10) — ряды «изображение + текст» с чередованием стороны
+// медиа по индексу. ЕДИНЫЙ flux-язык: ВСЯ секция — font-roboto-flex
+// (заголовки/текст/кнопки); прежний дрейф на comfortaa/manrope (наследие
+// разошедшегося product-grid порта) УДАЛЁН. Эталон нового flux-стиля —
+// MainText/Collections/Gallery: заголовок roboto-flex uppercase 19/23, тело
+// roboto-flex 300 (font-light), медиа rounded-[12px] + hover-zoom 1.03
+// (Collections), чёрная CTA h-14 rounded-6 uppercase (buttonStyle=black паттерн,
+// MainText/Hero/Puk). Скролл-анимаций НЕТ — манера flux статична (MANNER §6).
+// Контейнер = flux-носитель max-w-[1920px] px-4 md:px-20 2xl:px-80, вертикаль
+// py-10 md:py-16 (снимается при заданном padding-настройке — inline-override).
+// Цвета → токены rgb(var(--color-*)) с пиксель-фоллбеком (MANNER §7).
+//
+// НАСТРОЙКИ = паритет rose MultiRows (themes/rose/.../MultiRows.astro): читаем те
+// же поля схемы theme-base MultiRows.puckConfig — heading/headingSize/
+// headingAlignment, rows[] (image/size/title/headingSize/description/textSize/
+// button), rowsPosition, size, width, alignment, buttonStyle, containerEnabled/
+// containerColorScheme, padding, colorScheme. Поведение идентично rose — меняется
+// ТОЛЬКО манера рендера (flux-стиль вместо rose-title/manrope).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
 // Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy).
 // Figma 1:19335 — ПУСТОЕ состояние секции «Мультиряды»: дословный заголовок
-// «Мультиряды» (а НЕ отсутствие шапки/дефолт-копирайт верстальщика; зеркало rose
-// MultiRows.astro). Мерчант задал свой heading → его и рендерим. Роль =
-// внутрисекционный h2 (Comfortaa uppercase leading-[1.115], МАННЕРА §1).
-// Лестница §9 «Внутренний h2 24/28»: large/отсутствие = литерал 24/md:28,
-// medium 20/24, small 17/20.
+// «Мультиряды» (зеркало rose; НЕ дефолт-копирайт верстальщика). Мерчант задал свой
+// heading → его и рендерим. Роль = внутрисекционный h2 (roboto-flex uppercase
+// leading-normal). База flux = 19/md:23 (эталон MainText/Collections):
+// 'medium' (canon-default) и отсутствие = база; small ступень ниже, large выше.
 const heading =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "Мультиряды";
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
-		? "text-[17px] md:text-[20px]"
-		: headingSize === "medium"
-			? "text-[20px] md:text-[24px]"
-			: "text-[24px] md:text-[28px]";
+		? "text-[16px] md:text-[19px]"
+		: headingSize === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]"; // medium (canon-default) + отсутствие
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
-// imagePosition, button {text, href|link}, size per-item, headingSize/textSize).
-// Figma 1:19335 — ПУСТОЕ состояние секции: ряды-плейсхолдеры (пустая surface-плитка
-// + дословный текст «Изображение с текстом» / «Покажи и расскажи о своем товаре в
-// одном блоке» + кнопка «Кнопка»), а НЕ дефолт-контент верстальщика («Новое
-// поколение звука» / «Мощность в каждом пикселе», описания, «Подробнее»/«Узнать
-// больше») и НЕ мок-картинки (зеркало rose MultiRows.astro). Мерчант задал rows →
-// его и рендерим (поведение ниже не меняется).
+// button {text, href|link}, size/headingSize/textSize per-item). Figma 1:19335 —
+// ПУСТОЕ состояние секции: ряды-плейсхолдеры (дизайн-ассет
+// /placeholders/landscape-multirows-image.png + дословный текст «Изображение с
+// текстом» / «Покажи и расскажи о своем товаре в одном блоке» + кнопка «Кнопка»),
+// а НЕ дефолт-контент верстальщика и НЕ мок-картинки (зеркало rose). Мерчант
+// задал rows → его и рендерим.
+const PLACEHOLDER_ROW_IMAGE = "/placeholders/landscape-multirows-image.png";
 const PLACEHOLDER_ROWS = [
 	{
 		id: "row-1",
 		heading: "Изображение с текстом",
 		text: "Покажи и расскажи о своем товаре в одном блоке",
-		imageUrl: "/placeholders/landscape-multirows-image.png",
+		imageUrl: PLACEHOLDER_ROW_IMAGE,
 		button: { text: "Кнопка", href: "/catalog" },
 	},
 	{
 		id: "row-2",
 		heading: "Изображение с текстом",
 		text: "Покажи и расскажи о своем товаре в одном блоке",
-		imageUrl: "/placeholders/landscape-multirows-image.png",
+		imageUrl: PLACEHOLDER_ROW_IMAGE,
 		button: { text: "Кнопка", href: "/catalog" },
 	},
 ];
 const rawRows = Array.isArray(p.rows) && p.rows.length ? p.rows : PLACEHOLDER_ROWS;
 
-// Канон «Позиция рядов»: ряды ВСЕГДА чередуют сторону медиа по индексу. Свитчер
-// (Слева/Справа) задаёт сторону ТОЛЬКО первого ряда (i=0). per-item imagePosition
-// больше не учитываем (нет в UI).
+// Канон «Позиция рядов» (rowsPosition, паритет rose): ряды ВСЕГДА чередуют сторону
+// медиа по индексу. Свитчер (Слева/Справа) задаёт сторону ТОЛЬКО первого ряда (i=0):
+// «Справа» → ряд 0 фото справа, иначе (Слева/умолчание/legacy 'alternate') → ряд 0
+// слева. Дальше строгое чередование 0,1,0,1…
 const firstRowRight = p.rowsPosition === "right";
 
-// Канон size (s/m/l) — аспект медиа ряда (топ-уровень, per-item приоритетнее).
-// Лестница манеры §4: medium/отсутствие = aspect-square (левая плитка галереи,
-// Gallery.astro:23), small = широкое 16/9, large = карточная вертикаль 430/500
-// (FluxCollectionCard.astro / Puk.astro:16).
+// Канон size (s/m/l) — аспект медиа ряда (топ-уровень, per-item size приоритетнее).
+// Аспекты — манера flux (paritet ImageWithText): medium/отсутствие = aspect-square,
+// small = широкое 16/9 (под landscape-плейсхолдер), large = карточная вертикаль
+// 430/500 (FluxCollectionCard §4).
 const aspectFor = (s: string | undefined) =>
 	s === "small" ? "aspect-[16/9]" : s === "large" ? "aspect-[430/500]" : "aspect-square";
 
-// Плейсхолдер пустого состояния (Figma 1:19335, контракт картиночных секций):
-// ряды-плейсхолдеры показывают дизайн-ассет /placeholders/landscape-multirows-
-// image.png (PLACEHOLDER_ROWS выше), а НЕ пустую surface и НЕ мок верстальщика —
-// картинка показывается ВСЕГДА (гард {r.image && <img>} истинен, т.к. фолбэк
-// imageUrl задан). На live мерчант грузит своё фото поверх.
-
-// Шкалы per-item размеров: заголовок ряда = роль внутреннего h2 (лестница §9,
-// large/отсутствие = литерал 24/28); текст = body-роль Manrope light
-// leading-[1.6] (legal/[slug].astro:25): medium/отсутствие = литерал 16,
-// small 14, large 19.
+// Шкалы per-item размеров (паритет rose, на flux-базе). Заголовок ряда — роль h2
+// (roboto-flex uppercase): база 19/23 (эталон MainText), small ниже, large выше.
+// Текст ряда — body-роль (roboto-flex light): флэт 14/16/19 (паритет rose row text
+// 14/16/19).
 const rowHeadingSizeCls = (s: string | undefined) =>
 	s === "small"
-		? "text-[17px] md:text-[20px]"
-		: s === "medium"
-			? "text-[20px] md:text-[24px]"
-			: "text-[24px] md:text-[28px]";
+		? "text-[16px] md:text-[19px]"
+		: s === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]";
 const rowTextSizeCls = (s: string | undefined) =>
 	s === "small" ? "text-[14px]" : s === "large" ? "text-[19px]" : "text-[16px]";
 
+// Плейсхолдер пустого состояния (Figma 1:19335): ряд без выбранной картинки несёт
+// дизайн-ассет landscape-multirows-image.png. На live мерчант грузит своё фото.
 const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	const btnText =
 		typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined;
@@ -103,7 +108,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		image:
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
 			(typeof r.image === "string" && r.image.trim()) ||
-			"/placeholders/landscape-multirows-image.png",
+			PLACEHOLDER_ROW_IMAGE,
 		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(r.size ?? p.size),
 		headingCls: rowHeadingSizeCls(r.headingSize),
@@ -117,8 +122,8 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	};
 });
 
-// Канон width (s/m/l/full): large/отсутствие = 1320 (контейнер манеры §2),
-// medium 1080, small 780, full — без лимита.
+// Канон width (s/m/l/full, паритет rose): large/отсутствие = 1320 (контентный
+// контейнер внутри flux-носителя 1920), medium 1080, small 780, full — без лимита.
 const widthCls =
 	p.width === "small"
 		? "max-w-[780px]"
@@ -137,111 +142,120 @@ const alignCls =
 			? "items-end text-right"
 			: "items-start text-left";
 
-// Канон buttonStyle (primary/black/white): primary/black/отсутствие = чёрная
-// CTA манеры §3 дословно (contacts.astro:76: h-12 rounded-6 px-6 Manrope 16,
-// hover:opacity-95; кнопка-2 в схемах flux, МАННЕРА §7). 'white'-вариант bloom
-// (белый pill на цветном полотне) flux не нужен — цветных полотен нет; «Белая»
-// рендерится outlined: бордер/текст цвета заливки на прозрачном ≡ белая кнопка
-// с чёрным бордером PDP:168 (ховер 0.90). active:scale не используется (§3).
+// Канон buttonStyle (primary/black/white) — buttonStyle=black паттерн flux: чёрная
+// CTA h-14 rounded-6 uppercase roboto-flex (эталон MainText/Hero/Puk; в схемах flux
+// чёрная кнопка = кнопка-2, MANNER §7). primary/black/отсутствие → чёрная заливка;
+// 'white' → outlined (бордер/текст цвета заливки на прозрачном, паттерн PDP:168).
+// active:scale в манере flux НЕ используется (§3).
 const btnBase =
-	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] px-6 font-manrope text-[16px] font-normal leading-normal transition-opacity";
+	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-6 font-roboto-flex text-[16px] font-normal uppercase leading-none transition-opacity hover:opacity-90";
 const btnCls =
 	p.buttonStyle === "white"
-		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))] hover:opacity-90`
-		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))] hover:opacity-95`;
+		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
+		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))]`;
 
-// Канон containerEnabled — тоггл «Фон»/«Контейнер» (puckConfig готов). Дефолт ВЫКЛ:
-// ряды без подложки. ВКЛ → surface-бокс на КАЖДЫЙ ряд (<li>, эталон bloom MultiColumns
-// cardSurfaceCls), НЕ общий бокс вокруг секции. СОХРАНЁН flux-радиус 12px / surface
-// 245_245_245.
+// Канон containerEnabled — тоггл «Контейнер» (паритет rose). Дефолт ВЫКЛ: ряды без
+// подложки. ВКЛ → surface-бокс на КАЖДЫЙ ряд (<li>), НЕ общий бокс вокруг секции.
+// Радиус карточки 12px / surface 245_245_245 (манера flux).
 const containerEnabled = String(p.containerEnabled ?? "false") === "true";
 const cardSurfaceCls = containerEnabled
 	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10"
 	: "";
-// Канон Nikita: класс схемы контейнера — ТОЛЬКО при включённом контейнере, вешается на
-// ОБЁРТКУ СПИСКА (<ul>); внешний div (с заголовком) без бокса и без схемы. ВЫКЛ → без
-// бокса/схемы (работает основная секционная схема).
+// Класс схемы контейнера — ТОЛЬКО при включённом контейнере, на ОБЁРТКЕ СПИСКА
+// (<ul>); внешний контент без бокса/схемы. ВЫКЛ → основная секционная схема.
 const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+// Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
+// (паттерн MainText): тогда py-классы контейнера снимаются (нет двойного отступа).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
+// Контейнер = flux-носитель (как Header/Footer/MainText/Collections: mx-auto
+// max-w-[1920px] px-4 md:px-20 2xl:px-80). Вертикаль py-10 md:py-16 (канон); при
+// заданном padding (настройка) py-классы убираются — inline-стиль ставит
+// padding-top/bottom.
+const containerCls = paddingStyle
+	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80"
+	: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80";
+
 // colorScheme навешивает обёрткой composeV2Page; фон секции — bg-токен с белым
-// фоллбеком (у flux нет цветных полотен, МАННЕРА §7).
+// фоллбеком (у flux нет цветных полотен, MANNER §7).
 const titleId = id && heading ? `${id}-title` : undefined;
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-16 md:px-20 md:py-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12`}>
-		{
-			heading && (
-				<h2
-					id={titleId}
-					class={headingCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
-			)
-		}
-		<ul class={`flex w-full flex-col gap-8 md:gap-12${containerSchemeCls}`} role="list">
+	<div class={containerCls} style={paddingStyle}>
+		{/* Контентный контейнер widthCls (1320 канон) + ритм: группа [заголовок→ряды]
+		    gap-8 md:gap-12, между рядами gap-12 md:gap-16 (манера flux). */}
+		<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12`}>
 			{
-				rows.map((r, i) => (
-					<li
-						class={`grid w-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2${cardSurfaceCls}`}
+				heading && (
+					<h2
+						id={titleId}
+						class={headingCls}
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index={i}
-						data-puck-subsection-field="rows"
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
 					>
-						<div
-							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
-							aria-hidden={r.image ? undefined : "true"}
-						>
-							{r.image && (
-								<img
-									src={r.image}
-									alt={r.heading || "Ряд"}
-									loading="lazy"
-									class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-								/>
-							)}
-						</div>
-						<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
-							{r.heading && (
-								<h3
-									class={`font-comfortaa ${r.headingCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]`}
-									set:html={r.heading}
-								/>
-							)}
-							{r.text && (
-								<div
-									class={`font-manrope ${r.textCls} font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]`}
-									set:html={r.text}
-								/>
-							)}
-							{r.btnText && (
-								<div class="mt-2">
-									<a href={r.btnHref} class={btnCls}>
-										{r.btnText}
-									</a>
-								</div>
-							)}
-						</div>
-					</li>
-				))
+						{heading}
+					</h2>
+				)
 			}
-		</ul>
+			<ul class={`flex w-full flex-col gap-12 md:gap-16${containerSchemeCls}`} role="list">
+				{
+					rows.map((r, i) => (
+						<li
+							class={`grid w-full grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center${cardSurfaceCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="rows"
+						>
+							<div
+								class={`group relative w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+								aria-hidden={r.image ? undefined : "true"}
+							>
+								{r.image && (
+									<img
+										src={r.image}
+										alt={r.heading || "Ряд"}
+										loading="lazy"
+										class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+									/>
+								)}
+							</div>
+							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
+								{r.heading && (
+									<h3
+										class={`font-roboto-flex ${r.headingCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
+										set:html={r.heading}
+									/>
+								)}
+								{r.text && (
+									<div
+										class={`font-roboto-flex ${r.textCls} font-light leading-relaxed text-[rgb(var(--color-text,0_0_0))]`}
+										set:html={r.text}
+									/>
+								)}
+								{r.btnText && (
+									<div class="mt-2">
+										<a href={r.btnHref} class={btnCls}>
+											{r.btnText}
+										</a>
+									</div>
+								)}
+							</div>
+						</li>
+					))
+				}
+			</ul>
+		</div>
 	</div>
 </section>

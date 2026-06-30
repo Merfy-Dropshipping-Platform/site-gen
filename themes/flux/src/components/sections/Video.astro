@@ -1,10 +1,16 @@
 ---
-// Фаза B (flux, группа misc): новая канон-секция Video в манере flux (см.
-// themes/flux/MANNER.md §2/§4; rose-эталона НЕТ — эталон процесса bloom Video).
-// Схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts. Медиа
-// в контейнере 1320 со скруглением манеры 8px на surface-подложке; только
-// utility-классы с токенами, без <style>-блока. Скролл-анимаций в манере flux
-// нет (§6) — без data-animate.
+// Канон-секция Video в чистой манере flux (см. themes/flux/MANNER.md; эталон
+// чистого стиля — Collections.astro). Шапка font-roboto-flex uppercase (дефолт
+// 19/23), подзаголовок font-roboto-flex font-light muted; медиа aspect-video в
+// контейнере max-w-[1920px] (px-4 md:px-20 2xl:px-80, вертикаль py-10 md:py-16)
+// со скруглением 12px на surface-подложке. Только utility-классы с токенами
+// (MANNER §7), без <style>-блока и hex-литералов (кроме SVG play-иконки — на
+// токенах). Скролл-анимаций в манере flux нет (§6) — без data-animate.
+// Схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts; настройки
+// применяются как rose (heading / headingSize / subheading / textSize / videoUrl /
+// coverImage / padding / colorScheme). Провайдеры YouTube/Vimeo → embed-iframe
+// (parseVideo), self-hosted → <video>; пустое состояние → Figma-плейсхолдер
+// landscape-video.png + Play-иконка.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -15,7 +21,7 @@ const rawVideoUrl =
 const videoUrl = rawVideoUrl.startsWith("blob:") ? "" : rawVideoUrl;
 
 // Провайдер видео: YouTube/Vimeo → embed-iframe, иначе self-hosted <video>.
-// Раньше flux рендерил только <video src> — YouTube/Vimeo ссылки не воспроизводились.
+// (flux ранее рендерил только <video src> — YouTube/Vimeo ссылки не воспроизводились.)
 type VideoKind = "youtube" | "vimeo" | "file";
 function parseVideo(url: string): { kind: VideoKind; embedUrl: string } {
 	if (!url) return { kind: "file", embedUrl: "" };
@@ -31,35 +37,30 @@ function parseVideo(url: string): { kind: VideoKind; embedUrl: string } {
 	return { kind: "file", embedUrl: url };
 }
 const video = parseVideo(videoUrl);
-// Канон poster (+ video.coverImage). Когда мерчант НЕ загрузил ни видео, ни
-// обложку — пустое состояние = Figma-плейсхолдер (1:19335, контракт картиночных
-// секций): дизайн-ассет /placeholders/landscape-video.png (НЕ пустой surface-rect
-// и НЕ мок верстальщика — картинка показывается ВСЕГДА) + Play-иконка по центру
-// (см. ниже). Пользовательский постер/фолбэк рендерим простым <img> (битый
-// <source> у <picture> не фоллбечится на <img>; FluxPicture — только для
-// соимённых .webp ассетов темы, которых тут больше нет).
+
+// Канон coverImage/poster (+ video.coverImage). Пустое состояние (нет ни видео,
+// ни обложки) = Figma-плейсхолдер (1:19335, контракт картиночных секций): дизайн-
+// ассет /placeholders/landscape-video.png (раздаётся на каждой теме) + Play-иконка
+// по центру, а НЕ пустой surface-rect и НЕ мок верстальщика.
 const poster =
 	(typeof p.video?.coverImage === "string" && p.video.coverImage ? p.video.coverImage : undefined) ??
+	(typeof p.coverImage === "string" && p.coverImage ? p.coverImage : undefined) ??
 	(typeof p.poster === "string" && p.poster ? p.poster : undefined);
-// Обложка медиа-блока без видео: постер мерчанта, иначе дизайн-плейсхолдер темы
-// (раздаётся на каждой теме как /placeholders/landscape-video.png).
 const posterFallback = poster ?? "/placeholders/landscape-video.png";
 
-// Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
-// при enabled !== 'false'. Роль = внутренний h2 §1 (Comfortaa uppercase
-// leading-[1.115], токен heading с фоллбеком чёрного). Figma 1:19335 — ДОСЛОВНЫЙ
-// плейсхолдер пустого состояния Video: заголовок «Видео» НАД медиа-блоком.
-// Дефолт = «Видео» (паттерн bloom Video / rose Popular `?? "<Figma>"`); мерчант
-// задал свой heading → рендерим ЕГО (fallback только при пустом тексте).
+// Канон heading (как rose): string | {text, alignment, enabled, size} +
+// content.heading-конверт. Пустое состояние = Figma-плейсхолдер «Видео» НАД медиа
+// (мерчант задал свой heading → рендерим его; fallback только при пустом тексте).
+// Роль — шапка секции flux: font-roboto-flex uppercase (эталон Collections.astro).
 const headingRaw = p.heading ?? p.content?.heading;
 const headingRawText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
 const headingText = headingRawText.trim() ? headingRawText : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = headingEnabled;
-// Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
-// content.heading.size. Лестница §9 внутреннего h2 (дефолт роли — large):
-// отсутствие и large = литерал 24/md:28; medium 20/24, small 17/20.
+// Канон headingSize («Размер заголовка»; дубли size / heading.size /
+// content.heading.size). Лестница на базе эталона 19/23 (канон-дефолт medium):
+// small 16/19, medium 19/23, large 23/29 (паттерн flux Collections).
 const headingSize =
 	p.size ??
 	p.headingSize ??
@@ -67,25 +68,28 @@ const headingSize =
 	p.content?.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
-		? "text-[17px] md:text-[20px]"
-		: headingSize === "medium"
-			? "text-[20px] md:text-[24px]"
-			: "text-[24px] md:text-[28px]";
+		? "text-[16px] md:text-[19px]"
+		: headingSize === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]";
+// Канон alignment (как rose titleAlignment): дефолт/left — слева; center/right
+// двигают шапку (items-* + text-*) на flex-обёртке заголовка.
 const headingAlignment =
+	p.titleAlignment ??
 	p.headingAlignment ??
 	(typeof headingRaw === "object" ? headingRaw?.alignment : undefined) ??
 	p.content?.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center"
-		? " text-center"
+		? " items-center text-center"
 		: headingAlignment === "right"
-			? " text-right"
+			? " items-end text-right"
 			: "";
-const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-roboto-flex ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
 
-// Канон subheading «Подзаголовок» — string | {text} | content.subheading.{text,enabled}.
-// Рендер ТОЛЬКО при непустом тексте И enabled !== 'false' (default-preserving,
-// паритет theme-base Video.astro). Стиль — flux body (manrope, muted).
+// Канон subheading «Подзаголовок» (как rose) — string | {text} +
+// content.subheading.{text,enabled}. Рендер ТОЛЬКО при непустом тексте И
+// enabled !== 'false' (default-preserving). Стиль — flux body font-light muted.
 const subEnvelope = p.content?.subheading as { text?: string; enabled?: string } | undefined;
 const subEnabled = String(subEnvelope?.enabled ?? "true") !== "false";
 const subheadingText = (() => {
@@ -95,48 +99,63 @@ const subheadingText = (() => {
 	if (s && typeof s === "object") return String((s as { text?: string }).text ?? "").trim();
 	return "";
 })();
-const subheadingCls = `font-manrope text-[15px] font-light leading-[1.6] text-[rgb(var(--color-muted,102_102_102))] md:text-[16px]${headingAlignCls}`;
+// Канон textSize «Размер текста» подзаголовка (дубли subheadingSize /
+// subheading.size). Лестница flux Collections-subtitle: small 14/16 (канон-дефолт),
+// medium 16/19, large 19/23.
+const subSize =
+	p.textSize ??
+	p.subheadingSize ??
+	(typeof p.subheading === "object" ? (p.subheading as any)?.size : undefined);
+const subSizeCls =
+	subSize === "medium"
+		? "text-[16px] md:text-[19px]"
+		: subSize === "large"
+			? "text-[19px] md:text-[23px]"
+			: "text-[14px] md:text-[16px]";
+const subheadingCls = `font-roboto-flex ${subSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`;
 
-// Канон position contained|fullscreen + padded + align container|fullbleed
-// (паттерн bloom Video; align приоритетнее position — паттерн theme-base).
-// Canon-default ветка = контейнер 1320 c полями/вертикалью главной §2;
-// fullscreen/fullbleed → full-bleed без скругления и клампа; padded=false
-// убирает горизонтальные поля, сохраняя кламп и скругление.
+// Канон position contained|fullscreen («Положение видео» — ВИДИМОЕ поле) + align
+// container|fullbleed + padded (hidden 084-пилот). Default = контейнер 1920 с
+// полями/вертикалью эталона; fullscreen/fullbleed → full-bleed без скругления и
+// клампа (align приоритетнее position); padded=false убирает горизонтальные поля.
 const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
 const positionProp = typeof p.position === "string" ? p.position : "contained";
 const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
 const padded = !(p.padded === false || p.padded === "false");
-const sectionCls = fullBleed
-	? "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-16 pt-16 md:pb-24 md:pt-24"
-	: padded
-		? "w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
-		: "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-16 pt-16 md:pb-24 md:pt-24";
-const containerCls = fullBleed
-	? "flex w-full flex-col gap-8 md:gap-12"
-	: "mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12";
-// На full-bleed полотне заголовок остаётся в полях секций главной §2.
-const headingWrapCls = fullBleed ? "px-4 md:px-20 2xl:px-80" : undefined;
-const mediaCls = fullBleed
-	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
-	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]";
 
-// Канон overlay 0-100 (число или строка) — слой поверх медиа; клики проходят
-// сквозь (controls видео остаются доступны).
-const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
-
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+// Канон padding {top,bottom} — inline-стиль на контейнере ТОЛЬКО при заданном
+// пропе; тогда py-классы убираются (паттерн flux Collections — без двойного отступа).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+const pyCls = paddingStyle ? "" : " py-10 md:py-16";
+const containerCls = fullBleed
+	? `flex w-full flex-col gap-8${pyCls}`
+	: padded
+		? `mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80${pyCls}`
+		: `mx-auto flex w-full max-w-[1920px] flex-col gap-8${pyCls}`;
+// На full-bleed полотне шапка остаётся в полях секций эталона.
+const headingWrapPx = fullBleed ? " px-4 md:px-20 2xl:px-80" : "";
+const mediaCls = fullBleed
+	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+	: "relative aspect-video w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]";
+
+// Канон overlay 0-100 — слой поверх медиа; клики проходят сквозь (controls видео
+// остаются доступны).
+const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
 const titleId = id && showHeading ? `${id}-title` : undefined;
 ---
 
-<section class={sectionCls} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
-	<div class={containerCls}>
+<section
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	aria-labelledby={titleId}
+	data-puck-component-id={id}
+>
+	<div class={containerCls} style={paddingStyle}>
 		{
 			(showHeading || subheadingText) && (
-				<div class={headingWrapCls}>
+				<div class={`flex flex-col gap-2${headingAlignCls}${headingWrapPx}`}>
 					{showHeading && (
 						<h2
 							id={titleId}
@@ -148,7 +167,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 							{headingText}
 						</h2>
 					)}
-					{subheadingText && <p class={`${subheadingCls} mt-3`}>{subheadingText}</p>}
+					{subheadingText && <p class={subheadingCls}>{subheadingText}</p>}
 				</div>
 			)
 		}
@@ -181,13 +200,11 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						class="absolute inset-0 size-full object-cover"
 					/>
 				) : (
-					/* Пустое состояние (Figma 1:19335, контракт картиночных секций):
-					   без видео и без обложки — дизайн-ассет /placeholders/landscape-
-					   video.png (картинка показывается ВСЕГДА, НЕ пустой surface) +
-					   Play-иконка по центру поверх. Сырой <img> (не FluxPicture — у
-					   плейсхолдера нет соимённого .webp, <picture> не откатился бы на
-					   <img>). Цвета play-иконки — токены темы на SVG-узлах: контраст
-					   круг/стрелка гарантирован в любой схеме (не зависит от JIT). */
+					/* Пустое состояние (Figma 1:19335, контракт картиночных секций): без
+					   видео и без обложки — дизайн-ассет landscape-video.png на всю плитку
+					   + Play-иконка по центру (НЕ пустой surface). Цвета Play — токены темы
+					   на SVG-узлах: контраст круг/стрелка гарантирован в любой схеме (не
+					   зависит от Tailwind-JIT). */
 					<>
 						<img
 							src={posterFallback}

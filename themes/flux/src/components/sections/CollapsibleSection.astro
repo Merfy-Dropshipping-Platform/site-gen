@@ -1,42 +1,50 @@
 ---
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
-
-// Фаза B (flux, группа misc): новая канон-секция CollapsibleSection в манере
-// flux (см. themes/flux/MANNER.md; эталоны — bloom CollapsibleSection, rose T16).
-// Схема полей = packages/theme-base/blocks/CollapsibleSection/
-// CollapsibleSection.puckConfig.ts. Секции нет у верстальщика — нативный
-// <details>/<summary> (Container-safe, без JS): заголовок = роль внутреннего h2
-// §1 (Comfortaa 24/28 uppercase), вопрос Manrope 16 400, ответ Manrope 16 light
-// muted leading-[1.6], разделители #F5F5F5 (роль низа шапки H:32 и разделителей
-// корзины cart.astro:59); chevron — NtIcon dropdown-chevron с group-open-поворотом
-// (паттерн details-фильтров каталога catalog.astro:41-48; только conditional
-// Tailwind, без <style>-блока). Скролл-анимаций в манере flux нет (§6) —
-// data-animate не ставим.
+// Секция CollapsibleSection («Сворачиваемый раздел» / аккордеон-FAQ) в манере
+// flux. Донора у верстальщика flux НЕТ (секций всего 4, MANNER §10) — потому
+// дизайним в ЕДИНОМ flux-языке (эталон процесса — MainText.astro): ВСЯ секция
+// font-roboto-flex (заголовок секции / вопрос / ответ); прежний дрейф на
+// comfortaa/manrope (наследие разошедшегося rose-клона) УДАЛЁН. Шрифт-токен:
+// .font-roboto-flex = var(--font-body, Roboto Flex), вес 300 (g:22-25). Заголовок
+// секции — roboto-flex uppercase (как Popular/Collections/MainText), вопрос —
+// roboto-flex 400 (роль заголовка пункта), ответ — roboto-flex 300 (font-light,
+// body). Аккордеон — нативный <details>/<summary> (Container-safe, без JS):
+// раскрытие работает CSS-механикой. Шеврон — currentColor токен с акцентом
+// #FA5109 на раскрытом пункте (акцент flux: nav-active/Popular-badge, MANNER §1).
+// Скролл-анимаций НЕТ — манера flux статична (MANNER §6), только hover-opacity.
+//
+// НАСТРОЙКИ = паритет rose CollapsibleSection (themes/rose/.../CollapsibleSection.astro):
+// читаем те же поля heading/headingSize/headingAlignment/sections(items)/
+// container(+Enabled/ColorScheme)/padding/colorScheme — идентичная логика,
+// разнятся только flux-классы. colorScheme навешивается обёрткой composeV2Page;
+// фон секции = bg-токен с белым фоллбеком (§7).
 //
 // Figma 1:19335 — ПУСТОЕ состояние: дословный плейсхолдер (заголовок
 // «Сворачиваемый раздел» + ряд «Раздел» с хелпером «Ответь на самые популярные
-// вопросы клиентов»), а НЕ мок-вопросы верстальщика (CANON_SECTIONS про
-// доставку/возврат). Когда мерчант задал sections/items — рендерим их
-// (интерактивный <details>). Принцип паритета с Collections/MultiRows: пусто =
-// surface-карточки + лейбл/хелпер, без контента (эталон — rose CollapsibleSection).
+// вопросы клиентов»), а НЕ мок-вопросы верстальщика про доставку/возврат. Когда
+// мерчант задал sections/items — рендерим их (интерактивный <details>). Принцип
+// паритета с Collections/MultiRows: пусто = лейбл/хелпер, без контента (эталон —
+// rose CollapsibleSection).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
 // Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
 // состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
-// «Сворачиваемый раздел» (а НЕ дефолт-копирайт верстальщика «Часто задаваемые
-// вопросы»). Мерчант задал свой heading → его и рендерим.
+// «Сворачиваемый раздел» (а НЕ дефолт-копирайт «Часто задаваемые вопросы»).
+// Мерчант задал свой heading → его и рендерим.
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Сворачиваемый раздел");
-// Лестница §9 внутреннего h2 (дефолт роли — large): отсутствие пропа и large =
-// литерал 24/md:28; medium 20/24, small 17/20.
+// Канон headingSize (top-level hidden приоритетнее heading.size сабпанели — у
+// него canon-default 'medium', он перебивал бы правку размера в превью). База
+// flux = 19/md:23 (эталон MainText/Popular). 'medium' (canon-default) и
+// отсутствие = база; small ступень ниже, large выше. Заголовок — roboto-flex
+// uppercase, цвет = heading-токен с чёрным фоллбеком (§7) → colorScheme красит.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
-		? "text-[17px] md:text-[20px]"
-		: headingSize === "medium"
-			? "text-[20px] md:text-[24px]"
-			: "text-[24px] md:text-[28px]";
+		? "text-[16px] md:text-[19px]"
+		: headingSize === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center"
@@ -44,15 +52,14 @@ const headingAlignCls =
 		: headingAlignment === "right"
 			? " text-right"
 			: "";
-const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
 // Когда мерчант ЗАДАЛ пункты — рендерим ИХ (интерактивный <details>, content =
 // set:html). Когда пусто — Figma 1:19335 ПУСТОЕ состояние: дословный
-// плейсхолдер-ряд «Раздел» + хелпер-текст «Ответь на самые популярные вопросы
-// клиентов» (а НЕ мок-вопросы верстальщика про доставку/возврат). Паттерн
-// пустого состояния как Collections/MultiRows: DEMO-массив + лейбл/хелпер,
-// без контента (эталон — rose CollapsibleSection).
+// плейсхолдер-ряд «Раздел» + хелпер «Ответь на самые популярные вопросы
+// клиентов» (а НЕ мок-вопросы верстальщика). Паттерн пустого состояния как
+// Collections/MultiRows: DEMO-массив + лейбл/хелпер, без контента.
 const PLACEHOLDER_SECTIONS = [
 	{ heading: "Раздел", content: "Ответь на самые популярные вопросы клиентов" },
 ];
@@ -70,10 +77,9 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 	content: typeof s.content === "string" ? s.content : "",
 }));
 
-// Канон containerEnabled (toggle; legacy container.enabled) — подложка-поверхность
-// манеры §4 (surface #F5F5F5; --radius-card: 12px из theme.json — карточных
-// литералов у верстальщика нет) вокруг списка. Canon-default отсутствует →
-// false = голый список (карточки flux «голые», §4).
+// Канон containerEnabled (toggle; legacy container.enabled) — per-element:
+// surface-бокс (color-surface, радиус карточки) на КАЖДЫЙ вопрос, НЕ один общий
+// бокс вокруг списка. Canon-default отсутствует → false = голые разделители.
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
 // Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
 // При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
@@ -81,97 +87,114 @@ const containerSchemeCls =
 	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
-// Канон Nikita (ИСПРАВЛЕНИЕ: общий бокс вокруг списка был неверен): «Контейнер» ВКЛ →
-// surface-бокс на КАЖДЫЙ вопрос (<li>), НЕ общий бокс вокруг <ul>. Класс схемы — на
-// ОБЁРТКЕ СПИСКА (<ul>), внешний div (с заголовком) без бокса и без схемы. Эталон
-// per-element — bloom MultiColumns (cardSurfaceCls на каждом <li>). Сохранены
-// flux-значения (radius-card 12px, surface 245_245_245).
-// listWrapCls = ТОЛЬКО класс схемы (без бокса), вешается на <ul>.
+// Класс схемы — на обёртке списка <ul> (красит боксы вопросов), БЕЗ бокса/паддинга.
 const listWrapCls = containerSchemeCls.trim();
-// При ВКЛ <ul> получает зазор между боксами-вопросами; при ВЫКЛ список слитный.
+// При ВКЛ контейнере боксы вопросов отделяются зазором; при ВЫКЛ — сплошной
+// список с тонкими разделителями surface.
 const listGapCls = containerEnabled ? "gap-3 md:gap-4" : "";
-// Каждый <li>-вопрос: ВКЛ — surface-бокс (radius 12px + горизонтальный px, вертикаль —
-// от внутренних py-5); ВЫКЛ — текущий border-divider (first:border-t).
+// Бокс вопроса (per-element): ВКЛ → surface-карточка манеры (radius-card 12px /
+// color-surface / px; верт. отступ из py-5 контента); ВЫКЛ → тонкий разделитель
+// surface (border-b first:border-t).
 const itemBoxCls = containerEnabled
 	? "rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] px-6 md:px-8"
 	: "border-b border-solid border-[rgb(var(--color-surface,245_245_245))] first:border-t";
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+// Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном
+// пропе (паттерн MainText): тогда py-классы контейнера снимаются, чтобы не было
+// двойного отступа. Иначе эталонная вертикаль py-10 md:py-16.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// Контейнер = flux-container эталона (носитель темы как Header/Footer/MainText:
+// mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80). Вертикаль py-10 md:py-16
+// (канон); при заданном padding (настройка) py-классы убираются — inline-стиль
+// ставит padding-top/bottom.
+const containerCls = paddingStyle
+	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80"
+	: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80";
 
 const titleId = id && heading ? `${id}-title` : undefined;
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
-		{
-			heading && (
-				<h2
-					id={titleId}
-					class={headingCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="heading"
-					set:html={heading}
-				/>
-			)
-		}
-		<ul class={["flex w-full flex-col", listGapCls, listWrapCls].filter(Boolean).join(" ")} role="list">
+	<div class={containerCls} style={paddingStyle}>
+		{/* Колонка читаемой ширины max-w-[780px], центрирована (mx-auto) — список
+		    вопросов под комфортную длину строки (паттерн MainText). Заголовок секции
+		    + список; выравнивание заголовка — headingAlignCls (по умолчанию слева). */}
+		<div class="mx-auto flex w-full max-w-[780px] flex-col gap-8 md:gap-10">
 			{
-				sections.map((s, i) => (
-					<li
-						class={itemBoxCls}
+				heading && (
+					<h2
+						id={titleId}
+						class={headingCls}
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index={i}
-						data-puck-subsection-field="sections"
-					>
-						{isPlaceholder ? (
-							/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
-							   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
-							   популярные вопросы клиентов». Без интерактивного <details>:
-							   реального ответа нет, помощь видна сразу (паттерн пустого
-							   состояния Collections/MultiRows). Шеврон сохранён для вида. */
-							<div class="flex w-full flex-col gap-2 py-5">
-								<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
-									<span class="min-w-0 flex-1 break-words">{s.heading}</span>
-									<NtIcon
-										name="dropdown-chevron"
-										sizeClass="size-5"
-										class="shrink-0 rotate-180"
-									/>
-								</div>
-								<p class="font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]">
-									{s.content}
-								</p>
-							</div>
-						) : (
-							<details class="group">
-								<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-									<div class="flex w-full items-center justify-between gap-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-										<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
-										<NtIcon
-											name="dropdown-chevron"
-											sizeClass="size-5"
-											class="shrink-0 transition-transform duration-300 group-open:rotate-180"
-										/>
-									</div>
-								</summary>
-								<div
-									class="pb-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-muted,153_153_153))]"
-									set:html={s.content}
-								/>
-							</details>
-						)}
-					</li>
-				))
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+						set:html={heading}
+					/>
+				)
 			}
-		</ul>
+			<ul class={["flex w-full flex-col", listGapCls, listWrapCls].filter(Boolean).join(" ")} role="list">
+				{
+					sections.map((s, i) => (
+						<li
+							class={itemBoxCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="sections"
+						>
+							{isPlaceholder ? (
+								/* Figma 1:19335 ПУСТОЕ состояние: дословный ряд-плейсхолдер —
+								   лейбл «Раздел» (роль вопроса) + хелпер-текст «Ответь на самые
+								   популярные вопросы клиентов». Без интерактивного <details>:
+								   реального ответа нет, помощь видна сразу (паттерн пустого
+								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
+								<div class="flex w-full flex-col gap-2 py-5">
+									<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] md:text-[19px]">
+										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+										<svg
+											class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))]"
+											viewBox="0 0 16 16"
+											fill="currentColor"
+											aria-hidden="true"
+										>
+											<path d="M11.7899 10.3255C11.9111 10.1838 11.9118 9.9751 11.7916 9.83248L8.31861 5.71147C8.15213 5.51393 7.84787 5.51393 7.68139 5.71147L4.20838 9.83248C4.08819 9.9751 4.08892 10.1838 4.21011 10.3255C4.36289 10.5043 4.63951 10.5033 4.79103 10.3235L7.68139 6.89386C7.84787 6.69632 8.15213 6.69632 8.31861 6.89386L11.209 10.3235C11.3605 10.5033 11.6371 10.5043 11.7899 10.3255Z" />
+										</svg>
+									</div>
+									<p class="font-roboto-flex text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]">
+										{s.content}
+									</p>
+								</div>
+							) : (
+								<details class="group">
+									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
+										<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 md:text-[19px]">
+											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<svg
+												class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))] transition-[transform,color] duration-300 group-open:rotate-0 group-open:text-[#FA5109]"
+												viewBox="0 0 16 16"
+												fill="currentColor"
+												aria-hidden="true"
+											>
+												<path d="M11.7899 10.3255C11.9111 10.1838 11.9118 9.9751 11.7916 9.83248L8.31861 5.71147C8.15213 5.51393 7.84787 5.51393 7.68139 5.71147L4.20838 9.83248C4.08819 9.9751 4.08892 10.1838 4.21011 10.3255C4.36289 10.5043 4.63951 10.5033 4.79103 10.3235L7.68139 6.89386C7.84787 6.69632 8.15213 6.69632 8.31861 6.89386L11.209 10.3235C11.3605 10.5033 11.6371 10.5043 11.7899 10.3255Z" />
+											</svg>
+										</div>
+									</summary>
+									<div
+										class="pb-5 font-roboto-flex text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]"
+										set:html={s.content}
+									/>
+								</details>
+							)}
+						</li>
+					))
+				}
+			</ul>
+		</div>
 	</div>
 </section>

@@ -5,12 +5,12 @@
 export const CheckoutContactFormClasses = {
   root: 'w-full',
   heading:
-    'flex items-center justify-between mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
+    'flex items-center justify-between mb-5 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
   authLink:
     'text-[length:var(--size-small)] text-[rgb(var(--color-muted))] underline underline-offset-2 hover:no-underline',
-  fields: 'grid grid-cols-1 md:grid-cols-2 gap-4',
+  fields: 'grid grid-cols-1 md:grid-cols-2 gap-2.5',
   field:
-    'relative bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] h-14 transition-colors focus-within:border-[rgb(var(--color-text)/.5)]',
+    'relative bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] h-11 transition-colors focus-within:border-[rgb(var(--color-text)/.5)]',
   input:
     'peer block w-full h-full px-3 pt-5 pb-1 bg-transparent outline-none [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder-transparent rounded-[var(--radius-input)]',
   label:

@@ -20,124 +20,127 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
   <h2 class={C.heading}>{heading}</h2>
   <p class={C.subheading}>{subheading}</p>
 
+  {/* Figma 183-27866: методы — компактные строки БЕЗ рамок (radio + лейбл + бренд),
+      форма карты раскрывается ПРЯМО под выбранной «Банковская карта», затем
+      остальные методы. Рамку-выделение убрали — индикатор выбора = залитый radio. */}
   <div class={C.list} data-checkout-payment-list>
     {enabledMethods.map((m, i) => (
-      <label
-        class:list={[
-          'flex flex-col gap-3 px-3 py-5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors',
-          i === 0 ? 'border-[rgb(var(--color-text))]' : 'hover:border-[rgb(var(--color-text)/.4)]',
-        ]}
-        data-payment-key={m.key}
-        data-payment-method={m.key}
-        data-payment-selected={String(i === 0)}
-      >
-        <div class="flex items-center gap-2 w-full">
-          <input
-            type="radio"
-            name="paymentMethod"
-            value={m.key}
-            checked={i === 0}
-            class="sr-only"
-            data-payment-radio
-          />
-          <span
-            class:list={[
-              'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border',
-              i === 0
-                ? 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]'
-                : 'border-[rgb(var(--color-input-border))]',
-            ]}
-            data-payment-radio-dot
+      <Fragment>
+        <label
+          class="block py-1.5 cursor-pointer transition-colors"
+          data-payment-key={m.key}
+          data-payment-method={m.key}
+          data-payment-selected={String(i === 0)}
+        >
+          <div class="flex items-center gap-2.5 w-full">
+            <input
+              type="radio"
+              name="paymentMethod"
+              value={m.key}
+              checked={i === 0}
+              class="sr-only"
+              data-payment-radio
+            />
+            <span
+              class:list={[
+                'flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full border',
+                i === 0
+                  ? 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]'
+                  : 'border-[rgb(var(--color-input-border))]',
+              ]}
+              data-payment-radio-dot
+            >
+              {i === 0 && <span class="block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]"></span>}
+            </span>
+            <span class={C.label}>{m.label}</span>
+            {m.key === 'sbp' && (
+              <svg class={C.brand} viewBox="0 0 40 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">СБП</text>
+              </svg>
+            )}
+            {m.key === 'sberbank' && (
+              <svg class={C.brand} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">Sber Pay</text>
+              </svg>
+            )}
+            {m.key === 'tinkoff_bank' && (
+              <svg class={C.brand} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">T-Pay</text>
+              </svg>
+            )}
+          </div>
+        </label>
+        {m.key === 'bank_card' && (
+          <div
+            class="w-full grid grid-cols-1 gap-2.5"
+            data-card-form-wrapper
+            data-checkout-card-form
+            hidden={firstKey !== 'bank_card'}
           >
-            {i === 0 && <span class="block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]"></span>}
-          </span>
-          <span class={C.label}>{m.label}</span>
-          {m.key === 'sbp' && (
-            <svg class={C.brand} viewBox="0 0 40 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">СБП</text>
-            </svg>
-          )}
-          {m.key === 'sberbank' && (
-            <svg class={C.brand} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">Sber Pay</text>
-            </svg>
-          )}
-          {m.key === 'tinkoff_bank' && (
-            <svg class={C.brand} viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">T-Pay</text>
-            </svg>
-          )}
-        </div>
-      </label>
+            <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-11">
+              <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Номер карты</label>
+              <input
+                class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+                data-card-field="number"
+                inputmode="numeric"
+                autocomplete="cc-number"
+                maxlength="19"
+                placeholder="0000 0000 0000 0000"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-11">
+                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Срок действия</label>
+                <input
+                  class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+                  data-card-field="expiry"
+                  inputmode="numeric"
+                  autocomplete="cc-exp"
+                  maxlength="5"
+                  placeholder="ММ/ГГ"
+                />
+              </div>
+              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-11">
+                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">CVV</label>
+                <input
+                  class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
+                  data-card-field="cvc"
+                  inputmode="numeric"
+                  autocomplete="cc-csc"
+                  maxlength="4"
+                  type="password"
+                  placeholder="CVV"
+                />
+              </div>
+            </div>
+            {nameOnCardEnabled && (
+              <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-11">
+                <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Имя на карте</label>
+                <input
+                  class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] uppercase"
+                  data-card-field="nameOnCard"
+                  autocomplete="cc-name"
+                  placeholder="IVAN IVANOV"
+                />
+              </div>
+            )}
+            <p class="flex items-center gap-2 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]" data-card-warning>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+              </svg>
+              <span>{warningText}</span>
+            </p>
+            <p
+              class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"
+              data-payment-sdk-status
+              hidden
+            ></p>
+          </div>
+        )}
+      </Fragment>
     ))}
-  </div>
-
-  <div
-    class="w-full grid grid-cols-1 gap-3 mt-4"
-    data-card-form-wrapper
-    data-checkout-card-form
-    hidden={firstKey !== 'bank_card'}
-  >
-    <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-      <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Номер карты</label>
-      <input
-        class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-        data-card-field="number"
-        inputmode="numeric"
-        autocomplete="cc-number"
-        maxlength="19"
-        placeholder="0000 0000 0000 0000"
-      />
-    </div>
-    <div class="grid grid-cols-2 gap-3">
-      <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-        <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Срок действия</label>
-        <input
-          class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-          data-card-field="expiry"
-          inputmode="numeric"
-          autocomplete="cc-exp"
-          maxlength="5"
-          placeholder="ММ/ГГ"
-        />
-      </div>
-      <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-        <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">CVV</label>
-        <input
-          class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
-          data-card-field="cvc"
-          inputmode="numeric"
-          autocomplete="cc-csc"
-          maxlength="4"
-          type="password"
-          placeholder="CVV"
-        />
-      </div>
-    </div>
-    {nameOnCardEnabled && (
-      <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
-        <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Имя на карте</label>
-        <input
-          class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))] uppercase"
-          data-card-field="nameOnCard"
-          autocomplete="cc-name"
-          placeholder="IVAN IVANOV"
-        />
-      </div>
-    )}
-    <p class="flex items-center gap-2 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]" data-card-warning>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <circle cx="12" cy="16" r="0.5" fill="currentColor"/>
-      </svg>
-      <span>{warningText}</span>
-    </p>
-    <p
-      class="text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]"
-      data-payment-sdk-status
-      hidden
-    ></p>
   </div>
 </section>
 

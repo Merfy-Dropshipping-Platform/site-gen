@@ -115,7 +115,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
 
-    var OPTION_CLS = 'flex items-center gap-3 px-3 py-4 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
+    var OPTION_CLS = 'flex items-start gap-3 px-3 py-2.5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
     var OPTION_SELECTED_CLS = 'border-[rgb(var(--color-text))]';
     var BODY_CLS = 'flex-1 flex flex-col min-w-0';
     var LABEL_CLS = '[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
@@ -546,9 +546,6 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + (selected ? ' data-selected="true"' : '')
           + '>'
           + '<input type="radio" name="deliveryOption" value="' + esc(opt.type) + '"' + (selected ? ' checked' : '') + ' class="sr-only" data-delivery-radio />'
-          + '<span class="' + radioOuterCls + '" data-delivery-radio-dot>'
-          + (selected ? '<span class="' + RADIO_DOT + '"></span>' : '')
-          + '</span>'
           + '<div class="' + BODY_CLS + '">'
           + '<span class="' + LABEL_CLS + '" data-delivery-label>' + esc(opt.label) + '</span>'
           + (opt.cheapest ? '<span class="' + BADGE_CLS + '" data-delivery-cheapest>дешевле всего</span>' : '')

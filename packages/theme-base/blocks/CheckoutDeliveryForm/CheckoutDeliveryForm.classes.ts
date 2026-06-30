@@ -4,13 +4,13 @@
 export const CheckoutDeliveryFormClasses = {
   root: 'w-full',
   heading:
-    'mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
-  fields: 'flex flex-col gap-4',
-  fieldRow2: 'grid grid-cols-1 md:grid-cols-2 gap-4',
+    'mb-5 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
+  fields: 'flex flex-col gap-2.5',
+  fieldRow2: 'grid grid-cols-1 md:grid-cols-2 gap-2.5',
   // 65/35 split — город получает основное место, индекс компактный.
-  cityIndexRow: 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4',
+  cityIndexRow: 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2.5',
   field:
-    'relative bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] h-14 transition-colors focus-within:border-[rgb(var(--color-text)/.5)]',
+    'relative bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] h-11 transition-colors focus-within:border-[rgb(var(--color-text)/.5)]',
   input:
     'peer block w-full h-full px-3 pt-5 pb-1 bg-transparent outline-none [font-family:var(--font-body)] text-[length:var(--size-body)] text-[rgb(var(--color-text))] placeholder-transparent rounded-[var(--radius-input)]',
   inputWithIcon:

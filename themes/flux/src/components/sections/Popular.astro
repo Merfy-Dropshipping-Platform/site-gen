@@ -1,6 +1,4 @@
 ---
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular / rose T13): полная конструкторная
 // схема theme-base PopularProducts.puckConfig поверх разметки верстальщика.
 // Канон-дефолты конструктора (headingSize/textSize small = литерал DS, columns
@@ -52,27 +50,30 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 	image: `/placeholders/sweater-${PLACEHOLDER_COLORS[i % PLACEHOLDER_COLORS.length]}.svg`,
 }));
 
-// Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
-// размеры — через перекрытия на обёртке (лестница §9). Дефолт и 'small' =
-// литерал DS (20/24/32 + 14/18/24); medium → 38px, large → 46px.
+// Шапка секции = ВЁРСТКА ВЕРСТАЛЬЩИКОВ (эталон Popular.astro): простой <h2>
+// font-roboto-flex uppercase, дефолт text-[19px] md:text-[23px]. НЕ DS-компонент
+// NtSectionHeading (он рендерил Comfortaa h2 / Manrope подзаголовок — мимо манеры
+// flux). headingSize/textSize — ступени small/medium/large на базе эталонных
+// размеров (канон 19/23): small/дефолт = эталон, medium/large крупнее. Цвет —
+// токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
+// перекрашивает, без схемы пиксель эталона (MANNER.md §7).
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "medium"
-		? " [&_h2]:!text-[38px]"
+		? "text-[23px] md:text-[29px]"
 		: headingSize === "large"
-			? " [&_h2]:!text-[46px]"
-			: "";
-// Канон textSize: дефолт/small = подзаголовок DS дословно (14/18/24);
-// medium → 29px, large → 35px (ряд §9 от xl-базы 24).
+			? "text-[29px] md:text-[35px]"
+			: "text-[19px] md:text-[23px]";
 const textSize = p.textSize ?? p.text?.size;
 const textSizeCls =
-	textSize === "medium" ? " [&_p]:!text-[29px]" : textSize === "large" ? " [&_p]:!text-[35px]" : "";
-// Схемы flux включают ТЁМНЫЕ (scheme-1 bg 0 0 0) — хардкоды DS-шапки
-// (#000000/#999999) всегда перекрываются токенами; фоллбеки = литералы DS →
-// без схемы пиксель не меняется (MANNER.md §7).
-const headColorCls =
-	" [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]";
-const headWrapCls = [headingSizeCls, textSizeCls, headColorCls].join("").trim();
+	textSize === "medium"
+		? "text-[16px] md:text-[19px]"
+		: textSize === "large"
+			? "text-[19px] md:text-[23px]"
+			: "text-[14px] md:text-[16px]";
+// Классы <h2>/<p> = эталон верстальщиков + ступень размера + токен цвета схемы.
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
 
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
 // canon-default 'square' и отсутствие = aspect-square медиа эталонной
@@ -90,8 +91,10 @@ const tileAspectCls =
 // а превью конструктора уже lg-ширины → слайдер «не применялся». Переменная +
 // media-query идентичны на live и в превью (Container API).
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 4;
-// Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6" + tileAspectCls;
+// Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
+// с md (768px) и выше grid-template-columns задаёт <style> по --cols (слайдер
+// «Колонки» перебивает md:grid-cols-4).
+const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls;
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
@@ -110,7 +113,7 @@ const quickAddText =
 // карточке): токены кнопки-2 — в схемах flux чёрная кнопка = кнопка-2
 // (MANNER.md §7); active:scale в манере не используется.
 const quickAddCls =
-	"mt-3 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]";
+	"mt-3 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-roboto-flex text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]";
 
 // Канон buttonStyle link/primary/secondary — стиль добавленной CTA карточки.
 // primary/отсутствие = чёрная CTA (quickAddCls без правок); носитель —
@@ -183,9 +186,9 @@ const viewAllHref =
 // Стиль кнопки «Смотреть все» = единый «Стиль кнопки» секции (buttonStyle, Figma
 // 1195-42536): link = текстовая ссылка с подчёркиванием, secondary = контурная
 // (бордер в тонах кнопки-2), primary/отсутствие = чёрная CTA манеры (заливка
-// кнопки-2). Манера flux: font-manrope, rounded-button (6px), токены кнопки-2.
+// кнопки-2). Манера flux: font-roboto-flex, rounded-button (6px), токены кнопки-2.
 const viewAllBase =
-	"inline-flex h-12 items-center justify-center font-manrope text-[14px] font-normal leading-normal transition-opacity md:text-[16px]";
+	"inline-flex h-12 items-center justify-center font-roboto-flex text-[14px] font-normal leading-normal transition-opacity md:text-[16px]";
 const viewAllCls =
 	p.buttonStyle === "link"
 		? `${viewAllBase} px-0 text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 hover:opacity-70`
@@ -276,6 +279,15 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
+// Контейнер = flux-container эталона (носитель темы как Header/Footer flux:
+// mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80) + flex flex-col gap-8 (канон
+// верстальщиков). Вертикаль py-10 md:py-16 (канон эталона); при заданном padding
+// (настройка) py-классы убираются — inline-стиль ставит padding-top/bottom
+// (паттерн Footer flux, чтобы не было двойного отступа).
+const containerCls = paddingStyle
+	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80"
+	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80";
+
 // Канон Nikita (ИСПРАВЛЕНИЕ): у flux Popular контейнер-бокс УБРАН полностью — контент
 // (шапка + грид карточек + «Смотреть все») сразу в max-width-обёртке, без подложки/схемы
 // контейнера. Карточки остаются как были.
@@ -283,20 +295,20 @@ const paddingStyle = p.padding
 
 <section
 	id="popular"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="popular-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+	<div class={containerCls} style={paddingStyle}>
 		<div
-			class={headWrapCls}
+			class="flex flex-col gap-2"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
+			<h2 id="popular-title" class={headingCls}>{sectionTitle}</h2>
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
 		<ul

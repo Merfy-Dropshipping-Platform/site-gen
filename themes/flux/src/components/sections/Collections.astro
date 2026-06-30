@@ -1,14 +1,15 @@
 ---
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-
-// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Collections): конструкторная схема
-// theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
-// demo-данные verbatim (страницы зовут <Collections /> без пропсов — дефолты
-// дают прежний рендер). Канон-дефолты конструктора (headingSize/subtitleSize
-// small = литерал DS, columns 3, imageView 'square' → литерал 430/500) →
-// пиксель верстальщика; дефолтная ветка каждого тернарника = прежняя строка
-// классов байт-в-байт (цвета → токены с пиксель-фоллбеком родных литералов,
-// MANNER.md §7). Скролл-анимаций нет — манера flux статична (MANNER.md §6).
+// ОЖИВЛЕНИЕ (контракт flux Popular / rose T13): полная конструкторная схема
+// theme-base Collections.puckConfig поверх ВЁРСТКИ ВЕРСТАЛЬЩИКОВ (репо
+// flux-theme Collections.astro: простой <h2> font-roboto-flex uppercase
+// text-[19px] md:text-[23px], grid grid-cols-2 md:grid-cols-4, плитка
+// aspect-square rounded-12, название text-[16px] md:text-[19px] font-light).
+// НЕ DS-компонент NtSectionHeading (он рендерил Comfortaa/Manrope мимо манеры
+// flux). Канон-дефолты конструктора (headingSize 'medium' → эталон 19/23,
+// subtitleSize 'small', imageView 'portrait' + flux blockDefault variant 'tile'
+// → aspect-square эталона, columns 3) дают пиксель верстальщика; цвета → токены
+// с пиксель-фоллбеком родных литералов (MANNER.md §7). Скролл-анимаций нет —
+// манера flux статична (MANNER.md §6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Иконка-плейсхолдер пустого медиа-бокса (паритет rose Collections + flux ProductCard):
@@ -17,68 +18,56 @@ const PH_MEDIA_ICON =
 	'<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>';
 // Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
 // «Список коллекций» (без подзаголовка), а НЕ дефолт-копирайт верстальщика
-// («Категории» / «Смартфоны, наушники, ноутбуки…»). Эталон — rose Collections.astro.
-// Мерчант задал свой heading/subtitle → его и рендерим (?? срабатывает только при
-// пустых данных; пустая строка subtitle скрывает <p> внутри DS-шапки).
+// («Категории»). Эталон — rose Collections.astro. Мерчант задал свой
+// heading/subtitle → его и рендерим (?? срабатывает только при пустых данных;
+// пустая строка subtitle скрывает <p>).
 const sectionTitle =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Список коллекций";
 const sectionSubtitle =
 	(typeof p.subtitle === "string" ? p.subtitle : undefined) ?? "";
 
-// Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
-// размеры — через перекрытия на обёртке (лестница §9 от lg-базы 32 / xl-базы
-// 24). Дефолт и 'small' = литерал DS (20/24/32 + 14/18/24) без перекрытий.
+// Шапка секции = ВЁРСТКА ВЕРСТАЛЬЩИКОВ (эталон Collections.astro): простой <h2>
+// font-roboto-flex uppercase, дефолт text-[19px] md:text-[23px]. headingSize —
+// ступени small/medium/large на базе эталонных размеров (19/23): канон-дефолт
+// конструктора 'medium' = эталон, small меньше, large крупнее (НЕ 38/46).
+// subtitleSize: канон-дефолт 'small' = 14/16, medium/large крупнее. Цвет —
+// токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
+// перекрашивает, без схемы пиксель эталона (MANNER.md §7).
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
-	headingSize === "medium"
-		? " [&_h2]:!text-[38px]"
+	headingSize === "small"
+		? "text-[16px] md:text-[19px]"
 		: headingSize === "large"
-			? " [&_h2]:!text-[46px]"
-			: "";
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent → эталон 19/23
+const subtitleSize = p.subtitleSize ?? p.subtitle?.size;
 const subtitleSizeCls =
-	p.subtitleSize === "medium"
-		? " [&_p]:!text-[29px]"
-		: p.subtitleSize === "large"
-			? " [&_p]:!text-[35px]"
-			: "";
-// Схемы flux включают ТЁМНЫЕ (scheme-1 bg 0 0 0) — хардкоды DS-шапки
-// (#000000/#999999) всегда перекрываются токенами; фоллбеки = литералы DS →
-// без схемы пиксель не меняется (MANNER.md §7).
-const headColorCls =
-	" [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]";
-// Канон titleAlignment: центр = литерал DS (шапка flux центрована); left/right
-// двигают заголовок и подзаголовок перекрытиями на обёртке.
+	subtitleSize === "medium"
+		? "text-[16px] md:text-[19px]"
+		: subtitleSize === "large"
+			? "text-[19px] md:text-[23px]"
+			: "text-[14px] md:text-[16px]"; // small (canon-default) + absent
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${subtitleSizeCls}`;
+// Канон titleAlignment (как rose): дефолт/left = эталон (h2 слева); center/right
+// двигают заголовок и подзаголовок перекрытиями на обёртке шапки (flex-col).
 const titleAlignCls =
-	p.titleAlignment === "left"
-		? " [&>div]:!items-start [&_h2]:!text-left [&_p]:!text-left"
+	p.titleAlignment === "center"
+		? " items-center text-center"
 		: p.titleAlignment === "right"
-			? " [&>div]:!items-end [&_h2]:!text-right [&_p]:!text-right"
+			? " items-end text-right"
 			: "";
-const headWrapCls = [headingSizeCls, subtitleSizeCls, headColorCls, titleAlignCls].join("").trim();
+const headWrapCls = `flex flex-col gap-2${titleAlignCls}`;
 
-// Канон columns 1-6: 3 (canon-default puckConfig) и отсутствие → дефолт-ветка
-// (1→sm:2→lg:3). Заданное значение применяется уже с sm: раньше — только с lg,
-// потому на sm-md (640-1023px) залипало 2 и слайдер игнорировался. Моб (<sm) = 1.
-const colsRaw =
-	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
-const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
-const gridBase = "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3";
-const gridCls = cols
-	? "grid grid-cols-1 gap-6 sm:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
-	: gridBase;
-const gridStyle = cols ? `--cols:${cols}` : undefined;
-
-// Канон gridAspect/imageView: дефолт (canon-default 'portrait' конструктора) =
-// литерал плитки aspect-[430/500] (FluxCollectionCard); gridAspect '1:1' или
-// imageView 'square' → квадрат, imageView 'wide' → 16/9. Раньше ветки 'square'
-// не было → выбор «квадрат» падал в портрет 430/500 (как rose tileAspectCls).
-// Дефолт-ветка (portrait/отсутствие) остаётся 430/500 байт-в-байт.
-// Канон variant (flux blockDefault 'tile', Figma 1:26298): квадрат + font-light
-// названия. 'standard' → портрет 430/500. Раньше variant не читался → live всегда
-// портрет, расходясь с превью (theme-base tile).
+// Канон variant (flux blockDefault 'tile', Figma 1:26298 + репо Collections.astro):
+// квадратная плитка (aspect-square — ЭТАЛОН верстальщиков, НЕ 430/500) + font-light
+// названия. 'standard' → легаси-портрет 430/500 (rose-вид).
 const variant = p.variant === "standard" ? "standard" : "tile";
 const isTile = variant === "tile";
 const nameWeightCls = isTile ? "font-light" : "font-normal";
+// Канон imageView (настройка как rose): square / канон-дефолт (tile) → aspect-square
+// (репо); 'wide' → 16/9; 'portrait' → 430/500 только для легаси standard. Конструктор
+// шлёт imageView='portrait' по дефолту, но flux-tile → square (эталон верстальщиков).
 const tileAspect =
 	p.gridAspect === "1:1" || p.imageView === "square"
 		? "aspect-square"
@@ -87,9 +76,22 @@ const tileAspect =
 			: isTile
 				? "aspect-square"
 				: "aspect-[430/500]";
-// Канон cardCaptionStyle: 'default' и отсутствие = обычный регистр подписи
-// верстальщика; 'uppercase' — капсом.
+// Канон cardCaptionStyle: 'default'/отсутствие = обычный регистр подписи; 'uppercase' — капсом.
 const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
+// Название коллекции = эталон верстальщиков: font-roboto-flex text-[16px]
+// md:text-[19px] font-light (tile). Хук .flux-collection-name + токен цвета (схема).
+const nameCls = `flux-collection-name font-roboto-flex text-[16px] ${nameWeightCls} leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[19px]${captionCase}`;
+
+// Канон columns 1-6 (канон-дефолт конструктора 3). Применяются с md (768px) через
+// CSS-переменную --cols + media-query в <style> ниже (моб = 2 колонки — эталон
+// верстальщиков grid-cols-2). Tailwind-arbitrary md:grid-cols-[repeat(var(--cols))]
+// в flux-компиляторе ненадёжен — прецедент Popular: var + media-query, не класс.
+const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
+// Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
+// с md (768px) grid-template-columns задаёт <style> по --cols (слайдер «Колонки»
+// перебивает md:grid-cols-4).
+const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4";
+const gridStyle = `--cols:${colsN}`;
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
 // Иначе — плейсхолдер пустого состояния (PLACEHOLDER_COLLECTIONS, ниже). SSR
@@ -113,9 +115,9 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 				"Коллекция",
 			// Плейсхолдер пустого состояния (Figma 1:19335, паритет rose T15):
 			// карточка без выбранной картинки = ПУСТАЯ surface-плитка (НЕ мок-фото
-			// верстальщика /images/4x/Коллекция_N.png — нарушало rose-эталон). На
-			// live гидрация (data-collection-ref) подставит реальное фото коллекции
-			// по collectionId; SSR-гард {c.image && <img>} держит surface пустой.
+			// верстальщика). На live гидрация (data-collection-ref) подставит реальное
+			// фото коллекции по collectionId; SSR-гард {c.image ? img : icon} держит
+			// surface с иконкой-плейсхолдером пустой.
 			image: typeof c.image === "string" && c.image ? c.image : "",
 			hasOwnImage: !!(typeof c.image === "string" && c.image),
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
@@ -179,30 +181,35 @@ const resolvedCollections = propCollections.map((c) => {
 
 // Плейсхолдер пустого состояния (Figma 1:19335, контракт theme-base Collections
 // DEMO_COLLECTIONS): без ручного выбора — 3 карточки с пустым rounded-rect
-// (bg #FBFBFB / rgb(var(--color-surface))) и подписью «Коллекция». НЕ мок-демо
-// верстальщика (раньше тут рендерились хардкод Смартфоны/Наушники/Ноутбуки с
-// /images/4x/Коллекция_N.png). Реальные коллекции магазина при пустом пикере
-// подтягивает autofillCollections (hydration ниже).
+// (bg #FBFBFB / rgb(var(--color-surface)) + иконка-плейсхолдер) и подписью
+// «Коллекция». НЕ мок-демо верстальщика. Реальные коллекции магазина при пустом
+// пикере подтягивает autofillCollections (hydration ниже).
 const PLACEHOLDER_COLLECTIONS = [
 	{ name: "Коллекция" },
 	{ name: "Коллекция" },
 	{ name: "Коллекция" },
 ];
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+// Контейнер = flux-container эталона (как Header/Footer/Popular flux: mx-auto
+// max-w-[1920px] px-4 md:px-20 2xl:px-80) + flex flex-col gap-8 (канон
+// верстальщиков). Вертикаль py-10 md:py-16 (эталон); при заданном padding
+// (настройка) py-классы убираются — inline-стиль ставит padding-top/bottom
+// (паттерн Popular/Footer flux, чтобы не было двойного отступа).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+const containerCls = paddingStyle
+	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80"
+	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80";
 ---
 
 <section
 	id="collections"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="collections-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+	<div class={containerCls} style={paddingStyle}>
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}
@@ -210,15 +217,23 @@ const paddingStyle = p.padding
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<NtSectionHeading titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
+			<h2 id="collections-title" class={headingCls}>{sectionTitle}</h2>
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
-		<ul class={gridCls} role="list" style={gridStyle} data-collections-autofill={!usePropCollections ? "" : undefined}>
+		<ul
+			class={gridCls}
+			role="list"
+			data-nt="collections-grid"
+			data-cols={String(colsN)}
+			style={gridStyle}
+			data-collections-autofill={!usePropCollections ? "" : undefined}
+		>
 			{usePropCollections ? resolvedCollections.map((c, i) => (
 				<li>
 					<a
 						href={c.href}
-						class="group flex cursor-pointer flex-col gap-4 md:gap-5"
+						class="group flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1"
 						aria-label={c.name}
 						data-nt="flux-collection-card"
 						data-collection-ref={c.collectionId ?? undefined}
@@ -228,7 +243,7 @@ const paddingStyle = p.padding
 						data-puck-subsection-field="collections"
 					>
 						<div
-							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]`}
+							class={`${tileAspect} w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`}
 							aria-hidden={c.image ? undefined : "true"}
 						>
 							{c.image ? (
@@ -242,31 +257,23 @@ const paddingStyle = p.padding
 								<Fragment set:html={PH_MEDIA_ICON} />
 							)}
 						</div>
-						<h3
-							class={`flux-collection-name font-manrope text-[14px] ${nameWeightCls} leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
-						>
-							{c.name}
-						</h3>
+						<h3 class={nameCls}>{c.name}</h3>
 					</a>
 				</li>
 			)) : PLACEHOLDER_COLLECTIONS.map((c) => (
 				<li>
 					<div
-						class="group flex flex-col gap-4 md:gap-5"
+						class="group flex flex-col gap-4"
 						data-nt="flux-collection-card-placeholder"
 						aria-label={c.name}
 					>
 						<div
-							class={`${tileAspect} w-full overflow-hidden bg-[rgb(var(--color-surface,251_251_251))] rounded-[var(--radius-media,8px)]`}
+							class={`${tileAspect} w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))]`}
 							aria-hidden="true"
 						>
 							<Fragment set:html={PH_MEDIA_ICON} />
 						</div>
-						<h3
-							class={`flux-collection-name font-manrope text-[14px] ${nameWeightCls} leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]${captionCase}`}
-						>
-							{c.name}
-						</h3>
+						<h3 class={nameCls}>{c.name}</h3>
 					</div>
 				</li>
 			))}
@@ -276,6 +283,13 @@ const paddingStyle = p.padding
 
 <script>
 	import { loadRealCollections, findCollection, escapeHtml } from "../../lib/storefront-hydrate";
+
+	// Иконка-плейсхолдер пустого медиа-бокса (паритет SSR PH_MEDIA_ICON выше):
+	// hoisted-<script> компилируется esbuild'ом отдельным модулем и НЕ видит
+	// frontmatter-конст — потому строку SVG дублируем здесь (иначе автоподстановка
+	// рендерила бы undefined вместо иконки в плитке без обложки).
+	const PH_MEDIA_ICON =
+		'<span class="flex h-full w-full items-center justify-center text-[rgb(var(--color-muted,153_153_153))]"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>';
 
 	// Резолв collectionId → имя/обложка на плитках (data-collection-ref).
 	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
@@ -309,14 +323,12 @@ const paddingStyle = p.padding
 
 	// АВТОПОДСТАНОВКА: пустой пикер (SSR = плейсхолдеры «Коллекция») → реальные
 	// коллекции магазина из /data/collections.json (live) / storefront-data (превью).
-	// Прежде показывались фейк-демо, что вводило в заблуждение. Явный выбор в пикере
-	// имеет приоритет (грид не помечен data-collections-autofill). Реальных нет
-	// (demo-сборка без collections.json) → no-op, плейсхолдеры остаются. Разметка
-	// плитки = propCollections-ветка flux (canon-default при пустом пикере: imageView
-	// 'portrait' → aspect-[430/500], cardCaptionStyle 'default' → без капса).
-	// Обложка: своя картинка коллекции, иначе ПУСТАЯ surface-плитка (контракт Figma
-	// 1:19335 / rose-эталон — у секции «Список коллекций» нет плейсхолдер-ассета;
-	// мок-пути /images/4x/Коллекция_N.png убраны, паритет SSR-гарда {c.image && img}).
+	// Явный выбор в пикере имеет приоритет (грид не помечен data-collections-autofill).
+	// Реальных нет (demo-сборка без collections.json) → no-op, плейсхолдеры остаются.
+	// Разметка плитки = эталон верстальщиков (aspect-square, font-roboto-flex
+	// text-[16px] md:text-[19px] font-light). Обложка: своя картинка коллекции,
+	// иначе иконка-плейсхолдер PH_MEDIA_ICON (контракт Figma 1:19335 / rose-эталон —
+	// у секции «Список коллекций» нет мок-ассета; паритет SSR-гарда {c.image ? img : icon}).
 	const autofillCollections = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
 		if (grids.length === 0) return;
@@ -333,9 +345,9 @@ const paddingStyle = p.padding
 				const media = cover
 					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />`
 					: PH_MEDIA_ICON;
-				return `<li><a href="${href}" class="group flex cursor-pointer flex-col gap-4 md:gap-5" aria-label="${name}" data-nt="flux-collection-card">
-			<div class="aspect-[430/500] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
-			<h3 class="flux-collection-name font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${name}</h3>
+				return `<li><a href="${href}" class="group flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1" aria-label="${name}" data-nt="flux-collection-card">
+			<div class="aspect-square w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
+			<h3 class="flux-collection-name font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[19px]">${name}</h3>
 		</a></li>`;
 			})
 			.join("");
@@ -349,3 +361,14 @@ const paddingStyle = p.padding
 		autofillCollections();
 	});
 </script>
+
+<style is:global>
+	/* Слайдер «Колонки» (1-6) → grid-template-columns с md (768px) и выше.
+	   --cols ставится inline на сетке (data-cols — хук). Селектор с двумя
+	   атрибутами (0,2,0) бьёт tailwind .md:grid-cols-4 (0,1,0) без !important. */
+	@media (min-width: 768px) {
+		[data-nt="collections-grid"][data-cols] {
+			grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+		}
+	}
+</style>

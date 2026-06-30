@@ -132,18 +132,18 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">
-								<a href="/products/${line.productId}" class="font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] hover:opacity-80 sm:text-[15px] md:text-[18px]">${line.name}</a>
+								<a href="/products/${line.productId}" class="font-manrope text-[14px] font-normal leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 sm:text-[15px] md:text-[18px]">${line.name}</a>
 								<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-									<span class="font-manrope text-[14px] font-normal leading-normal text-[#000000] sm:text-[16px] md:text-[18px]">${totalCurrent}</span>
+									<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[16px] md:text-[18px]">${totalCurrent}</span>
 									${
 										totalOld
-											? `<span class="font-manrope text-[13px] font-light leading-normal text-[#999999] line-through sm:text-[14px] md:text-[16px]">${totalOld}</span>`
+											? `<span class="font-manrope text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through sm:text-[14px] md:text-[16px]">${totalOld}</span>`
 											: ""
 									}
 								</div>
 								${
 									variantUnderPrice
-										? `<p class="font-manrope text-[12px] font-light leading-normal text-[#999999] sm:text-[13px] md:text-[14px]">${variantUnderPrice}</p>`
+										? `<p class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]">${variantUnderPrice}</p>`
 										: ""
 								}
 							</div>
@@ -151,13 +151,13 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 						<div class="flex shrink-0 flex-col items-end gap-3 self-start md:gap-4">
 							<button type="button" data-cart-remove data-id="${
 								line.id
-							}" class="flex size-9 items-center justify-center rounded-[4px] text-[#000000] transition-opacity hover:bg-[#F5F5F5] hover:opacity-80 md:size-10" aria-label="Удалить товар из корзины">
+							}" class="flex size-9 items-center justify-center rounded-[4px] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:bg-[#F5F5F5] hover:opacity-80 md:size-10" aria-label="Удалить товар из корзины">
 								<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="pointer-events-none size-[22px] md:size-6" aria-hidden="true"><path d="M4 7h16M10 7V5a1 1 0 011-1h2a1 1 0 011 1v2M6 7l1 14a1 1 0 001 1h8a1 1 0 001-1l1-14M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 							</button>
 							<div class="inline-flex h-10 items-center rounded-[4px] border border-solid border-[#E5E5E5]">
-								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[#000000]" aria-label="Уменьшить">−</button>
-								<span class="min-w-[28px] text-center font-manrope text-[12px] text-[#000000] sm:text-[14px]">${line.quantity}</span>
-								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[#000000]" aria-label="Увеличить">+</button>
+								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>
+								<span class="min-w-[28px] text-center font-manrope text-[12px] text-[rgb(var(--color-text,0_0_0))] sm:text-[14px]">${line.quantity}</span>
+								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>
 							</div>
 						</div>
 					</li>

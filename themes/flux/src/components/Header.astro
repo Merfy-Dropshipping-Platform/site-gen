@@ -17,10 +17,13 @@ const defaultNav: NavLink[] = [
 	{ label: "Аксессуары", href: "/catalog?collection=%D0%90%D0%BA%D1%81%D0%B5%D1%81%D1%81%D1%83%D0%B0%D1%80%D1%8B" },
 ];
 
-// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Header): канон-схема theme-base Header.puckConfig —
-// siteTitle, navigationLinks, logo, logoPosition, stickiness, padding. Тело ниже —
-// verbatim верстальщика; дефолтные ветки тернарников = прежним строкам байт-в-байт
-// (цвета → токены с пиксель-фоллбеком родных литералов §7).
+// ОЖИВЛЕНИЕ натянуто на ВЁРСТКУ ВЕРСТАЛЬЩИКОВ (эталон /tmp/flux-header-ref.astro):
+// дефолтный Header (мерчант ничего не настроил) = two-tier верстальщика 1:1
+// (Roboto Flex, py-6/gap-5/gap-8, size-8 desktop иконки, bg-white без border-b,
+// промо-бар сверху); каждая настройка конструктора (logoPosition×4, menuType×3,
+// stickiness, padding, nav, logo, colorScheme, wishlist) работает поверх этой
+// вёрстки. Канон-схема theme-base Header.puckConfig — siteTitle, navigationLinks,
+// logo, logoPosition, stickiness, padding, menuType, menuColorScheme.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
@@ -32,25 +35,26 @@ const nav: NavLink[] =
 
 // Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
 // <img> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux = ТЕКСТ-лого
-// {SITE_TITLE} Comfortaa uppercase (mobile 18px / desktop 24 → lg:28, H:54, 85);
-// фоллбек токена 24px = --size-logo-width из theme.json flux.
+// {SITE_TITLE} — Roboto Flex uppercase (НЕ comfortaa: эталон верстальщиков целиком на
+// Roboto Flex; реальный лого верстальщика = img logo-flux.svg, у нас ассета нет →
+// текст-фоллбек тем же шрифтом, размер близкий к h-6/24px логотипа эталона).
 const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 
-// Канон logoPosition: 'top-left' (canon-default) / 'top-center' / 'center-left' /
-// 'center-absolute'. Отсутствие / неизвестное значение → 'top-left' (designer default,
-// два ряда). isTwoRow: два ряда (top-left, top-center); single-row: center-left / center-absolute.
+// Канон logoPosition: 'top-left' (canon-default = two-tier эталона) / 'top-center' /
+// 'center-left' / 'center-absolute' (+ 'top-right' из enum → single-row). Отсутствие /
+// неизвестное → 'top-left'. isTwoRow: два ряда (top-left, top-center); single-row:
+// center-left / center-absolute / top-right.
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
 const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
 // center-absolute: лого absolute по центру single-row
 const isAbsoluteCenter = logoPosition === "center-absolute";
 // center-left («Слева»): лого в потоке слева, nav центрируется ПО СТРАНИЦЕ через
-// равные flex-1 фланги (лого + блок иконок), nav (auto) садится по центру —
-// паттерн эталона rose Header. Взаимоисключающе с center-absolute.
+// равные flex-1 фланги (лого + блок иконок), nav (auto) садится по центру.
 const logoLeft = logoPosition === "center-left";
 
-// Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:24) — 'none' /
-// 'always' / canon-default / отсутствие → sticky остаётся. 'scroll-up' → прячем при
+// Канон stickiness: дефолт puckConfig = 'scroll-up'. 'none' / 'always' / отсутствие →
+// обычный sticky (= эталон верстальщика `sticky top-0 z-50`). 'scroll-up' → прячем при
 // скролле вниз, показываем при скролле вверх: is:inline скрипт через data-атрибут
 // (компилятор секций не умеет define:vars), идемпотентность через data-hydrated.
 const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
@@ -72,10 +76,9 @@ const SCROLL_UP_JS = [
 	"})();",
 ].join("");
 
-// Канон padding {top,bottom} — clamp ≤64 на носителе отступов верстальщика
-// (desktop-ряд md:py-4; мобильная строка h-14 фиксированная). {12,12} = canon-default
-// puckConfig (theme.json flux Header без padding) → ЛИТЕРАЛ md:py-4; inline-стиль
-// только при ином значении (паттерн bloom Header:100-107).
+// Канон padding {top,bottom} — носитель отступов десктопного ряда. Дефолт puckConfig =
+// {12,12} → рендерим ЛИТЕРАЛ верстальщика py-6 (как и отсутствие padding); inline-стиль
+// только при ином значении (clamp ≤64). Мобильная строка фиксирована h-20.
 const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
 const isCanonPad = pad && Number(pad.top) === 12 && Number(pad.bottom) === 12;
 const headerPad =
@@ -85,45 +88,57 @@ const headerPad =
 const headerPadStyle = headerPad
 	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
 	: undefined;
-// single-row classes (center-left / center-absolute)
-const singleRowCls = [
-	"w-full max-w-[1920px] mx-auto px-4 flex items-center justify-between md:px-20 2xl:px-80",
-	headerPad ? "" : "py-4",
-	isAbsoluteCenter ? "relative" : "",
-].filter(Boolean).join(" ");
-const desktopLogoCls = logo
-	? `flex shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`
-	: `shrink-0 font-comfortaa text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90 lg:text-[28px]${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
-const mobileLogoCls = logo
-	? "flex items-center hover:opacity-80"
-	: "font-comfortaa text-[18px] font-normal uppercase text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80";
 
-// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное) / 'sidebar' (Боковое).
-// Для mega-menu добавляем uppercase + tracking к десктопным ссылкам нав-меню.
-// Для sidebar — десктопный inline-nav скрыт, показывается hamburger → правая шторка.
+// Канон menuType: 'dropdown' (по умолчанию) / 'mega-menu' (Расширенное) / 'sidebar'
+// (Боковое). mega-menu → uppercase tracking к десктопным ссылкам. sidebar → десктопный
+// inline-nav скрыт, hamburger открывает правую шторку.
 const menuType = typeof p.menuType === "string" ? p.menuType : "dropdown";
 const isMegaMenu = menuType === "mega-menu";
 const isSidebar = menuType === "sidebar";
-const megaLinkCls = "";
+const megaLinkCls = isMegaMenu ? "tracking-[0.06em] font-medium" : "";
 
-// Канон menuColorScheme: опциональная отдельная цветовая схема для десктопного <nav>.
-// При задании — добавляем класс color-scheme-<X> к обёртке <nav>.
+// Канон menuColorScheme: опциональная отдельная цветовая схема десктопного <nav>.
 const menuColorScheme = typeof p.menuColorScheme === "string" ? p.menuColorScheme : "";
 const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replace("scheme-", "")}` : "";
 
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 
-// Сердце «Избранное» в хедере (outline-дефолт). Инлайн-SVG (НЕ NtIcon=<img> —
-// не перекрашивается): глобальный делегат initWishlistUI красит filled/outline.
-// Геометрия = public/icons/favourite.svg (тот же path); currentColor наследуется
-// от иконки-ссылки (как у иконок корзины/аккаунта flux). filled-цвет (акцент)
-// делегат подставляет на page-load, если в избранном есть товары.
+// Сердце «Избранное» в хедере (outline-дефолт). 4-я иконка — у верстальщика её нет,
+// Merfy-фича ОСТАВЛЯЕМ (после search, перед cart). Инлайн-SVG (НЕ NtIcon=<img> — не
+// перекрашивается): глобальный делегат initWishlistUI красит filled/outline. Геометрия
+// = public/icons/favourite.svg; currentColor наследуется от иконки-ссылки.
 const headerHeartSvg =
 	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
 	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
 	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
 	"</svg>";
+
+// Бейдж счётчика (корзина/избранное) — эталон верстальщика: -right-1 -top-1,
+// h-[18px] min-w-[18px], bg-[#FA5109], Roboto Flex 11px белый.
+const badgeCls =
+	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
+
+// Текст-лого: Roboto Flex uppercase. img-ветка = h-6 (24px) как логотип эталона.
+const desktopLogoCls = logo
+	? `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`
+	: `flex shrink-0 items-center font-roboto-flex text-[24px] font-medium uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
+const mobileLogoCls = logo
+	? "flex items-center hover:opacity-80"
+	: "flex items-center font-roboto-flex text-[18px] font-medium uppercase text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80";
+
+// Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
+const deskContainerBase = "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80";
+// py-6 = вертикальный отступ верстальщика (дефолт); inline-стиль перебивает при настройке padding.
+const deskPadCls = headerPad ? "" : "py-6";
+const twoRowContainerCls = [deskContainerBase, "hidden flex-col gap-5 md:flex", deskPadCls].filter(Boolean).join(" ");
+const singleRowContainerCls = [deskContainerBase, "hidden items-center justify-between md:flex", deskPadCls, isAbsoluteCenter ? "relative" : ""].filter(Boolean).join(" ");
+
+// Пункт nav эталона: Roboto Flex 16px light; active чёрный, inactive #cccccc → hover чёрный.
+// active/hover токенизированы (дефолт чёрный = эталон) → menuColorScheme их перекрашивает.
+const navLinkBase = "font-roboto-flex text-[16px] font-light leading-normal transition-colors";
+const navActiveCls = "text-[rgb(var(--color-text,0_0_0))]";
+const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 ---
 
 <div
@@ -134,23 +149,22 @@ const headerHeartSvg =
 >
 	{
 		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
-		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль
-		   (паттерн bloom Header:117-133). */
+		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
 		!id && (
 			<NtPromoBanner
 				text="Бесплатная доставка на весь ассортимент до 30.06.2026."
 				link="/catalog"
-				linkText="Перейти"
+				linkText="Смотреть больше"
 			/>
 		)
 	}
 
 	<header
-		class="w-full border-b border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))]"
+		class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 		data-nt="flux-header"
 	>
-	<!-- Mobile 375 -->
-	<div class="relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden">
+	<!-- Mobile (h-20): бургер слева | лого по центру (absolute) | wishlist+корзина справа -->
+	<div class="relative z-[60] flex h-20 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden">
 		<button
 			type="button"
 			id="flux-burger-btn"
@@ -167,361 +181,304 @@ const headerHeartSvg =
 				<NtIcon name="menu-close" sizeClass="size-6" />
 			</span>
 		</button>
-		<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
+		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
 			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 		</a>
 		<div class="flex items-center gap-3">
-			<a href="#" data-action="toggle-search" class="flex size-6 items-center justify-center" aria-label="Поиск">
-				<NtIcon name="search-sm" sizeClass="size-6" />
-			</a>
 			<a
 				href="/wishlist"
-				class="relative flex size-6 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
+				class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
 				aria-label="Избранное"
 			>
-				<span class="block size-4" set:html={headerHeartSvg}></span>
-				<span
-					data-wishlist-count
-					data-empty="true"
-					class="absolute -right-2 -top-2 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-				>0</span>
+				<span class="block size-6" set:html={headerHeartSvg}></span>
+				<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
 			</a>
 			<button
 				type="button"
 				data-cart-open
-				class="relative flex size-6 items-center justify-center"
+				class="relative flex size-8 items-center justify-center"
 				aria-label="Корзина"
 			>
-				<NtIcon name="cart-sm" sizeClass="size-4" />
-				<span
-					data-cart-count
-					data-empty="true"
-					class="absolute -right-2 -top-2 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-				>0</span>
+				<NtIcon name="cart" sizeClass="size-6" />
+				<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 			</button>
-			<a href="/login" data-auth-link class="flex size-6 items-center justify-center" aria-label="Аккаунт">
-				<NtIcon name="user-sm" sizeClass="size-4" />
-			</a>
 		</div>
 	</div>
 
 	<!-- Desktop -->
-	<div class="hidden w-full md:block">
-		{isTwoRow ? (
-			/* ── TWO-ROW LAYOUTS: top-left / top-center ── */
-			<div
-				class={[
-					"w-full max-w-[1920px] mx-auto px-4 flex flex-col md:px-20 2xl:px-80",
-					headerPad ? "" : "md:py-4",
-				].filter(Boolean).join(" ")}
-				style={headerPadStyle}
-			>
-				{logoPosition === "top-left" || logoPosition === "" ? (
-					/* top-left (designer default): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
-					<>
-						<div class="flex w-full items-center justify-between">
+	{isTwoRow ? (
+		<div class={twoRowContainerCls} style={headerPadStyle}>
+			{logoPosition === "top-center" ? (
+				/* top-center: Row1=[search LEFT | logo CENTER | actions RIGHT], Row2=[nav CENTER] */
+				<>
+					<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+						<div class="flex items-center">
+							<button
+								type="button"
+								data-action="toggle-search"
+								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+								aria-label="Поиск"
+							>
+								<NtIcon name="search-lg" sizeClass="size-8" />
+							</button>
+						</div>
+						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 							</a>
-							<div class="flex items-center gap-4 lg:gap-5">
-								<button
-									type="button"
-									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Поиск"
-								>
-									<NtIcon name="search-lg" sizeClass="size-6" />
-								</button>
-								<a
-									href="/wishlist"
-									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-									aria-label="Избранное"
-								>
-									<span class="block size-6" set:html={headerHeartSvg}></span>
-									<span
-										data-wishlist-count
-										data-empty="true"
-										class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-									>0</span>
-								</a>
-								<button
-									type="button"
-									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Корзина"
-								>
-									<NtIcon name="cart" sizeClass="size-6" />
-									<span
-										data-cart-count
-										data-empty="true"
-										class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-									>0</span>
-								</button>
-								<a
-									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Аккаунт"
-								>
-									<NtIcon name="user" sizeClass="size-6" />
-								</a>
-								{isSidebar && (
-									<button
-										type="button"
-										data-burger-toggle
-										class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
-										aria-label="Меню"
-										aria-expanded="false"
-										aria-controls="flux-burger"
-									>
-										<span class="burger-icon" data-icon="open">
-											<NtIcon name="menu-burger" sizeClass="size-6" />
-										</span>
-										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon name="menu-close" sizeClass="size-6" />
-										</span>
-									</button>
-								)}
-							</div>
 						</div>
-						<nav
-							class:list={["mt-3 flex w-full items-center gap-8 lg:gap-10", logoPosition === "top-left" || logoPosition === "" ? "justify-start" : "justify-center", menuSchemeClass, isSidebar && "md:!hidden"]}
-							aria-label="Основная навигация" data-nav-inline
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="997"
-							data-puck-subsection-field="navigationLinks"
-						>
-							{nav.map((link) => {
-								const active = isActive(link);
-								return (
-									<a
-										href={link.href}
-										aria-current={active ? "page" : undefined}
-										class:list={[
-											"relative pb-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-											active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
-											megaLinkCls,
-										]}
-									>
-										{link.label}
-									</a>
-								);
-							})}
-						</nav>
-					</>
-				) : (
-					/* top-center: Row1=[search LEFT | logo CENTER | cart+user RIGHT], Row2=[nav CENTER] */
-					<>
-						<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
-							<div class="flex items-center">
+						<div class="flex items-center justify-end gap-4">
+							<a
+								href="/wishlist"
+								class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
+								aria-label="Избранное"
+							>
+								<span class="block size-7" set:html={headerHeartSvg}></span>
+								<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
+							</a>
+							<button
+								type="button"
+								data-cart-open
+								class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+								aria-label="Корзина"
+							>
+								<NtIcon name="cart" sizeClass="size-8" />
+								<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+							</button>
+							<a
+								href="/login" data-auth-link
+								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+								aria-label="Аккаунт"
+							>
+								<NtIcon name="user" sizeClass="size-8" />
+							</a>
+							{isSidebar && (
 								<button
 									type="button"
-									data-action="toggle-search"
+									data-burger-toggle
 									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Поиск"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="flux-burger"
 								>
-									<NtIcon name="search-lg" sizeClass="size-6" />
+									<span class="burger-icon" data-icon="open">
+										<NtIcon name="menu-burger" sizeClass="size-6" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<NtIcon name="menu-close" sizeClass="size-6" />
+									</span>
 								</button>
-							</div>
-							<div class="flex items-center justify-center">
-								<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-									{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
-								</a>
-							</div>
-							<div class="flex items-center justify-end gap-4 lg:gap-5">
-								<a
-									href="/wishlist"
-									class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-									aria-label="Избранное"
-								>
-									<span class="block size-6" set:html={headerHeartSvg}></span>
-									<span
-										data-wishlist-count
-										data-empty="true"
-										class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-									>0</span>
-								</a>
-								<button
-									type="button"
-									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Корзина"
-								>
-									<NtIcon name="cart" sizeClass="size-6" />
-									<span
-										data-cart-count
-										data-empty="true"
-										class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-									>0</span>
-								</button>
-								<a
-									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Аккаунт"
-								>
-									<NtIcon name="user" sizeClass="size-6" />
-								</a>
-								{isSidebar && (
-									<button
-										type="button"
-										data-burger-toggle
-										class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
-										aria-label="Меню"
-										aria-expanded="false"
-										aria-controls="flux-burger"
-									>
-										<span class="burger-icon" data-icon="open">
-											<NtIcon name="menu-burger" sizeClass="size-6" />
-										</span>
-										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon name="menu-close" sizeClass="size-6" />
-										</span>
-									</button>
-								)}
-							</div>
+							)}
 						</div>
-						<nav
-							class:list={["mt-3 flex w-full items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
-							aria-label="Основная навигация" data-nav-inline
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="997"
-							data-puck-subsection-field="navigationLinks"
+					</div>
+					<nav
+						class:list={["flex h-6 w-full items-center justify-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
+						aria-label="Основная навигация" data-nav-inline
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="navigationLinks"
+					>
+						{nav.map((link) => {
+							const active = isActive(link);
+							return (
+								<a
+									href={link.href}
+									aria-current={active ? "page" : undefined}
+									class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
+								>
+									{link.label}
+								</a>
+							);
+						})}
+					</nav>
+				</>
+			) : (
+				/* top-left (designer default = two-tier эталона): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
+				<>
+					<div class="flex w-full items-center justify-between">
+						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+						</a>
+						<div class="flex items-center gap-4">
+							<button
+								type="button"
+								data-action="toggle-search"
+								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+								aria-label="Поиск"
+							>
+								<NtIcon name="search-lg" sizeClass="size-8" />
+							</button>
+							<a
+								href="/wishlist"
+								class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
+								aria-label="Избранное"
+							>
+								<span class="block size-7" set:html={headerHeartSvg}></span>
+								<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
+							</a>
+							<button
+								type="button"
+								data-cart-open
+								class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+								aria-label="Корзина"
+							>
+								<NtIcon name="cart" sizeClass="size-8" />
+								<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+							</button>
+							<a
+								href="/login" data-auth-link
+								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+								aria-label="Аккаунт"
+							>
+								<NtIcon name="user" sizeClass="size-8" />
+							</a>
+							{isSidebar && (
+								<button
+									type="button"
+									data-burger-toggle
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="flux-burger"
+								>
+									<span class="burger-icon" data-icon="open">
+										<NtIcon name="menu-burger" sizeClass="size-6" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<NtIcon name="menu-close" sizeClass="size-6" />
+									</span>
+								</button>
+							)}
+						</div>
+					</div>
+					<nav
+						class:list={["flex h-6 w-full items-center justify-start gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
+						aria-label="Основная навигация" data-nav-inline
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="navigationLinks"
+					>
+						{nav.map((link) => {
+							const active = isActive(link);
+							return (
+								<a
+									href={link.href}
+									aria-current={active ? "page" : undefined}
+									class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
+								>
+									{link.label}
+								</a>
+							);
+						})}
+					</nav>
+				</>
+			)}
+		</div>
+	) : (
+		/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute / top-right ── */
+		<div class={singleRowContainerCls} style={headerPadStyle}>
+			<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+			</a>
+
+			<nav
+				class:list={["flex items-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
+				aria-label="Основная навигация" data-nav-inline
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="997"
+				data-puck-subsection-field="navigationLinks"
+			>
+				{nav.map((link) => {
+					const active = isActive(link);
+					return (
+						<a
+							href={link.href}
+							aria-current={active ? "page" : undefined}
+							class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
 						>
-							{nav.map((link) => {
-								const active = isActive(link);
-								return (
-									<a
-										href={link.href}
-										aria-current={active ? "page" : undefined}
-										class:list={[
-											"relative pb-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-											active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
-											megaLinkCls,
-										]}
-									>
-										{link.label}
-									</a>
-								);
-							})}
-						</nav>
-					</>
+							{link.label}
+						</a>
+					);
+				})}
+			</nav>
+
+			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end"]}>
+				<button
+					type="button"
+					data-action="toggle-search"
+					class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+					aria-label="Поиск"
+				>
+					<NtIcon name="search-lg" sizeClass="size-8" />
+				</button>
+				<a
+					href="/wishlist"
+					class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
+					aria-label="Избранное"
+				>
+					<span class="block size-7" set:html={headerHeartSvg}></span>
+					<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
+				</a>
+				<button
+					type="button"
+					data-cart-open
+					class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+					aria-label="Корзина"
+				>
+					<NtIcon name="cart" sizeClass="size-8" />
+					<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+				</button>
+				<a
+					href="/login" data-auth-link
+					class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+					aria-label="Аккаунт"
+				>
+					<NtIcon name="user" sizeClass="size-8" />
+				</a>
+				{isSidebar && (
+					<button
+						type="button"
+						data-burger-toggle
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Меню"
+						aria-expanded="false"
+						aria-controls="flux-burger"
+					>
+						<span class="burger-icon" data-icon="open">
+							<NtIcon name="menu-burger" sizeClass="size-6" />
+						</span>
+						<span class="burger-icon hidden" data-icon="close">
+							<NtIcon name="menu-close" sizeClass="size-6" />
+						</span>
+					</button>
 				)}
 			</div>
-		) : (
-			/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
-			<div class={singleRowCls} style={headerPadStyle}>
-				<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
-					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
-				</a>
+		</div>
+	)}
 
-				<nav
-					class:list={["flex items-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
-					aria-label="Основная навигация" data-nav-inline
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="997"
-					data-puck-subsection-field="navigationLinks"
-				>
-					{nav.map((link) => {
-						const active = isActive(link);
-						return (
-							<a
-								href={link.href}
-								aria-current={active ? "page" : undefined}
-								class:list={[
-									"relative pb-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-									active && "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-[rgb(var(--color-accent,250_81_9))] after:content-['']",
-									megaLinkCls,
-								]}
-							>
-								{link.label}
-							</a>
-						);
-					})}
-				</nav>
-
-				<div class:list={["flex items-center gap-4 lg:gap-5", logoLeft && "flex-1 justify-end"]}>
-					<button
-						type="button"
-						data-action="toggle-search"
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-						aria-label="Поиск"
-					>
-						<NtIcon name="search-lg" sizeClass="size-6" />
-					</button>
-					<a
-						href="/wishlist"
-						class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-						aria-label="Избранное"
-					>
-						<span class="block size-6" set:html={headerHeartSvg}></span>
-						<span
-							data-wishlist-count
-							data-empty="true"
-							class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-						>0</span>
-					</a>
-					<button
-						type="button"
-						data-cart-open
-						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-						aria-label="Корзина"
-					>
-						<NtIcon name="cart" sizeClass="size-6" />
-						<span
-							data-cart-count
-							data-empty="true"
-							class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-						>0</span>
-					</button>
-					<a
-						href="/login" data-auth-link
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-						aria-label="Аккаунт"
-					>
-						<NtIcon name="user" sizeClass="size-6" />
-					</a>
-					{isSidebar && (
-						<button
-							type="button"
-							data-burger-toggle
-							class="flex size-8 items-center justify-center transition-opacity hover:opacity-80 lg:size-10"
-							aria-label="Меню"
-							aria-expanded="false"
-							aria-controls="flux-burger"
-						>
-							<span class="burger-icon" data-icon="open">
-								<NtIcon name="menu-burger" sizeClass="size-6" />
-							</span>
-							<span class="burger-icon hidden" data-icon="close">
-								<NtIcon name="menu-close" sizeClass="size-6" />
-							</span>
-						</button>
-					)}
-				</div>
-			</div>
-		)}
-	</div>
-
-	<!-- Desktop Search Panel (expandable) -->
+	<!-- Desktop Search Panel (expandable) — эталон: border-t #F5F5F5, форма h-16 rounded-8 border #FA5109 -->
 	<div
 		data-search-panel
-		class="hidden w-full border-t border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4 py-4 md:px-20 2xl:px-80"
+		class="hidden w-full border-t border-[#F5F5F5] bg-[rgb(var(--color-bg,255_255_255))] py-4"
 		hidden
 	>
-		<form role="search" action="/catalog" method="get" class="mx-auto flex h-12 w-full max-w-[1320px] items-center justify-between gap-2 rounded-[4px] border border-[#FA5109] bg-white pl-3 pr-1">
-			<input
-				type="search"
-				name="q"
-				placeholder="Поиск..."
-				aria-label="Поиск"
-				class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[14px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none md:text-[16px]"
-			/>
-			<button
-				type="submit"
-				class="flex h-10 shrink-0 items-center justify-center rounded-[4px] bg-[#FA5109] px-3 py-2 font-roboto-flex text-[12px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-95 md:text-[14px]"
-			>
-				Найти
-			</button>
-		</form>
+		<div class={deskContainerBase}>
+			<form role="search" action="/catalog" method="get" class="flex h-16 w-full items-center justify-between gap-2 rounded-[8px] border border-[#FA5109] bg-white pl-4 pr-2">
+				<input
+					type="search"
+					name="q"
+					placeholder="Поиск..."
+					aria-label="Поиск"
+					class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
+				/>
+				<button
+					type="submit"
+					class="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				>
+					Найти
+				</button>
+			</form>
+		</div>
 	</div>
 	</header>
 
@@ -532,14 +489,14 @@ const headerHeartSvg =
 			"fixed z-[55] hidden overflow-y-auto bg-white",
 			isSidebar
 				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
-				: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
+				: "inset-x-0 top-[80px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
 		]}
 		role="dialog"
 		aria-modal="true"
 		aria-label="Меню"
 	>
 		{isSidebar ? (
-			/* Sidebar drawer: logo + cart at top */
+			/* Sidebar drawer: logo + wishlist/cart at top */
 			<div class="flex items-center justify-between">
 				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
@@ -551,11 +508,7 @@ const headerHeartSvg =
 						aria-label="Избранное"
 					>
 						<span class="block size-6" set:html={headerHeartSvg}></span>
-						<span
-							data-wishlist-count
-							data-empty="true"
-							class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-						>0</span>
+						<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
 					</a>
 					<button
 						type="button"
@@ -564,23 +517,19 @@ const headerHeartSvg =
 						aria-label="Корзина"
 					>
 						<NtIcon name="cart" sizeClass="size-6" />
-						<span
-							data-cart-count
-							data-empty="true"
-							class="absolute right-0 top-0 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden"
-						>0</span>
+						<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 					</button>
 				</div>
 			</div>
 		) : (
-			/* Mobile drawer: search + profile */
+			/* Mobile drawer (эталон): поиск + профиль сверху */
 			<div class="flex items-center gap-2">
-				<form class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[#999999] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
+				<form class="flex h-11 min-h-11 flex-1 items-center justify-between rounded-[4px] border border-[#F5F5F5] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
 					<input
 						type="search"
 						name="q"
 						placeholder="Поиск"
-						class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
+						class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
 					/>
 					<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
 						<NtIcon name="search-sm" sizeClass="size-6" />
@@ -588,34 +537,30 @@ const headerHeartSvg =
 				</form>
 				<a
 					href="/login" data-auth-link
-					class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-[#FA5109]"
+					class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-black"
 					aria-label="Профиль"
 				>
-					<NtIcon name="user" sizeClass="size-6" />
+					<NtIcon name="user" sizeClass="size-8" class="invert" />
 				</a>
 			</div>
 		)}
 
-		<nav class="mt-6 flex flex-col gap-4" aria-label="Основное меню" data-nav-drawer>
-			{nav.map((link) => {
+		<nav class:list={["flex flex-col gap-3", isSidebar ? "mt-6" : "mt-[52px]"]} aria-label="Основное меню" data-nav-drawer>
+			{nav.filter((l) => l.href !== "/").map((link) => {
 				const active = isActive(link);
 				return (
-					<div class="flex flex-col gap-1">
-						<a
-							href={link.href}
-							class:list={[
-								"text-[14px] font-normal leading-normal",
-								active ? "text-[#000000]" : "text-[#999999]",
-							]}
-						>
-							{link.label}
-						</a>
-						{active && <div class="h-[2px] w-[54px] bg-[#FA5109]" aria-hidden="true"></div>}
-					</div>
+					<a
+						href={link.href}
+						class:list={[
+							"flex h-11 items-center justify-between rounded-[4px] px-3 pr-[10px] font-roboto-flex text-[16px] leading-normal",
+							active ? "bg-black font-normal text-white" : "font-light text-black",
+						]}
+					>
+						<span>{link.label}</span>
+						<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
+					</a>
 				);
 			})}
-			<a href="/cart" class="text-[14px] font-normal leading-normal text-[#999999]">Корзина</a>
-			<a href="/auth/sign-up" class="text-[14px] font-normal leading-normal text-[#999999]">Регистрация</a>
 		</nav>
 	</div>
 
@@ -623,11 +568,6 @@ const headerHeartSvg =
 </div>
 
 <script>
-	const isSidebarDrawer = () => {
-		const burger = document.getElementById("flux-burger");
-		return burger ? burger.classList.contains("inset-y-0") : false;
-	};
-
 	const syncBurgerButtonIcons = (open: boolean) => {
 		// Update ALL burger toggle buttons (mobile #flux-burger-btn + desktop [data-burger-toggle])
 		document.querySelectorAll<HTMLElement>("[data-burger-toggle]").forEach((btn) => {

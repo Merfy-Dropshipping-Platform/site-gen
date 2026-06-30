@@ -12,6 +12,19 @@
  */
 import FluxPicture from "./FluxPicture.astro";
 
+interface VariantSwatchLite {
+  value?: string;
+  color?: string | null;
+  available?: boolean;
+}
+interface VariantGroupLite {
+  name?: string;
+  options?: Array<{ value?: string; swatchHex?: string | null }>;
+}
+interface VariantComboLite {
+  options?: Record<string, string>;
+  available?: boolean;
+}
 interface Product {
   name: string;
   price: string;
@@ -19,6 +32,12 @@ interface Product {
   image: string;
   id?: string;
   discount?: boolean;
+  // Опц. вариант-данные (parity с client renderCardHtml). Demo-товары их НЕ несут
+  // → свотчи/чипы не рендерятся; реальный товар (если прокинут) рисует как эталон.
+  variantSwatches?: VariantSwatchLite[];
+  variantGroups?: VariantGroupLite[];
+  variantCombinations?: VariantComboLite[];
+  compareAtPrice?: number | string | null;
 }
 
 interface Props {
@@ -57,7 +76,112 @@ const {
   cardContainerOn = false,
 } = Astro.props as Props;
 const href = `/products/${product.id}`;
-const showSaleBadge = product.discount === true;
+
+// ─── Свотчи цвета / чипы памяти-размера / бейдж «-N%» (parity с эталоном
+//     FluxProductCard.astro + client renderCardHtml). Логика деривации
+//     заинлайнена (block-папка автономна — без import за пределы папки). ───
+const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const COLOR_GROUP_RE = /^(цвет|color)$/i;
+const CHIP_GROUP_RE = /^(память|memory|storage|накопитель|размер|объ[её]м памяти|размер памяти)$/i;
+const COLOR_NAME_HEX: Record<string, string> = {
+  белый: "#FFFFFF", white: "#FFFFFF", "чёрный": "#000000", черный: "#000000", black: "#000000",
+  красный: "#E02D2D", red: "#E02D2D", синий: "#2D4BE0", blue: "#2D4BE0", голубой: "#6FB7E0",
+  "зелёный": "#2DA84F", зеленый: "#2DA84F", green: "#2DA84F", "жёлтый": "#F2C53D", желтый: "#F2C53D",
+  yellow: "#F2C53D", оранжевый: "#FA5109", orange: "#FA5109", серый: "#9A9A9A", gray: "#9A9A9A",
+  grey: "#9A9A9A", серебро: "#C0C0C0", серебряный: "#C0C0C0", silver: "#C0C0C0", графит: "#3A3A3A",
+  graphite: "#3A3A3A", "бежевый": "#E8D9C0", beige: "#E8D9C0", коричневый: "#7A5230", brown: "#7A5230",
+  розовый: "#F2A0C0", pink: "#F2A0C0", фиолетовый: "#7A3FB0", purple: "#7A3FB0", violet: "#7A3FB0",
+  бордовый: "#6E1423", золотой: "#D4AF37", gold: "#D4AF37", бирюзовый: "#2DBFB0", teal: "#2DBFB0",
+};
+function colorToHex(value?: string | null, hint?: string | null): string | null {
+  const h = String(hint ?? "").trim();
+  if (HEX_RE.test(h)) return h;
+  const v = String(value ?? "").trim();
+  if (HEX_RE.test(v)) return v;
+  return COLOR_NAME_HEX[v.toLowerCase()] ?? null;
+}
+function deriveSwatches(p: Product): { swatches: string[]; swatchDisabled: boolean } {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  let swatchDisabled = false;
+  const push = (hex: string | null, available?: boolean): void => {
+    if (!hex) return;
+    if (available === false) { swatchDisabled = true; return; }
+    const key = hex.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(hex);
+  };
+  if (Array.isArray(p.variantSwatches) && p.variantSwatches.length) {
+    for (const s of p.variantSwatches) push(colorToHex(s?.value, s?.color), s?.available);
+  }
+  if (out.length === 0 && Array.isArray(p.variantGroups)) {
+    const group = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()));
+    if (group && Array.isArray(group.options)) {
+      for (const o of group.options) push(colorToHex(o?.value, o?.swatchHex));
+    }
+  }
+  if (out.length === 0 && Array.isArray(p.variantCombinations)) {
+    for (const c of p.variantCombinations) {
+      const name = c?.options?.["Цвет"] ?? c?.options?.["Color"];
+      push(colorToHex(name), c?.available);
+    }
+  }
+  return { swatches: out.slice(0, 6), swatchDisabled };
+}
+function deriveChips(p: Product): Array<{ value: string; disabled: boolean }> {
+  const groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
+  const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+  const availableValues = new Set<string>();
+  let haveComboData = false;
+  for (const c of combos) {
+    const opts = c?.options ?? {};
+    for (const k of Object.keys(opts)) {
+      if (!CHIP_GROUP_RE.test(String(k).trim())) continue;
+      haveComboData = true;
+      if (c?.available !== false) availableValues.add(String(opts[k]).trim().toLowerCase());
+    }
+  }
+  const out: Array<{ value: string; disabled: boolean }> = [];
+  const seen = new Set<string>();
+  const add = (value?: string | null): void => {
+    const s = String(value ?? "").trim();
+    if (!s) return;
+    const key = s.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ value: s, disabled: haveComboData && !availableValues.has(key) });
+  };
+  for (const g of groups) {
+    if (!g || !CHIP_GROUP_RE.test(String(g.name ?? "").trim())) continue;
+    for (const o of g.options ?? []) add(o?.value);
+  }
+  if (out.length === 0) {
+    for (const c of combos) {
+      const opts = c?.options ?? {};
+      for (const k of Object.keys(opts)) {
+        if (CHIP_GROUP_RE.test(String(k).trim())) add(opts[k]);
+      }
+    }
+  }
+  return out.slice(0, 4);
+}
+function parsePriceNum(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") return Number.isFinite(v) && v > 0 ? v : null;
+  const n = parseInt(String(v).replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+const { swatches, swatchDisabled } = deriveSwatches(product);
+const chips = deriveChips(product);
+// Бейдж: «-N%» при уценке (oldPrice/compareAtPrice > price); иначе legacy «Скидка»
+// (demo-флаг discount, чтобы не потерять заглушку пустой сборки).
+const _oldNum = parsePriceNum(product.oldPrice ?? product.compareAtPrice ?? null);
+const _curNum = parsePriceNum(product.price);
+const salePercent =
+  _oldNum && _curNum && _oldNum > _curNum ? Math.round(((_oldNum - _curNum) / _oldNum) * 100) : null;
+const saleBadgeLabel =
+  salePercent && salePercent > 0 ? `-${salePercent}%` : product.discount === true ? "Скидка" : null;
 // «Контейнер» (cardBackground): true → внутренний отступ 12px со всех сторон +
 //   surface-фон → фото/название/цена/кнопка inset (кнопка width:100% становится
 //   cardW−24, НЕ во всю ширину). false (дефолт) → флеш к краям, фон не задаётся,
@@ -140,12 +264,12 @@ const defaultHeartSvg =
         </svg>
       </div>
     )}
-    {showSaleBadge && (
-      <span
-        class="absolute left-2 top-2 z-10 inline-flex h-6 items-center rounded-[4px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 font-roboto-flex text-[11px] font-light leading-none !text-[#000000] md:text-[12px]"
-      >
-        Скидка
-      </span>
+    {saleBadgeLabel && (
+      <div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+        <span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+          {saleBadgeLabel}
+        </span>
+      </div>
     )}
   </a>
     {/* Сердце избранного (overlay top-right, зеркалит бейдж «Скидка» по позиции).
@@ -164,6 +288,20 @@ const defaultHeartSvg =
       <span data-wishlist-icon class="block size-[18px]" set:html={defaultHeartSvg}></span>
     </button>
   </div>
+  {/* Свотчи цвета (эталон): цветные квадраты + опц. перечёркнутый «недоступный».
+      Demo-товары без вариантов → массив пуст → блок не рендерится. */}
+  {swatches.length > 0 && (
+    <div class="flex items-center gap-1">
+      {swatches.map((c) => (
+        <span class="size-5 rounded-[2px]" style={`background:${c}`} aria-hidden="true"></span>
+      ))}
+      {swatchDisabled && (
+        <span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true">
+          <span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span>
+        </span>
+      )}
+    </div>
+  )}
   <div class="flex w-full flex-col gap-1 text-left">
     <a
       href={href}
@@ -182,6 +320,21 @@ const defaultHeartSvg =
       )}
     </div>
   </div>
+  {/* Чипы памяти/размера (эталон): приглушённый чип = недоступное значение. */}
+  {chips.length > 0 && (
+    <div class="flex flex-wrap items-start gap-1">
+      {chips.map((m) => (
+        <span
+          class:list={[
+            "inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none",
+            m.disabled ? "border-[#F5F5F5] bg-[#F5F5F5] text-[#CCCCCC]" : "border-[#F5F5F5] text-[#000000]",
+          ]}
+        >
+          {m.value}
+        </span>
+      ))}
+    </div>
+  )}
   {/* Быстрое действие (настройка «Быстрое добавление»). Кнопка СНАРУЖИ <a>
       (button-in-anchor — невалидный HTML). Зеркалит client renderCardHtml. */}
   {showQuickAdd && (

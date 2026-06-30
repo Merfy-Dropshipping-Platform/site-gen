@@ -345,14 +345,13 @@ export class PreviewController {
       // getChromeKind('checkout')==='checkout' → пропуск. Изолировано: пустой/
       // упавший рендер → {null,null} → injectChromeIntoHtml = no-op (блоб как был).
       let chromedHtml = builtThemeHtml;
-      // Checkout (verbatim blob): мегаблоки CheckoutForm/CheckoutSummary рендерятся
-      // из dist (checkout.astro зовёт их БЕЗ id) → их секции без data-puck-component-id,
-      // а у внутренних блоков id есть (Spec 102 hydration «checkout-*») → превью-агент
-      // цеплял внутренние блоки. Впрыскиваем id мегаблоков из ревизии на их секции →
-      // resolveSection в агенте выделяет «Оформление заказа»/«Сводка заказа» целиком,
-      // и клик из левого дерева находит секцию по data-puck-component-id.
+      // Checkout (verbatim blob): панели form/summary рендерятся из dist под общей
+      // color-scheme-2 без id. Впрыскиваем на ПАНЕЛЬ (data-checkout-column) из ревизии:
+      // (1) data-puck-component-id → resolveSection выделяет панель-половину целиком +
+      // клик из левого дерева её находит; (2) класс color-scheme-N → панель красится
+      // мерчантской схемой (превью-блоб НЕ проходит live-патч unifyChromeInDist).
       if (route.split('/')[0] === 'checkout') {
-        chromedHtml = this.injectCheckoutBlockIds(chromedHtml, loaded.data);
+        chromedHtml = this.injectCheckoutPaneAttrs(chromedHtml, loaded.data);
       }
       if (getChromeKind(route) === 'full') {
         try {
@@ -846,32 +845,49 @@ export class PreviewController {
   }
 
   /**
-   * Checkout (verbatim blob) — впрыснуть data-puck-component-id мегаблоков
-   * CheckoutForm («Оформление заказа») / CheckoutSummary («Сводка заказа») из id
-   * ревизии на их секции (data-block=checkout-form/summary). checkout.astro зовёт
-   * блоки БЕЗ id → в dist у секций нет data-puck-component-id, и превью-агент
-   * цеплял внутренние блоки (их id хардкод «checkout-*» для __merfyRoot). С id на
-   * контейнере resolveSection выделяет 2 секции целиком + клик из дерева их
-   * находит. Идемпотентно (lookahead на уже присутствующий id).
+   * Checkout (verbatim blob) — впрыснуть на ПАНЕЛЬ form/summary
+   * (data-checkout-column) из ревизии: data-puck-component-id мегаблока
+   * (CheckoutForm/CheckoutSummary) И класс color-scheme-N. checkout.astro зовёт
+   * блоки БЕЗ id и под общей color-scheme-2, поэтому в dist панель не выбираема и
+   * не покрашена мерчантской схемой. id → resolveSection выделяет панель-половину
+   * целиком + клик из дерева её находит; color-scheme-N → панель красит свой фон
+   * (на live это делает unifyChromeInDist; превью-блоб через него не проходит).
+   * Идемпотентно (lookahead на id; класс не дублируется).
    */
-  private injectCheckoutBlockIds(html: string, data: unknown): string {
-    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { id?: unknown } }> }> } | null)?.pagesData ?? {};
+  private injectCheckoutPaneAttrs(html: string, data: unknown): string {
+    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { id?: unknown; colorScheme?: unknown } }> }> } | null)?.pagesData ?? {};
     const content = (pages['page-checkout'] ?? pages['checkout'])?.content;
     if (!Array.isArray(content)) return html;
-    const idOf = (type: string): string | null => {
-      const found = content.find((b) => b?.type === type)?.props?.id;
-      return typeof found === 'string' && found.trim() ? found.trim() : null;
-    };
-    const patch = (h: string, block: string, id: string | null): string => {
-      if (!id) return h;
-      const re = new RegExp(
-        `<section\\b(?![^>]*\\bdata-puck-component-id)([^>]*\\bdata-block="${block}")`,
-      );
-      return h.replace(re, `<section data-puck-component-id="${id}"$1`);
+    const propsOf = (type: string): { id?: unknown; colorScheme?: unknown } =>
+      (content.find((b) => b?.type === type)?.props ?? {});
+    const patch = (h: string, column: string, type: string): string => {
+      const p = propsOf(type);
+      const id = typeof p.id === 'string' && p.id.trim() ? p.id.trim() : null;
+      const scheme =
+        typeof p.colorScheme === 'string' && p.colorScheme.trim()
+          ? p.colorScheme.trim()
+          : null;
+      let out = h;
+      if (id) {
+        const reId = new RegExp(
+          `<div\\b(?![^>]*\\bdata-puck-component-id)([^>]*\\bdata-checkout-column="${column}")`,
+        );
+        out = out.replace(reId, `<div data-puck-component-id="${id}"$1`);
+      }
+      if (scheme) {
+        const cls = `color-scheme-${scheme.replace('scheme-', '')}`;
+        const reCls = new RegExp(
+          `(<div\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-checkout-column="${column}")`,
+        );
+        out = out.replace(reCls, (m, p1: string, classes: string, p3: string) =>
+          classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
+        );
+      }
+      return out;
     };
     let out = html;
-    out = patch(out, 'checkout-form', idOf('CheckoutForm'));
-    out = patch(out, 'checkout-summary', idOf('CheckoutSummary'));
+    out = patch(out, 'form', 'CheckoutForm');
+    out = patch(out, 'summary', 'CheckoutSummary');
     return out;
   }
 

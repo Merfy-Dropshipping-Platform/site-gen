@@ -34,12 +34,19 @@ const nav: NavLink[] =
 		: defaultNav;
 
 // Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux = ТЕКСТ-лого
-// {SITE_TITLE} — Roboto Flex uppercase (НЕ comfortaa: эталон верстальщиков целиком на
-// Roboto Flex; реальный лого верстальщика = img logo-flux.svg, у нас ассета нет →
-// текст-фоллбек тем же шрифтом, размер близкий к h-6/24px логотипа эталона).
+// <img src={logo}> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux
+// (мерчант НЕ задал logo) = барчарт-SVG `/icons/logo-flux.svg` (эталон верстальщиков,
+// 81×24, рендер h-6/24px). Текст-лого {siteTitle} остаётся ТОЛЬКО крайним фоллбэком —
+// через alt дефолтного img (ассет не загрузился → браузер покажет alt = название).
 const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+
+// Канон actionButtons {showCart, showSearch, showProfile} (строки "true"/"false";
+// панель «Кнопки действий»): show/hide трёх иконок шапки. Отсутствие/иное → показаны
+// (дефолт = эталон верстальщиков: поиск + корзина + профиль).
+const showSearch = String(p.actionButtons?.showSearch ?? "true") !== "false";
+const showCart = String(p.actionButtons?.showCart ?? "true") !== "false";
+const showProfile = String(p.actionButtons?.showProfile ?? "true") !== "false";
 
 // Канон logoPosition: 'top-left' (canon-default = two-tier эталона) / 'top-center' /
 // 'center-left' / 'center-absolute' (+ 'top-right' из enum → single-row). Отсутствие /
@@ -104,28 +111,15 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 
-// Сердце «Избранное» в хедере (outline-дефолт). 4-я иконка — у верстальщика её нет,
-// Merfy-фича ОСТАВЛЯЕМ (после search, перед cart). Инлайн-SVG (НЕ NtIcon=<img> — не
-// перекрашивается): глобальный делегат initWishlistUI красит filled/outline. Геометрия
-// = public/icons/favourite.svg; currentColor наследуется от иконки-ссылки.
-const headerHeartSvg =
-	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
-	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
-	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
-	"</svg>";
-
-// Бейдж счётчика (корзина/избранное) — эталон верстальщика: -right-1 -top-1,
+// Бейдж счётчика (корзина) — эталон верстальщика: -right-1 -top-1,
 // h-[18px] min-w-[18px], bg-[#FA5109], Roboto Flex 11px белый.
 const badgeCls =
 	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
 
-// Текст-лого: Roboto Flex uppercase. img-ветка = h-6 (24px) как логотип эталона.
-const desktopLogoCls = logo
-	? `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`
-	: `flex shrink-0 items-center font-roboto-flex text-[24px] font-medium uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
-const mobileLogoCls = logo
-	? "flex items-center hover:opacity-80"
-	: "flex items-center font-roboto-flex text-[18px] font-medium uppercase text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80";
+// Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
+// якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
+const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
+const mobileLogoCls = "flex items-center hover:opacity-80";
 
 // Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
 const deskContainerBase = "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80";
@@ -182,26 +176,20 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 			</span>
 		</button>
 		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
-			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
 		</a>
 		<div class="flex items-center gap-3">
-			<a
-				href="/wishlist"
-				class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-				aria-label="Избранное"
-			>
-				<span class="block size-6" set:html={headerHeartSvg}></span>
-				<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
-			</a>
-			<button
-				type="button"
-				data-cart-open
-				class="relative flex size-8 items-center justify-center"
-				aria-label="Корзина"
-			>
-				<NtIcon name="cart" sizeClass="size-6" />
-				<span data-cart-count data-empty="true" class={badgeCls}>0</span>
-			</button>
+			{showCart && (
+				<button
+					type="button"
+					data-cart-open
+					class="relative flex size-8 items-center justify-center"
+					aria-label="Корзина"
+				>
+					<NtIcon name="cart" sizeClass="size-6" />
+					<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+				</button>
+			)}
 		</div>
 	</div>
 
@@ -213,45 +201,43 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				<>
 					<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
 						<div class="flex items-center">
-							<button
-								type="button"
-								data-action="toggle-search"
-								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Поиск"
-							>
-								<NtIcon name="search-lg" sizeClass="size-8" />
-							</button>
+							{showSearch && (
+								<button
+									type="button"
+									data-action="toggle-search"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Поиск"
+								>
+									<NtIcon name="search-lg" sizeClass="size-8" />
+								</button>
+							)}
 						</div>
 						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
 							</a>
 						</div>
 						<div class="flex items-center justify-end gap-4">
-							<a
-								href="/wishlist"
-								class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-								aria-label="Избранное"
-							>
-								<span class="block size-7" set:html={headerHeartSvg}></span>
-								<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
-							</a>
-							<button
-								type="button"
-								data-cart-open
-								class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Корзина"
-							>
-								<NtIcon name="cart" sizeClass="size-8" />
-								<span data-cart-count data-empty="true" class={badgeCls}>0</span>
-							</button>
-							<a
-								href="/login" data-auth-link
-								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Аккаунт"
-							>
-								<NtIcon name="user" sizeClass="size-8" />
-							</a>
+							{showCart && (
+								<button
+									type="button"
+									data-cart-open
+									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Корзина"
+								>
+									<NtIcon name="cart" sizeClass="size-8" />
+									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+								</button>
+							)}
+							{showProfile && (
+								<a
+									href="/login" data-auth-link
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Аккаунт"
+								>
+									<NtIcon name="user" sizeClass="size-8" />
+								</a>
+							)}
 							{isSidebar && (
 								<button
 									type="button"
@@ -297,41 +283,39 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				<>
 					<div class="flex w-full items-center justify-between">
 						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
 						</a>
 						<div class="flex items-center gap-4">
-							<button
-								type="button"
-								data-action="toggle-search"
-								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Поиск"
-							>
-								<NtIcon name="search-lg" sizeClass="size-8" />
-							</button>
-							<a
-								href="/wishlist"
-								class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-								aria-label="Избранное"
-							>
-								<span class="block size-7" set:html={headerHeartSvg}></span>
-								<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
-							</a>
-							<button
-								type="button"
-								data-cart-open
-								class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Корзина"
-							>
-								<NtIcon name="cart" sizeClass="size-8" />
-								<span data-cart-count data-empty="true" class={badgeCls}>0</span>
-							</button>
-							<a
-								href="/login" data-auth-link
-								class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-								aria-label="Аккаунт"
-							>
-								<NtIcon name="user" sizeClass="size-8" />
-							</a>
+							{showSearch && (
+								<button
+									type="button"
+									data-action="toggle-search"
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Поиск"
+								>
+									<NtIcon name="search-lg" sizeClass="size-8" />
+								</button>
+							)}
+							{showCart && (
+								<button
+									type="button"
+									data-cart-open
+									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Корзина"
+								>
+									<NtIcon name="cart" sizeClass="size-8" />
+									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+								</button>
+							)}
+							{showProfile && (
+								<a
+									href="/login" data-auth-link
+									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Аккаунт"
+								>
+									<NtIcon name="user" sizeClass="size-8" />
+								</a>
+							)}
 							{isSidebar && (
 								<button
 									type="button"
@@ -378,7 +362,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 		/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute / top-right ── */
 		<div class={singleRowContainerCls} style={headerPadStyle}>
 			<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
 			</a>
 
 			<nav
@@ -403,38 +387,36 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 			</nav>
 
 			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end"]}>
-				<button
-					type="button"
-					data-action="toggle-search"
-					class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-					aria-label="Поиск"
-				>
-					<NtIcon name="search-lg" sizeClass="size-8" />
-				</button>
-				<a
-					href="/wishlist"
-					class="relative flex size-8 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-					aria-label="Избранное"
-				>
-					<span class="block size-7" set:html={headerHeartSvg}></span>
-					<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
-				</a>
-				<button
-					type="button"
-					data-cart-open
-					class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-					aria-label="Корзина"
-				>
-					<NtIcon name="cart" sizeClass="size-8" />
-					<span data-cart-count data-empty="true" class={badgeCls}>0</span>
-				</button>
-				<a
-					href="/login" data-auth-link
-					class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
-					aria-label="Аккаунт"
-				>
-					<NtIcon name="user" sizeClass="size-8" />
-				</a>
+				{showSearch && (
+					<button
+						type="button"
+						data-action="toggle-search"
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Поиск"
+					>
+						<NtIcon name="search-lg" sizeClass="size-8" />
+					</button>
+				)}
+				{showCart && (
+					<button
+						type="button"
+						data-cart-open
+						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Корзина"
+					>
+						<NtIcon name="cart" sizeClass="size-8" />
+						<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+					</button>
+				)}
+				{showProfile && (
+					<a
+						href="/login" data-auth-link
+						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Аккаунт"
+					>
+						<NtIcon name="user" sizeClass="size-8" />
+					</a>
+				)}
 				{isSidebar && (
 					<button
 						type="button"
@@ -496,52 +478,50 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 		aria-label="Меню"
 	>
 		{isSidebar ? (
-			/* Sidebar drawer: logo + wishlist/cart at top */
+			/* Sidebar drawer: logo + cart at top */
 			<div class="flex items-center justify-between">
 				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
-					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
+					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
 				</a>
 				<div class="flex items-center gap-3">
-					<a
-						href="/wishlist"
-						class="relative flex size-10 shrink-0 items-center justify-center text-[#000000] transition-opacity hover:opacity-80"
-						aria-label="Избранное"
-					>
-						<span class="block size-6" set:html={headerHeartSvg}></span>
-						<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
-					</a>
-					<button
-						type="button"
-						data-cart-open
-						class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
-						aria-label="Корзина"
-					>
-						<NtIcon name="cart" sizeClass="size-6" />
-						<span data-cart-count data-empty="true" class={badgeCls}>0</span>
-					</button>
+					{showCart && (
+						<button
+							type="button"
+							data-cart-open
+							class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+							aria-label="Корзина"
+						>
+							<NtIcon name="cart" sizeClass="size-6" />
+							<span data-cart-count data-empty="true" class={badgeCls}>0</span>
+						</button>
+					)}
 				</div>
 			</div>
 		) : (
 			/* Mobile drawer (эталон): поиск + профиль сверху */
 			<div class="flex items-center gap-2">
-				<form class="flex h-11 min-h-11 flex-1 items-center justify-between rounded-[4px] border border-[#F5F5F5] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
-					<input
-						type="search"
-						name="q"
-						placeholder="Поиск"
-						class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
-					/>
-					<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
-						<NtIcon name="search-sm" sizeClass="size-6" />
-					</button>
-				</form>
-				<a
-					href="/login" data-auth-link
-					class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-black"
-					aria-label="Профиль"
-				>
-					<NtIcon name="user" sizeClass="size-8" class="invert" />
-				</a>
+				{showSearch && (
+					<form class="flex h-11 min-h-11 flex-1 items-center justify-between rounded-[4px] border border-[#F5F5F5] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
+						<input
+							type="search"
+							name="q"
+							placeholder="Поиск"
+							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
+						/>
+						<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
+							<NtIcon name="search-sm" sizeClass="size-6" />
+						</button>
+					</form>
+				)}
+				{showProfile && (
+					<a
+						href="/login" data-auth-link
+						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-black"
+						aria-label="Профиль"
+					>
+						<NtIcon name="user" sizeClass="size-8" class="invert" />
+					</a>
+				)}
 			</div>
 		)}
 

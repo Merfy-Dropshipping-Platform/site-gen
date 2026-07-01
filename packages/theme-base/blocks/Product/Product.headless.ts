@@ -37,7 +37,9 @@ export function formatRub(amount: number): string {
 }
 
 function toPriceView(raw: number | string | null | undefined): PriceView {
-  const amount = parsePrice(raw);
+  // Цены storefront-data / products.json (basePrice/compareAtPrice) — в КОПЕЙКАХ.
+  // Делим /100 в единой headless-точке → рубли для SSR-отображения и cart (amount).
+  const amount = Math.round(parsePrice(raw) / 100);
   return { amount, formatted: formatRub(amount) };
 }
 

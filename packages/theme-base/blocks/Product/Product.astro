@@ -422,7 +422,8 @@ const cartImage = view.gallery.hero?.src ?? '';
     function fmtPrice(p) {
       const num = typeof p === 'number' ? p : parseFloat(String(p).replace(/[^\d.,-]/g, '').replace(',', '.'));
       if (!Number.isFinite(num) || num <= 0) return '';
-      return Math.round(num).toLocaleString('ru-RU') + ' ₽';
+      // Цены (basePrice/variant.price) — в КОПЕЙКАХ → рубли.
+      return Math.round(num / 100).toLocaleString('ru-RU') + ' ₽';
     }
     function findVariantByOptions(variants, sel) {
       const keys = Object.keys(sel);
@@ -543,8 +544,8 @@ const cartImage = view.gallery.hero?.src ?? '';
       const heroSrc = (heroImg && heroImg.getAttribute('src')) || '';
       if (pid) addBtn.setAttribute('data-product-id', pid);
       if (name) addBtn.setAttribute('data-name', name);
-      addBtn.setAttribute('data-price', String(Math.round(unit)));
-      if (Number.isFinite(old) && old > 0) addBtn.setAttribute('data-old-price', String(Math.round(old)));
+      addBtn.setAttribute('data-price', String(Math.round(unit / 100)));
+      if (Number.isFinite(old) && old > 0) addBtn.setAttribute('data-old-price', String(Math.round(old / 100)));
       else addBtn.removeAttribute('data-old-price');
       if (heroSrc) addBtn.setAttribute('data-image', heroSrc);
       addBtn.setAttribute('data-quantity', String(currentQty));

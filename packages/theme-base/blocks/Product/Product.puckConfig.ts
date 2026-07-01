@@ -212,9 +212,10 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       hintLinkText: 'Товары',
       hintLinkHref: '/products',
     } as any,
-    // Figma 1236-42145: подпанель «Кнопки» = одна «Основная кнопка» с полем
-    // «Текст» (пусто = скрыть кнопку). Вторая кнопка «Купить сейчас»
-    // управляется тоглом «Динамическая кнопка» в основном сайдбаре.
+    // Figma 1236-42145: подпанель «Кнопки» = «Основная кнопка» (addToCart) +
+    // «Динамическая кнопка» (buyNow), у каждой поле «Текст». Пусто у Основной =
+    // скрыть кнопку; пусто у Динамической = дефолтный лейбл «Купить сейчас»
+    // (видимость динамической управляется тоглом «Динамическая кнопка» в осн. сайдбаре).
     buttons: {
       type: 'object',
       label: 'Кнопки',
@@ -225,6 +226,13 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
           label: 'Основная кнопка',
           objectFields: {
             text: { type: 'text', label: 'Текст', placeholder: '*Оставьте пустой, чтобы скрыть' },
+          },
+        },
+        buyNow: {
+          type: 'object',
+          label: 'Динамическая кнопка',
+          objectFields: {
+            text: { type: 'text', label: 'Текст', placeholder: 'Купить сейчас' },
           },
         },
       },

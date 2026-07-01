@@ -127,7 +127,11 @@ const textContent = text?.content ?? badge?.text ?? '';
 const addBtnTextRaw = buttons?.addToCart?.text;
 const addBtnText = addBtnTextRaw === undefined ? 'Добавить в корзину' : addBtnTextRaw;
 const showAddToCart = String(addBtnText).trim() !== '';
-const buyBtnText = 'Купить сейчас';
+// Figma 1236-42145: «Динамическая кнопка» → редактируемый текст
+// (buttons.buyNow.text из подпанели «Кнопки»); пусто = дефолтный лейбл
+// «Купить сейчас». Видимость кнопки — отдельный тогл dynamicButton (ниже).
+const buyBtnTextRaw = buttons?.buyNow?.text;
+const buyBtnText = String(buyBtnTextRaw ?? '').trim() || 'Купить сейчас';
 const dynVal =
   dynamicButton && typeof dynamicButton === 'object'
     ? (dynamicButton as { enabled?: string }).enabled

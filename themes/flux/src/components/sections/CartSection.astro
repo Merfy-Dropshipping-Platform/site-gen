@@ -5,6 +5,9 @@
 // главная, корзину можно двигать/настраивать, добавлять другие секции вокруг.
 // Корзина одна на странице (maxInstances:1) → document.querySelector безопасен
 // (first-match не ловит дубль). Резолвится раньше theme-base скаффолда (resolveV2Section).
+// Вёрстка приведена к канону верстальщиков (flux-theme/src/pages/cart.astro, Figma
+// 905-18809): roboto-flex, flux-container, контент слева (max-w-[343px]), оранж-кнопка
+// оформления, богатая товарная строка (207px превью + чёрный счётчик + Цвет/Размер).
 
 interface Props {
 	id?: string;
@@ -28,62 +31,73 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-puck-component-id={id}
 	data-block="cart-section"
 	class:list={[
-		"w-full bg-white px-4 md:px-20 2xl:px-[300px]",
+		"w-full bg-white",
 		schemeClass,
-		padStyle ? "" : "pb-[60px] pt-16 md:pb-[80px] md:pt-20",
+		padStyle ? "" : "pb-[80px] pt-[40px] md:pb-[120px] md:pt-[60px]",
 	]}
 	style={padStyle}
 	aria-labelledby="cart-title"
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-16">
+	<div class="mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80">
 		<!-- Пустое состояние -->
 		<div
 			data-cart-page-empty
-			class="flex flex-col items-center gap-4 py-10"
+			class="flex w-full max-w-[343px] flex-col items-start gap-6"
 		>
-			<h1
-				id="cart-title"
-				class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px]"
-			>
-				Корзина
-			</h1>
-			<p class="font-manrope text-[14px] font-light leading-normal text-[#999999] md:text-[16px]">
-				Вы пока не добавили товар в корзину.
-			</p>
+			<div class="flex w-full flex-col items-start gap-2">
+				<h1
+					id="cart-title"
+					class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-black"
+				>
+					Корзина
+				</h1>
+				<p class="font-roboto-flex text-[16px] font-light leading-normal text-[#cccccc]">
+					Вы пока не добавили товар в корзину
+				</p>
+			</div>
 			<a
 				href="/catalog"
-				class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
 			>
 				Продолжить покупки
 			</a>
-			<p class="font-manrope text-[14px] font-normal leading-normal text-[#999999] md:text-[16px]">
+			<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]">
 				Есть аккаунт?
-				<a href="/auth/sign-in" class="text-[#000000] hover:opacity-80">Войти</a>
+				<a href="/auth/sign-in" class="text-black hover:opacity-80">Войти</a>
 			</p>
 		</div>
 
 		<!-- Наполненная корзина -->
 		<div
 			data-cart-page-filled
-			class="hidden flex-col gap-10"
+			class="hidden w-full flex-col gap-6"
 		>
-			<h1 class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px]">
-				Корзина
-			</h1>
-			<ul
-				data-cart-page-items
-				role="list"
-				class="flex flex-col gap-6"
-			></ul>
-			<div class="flex items-center justify-end gap-6 border-t border-[#F5F5F5] pt-6">
-				<span class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">Итого</span>
-				<span data-cart-page-total class="font-manrope text-[20px] font-normal leading-normal text-[#000000]">0 ₽</span>
+			<div class="flex flex-col gap-6">
+				<h1 class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-black">
+					Корзина
+				</h1>
+				<ul
+					data-cart-page-items
+					role="list"
+					class="flex flex-col gap-6"
+				></ul>
 			</div>
-			<div class="flex justify-end">
+
+			<!-- Сводка заказа -->
+			<div class="flex w-full max-w-[343px] flex-col gap-6 pt-1">
+				<div class="flex flex-col gap-4">
+					<p class="max-w-[269px] font-roboto-flex text-[14px] font-light leading-normal text-[#cccccc]">
+						Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
+					</p>
+					<div class="flex items-center gap-3">
+						<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">Итого</span>
+						<span data-cart-page-total class="font-roboto-flex text-[20px] font-light leading-normal text-black">0 ₽</span>
+					</div>
+				</div>
 				<button
 					type="button"
 					data-action="checkout"
-					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					class="inline-flex h-[56px] w-full items-center justify-center rounded-[6px] bg-[#FA5109] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
 				>
 					Оформить заказ
 				</button>
@@ -95,6 +109,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 <script>
 	import { getCart, getCartTotal, formatCartPrice } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
+	import { withBase } from "../../lib/with-base";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
 	const filledBlock = document.querySelector<HTMLElement>("[data-cart-page-filled]");
@@ -118,26 +133,56 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 		itemsEl.innerHTML = lines
 			.map((line) => {
-				const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+				// Богатая товарная строка — канон верстальщиков (207px превью + бейдж
+				// скидки + Цвет/Размер + чёрный счётчик с иконками). Данные счётчика/
+				// удаления (data-cart-inc/dec/remove + data-id) НЕ трогаем: их слушает
+				// общий делегат initCartUI (nt-cart-flux.ts). «Новинка»-бейдж опущен —
+				// NtCartLine его не несёт; бейдж скидки берётся из реального oldPrice.
+				const color = line.variant?.color ?? "";
+				const size = line.variant?.size ?? "";
+				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
+				const oldPrice = hasSale ? formatCartPrice(line.oldPrice as number) : "";
+				const discountPercent = hasSale
+					? `-${Math.round((1 - line.price / (line.oldPrice as number)) * 100)}%`
+					: "";
+				const badges = discountPercent
+					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-white">${discountPercent}</span></div>`
+					: "";
+				const varInfo =
+					color || size
+						? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-black">${color ? `<span>Цвет:</span><span>${color}</span>` : ""}${size ? `<span class="ml-1">Размер:</span><span>${size}</span>` : ""}</div>`
+						: "";
 				return `
-					<li class="flex flex-col gap-4 border-b border-[#F5F5F5] pb-6 md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
-						<div class="flex gap-4">
-							<a href="/products/${line.productId}" class="block size-24 shrink-0 overflow-hidden bg-[#F5F5F5]">
-								${cartLineThumbPictureHtml(line.image, line.name)}
-							</a>
-							<div class="flex flex-col gap-2">
-								<a href="/products/${line.productId}" class="font-manrope text-[16px] font-normal text-[#000000] hover:opacity-80 md:text-[20px]">${line.name}</a>
-								${variant ? `<span class="font-manrope text-[14px] font-light text-[#999999]">${variant}</span>` : ""}
-								<button type="button" data-cart-remove data-id="${line.id}" class="w-fit font-manrope text-[14px] font-normal text-[#999999] transition-opacity hover:text-[#000000]">Удалить</button>
+					<li class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4" data-line-id="${line.id}">
+						<a href="/products/${line.productId}" class="relative block size-[207px] shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] max-sm:size-[140px]">
+							${cartLineThumbPictureHtml(line.image, line.name)}
+							${badges}
+						</a>
+						<div class="flex min-w-0 flex-1 items-start gap-4 self-stretch">
+							<div class="flex min-w-0 flex-1 flex-col gap-4">
+								<div class="flex flex-col gap-1">
+									<a href="/products/${line.productId}" class="font-roboto-flex text-[20px] font-light leading-normal text-black transition-opacity hover:opacity-70">${line.name}</a>
+									<div class="flex items-center gap-2 uppercase">
+										<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">${formatCartPrice(line.price)}</span>
+										${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[#cccccc] line-through">${oldPrice}</span>` : ""}
+									</div>
+								</div>
+								${varInfo}
 							</div>
-						</div>
-						<div class="flex items-center justify-between gap-6 md:flex-col md:items-end md:justify-start md:gap-3">
-							<div class="inline-flex h-10 items-center rounded-[4px] border border-[#F5F5F5]">
-								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Уменьшить">−</button>
-								<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
-								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Увеличить">+</button>
+							<div class="flex h-full w-auto shrink-0 flex-col items-end justify-between gap-4 sm:w-[111px]">
+								<button type="button" data-cart-remove data-id="${line.id}" class="flex size-6 items-center justify-center transition-opacity hover:opacity-70" aria-label="Удалить товар">
+									<img src="${withBase("/icons/menu-close.svg")}" alt="" aria-hidden="true" width="12" height="12" class="size-3" />
+								</button>
+								<div class="inline-flex items-center justify-center gap-2 rounded-[4px] bg-black p-2">
+									<button type="button" data-cart-dec data-id="${line.id}" class="flex size-8 items-center justify-center rounded-[4px] transition-opacity hover:opacity-70" aria-label="Уменьшить количество">
+										<img src="${withBase("/icons/minus.svg")}" alt="" aria-hidden="true" width="16" height="16" class="size-4 brightness-0 invert" />
+									</button>
+									<span class="min-w-[16px] text-center font-roboto-flex text-[20px] font-light leading-normal text-white">${line.quantity}</span>
+									<button type="button" data-cart-inc data-id="${line.id}" class="flex size-8 items-center justify-center rounded-[4px] transition-opacity hover:opacity-70" aria-label="Увеличить количество">
+										<img src="${withBase("/icons/plus.svg")}" alt="" aria-hidden="true" width="16" height="16" class="size-4 brightness-0 invert" />
+									</button>
+								</div>
 							</div>
-							<span class="font-manrope text-[16px] font-normal text-[#000000] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
 						</div>
 					</li>
 				`;

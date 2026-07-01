@@ -2,7 +2,6 @@
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
-import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
 import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
@@ -36,14 +35,13 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			<slot />
 		</main>
 		{/* Чекаут — без футера (header="checkout"), паритет с rose. */}
-		{header !== "checkout" ? (
-			<Footer />
-		) : (
-			<div class="color-scheme-2" style="display:contents;">
-				<CheckoutFooterStrip siteTitle={SITE_TITLE} />
-			</div>
-		)}
+		{header !== "checkout" && <Footer />}
 		<NtCartDrawer rootId="flux-cart-drawer-root" eventPrefix="flux:cart" />
+		{/* Стор корзины (window.cartStore) — общий бэкенд-стор витрины (как rose
+		    BaseLayout): quick-add в каталоге/Popular вызывает window.cartStore.addItem.
+		    Без него /catalog не грузил cart-store.js → window.cartStore undefined →
+		    «В корзину» не работало. Подключаем глобально на ВСЕХ страницах. */}
+		<script is:inline type="module" src="/scripts/cart-store.js"></script>
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initAnimations } from "../lib/animations";

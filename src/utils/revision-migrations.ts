@@ -1370,6 +1370,70 @@ function backfillProductVariants(pagesData: Record<string, unknown>): Record<str
   return changed ? out : pagesData;
 }
 
+/**
+ * Hero legacy→nested бэкфилл. Баг: в панели «Изображение» (Hero) инпуты
+ * «Заголовок» / «Текст» / «Текст» основной кнопки ПУСТЫЕ, хотя на витрине
+ * заголовок/кнопка отображаются. Причина: старые ревизии хранят Hero в ПЛОСКОЙ
+ * форме (`title` / `subtitle` / `cta`), а поля конструктора привязаны к
+ * ВЛОЖЕННЫМ пропам (`heading.text` / `text.content` / `primaryButton.text`).
+ * Hero.astro читает обе формы с фолбэком `new ?? legacy` → на витрине всё видно,
+ * но поля панели (bind только к nested) пустые = десинк.
+ *
+ * Бэкфилл КОПИРУЕТ непустые legacy-значения в nested-пропы. Legacy сохраняем
+ * 1-в-1 (backward-compat при rollback кода — puckConfig держит их hidden).
+ * Рендер-нейтрально: new === legacy → resolved-строка та же (кнопка/заголовок
+ * не меняются). Пустое состояние Hero (Figma-плейсхолдер) не затрагивается —
+ * оно считается из тех же raw legacy/nested пропов. Идемпотентно: блок с уже
+ * заданным nested-пропом пропускается.
+ */
+function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  const isBlank = (v: unknown): boolean => v == null || v === '';
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    const pd = page as PageData | undefined;
+    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    if (!content) continue;
+    let pageChanged = false;
+    const newContent = content.map((block) => {
+      if (block?.type !== 'Hero') return block;
+      const props = (block.props ?? {}) as Record<string, unknown>;
+      const patch: Record<string, unknown> = {};
+
+      // «Заголовок»: heading.text ← legacy title.
+      const heading = props.heading as Record<string, unknown> | undefined;
+      if (isBlank(heading?.text) && typeof props.title === 'string' && props.title !== '') {
+        patch.heading = { ...(heading ?? {}), text: props.title };
+      }
+
+      // «Текст»: text.content ← legacy subtitle.
+      const text = props.text as Record<string, unknown> | undefined;
+      if (isBlank(text?.content) && typeof props.subtitle === 'string' && props.subtitle !== '') {
+        patch.text = { ...(text ?? {}), content: props.subtitle };
+      }
+
+      // «Кнопка основная»: primaryButton.{text,link} ← legacy cta.{text,href}.
+      const primaryButton = props.primaryButton as Record<string, unknown> | undefined;
+      const cta = props.cta as { text?: unknown; href?: unknown } | undefined;
+      if (isBlank(primaryButton?.text) && cta && typeof cta.text === 'string' && cta.text !== '') {
+        patch.primaryButton = {
+          text: cta.text,
+          link: { href: typeof cta.href === 'string' ? cta.href : '' },
+        };
+      }
+
+      if (Object.keys(patch).length === 0) return block;
+      pageChanged = true;
+      return { ...block, props: { ...props, ...patch } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(pd as object), content: newContent };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -1406,6 +1470,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillProductVariants(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = backfillHeroLegacyProps(out.pagesData as Record<string, unknown>);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.

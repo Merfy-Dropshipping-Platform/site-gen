@@ -907,19 +907,34 @@ const skeletons = Array.from({ length: skeletonCount });
     // Бейдж «-N%» (оверлей поверх фото).
     const saleBadge = cardSaleBadgeHtml(p);
     // quickAdd-кнопка — СНАРУЖИ <a> (button-in-anchor невалиден). data-quick-add-id
-    // ловит обработчик добавления в корзину. Решение владельца: товар с вариантами
-    // добавляет ПЕРВУЮ доступную комбинацию (combo.id), а не товар без варианта —
-    // несём её id в data-quick-add-combo-id (handler читает и шлёт в cartStore).
+    // ловит обработчик добавления в корзину (bindCardInteractions). Товар с вариантами
+    // добавляет ПЕРВУЮ доступную комбинацию (combo.id + её цвет/размер), иначе товар
+    // без варианта. Данные товара (имя / цена-в-рублях / фото / старая цена / вариант)
+    // несём в data-* — handler кладёт их в nt-cart (flux:cart:v1), ЕДИНЫЙ стор витрины
+    // (его читают секция «Корзина» и шапка-drawer). Цена уже в рублях (mapApiProduct
+    // делит копейки/100) → data-price = рубли, nt-cart parsePrice НЕ делит повторно.
     const _vc = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
     const _hasVariants = p.hasVariants === true || _vc.length > 0;
     const _firstCombo = _hasVariants
       ? _vc.find((c) => c && c.available !== false) || _vc[0]
       : null;
+    const _comboOpts = (_firstCombo && _firstCombo.options) || {};
+    const _comboColor = _comboOpts["Цвет"] || _comboOpts["Color"] || "";
+    const _comboSize = _comboOpts["Размер"] || _comboOpts["Size"] || "";
     const comboAttr = _firstCombo
       ? ` data-quick-add-combo-id="${escapeHtml(String(_firstCombo.id))}"`
       : "";
+    // Данные строки корзины (parity с контрактом [data-add-to-cart] PDP/Popular):
+    // name уже escapeHtml (см. выше), rawImage = первое фото. Пустые поля не пишем.
+    const quickAddDataAttrs =
+      ` data-name="${name}"` +
+      ` data-price="${escapeHtml(String(p.price == null ? "" : p.price))}"` +
+      (p.oldPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice))}"` : "") +
+      (rawImage ? ` data-image="${escapeHtml(rawImage)}"` : "") +
+      (_comboColor ? ` data-variant-color="${escapeHtml(_comboColor)}"` : "") +
+      (_comboSize ? ` data-variant-size="${escapeHtml(_comboSize)}"` : "");
     const quickBtn = showQuickAdd
-      ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}"${comboAttr} style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
+      ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}"${comboAttr}${quickAddDataAttrs} style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
       : "";
     // Сердце избранного (overlay top-right) — зеркалит FluxProductCard.astro (parity
     // SSG↔client). Начальное состояние читаем из глобала window.__fluxWishlist
@@ -1390,6 +1405,68 @@ const skeletons = Array.from({ length: skeletonCount });
     });
   }
 
+  // ─────────── nt-cart (flux:cart:v1) — инлайн-запись как lib/nt-cart-flux.ts ───────────
+  // is:inline НЕ резолвит `import { addToCart }`, поэтому тело addToCart перенесено
+  // 1:1: тот же storageKey ("flux:cart:v1") и событие ("flux:cart:updated"), что
+  // читают секция «Корзина» (CartSection getCart + слушатель flux:cart:updated) и
+  // шапка-drawer (initCartUI). Единый стор витрины (как rose) → quick-add из каталога
+  // СРАЗУ виден в корзине. cartStore (backend) НЕ трогаем — он наполняется из nt-cart
+  // при оформлении (мост CartSection «Оформить заказ»).
+  const NT_CART_KEY = "flux:cart:v1";
+  const NT_CART_EVENT = "flux:cart:updated";
+  function ntParsePrice(raw) {
+    if (typeof raw === "number") return Number.isFinite(raw) ? raw : 0;
+    const digits = String(raw == null ? "" : raw).replace(/[^\d]/g, "");
+    return digits ? Number(digits) : 0;
+  }
+  function ntReadCart() {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(NT_CART_KEY) || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  // Зеркалит makeLineId (nt-cart-flux.ts): productId|comboId|color|size, пустые опущены.
+  function ntMakeLineId(productId, variant) {
+    return [
+      productId,
+      variant && variant.variantCombinationId,
+      variant && variant.color,
+      variant && variant.size,
+    ]
+      .filter(Boolean)
+      .join("|");
+  }
+  function ntAddToCart(opts) {
+    const lines = ntReadCart();
+    const variant = opts.variant || {};
+    const id = ntMakeLineId(opts.productId, variant);
+    const quantity = Math.max(1, opts.quantity || 1);
+    const price = ntParsePrice(opts.price);
+    const oldPrice =
+      opts.oldPrice !== undefined && opts.oldPrice !== null && opts.oldPrice !== ""
+        ? ntParsePrice(opts.oldPrice)
+        : undefined;
+    const existing = lines.find((l) => l.id === id);
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      lines.push({
+        id: id,
+        productId: opts.productId,
+        name: opts.name || "",
+        price: price,
+        oldPrice: oldPrice,
+        image: opts.image || "",
+        quantity: quantity,
+        variant: variant,
+      });
+    }
+    window.localStorage.setItem(NT_CART_KEY, JSON.stringify(lines));
+    window.dispatchEvent(new CustomEvent(NT_CART_EVENT, { detail: lines }));
+  }
+
   // ─────────── Карточка: quickAdd-клик + nextPhoto hover-swap ───────────
   function bindCardInteractions() {
     if (document.body.getAttribute("data-cf-card") === "1") return;
@@ -1402,12 +1479,25 @@ const skeletons = Array.from({ length: skeletonCount });
       event.preventDefault();
       event.stopPropagation();
       const productId = btn.getAttribute("data-quick-add-id");
-      // Товар с вариантами → добавляем первую комбинацию (variantId = combo.id),
-      // иначе товар без варианта (null). Решение владельца.
+      // Товар с вариантами → первая комбинация (combo.id + её цвет/размер из data-*),
+      // иначе товар без варианта. Пишем в nt-cart (flux:cart:v1) — ЕДИНЫЙ стор витрины,
+      // который читают секция «Корзина» (CartSection getCart) и шапка-drawer (initCartUI).
+      // cartStore (backend) здесь НЕ трогаем: он наполняется из nt-cart при оформлении
+      // (мост CartSection «Оформить заказ»). Данные строки — из data-* кнопки.
       const comboId = btn.getAttribute("data-quick-add-combo-id") || null;
-      if (window.cartStore && typeof window.cartStore.addItem === "function") {
-        window.cartStore.addItem(productId, comboId, 1);
-      }
+      ntAddToCart({
+        productId: productId,
+        name: btn.getAttribute("data-name") || "",
+        price: btn.getAttribute("data-price") || "0",
+        oldPrice: btn.getAttribute("data-old-price") || undefined,
+        image: btn.getAttribute("data-image") || "",
+        quantity: 1,
+        variant: {
+          color: btn.getAttribute("data-variant-color") || undefined,
+          size: btn.getAttribute("data-variant-size") || undefined,
+          variantCombinationId: comboId || undefined,
+        },
+      });
       const orig = btn.textContent;
       btn.textContent = "✓ ДОБАВЛЕНО";
       setTimeout(() => { btn.textContent = orig; }, 1500);

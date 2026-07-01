@@ -381,9 +381,21 @@ const defaultHeartSvg =
     </div>
   )}
   {/* Быстрое действие (настройка «Быстрое добавление»). Кнопка СНАРУЖИ <a>
-      (button-in-anchor — невалидный HTML). Зеркалит client renderCardHtml. */}
+      (button-in-anchor — невалидный HTML). Зеркалит client renderCardHtml.
+      data-* (имя/цена/фото/старая цена) — контракт nt-cart для quick-add-handler
+      в Catalog.astro (единый стор flux:cart:v1). Demo-товары без вариантов →
+      цвет/размер/combo-id не несём. Цена demo — строка ("59 990 ₽"), nt-cart
+      parsePrice её нормализует (снимает non-digits). */}
   {showQuickAdd && (
-    <button type="button" data-quick-add-id={product.id} style={quickBtnStyle}>
+    <button
+      type="button"
+      data-quick-add-id={product.id}
+      data-name={product.name}
+      data-price={product.price}
+      data-old-price={product.oldPrice ?? ""}
+      data-image={product.image}
+      style={quickBtnStyle}
+    >
       {quickAddText}
     </button>
   )}

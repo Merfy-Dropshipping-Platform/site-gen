@@ -213,7 +213,7 @@ const pdpHeartSvg =
 					/>
 				)}
 				{displayDiscount && (
-					<span class="absolute left-3 top-3 inline-flex h-6 items-center rounded-[4px] bg-[#000000] px-1.5 font-manrope text-[12px] font-normal leading-none text-white" data-pdp-badge>
+					<span class="absolute left-3 top-3 inline-flex h-6 items-center rounded-[4px] bg-[#000000] px-1.5 font-roboto-flex text-[12px] font-normal leading-none text-white" data-pdp-badge>
 						Скидка
 					</span>
 				)}
@@ -243,7 +243,7 @@ const pdpHeartSvg =
 		<div class="flex flex-col gap-10">
 			<div class="flex flex-col gap-2">
 				<p
-					class="font-manrope text-[14px] font-light leading-normal text-[#999999]"
+					class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]"
 					data-pdp-brand
 					hidden={!displayBrand}
 					data-puck-subsection-parent={id}
@@ -258,7 +258,7 @@ const pdpHeartSvg =
 				<div class="flex items-start justify-between gap-3">
 					<h1
 						id="product-title"
-						class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
+						class="font-roboto-flex text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
 						data-pdp-name
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
@@ -283,11 +283,11 @@ const pdpHeartSvg =
 					data-puck-subsection-index="102"
 					data-puck-subsection-field="price"
 				>
-					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000] md:text-[24px]" data-pdp-price>
+					<span class="font-roboto-flex text-[20px] font-normal leading-normal text-[#000000] md:text-[24px]" data-pdp-price>
 						{displayPrice}
 					</span>
 					<span
-						class="font-manrope text-[16px] font-light leading-normal text-[#999999] line-through md:text-[18px]"
+						class="font-roboto-flex text-[16px] font-light leading-normal text-[#999999] line-through md:text-[18px]"
 						data-pdp-oldprice
 						hidden={!displayOldPrice}
 					>
@@ -324,7 +324,7 @@ const pdpHeartSvg =
 				{isPlaceholder && (
 					<span
 						data-pdp-qty-placeholder-label
-						class="font-manrope text-[14px] font-normal leading-none text-[#000000]"
+						class="font-roboto-flex text-[14px] font-normal leading-none text-[#000000]"
 					>
 						Количество
 					</span>
@@ -380,7 +380,7 @@ const pdpHeartSvg =
 					data-image={mainImage}
 					data-variant-color={isPlaceholder ? "" : cartVariantColor}
 					data-quantity="1"
-					class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90"
+					class="inline-flex h-12 items-center justify-center rounded-[6px] border border-[#000000] bg-white px-4 font-roboto-flex text-[16px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90"
 				>
 					Добавить в корзину
 				</button>
@@ -391,7 +391,7 @@ const pdpHeartSvg =
 					data-name={displayName}
 					data-price={displayPrice}
 					data-image={mainImage}
-					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-roboto-flex text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
 				>
 					Купить сейчас
 				</button>
@@ -408,10 +408,10 @@ const pdpHeartSvg =
 					data-puck-subsection-field="description"
 					hidden={isPlaceholder}
 				>
-					<h2 class="font-comfortaa text-[18px] font-normal uppercase leading-normal text-[#000000]">
+					<h2 class="font-roboto-flex text-[18px] font-normal uppercase leading-normal text-[#000000]">
 						Описание
 					</h2>
-					<p class="font-manrope text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
+					<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
 						{isPlaceholder ? "" : (product as { description?: string }).description}
 					</p>
 				</div>
@@ -423,7 +423,7 @@ const pdpHeartSvg =
 					<button
 						type="button"
 						data-action="share"
-						class="inline-flex w-fit items-center gap-2 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70"
+						class="inline-flex w-fit items-center gap-2 font-roboto-flex text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-70"
 						aria-label="Поделиться"
 					>
 						<NtIcon name="share" sizeClass="size-5" />
@@ -444,10 +444,10 @@ const pdpHeartSvg =
 		hidden
 		class="w-full bg-white py-24 text-center"
 	>
-		<p class="font-comfortaa text-[24px] uppercase text-[#000000]">Товар не найден</p>
+		<p class="font-roboto-flex text-[24px] uppercase text-[#000000]">Товар не найден</p>
 		<a
 			href="/catalog"
-			class="mt-6 inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] text-white transition-opacity hover:opacity-90"
+			class="mt-6 inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-roboto-flex text-[16px] text-white transition-opacity hover:opacity-90"
 		>В каталог</a>
 	</div>
 </section>
@@ -542,8 +542,10 @@ const pdpHeartSvg =
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				price: cents,
-				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
+				// Цены копейки→рубли (зеркало Catalog.astro mapApiProduct): formatPrice
+				// НЕ делит, корзина (nt-cart-flux parsePrice) читает data-price как рубли.
+				price: cents != null ? Math.round(cents / 100) : 0,
+				oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents / 100) : null,
 				slug: p.handle || p.slug,
 				description: p.description || p.metaDescription || "",
 				images: Array.isArray(p.images) ? p.images : [],
@@ -555,8 +557,8 @@ const pdpHeartSvg =
 							return {
 								id: vc.id,
 								title: vc.title,
-								price: vcCents !== null ? vcCents : 0,
-								compareAtPrice: vcOld && vcOld > 0 ? vcOld : null,
+								price: vcCents !== null ? Math.round(vcCents / 100) : 0,
+								compareAtPrice: vcOld && vcOld > 0 ? Math.round(vcOld / 100) : null,
 								available: vc.available,
 								quantity: vc.quantity,
 								options: vc.options || {},
@@ -642,7 +644,21 @@ const pdpHeartSvg =
 						var payload = await r3.json();
 						var products = payload && payload.products;
 						if (Array.isArray(products) && products.length > 0) {
-							__cachedProducts = products;
+							// ⚠️ storefront-data тоже отдаёт цены в КОПЕЙКАХ (basePrice
+							// 5499000 = 54990₽; см. storefront-data.controller) → делим на
+							// 100, как источник №2 (products.json) и mapApiProduct выше.
+							var k100p = function (v) { return typeof v === "number" ? v / 100 : v; };
+							__cachedProducts = products.map(function (p) {
+								return Object.assign({}, p, {
+									price: k100p(p.price),
+									basePrice: k100p(p.basePrice),
+									compareAtPrice: k100p(p.compareAtPrice),
+									oldPrice: k100p(p.oldPrice),
+									variantCombinations: Array.isArray(p.variantCombinations)
+										? p.variantCombinations.map(function (vc) { return Object.assign({}, vc, { price: k100p(vc.price) }); })
+										: p.variantCombinations,
+								});
+							});
 							return __cachedProducts;
 						}
 					}
@@ -724,9 +740,9 @@ const pdpHeartSvg =
 						})
 						.join("");
 					return (
-						'<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="' +
+						'<div class="flex w-full flex-col gap-2 font-roboto-flex" data-pdp-variant-group="' +
 						escapeHtml(g.name) + '">' +
-						'<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">' +
+						'<span class="font-roboto-flex text-[14px] font-normal leading-none text-[#000000]">' +
 						escapeHtml(g.name) + "</span>" +
 						'<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="' +
 						escapeHtml(g.name) + '">' + buttons + "</div></div>"

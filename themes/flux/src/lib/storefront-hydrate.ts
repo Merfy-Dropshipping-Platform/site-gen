@@ -71,6 +71,32 @@ const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 /** Кэш на страницу: undefined — не загружали, null — demo/пусто/ошибка. */
 let cached: RealProduct[] | null | undefined;
 
+const kopToRub = (v: number | string | null | undefined): number | string | null | undefined =>
+	typeof v === "number" ? Math.round(v / 100) : v;
+
+/**
+ * Нормализует цены товаров к рублям РАЗОМ на загрузке — зеркало
+ * Catalog.astro `mapApiProduct` (price: Math.round(cents/100)). Так ВСЕ
+ * потребители (renderCardHtml display + data-price, Popular/Gallery гидрация)
+ * получают рубли из единого места. Трогаем только поля цены: price, oldPrice,
+ * compareAtPrice и variantCombinations[].{price,compareAtPrice}.
+ */
+function normalizeProductPrices(products: RealProduct[]): RealProduct[] {
+	return products.map((p) => ({
+		...p,
+		price: kopToRub(p.price) as number | string,
+		oldPrice: kopToRub(p.oldPrice) as number | string | null,
+		compareAtPrice: kopToRub(p.compareAtPrice) as number | string | null,
+		variantCombinations: Array.isArray(p.variantCombinations)
+			? p.variantCombinations.map((vc) => ({
+					...vc,
+					price: kopToRub(vc.price) as number | string,
+					compareAtPrice: kopToRub(vc.compareAtPrice) as number | string | null,
+			  }))
+			: p.variantCombinations,
+	}));
+}
+
 /**
  * Грузит реальные товары. Возвращает null, когда товаров нет (demo-сборка) —
  * вызывающий код в этом случае оставляет SSG-разметку нетронутой.
@@ -84,7 +110,7 @@ export async function loadRealProducts(): Promise<RealProduct[] | null> {
 		if (res.ok) {
 			const data: unknown = await res.json();
 			if (Array.isArray(data) && data.length > 0) {
-				cached = data as RealProduct[];
+				cached = normalizeProductPrices(data as RealProduct[]);
 				return cached;
 			}
 		}
@@ -107,7 +133,7 @@ export async function loadRealProducts(): Promise<RealProduct[] | null> {
 				const payload = (await res.json()) as { products?: unknown };
 				const products = payload?.products;
 				if (Array.isArray(products) && products.length > 0) {
-					cached = products as RealProduct[];
+					cached = normalizeProductPrices(products as RealProduct[]);
 					return cached;
 				}
 			}

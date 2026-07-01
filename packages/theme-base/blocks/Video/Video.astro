@@ -25,7 +25,13 @@ const {
 
 // Accept legacy {text,size} heading envelope.
 const heading = (() => {
-  const h = raw.heading ?? (raw.content as { heading?: unknown } | undefined)?.heading;
+  // ВАЖНО: пустая top-level строка (heading:"") НЕ должна короткозамыкать ??
+  // — иначе legacy `content.heading.text` игнорится (реальный баг: заголовок,
+  // записанный старым конструктором в content.heading.text, не рендерился при
+  // top-level heading:""). Пустую строку трактуем как отсутствие → fallback.
+  const topH = raw.heading;
+  const topHClean = typeof topH === 'string' ? (topH.trim() ? topH : undefined) : topH;
+  const h = topHClean ?? (raw.content as { heading?: unknown } | undefined)?.heading;
   if (typeof h === 'string') return h || undefined;
   if (h && typeof h === 'object') {
     const o = h as { text?: string };

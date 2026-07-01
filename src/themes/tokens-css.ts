@@ -291,11 +291,23 @@ export function buildTokensCss(
   ];
   const defaultIdx =
     typeof s.defaultSchemeIndex === 'number' ? s.defaultSchemeIndex : 0;
-  const defaultScheme = isPlainObject(schemes[defaultIdx])
+  const defaultSchemeRaw = isPlainObject(schemes[defaultIdx])
     ? (schemes[defaultIdx] as Record<string, unknown>)
     : isPlainObject(schemes[0])
       ? (schemes[0] as Record<string, unknown>)
       : null;
+  // :root несёт АКТИВНУЮ merchant-схему, но merchant-схемы не хранят accent/
+  // muted (admin ThemeSettings их не редактирует — 096). Для `.color-scheme-N`
+  // правил эти токены наследуются из theme manifest (inherit-ветка выше); тот
+  // же inherit ОБЯЗАН применяться к :root, иначе секция БЕЗ scheme-обёртки
+  // (preview одиночного блока без colorScheme prop — preview.service ~632; и
+  // любой :root-контекст) берёт accent из BASE_DEFAULTS (17 17 17) → напр.
+  // vanilla Slideshow контрол-бар `bg-[rgb(var(--color-accent,38_49_28))]`
+  // рендерится чёрным вместо зелёного манифеста (58 69 48). На live scheme-
+  // обёртка композитора это маскировала — баг проявляется только на :root.
+  const defaultScheme = defaultSchemeRaw
+    ? inheritSchemeAccentMuted(defaultSchemeRaw, themeSchemes)
+    : null;
   const rootColorRules = defaultScheme ? schemeVarsInRoot(defaultScheme) : '';
 
   // Избранное (wishlist) вкл/выкл — глобальный тумблер из ThemeSettingsPanel
@@ -436,6 +448,33 @@ export function themeSchemeToMerchantShape(scheme: {
       text: rgbTripleToHex(t['--color-button-2-text']),
       border: rgbTripleToHex(t['--color-button-2-border']),
     },
+  };
+}
+
+/**
+ * Обогащает merchant-схему accent/muted из theme manifest по совпадающему id.
+ * Merchant color-schemes (из ревизии) хранят только bg/heading/text/buttons —
+ * accent/muted недоступны в admin ThemeSettings UI (096), поэтому приходят из
+ * манифеста темы. Для `.color-scheme-N` правил inherit уже есть в buildTokensCss;
+ * этот хелпер даёт тот же inherit активной :root-схеме (иначе :root accent/muted
+ * падают в BASE_DEFAULTS — 17 17 17 / серый — и секции без scheme-обёртки красятся
+ * generic-чёрным вместо цвета манифеста). No-op когда accent+muted уже заданы или
+ * в манифесте нет схемы с таким id.
+ */
+function inheritSchemeAccentMuted(
+  scheme: Record<string, unknown>,
+  themeSchemes: { id: string; name: string; tokens: Record<string, string> }[],
+): Record<string, unknown> {
+  if (scheme.accent !== undefined && scheme.muted !== undefined) return scheme;
+  const id = typeof scheme.id === 'string' ? schemeClassId(scheme.id) : '';
+  if (!id) return scheme;
+  const ts = themeSchemes.find((t) => schemeClassId(t.id) === id);
+  if (!ts) return scheme;
+  const shape = themeSchemeToMerchantShape(ts);
+  return {
+    ...scheme,
+    accent: scheme.accent ?? shape.accent,
+    muted: scheme.muted ?? shape.muted,
   };
 }
 

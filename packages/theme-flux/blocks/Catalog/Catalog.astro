@@ -328,7 +328,7 @@ const skeletons = Array.from({ length: skeletonCount });
           {sortVisible && (
             <details class="group relative [&[open]]:z-30">
               <summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
-                <span>По новизне</span>
+                <span>По популярности</span>
                 <FluxNtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
               </summary>
               <div class="absolute right-0 top-full z-30 mt-1 w-[180px]">
@@ -570,10 +570,10 @@ const skeletons = Array.from({ length: skeletonCount });
           slug: (pc && (pc.slug || (pc.collection && pc.collection.slug))) || undefined,
         }))
       : [];
+    // Цены из storefront API — в КОПЕЙКАХ; карточка показывает рубли (formatPrice не делит).
     return {
       id: p.id,
       name: p.title || p.name || "",
-      // Цены из storefront API — в КОПЕЙКАХ; карточка показывает рубли (formatPrice не делит).
       price: cents != null ? Math.round(cents / 100) : 0,
       oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents / 100) : null,
       slug: p.handle || p.slug,
@@ -738,31 +738,54 @@ const skeletons = Array.from({ length: skeletonCount });
   // deriveCardSwatches — каскад источников: variantSwatches → группа «Цвет»
   // (swatchHex) из variantGroups → имена цветов из variantCombinations.
   // Недоступный цвет → один перечёркнутый серый квадрат (swatchDisabled), эталон.
+  // ФИЧА flux (нет у rose): каждый свотч несёт СВОЮ картинку цвета-варианта
+  // → { color:#hex, image:url|null, available }. image = группа «Цвет»
+  // variantGroups → option.images[0], сопоставление по value (имя цвета) и по
+  // hex. Нет картинки у цвета → image=null (свотч рисуется статичным, эталон).
   function deriveCardSwatches(p) {
     const out = [];
     const seen = new Set();
     let swatchDisabled = false;
-    const push = (hex, available) => {
+    // Лукап картинок цвета из группы «Цвет» variantGroups (option.images[0]):
+    // по имени цвета (value) и по hex — свотч из ЛЮБОГО источника найдёт своё фото.
+    const imageByValue = new Map();
+    const imageByHex = new Map();
+    if (Array.isArray(p.variantGroups)) {
+      const grp = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String((g && g.name) || "").trim()));
+      if (grp && Array.isArray(grp.options)) {
+        for (const o of grp.options) {
+          const img = (o && Array.isArray(o.images) && typeof o.images[0] === "string" && o.images[0]) || null;
+          if (!img) continue;
+          const val = String((o && o.value) ?? "").trim().toLowerCase();
+          if (val && !imageByValue.has(val)) imageByValue.set(val, img);
+          const hx = colorToHex(o && o.value, o && o.swatchHex);
+          if (hx && !imageByHex.has(hx.toLowerCase())) imageByHex.set(hx.toLowerCase(), img);
+        }
+      }
+    }
+    const push = (hex, available, value) => {
       if (!hex) return;
       if (available === false) { swatchDisabled = true; return; }
       const key = hex.toLowerCase();
       if (seen.has(key)) return;
       seen.add(key);
-      out.push(hex);
+      const val = String(value ?? "").trim().toLowerCase();
+      const image = (val ? imageByValue.get(val) : undefined) ?? imageByHex.get(key) ?? null;
+      out.push({ color: hex, image, available: available !== false });
     };
     if (Array.isArray(p.variantSwatches) && p.variantSwatches.length) {
-      for (const s of p.variantSwatches) push(colorToHex(s && s.value, s && s.color), s && s.available);
+      for (const s of p.variantSwatches) push(colorToHex(s && s.value, s && s.color), s && s.available, s && s.value);
     }
     if (out.length === 0 && Array.isArray(p.variantGroups)) {
       const group = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String((g && g.name) || "").trim()));
       if (group && Array.isArray(group.options)) {
-        for (const o of group.options) push(colorToHex(o && o.value, o && o.swatchHex));
+        for (const o of group.options) push(colorToHex(o && o.value, o && o.swatchHex), undefined, o && o.value);
       }
     }
     if (out.length === 0 && Array.isArray(p.variantCombinations)) {
       for (const c of p.variantCombinations) {
         const name = c && c.options && (c.options["Цвет"] || c.options["Color"]);
-        push(colorToHex(name), c && c.available);
+        push(colorToHex(name), c && c.available, name);
       }
     }
     return { swatches: out.slice(0, 6), swatchDisabled };
@@ -832,9 +855,12 @@ const skeletons = Array.from({ length: skeletonCount });
     // Второе фото (настройка «Следующее фото при наведении») — images[1].
     const rawImage2 =
       (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+    // data-card-img — стабильный якорь фото ВНУТРИ карточки: клик по свотчу цвета
+    // (ниже) находит его через closest-карточку и подменяет src на фото цвета.
     // data-img-primary всегда; data-img-secondary только если есть второе фото —
     // hover-обработчик (ниже) свапит src между ними.
     const imgDataAttrs =
+      ' data-card-img' +
       ' data-img-primary="' + escapeHtml(rawImage) + '"' +
       (rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "");
     const media = rawImage
@@ -846,11 +872,19 @@ const skeletons = Array.from({ length: skeletonCount });
       ? `<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
       : "";
     // Свотчи цвета (эталон): цветные квадраты + опц. перечёркнутый «недоступный».
+    // Свотч С картинкой цвета → КЛИКАБЕЛЬНАЯ кнопка (data-swatch-img): клик меняет
+    // фото карточки на фото этого цвета (делегат в bindCardInteractions). Свотч
+    // без картинки → статический <span> (эталонный вид не меняется). Класс кнопки
+    // ЗЕРКАЛИТ FluxProductCard.astro (parity SSG↔live, Tailwind-скан оттуда).
     const sw = deriveCardSwatches(p);
+    const swatchOneHtml = (s) =>
+      s.image
+        ? `<button type="button" data-swatch-img="${escapeHtml(s.image)}" aria-pressed="false" aria-label="Показать фото цвета" class="size-5 rounded-[2px] cursor-pointer p-0" style="background:${s.color};border:0"></button>`
+        : `<span class="size-5 rounded-[2px]" style="background:${s.color}" aria-hidden="true"></span>`;
     const swatchesHtml =
       sw.swatches.length > 0
         ? `<div class="flex items-center gap-1">${sw.swatches
-            .map((c) => `<span class="size-5 rounded-[2px]" style="background:${c}" aria-hidden="true"></span>`)
+            .map(swatchOneHtml)
             .join("")}${
             sw.swatchDisabled
               ? `<span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true"><span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span></span>`
@@ -943,7 +977,7 @@ const skeletons = Array.from({ length: skeletonCount });
     priceMin: null,
     priceMax: null,
     colors: [],
-    sort: "new",
+    sort: "popularity",
     page: 1,
   };
 
@@ -1072,38 +1106,12 @@ const skeletons = Array.from({ length: skeletonCount });
     }
 
     // ── Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0) ──
-    // Активные фильтры пользователя: если что-то выбрано, пустой результат —
-    // это «ничего не найдено», а НЕ «магазин пуст». Демо-моки оставляем только
-    // для реально пустого магазина (без фильтров) либо когда API недоступен.
-    const hasActiveFilters =
-      filters.stock !== "all" ||
-      filters.priceMin !== null ||
-      filters.priceMax !== null ||
-      (Array.isArray(filters.colors) && filters.colors.length > 0) ||
-      !!(new URLSearchParams(window.location.search).get("collection") || "").trim();
-
-    // Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0,
-    // без активных фильтров) — красивая заглушка нового сайта; кнопку прячем.
-    if (res === null || (filters.page === 1 && res.total === 0 && !hasActiveFilters)) {
+    if (res === null || (filters.page === 1 && res.total === 0)) {
       const demoTpl = document.querySelector('[data-nt="catalog-demo"]');
       const demoHtml = demoTpl ? demoTpl.innerHTML : "";
       const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
       for (const grid of grids) grid.innerHTML = demoHtml;
       updateCount('[data-nt="catalog-count"]', demoN);
-      for (const btn of loadMoreBtns) {
-        btn.style.display = "none";
-        btn.disabled = false;
-      }
-      return;
-    }
-
-    // Пустой результат ПРИ активном фильтре (page=1, total=0) → «Ничего не
-    // найдено», а НЕ demo-моки (баг: «Распродано» подтягивал demo-сумки).
-    if (filters.page === 1 && res.total === 0) {
-      for (const grid of grids)
-        grid.innerHTML =
-          '<li style="grid-column:1 / -1"><p style="padding:48px 0;text-align:center;color:rgb(var(--color-muted,153 153 153));font-family:var(--font-body,inherit)">По выбранным фильтрам ничего не найдено</p></li>';
-      updateCount('[data-nt="catalog-count"]', 0);
       for (const btn of loadMoreBtns) {
         btn.style.display = "none";
         btn.disabled = false;
@@ -1310,8 +1318,8 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 
   // ─────────── Сортировка (top: <p> в NtFilterPanel[sort]; side: radio) ───────────
-  const SORT_PANEL_BY_INDEX = ["price-asc", "price-desc"];
-  const SORT_PANEL_LABELS = ["Сначала дешевые", "Сначала дорогие"];
+  const SORT_PANEL_BY_INDEX = ["new", "price-asc", "price-desc"];
+  const SORT_PANEL_LABELS = ["По новизне", "Сначала дешевые", "Сначала дорогие"];
 
   function syncSortUi() {
     for (const panel of Array.from(
@@ -1325,7 +1333,7 @@ const skeletons = Array.from({ length: skeletonCount });
       const labelSpan = details && details.querySelector("summary span");
       if (labelSpan) {
         const idx = SORT_PANEL_BY_INDEX.indexOf(filters.sort);
-        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По новизне";
+        labelSpan.textContent = idx >= 0 ? SORT_PANEL_LABELS[idx] : "По популярности";
       }
     }
     for (const input of Array.from(
@@ -1403,6 +1411,36 @@ const skeletons = Array.from({ length: skeletonCount });
       const orig = btn.textContent;
       btn.textContent = "✓ ДОБАВЛЕНО";
       setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+
+    // ── Свотч цвета кликабелен → фото карточки меняется на фото этого цвета ──
+    // Делегат на document (как quickAdd). Скоуп — СВОЯ карточка: closest по
+    // data-nt="flux-product-card" (или data-product-id), поэтому клик меняет фото
+    // ТОЛЬКО своей карточки (на странице много карточек). Свотчи без картинки —
+    // статичные <span> (не имеют data-swatch-img) → сюда не попадают. Работает и
+    // для SSG-карточек (demo/пустой магазин), и для renderCardHtml (фильтрация).
+    // НЕ гейтится nextPhotoOn — переключение по цвету независимо от hover-фото.
+    document.addEventListener("click", (event) => {
+      const swBtn = event.target.closest("[data-swatch-img]");
+      if (!swBtn) return;
+      if (!swBtn.closest('[data-nt="catalog-grid"], [data-nt="catalog-demo"]')) return;
+      event.preventDefault();
+      const url = swBtn.getAttribute("data-swatch-img");
+      const card = swBtn.closest('[data-nt="flux-product-card"]') || swBtn.closest("[data-product-id]");
+      if (!card || !url) return;
+      const img = card.querySelector("[data-card-img]");
+      if (img) {
+        img.setAttribute("src", url);
+        // Выбранный цвет «залипает» и после hover-возврата (nextPhoto):
+        // primary становится картинкой выбранного цвета.
+        img.setAttribute("data-img-primary", url);
+      }
+      // Подсветка активного свотча В ПРЕДЕЛАХ карточки (box-shadow — без сдвига).
+      for (const el of Array.from(card.querySelectorAll("[data-swatch-img]"))) {
+        const on = el === swBtn;
+        el.setAttribute("aria-pressed", on ? "true" : "false");
+        el.style.boxShadow = on ? "0 0 0 2px rgb(var(--color-text,0 0 0))" : "";
+      }
     });
 
     if (!nextPhotoOn) return;

@@ -19,7 +19,7 @@ interface VariantSwatchLite {
 }
 interface VariantGroupLite {
   name?: string;
-  options?: Array<{ value?: string; swatchHex?: string | null }>;
+  options?: Array<{ value?: string; swatchHex?: string | null; images?: string[] | null }>;
 }
 interface VariantComboLite {
   options?: Record<string, string>;
@@ -100,31 +100,61 @@ function colorToHex(value?: string | null, hint?: string | null): string | null 
   if (HEX_RE.test(v)) return v;
   return COLOR_NAME_HEX[v.toLowerCase()] ?? null;
 }
-function deriveSwatches(p: Product): { swatches: string[]; swatchDisabled: boolean } {
-  const out: string[] = [];
+// Свотч flux несёт СВОЮ картинку цвета-варианта (фича flux, нет у rose):
+// { color:#hex, image:url|null, available }. image = группа «Цвет» variantGroups →
+// option.images[0], сопоставление по value (имя цвета) и по hex. Нет картинки →
+// image=null → свотч рисуется статичным <span> (эталон). Зеркалит client
+// deriveCardSwatches в Catalog.astro (parity SSG↔live).
+interface CardSwatch {
+  color: string;
+  image: string | null;
+  available: boolean;
+}
+function deriveSwatches(p: Product): { swatches: CardSwatch[]; swatchDisabled: boolean } {
+  const out: CardSwatch[] = [];
   const seen = new Set<string>();
   let swatchDisabled = false;
-  const push = (hex: string | null, available?: boolean): void => {
+  // Лукап картинок цвета из группы «Цвет» variantGroups (option.images[0]):
+  // по имени цвета (value) и по hex.
+  const imageByValue = new Map<string, string>();
+  const imageByHex = new Map<string, string>();
+  const colorGroup = Array.isArray(p.variantGroups)
+    ? p.variantGroups.find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()))
+    : undefined;
+  if (colorGroup && Array.isArray(colorGroup.options)) {
+    for (const o of colorGroup.options) {
+      const img =
+        (o && Array.isArray(o.images) && typeof o.images[0] === "string" && o.images[0]) || null;
+      if (!img) continue;
+      const val = String(o?.value ?? "").trim().toLowerCase();
+      if (val && !imageByValue.has(val)) imageByValue.set(val, img);
+      const hx = colorToHex(o?.value, o?.swatchHex);
+      if (hx && !imageByHex.has(hx.toLowerCase())) imageByHex.set(hx.toLowerCase(), img);
+    }
+  }
+  const push = (hex: string | null, available?: boolean, value?: string | null): void => {
     if (!hex) return;
     if (available === false) { swatchDisabled = true; return; }
     const key = hex.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    out.push(hex);
+    const val = String(value ?? "").trim().toLowerCase();
+    const image = (val ? imageByValue.get(val) : undefined) ?? imageByHex.get(key) ?? null;
+    out.push({ color: hex, image, available: available !== false });
   };
   if (Array.isArray(p.variantSwatches) && p.variantSwatches.length) {
-    for (const s of p.variantSwatches) push(colorToHex(s?.value, s?.color), s?.available);
+    for (const s of p.variantSwatches) push(colorToHex(s?.value, s?.color), s?.available, s?.value);
   }
   if (out.length === 0 && Array.isArray(p.variantGroups)) {
     const group = p.variantGroups.find((g) => COLOR_GROUP_RE.test(String(g?.name ?? "").trim()));
     if (group && Array.isArray(group.options)) {
-      for (const o of group.options) push(colorToHex(o?.value, o?.swatchHex));
+      for (const o of group.options) push(colorToHex(o?.value, o?.swatchHex), undefined, o?.value);
     }
   }
   if (out.length === 0 && Array.isArray(p.variantCombinations)) {
     for (const c of p.variantCombinations) {
       const name = c?.options?.["Цвет"] ?? c?.options?.["Color"];
-      push(colorToHex(name), c?.available);
+      push(colorToHex(name), c?.available, name);
     }
   }
   return { swatches: out.slice(0, 6), swatchDisabled };
@@ -236,6 +266,7 @@ const defaultHeartSvg =
         loading="eager"
         fetchpriority={priority ? "high" : undefined}
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        data-card-img="true"
         data-img-primary={product.image}
       />
     ) : (
@@ -292,9 +323,23 @@ const defaultHeartSvg =
       Demo-товары без вариантов → массив пуст → блок не рендерится. */}
   {swatches.length > 0 && (
     <div class="flex items-center gap-1">
-      {swatches.map((c) => (
-        <span class="size-5 rounded-[2px]" style={`background:${c}`} aria-hidden="true"></span>
-      ))}
+      {swatches.map((s) =>
+        s.image ? (
+          /* Свотч С картинкой цвета → кликабельная кнопка: клик меняет фото
+             карточки на фото цвета (делегат в Catalog.astro inline-скрипте).
+             Классы = span-эталон + cursor/p-0; border снят inline. */
+          <button
+            type="button"
+            data-swatch-img={s.image}
+            aria-pressed="false"
+            aria-label="Показать фото цвета"
+            class="size-5 rounded-[2px] cursor-pointer p-0"
+            style={`background:${s.color};border:0`}
+          ></button>
+        ) : (
+          <span class="size-5 rounded-[2px]" style={`background:${s.color}`} aria-hidden="true"></span>
+        ),
+      )}
       {swatchDisabled && (
         <span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true">
           <span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span>

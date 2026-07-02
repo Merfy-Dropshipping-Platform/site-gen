@@ -574,8 +574,8 @@ const skeletons = Array.from({ length: skeletonCount });
     return {
       id: p.id,
       name: p.title || p.name || "",
-      price: cents != null ? Math.round(cents / 100) : 0,
-      oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents / 100) : null,
+      price: cents != null ? Math.round(cents) : 0,
+      oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents) : null,
       slug: p.handle || p.slug,
       images: Array.isArray(p.images) ? p.images : [],
       hasVariants: !!p.hasVariants,

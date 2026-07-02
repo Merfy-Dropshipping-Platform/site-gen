@@ -72,7 +72,7 @@ const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 let cached: RealProduct[] | null | undefined;
 
 const kopToRub = (v: number | string | null | undefined): number | string | null | undefined =>
-	typeof v === "number" ? Math.round(v / 100) : v;
+	v;
 
 /**
  * Нормализует цены товаров к рублям РАЗОМ на загрузке — зеркало

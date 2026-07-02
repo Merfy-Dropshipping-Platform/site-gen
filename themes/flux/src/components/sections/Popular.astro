@@ -212,7 +212,7 @@ const siteId = typeof p.siteId === "string" ? p.siteId : "";
 const fmtPrice = (v: unknown): string => {
 	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
 	// Цены storefront-data (basePrice/compareAtPrice) — в КОПЕЙКАХ → рубли.
-	return Number.isFinite(n) ? `${Math.round(n / 100).toLocaleString("ru-RU")} ₽` : "";
+	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
 };
 let realProducts: any[] = [];
 if (collectionRef && siteId) {

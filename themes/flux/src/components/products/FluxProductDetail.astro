@@ -544,8 +544,8 @@ const pdpHeartSvg =
 				name: p.title || p.name || "",
 				// Цены копейки→рубли (зеркало Catalog.astro mapApiProduct): formatPrice
 				// НЕ делит, корзина (nt-cart-flux parsePrice) читает data-price как рубли.
-				price: cents != null ? Math.round(cents / 100) : 0,
-				oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents / 100) : null,
+				price: cents != null ? Math.round(cents) : 0,
+				oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents) : null,
 				slug: p.handle || p.slug,
 				description: p.description || p.metaDescription || "",
 				images: Array.isArray(p.images) ? p.images : [],
@@ -557,8 +557,8 @@ const pdpHeartSvg =
 							return {
 								id: vc.id,
 								title: vc.title,
-								price: vcCents !== null ? Math.round(vcCents / 100) : 0,
-								compareAtPrice: vcOld && vcOld > 0 ? Math.round(vcOld / 100) : null,
+								price: vcCents !== null ? Math.round(vcCents) : 0,
+								compareAtPrice: vcOld && vcOld > 0 ? Math.round(vcOld) : null,
 								available: vc.available,
 								quantity: vc.quantity,
 								options: vc.options || {},
@@ -620,7 +620,7 @@ const pdpHeartSvg =
 				if (r2.ok) {
 					var data = await r2.json();
 					if (Array.isArray(data) && data.length > 0) {
-						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						var k100 = function (v) { return v; };
 						__cachedProducts = data.map(function (p) {
 							return Object.assign({}, p, {
 								price: k100(p.price),
@@ -647,7 +647,7 @@ const pdpHeartSvg =
 							// ⚠️ storefront-data тоже отдаёт цены в КОПЕЙКАХ (basePrice
 							// 5499000 = 54990₽; см. storefront-data.controller) → делим на
 							// 100, как источник №2 (products.json) и mapApiProduct выше.
-							var k100p = function (v) { return typeof v === "number" ? v / 100 : v; };
+							var k100p = function (v) { return v; };
 							__cachedProducts = products.map(function (p) {
 								return Object.assign({}, p, {
 									price: k100p(p.price),

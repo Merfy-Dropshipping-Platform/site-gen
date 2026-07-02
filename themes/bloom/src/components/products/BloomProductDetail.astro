@@ -590,7 +590,7 @@ const pdpHeartSvg =
 				if (r2.ok) {
 					var data = await r2.json();
 					if (Array.isArray(data) && data.length > 0) {
-						var k100 = function (v) { return typeof v === "number" ? v / 100 : v; };
+						var k100 = function (v) { return v; };
 						__cachedProducts = data.map(function (p) {
 							return Object.assign({}, p, {
 								price: k100(p.price),

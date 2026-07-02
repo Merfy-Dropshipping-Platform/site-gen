@@ -57,17 +57,13 @@ const newsletterText =
 	typeof p.text?.content === "string" && p.text.content.trim()
 		? p.text.content
 		: "Получайте информацию от нашего бренда";
-// item 1 — responsive-выравнивание блока рассылки. Классы ЛИТЕРАЛАМИ (Tailwind JIT scan);
-// base = адаптив, md: = десктоп. Дефолт: десктоп left / адаптив center = текущее поведение
-// (раньше было захардкожено: text-left + @media(<640) center).
+// item 1 — выравнивание блока рассылки, ОДНО значение на десктоп И адаптив. Классы
+// ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left (раньше был захардкожен text-left + @media center).
 const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
 const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
-const _AL_MD_ITEMS: Record<string, string> = { left: "md:items-start", center: "md:items-center", right: "md:items-end" };
-const _AL_MD_TEXT: Record<string, string> = { left: "md:text-left", center: "md:text-center", right: "md:text-right" };
-const _caD = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
-const _caM = ["left", "center", "right"].includes(p.contentAlignMobile) ? p.contentAlignMobile : "center";
-const nlSectionAlignCls = `${_AL_ITEMS[_caM]} ${_AL_MD_ITEMS[_caD]}`;
-const nlCopyAlignCls = `${_AL_ITEMS[_caM]} ${_AL_TEXT[_caM]} ${_AL_MD_ITEMS[_caD]} ${_AL_MD_TEXT[_caD]}`;
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+const nlSectionAlignCls = _AL_ITEMS[_ca];
+const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только

@@ -55,10 +55,9 @@ export const FooterSchema = z.object({
     content: z.string(),
     size: z.enum(['small', 'medium', 'large']),
   }),
-  // Responsive-выравнивание блока рассылки (заголовок+текст): отдельные значения
-  // для десктопа и адаптива. contentAlign = десктоп (md:), contentAlignMobile = моб (base).
+  // Выравнивание блока рассылки (заголовок+текст) — ОДНО значение, применяется на
+  // десктопе И адаптиве (item 1).
   contentAlign: z.enum(['left', 'center', 'right']).optional(),
-  contentAlignMobile: z.enum(['left', 'center', 'right']).optional(),
   navigationColumn: z.object({
     title: z.string(),
     links: z.array(FooterLinkSchema),
@@ -144,9 +143,8 @@ export const FooterPuckConfig = {
         size: { type: 'select', label: 'Размер текста', options: sizeOptions },
       },
     } as any,
-    // Новое (item 1): responsive-выравнивание блока рассылки — десктоп + адаптив.
+    // item 1: одно выравнивание блока рассылки (десктоп И адаптив).
     contentAlign: { type: 'alignment', label: 'Выравнивание' },
-    contentAlignMobile: { type: 'alignment', label: 'Выравнивание (адаптив)' } as any,
     // Hidden — нет в Figma 314-34558.
     siteTitle: { type: 'hidden', label: '' },
     bottomStrip: { type: 'hidden', label: '' },
@@ -188,9 +186,8 @@ export const FooterPuckConfig = {
     },
     heading: { text: '', size: 'small', alignment: 'center' },
     text: { content: '', size: 'small' },
-    // item 1 default = текущее поведение rose: десктоп слева, адаптив по центру.
+    // item 1 default: выравнивание слева (одно значение на десктоп+адаптив).
     contentAlign: 'left',
-    contentAlignMobile: 'center',
     navigationColumn: {
       title: 'Навигация',
       links: [

@@ -72,6 +72,10 @@ const inlineSubmit = p.formLayout !== "stacked";
 // иначе ничего.
 const showAgreement = p.agreement === "true";
 
+// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
+// 'true' блок heading+description не рендерится (форма/согласие остаются).
+const hideTitle = p.hideTitle === "true";
+
 // Канон position/alignment: canon-default left = литерал подвала (колонка
 // заголовок-над-формой max-w-[320px] слева, F:70); center/right двигают
 // колонку; alignment правит выключку текста внутри колонки.
@@ -94,7 +98,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && heading ? `${id}-title` : undefined;
+const titleId = id && heading && !hideTitle ? `${id}-title` : undefined;
 ---
 
 {/* Секционная обёртка (новая): вертикаль-стандарт §2, поля .satin-pad, контейнер 1320.
@@ -108,7 +112,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	<div class="satin-container">
 		<div class={colCls}>
 			{
-				heading && (
+				!hideTitle && heading && (
 					<p
 						id={titleId}
 						class={headingCls}
@@ -121,7 +125,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				)
 			}
 			{
-				description && (
+				!hideTitle && description && (
 					<p
 						class={`font-manrope ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 						data-puck-subsection-parent={id}

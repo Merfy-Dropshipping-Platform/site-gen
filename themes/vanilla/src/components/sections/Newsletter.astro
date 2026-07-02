@@ -67,6 +67,10 @@ const inlineSubmit = p.formLayout !== "stacked";
 // тёмном полотне); иначе ничего.
 const showAgreement = p.agreement === "true";
 
+// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
+// 'true' блок heading+description не рендерится (форма/согласие остаются).
+const hideTitle = p.hideTitle === "true";
+
 // Канон alignment (blockDefaults 'left' = литерал FN:10 items-start text-left);
 // center/right двигают колонку по контейнеру. Выравнивание живёт в под-панели
 // «Заголовок» (heading.alignment) — основной контрол (как rose T17); top-level
@@ -90,7 +94,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id ? `${id}-title` : undefined;
+const titleId = id && !hideTitle ? `${id}-title` : undefined;
 ---
 
 <section
@@ -104,24 +108,28 @@ const titleId = id ? `${id}-title` : undefined;
 		class={`mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col gap-10 ${alignCls}`}
 		data-animate
 	>
-		<div class="flex w-full flex-col gap-2">
-			<h2
-				id={titleId}
-				class={headingCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="heading"
-			>
-				{heading}
-			</h2>
-			<p
-				class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]`}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="text"
-				set:html={description}
-			/>
-		</div>
+		{
+			!hideTitle && (
+				<div class="flex w-full flex-col gap-2">
+					<h2
+						id={titleId}
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+					<p
+						class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]`}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+						set:html={description}
+					/>
+				</div>
+			)
+		}
 
 		{
 			inlineSubmit ? (

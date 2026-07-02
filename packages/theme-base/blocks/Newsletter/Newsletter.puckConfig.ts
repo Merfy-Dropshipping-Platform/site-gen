@@ -25,6 +25,13 @@ export const NewsletterSchema = z.object({
    */
   agreement: z.enum(['true', 'false']).optional(),
   /**
+   * Тогл «Скрыть заголовок и текст» (legacy 'true'/'false' strings, как
+   * agreement). При 'true' порты не рендерят блок heading+description (форма и
+   * чекбокс согласия остаются); default 'false' сохраняет прежний вид
+   * (default-preserving).
+   */
+  hideTitle: z.enum(['true', 'false']).optional(),
+  /**
    * 084 vanilla pilot — additive variant. Form layout style:
    *   - `inline-submit` (default behaviour, identical pre-commit)
    *     keeps the submit button absolute-positioned inside the input
@@ -70,6 +77,9 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         },
       },
     },
+    // Тогл «Скрыть заголовок и текст» — при 'true' порты не рендерят блок
+    // heading+description (форма/согласие остаются); default 'false' (виден).
+    hideTitle: { type: 'toggle', label: 'Скрыть заголовок и текст' } as any,
     // Figma «Соглашение на рассылку» — toggle. При 'true' порты рендерят чекбокс
     // согласия под формой; default 'false' (по умолчанию чекбокса нет).
     agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
@@ -113,6 +123,7 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     buttonText: 'Подписаться',
     formLayout: 'stacked',
     agreement: 'false',
+    hideTitle: 'false',
     padding: { top: 80, bottom: 80 },
   },
   schema: NewsletterSchema,

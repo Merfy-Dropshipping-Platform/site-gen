@@ -413,9 +413,10 @@ hr {
   body {
     font-size: 18px;
   }
-  main {
-    padding: 1em;
-  }
+  /* NB: `main { padding: 1em }` УДАЛЁН (legacy из старого rose-шаблона). Секции
+     сами держат свой горизонтальный padding и должны быть full-bleed на мобиле.
+     18px-гаттер на <main> ломал full-bleed и обнажал тёмный фон <body> по бокам
+     → «чёрные полосы по бокам» на мобиле. НЕ возвращать padding на <main>. */
 }
 
 .sr-only {

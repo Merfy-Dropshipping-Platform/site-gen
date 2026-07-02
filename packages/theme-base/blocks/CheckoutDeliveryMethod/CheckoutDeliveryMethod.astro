@@ -16,6 +16,7 @@ const {
   cdekEnabled,
   cdekDoorLabel,
   cdekPvzLabel,
+  cdekPostamatLabel,
   pickupEnabled,
   pickupLabel,
   freeShippingThresholdCents,
@@ -30,6 +31,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   data-cdek-enabled={String(cdekEnabled)}
   data-cdek-door-label={cdekDoorLabel}
   data-cdek-pvz-label={cdekPvzLabel}
+  data-cdek-postamat-label={cdekPostamatLabel}
   data-pickup-enabled={String(pickupEnabled)}
   data-pickup-label={pickupLabel}
   data-free-shipping-threshold={freeShippingThresholdCents != null ? String(freeShippingThresholdCents) : ''}
@@ -57,12 +59,17 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
   {/* Error state — CDEK ответил ошибкой / нет тарифов. */}
   <div
     data-checkout-delivery-error
-    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(220,38,38)]"
+    class="py-4 text-[length:var(--size-small)] [font-family:var(--font-body)] text-[rgb(var(--color-error))]"
     hidden
   ></div>
 
   {/* Live cards — заполняется inline-script'ом из ответа логистики. */}
   <div class={C.list} data-checkout-delivery-list hidden></div>
+
+  {/* CDEK ПВЗ/постамат picker — раскрывается под выбранной cdek_pickup карточкой.
+      Сиблинг списка (НЕ внутри [data-checkout-delivery-list]): render() перетирает
+      innerHTML списка на каждом пересчёте и снёс бы пикер. */}
+  <div data-cdek-pvz-picker hidden></div>
 </section>
 
 <script is:inline define:vars={{ blockId: id }}>
@@ -79,10 +86,26 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
     var pickupEnabled = section.getAttribute('data-pickup-enabled') === 'true';
     var pickupLabel = section.getAttribute('data-pickup-label') || 'Самовывоз';
-    var cdekDoorLabel = section.getAttribute('data-cdek-door-label') || 'Курьер до двери';
-    var cdekPvzLabel = section.getAttribute('data-cdek-pvz-label') || 'До пункта выдачи';
+    var cdekDoorLabel = section.getAttribute('data-cdek-door-label') || 'Курьер СДЭК до двери';
+    var cdekPvzLabel = section.getAttribute('data-cdek-pvz-label') || 'Пункт выдачи СДЭК';
+    var cdekPostamatLabel = section.getAttribute('data-cdek-postamat-label') || 'Постамат СДЭК';
     var freeThresholdRaw = section.getAttribute('data-free-shipping-threshold') || '';
     var freeShippingThreshold = freeThresholdRaw ? parseInt(freeThresholdRaw, 10) : null;
+
+    // ── CDEK ПВЗ-picker state ──────────────────────────────────────────────
+    // Раскрывается под выбранной cdek_pickup карточкой. Точки тянем из того же
+    // gateway-эндпоинта, что и rose React-чекаут (/delivery/pickup-points).
+    var pickerEl = section.querySelector('[data-cdek-pvz-picker]');
+    var pvzCache = {};            // fiasId → точки (кэш на сессию)
+    var pvzPoints = null;         // текущие точки (null = ещё грузим/loading)
+    var pvzError = false;
+    var pvzQuery = '';
+    var selectedPvzCode = null;
+    var selectedPvzAddress = null;
+    var lastOpt = null;           // последняя выбранная опция доставки (для re-emit при выборе точки)
+    var pvzListenersBound = false;
+    var pvzFias = null;           // город, для которого загружены/выбраны точки (смена → сброс выбора)
+    var selectedPickupKind = null; // 'PVZ'|'POSTAMAT' выбранного тарифа — фильтр точек
 
     // Lazy — конфиг инжектится ПОСЛЕ блоков. Считываем при каждом вызове.
     function getApiBase() {
@@ -92,17 +115,30 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
 
-    var OPTION_CLS = 'flex items-center gap-3 px-3 py-4 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
+    var OPTION_CLS = 'flex items-start gap-3 px-3 py-2.5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
     var OPTION_SELECTED_CLS = 'border-[rgb(var(--color-text))]';
     var BODY_CLS = 'flex-1 flex flex-col min-w-0';
     var LABEL_CLS = '[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
     var META_CLS = 'mt-0.5 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]';
+    var BADGE_CLS = 'mt-1 self-start inline-flex items-center px-2 py-0.5 rounded-full [font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-bg))] bg-[rgb(var(--color-text))]';
     var PRICE_CLS = '[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-text))] flex-shrink-0';
     // Radio button (паритет с CheckoutPayment): outer circle + inner dot когда selected
     var RADIO_OUTER_BASE = 'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border';
     var RADIO_OUTER_SELECTED = 'bg-[rgb(var(--color-text))] border-[rgb(var(--color-text))]';
     var RADIO_OUTER_UNSELECTED = 'border-[rgb(var(--color-input-border))]';
     var RADIO_DOT = 'block w-2 h-2 rounded-full bg-[rgb(var(--color-bg))]';
+
+    // ── PVZ-picker classes (только rgb(var(--color-*)) — без сырых hex/rgb) ──
+    var PVZ_BOX_CLS = 'mt-2 flex flex-col gap-2 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] bg-[rgb(var(--color-bg))] p-3';
+    var PVZ_SEARCH_CLS = 'w-full h-10 px-3 [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))] bg-[rgb(var(--color-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] outline-none focus:border-[rgb(var(--color-text)/.4)]';
+    var PVZ_LIST_CLS = 'max-h-[240px] overflow-y-auto flex flex-col';
+    var PVZ_ROW_CLS = 'w-full text-left px-3 py-2 flex flex-col gap-0.5 rounded-[var(--radius-input)] cursor-pointer transition-colors hover:bg-[rgb(var(--color-text)/.04)]';
+    var PVZ_ROW_SEL_CLS = 'w-full text-left px-3 py-2 flex flex-col gap-0.5 rounded-[var(--radius-input)] cursor-pointer bg-[rgb(var(--color-text)/.06)] outline outline-1 outline-[rgb(var(--color-text))]';
+    var PVZ_ROW_ADDR_CLS = 'flex-1 [font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-text))]';
+    var PVZ_BADGE_CLS = 'flex-shrink-0 text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] uppercase tracking-wider';
+    var PVZ_TIME_CLS = 'text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))]';
+    var PVZ_MSG_CLS = 'px-3 py-2 text-[length:var(--size-small)] text-[rgb(var(--color-muted))]';
+    var PVZ_RETRY_CLS = 'underline underline-offset-2 hover:no-underline text-[rgb(var(--color-error))]';
 
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';
@@ -151,6 +187,172 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       listEl && (listEl.hidden = false);
     }
 
+    // ── CDEK ПВЗ-picker ────────────────────────────────────────────────────
+    // GET /store/carts/:id/delivery/pickup-points?store_id&cityFiasId — тот же
+    // эндпоинт, что и rose React-чекаут. Точка = {code,name,address,workTime,type}.
+    async function fetchPickupPoints(fias) {
+      var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+      var shopId = getShopId();
+      if (!fias || !cartId || !shopId) return [];
+      var url = getApiBase() + '/store/carts/' + encodeURIComponent(cartId)
+        + '/delivery/pickup-points?store_id=' + encodeURIComponent(shopId)
+        + '&cityFiasId=' + encodeURIComponent(fias);
+      var res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('http ' + res.status);
+      var json = await res.json().catch(function () { return null; });
+      return (json && Array.isArray(json.data)) ? json.data : [];
+    }
+
+    // Подпись типа точки для пустого состояния/плейсхолдера.
+    function pvzKindLabel(plural) {
+      return selectedPickupKind === 'POSTAMAT'
+        ? (plural ? 'постаматов' : 'постамата')
+        : (plural ? 'пунктов выдачи' : 'пункта выдачи');
+    }
+    // Точки только нужного тарифу типа (ПВЗ-тариф → ПВЗ, постамат → постамат).
+    // Без kind (старый бэк/неизвестный тариф) — все точки (обратная совместимость).
+    function kindFilteredPoints() {
+      if (!pvzPoints) return pvzPoints; // null → null (loading)
+      return selectedPickupKind
+        ? pvzPoints.filter(function (p) { return p.type === selectedPickupKind; })
+        : pvzPoints;
+    }
+
+    // loading / error+retry / empty / shell(input+list)
+    function renderPvzState() {
+      if (!pickerEl) return;
+      if (pvzError) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Не удалось загрузить пункты выдачи. '
+          + '<button type="button" data-pvz-retry class="' + PVZ_RETRY_CLS + '">Повторить</button></div>';
+        return;
+      }
+      if (pvzPoints === null) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Загружаем пункты выдачи…</div>';
+        return;
+      }
+      var pool = kindFilteredPoints();
+      if (!pool || pool.length === 0) {
+        pickerEl.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Нет доступных ' + pvzKindLabel(true) + ' в этом городе.</div>';
+        return;
+      }
+      pickerEl.innerHTML = '<div class="' + PVZ_BOX_CLS + '">'
+        + '<input type="text" data-pvz-search value="' + esc(pvzQuery) + '" placeholder="Поиск ' + pvzKindLabel(false) + '…" class="' + PVZ_SEARCH_CLS + '" />'
+        + '<div data-pvz-list class="' + PVZ_LIST_CLS + '"></div>'
+        + '</div>';
+      renderPvzRows();
+    }
+
+    // Только список (search-input не перерисовываем — иначе теряется фокус при вводе).
+    function renderPvzRows() {
+      var listC = pickerEl && pickerEl.querySelector('[data-pvz-list]');
+      if (!listC) return;
+      var q = pvzQuery.trim().toLowerCase();
+      var sorted = (kindFilteredPoints() || []).slice().sort(function (a, b) {
+        // ПВЗ перед постаматами, затем по адресу
+        if (a.type !== b.type) return a.type === 'POSTAMAT' ? 1 : -1;
+        return String(a.address || '').localeCompare(String(b.address || ''), 'ru');
+      });
+      var filtered = q ? sorted.filter(function (p) {
+        return String(p.address || '').toLowerCase().indexOf(q) >= 0
+          || String(p.name || '').toLowerCase().indexOf(q) >= 0
+          || String(p.code || '').toLowerCase().indexOf(q) >= 0;
+      }) : sorted;
+      if (filtered.length === 0) {
+        listC.innerHTML = '<div class="' + PVZ_MSG_CLS + '">Ничего не найдено</div>';
+        return;
+      }
+      listC.innerHTML = filtered.map(function (p) {
+        var sel = selectedPvzCode === p.code;
+        var badge = p.type === 'POSTAMAT' ? 'постамат' : 'пвз';
+        return '<button type="button" data-pvz-row data-pvz-code="' + esc(p.code) + '" data-pvz-address="' + esc(p.address) + '" class="' + (sel ? PVZ_ROW_SEL_CLS : PVZ_ROW_CLS) + '">'
+          + '<span class="flex items-center gap-2">'
+          + '<span class="' + PVZ_ROW_ADDR_CLS + '">' + esc(p.address) + '</span>'
+          + '<span class="' + PVZ_BADGE_CLS + '">' + esc(badge) + '</span>'
+          + '</span>'
+          + (p.workTime ? '<span class="' + PVZ_TIME_CLS + '">' + esc(p.workTime) + '</span>' : '')
+          + '</button>';
+      }).join('');
+    }
+
+    // Делегируем input(поиск) / click(выбор точки, retry) на host пикера (Spec 102).
+    function ensurePvzListeners() {
+      if (pvzListenersBound || !pickerEl) return;
+      pvzListenersBound = true;
+      pickerEl.addEventListener('input', function (e) {
+        var s = e.target.closest && e.target.closest('[data-pvz-search]');
+        if (!s) return;
+        pvzQuery = s.value || '';
+        renderPvzRows();
+      });
+      pickerEl.addEventListener('click', function (e) {
+        var retry = e.target.closest && e.target.closest('[data-pvz-retry]');
+        if (retry) {
+          var fias = section.getAttribute('data-last-fias-id') || '';
+          delete pvzCache[fias];
+          openPickerFor(fias);
+          return;
+        }
+        var row = e.target.closest && e.target.closest('[data-pvz-row]');
+        if (!row) return;
+        selectedPvzCode = row.getAttribute('data-pvz-code') || null;
+        selectedPvzAddress = row.getAttribute('data-pvz-address') || null;
+        renderPvzRows(); // обновить подсветку выбранной строки
+        // re-emit без повторного syncPicker (пикер уже открыт) → enable кнопки оплаты
+        if (lastOpt) emitSelection(lastOpt);
+      });
+    }
+
+    async function openPickerFor(fias) {
+      if (!pickerEl) return;
+      ensurePvzListeners();
+      if (fias !== pvzFias) {
+        // Город сменился → точка из старого города больше не валидна (СДЭК
+        // отклонит). Сбрасываем выбор и поиск; guard снова заблокирует оплату,
+        // пока покупатель не выберет точку в новом городе.
+        pvzFias = fias;
+        selectedPvzCode = null;
+        selectedPvzAddress = null;
+        pvzQuery = '';
+      }
+      if (!fias) { pvzPoints = []; pvzError = false; renderPvzState(); return; }
+      if (pvzCache[fias]) { pvzPoints = pvzCache[fias]; pvzError = false; renderPvzState(); return; }
+      pvzPoints = null; pvzError = false; renderPvzState(); // loading
+      try {
+        var list = await fetchPickupPoints(fias);
+        pvzCache[fias] = list;
+        pvzPoints = list; pvzError = false;
+      } catch (e) {
+        pvzError = true;
+      }
+      renderPvzState();
+    }
+
+    // Показать/скрыть пикер под выбранной опцией доставки.
+    function syncPicker(opt) {
+      if (!pickerEl) return;
+      if (opt && opt.type === 'cdek_pickup') {
+        var newKind = opt.pickupPointKind || null; // ПВЗ-тариф → ПВЗ, постамат → постамат
+        // Сменился тип точки тарифа (ПВЗ↔постамат) в том же городе → ранее
+        // выбранная точка другого типа невалидна (СДЭК отклонит). Сбрасываем,
+        // чтобы guard снова заблокировал оплату до выбора точки нужного типа.
+        // Сравнение (а не безусловный сброс) сохраняет выбор при ре-рендере того
+        // же типа (cart:updated / повторный авто-селект той же опции).
+        if (newKind !== selectedPickupKind) {
+          selectedPvzCode = null;
+          selectedPvzAddress = null;
+        }
+        selectedPickupKind = newKind;
+        pickerEl.hidden = false;
+        openPickerFor(section.getAttribute('data-last-fias-id') || '');
+      } else {
+        pickerEl.hidden = true;
+        // ушли с pickup-метода → сбрасываем точку, чтобы не уехал устаревший код
+        selectedPvzCode = null;
+        selectedPvzAddress = null;
+        selectedPickupKind = null;
+      }
+    }
+
     /**
      * Собирает массив option'ов из ответа логистики + локальных флагов.
      * Доставкой владеет merfy-logistics-service: ответ — дженерик
@@ -191,30 +393,73 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         }
       }
 
-      // Опции доставки: PARTNER (CDEK) → дверь/ПВЗ, OWN → свой тариф магазина.
+      // Опции доставки.
+      // • OWN — собственный тариф магазина: каждый своей карточкой.
+      // • PARTNER (CDEK) — группируем по «методу покупателя» (дверь / ПВЗ /
+      //   постамат) и оставляем по ОДНОЙ карточке. СДЭК отдаёт дубли-тарифы,
+      //   отличающиеся лишь внутренним плечом отправки (склад-склад vs
+      //   дверь-склад) при одной точке назначения, — для покупателя это один и
+      //   тот же способ, поэтому держим самый дешёвый. Разные ТИПЫ точки
+      //   (ПВЗ ↔ постамат) НЕ мержим: контракт СДЭК привязывает delivery_point и
+      //   фильтр пикера к типу точки тарифа.
+      var cdekGroups = {}; // methodKey → лучший (самый дешёвый) кандидат
+      var cdekOrder = [];  // порядок появления методов (стабильность до сортировки)
+
+      // Кандидат дешевле/быстрее: цена, затем меньший maxDays, затем minDays.
+      function cdekBetter(a, b) {
+        if (a.priceCents !== b.priceCents) return a.priceCents < b.priceCents;
+        var am = a.periodMax == null ? Infinity : a.periodMax;
+        var bm = b.periodMax == null ? Infinity : b.periodMax;
+        if (am !== bm) return am < bm;
+        var an = a.periodMin == null ? Infinity : a.periodMin;
+        var bn = b.periodMin == null ? Infinity : b.periodMin;
+        return an < bn;
+      }
+      // Понятное описание метода (если магазин не задал своё в тарифе).
+      function cdekDefaultDesc(methodKey) {
+        if (methodKey === 'door') return 'Привезём по вашему адресу';
+        if (methodKey === 'POSTAMAT') return 'Ячейка по коду из СМС, круглосуточно';
+        return 'Заберёте в офисе СДЭК, с сотрудником';
+      }
+
       for (var i = 0; i < deliveryOptions.length; i++) {
         var o = deliveryOptions[i];
         var priceCents = Math.round((o.price || 0) * 100);
         var period = (o.minDays != null && o.maxDays != null)
           ? 'от ' + o.minDays + ' до ' + o.maxDays + ' рабочих дней'
-          : (o.description || '');
+          : '';
 
         if (o.type === 'PARTNER') {
           // CDEK (PARTNER) — адрес-зависимая служба. Без адреса не показываем,
           // появится сама после ввода адреса (checkout:address-changed).
           if (!addressKnown) continue;
           var isDoor = o.deliveryMode === 'door';
-          // Заголовок карточки — настройка темы (cdekDoorLabel / cdekPvzLabel),
-          // срок/описание — meta.
-          options.push({
-            type: isDoor ? 'cdek_door' : 'cdek_pickup',
+          // Метод покупателя: дверь / постамат / ПВЗ. Тип точки (postamat/pvz)
+          // разводит карточки — постамат больше не маскируется под ПВЗ.
+          var methodKey = isDoor
+            ? 'door'
+            : (o.pickupPointKind === 'POSTAMAT' ? 'POSTAMAT' : 'PVZ');
+          var cand = {
+            cardType: isDoor ? 'cdek_door' : 'cdek_pickup',
+            methodKey: methodKey,
             tariffCode: (o.cdekTariffCode != null ? o.cdekTariffCode : null),
-            label: isDoor ? cdekDoorLabel : cdekPvzLabel,
-            meta: period,
+            label: isDoor
+              ? cdekDoorLabel
+              : (methodKey === 'POSTAMAT' ? cdekPostamatLabel : cdekPvzLabel),
             priceCents: priceCents,
             periodMin: o.minDays,
             periodMax: o.maxDays,
-          });
+            period: period,
+            description: o.description || '',
+            // Тип точки тарифа (ПВЗ/постамат) — пикер по нему фильтрует список.
+            pickupPointKind: o.pickupPointKind || null,
+          };
+          if (!cdekGroups[methodKey]) {
+            cdekGroups[methodKey] = cand;
+            cdekOrder.push(methodKey);
+          } else if (cdekBetter(cand, cdekGroups[methodKey])) {
+            cdekGroups[methodKey] = cand;
+          }
         } else {
           // OWN — собственный тариф магазина (бывшие customProfiles).
           options.push({
@@ -226,6 +471,24 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             priceCents: priceCents,
           });
         }
+      }
+
+      // Материализуем дедуплицированные CDEK-карточки. Подзаголовок = понятное
+      // описание метода (приоритет — текст магазина) + срок.
+      for (var ci = 0; ci < cdekOrder.length; ci++) {
+        var best = cdekGroups[cdekOrder[ci]];
+        var desc = best.description || cdekDefaultDesc(best.methodKey);
+        var bestMeta = best.period ? (desc + ' · ' + best.period) : desc;
+        options.push({
+          type: best.cardType,
+          tariffCode: best.tariffCode,
+          label: best.label,
+          meta: bestMeta,
+          priceCents: best.priceCents,
+          periodMin: best.periodMin,
+          periodMax: best.periodMax,
+          pickupPointKind: best.pickupPointKind,
+        });
       }
 
       // Free shipping override — если cart total >= threshold, все платные → бесплатно.
@@ -240,6 +503,14 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 
       // Сортировка: бесплатные первыми, потом по цене.
       options.sort(function (a, b) { return a.priceCents - b.priceCents; });
+
+      // «Дешевле всего» — только на единственной самой дешёвой ПЛАТНОЙ карточке
+      // (строго дешевле следующей; «Бесплатно» уже само себя продаёт, поэтому
+      // на нулевой цене бейдж не вешаем).
+      if (options.length > 1 && options[0].priceCents > 0
+          && options[0].priceCents < options[1].priceCents) {
+        options[0].cheapest = true;
+      }
       return options;
     }
 
@@ -271,14 +542,13 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + ' data-delivery-price-cents="' + esc(String(opt.priceCents)) + '"'
           + ' data-delivery-period-min="' + esc(opt.periodMin != null ? String(opt.periodMin) : '') + '"'
           + ' data-delivery-period-max="' + esc(opt.periodMax != null ? String(opt.periodMax) : '') + '"'
+          + ' data-delivery-pvz-kind="' + esc(opt.pickupPointKind || '') + '"'
           + (selected ? ' data-selected="true"' : '')
           + '>'
           + '<input type="radio" name="deliveryOption" value="' + esc(opt.type) + '"' + (selected ? ' checked' : '') + ' class="sr-only" data-delivery-radio />'
-          + '<span class="' + radioOuterCls + '" data-delivery-radio-dot>'
-          + (selected ? '<span class="' + RADIO_DOT + '"></span>' : '')
-          + '</span>'
           + '<div class="' + BODY_CLS + '">'
           + '<span class="' + LABEL_CLS + '" data-delivery-label>' + esc(opt.label) + '</span>'
+          + (opt.cheapest ? '<span class="' + BADGE_CLS + '" data-delivery-cheapest>дешевле всего</span>' : '')
           + (opt.meta ? '<span class="' + META_CLS + '">' + esc(opt.meta) + '</span>' : '')
           + '</div>'
           + '<span class="' + PRICE_CLS + '">' + priceText + '</span>'
@@ -292,7 +562,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       if (addressKnown) dispatchSelection(options[0]);
     }
 
-    function dispatchSelection(opt) {
+    // Только отправка события (без управления пикером) — для re-emit при выборе
+    // точки, когда пикер уже открыт. pickupPointCode непуст только для cdek_pickup
+    // и только когда точка реально выбрана.
+    function emitSelection(opt) {
+      var isPvz = opt.type === 'cdek_pickup';
       document.dispatchEvent(new CustomEvent('checkout:delivery-changed', {
         detail: {
           type: opt.type,
@@ -303,8 +577,16 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           periodMin: opt.periodMin || null,
           periodMax: opt.periodMax || null,
           label: opt.label,
+          pickupPointCode: isPvz ? selectedPvzCode : null,
+          pickupPointAddress: isPvz ? selectedPvzAddress : null,
         },
       }));
+    }
+
+    function dispatchSelection(opt) {
+      lastOpt = opt;
+      syncPicker(opt);
+      emitSelection(opt);
     }
 
     // Click handler — переключение selected состояния (radio + border)
@@ -348,6 +630,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         periodMin: card.getAttribute('data-delivery-period-min') ? parseInt(card.getAttribute('data-delivery-period-min'), 10) : null,
         periodMax: card.getAttribute('data-delivery-period-max') ? parseInt(card.getAttribute('data-delivery-period-max'), 10) : null,
         label: labelEl ? labelEl.textContent : '',
+        pickupPointKind: card.getAttribute('data-delivery-pvz-kind') || null,
       });
     });
 

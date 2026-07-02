@@ -26,7 +26,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 <html lang="ru">
 	<head>
 		<BaseHead title={pageTitle} description={description} />
-		<ViewTransitions />
+		{/* VT отключены на checkout: ClientRouter пере-выполняет is:inline-скрипты на
+		    astro:page-load → cart-store грузится дважды → форма/сводка перерисовываются
+		    ~1с = «скачки интерфейса». Checkout терминальный → грузим полной страницей. */}
+		{header !== "checkout" && <ViewTransitions />}
 		<slot name="head" />
 	</head>
 	<body class="antialiased bg-[rgb(var(--color-bg,255_255_255))]">

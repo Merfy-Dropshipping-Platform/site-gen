@@ -58,6 +58,10 @@ const inlineSubmit = p.formLayout !== "stacked";
 // согласия под формой (манера bloom: Inter light мелкий muted, акцент розовый);
 // иначе ничего.
 const showAgreement = p.agreement === "true";
+// Текст согласия + опциональная ссылка (страница/URL, даже несуществующая).
+const agreeText = typeof p.agreementText === "string" && p.agreementText.trim() ? p.agreementText : "Согласен на обработку персональных данных";
+const agreeLinkText = typeof p.agreementLinkText === "string" ? p.agreementLinkText.trim() : "";
+const agreeLink = typeof p.agreementLink === "string" ? p.agreementLink.trim() : "";
 
 // Канон position/alignment: canon-default 'left' (blockDefaults) = литерал
 // подвала — заголовок слева, форма max-w-[318px] справа, двухколонная
@@ -173,8 +177,8 @@ const titleId = id ? `${id}-title` : undefined;
 				}
 				{
 					showAgreement && (
-						<label class="flex w-full cursor-pointer items-start gap-2.5 font-inter text-[14px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
-							<span class="relative mt-px flex size-5 shrink-0">
+						<label class="flex w-full cursor-pointer items-center gap-2.5 font-inter text-[14px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+							<span class="relative flex size-5 shrink-0">
 							<input
 								type="checkbox"
 								required
@@ -189,7 +193,15 @@ const titleId = id ? `${id}-title` : undefined;
 								<path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
 							</svg>
 						</span>
-							<span>Согласен на обработку персональных данных</span>
+							{
+						agreeLink && agreeLinkText ? (
+							<span>{agreeText} <a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeLinkText}</a></span>
+						) : agreeLink ? (
+							<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
+						) : (
+							<span>{agreeText}</span>
+						)
+					}
 						</label>
 					)
 				}

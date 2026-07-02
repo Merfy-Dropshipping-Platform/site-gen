@@ -24,6 +24,12 @@ export const NewsletterSchema = z.object({
    * 'false' (контрол выключен) сохраняет прежний вид (default-preserving).
    */
   agreement: z.enum(['true', 'false']).optional(),
+  // Текст чекбокса согласия + опциональная ссылка (страница/URL, даже
+  // несуществующая). agreementLinkText — часть-ссылка; если пусто, а link задан,
+  // ссылкой становится весь текст.
+  agreementText: z.string().optional(),
+  agreementLinkText: z.string().optional(),
+  agreementLink: z.string().optional(),
   /**
    * 084 vanilla pilot — additive variant. Form layout style:
    *   - `inline-submit` (default behaviour, identical pre-commit)
@@ -73,6 +79,9 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     // Figma «Соглашение на рассылку» — toggle. При 'true' порты рендерят чекбокс
     // согласия под формой; default 'false' (по умолчанию чекбокса нет).
     agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
+    agreementText: { type: 'hidden', label: '' },
+    agreementLinkText: { type: 'hidden', label: '' },
+    agreementLink: { type: 'hidden', label: '' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Sub-panel «Форма рассылки» (314:35058):
@@ -113,6 +122,7 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     buttonText: 'Подписаться',
     formLayout: 'stacked',
     agreement: 'false',
+    agreementText: 'Согласен на обработку персональных данных',
     padding: { top: 80, bottom: 80 },
   },
   schema: NewsletterSchema,

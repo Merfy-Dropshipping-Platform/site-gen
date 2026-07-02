@@ -57,6 +57,10 @@ const inlineSubmit = p.formLayout === "inline-submit";
 // Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
 // согласия под формой (манера rose: Manrope мелкий muted); иначе ничего.
 const showAgreement = p.agreement === "true";
+// Текст согласия + опциональная ссылка (страница/URL, даже несуществующая).
+const agreeText = typeof p.agreementText === "string" && p.agreementText.trim() ? p.agreementText : "Согласен на обработку персональных данных";
+const agreeLinkText = typeof p.agreementLinkText === "string" ? p.agreementLinkText.trim() : "";
+const agreeLink = typeof p.agreementLink === "string" ? p.agreementLink.trim() : "";
 
 // Канон «Выравнивание» = ЕДИНЫЙ контрол (конструктор пишет position): рулит И
 // позицией блока в контейнере (posCls), И выключкой содержимого внутри
@@ -164,8 +168,8 @@ const titleId = id ? `${id}-title` : undefined;
 			}
 			{
 				showAgreement && (
-					<label class="flex w-full cursor-pointer items-start gap-2.5 font-manrope text-[14px] font-normal leading-snug text-[rgb(var(--color-muted,153_153_153))]">
-						<span class="relative mt-px flex size-5 shrink-0">
+					<label class="flex w-full cursor-pointer items-center gap-2.5 font-manrope text-[14px] font-normal leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<span class="relative flex size-5 shrink-0">
 							<input
 								type="checkbox"
 								required
@@ -180,7 +184,15 @@ const titleId = id ? `${id}-title` : undefined;
 								<path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
 							</svg>
 						</span>
-						<span>Согласен на обработку персональных данных</span>
+						{
+						agreeLink && agreeLinkText ? (
+							<span>{agreeText} <a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeLinkText}</a></span>
+						) : agreeLink ? (
+							<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
+						) : (
+							<span>{agreeText}</span>
+						)
+					}
 					</label>
 				)
 			}

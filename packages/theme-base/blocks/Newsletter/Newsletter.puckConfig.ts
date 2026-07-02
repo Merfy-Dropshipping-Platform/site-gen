@@ -28,7 +28,6 @@ export const NewsletterSchema = z.object({
   // несуществующая). agreementLinkText — часть-ссылка; если пусто, а link задан,
   // ссылкой становится весь текст.
   agreementText: z.string().optional(),
-  agreementLinkText: z.string().optional(),
   agreementLink: z.string().optional(),
   /**
    * 084 vanilla pilot — additive variant. Form layout style:
@@ -80,7 +79,6 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     // согласия под формой; default 'false' (по умолчанию чекбокса нет).
     agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
     agreementText: { type: 'hidden', label: '' },
-    agreementLinkText: { type: 'hidden', label: '' },
     agreementLink: { type: 'hidden', label: '' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },

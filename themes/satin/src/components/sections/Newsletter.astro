@@ -73,7 +73,6 @@ const inlineSubmit = p.formLayout !== "stacked";
 const showAgreement = p.agreement === "true";
 // Текст согласия + опциональная ссылка (страница/URL, даже несуществующая).
 const agreeText = typeof p.agreementText === "string" && p.agreementText.trim() ? p.agreementText : "Согласен на обработку персональных данных";
-const agreeLinkText = typeof p.agreementLinkText === "string" ? p.agreementLinkText.trim() : "";
 const agreeLink = typeof p.agreementLink === "string" ? p.agreementLink.trim() : "";
 
 // Канон position/alignment: canon-default left = литерал подвала (колонка
@@ -208,9 +207,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							</svg>
 						</span>
 						{
-						agreeLink && agreeLinkText ? (
-							<span>{agreeText} <a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeLinkText}</a></span>
-						) : agreeLink ? (
+						agreeLink ? (
 							<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
 						) : (
 							<span>{agreeText}</span>

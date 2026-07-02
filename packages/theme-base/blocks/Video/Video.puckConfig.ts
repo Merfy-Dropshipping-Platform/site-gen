@@ -24,14 +24,10 @@ export const VideoSchema = z.object({
    */
   align: z.enum(['container', 'fullbleed']).optional(),
   // «Размер» — ВЫСОТА медиа-блока (small короче 21:9 / medium 16:9 дефолт /
-  // large выше 4:3). Канон Hero: секционный `size` = высота секции, отдельно от
-  // кегля заголовка (`headingSize`). Раньше `size` ошибочно управлял кеглем <h2>
-  // — исправлено; backfillVideoSizeSplit переносит старые значения в `headingSize`.
+  // large выше 4:3). Раньше `size` ошибочно управлял кеглем <h2> — исправлено:
+  // теперь это высота, а кегль заголовка приходит из `content.heading.size`
+  // (панель конструктора «Размер заголовка» пишет именно туда).
   size: z.enum(['small', 'medium', 'large']).optional(),
-  // «Размер заголовка» — кегль шрифта <h2>. Отдельный регулятор (канон Hero
-  // heading.size), НЕ путать с секционным `size`=высота. Опционально →
-  // отсутствие = medium (дефолт темы); старые ревизии default-preserving.
-  headingSize: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
   video: z.object({ url: z.string() }).optional(),
   content: z.object({
@@ -98,16 +94,6 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
       fieldType: 'description',
       placeholder: 'Ввести текст...',
     } as any,
-    // «Размер заголовка» — кегль шрифта <h2> (отдельно от секционного «Размер»=высота).
-    headingSize: {
-      type: 'select',
-      label: 'Размер заголовка',
-      options: [
-        { label: 'Маленький', value: 'small' },
-        { label: 'Средний', value: 'medium' },
-        { label: 'Большой', value: 'large' },
-      ],
-    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-35082.
@@ -124,7 +110,6 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     videoUrl: '',
     poster: '',
     position: 'contained',
-    headingSize: 'medium',
     padding: { top: 80, bottom: 80 },
   },
   schema: VideoSchema,

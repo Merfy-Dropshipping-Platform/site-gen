@@ -39,7 +39,6 @@ const showHeading = headingEnabled;
 // content.heading.size. Секционный `size` теперь = ВЫСОТА блока (не кегль) —
 // исключён из цепочки. Лестница §9: small 15/17, medium 18/20 (литерал), large 22/24.
 const headingSize =
-	p.headingSize ??
 	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
 	p.content?.heading?.size;
 const headingSizeCls =

@@ -63,7 +63,6 @@ const showHeading = headingEnabled;
 // исключён из цепочки. Лестница на базе эталона 19/23 (канон-дефолт medium):
 // small 16/19, medium 19/23, large 23/29 (паттерн flux Collections).
 const headingSize =
-	p.headingSize ??
 	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
 	p.content?.heading?.size;
 const headingSizeCls =

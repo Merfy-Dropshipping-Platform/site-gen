@@ -93,10 +93,10 @@ const overlayStyle = overlayPctRaw > 0
 const contentObj = raw.content as { heading?: { text?: string; alignment?: string; enabled?: string; size?: string } } | undefined;
 const headingAlignment = contentObj?.heading?.alignment;
 const headingEnabled = contentObj?.heading?.enabled !== 'false';
-// «Размер заголовка» — отдельное поле `headingSize` (кегль <h2>). Pre-split
-// ревизии писали кегль в top-level `size`; backfillVideoSizeSplit переносит его
-// в `headingSize`. content.heading.size — ещё более старый legacy-fallback.
-const headingSize = typeof raw.headingSize === 'string' ? raw.headingSize : contentObj?.heading?.size;
+// «Размер заголовка» — кегль <h2>. Панель конструктора пишет его в
+// `content.heading.size`; top-level `size` теперь = ВЫСОТА блока (не кегль),
+// поэтому из цепочки заголовка исключён.
+const headingSize = contentObj?.heading?.size;
 const headingAlignClass =
   headingAlignment === 'left' ? 'text-left' :
   headingAlignment === 'right' ? 'text-right' :

@@ -25,7 +25,9 @@ const PLACEHOLDER_SLIDE_IMAGE = "/placeholders/landscape-slideshow.png";
 const PLACEHOLDER_SLIDES = [
 	{
 		id: "slide-placeholder",
-		imageUrl: PLACEHOLDER_SLIDE_IMAGE,
+		// Figma 1236-42150: imageUrl пуст → маппинг ниже пометит слайд как isPromptCard,
+		// сам подставит PLACEHOLDER_SLIDE_IMAGE фоном и включит белую карточку (boxed).
+		imageUrl: "",
 		heading: "Слайд-шоу",
 		subtitle: "Добавь несколько изображений с информацией о своём бренде",
 		ctaText: "Кнопка",
@@ -96,11 +98,24 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
 		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
+	// Figma node 1236-42150 (пустое/дефолтное состояние секции): слайд БЕЗ картинки
+	// мерчанта = дизайн-подсказка — фото-плейсхолдер landscape-slideshow.png ФОНОМ +
+	// белая карточка (boxed) по ЦЕНТРУ полотна (заголовок/подзаголовок/кнопка). Слайд
+	// С фото мерчанта — full-bleed как раньше (boxed управляется флагом «Контейнер»).
+	const merchantImage =
+		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
+		(typeof s.image === "string" && s.image.trim()) ||
+		"";
+	const isPromptCard = !merchantImage;
+	// Карточка-подсказка включена по умолчанию (Figma), но тумблер «Контейнер: Скрыть»
+	// (container==='false') её выключает — тогда слайд без фото = пустая surface-карточка
+	// (прежнее поведение). undefined/'true' → карточка.
+	const promptBoxed = isPromptCard && String(s.container) !== "false";
+	const layout = slideLayoutCls(s);
 	return {
-		image:
-			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
-			(typeof s.image === "string" && s.image.trim()) ||
-			"",
+		// Figma: карточка-подсказка сидит на фото-плейсхолдере. Выключенная подсказка и
+		// реальный слайд без фото → пустая surface (bg-surface, рендер ниже).
+		image: merchantImage || (promptBoxed ? PLACEHOLDER_SLIDE_IMAGE : ""),
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),
@@ -113,12 +128,17 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			s.button?.link?.href ??
 			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
 			"/catalog",
-		boxed: String(s.container ?? "false") === "true",
+		// Подсказка → карточка (если не выключена тумблером). Реальный слайд с фото → по «Контейнеру».
+		boxed: isPromptCard ? promptBoxed : String(s.container ?? "false") === "true",
 		schemeCls:
 			typeof s.colorScheme === "string" && s.colorScheme
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
-		...slideLayoutCls(s),
+		// Карточка-подсказка центрируется по полотну (Figma: карточка в середине), реальный
+		// слайд размещается по своей position (сетка 3×3).
+		...(promptBoxed
+			? { ...layout, vJustifyCls: "justify-center", hItemsCls: "items-center" }
+			: layout),
 		active: i === 0,
 	};
 });
@@ -253,28 +273,37 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<>
-						<button
-							type="button"
-							data-slide-prev
-							aria-label="Предыдущий слайд"
-							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
-						>
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
-						<button
-							type="button"
-							data-slide-next
-							aria-label="Следующий слайд"
-							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
-						>
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
+						{/* Боковые круглые стрелки — только для точек/линий/счётчика. Для «Числа»
+						    (canon-default, Figma node 1236-42150) навигация инлайн внутри пагинации:
+						    ← 1 2 3 → (стрелки-шевроны вокруг чисел по центру снизу). */}
+						{pagination !== "numbers" && (
+							<>
+								<button
+									type="button"
+									data-slide-prev
+									aria-label="Предыдущий слайд"
+									class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
+								>
+									<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+										<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+								<button
+									type="button"
+									data-slide-next
+									aria-label="Следующий слайд"
+									class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
+								>
+									<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+										<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+							</>
+						)}
 						{pagination !== "none" && (
-							<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+							<div
+								class={`absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center ${pagination === "numbers" ? "gap-4" : "gap-2"}`}
+							>
 								{pagination === "dots" &&
 									slides.map((_, i) => (
 										<button
@@ -295,17 +324,42 @@ const paddingStyle = p.padding
 											class="h-0.5 w-6 !bg-white/50 transition-colors data-[active=true]:!bg-white"
 										/>
 									))}
-								{pagination === "numbers" &&
-									slides.map((_, i) => (
+								{/* Figma node 1236-42150: ← 1 2 3 → — стрелки-шевроны по краям +
+								    числа (активное белое, неактивные white/50) по центру снизу. */}
+								{pagination === "numbers" && (
+									<>
 										<button
 											type="button"
-											data-slide-dot
-											data-active={i === 0 ? "true" : "false"}
-											class="font-manrope text-[14px] font-normal leading-none !text-white/60 transition-colors data-[active=true]:!text-white"
+											data-slide-prev
+											aria-label="Предыдущий слайд"
+											class="flex size-6 items-center justify-center !text-white/70 transition-opacity hover:opacity-100"
 										>
-											{i + 1}
+											<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+												<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+											</svg>
 										</button>
-									))}
+										{slides.map((_, i) => (
+											<button
+												type="button"
+												data-slide-dot
+												data-active={i === 0 ? "true" : "false"}
+												class="font-manrope text-[16px] font-normal leading-none !text-white/50 transition-colors data-[active=true]:!text-white"
+											>
+												{i + 1}
+											</button>
+										))}
+										<button
+											type="button"
+											data-slide-next
+											aria-label="Следующий слайд"
+											class="flex size-6 items-center justify-center !text-white/70 transition-opacity hover:opacity-100"
+										>
+											<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+												<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+											</svg>
+										</button>
+									</>
+								)}
 								{pagination === "counter" && (
 									<span
 										data-slide-counter
@@ -321,16 +375,26 @@ const paddingStyle = p.padding
 				)
 			}
 
-			{/* Figma 1:19335 — пустое состояние: декоративные точки навигации поверх
-			    слайда-плейсхолдера с фоном landscape-slideshow.png (реальных слайдов для
-			    пролистывания нет, поэтому статичные, без data-slide-dot). Белые точки на
-			    фото-фоне (как реальная навигация поверх слайда с изображением). */}
+			{/* Figma node 1236-42150 — пустое состояние: декоративная пагинация ← 1 2 3 →
+			    поверх слайда-плейсхолдера (реальных слайдов для пролистывания нет, поэтому
+			    статичная, без data-slide-*). Активное «1» белое, «2 3» — white/50; стрелки-
+			    шевроны white/70. Зеркалит рабочую numbers-пагинацию выше. */}
 			{
 				!hasSlides && (
-					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2" aria-hidden="true">
-						<span class="size-2 !rounded-full bg-white" />
-						<span class="size-2 !rounded-full bg-white/50" />
-						<span class="size-2 !rounded-full bg-white/50" />
+					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4" aria-hidden="true">
+						<span class="flex size-6 items-center justify-center text-white/70">
+							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</span>
+						<span class="font-manrope text-[16px] font-normal leading-none text-white">1</span>
+						<span class="font-manrope text-[16px] font-normal leading-none text-white/50">2</span>
+						<span class="font-manrope text-[16px] font-normal leading-none text-white/50">3</span>
+						<span class="flex size-6 items-center justify-center text-white/70">
+							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</span>
 					</div>
 				)
 			}

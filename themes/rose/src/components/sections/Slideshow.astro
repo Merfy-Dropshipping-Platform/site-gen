@@ -153,15 +153,16 @@ const intervalMs = String(
 );
 const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "true";
 
-// Канон size (s/m/l) — высота полотна в долях вьюпорта (паттерн Hero «Размер»):
-// small=50svh, medium(отсутствие)=75svh, large=100svh. min-h гарантирует высоту
-// при коротком контенте; раньше size игнорировался («не работал»).
+// Канон size (s/m/l) — высота полотна. КАП min(svh,px) как у Hero: чистый svh
+// «раздувается» в превью конструктора (iframe height = высота ВСЕЙ страницы, а не
+// экрана телефона → 56svh ≈ 1232px). min(svh,px) кап держит нормальную высоту и в
+// превью, и на реальном телефоне (там svh<кап → работает svh), desktop через md:.
 const heightCls =
 	p.size === "small"
-		? "min-h-[40svh] md:min-h-[50svh]"
+		? "min-h-[min(40svh,320px)] md:min-h-[min(50svh,460px)]"
 		: p.size === "large"
-			? "min-h-[70svh] md:min-h-[100svh]"
-			: "min-h-[56svh] md:min-h-[75svh]";
+			? "min-h-[min(70svh,540px)] md:min-h-[min(100svh,900px)]"
+			: "min-h-[min(56svh,440px)] md:min-h-[min(75svh,680px)]";
 
 // Канон imagePosition («Положение изображения»): fullscreen (canon-default;
 // полотно во всю ширину секции, как hero — без боковых полей и радиуса) |

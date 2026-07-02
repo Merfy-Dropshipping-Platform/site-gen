@@ -23,8 +23,15 @@ export const VideoSchema = z.object({
    * `fullbleed` removes the clamp so video spans the viewport.
    */
   align: z.enum(['container', 'fullbleed']).optional(),
-  // Pupa parity.
+  // «Размер» — ВЫСОТА медиа-блока (small короче 21:9 / medium 16:9 дефолт /
+  // large выше 4:3). Канон Hero: секционный `size` = высота секции, отдельно от
+  // кегля заголовка (`headingSize`). Раньше `size` ошибочно управлял кеглем <h2>
+  // — исправлено; backfillVideoSizeSplit переносит старые значения в `headingSize`.
   size: z.enum(['small', 'medium', 'large']).optional(),
+  // «Размер заголовка» — кегль шрифта <h2>. Отдельный регулятор (канон Hero
+  // heading.size), НЕ путать с секционным `size`=высота. Опционально →
+  // отсутствие = medium (дефолт темы); старые ревизии default-preserving.
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
   overlay: z.number().int().min(0).max(100).optional(),
   video: z.object({ url: z.string() }).optional(),
   content: z.object({
@@ -55,8 +62,8 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
   label: 'Видео',
   category: 'media',
   // Figma 314-35082: Добавить видео (file upload) / Положение видео (toggle) /
-  // Содержание (header) / Заголовок (aiText) / Размер заголовка /
-  // Цветовая схема / Отступы.
+  // Размер (высота блока) / Содержание (header) / Заголовок (aiText) /
+  // Размер заголовка (кегль <h2>) / Цветовая схема / Отступы.
   fields: {
     videoUrl: { type: 'video', label: 'Добавить видео' } as any,
     position: {
@@ -65,6 +72,17 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
       options: [
         { label: 'На весь экран', value: 'fullscreen' },
         { label: 'Окно', value: 'contained' },
+      ],
+    },
+    // «Размер» — высота медиа-блока (секционный size, канон Hero). small короче,
+    // large выше; medium = дефолтные 16:9.
+    size: {
+      type: 'select',
+      label: 'Размер',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
       ],
     },
     ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
@@ -80,7 +98,8 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
       fieldType: 'description',
       placeholder: 'Ввести текст...',
     } as any,
-    size: {
+    // «Размер заголовка» — кегль шрифта <h2> (отдельно от секционного «Размер»=высота).
+    headingSize: {
       type: 'select',
       label: 'Размер заголовка',
       options: [
@@ -106,7 +125,6 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     poster: '',
     position: 'contained',
     headingSize: 'medium',
-    headingAlignment: 'left',
     padding: { top: 80, bottom: 80 },
   },
   schema: VideoSchema,

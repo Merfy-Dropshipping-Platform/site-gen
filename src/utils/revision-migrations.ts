@@ -1434,6 +1434,47 @@ function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<str
   return changed ? out : pagesData;
 }
 
+/**
+ * Video «Размер» split (rose/flux/vanilla/bloom/satin parity): исторически у
+ * блока Video было единственное top-level поле `size`, ошибочно подписанное
+ * «Размер заголовка» и управлявшее КЕГЛЕМ <h2>. Канон (как у Hero) — два
+ * независимых регулятора: `size` = ВЫСОТА медиа-блока, `headingSize` = кегль
+ * заголовка. Этот backfill сохраняет уже выбранный мерчантом кегль, перенося
+ * legacy top-level `size` в `headingSize`, и очищает `size`, чтобы высота
+ * видео осталась дефолтной (medium/16:9) — иначе старая ревизия с «Большим
+ * заголовком» молча получила бы более высокое видео.
+ * Идемпотентно: срабатывает только когда `size` — строка И `headingSize` пуст.
+ */
+function backfillVideoSizeSplit(pagesData: Record<string, unknown>): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    const pd = page as PageData | undefined;
+    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    if (!content) continue;
+    let pageChanged = false;
+    const newContent = content.map((block) => {
+      if (block?.type !== 'Video') return block;
+      const props = (block.props ?? {}) as Record<string, unknown>;
+      const hasHeadingSize =
+        typeof props.headingSize === 'string' && props.headingSize !== '';
+      const legacySize = props.size;
+      if (hasHeadingSize || typeof legacySize !== 'string' || legacySize === '') {
+        return block;
+      }
+      pageChanged = true;
+      const nextProps: Record<string, unknown> = { ...props, headingSize: legacySize };
+      delete nextProps.size;
+      return { ...block, props: nextProps };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(pd as object), content: newContent };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -1473,6 +1514,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillHeroLegacyProps(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = backfillVideoSizeSplit(out.pagesData as Record<string, unknown>);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.

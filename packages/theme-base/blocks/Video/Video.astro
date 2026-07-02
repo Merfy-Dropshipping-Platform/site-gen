@@ -93,9 +93,10 @@ const overlayStyle = overlayPctRaw > 0
 const contentObj = raw.content as { heading?: { text?: string; alignment?: string; enabled?: string; size?: string } } | undefined;
 const headingAlignment = contentObj?.heading?.alignment;
 const headingEnabled = contentObj?.heading?.enabled !== 'false';
-// «Размер заголовка» — visible field `size` (Figma 314:35082). Legacy
-// `content.heading.size` kept as fallback for pre-existing revisions.
-const headingSize = typeof raw.size === 'string' ? raw.size : contentObj?.heading?.size;
+// «Размер заголовка» — отдельное поле `headingSize` (кегль <h2>). Pre-split
+// ревизии писали кегль в top-level `size`; backfillVideoSizeSplit переносит его
+// в `headingSize`. content.heading.size — ещё более старый legacy-fallback.
+const headingSize = typeof raw.headingSize === 'string' ? raw.headingSize : contentObj?.heading?.size;
 const headingAlignClass =
   headingAlignment === 'left' ? 'text-left' :
   headingAlignment === 'right' ? 'text-right' :
@@ -107,6 +108,13 @@ const headingAlignClass =
 const headingSizeClass =
   headingSize === 'small' ? '[--video-heading-size:12px]' :
   headingSize === 'large' ? '[--video-heading-size:17px]' : '';
+// «Размер» (секционный `size`) — ВЫСОТА медиа-блока (канон Hero: size=высота
+// секции). Меняет aspect-ratio плитки видео: small короче (21:9), large выше
+// (4:3); medium/absent = 16:9 (дефолт, байт-идентично прежнему рендеру).
+const sectionSize = typeof raw.size === 'string' ? raw.size : 'medium';
+const mediaAspect =
+  sectionSize === 'small' ? '21/9' :
+  sectionSize === 'large' ? '4/3' : '16/9';
 // 084 vanilla pilot: additive `align` and `padded` variants. When set,
 // they take precedence over the legacy `position` prop. Defaults preserve
 // pre-084 behaviour: `align` falls back to position-derived clamp,
@@ -166,11 +174,11 @@ const video = parseVideo(videoUrl);
   <div class={containerClass}>
     {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
     {subheading && <p class:list={[C.subheading, headingAlignClass]}>{subheading}</p>}
-    {/* style=aspect-ratio дублирует `aspect-video` из C.media: страховка
-        геометрии, если Tailwind-утилита не сгенерирована в CSS темы
-        (CSS темы сканирует только свои файлы — блок не должен
-        схлопываться в 0 высоты ни при каком CSS). */}
-    <div class={C.media} data-media-target style="aspect-ratio:16/9">
+    {/* style=aspect-ratio — «Размер» (высота блока): small 21:9 / medium 16:9 /
+        large 4:3. Inline перебивает `aspect-video` из C.media и одновременно
+        страхует геометрию, если Tailwind-утилита не сгенерирована в CSS темы
+        (блок не схлопывается в 0 высоты ни при каком CSS). */}
+    <div class={C.media} data-media-target style={`aspect-ratio:${mediaAspect}`}>
       {video.kind === 'youtube' && (
         <iframe
           class={C.iframe}

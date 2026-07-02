@@ -35,10 +35,10 @@ const headingRawText =
 const headingText = headingRawText.trim() ? headingRawText : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = headingEnabled;
-// Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
-// content.heading.size. Лестница §9: small 15/17, medium 18/20 (литерал), large 22/24.
+// Канон headingSize («Размер заголовка», кегль <h2>) + дубли heading.size /
+// content.heading.size. Секционный `size` теперь = ВЫСОТА блока (не кегль) —
+// исключён из цепочки. Лестница §9: small 15/17, medium 18/20 (литерал), large 22/24.
 const headingSize =
-	p.size ??
 	p.headingSize ??
 	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
 	p.content?.heading?.size;
@@ -104,6 +104,11 @@ const mediaCls = fullBleed
 // клики проходят сквозь (controls видео остаются доступны).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
+// «Размер» (секционный size) — ВЫСОТА медиа-плитки (канон Hero). small короче
+// (21:9), large выше (4:3); medium/absent = базовый aspect-video (без override).
+const mediaHeightStyle =
+	p.size === "small" ? "aspect-ratio:21/9" : p.size === "large" ? "aspect-ratio:4/3" : undefined;
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -140,7 +145,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 			)
 		}
 
-		<div class={mediaCls} data-animate data-animate-delay="0.1s">
+		<div class={mediaCls} style={mediaHeightStyle} data-animate data-animate-delay="0.1s">
 			{
 				videoUrl ? (
 					<video

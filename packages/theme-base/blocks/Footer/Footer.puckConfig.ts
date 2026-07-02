@@ -55,6 +55,10 @@ export const FooterSchema = z.object({
     content: z.string(),
     size: z.enum(['small', 'medium', 'large']),
   }),
+  // Responsive-выравнивание блока рассылки (заголовок+текст): отдельные значения
+  // для десктопа и адаптива. contentAlign = десктоп (md:), contentAlignMobile = моб (base).
+  contentAlign: z.enum(['left', 'center', 'right']).optional(),
+  contentAlignMobile: z.enum(['left', 'center', 'right']).optional(),
   navigationColumn: z.object({
     title: z.string(),
     links: z.array(FooterLinkSchema),
@@ -119,25 +123,30 @@ export const FooterPuckConfig = {
         placeholder: { type: 'hidden', label: '' },
       },
     },
+    // Figma 314-34558: под «Рассылка» — Заголовок(aiText) / Размер заголовка / Текст(aiText)
+    // / Размер текста, ВИДИМЫМИ в панели. `label:''` → под-поля плоскими группами (как Figma),
+    // без дубля-обёртки «Заголовок». heading/text питают заголовок+описание рассылки.
     heading: {
       type: 'object',
-      label: 'Заголовок',
-      hiddenInMainPanel: true,
+      label: '',
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер заголовка', options: sizeOptions },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
+        // Выравнивание вынесено в top-level responsive-контрол (contentAlign/contentAlignMobile).
+        alignment: { type: 'hidden', label: '' },
       },
     } as any,
     text: {
       type: 'object',
-      label: 'Текст',
-      hiddenInMainPanel: true,
+      label: '',
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер текста', options: sizeOptions },
       },
     } as any,
+    // Новое (item 1): responsive-выравнивание блока рассылки — десктоп + адаптив.
+    contentAlign: { type: 'alignment', label: 'Выравнивание' },
+    contentAlignMobile: { type: 'alignment', label: 'Выравнивание (адаптив)' } as any,
     // Hidden — нет в Figma 314-34558.
     siteTitle: { type: 'hidden', label: '' },
     bottomStrip: { type: 'hidden', label: '' },
@@ -179,6 +188,9 @@ export const FooterPuckConfig = {
     },
     heading: { text: '', size: 'small', alignment: 'center' },
     text: { content: '', size: 'small' },
+    // item 1 default = текущее поведение rose: десктоп слева, адаптив по центру.
+    contentAlign: 'left',
+    contentAlignMobile: 'center',
     navigationColumn: {
       title: 'Навигация',
       links: [

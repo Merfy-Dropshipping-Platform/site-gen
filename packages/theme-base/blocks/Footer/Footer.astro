@@ -20,6 +20,8 @@ const {
   newsletter,
   heading,
   text,
+  contentAlign,
+  contentAlignMobile,
   navigationColumn,
   informationColumn,
   socialColumn,
@@ -56,6 +58,17 @@ const copyText = `© ${showYear ? year + ' ' : ''}${brandName ? brandName + ' ' 
 const newsletterHeading = heading?.text || newsletter?.heading;
 const newsletterDescription = text?.content || newsletter?.description;
 
+// item 1: responsive-выравнивание блока рассылки (заголовок+текст). copy = flex-col →
+// items-* (поперечная ось) + text-*. Классы ЛИТЕРАЛАМИ (Tailwind JIT scan); base = адаптив,
+// md: = десктоп. Дефолт left/left = текущее поведение (copy без выравнивания).
+const ALIGN_ITEMS = { left: 'items-start', center: 'items-center', right: 'items-end' } as const;
+const ALIGN_TEXT = { left: 'text-left', center: 'text-center', right: 'text-right' } as const;
+const ALIGN_MD_ITEMS = { left: 'md:items-start', center: 'md:items-center', right: 'md:items-end' } as const;
+const ALIGN_MD_TEXT = { left: 'md:text-left', center: 'md:text-center', right: 'md:text-right' } as const;
+const caDesktop = ((contentAlign as string) || 'left') as 'left' | 'center' | 'right';
+const caMobile = ((contentAlignMobile as string) || caDesktop) as 'left' | 'center' | 'right';
+const copyAlignCls = `${ALIGN_ITEMS[caMobile]} ${ALIGN_TEXT[caMobile]} ${ALIGN_MD_ITEMS[caDesktop]} ${ALIGN_MD_TEXT[caDesktop]}`;
+
 // Newsletter submit style: icon-arrow for 3-col (rose) and minimal (base); text "Подписаться" for 2-part.
 const submitStyle: 'icon' | 'text' = variant === '2-part' ? 'text' : 'icon';
 
@@ -82,7 +95,7 @@ const CpoweredBy = (C as any).poweredBy ?? {};
     {newsletter?.enabled && (
       <section class={C.newsletter.wrapper} aria-labelledby="newsletter-heading">
         <div class={C.newsletter.inner}>
-          <div class={C.newsletter.copy}>
+          <div class:list={[C.newsletter.copy, copyAlignCls]}>
             {newsletterHeading && (
               <h2 id="newsletter-heading" class={C.newsletter.heading}>{newsletterHeading}</h2>
             )}

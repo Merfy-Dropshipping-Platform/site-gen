@@ -49,6 +49,26 @@ const newsletterEnabled = !(
 	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
 
+// Оживление полей панели: заголовок/текст рассылки из пропов (Figma 314-34558 «Заголовок»/
+// «Текст»), fallback на литералы верстальщика → без правок футер байт-в-байт как раньше.
+const newsletterHeadingText =
+	typeof p.heading?.text === "string" && p.heading.text.trim() ? p.heading.text : "Подпишитесь на нашу рассылку";
+const newsletterText =
+	typeof p.text?.content === "string" && p.text.content.trim()
+		? p.text.content
+		: "Получайте информацию от нашего бренда";
+// item 1 — responsive-выравнивание блока рассылки. Классы ЛИТЕРАЛАМИ (Tailwind JIT scan);
+// base = адаптив, md: = десктоп. Дефолт: десктоп left / адаптив center = текущее поведение
+// (раньше было захардкожено: text-left + @media(<640) center).
+const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const _AL_MD_ITEMS: Record<string, string> = { left: "md:items-start", center: "md:items-center", right: "md:items-end" };
+const _AL_MD_TEXT: Record<string, string> = { left: "md:text-left", center: "md:text-center", right: "md:text-right" };
+const _caD = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+const _caM = ["left", "center", "right"].includes(p.contentAlignMobile) ? p.contentAlignMobile : "center";
+const nlSectionAlignCls = `${_AL_ITEMS[_caM]} ${_AL_MD_ITEMS[_caD]}`;
+const nlCopyAlignCls = `${_AL_ITEMS[_caM]} ${_AL_TEXT[_caM]} ${_AL_MD_ITEMS[_caD]} ${_AL_MD_TEXT[_caD]}`;
+
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только
 // при непустом title из пропсов (в вёрстке верстальщика заголовков колонок нет).
@@ -136,8 +156,8 @@ const footerContainerCls = pad
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
 			{newsletterEnabled && (
-			<section class="flex w-full flex-col gap-5" aria-labelledby="newsletter-heading">
-				<div class="flex max-w-[1320px] flex-col gap-2 text-left">
+			<section class={`flex w-full flex-col gap-5 ${nlSectionAlignCls}`} aria-labelledby="newsletter-heading">
+				<div class={`flex max-w-[1320px] flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
 						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap !text-[clamp(14px,2.2vw,20px)]"
@@ -145,10 +165,10 @@ const footerContainerCls = pad
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="newsletter"
 					>
-						Подпишитесь на нашу рассылку
+						{newsletterHeadingText}
 					</h2>
 					<p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]">
-						Получайте информацию от нашего бренда
+						{newsletterText}
 					</p>
 				</div>
 
@@ -318,14 +338,6 @@ const footerContainerCls = pad
 	   - ссылки навигации/инфо/контактов — Manrope 12–14, text-center.
 	   - колонки навигации/контактов центрируются как блоки. */
 	@media (max-width: 639.98px) {
-		:global([aria-labelledby="newsletter-heading"]) {
-			align-items: center;
-		}
-
-		:global([aria-labelledby="newsletter-heading"] > div:first-child) {
-			text-align: center;
-			align-items: center;
-		}
 
 		:global(#newsletter-heading) {
 			font-weight: 400 !important;

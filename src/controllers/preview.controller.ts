@@ -527,6 +527,20 @@ export class PreviewController {
         ...(body.props ?? {}),
         siteId,
       };
+      // Footer hot-render: обогатить props данными из БД (политики → informationColumn,
+      // контакты → phone/email/contactFields, платёжки → paymentEnabled) тем же
+      // applyFooterData, что composed-превью (GET /preview) и build-пайплайн. Иначе
+      // одиночный hot-render шлёт СЫРЫЕ props (informationColumn.links=[], без phone/payment)
+      // → футер «ломается» при клике по любой настройке (контент исчезает). Оборачиваем
+      // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
+      if (body.blockType === 'Footer') {
+        await applyFooterData(
+          { db: this.db, schema, billingClient: this.billingClient },
+          siteId,
+          { content: [{ type: 'Footer', props: propsWithContext }] },
+          this.logger,
+        );
+      }
       let html = await this.preview.renderBlock({
         blockName: body.blockType,
         props: propsWithContext,

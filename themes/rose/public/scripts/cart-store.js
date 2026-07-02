@@ -457,7 +457,9 @@ export const cartStore = {
       const cartId = await ensureCart();
       for (let i = 0; i < lines.length; i++) {
         const l = lines[i];
-        try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null); } catch (e) {}
+        // options (Цвет/Размер) → сервер пере-матчит вариант по ним, если
+        // variantCombinationId устарел (ресед пересоздал комбинации).
+        try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null, l.options || null); } catch (e) {}
       }
       try {
         const res = await CartAPI.getCart(cartId);

@@ -94,9 +94,9 @@ const subtitleCls =
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
 const heroHeightCls = {
-	large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
-	medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
-	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
+	large: "min-h-[min(64svh,460px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
+	medium: "min-h-[min(52svh,380px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
+	small: "min-h-[min(40svh,300px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
 }[heroSize];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.

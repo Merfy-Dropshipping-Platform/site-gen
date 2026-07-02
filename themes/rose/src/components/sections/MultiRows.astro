@@ -117,12 +117,16 @@ const widthCls =
 				: "max-w-[1320px]";
 
 // Канон alignment — выравнивание текстовой колонки рядов.
+// Мобилка (<sm=640): тема форсит заголовки по центру (global.css .rose-title
+// @≤639.98px), поэтому весь контент ряда центрируем (иначе кнопка/текст слева
+// «криво» под центрированным заголовком). Настройка выравнивания уважается с sm:+
+// (desktop) — эмитим sm:-варианты; base — центр.
 const alignCls =
 	p.alignment === "center"
-		? "items-center text-center"
+		? "sm:items-center sm:text-center"
 		: p.alignment === "right"
-			? "items-end text-right"
-			: "items-start text-left";
+			? "sm:items-end sm:text-right"
+			: "sm:items-start sm:text-left";
 
 // Канон buttonStyle (primary/black/white): primary|black/отсутствие = чёрная
 // заливка манеры §3 (габариты Contacts CTA); white = белая (button-2 токены,
@@ -196,7 +200,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<img src={r.image} alt={r.heading || "Ряд"} loading="lazy" class="!h-full !w-full object-cover" />
 							)}
 						</div>
-						<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
+						<div class={`flex w-full flex-col gap-6 items-center text-center ${alignCls}${r.right ? " lg:order-1" : ""}`}>
 							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={r.heading} />}
 							{r.text && (
 								<div

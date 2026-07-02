@@ -158,10 +158,10 @@ const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "tru
 // при коротком контенте; раньше size игнорировался («не работал»).
 const heightCls =
 	p.size === "small"
-		? "min-h-[50svh]"
+		? "min-h-[40svh] md:min-h-[50svh]"
 		: p.size === "large"
-			? "min-h-[100svh]"
-			: "min-h-[75svh]";
+			? "min-h-[70svh] md:min-h-[100svh]"
+			: "min-h-[56svh] md:min-h-[75svh]";
 
 // Канон imagePosition («Положение изображения»): fullscreen (canon-default;
 // полотно во всю ширину секции, как hero — без боковых полей и радиуса) |

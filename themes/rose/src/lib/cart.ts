@@ -15,6 +15,9 @@ import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 const api = createNtCart({
 	storageKey: "rose:cart:v1",
 	eventPrefix: "rose:cart",
+	// Само-лечение: цены/наличие пере-резолвятся из актуального каталога на загрузке
+	// → корзина всегда совпадает с оформлением (не «зависает» на старой цене).
+	catalogUrl: "/data/products.json",
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
 		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
 		const pHref = `${productPathPrefix}/${line.productId}`;
@@ -58,3 +61,4 @@ export const getCartCount = api.getCartCount;
 export const getCartTotal = api.getCartTotal;
 export const formatCartPrice = api.formatCartPrice;
 export const initCartUI = api.initCartUI;
+export const reconcileCart = api.reconcileCart;

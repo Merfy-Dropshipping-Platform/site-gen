@@ -404,6 +404,18 @@ export const cartStore = {
     return reconcileFromCatalog(url);
   },
 
+  // Как setLocalItems, но СНАЧАЛА пере-резолвит из каталога, ПОТОМ ставит — ОДИН
+  // рендер сразу актуальными данными. Чекаут зовёт это вместо setLocalItems, чтобы
+  // первый кадр сводки был верным (без мелькания старой цены → текущей).
+  async setLocalItemsReconciled(items, url) {
+    const src = Array.isArray(items) ? items : [];
+    const products = await loadCatalogProducts(url || '/data/products.json');
+    const result = reconcileItemsAgainstCatalog(src, products);
+    state.items = result.items;
+    saveToStorage();
+    notify('cart:updated', { items: state.items });
+  },
+
   // Публичная ре-синхронизация позиций из ответа сервера (плоский order с items).
   // Нужна хендлерам apply/remove промокода на чекауте: после применения
   // промокод-BOGO в ответе появляется 0₽-подарок (item.isBonus=true), после

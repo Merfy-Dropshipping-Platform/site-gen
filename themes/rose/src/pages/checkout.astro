@@ -107,7 +107,10 @@ const dadataToken = "";
           variantCombinationId: (v.variantCombinationId) || null,
         };
       });
-      if (cs.setLocalItems) cs.setLocalItems(display);
+      // Резолвим из каталога ДО показа → первый кадр сводки актуальный (цена/наличие),
+      // без мелькания старой цены. Fallback — обычный setLocalItems.
+      if (cs.setLocalItemsReconciled) cs.setLocalItemsReconciled(display, "/data/products.json");
+      else if (cs.setLocalItems) cs.setLocalItems(display);
       else if (cs.init) cs.init();
 
       // Фоновый синк серверной корзины ПОСЛЕ мгновенного локального first-paint.

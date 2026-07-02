@@ -219,21 +219,23 @@ describe('migrateCartPage', () => {
 });
 
 describe('migrateCartPage — split themes (rose, Spec 110)', () => {
-  // Для тем из CART_SPLIT_THEMES (rose) корзина = ДВА блока: CartBody («Корзина»)
-  // + CartSummary («Промежуточный итог»), Figma 1:20818. Прочие темы — монолит.
-  it('seeds [Header, CartBody, CartSummary, Footer] when page-cart missing (rose)', () => {
+  // Для тем из CART_SPLIT_THEMES (rose) корзина = ЧЕТЫРЕ блока (полный сплит per
+  // Figma 1:20818): CartBody («Корзина») + CartSummary («Промежуточный итог») +
+  // CartTotals («Итоговая цена») + CartCheckoutButton («Кнопка оформления заказа»).
+  // Прочие темы — монолит CartSection.
+  const SPLIT_CART = ['CartBody', 'CartSummary', 'CartTotals', 'CartCheckoutButton'];
+  it('seeds [Header, ...4 cart blocks, Footer] when page-cart missing (rose)', () => {
     const result = migrateRevisionData({ pagesData: {} }, 'rose') as {
       pagesData: Record<string, any>;
     };
     expect(result.pagesData['page-cart'].content.map((b: any) => b.type)).toEqual([
       'Header',
-      'CartBody',
-      'CartSummary',
+      ...SPLIT_CART,
       'Footer',
     ]);
   });
 
-  it('decomposes monolith CartSection → [CartBody, CartSummary], carries colorScheme/padding', () => {
+  it('decomposes monolith CartSection → 4 cart blocks, carries colorScheme/padding', () => {
     const result = migrateRevisionData(
       {
         pagesData: {
@@ -249,13 +251,37 @@ describe('migrateCartPage — split themes (rose, Spec 110)', () => {
       'rose',
     ) as { pagesData: Record<string, any> };
     const content = result.pagesData['page-cart'].content;
-    expect(content.map((b: any) => b.type)).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
+    expect(content.map((b: any) => b.type)).toEqual(['Header', ...SPLIT_CART, 'Footer']);
     const body = content.find((b: any) => b.type === 'CartBody');
     expect(body.props.colorScheme).toBe('scheme-4');
     expect(body.props.padding).toEqual({ top: 24, bottom: 24 });
   });
 
-  it('is idempotent on already-split cart (rose no-op)', () => {
+  it('upgrades legacy 2-block split (CartBody+CartSummary) → full 4-block split (rose)', () => {
+    const result = migrateRevisionData(
+      {
+        pagesData: {
+          'page-cart': {
+            content: [
+              { type: 'Header', props: {} },
+              { type: 'CartBody', props: { id: 'cb', colorScheme: 'scheme-2', padding: { top: 80, bottom: 40 } } },
+              { type: 'CartSummary', props: { id: 'cs' } },
+              { type: 'Footer', props: {} },
+            ],
+          },
+        },
+      },
+      'rose',
+    ) as { pagesData: Record<string, any> };
+    const content = result.pagesData['page-cart'].content;
+    expect(content.map((b: any) => b.type)).toEqual(['Header', ...SPLIT_CART, 'Footer']);
+    // Настройки существующего CartBody переносятся (не теряются).
+    const body = content.find((b: any) => b.type === 'CartBody');
+    expect(body.props.colorScheme).toBe('scheme-2');
+    expect(body.props.padding).toEqual({ top: 80, bottom: 40 });
+  });
+
+  it('is idempotent on already 4-split cart (rose no-op)', () => {
     const split = {
       pagesData: {
         'page-cart': {
@@ -263,6 +289,8 @@ describe('migrateCartPage — split themes (rose, Spec 110)', () => {
             { type: 'Header', props: {} },
             { type: 'CartBody', props: { id: 'cb' } },
             { type: 'CartSummary', props: { id: 'cs' } },
+            { type: 'CartTotals', props: { id: 'ct' } },
+            { type: 'CartCheckoutButton', props: { id: 'ccb' } },
             { type: 'Footer', props: {} },
           ],
           root: { props: { title: 'Корзина' } },
@@ -274,7 +302,7 @@ describe('migrateCartPage — split themes (rose, Spec 110)', () => {
     const second = migrateRevisionData(first, 'rose');
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
     const types = (first as any).pagesData['page-cart'].content.map((b: any) => b.type);
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
+    expect(types).toEqual(['Header', ...SPLIT_CART, 'Footer']);
   });
 
   it('drops demo PopularProducts when decomposing (rose)', () => {
@@ -294,7 +322,7 @@ describe('migrateCartPage — split themes (rose, Spec 110)', () => {
       'rose',
     ) as { pagesData: Record<string, any> };
     const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
+    expect(types).toEqual(['Header', ...SPLIT_CART, 'Footer']);
     expect(types).not.toContain('PopularProducts');
   });
 

@@ -63,11 +63,15 @@ function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Blo
 }
 
 /**
- * Cart page (Spec 110, Figma 1:20818). Для тем из CART_SPLIT_THEMES корзина = ДВА
- * Puck-блока-сиблинга:
- *   • CartBody     («Корзина»)            — товары + пустое состояние
- *   • CartSummary  («Промежуточный итог») — примечание + «Итого» + «Оформить»
- * У каждого свои colorScheme + padding (на live применяются независимо). Для прочих
+ * Cart page (Spec 110, Figma 1:20818). Для тем из CART_SPLIT_THEMES корзина = ЧЕТЫРЕ
+ * Puck-блока-сиблинга (полный сплит per Figma 1:20818):
+ *   • CartBody           («Корзина»)                — товары + пустое состояние
+ *   • CartSummary        («Промежуточный итог»)     — дисклеймер (налоги/скидки)
+ *   • CartTotals         («Итоговая цена»)          — строка «Итого <сумма>»
+ *   • CartCheckoutButton («Кнопка оформления заказа») — CTA «Оформить заказ»
+ * CartBody/CartSummary имеют свои colorScheme + padding (на live применяются
+ * независимо); CartTotals/CartCheckoutButton — мини-блоки без user-настройки
+ * (поля hidden → сайдбар «Настройка недоступна»). Для прочих
  * тем (порт ещё не сделан) корзина остаётся МОНОЛИТОМ CartSection (как было) — гейт
  * по теме защищает их live-корзину до Phase 2. Мерчант добавляет вокруг другие секции.
  *
@@ -111,6 +115,14 @@ function migrateCartPage(
     type: 'CartSummary',
     props: { id: `CartSummary-${ts + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 80 }, ...props },
   });
+  const makeCartTotals = (props: Record<string, unknown> = {}): Block => ({
+    type: 'CartTotals',
+    props: { id: `CartTotals-${ts + 2}`, padding: { top: 0, bottom: 8 }, ...props },
+  });
+  const makeCartCheckoutButton = (props: Record<string, unknown> = {}): Block => ({
+    type: 'CartCheckoutButton',
+    props: { id: `CartCheckoutButton-${ts + 3}`, padding: { top: 8, bottom: 80 }, ...props },
+  });
   const makeCartSection = (props: Record<string, unknown> = {}): Block => ({
     type: 'CartSection',
     props: { id: `CartSection-${ts}`, padding: { top: 80, bottom: 80 }, ...props },
@@ -119,7 +131,9 @@ function migrateCartPage(
   // Нет page-cart → полный seed [Header, …cart, Footer] под структуру темы.
   if (!existing || !Array.isArray(existing.content)) {
     const chrome = getHomeChrome(pagesData);
-    const cartBlocks = split ? [makeCartBody(), makeCartSummary()] : [makeCartSection()];
+    const cartBlocks = split
+      ? [makeCartBody(), makeCartSummary(), makeCartTotals(), makeCartCheckoutButton()]
+      : [makeCartSection()];
     return {
       ...pagesData,
       'page-cart': {
@@ -136,8 +150,8 @@ function migrateCartPage(
   const has = (t: string): boolean => content.some((b) => b.type === t);
   // Целевая структура темы уже достигнута → no-op (только chrome).
   const isTargetReached = split
-    ? has('CartBody') && has('CartSummary') &&
-      !has('CartSection') && !has('CartTotals') && !has('CartCheckoutButton')
+    ? has('CartBody') && has('CartSummary') && has('CartTotals') && has('CartCheckoutButton') &&
+      !has('CartSection')
     : has('CartSection') &&
       !has('CartBody') && !has('CartSummary') && !has('CartTotals') && !has('CartCheckoutButton');
 
@@ -163,7 +177,7 @@ function migrateCartPage(
   const bodySrc = (monolith?.props ?? prevBody?.props ?? {}) as Record<string, unknown>;
   const summarySrc = (prevSummary?.props ?? monolith?.props ?? {}) as Record<string, unknown>;
   const cartBlocks = split
-    ? [makeCartBody(carry(bodySrc)), makeCartSummary(carry(summarySrc))]
+    ? [makeCartBody(carry(bodySrc)), makeCartSummary(carry(summarySrc)), makeCartTotals(), makeCartCheckoutButton()]
     : [makeCartSection(carry(bodySrc))];
 
   const firstIdx = content.findIndex(isCartCore);

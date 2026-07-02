@@ -171,9 +171,12 @@ const viewportCls =
 const contained =
 	p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right";
 
-// Канон overlay 0-100: отсутствие = оверлей героя дословно (bg-black/25 →
-// 25); явное значение ведёт плотность затемнения (0 убирает слой).
-const overlayRaw = Number(p.overlay);
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (паритет rose). ОДИН слой оверлея
+// на всё полотно (единственный копи-блок, скрипт подменяет фоны) → читаем с
+// ПЕРВОГО слайда s0.overlay (как все прочие per-slide поля vanilla, см. шапку) с
+// fallback на section-level p.overlay (backward-compat). Отсутствие обоих = оверлей
+// героя дословно (bg-black/25 → 25); явное значение ведёт плотность (0 убирает слой).
+const overlayRaw = Number(s0.overlay ?? p.overlay);
 const overlayN = Number.isFinite(overlayRaw)
 	? Math.max(0, Math.min(100, Math.round(overlayRaw)))
 	: 25;

@@ -59,6 +59,10 @@ const slideTextCls = (s: string | undefined) =>
 // Пустое состояние = ПЛЕЙСХОЛДЕР по контракту: слайд без своего фото рендерит
 // пустой image-rect surface (НЕ кампанию верстальщика /images/4x/*.png). Реальный
 // слайд мерчанта со своим imageUrl/image рендерится без изменений (см. JSX).
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (паритет rose): дополнительный
+// чёрный слой ПОВЕРХ штатного градиента about-полотна. Читаем s.overlay с fallback
+// на section-level p.overlay (backward-compat). Хелпер ВЫШЕ маппинга slides.
+const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -102,6 +106,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 				: s.alignment === "right"
 					? "items-end text-right"
 					: "items-center text-center",
+		overlayN: slideOverlayN(s),
 		active: i === 0,
 	};
 });
@@ -136,9 +141,9 @@ const canvasCls = contained
 	? `satin-container relative w-full overflow-hidden rounded-[var(--radius-media,0px)] ${canvasBg} aspect-[375/362] md:aspect-auto ${heightCls}`
 	: `relative mx-auto w-full max-w-[1920px] overflow-hidden ${canvasBg} aspect-[375/362] md:aspect-auto ${heightCls}`;
 
-// Канон overlay 0-100 — дополнительный чёрный слой ПОВЕРХ штатного градиента
-// about-полотна (у верстальщика 0 — слоя нет).
-const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE: дополнительный чёрный слой ПОВЕРХ
+// штатного градиента about-полотна (у верстальщика 0 — слоя нет). Хелпер
+// slideOverlayN объявлен ВЫШЕ (перед маппингом slides); overlayN теперь поле слайда.
 
 // Канон pagination: 'dots' (canon-default blockDefaults satin) и отсутствие =
 // КВАДРАТЫ size-2 манеры нулевых радиусов (активная белая, неактивная white/50);
@@ -206,10 +211,10 @@ const paddingStyle = p.padding
 								<div class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true" />
 							</>
 						)}
-						{overlayN > 0 && (
+						{s.overlayN > 0 && (
 							<div
 								class="pointer-events-none absolute inset-0 bg-black"
-								style={`opacity:${overlayN / 100}`}
+								style={`opacity:${s.overlayN / 100}`}
 								aria-hidden="true"
 							/>
 						)}

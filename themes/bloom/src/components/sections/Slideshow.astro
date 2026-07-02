@@ -102,6 +102,10 @@ const slidePosCls = (s: any) => {
 				: "justify-center";
 	return `${vItemsCls} ${hJustifyCls}`;
 };
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (паритет rose). Читаем s.overlay с
+// fallback на section-level p.overlay (backward-compat со старыми данными, где
+// overlay был в секции). Хелпер объявлен ВЫШЕ маппинга slides (используется в нём).
+const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -139,6 +143,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 				: s.alignment === "right"
 					? "items-end text-right"
 					: "items-start text-left",
+		overlayN: slideOverlayN(s),
 		active: i === 0,
 	};
 });
@@ -166,8 +171,8 @@ const contained =
 	p.imageFullBleed !== true &&
 	p.imageFullBleed !== "true";
 
-// Канон overlay 0-100 — затемнение между фото и контентом (паттерн Hero).
-const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (хелпер slideOverlayN объявлен ВЫШЕ,
+// перед маппингом slides, т.к. используется в нём; overlayN теперь поле слайда).
 
 // Канон pagination: 'numbers' (canon-default из blockDefaults bloom) и
 // отсутствие = цифры Inter 14; dots = точки манеры h-2 w-2 rounded-full
@@ -222,10 +227,10 @@ const paddingStyle = p.padding
 						) : (
 							<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
 						)}
-						{overlayN > 0 && s.image && (
+						{s.overlayN > 0 && s.image && (
 							<div
 								class="pointer-events-none absolute inset-0 bg-black"
-								style={`opacity:${overlayN / 100}`}
+								style={`opacity:${s.overlayN / 100}`}
 								aria-hidden="true"
 							/>
 						)}

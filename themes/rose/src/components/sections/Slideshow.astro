@@ -94,6 +94,9 @@ const slideLayoutCls = (s: any) => {
 		s.alignment === "left" ? "text-left" : s.alignment === "right" ? "text-right" : "text-center";
 	return { vJustifyCls, hItemsCls, alignItemsCls, textAlignCls };
 };
+// Figma node 1:33170: «Затемнение» — PER-SLIDE. Читаем s.overlay с fallback на
+// section-level p.overlay (backward-compat со старыми данными где overlay был в секции).
+const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -139,6 +142,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		...(promptBoxed
 			? { ...layout, vJustifyCls: "justify-center", hItemsCls: "items-center" }
 			: layout),
+		overlayN: slideOverlayN(s),
 		active: i === 0,
 	};
 });
@@ -170,8 +174,8 @@ const wrapperCls = contained
 	: "w-full";
 const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : "";
 
-// Канон overlay 0-100 — затемнение между фото и контентом (паттерн Hero T11).
-const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (Figma node 1:33170). Хелпер
+// slideOverlayN объявлен ВЫШЕ (перед маппингом slides), т.к. используется в нём.
 
 // Канон pagination: numbers (отсутствие = numbers, как панель/vanilla/bloom) | dots | counter | lines | none.
 const pagination =
@@ -221,8 +225,8 @@ const paddingStyle = p.padding
 						) : (
 							<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
 						)}
-						{overlayN > 0 && s.image && (
-							<div class="pointer-events-none absolute inset-0 bg-black" style={`opacity:${overlayN / 100}`} aria-hidden="true" />
+						{s.overlayN > 0 && s.image && (
+							<div class="pointer-events-none absolute inset-0 bg-black" style={`opacity:${s.overlayN / 100}`} aria-hidden="true" />
 						)}
 						{s.image && !s.boxed && (
 							<div

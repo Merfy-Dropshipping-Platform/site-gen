@@ -99,6 +99,10 @@ const slideLayoutCls = (s: any) => {
 // без своего фото получает дизайн-ассет landscape-slideshow.png (PLACEHOLDER_SLIDES
 // выше) — НЕ мок верстальщика и НЕ пустой surface. Реальный слайд без фото
 // (мерчант не загрузил) остаётся image="" → surface-rect.
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (паритет rose). Читаем s.overlay с
+// fallback на section-level p.overlay (backward-compat со старыми данными, где
+// overlay был в секции). Хелпер объявлен ВЫШЕ маппинга slides (используется в нём).
+const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -126,6 +130,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
 		...slideLayoutCls(s),
+		overlayN: slideOverlayN(s),
 		active: i === 0,
 	};
 });
@@ -170,8 +175,8 @@ const contentPadCls = contained
 // секции, в contained — скромный отступ от края рамки.
 const navEdgeCls = contained ? "right-5 md:right-8" : "right-4 md:right-20 2xl:right-80";
 
-// Канон overlay 0-100 — затемнение между фото и контентом (паттерн Hero).
-const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (хелпер slideOverlayN объявлен ВЫШЕ,
+// перед маппингом slides, т.к. используется в нём; overlayN теперь поле слайда).
 
 // Канон pagination: 'numbers' (отсутствие = numbers) | dots | counter | lines | none.
 const pagination =
@@ -230,10 +235,10 @@ const paddingStyle = p.padding
 						) : (
 							<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
 						)}
-						{overlayN > 0 && s.image && (
+						{s.overlayN > 0 && s.image && (
 							<div
 								class="pointer-events-none absolute inset-0 bg-black"
-								style={`opacity:${overlayN / 100}`}
+								style={`opacity:${s.overlayN / 100}`}
 								aria-hidden="true"
 							/>
 						)}

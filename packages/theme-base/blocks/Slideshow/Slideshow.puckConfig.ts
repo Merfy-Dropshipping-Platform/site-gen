@@ -24,6 +24,9 @@ const SlideSchema = z.object({
   }).optional(),
   // Pupa parity: per-slide layout + theme.
   image: z.string().optional(),
+  // Figma node 1:33170: «Затемнение» — per-slide (панель «Слайд»). Порты читают
+  // s.overlay с fallback на section-level p.overlay (backward-compat).
+  overlay: z.number().int().min(0).max(100).optional(),
   container: z.enum(['true', 'false']).optional(),
   // Per-slide 9-grid позиция (как Hero): размещает контент-блок слайда по сетке
   // 3×3. `center` = середина-центр. Legacy left/center/right совместимы (резолвятся
@@ -90,16 +93,25 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       type: 'array',
       label: 'Слайды (макс 5)',
       arrayFields: {
-        imageUrl: { type: 'image', label: 'Изображение (старое)' },
+        // Figma node 1:33170 — панель «Слайд», порядок сверху вниз: Изображение,
+        // Затемнение, Содержание(разделитель), Заголовок, Размер заголовка, Текст,
+        // Размер текста, Кнопка, Ссылка, Контейнер(тумблер), Позиция, Выравнивание,
+        // Цветовая схема. heading/text/button = объект с label:'' → FocusedItemPanel
+        // рендерит под-поля ПЛОСКИМИ отдельными группами (как Figma) БЕЗ смены формы
+        // данных (heading остаётся {text,size} и т.д.).
         image: { type: 'image', label: 'Изображение' },
+        // Legacy-дубль скрыт (Figma показывает одно «Изображение»).
+        imageUrl: { type: 'hidden', label: '' },
+        overlay: { type: 'slider', label: 'Затемнение', min: 0, max: 100, step: 5 } as any,
+        contentHeader: { type: 'section-header', label: 'Содержание' } as any,
         heading: {
           type: 'object',
-          label: 'Заголовок',
+          label: '',
           objectFields: {
-            text: { type: 'text', label: 'Текст' },
+            text: { type: 'aiText', label: 'Заголовок', fieldType: 'title' } as any,
             size: {
-              type: 'radio',
-              label: 'Размер',
+              type: 'select',
+              label: 'Размер заголовка',
               options: [
                 { label: 'Маленький', value: 'small' },
                 { label: 'Средний', value: 'medium' },
@@ -110,12 +122,12 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
         },
         text: {
           type: 'object',
-          label: 'Текст',
+          label: '',
           objectFields: {
-            content: { type: 'textarea', label: 'Содержание' },
+            content: { type: 'aiText', label: 'Текст', fieldType: 'description' } as any,
             size: {
-              type: 'radio',
-              label: 'Размер',
+              type: 'select',
+              label: 'Размер текста',
               options: [
                 { label: 'Маленький', value: 'small' },
                 { label: 'Средний', value: 'medium' },
@@ -126,20 +138,21 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
         },
         button: {
           type: 'object',
-          label: 'Кнопка',
+          label: '',
           objectFields: {
-            text: { type: 'text', label: 'Текст' },
+            text: { type: 'text', label: 'Кнопка', placeholder: '*Оставьте пустой, чтобы скрыть' } as any,
             link: { type: 'pagePicker', label: 'Ссылка' },
           },
         },
         container: {
-          type: 'radio',
+          type: 'toggle',
           label: 'Контейнер',
+          toggleLabel: 'Скрыть/показать',
           options: [
             { label: 'Показать', value: 'true' },
             { label: 'Скрыть', value: 'false' },
           ],
-        },
+        } as any,
         position: {
           type: 'select',
           label: 'Позиция',

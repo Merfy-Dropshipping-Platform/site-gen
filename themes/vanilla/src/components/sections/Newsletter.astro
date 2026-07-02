@@ -62,10 +62,10 @@ const buttonText =
 // без радиуса).
 const inlineSubmit = p.formLayout !== "stacked";
 
-// «Согласие на рассылку» (toggle 'true'/'false', default 'false'): при 'true'
-// блок heading+description СКРЫВАЕТСЯ (форма остаётся); 'false' — заголовок и
-// текст видны. Конструктор пишет проп из хардкод-тумблера панели Newsletter.
-const hideHeading = p.agreement === "true";
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера vanilla: Arsenal italic мелкий, токен text на
+// тёмном полотне); иначе ничего.
+const showAgreement = p.agreement === "true";
 
 // Канон alignment (blockDefaults 'left' = литерал FN:10 items-start text-left);
 // center/right двигают колонку по контейнеру. Выравнивание живёт в под-панели
@@ -90,7 +90,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && !hideHeading ? `${id}-title` : undefined;
+const titleId = id ? `${id}-title` : undefined;
 ---
 
 <section
@@ -104,28 +104,24 @@ const titleId = id && !hideHeading ? `${id}-title` : undefined;
 		class={`mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col gap-10 ${alignCls}`}
 		data-animate
 	>
-		{
-			!hideHeading && (
-				<div class="flex w-full flex-col gap-2">
-					<h2
-						id={titleId}
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{heading}
-					</h2>
-					<p
-						class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]`}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="text"
-						set:html={description}
-					/>
-				</div>
-			)
-		}
+		<div class="flex w-full flex-col gap-2">
+			<h2
+				id={titleId}
+				class={headingCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
+			>
+				{heading}
+			</h2>
+			<p
+				class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]`}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="101"
+				data-puck-subsection-field="text"
+				set:html={description}
+			/>
+		</div>
 
 		{
 			inlineSubmit ? (
@@ -174,6 +170,18 @@ const titleId = id && !hideHeading ? `${id}-title` : undefined;
 						{buttonText}
 					</button>
 				</form>
+			)
+		}
+		{
+			showAgreement && (
+				<label class="flex w-full max-w-[652px] cursor-pointer items-start gap-2 font-vanilla-arsenal text-[13px] font-normal italic leading-snug text-[rgb(var(--color-text,240_240_240))]">
+					<input
+						type="checkbox"
+						required
+						class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-2-bg,255_255_255))]"
+					/>
+					<span>Согласен на обработку персональных данных</span>
+				</label>
 			)
 		}
 		<p

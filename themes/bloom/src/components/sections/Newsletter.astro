@@ -54,10 +54,10 @@ const buttonText =
 // h-8 на розовой поверхности); 'stacked' = поле + розовый pill-CTA h-12 манеры §3.
 const inlineSubmit = p.formLayout !== "stacked";
 
-// «Согласие на рассылку» (toggle 'true'/'false', default 'false'): при 'true'
-// блок heading+description СКРЫВАЕТСЯ (форма остаётся); 'false' — заголовок и
-// текст видны. Конструктор пишет проп из хардкод-тумблера панели Newsletter.
-const hideHeading = p.agreement === "true";
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера bloom: Inter light мелкий muted, акцент розовый);
+// иначе ничего.
+const showAgreement = p.agreement === "true";
 
 // Канон position/alignment: canon-default 'left' (blockDefaults) = литерал
 // подвала — заголовок слева, форма max-w-[318px] справа, двухколонная
@@ -90,7 +90,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && !hideHeading ? `${id}-title` : undefined;
+const titleId = id ? `${id}-title` : undefined;
 ---
 
 <section
@@ -101,29 +101,25 @@ const titleId = id && !hideHeading ? `${id}-title` : undefined;
 >
 	<div class="mx-auto w-full max-w-[1320px]" data-animate>
 		<div class={wrapCls}>
-			{
-				!hideHeading && (
-					<div class={textBlockCls}>
-						<h2
-							id={titleId}
-							class={headingCls}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="100"
-							data-puck-subsection-field="heading"
-						>
-							{heading}
-						</h2>
-						<p
-							class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="text"
-						>
-							{description}
-						</p>
-					</div>
-				)
-			}
+			<div class={textBlockCls}>
+				<h2
+					id={titleId}
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{heading}
+				</h2>
+				<p
+					class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+				>
+					{description}
+				</p>
+			</div>
 
 			<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">
 				{
@@ -173,6 +169,18 @@ const titleId = id && !hideHeading ? `${id}-title` : undefined;
 								{buttonText}
 							</button>
 						</form>
+					)
+				}
+				{
+					showAgreement && (
+						<label class="flex w-full cursor-pointer items-start gap-2 font-inter text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+							<input
+								type="checkbox"
+								required
+								class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,227_142_159))]"
+							/>
+							<span>Согласен на обработку персональных данных</span>
+						</label>
 					)
 				}
 				<p

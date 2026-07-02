@@ -67,10 +67,10 @@ const stackedBtnCls =
 // кнопка внутри); 'stacked' = поле + тёмная md-кнопка ниже (манера §3).
 const inlineSubmit = p.formLayout !== "stacked";
 
-// «Согласие на рассылку» (toggle 'true'/'false', default 'false'): при 'true'
-// блок heading+description СКРЫВАЕТСЯ (форма остаётся); 'false' — заголовок и
-// текст видны. Конструктор пишет проп из хардкод-тумблера панели Newsletter.
-const hideHeading = p.agreement === "true";
+// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
+// согласия под формой (манера satin: Manrope light мелкий muted, акцент чёрный);
+// иначе ничего.
+const showAgreement = p.agreement === "true";
 
 // Канон position/alignment: canon-default left = литерал подвала (колонка
 // заголовок-над-формой max-w-[320px] слева, F:70); center/right двигают
@@ -94,7 +94,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && heading && !hideHeading ? `${id}-title` : undefined;
+const titleId = id && heading ? `${id}-title` : undefined;
 ---
 
 {/* Секционная обёртка (новая): вертикаль-стандарт §2, поля .satin-pad, контейнер 1320.
@@ -108,7 +108,7 @@ const titleId = id && heading && !hideHeading ? `${id}-title` : undefined;
 	<div class="satin-container">
 		<div class={colCls}>
 			{
-				!hideHeading && heading && (
+				heading && (
 					<p
 						id={titleId}
 						class={headingCls}
@@ -121,7 +121,7 @@ const titleId = id && heading && !hideHeading ? `${id}-title` : undefined;
 				)
 			}
 			{
-				!hideHeading && description && (
+				description && (
 					<p
 						class={`font-manrope ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 						data-puck-subsection-parent={id}
@@ -183,6 +183,18 @@ const titleId = id && heading && !hideHeading ? `${id}-title` : undefined;
 							{buttonText || "Подписаться"}
 						</button>
 					</form>
+				)
+			}
+			{
+				showAgreement && (
+					<label class="flex w-full cursor-pointer items-start gap-2 font-manrope text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<input
+							type="checkbox"
+							required
+							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
+						/>
+						<span>Согласен на обработку персональных данных</span>
+					</label>
 				)
 			}
 			<p

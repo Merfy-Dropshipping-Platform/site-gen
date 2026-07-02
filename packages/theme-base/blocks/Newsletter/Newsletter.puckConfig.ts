@@ -19,10 +19,9 @@ export const NewsletterSchema = z.object({
   buttonText: z.string(),
   position: z.enum(['left', 'center', 'right']).optional(),
   /**
-   * «Согласие на рассылку» — toggle (legacy 'true'/'false' strings). При 'true'
-   * порты СКРЫВАЮТ блок heading+description (форма остаётся); default 'false'
-   * сохраняет прежний вид — заголовок и текст видны (default-preserving).
-   * Конструктор показывает этот тумблер в хардкод-панели Newsletter.
+   * Figma Newsletter «Соглашение на рассылку» — toggle (legacy 'true'/'false'
+   * strings). При 'true' порты рендерят чекбокс согласия под формой; default
+   * 'false' (контрол выключен) сохраняет прежний вид (default-preserving).
    */
   agreement: z.enum(['true', 'false']).optional(),
   /**
@@ -71,10 +70,9 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         },
       },
     },
-    // «Согласие на рассылку» — toggle. При 'true' порты СКРЫВАЮТ заголовок+текст
-    // (форма остаётся); default 'false' — заголовок и текст видны. Рендерится в
-    // хардкод-панели конструктора (CustomFieldsPanel.tsx).
-    agreement: { type: 'toggle', label: 'Согласие на рассылку' } as any,
+    // Figma «Соглашение на рассылку» — toggle. При 'true' порты рендерят чекбокс
+    // согласия под формой; default 'false' (по умолчанию чекбокса нет).
+    agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Sub-panel «Форма рассылки» (314:35058):

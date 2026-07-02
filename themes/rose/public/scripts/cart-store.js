@@ -47,6 +47,115 @@ function notify(eventName, detail) {
   document.dispatchEvent(new CustomEvent(eventName, { detail }));
 }
 
+// ── Само-лечение корзины из АКТУАЛЬНОГО каталога ──────────────────────────────
+// Корзина по сути хранит ID+кол-во; цена/имя/картинка — снимок с момента добавления
+// и устаревает, когда мерчант меняет цену или удаляет товар. Без пере-резолва
+// страница корзины показывает старую цену, а checkout (серверный синк) — новую →
+// «в корзине и в оформлении разное». Пере-резолв приводит ОБА дисплея (оба читают
+// getItems()) к текущему каталогу. Цены products.json — в РУБЛЯХ → *100 в копейки.
+const optionsMatch = (catalogOpts, itemOpts) => {
+  if (!catalogOpts || !itemOpts) return false;
+  const keys = Object.keys(itemOpts);
+  if (keys.length === 0) return false;
+  for (const k of keys) {
+    if (String(catalogOpts[k]) !== String(itemOpts[k])) return false;
+  }
+  return true;
+};
+
+/**
+ * Чистый пере-резолв позиций из каталога (экспорт для юнит-теста).
+ * Товар/вариант отсутствует в каталоге → строка ВЫКИДЫВАЕТСЯ (удалён мерчантом).
+ * Мёртвый variantCombinationId → ре-матч по options (Цвет/Размер). isBonus не трогаем.
+ * @param {Array<any>} items
+ * @param {Array<any>} products
+ * @returns {{items: Array<any>, changed: boolean, dropped: number}}
+ */
+export function reconcileItemsAgainstCatalog(items, products) {
+  if (!Array.isArray(items) || items.length === 0) return { items: items || [], changed: false, dropped: 0 };
+  if (!Array.isArray(products) || products.length === 0) return { items, changed: false, dropped: 0 };
+  const byId = new Map();
+  for (const p of products) {
+    if (p && p.id != null) byId.set(String(p.id), p);
+  }
+  let changed = false;
+  let dropped = 0;
+  const next = [];
+  for (const it of items) {
+    if (it && it.isBonus) { next.push(it); continue; } // серверный подарок (0₽) — не трогаем
+    const p = it ? byId.get(String(it.productId)) : null;
+    if (!p) { changed = true; dropped++; continue; } // товар удалён из каталога → выкинуть
+    const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+    let combo = null;
+    if (combos.length > 0) {
+      const vcId = it.variantCombinationId;
+      if (vcId) combo = combos.find((c) => String(c.id) === String(vcId)) || null;
+      if (!combo && it.options) combo = combos.find((c) => optionsMatch(c.options, it.options)) || null;
+      if (!combo) { changed = true; dropped++; continue; } // вариант удалён → выкинуть
+    }
+    const priceRub = combo ? Number(combo.price) : Number(p.price);
+    const priceCents = Number.isFinite(priceRub) ? Math.round(priceRub * 100) : (it.unitPriceCents || it.priceCents || 0);
+    const oldRaw = combo ? combo.compareAtPrice : p.compareAtPrice;
+    const oldCents = (oldRaw != null && Number.isFinite(Number(oldRaw))) ? Math.round(Number(oldRaw) * 100) : undefined;
+    const name = p.name || it.name;
+    const image = (Array.isArray(p.images) && p.images[0]) ? p.images[0] : (it.imageUrl || it.image);
+    const qty = it.quantity || 1;
+    const nit = {
+      ...it,
+      name,
+      imageUrl: image,
+      image,
+      priceCents,
+      unitPriceCents: priceCents,
+      totalCents: priceCents * qty,
+      compareAtPriceCents: oldCents,
+    };
+    if (combo) nit.variantCombinationId = String(combo.id);
+    if (
+      nit.priceCents !== it.priceCents ||
+      nit.unitPriceCents !== it.unitPriceCents ||
+      nit.name !== it.name ||
+      nit.imageUrl !== it.imageUrl ||
+      nit.variantCombinationId !== it.variantCombinationId
+    ) {
+      changed = true;
+    }
+    next.push(nit);
+  }
+  return { items: next, changed, dropped };
+}
+
+// Кэш каталога на сессию (одна сетевая загрузка на страницу). Ошибка/пустой → [];
+// тогда reconcile НЕ трогает корзину (оффлайн-защита — не теряем товары при недоступном
+// каталоге). cache:'default' — уважаем cache-заголовки products.json (свежесть = публикация).
+let catalogPromise = null;
+function loadCatalogProducts(url) {
+  if (!catalogPromise) {
+    catalogPromise = fetch(url, { cache: 'default' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const arr = Array.isArray(j) ? j : (j && (j.products || j.data)) || [];
+        return Array.isArray(arr) ? arr : [];
+      })
+      .catch(() => []);
+  }
+  return catalogPromise;
+}
+
+// Пере-резолвит state.items из products.json и, если что-то поменялось (цена/имя/
+// картинка/выкинутый товар), сохраняет + шлёт cart:updated → сводка/корзина перерисуются.
+async function reconcileFromCatalog(url) {
+  if (typeof window === 'undefined') return;
+  if (!Array.isArray(state.items) || state.items.length === 0) return;
+  const products = await loadCatalogProducts(url || '/data/products.json');
+  const result = reconcileItemsAgainstCatalog(state.items, products);
+  if (result.changed) {
+    state.items = result.items;
+    saveToStorage();
+    notify('cart:updated', { items: state.items });
+  }
+}
+
 function syncFromCartData(cartData) {
   if (cartData && Array.isArray(cartData.items)) {
     state.items = cartData.items;
@@ -110,6 +219,11 @@ export const cartStore = {
         // Network error — keep local cache, don't reset
       }
     }
+
+    // Само-лечение: пере-резолв цен/наличия из текущего каталога (products.json).
+    // Страница корзины наполняется через init() (BaseLayout зовёт на КАЖДОЙ странице)
+    // → корзина всегда показывает актуальные цены, ровно как checkout.
+    reconcileFromCatalog();
   },
 
   /**
@@ -278,6 +392,16 @@ export const cartStore = {
     state.items = Array.isArray(items) ? items : [];
     saveToStorage();
     notify('cart:updated', { items: state.items });
+    // Само-лечение: checkout передаёт display из nt-cart (снимок add-time цен) →
+    // пере-резолвим из каталога, чтобы сводка показала АКТУАЛЬНЫЕ цены/наличие.
+    reconcileFromCatalog();
+  },
+
+  // Публичный пере-резолв позиций из products.json (само-лечение стейл-цен и
+  // удалённых товаров). Автоматически зовётся из init()/setLocalItems();
+  // экспонируем для ручного вызова из блоков при необходимости.
+  reconcileFromCatalog(url) {
+    return reconcileFromCatalog(url);
   },
 
   // Публичная ре-синхронизация позиций из ответа сервера (плоский order с items).
@@ -354,6 +478,6 @@ export const cartStore = {
 };
 
 // Make available globally for inline onclick handlers in Astro templates
-window.cartStore = cartStore;
+if (typeof window !== 'undefined') window.cartStore = cartStore;
 
 export default cartStore;

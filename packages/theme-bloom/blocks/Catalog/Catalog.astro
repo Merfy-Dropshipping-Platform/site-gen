@@ -225,7 +225,7 @@ const skeletons = Array.from({ length: skeletonCount });
   data-page-size={pageSize}
   data-next-photo={nextPhotoOn ? 'true' : 'false'}
   data-quick-add={quickAddMode}
-  style={paddingStyle}
+  style={`background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-text,0 0 0));${paddingStyle}`}
 >
   {/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер
       и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО вариантов,

@@ -164,12 +164,22 @@ const titleId = id ? `${id}-title` : undefined;
 			}
 			{
 				showAgreement && (
-					<label class="flex w-full cursor-pointer items-start gap-2 font-manrope text-[13px] font-normal leading-snug text-[rgb(var(--color-muted,153_153_153))]">
-						<input
-							type="checkbox"
-							required
-							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
-						/>
+					<label class="flex w-full cursor-pointer items-start gap-2.5 font-manrope text-[14px] font-normal leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<span class="relative mt-px flex size-5 shrink-0">
+							<input
+								type="checkbox"
+								required
+								class="peer size-5 cursor-pointer appearance-none rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white transition-colors checked:border-[rgb(var(--color-button-bg,0_0_0))] checked:bg-[rgb(var(--color-button-bg,0_0_0))]"
+							/>
+							<svg
+								class="pointer-events-none absolute inset-0 m-auto size-3 text-[rgb(var(--color-button-text,255_255_255))] opacity-0 transition-opacity peer-checked:opacity-100"
+								viewBox="0 0 12 12"
+								fill="none"
+								aria-hidden="true"
+							>
+								<path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</span>
 						<span>Согласен на обработку персональных данных</span>
 					</label>
 				)

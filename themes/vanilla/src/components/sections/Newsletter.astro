@@ -174,12 +174,22 @@ const titleId = id ? `${id}-title` : undefined;
 		}
 		{
 			showAgreement && (
-				<label class="flex w-full max-w-[652px] cursor-pointer items-start gap-2 font-vanilla-arsenal text-[13px] font-normal italic leading-snug text-[rgb(var(--color-text,240_240_240))]">
-					<input
-						type="checkbox"
-						required
-						class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-2-bg,255_255_255))]"
-					/>
+				<label class="flex w-full max-w-[652px] cursor-pointer items-start gap-2.5 font-vanilla-arsenal text-[14px] font-normal italic leading-snug text-[rgb(var(--color-text,240_240_240))]">
+					<span class="relative mt-px flex size-5 shrink-0">
+							<input
+								type="checkbox"
+								required
+								class="peer size-5 cursor-pointer appearance-none rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-text,240_240_240))] bg-transparent transition-colors checked:border-[rgb(var(--color-button-2-bg,255_255_255))] checked:bg-[rgb(var(--color-button-2-bg,255_255_255))]"
+							/>
+							<svg
+								class="pointer-events-none absolute inset-0 m-auto size-3 text-[rgb(var(--color-button-2-text,58_69_48))] opacity-0 transition-opacity peer-checked:opacity-100"
+								viewBox="0 0 12 12"
+								fill="none"
+								aria-hidden="true"
+							>
+								<path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</span>
 					<span>Согласен на обработку персональных данных</span>
 				</label>
 			)

@@ -126,6 +126,11 @@ const schemeClass =
 
 // (1) Отступы СЕКЦИИ: padding-top/bottom на корневую обёртку секции (эталон
 //     paddingStyle, theme-base:70-72). Дефолт 120/120.
+//     ВАЖНО: фон схемы (background:rgb(var(--color-bg))) обязан быть НА САМОЙ
+//     <section> вместе с paddingStyle (см. атрибут style ниже) — как в эталоне
+//     theme-base. Иначе зона вертикальных отступов = прозрачный зазор ВНЕ
+//     внутреннего bg-div → просвечивает тёмный фон страницы (BASE_DEFAULT
+//     ~rgb(17 17 17)) = «чёрный кусок при смене отступов». НЕ убирать bg с секции.
 // Колонки грида (desktop): clamp 2..6 → CSS-var --rose-cols (mobile/планшет 2/3
 // остаются классами). Паттерн theme-base Catalog (colCount/--catalog-cols).
 const colCount = Math.max(2, Math.min(6, Number(columns) || 4));
@@ -219,7 +224,7 @@ const skeletons = Array.from({ length: skeletonCount });
   data-page-size={pageSize}
   data-next-photo={nextPhotoOn ? 'true' : 'false'}
   data-quick-add={quickAddMode}
-  style={paddingStyle}
+  style={`background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-text,0 0 0));${paddingStyle}`}
 >
   {/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер
       и билд) инжектит window.__MERFY_CATALOG_LAYOUT__. Скрипт стоит ДО вариантов,

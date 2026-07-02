@@ -200,6 +200,24 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 	// Само-лечение корзины из каталога. Кэш на сессию (одна сетевая загрузка);
 	// ошибка/пустой → [], тогда reconcile НЕ трогает корзину (оффлайн-защита).
 	let catalogPromise: Promise<NtCatalogProduct[]> | null = null;
+	// Preview-фолбэк: в конструктор-превью (iframe на gateway) /data/products.json
+	// = 404. Берём каталог из storefront-data (тот же источник, что у продукт-блоков
+	// превью — storefront-hydrate.ts) → reconcile лечит стейл-корзину и в превью.
+	const fetchStorefrontDataProducts = (): Promise<NtCatalogProduct[]> => {
+		const w = window as unknown as {
+			__MERFY_SITE_ID__?: string;
+			__MERFY_CONFIG__?: { shopId?: string };
+		};
+		const siteId = w.__MERFY_SITE_ID__ || w.__MERFY_CONFIG__?.shopId;
+		if (!siteId) return Promise.resolve([]);
+		return fetch(`/api/sites/${encodeURIComponent(siteId)}/storefront-data`)
+			.then((r) => (r.ok ? r.json() : null))
+			.then((p) => {
+				const prods = (p as { products?: unknown } | null)?.products;
+				return Array.isArray(prods) ? (prods as NtCatalogProduct[]) : [];
+			})
+			.catch(() => []);
+	};
 	const loadCatalog = (url: string): Promise<NtCatalogProduct[]> => {
 		if (typeof window === "undefined") return Promise.resolve([]);
 		if (!catalogPromise) {
@@ -207,9 +225,11 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 				.then((r) => (r.ok ? r.json() : null))
 				.then((j) => {
 					const arr = Array.isArray(j) ? j : (j && (j.products || j.data)) || [];
-					return Array.isArray(arr) ? (arr as NtCatalogProduct[]) : [];
+					return Array.isArray(arr) && arr.length
+						? (arr as NtCatalogProduct[])
+						: fetchStorefrontDataProducts();
 				})
-				.catch(() => []);
+				.catch(() => fetchStorefrontDataProducts());
 		}
 		return catalogPromise;
 	};

@@ -129,15 +129,30 @@ export function reconcileItemsAgainstCatalog(items, products) {
 // тогда reconcile НЕ трогает корзину (оффлайн-защита — не теряем товары при недоступном
 // каталоге). cache:'default' — уважаем cache-заголовки products.json (свежесть = публикация).
 let catalogPromise = null;
+// Preview-фолбэк: в конструктор-превью (iframe на gateway) /data/products.json = 404.
+// Берём каталог из того же storefront-data, которым продукт-блоки превью грузят
+// товары (storefront-hydrate.ts) → reconcile лечит стейл-корзину и в превью.
+function fetchStorefrontDataProducts() {
+  const siteId =
+    typeof window !== 'undefined'
+      ? window.__MERFY_SITE_ID__ || (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId)
+      : null;
+  if (!siteId) return Promise.resolve([]);
+  return fetch('/api/sites/' + encodeURIComponent(siteId) + '/storefront-data')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((p) => (p && Array.isArray(p.products) ? p.products : []))
+    .catch(() => []);
+}
 function loadCatalogProducts(url) {
   if (!catalogPromise) {
     catalogPromise = fetch(url, { cache: 'default' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         const arr = Array.isArray(j) ? j : (j && (j.products || j.data)) || [];
-        return Array.isArray(arr) ? arr : [];
+        if (Array.isArray(arr) && arr.length) return arr;
+        return fetchStorefrontDataProducts();
       })
-      .catch(() => []);
+      .catch(() => fetchStorefrontDataProducts());
   }
   return catalogPromise;
 }

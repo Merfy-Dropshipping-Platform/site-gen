@@ -94,9 +94,9 @@ const subtitleCls =
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
 const heroHeightCls = {
-	large: "min-h-[min(64svh,460px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
-	medium: "min-h-[min(52svh,380px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
-	small: "min-h-[min(40svh,300px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
+	large: "min-h-[min(46svh,320px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
+	medium: "min-h-[min(38svh,260px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
+	small: "min-h-[min(30svh,210px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
 }[heroSize];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
@@ -165,8 +165,12 @@ const buttonsCls = secondaryText
 	: `hero-animate-3 flex w-full flex-col ${alignItemsCls} justify-center`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).
+// АДАПТИВ: значение настройки «Отступы» = ДЕСКТОП-паддинг (clamp-верх), на мобиле
+// сжимается через 7vw (≥1140px → 8vw≥80 → упирается в кап = точная настройка;
+// 375px → ~26px). Иначе 80×2=160px на секцию = блок «высокий»/растянутый на телефоне.
+const clampPad = (v: number) => `clamp(20px,7vw,${v}px)`;
 const paddingStyle = p.padding
-	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	? `padding-top:${clampPad(p.padding.top)};padding-bottom:${clampPad(p.padding.bottom)};`
 	: undefined;
 ---
 

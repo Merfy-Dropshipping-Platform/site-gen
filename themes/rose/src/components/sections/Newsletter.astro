@@ -54,13 +54,10 @@ const buttonText =
 // inline-submit — форма подвала верстальщика дословно (кнопка-стрелка в рамке).
 const inlineSubmit = p.formLayout === "inline-submit";
 
-// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
-// согласия под формой (манера rose: Manrope мелкий muted); иначе ничего.
-const showAgreement = p.agreement === "true";
-
-// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
-// 'true' блок heading+description не рендерится (форма/согласие остаются).
-const hideTitle = p.hideTitle === "true";
+// «Согласие на рассылку» (toggle 'true'/'false', default 'false'): при 'true'
+// блок heading+description СКРЫВАЕТСЯ (форма остаётся); 'false' — заголовок и
+// текст видны. Конструктор пишет этот проп из хардкод-тумблера панели Newsletter.
+const hideHeading = p.agreement === "true";
 
 // Канон «Выравнивание» = ЕДИНЫЙ контрол (конструктор пишет position): рулит И
 // позицией блока в контейнере (posCls), И выключкой содержимого внутри
@@ -83,7 +80,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && !hideTitle ? `${id}-title` : undefined;
+const titleId = id && !hideHeading ? `${id}-title` : undefined;
 ---
 
 <section
@@ -95,7 +92,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 	<div class="mx-auto w-full max-w-[1320px]">
 		<div class={`flex w-full max-w-[430px] flex-col gap-5 ${posCls} ${alignCls}`} data-animate>
 			{
-				!hideTitle && (
+				!hideHeading && (
 					<div class="flex w-full flex-col gap-2">
 						<h2
 							id={titleId}
@@ -168,18 +165,6 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							{buttonText}
 						</button>
 					</form>
-				)
-			}
-			{
-				showAgreement && (
-					<label class="flex w-full cursor-pointer items-start gap-2 font-manrope text-[13px] font-normal leading-snug text-[rgb(var(--color-muted,153_153_153))]">
-						<input
-							type="checkbox"
-							required
-							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
-						/>
-						<span>Согласен на обработку персональных данных</span>
-					</label>
 				)
 			}
 			<p

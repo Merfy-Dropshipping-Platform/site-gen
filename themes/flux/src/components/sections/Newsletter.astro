@@ -84,21 +84,17 @@ const buttonText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.b
 // одной оранжевой рамке, как панель поиска Header:451).
 const inlineSubmit = p.formLayout === "inline-submit";
 
-// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
-// согласия под формой (манера flux: roboto-flex мелкий muted, акцент #FA5109);
-// иначе ничего.
-const showAgreement = p.agreement === "true";
-
-// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
-// 'true' блок heading+description не рендерится (форма/согласие остаются).
-const hideTitle = p.hideTitle === "true";
+// «Согласие на рассылку» (toggle 'true'/'false', default 'false'): при 'true'
+// блок heading+description СКРЫВАЕТСЯ (форма остаётся); 'false' — заголовок и
+// текст видны. Конструктор пишет проп из хардкод-тумблера панели Newsletter.
+const hideHeading = p.agreement === "true";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && !hideTitle ? `${id}-title` : undefined;
+const titleId = id && !hideHeading ? `${id}-title` : undefined;
 ---
 
 <section
@@ -110,7 +106,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 	<div class="mx-auto w-full max-w-[1920px]">
 		<div class={`flex w-full max-w-[652px] flex-col gap-6 ${posCls} ${alignCls}`}>
 			{
-				!hideTitle && (
+				!hideHeading && (
 					<div class="flex w-full flex-col gap-2">
 						<h2
 							id={titleId}
@@ -180,18 +176,6 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							{buttonText}
 						</button>
 					</form>
-				)
-			}
-			{
-				showAgreement && (
-					<label class="flex w-full cursor-pointer items-start gap-2 font-roboto-flex text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
-						<input
-							type="checkbox"
-							required
-							class="mt-0.5 size-4 shrink-0 accent-[#FA5109]"
-						/>
-						<span>Согласен на обработку персональных данных</span>
-					</label>
 				)
 			}
 			<p

@@ -62,14 +62,10 @@ const buttonText =
 // без радиуса).
 const inlineSubmit = p.formLayout !== "stacked";
 
-// Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
-// согласия под формой (манера vanilla: Arsenal italic мелкий, токен text на
-// тёмном полотне); иначе ничего.
-const showAgreement = p.agreement === "true";
-
-// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
-// 'true' блок heading+description не рендерится (форма/согласие остаются).
-const hideTitle = p.hideTitle === "true";
+// «Согласие на рассылку» (toggle 'true'/'false', default 'false'): при 'true'
+// блок heading+description СКРЫВАЕТСЯ (форма остаётся); 'false' — заголовок и
+// текст видны. Конструктор пишет проп из хардкод-тумблера панели Newsletter.
+const hideHeading = p.agreement === "true";
 
 // Канон alignment (blockDefaults 'left' = литерал FN:10 items-start text-left);
 // center/right двигают колонку по контейнеру. Выравнивание живёт в под-панели
@@ -94,7 +90,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && !hideTitle ? `${id}-title` : undefined;
+const titleId = id && !hideHeading ? `${id}-title` : undefined;
 ---
 
 <section
@@ -109,7 +105,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 		data-animate
 	>
 		{
-			!hideTitle && (
+			!hideHeading && (
 				<div class="flex w-full flex-col gap-2">
 					<h2
 						id={titleId}
@@ -178,18 +174,6 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 						{buttonText}
 					</button>
 				</form>
-			)
-		}
-		{
-			showAgreement && (
-				<label class="flex w-full max-w-[652px] cursor-pointer items-start gap-2 font-vanilla-arsenal text-[13px] font-normal italic leading-snug text-[rgb(var(--color-text,240_240_240))]">
-					<input
-						type="checkbox"
-						required
-						class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-2-bg,255_255_255))]"
-					/>
-					<span>Согласен на обработку персональных данных</span>
-				</label>
 			)
 		}
 		<p

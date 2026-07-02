@@ -19,18 +19,12 @@ export const NewsletterSchema = z.object({
   buttonText: z.string(),
   position: z.enum(['left', 'center', 'right']).optional(),
   /**
-   * Figma Newsletter «Соглашение на рассылку» — toggle (legacy 'true'/'false'
-   * strings). При 'true' порты рендерят чекбокс согласия под формой; default
-   * 'false' (контрол выключен) сохраняет прежний вид (default-preserving).
+   * «Согласие на рассылку» — toggle (legacy 'true'/'false' strings). При 'true'
+   * порты СКРЫВАЮТ блок heading+description (форма остаётся); default 'false'
+   * сохраняет прежний вид — заголовок и текст видны (default-preserving).
+   * Конструктор показывает этот тумблер в хардкод-панели Newsletter.
    */
   agreement: z.enum(['true', 'false']).optional(),
-  /**
-   * Тогл «Скрыть заголовок и текст» (legacy 'true'/'false' strings, как
-   * agreement). При 'true' порты не рендерят блок heading+description (форма и
-   * чекбокс согласия остаются); default 'false' сохраняет прежний вид
-   * (default-preserving).
-   */
-  hideTitle: z.enum(['true', 'false']).optional(),
   /**
    * 084 vanilla pilot — additive variant. Form layout style:
    *   - `inline-submit` (default behaviour, identical pre-commit)
@@ -77,12 +71,10 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         },
       },
     },
-    // Тогл «Скрыть заголовок и текст» — при 'true' порты не рендерят блок
-    // heading+description (форма/согласие остаются); default 'false' (виден).
-    hideTitle: { type: 'toggle', label: 'Скрыть заголовок и текст' } as any,
-    // Figma «Соглашение на рассылку» — toggle. При 'true' порты рендерят чекбокс
-    // согласия под формой; default 'false' (по умолчанию чекбокса нет).
-    agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
+    // «Согласие на рассылку» — toggle. При 'true' порты СКРЫВАЮТ заголовок+текст
+    // (форма остаётся); default 'false' — заголовок и текст видны. Рендерится в
+    // хардкод-панели конструктора (CustomFieldsPanel.tsx).
+    agreement: { type: 'toggle', label: 'Согласие на рассылку' } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Sub-panel «Форма рассылки» (314:35058):
@@ -123,7 +115,6 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     buttonText: 'Подписаться',
     formLayout: 'stacked',
     agreement: 'false',
-    hideTitle: 'false',
     padding: { top: 80, bottom: 80 },
   },
   schema: NewsletterSchema,

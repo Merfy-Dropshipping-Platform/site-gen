@@ -148,25 +148,71 @@ export const FooterPuckConfig = {
     // Hidden — нет в Figma 314-34558.
     siteTitle: { type: 'hidden', label: '' },
     bottomStrip: { type: 'hidden', label: '' },
-    // Columns hidden из main по Figma 314-34558 (footer-specific advanced).
+    // «Весь футер» редактируемый — ручные части колонок/соцсетей/копирайта. АВТО из
+    // настроек магазина (applyFooterData, НЕ в панели): Информация-ссылки = политики
+    // (site_policy), соц. почта/телефон = контакты (site_contacts), платёжки = касса.
     navigationColumn: {
-      type: 'hidden' as const,
-      label: '',
+      type: 'object',
+      label: 'Навигация',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
         links: linkArrayField,
       },
-    },
+    } as any,
     informationColumn: {
-      type: 'hidden' as const,
-      label: '',
+      type: 'object',
+      label: 'Информация',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
-        links: linkArrayField,
+        // Ссылки этой колонки = политики магазина (тянутся автоматически из настроек).
+        links: { type: 'hidden', label: '' },
       },
-    },
-    socialColumn: { type: 'hidden' as const, label: '' },
-    copyright: { type: 'hidden' as const, label: '' },
+    } as any,
+    socialColumn: {
+      type: 'object',
+      label: 'Соцсети',
+      objectFields: {
+        title: { type: 'text', label: 'Заголовок колонки' },
+        socialLinks: {
+          type: 'array',
+          label: 'Ссылки на соцсети',
+          arrayFields: {
+            platform: {
+              type: 'select',
+              label: 'Соцсеть',
+              options: [
+                { label: 'Telegram', value: 'telegram' },
+                { label: 'VK', value: 'vk' },
+                { label: 'YouTube', value: 'youtube' },
+                { label: 'TikTok', value: 'tiktok' },
+                { label: 'Дзен', value: 'dzen' },
+              ],
+            },
+            href: { type: 'text', label: 'Ссылка' },
+          },
+          defaultItemProps: { platform: 'telegram', href: '' },
+          max: 6,
+        },
+        // Почта/доп. контакты — автоматически из «Информация о компании» (настройки).
+        email: { type: 'hidden', label: '' },
+      },
+    } as any,
+    copyright: {
+      type: 'object',
+      label: 'Копирайт',
+      objectFields: {
+        companyName: { type: 'text', label: 'Название компании' },
+        poweredBy: { type: 'text', label: 'Подпись' },
+        showYear: {
+          type: 'toggle',
+          label: 'Показывать год',
+          options: [
+            { label: 'Да', value: true },
+            { label: 'Нет', value: false },
+          ],
+        },
+      },
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

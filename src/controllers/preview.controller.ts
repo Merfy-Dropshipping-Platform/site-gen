@@ -30,6 +30,7 @@ import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
+import { schemeIdFromProp } from '../themes/v2-page-composer';
 import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_SECTION_THEMES } from '../themes/page-registry';
 import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
@@ -383,13 +384,49 @@ export class PreviewController {
           // иконки на блоб-страницах ('full': корзина и т.п.). Товар/каталог не
           // идут этим путём — их родной dist-Header уже с /__theme/.
           const chromePrefix = `/__theme/${PreviewService.bareThemeKey(loaded.themeId ?? 'base')}`;
+          // Оборачиваем header/footer в .color-scheme-N ровно как контент-пайплайн
+          // (preview.service.ts: каждый блок → <div class="color-scheme-N"
+          // [style=display:contents для Header] data-block-scheme="N">). Без этого
+          // verbatim-страницы (account/*, wishlist, …) отдавали шапку/подвал БЕЗ
+          // scheme-обёртки → :root дефолт (белый) вместо схемы мерчанта, тогда как на
+          // home она есть → «на избранном/профиле шапка другая, схемы не применяются».
+          // Схема берётся из home-Header/Footer ревизии (тот же источник пропсов, что
+          // assembleChrome). Безопасно: этот путь только для голых тема-дефолтных
+          // шапок (нет прежней обёртки → нет двойной). ⛔ НЕ переносить в общий
+          // assembleChrome — live applyChromeToDist прогоняется и по контент-страницам,
+          // где HEADER_NT_RE матчит только <header>, и обёртка в target даст двойной wrap.
+          const homeContent =
+            ((loaded.data as {
+              pagesData?: Record<
+                string,
+                { content?: Array<{ type?: string; props?: { colorScheme?: unknown } }> }
+              >;
+            } | null)?.pagesData?.['home']?.content) ?? [];
+          const wrapChromeScheme = (
+            innerHtml: string | null,
+            blockType: 'Header' | 'Footer',
+          ): string | null => {
+            if (!innerHtml) return null;
+            const schemeId = schemeIdFromProp(
+              homeContent.find((b) => b?.type === blockType)?.props?.colorScheme,
+            );
+            if (!schemeId) return innerHtml;
+            const style = blockType === 'Header' ? ' style="display:contents"' : '';
+            return `<div class="color-scheme-${schemeId}"${style} data-block-scheme="${schemeId}">${innerHtml}</div>`;
+          };
           const themedChrome = {
-            headerHtml: chrome.headerHtml
-              ? rewriteRootUrlsToPrefix(chrome.headerHtml, chromePrefix)
-              : null,
-            footerHtml: chrome.footerHtml
-              ? rewriteRootUrlsToPrefix(chrome.footerHtml, chromePrefix)
-              : null,
+            headerHtml: wrapChromeScheme(
+              chrome.headerHtml
+                ? rewriteRootUrlsToPrefix(chrome.headerHtml, chromePrefix)
+                : null,
+              'Header',
+            ),
+            footerHtml: wrapChromeScheme(
+              chrome.footerHtml
+                ? rewriteRootUrlsToPrefix(chrome.footerHtml, chromePrefix)
+                : null,
+              'Footer',
+            ),
           };
           chromedHtml = injectChromeIntoHtml(builtThemeHtml, themedChrome);
         } catch (chromeErr) {

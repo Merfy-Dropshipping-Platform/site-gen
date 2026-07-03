@@ -78,52 +78,27 @@ const paddingStyle = padding
       </div>
     ))}
 
-    {/* Город — отдельный full-ряд (Figma 183-27866). */}
-    <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
-      <input
-        class={cityDadata ? C.inputWithIcon : C.input}
-        id="checkout-city"
-        name="city"
-        type="text"
-        autocomplete="off"
-        placeholder=" "
-        data-checkout-dadata-input="city"
-      />
-      <label class={C.label} for="checkout-city">Город</label>
-      {cityDadata && (
-        <span class={C.searchIcon}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        </span>
-      )}
-      {cityDadata && (
-        <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
-      )}
-    </div>
-
-    {/* Полный адрес + Индекс — один ряд (Figma 183-27866). «Полный адрес» — это
-        DaData-поле: показывает ПОЛНУЮ строку (улица, д. дом, кв. квартира), а
-        раскладку DaData пишет в СКРЫТЫЕ поля street/building/apartment ниже.
-        CheckoutSubmit + валидация читают street/building/apartment напрямую (как
-        раньше) — без хрупкого позиционного split(',') видимой строки. */}
-    <div class={C.fieldRow2}>
-      <div class={C.field} data-checkout-field="fullAddress" data-dadata={String(addressDadata)}>
+    {/* Город + Индекс — один ряд, 65/35 на десктопе. Индекс не вешает
+        одиночный ряд, и логически связан с городом (postal_code города). */}
+    <div class={C.cityIndexRow}>
+      <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
         <input
-          class={addressDadata ? C.inputWithIcon : C.input}
-          id="checkout-fullAddress"
-          name="fullAddress"
+          class={cityDadata ? C.inputWithIcon : C.input}
+          id="checkout-city"
+          name="city"
           type="text"
           autocomplete="off"
           placeholder=" "
-          data-checkout-dadata-input="street"
+          data-checkout-dadata-input="city"
         />
-        <label class={C.label} for="checkout-fullAddress">Полный адрес</label>
-        {addressDadata && (
+        <label class={C.label} for="checkout-city">Город</label>
+        {cityDadata && (
           <span class={C.searchIcon}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
           </span>
         )}
-        {addressDadata && (
-          <ul class={C.dropdown} data-checkout-dadata-list="street" hidden></ul>
+        {cityDadata && (
+          <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
         )}
       </div>
       <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
@@ -132,13 +107,44 @@ const paddingStyle = padding
       </div>
     </div>
 
-    {/* Скрытые структурированные поля адреса (улица/дом/кв). DaData раскладывает
-        сюда при выборе подсказки; при ручном вводе «Полного адреса» строка
-        зеркалится в street. CheckoutSubmit + валидация читают их напрямую, поэтому
-        отдельные видимые Дом/Кв. из Figma убраны, а данные для заказа сохранены. */}
-    <div data-checkout-field="street" hidden><input id="checkout-street" name="street" type="text" autocomplete="off" tabindex="-1" aria-hidden="true" /></div>
-    <div data-checkout-field="building" hidden><input id="checkout-building" name="building" type="text" autocomplete="off" tabindex="-1" aria-hidden="true" /></div>
-    <div data-checkout-field="apartment" hidden><input id="checkout-apartment" name="apartment" type="text" autocomplete="off" tabindex="-1" aria-hidden="true" /></div>
+    {/* Улица — full row, DaData. При выборе подсказки раскладываем дом/квартиру/
+        индекс в ОТДЕЛЬНЫЕ поля ниже (1:1 как поля админки заказа), поэтому
+        CheckoutSubmit читает street/building/apartment напрямую — без хрупкого
+        позиционного split(',') одной строки, который путал порядок при ручном
+        вводе (город уезжал в улицу, и т.д.). */}
+    <div class={C.field} data-checkout-field="street" data-dadata={String(addressDadata)}>
+      <input
+        class={addressDadata ? C.inputWithIcon : C.input}
+        id="checkout-street"
+        name="street"
+        type="text"
+        autocomplete="off"
+        placeholder=" "
+        data-checkout-dadata-input="street"
+      />
+      <label class={C.label} for="checkout-street">Улица</label>
+      {addressDadata && (
+        <span class={C.searchIcon}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+      )}
+      {addressDadata && (
+        <ul class={C.dropdown} data-checkout-dadata-list="street" hidden></ul>
+      )}
+    </div>
+
+    {/* Дом + Кв./офис — отдельные поля (50/50), как в админке заказа. Хранятся
+        «сырыми» (дом «19», кв «5») — как ждёт ShippingAddressDto. */}
+    <div class={C.fieldRow2}>
+      <div class={C.field} data-checkout-field="building">
+        <input class={C.input} id="checkout-building" name="building" type="text" autocomplete="off" placeholder=" " />
+        <label class={C.label} for="checkout-building">Дом</label>
+      </div>
+      <div class={C.field} data-checkout-field="apartment">
+        <input class={C.input} id="checkout-apartment" name="apartment" type="text" autocomplete="off" placeholder=" " />
+        <label class={C.label} for="checkout-apartment">Кв./офис</label>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -411,12 +417,6 @@ const paddingStyle = padding
         var q = (input.value || '').trim();
         if (q === lastQuery) return;
         lastQuery = q;
-        if (kind === 'street') {
-          // Ручной ввод «Полного адреса» → зеркалим в скрытую street (валидация и
-          // сабмит читают street). building/apartment оставляем как есть.
-          var hsMirror = section.querySelector('[data-checkout-field="street"] input');
-          if (hsMirror) hsMirror.value = input.value;
-        }
         // Юзер изменил город руками → сохранённый fias_id больше не валиден
         // для фильтрации адресных подсказок. Очищаем.
         if (kind === 'city') {
@@ -547,23 +547,20 @@ const paddingStyle = padding
           var dHouse = li.getAttribute('data-house') || '';
           var dFlat = li.getAttribute('data-flat') || '';
 
-          // Видимое «Полный адрес» показывает ПОЛНУЮ строку (val «улица, д X, кв Y»,
-          // как в Figma), а раскладку пишем в СКРЫТЫЕ поля street/building/apartment —
-          // CheckoutSubmit читает их напрямую, дублирования при сабмите нет.
-          input.value = val;
-          lastQuery = val;
-          var hiddenStreet = section.querySelector('[data-checkout-field="street"] input');
-          if (hiddenStreet) {
-            hiddenStreet.value = dStreet || val;
-            hiddenStreet.dispatchEvent(new Event('change', { bubbles: true }));
+          // Поле «Улица» показывает только название улицы (а не собранную
+          // строку val «улица, д X, кв Y») — иначе при сабмите street дублировал
+          // бы дом/квартиру.
+          if (dStreet) {
+            input.value = dStreet;
+            lastQuery = dStreet;
           }
           var buildingInput = section.querySelector('[data-checkout-field="building"] input');
-          if (buildingInput) {
+          if (buildingInput && dHouse) {
             buildingInput.value = dHouse;
             buildingInput.dispatchEvent(new Event('change', { bubbles: true }));
           }
           var apartmentInput = section.querySelector('[data-checkout-field="apartment"] input');
-          if (apartmentInput) {
+          if (apartmentInput && dFlat) {
             apartmentInput.value = dFlat;
             apartmentInput.dispatchEvent(new Event('change', { bubbles: true }));
           }

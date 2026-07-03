@@ -98,6 +98,14 @@ const heroHeightCls = {
 	medium: "min-h-[min(38svh,260px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
 	small: "min-h-[min(30svh,210px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
 }[heroSize];
+// Мобила = стек (картинка сверху + подложка снизу, Shopify Image banner), десктоп
+// = оверлей. Поэтому min-h секции нужен ТОЛЬКО на md+ (на мобиле высота = картинка
+// + блок-подложка). md-only лестница высоты (без base/sm min-h).
+const heroHeightMdCls = {
+	large: "md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
+	medium: "md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
+	small: "md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
+}[heroSize];
 
 // «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
 // (max-w/gap/padding) + кнопку — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
@@ -175,6 +183,8 @@ const vPadCls =
 	vPos === "middle"
 		? "py-10 sm:py-12 md:py-16"
 		: "pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
+// md-only верт.паддинг для десктоп-оверлея (на мобиле блок-подложка имеет свой py-10).
+const vPadMdCls = vPos === "middle" ? "md:py-16" : "md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center";
 // alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
 // Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
@@ -272,7 +282,7 @@ const paddingStyle = p.padding
 		</section>
 	) : (
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] ${heroHeightMdCls}`}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -282,50 +292,55 @@ const paddingStyle = p.padding
 	    «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
 	    (padding на <section>) теперь отодвигают КОНТЕНТ (inner-div в нормальном
 	    потоке ниже), а не создают полосы. */}
-	{
-		backgroundImage2 ? (
-			<div class="absolute inset-0 z-0 grid grid-cols-2">
+	{/* КАРТИНКА — мобила: блок-картинка сверху (стек как Shopify Image banner);
+	    десктоп: absolute на всю секцию (оверлей под текстом). */}
+	<div class="relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto">
+		{
+			backgroundImage2 ? (
+				<div class="absolute inset-0 grid grid-cols-2">
+					<RosePicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="!size-full object-cover object-center"
+					/>
+					<RosePicture
+						src={backgroundImage2}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="!size-full object-cover object-center"
+					/>
+				</div>
+			) : backgroundImage ? (
 				<RosePicture
 					src={backgroundImage}
 					alt={title}
 					loading="eager"
 					fetchpriority="high"
-					class="!size-full object-cover object-center"
+					class="absolute inset-0 !size-full object-cover object-center"
 				/>
-				<RosePicture
-					src={backgroundImage2}
-					alt={title}
-					loading="eager"
-					fetchpriority="high"
-					class="!size-full object-cover object-center"
-				/>
-			</div>
-		) : backgroundImage ? (
-			<RosePicture
-				src={backgroundImage}
-				alt={title}
-				loading="eager"
-				fetchpriority="high"
-				class="absolute inset-0 z-0 !size-full object-cover object-center"
-			/>
-		) : null
-	}
+			) : (
+				<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
+			)
+		}
+	</div>
 
+	{/* Затемнение фото — только десктоп (на мобиле текст на подложке снизу). */}
 	{
 		overlayN > 0 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[1] bg-black"
+				class="pointer-events-none absolute inset-0 z-[1] hidden bg-black md:block"
 				style={`opacity:${overlayN / 100}`}
 			/>
 		)
 	}
 
+	{/* КОНТЕНТ — мобила: блок-подложка (фон схемы) ПОД картинкой; десктоп: overlay поверх. */}
 	<div
-		class={`relative w-full ${heroHeightCls}`}
+		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12 md:absolute md:inset-0 md:bg-transparent md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadMdCls}`}
 	>
-		<div
-			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadCls}`}
-		>
 			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
 					<h1
@@ -373,7 +388,6 @@ const paddingStyle = p.padding
 				</div>
 			</div>
 		</div>
-	</div>
 </section>
 	)
 }

@@ -107,12 +107,41 @@ export interface NtCatalogProduct {
 	price?: number;
 	compareAtPrice?: number | null;
 	images?: string[];
+	/** Опции с фото варианта (Цвет=Чёрный→своё фото). Фото варианта живёт ЗДЕСЬ,
+	 * не в product.images[0] (= первый вариант) и не в combination. */
+	variantGroups?: Array<{
+		name?: string;
+		options?: Array<{ value?: string; images?: string[] }>;
+	}>;
 	variantCombinations?: Array<{
 		id: string;
 		price?: number;
 		compareAtPrice?: number | null;
 		options?: Record<string, string>;
 	}>;
+}
+
+/**
+ * Фото выбранного варианта из каталога по color/size строки. null если у выбранной
+ * опции своего фото нет (тогда оставляем фото позиции / дефолт — НЕ первый вариант).
+ * Экспортируется для юнит-теста.
+ */
+export function variantImageFromNtCatalog(
+	product: NtCatalogProduct | undefined,
+	variant?: { color?: string; size?: string } | null,
+): string | null {
+	if (!product || !variant) return null;
+	const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+	const selected = [variant.color, variant.size].filter(Boolean).map((v) => String(v));
+	for (const g of groups) {
+		const opts = Array.isArray(g.options) ? g.options : [];
+		for (const o of opts) {
+			if (o.value != null && selected.indexOf(String(o.value)) !== -1 && Array.isArray(o.images) && o.images[0]) {
+				return o.images[0];
+			}
+		}
+	}
+	return null;
 }
 
 /**
@@ -157,7 +186,11 @@ export function reconcileNtLines(
 		const rawOld = combo ? combo.compareAtPrice : p.compareAtPrice;
 		const oldPrice = rawOld != null && Number.isFinite(Number(rawOld)) ? Number(rawOld) : undefined;
 		const name = p.name || line.name;
-		const image = Array.isArray(p.images) && p.images[0] ? p.images[0] : line.image;
+		// Фото выбранного варианта (Цвет) → иначе фото позиции (add-time, верное) →
+		// лишь в крайнем случае первое фото товара. НЕ клобберим на p.images[0]
+		// (= первый вариант) — баг «встаёт фото другого варианта после подгрузки».
+		const variantImg = variantImageFromNtCatalog(p, line.variant);
+		const image = variantImg || line.image || (Array.isArray(p.images) && p.images[0] ? p.images[0] : "");
 		const newVcId = combo ? String(combo.id) : line.variant?.variantCombinationId;
 		const nl: NtCartLine = {
 			...line,

@@ -71,6 +71,25 @@ const optionsMatch = (catalogOpts, itemOpts) => {
  * @param {Array<any>} products
  * @returns {{items: Array<any>, changed: boolean, dropped: number}}
  */
+// Фото ВЫБРАННОГО варианта живёт в опции (variantGroups[].options[].images,
+// напр. Цвет=Чёрный→штаны), НЕ в product.images[0] (= первый/дефолтный вариант).
+// Резолвим фото по options позиции; null если у выбранной опции своего фото нет
+// (тогда вызывающий оставляет фото позиции / дефолт товара — НЕ перетирает на первый).
+export function variantImageFromCatalog(product, options) {
+  if (!product || !options) return null;
+  const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+  const selected = Object.keys(options).map((k) => String(options[k]));
+  for (const g of groups) {
+    const opts = Array.isArray(g.options) ? g.options : [];
+    for (const o of opts) {
+      if (selected.indexOf(String(o.value)) !== -1 && Array.isArray(o.images) && o.images[0]) {
+        return o.images[0];
+      }
+    }
+  }
+  return null;
+}
+
 export function reconcileItemsAgainstCatalog(items, products) {
   if (!Array.isArray(items) || items.length === 0) return { items: items || [], changed: false, dropped: 0 };
   if (!Array.isArray(products) || products.length === 0) return { items, changed: false, dropped: 0 };
@@ -98,7 +117,12 @@ export function reconcileItemsAgainstCatalog(items, products) {
     const oldRaw = combo ? combo.compareAtPrice : p.compareAtPrice;
     const oldCents = (oldRaw != null && Number.isFinite(Number(oldRaw))) ? Math.round(Number(oldRaw) * 100) : undefined;
     const name = p.name || it.name;
-    const image = (Array.isArray(p.images) && p.images[0]) ? p.images[0] : (it.imageUrl || it.image);
+    // Фото выбранного варианта (Цвет) из каталога → иначе фото позиции (add-time,
+    // уже верное для варианта) → лишь в крайнем случае первое фото товара. НЕ клобберим
+    // верное фото варианта на p.images[0] (= первый вариант) — это и был баг «встаёт
+    // фото другого варианта после подгрузки».
+    const variantImg = variantImageFromCatalog(p, it.options);
+    const image = variantImg || it.imageUrl || it.image || (Array.isArray(p.images) && p.images[0]) || undefined;
     const qty = it.quantity || 1;
     const nit = {
       ...it,

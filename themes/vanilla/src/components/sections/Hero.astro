@@ -89,6 +89,27 @@ const heroHeightCls = {
 	small: "min-h-[335px] md:min-h-[400px] xl:min-h-[505px]",
 }[heroSize];
 
+// «Размер» масштабирует НЕ только высоту полотна, но и подложку/CTA симметрично
+// (паттерн rose Hero «Размер»): large = ТЕКУЩИЕ значения vanilla байт-в-байт,
+// medium ≈0.82×, small ≈0.64×. Шрифты заголовка/текста здесь НЕ участвуют
+// (кегль h1/p живёт в headingClsFor/textClsFor от heading.size/text.size).
+//   • panelMaxWCls — макс-ширина контент-блока (copyWrapCls, было 52rem);
+//   • panelGapCls  — вертикальный зазор копи (было gap-5);
+//   • panelPadCls  — паддинги подложки-плашки (heroBoxed=true, было p-6 md:p-10);
+//   • ctaSizeCls   — размерная часть CTA-кнопки (высота/паддинги/кегль лейбла).
+const panelMaxWCls = {
+	large: "max-w-[min(100%,52rem)]",
+	medium: "max-w-[min(100%,43rem)]",
+	small: "max-w-[min(100%,33rem)]",
+}[heroSize];
+const panelGapCls = { large: "gap-5", medium: "gap-4", small: "gap-3" }[heroSize];
+const panelPadCls = { large: "p-6 md:p-10", medium: "p-5 md:p-8", small: "p-4 md:p-6" }[heroSize];
+const ctaSizeCls = {
+	large: "h-12 min-h-12 px-4 text-base",
+	medium: "h-10 min-h-10 px-3.5 text-[15px]",
+	small: "h-9 min-h-9 px-3 text-[14px]",
+}[heroSize];
+
 type CanonSlide = {
 	image: string;
 	title: string;
@@ -202,8 +223,8 @@ const pagination =
 // (токены кнопки-1); outlined = белый контур манеры на тёмном (§3, токены кнопки-2).
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80"
-		: "hero-animate-3 inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+		? `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`
+		: `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9
 // значений) — РАЗМЕЩЕНИЕ контент-блока по сетке 3×3 (Figma 648-55404): вертикаль
@@ -256,7 +277,7 @@ const layoutFor = (posInput: unknown, alignInput: unknown, contentAlignInput: un
 				: "left";
 	const alignItemsCls = align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start";
 	const textAlignCls = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
-	const copyWrapCls = `pointer-events-auto flex w-full max-w-[min(100%,52rem)] flex-col gap-5 md:overflow-visible ${hMarginCls} ${alignItemsCls} ${textAlignCls}`;
+	const copyWrapCls = `pointer-events-auto flex w-full ${panelMaxWCls} flex-col ${panelGapCls} md:overflow-visible ${hMarginCls} ${alignItemsCls} ${textAlignCls}`;
 	return { vItemsCls, copyWrapCls };
 };
 
@@ -357,7 +378,7 @@ const singleSubtitleCls = textClsFor(p.text?.size);
 // только явный true → плашка. Раньше vanilla тоггл игнорировал (мёртвая настройка).
 const heroBoxed = String(p.container ?? "false") === "true";
 const heroBoxedCls = heroBoxed
-	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,238_238_238))]/95 p-6 md:p-10 [&_h1]:!text-[rgb(var(--color-heading,38_49_28))] [&_p]:!text-[rgb(var(--color-text,68_68_68))]"
+	? ` rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,238_238_238))]/95 ${panelPadCls} [&_h1]:!text-[rgb(var(--color-heading,38_49_28))] [&_p]:!text-[rgb(var(--color-text,68_68_68))]`
 	: "";
 // Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
 const secondaryText =
@@ -369,7 +390,7 @@ const secondaryHref =
 	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
 	"/catalog/textile";
 const secondaryCls =
-	"inline-flex h-12 min-h-12 max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+	`inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
 ---
 
 {

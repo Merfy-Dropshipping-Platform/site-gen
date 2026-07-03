@@ -113,6 +113,31 @@ const heroHeightCls = {
 	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[380px] xl:min-h-[400px]",
 }[heroSize];
 
+// «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
+// (max-w/gap/padding) + кнопку CTA — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
+// героя НЕ трогаем (у них свои поля heading.size/text.size). large = дефолт bloom;
+// max-w догоняет rose-паритет (540/640) для одинакового поведения панели по темам.
+const panelMaxWCls = {
+	large: "max-w-[330px]",
+	medium: "max-w-[270px]",
+	small: "max-w-[210px]",
+}[heroSize];
+const panelGapCls = {
+	large: "gap-4",
+	medium: "gap-3",
+	small: "gap-2.5",
+}[heroSize];
+const panelPadCls = {
+	large: "p-6 md:p-8",
+	medium: "p-5 md:p-6",
+	small: "p-4 md:p-5",
+}[heroSize];
+const ctaSizeCls = {
+	large: "h-12 px-4 text-[16px]",
+	medium: "h-10 px-3.5 text-[14px]",
+	small: "h-9 px-3 text-[13px]",
+}[heroSize];
+
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
 // тексте; кнопки встают рядом в ряд с зазором gap-3 (манера §3).
 const secondaryText =
@@ -132,7 +157,7 @@ const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 // На светлой плашке текст переключаем на тёмный цвет схемы для читаемости.
 const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
-	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
+	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
 
 // Канон position (видимое поле панели) / contentPosition (legacy hidden, те же
@@ -184,8 +209,8 @@ const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItems
 // дословно (токены кнопки-1 §7, rounded-full → --radius-button 100px).
 const ctaBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95"
-		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95";
+		? `inline-flex ${ctaSizeCls} items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent font-inter font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95`
+		: `inline-flex ${ctaSizeCls} items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] font-inter font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95`;
 // Вторая кнопка — белый pill манеры (Philosophy.astro:26) на токенах кнопки-2.
 const secondaryBtnCls =
 	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
@@ -309,7 +334,7 @@ const paddingStyle = p.padding
 		class={`relative w-full ${heroHeightCls}`}
 	>
 		<div class={containerCls}>
-			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4${boxedCls}`}>
+			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
 					<h1
 						id="hero-title"

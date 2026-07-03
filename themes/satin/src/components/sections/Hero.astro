@@ -100,14 +100,39 @@ const heroHeightCls = {
 	small: "md:h-[440px]",
 }[heroSize];
 
+// «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
+// (max-w/gap/padding) + CTA-кнопку — симметрично (medium ≈0.82×, small ≈0.64×). large =
+// прежние satin-значения байт-в-байт. Шрифты заголовка/кикера НЕ трогаем (у них свои
+// поля heading.size/text.size).
+const panelMaxWCls = {
+	large: "max-w-[420px]",
+	medium: "max-w-[344px]",
+	small: "max-w-[270px]",
+}[heroSize];
+const panelGapCls = {
+	large: "gap-6",
+	medium: "gap-5",
+	small: "gap-4",
+}[heroSize];
+const panelPadCls = {
+	large: "p-6 md:p-10",
+	medium: "p-5 md:p-8",
+	small: "p-4 md:p-6",
+}[heroSize];
+const ctaSizeCls = {
+	large: "min-h-12 px-6 text-[16px]",
+	medium: "min-h-11 px-5 text-[15px]",
+	small: "min-h-10 px-4 text-[14px]",
+}[heroSize];
+
 // Кнопки манеры §3 на токенах — реплика .satin-button.satin-button-md (литеральные
 // --satin-* тех классов не реагируют на смену схемы, поэтому утилиты с токенами):
 // dark = чёрная заливка (кнопка-1: 0_0_0 / 255_255_255), light = контурная (кнопка-2 —
 // родная роль satin: бордер/текст 0_0_0 на прозрачном), радиус rounded-[var(--radius-button,0px)].
 const BTN_DARK =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] font-manrope font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
 const BTN_LIGHT =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent font-manrope font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
 // Канон buttonStyle: solid (canon-default) И отсутствие = dark литерал; outlined = light.
 const primaryBtnCls = p.buttonStyle === "outlined" ? BTN_LIGHT : BTN_DARK;
 // Канон secondaryButton — рендер ТОЛЬКО при непустом тексте, рядом в ряд gap-3, light.
@@ -130,7 +155,7 @@ const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 // Дефолт/пусто = 'false' → плашки нет → рендер байт-в-байт прежним строкам.
 const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
-	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]"
+	? ` rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]`
 	: "";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений) —
@@ -169,7 +194,7 @@ const buttonsJustifyCls = p.alignment === "right" ? "justify-end" : p.alignment 
 const textColCls =
 	`satin-bleed-left order-2 flex ${vJustifyCls} py-12 pr-4 md:order-1 ${heroHeightCls} ${vPadCls} md:pr-0`;
 const blockCls =
-	[hItemsCls, "flex max-w-[420px] flex-col", alignItemsCls, "gap-6", textAlignCls]
+	[hItemsCls, `flex ${panelMaxWCls} flex-col`, alignItemsCls, panelGapCls, textAlignCls]
 		.filter(Boolean)
 		.join(" ") + boxedCls;
 const rowJustifyCls = buttonsJustifyCls;

@@ -111,6 +111,32 @@ const heroHeightCls = {
 	small: "h-[180px] sm:h-[240px] lg:h-[320px]",
 }[heroSize];
 
+// «Размер» (p.size) масштабирует не только высоту полотна, но и подложку-контейнер
+// (max-w/gap/padding) + CTA-кнопку — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
+// героя НЕ трогаем (у них свои поля heading.size/text.size). large = ТЕКУЩИЕ значения
+// верстальщика flux байт-в-байт (max-w-[520px], gap-6 lg:gap-10, p-6 md:p-8, кнопка
+// h-14 px-4 text-[16px]). Паттерн эталона rose Hero.astro.
+const panelMaxWCls = {
+	large: "max-w-[520px]",
+	medium: "max-w-[460px]",
+	small: "max-w-[380px]",
+}[heroSize];
+const panelGapCls = {
+	large: "gap-6 lg:gap-10",
+	medium: "gap-5 lg:gap-8",
+	small: "gap-4 lg:gap-6",
+}[heroSize];
+const panelPadCls = {
+	large: "p-6 md:p-8",
+	medium: "p-5 md:p-6",
+	small: "p-4 md:p-5",
+}[heroSize];
+const ctaSizeCls = {
+	large: "h-14 px-4 text-[16px]",
+	medium: "h-[46px] px-[13px] text-[13px]",
+	small: "h-9 px-2.5 text-[11px]",
+}[heroSize];
+
 // Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не
 // подставляем дефолт «О нас», когда secondaryButton/aboutText не заданы.
 // Пустой текст заданного пропа также скрывает. Legacy flat aboutText/aboutLink поддержаны.
@@ -132,7 +158,7 @@ const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 // На светлой плашке белый текст flux не читается → переключаем на тёмный схемы.
 const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
-	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
+	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
@@ -184,7 +210,7 @@ const align = p.alignment === "center" || p.alignment === "right" ? p.alignment 
 const alignItemsCls = align === "right" ? "items-end" : align === "center" ? "items-center" : "items-start"; // ВЫРАВНИВАНИЕ
 const textAlignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 const buttonsJustifyCls = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
-const contentCls = `flex max-w-[520px] flex-col gap-6 lg:gap-10 ${alignItemsCls}${boxedCls}`;
+const contentCls = `flex ${panelMaxWCls} flex-col ${panelGapCls} ${alignItemsCls}${boxedCls}`;
 
 // Канон buttonStyle solid|outlined для основной кнопки. ЭТАЛОН верстальщика
 // (Hero.astro:59) = СПЛОШНАЯ ЧЁРНАЯ кнопка: h-14, bg-black, белый текст,
@@ -194,12 +220,11 @@ const contentCls = `flex max-w-[520px] flex-col gap-6 lg:gap-10 ${alignItemsCls}
 // прозрачном). Радиус остаётся токеном схемы (дефолт 6px = эталон).
 const ctaBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-black transition-colors hover:bg-black/5"
-		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
+		? `inline-flex w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`
+		: `inline-flex w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black font-roboto-flex font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 ${ctaSizeCls}`;
 // Вторая кнопка — outlined в том же чёрном языке эталона (h-14, font-roboto-flex,
 // uppercase); рендерится ТОЛЬКО когда мерчант задал secondaryButton (условие ниже).
-const secondaryBtnCls =
-	"inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-black transition-colors hover:bg-black/5";
+const secondaryBtnCls = `inline-flex w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне

@@ -99,6 +99,30 @@ const heroHeightCls = {
 	small: "min-h-[min(30svh,210px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
 }[heroSize];
 
+// «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
+// (max-w/gap/padding) + кнопку — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
+// героя НЕ трогаем (у них свои поля heading.size/text.size).
+const panelMaxWCls = {
+	large: "max-w-[540px] md:max-w-[640px]",
+	medium: "max-w-[460px] md:max-w-[540px]",
+	small: "max-w-[380px] md:max-w-[440px]",
+}[heroSize];
+const panelGapCls = {
+	large: "gap-6 sm:gap-10",
+	medium: "gap-5 sm:gap-8",
+	small: "gap-4 sm:gap-6",
+}[heroSize];
+const panelPadCls = {
+	large: "p-6 md:p-10",
+	medium: "p-5 md:p-8",
+	small: "p-4 md:p-6",
+}[heroSize];
+const ctaSizeCls = {
+	large: "h-10 min-h-10 min-w-[120px] px-3 py-2.5 text-[14px] sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]",
+	medium: "h-10 min-h-10 min-w-[110px] px-3 py-2.5 text-[13px] sm:h-[46px] sm:min-h-[46px] sm:min-w-[140px] sm:px-5 sm:py-[9px] sm:text-[14px] md:text-[15px]",
+	small: "h-9 min-h-9 min-w-[100px] px-2.5 py-2 text-[12px] sm:h-10 sm:min-h-10 sm:min-w-[120px] sm:px-4 sm:py-2 sm:text-[13px] md:text-[14px]",
+}[heroSize];
+
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
@@ -119,7 +143,7 @@ const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 // переключаем заголовок/текст на тёмный цвет схемы ([&_h1]/[&_p] override).
 const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
-	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
+	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
@@ -161,10 +185,11 @@ const buttonsJustifyCls = p.alignment === "left" ? "justify-start" : p.alignment
 
 // Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
 // прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
+const ctaBaseCls = `inline-flex w-auto items-center justify-center rounded font-manrope font-normal leading-none transition-opacity hover:opacity-90 sm:rounded-[var(--radius-button,6px)] ${ctaSizeCls}`;
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-bg,255_255_255))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
-		: "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
+		? `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`
+		: `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`;
 
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
 // secondaryButton кнопки встают рядом (row) с зазором манеры.
@@ -301,7 +326,7 @@ const paddingStyle = p.padding
 		<div
 			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadCls}`}
 		>
-			<div class={`flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-6 sm:gap-10 md:max-w-[640px]${boxedCls}`}>
+			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
 					<h1
 						id="hero-title"

@@ -143,6 +143,14 @@ const vPos = posRaw.startsWith("top")
 			: ""; // пусто = дефолт (низ)
 const hPos = posRaw.endsWith("left") ? "left" : posRaw.endsWith("right") ? "right" : "center";
 const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+// Вертикальный паддинг overlay: для позиции «центр» СИММЕТРИЧНЫЙ, иначе asymmetric
+// pt-28/pb-10 (112/40) центрирует контент в перекошенном боксе → он уезжает вниз
+// на ~36px = «ниже центра». Верх/низ оставляем asymmetric (верх отодвигает контент
+// от края, низ держит нижний отступ). Одинаково mobile+desktop.
+const vPadCls =
+	vPos === "middle"
+		? "py-10 sm:py-12 md:py-16"
+		: "pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center";
 // alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
 // Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
@@ -291,7 +299,7 @@ const paddingStyle = p.padding
 		class={`relative w-full ${heroHeightCls}`}
 	>
 		<div
-			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]`}
+			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadCls}`}
 		>
 			<div class={`flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-6 sm:gap-10 md:max-w-[640px]${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>

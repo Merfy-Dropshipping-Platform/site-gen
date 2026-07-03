@@ -36,6 +36,17 @@ import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
 
+// Версия для cache-bust превью-скриптов. ОБЯЗАНА меняться на каждый деплой.
+// gateway отдаёт /__theme/*.js с max-age=3600 БЕЗ content-хэша → превью-iframe
+// конструктора держит СТАРЫЙ бандл (cart-store.js) до часа (hard-refresh НЕ чистит
+// iframe-субресурсы) → юзер видит старое поведение checkout после деплоя (доказано:
+// deployed-бандл содержит reconcile, но у юзера мелькает старая сводка). ?v=<версия>
+// = уникальный URL → браузер обходит кэш. SOURCE_COMMIT (Coolify, если задан) меняется
+// per-commit; иначе Date.now() на загрузке модуля = момент старта процесса, а контейнер
+// РЕСТАРТУЕТ на каждый деплой → значение свежее. НЕ использовать COOLIFY_RESOURCE_UUID —
+// он КОНСТАНТА на приложение (не менялся бы между деплоями → кэш никогда не сбросить).
+const PREVIEW_ASSET_VERSION = (process.env.SOURCE_COMMIT || String(Date.now())).slice(0, 12);
+
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
  * used by the iframe's `update-block` postMessage handler in the constructor
@@ -678,6 +689,12 @@ export class PreviewController {
     productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
+    // Cache-bust плоских превью-скриптов (cart-store.js, cart-api.js): gateway кэширует
+    // /__theme/*.js на час без хэша → iframe держит старый бандл. ?v=<деплой> = свежий.
+    html = html.replace(
+      /(\/__theme\/[a-z0-9_-]+\/scripts\/[a-z0-9._-]+\.js)"/gi,
+      `$1?v=${PREVIEW_ASSET_VERSION}"`,
+    );
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
     // блочного скрипта, чтобы любая секция (в т.ч. 2+ одинаковых) находила свой
     // корень, а не «первую». Зеркалит live-инжект build.service.injectBlockRootHelper.

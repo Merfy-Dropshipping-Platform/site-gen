@@ -346,12 +346,31 @@ export function buildTokensCss(
     'body:has(footer):not(:has(main main)){min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}' +
     'body:has(footer):not(:has(main main))>main{flex:1 0 auto}';
 
+  // «Жирность заголовка / текста» (Типографика) — оживление слайдеров. Порты тем
+  // хардкодят font-weight по Figma (в т.ч. Tailwind `!font-normal` = !important),
+  // поэтому одной эмиссии --weight-* было мало — слайдер не влиял. Инжектим
+  // override ТОЛЬКО когда мерчант РЕАЛЬНО сдвинул слайдер (headingWeightSet /
+  // bodyWeightSet); иначе правило пустое → дефолтный вид тем байт-в-байт сохранён
+  // (default-preserving, как wishlistHideRule). Скоуп `main` — контент секций, НЕ
+  // header/footer/nav-хром. `[class]`-квалификатор поднимает специфичность до
+  // (0,1,2) > (0,1,0) у `!font-normal`, а !important перебивает !important-класс.
+  // Заголовок — все h1..h6; текст — параграфы <p> (кнопки/бейджи это <a>/<button>,
+  // не трогаем). Unlayered → перебивает @layer base { h*, p } из global.css тем.
+  const weightHeadingRule = headingWeightSet
+    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class]{font-weight:var(--weight-heading) !important}'
+    : '';
+  const weightBodyRule = bodyWeightSet
+    ? 'main p[class]{font-weight:var(--weight-body) !important}'
+    : '';
+
   return [
     rootRules,
     rootColorRules,
     schemeRules,
     wishlistHideRule,
     stickyFooterRule,
+    weightHeadingRule,
+    weightBodyRule,
   ]
     .filter(Boolean)
     .join('\n');

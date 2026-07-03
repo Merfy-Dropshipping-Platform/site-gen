@@ -31,6 +31,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { buildTokensCss } from "../themes/tokens-css";
+import { googleFontsHref } from "./constructor-theme-bridge";
 
 /**
  * Env-var flag for new assembly path.
@@ -665,10 +666,9 @@ async function applyThemeDefaultFonts(
   const families = new Set<string>();
   if (headingName) families.add(headingName);
   if (bodyName) families.add(bodyName);
-  const familyParams = [...families]
-    .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
-    .join("&");
-  const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=swap`;
+  // Реальные веса per-font + display=swap (css2 400-ит `wght@100..900` для
+  // узко-осных/невариативных шрифтов → шрифт не грузился).
+  const newUrl = googleFontsHref([...families]);
 
   const layoutPath = path.join(outputDir, "src", "layouts", "BaseLayout.astro");
   try {

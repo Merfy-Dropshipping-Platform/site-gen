@@ -77,6 +77,15 @@ export interface ConstructorThemeSettings {
 interface FontDef {
   name: string;
   cssFamily: string;
+  /**
+   * Доступные веса шрифта на Google Fonts (для css2 `wght@` списка). css2
+   * ОТКЛОНЯЕТ запрос веса/диапазона, которого у шрифта нет (HTTP 400 → весь
+   * `<link>` падает → шрифт не грузится). Раньше все URL слали `wght@100..900`,
+   * что 400-ило почти все шрифты (Comfortaa 300..700, невариативные и т.п.).
+   * Значения выверены против css2 API (все → 200). undefined → грузим только
+   * дефолт (`family=Name` без wght), тоже валидно.
+   */
+  weights?: number[];
 }
 
 /**
@@ -89,40 +98,103 @@ interface FontDef {
 // а не по варианту "<Family> Variable". Если использовать "Comfortaa Variable"
 // в CSS — браузер не находит шрифт и сваливается в sans-serif fallback.
 // Поэтому везде имя без " Variable".
+// Полный набор шрифтов конструктора (FONT_DEFINITIONS, 44 шт.) + sites-only
+// дефолты тем. `weights` выверены против css2 API. Раньше карта sites была
+// неполной (~27 шрифтов конструктора отсутствовали) → resolveFontName возвращал
+// сырой ключ (lowercase) → неверные CSS-имя и URL → шрифт не применялся.
 const FONT_FAMILIES: Record<string, FontDef> = {
-  inter: { name: "Inter", cssFamily: '"Inter", sans-serif' },
-  manrope: { name: "Manrope", cssFamily: '"Manrope", sans-serif' },
-  roboto: { name: "Roboto", cssFamily: '"Roboto", sans-serif' },
-  "roboto-flex": { name: "Roboto Flex", cssFamily: '"Roboto Flex", sans-serif' },
-  "roboto-condensed": { name: "Roboto Condensed", cssFamily: '"Roboto Condensed", sans-serif' },
-  raleway: { name: "Raleway", cssFamily: '"Raleway", sans-serif' },
-  "open-sans": { name: "Open Sans", cssFamily: '"Open Sans", sans-serif' },
-  montserrat: { name: "Montserrat", cssFamily: '"Montserrat", sans-serif' },
+  inter: { name: "Inter", cssFamily: '"Inter", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  manrope: { name: "Manrope", cssFamily: '"Manrope", sans-serif', weights: [200, 300, 400, 500, 600, 700, 800] },
+  roboto: { name: "Roboto", cssFamily: '"Roboto", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "roboto-flex": { name: "Roboto Flex", cssFamily: '"Roboto Flex", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] },
+  "roboto-condensed": { name: "Roboto Condensed", cssFamily: '"Roboto Condensed", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  raleway: { name: "Raleway", cssFamily: '"Raleway", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  oswald: { name: "Oswald", cssFamily: '"Oswald", sans-serif', weights: [200, 300, 400, 500, 600, 700] },
+  "open-sans": { name: "Open Sans", cssFamily: '"Open Sans", sans-serif', weights: [300, 400, 500, 600, 700, 800] },
+  montserrat: { name: "Montserrat", cssFamily: '"Montserrat", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  merriweather: { name: "Merriweather", cssFamily: '"Merriweather", serif', weights: [300, 400, 700, 900] },
+  lora: { name: "Lora", cssFamily: '"Lora", serif', weights: [400, 500, 600, 700] },
+  exo: { name: "Exo", cssFamily: '"Exo", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "exo-2": { name: "Exo 2", cssFamily: '"Exo 2", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  barlow: { name: "Barlow", cssFamily: '"Barlow", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  urbanist: { name: "Urbanist", cssFamily: '"Urbanist", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  comfortaa: { name: "Comfortaa", cssFamily: '"Comfortaa", sans-serif', weights: [300, 400, 500, 600, 700] },
+  unbounded: { name: "Unbounded", cssFamily: '"Unbounded", sans-serif', weights: [200, 300, 400, 500, 600, 700, 800, 900] },
+  "advent-pro": { name: "Advent Pro", cssFamily: '"Advent Pro", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "alumni-sans": { name: "Alumni Sans", cssFamily: '"Alumni Sans", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "news-cycle": { name: "News Cycle", cssFamily: '"News Cycle", sans-serif', weights: [400, 700] },
+  bitter: { name: "Bitter", cssFamily: '"Bitter", serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "cormorant-infant": { name: "Cormorant Infant", cssFamily: '"Cormorant Infant", serif', weights: [300, 400, 500, 600, 700] },
+  cuprum: { name: "Cuprum", cssFamily: '"Cuprum", sans-serif', weights: [400, 500, 600, 700] },
+  "ibm-plex-sans": { name: "IBM Plex Sans", cssFamily: '"IBM Plex Sans", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700] },
+  onest: { name: "Onest", cssFamily: '"Onest", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "pt-sans-narrow": { name: "PT Sans Narrow", cssFamily: '"PT Sans Narrow", sans-serif', weights: [400, 700] },
+  "pt-serif": { name: "PT Serif", cssFamily: '"PT Serif", serif', weights: [400, 700] },
+  tinos: { name: "Tinos", cssFamily: '"Tinos", serif', weights: [400, 700] },
+  arsenal: { name: "Arsenal", cssFamily: '"Arsenal", sans-serif', weights: [400, 700] },
+  tektur: { name: "Tektur", cssFamily: '"Tektur", sans-serif', weights: [400, 500, 600, 700, 800, 900] },
+  "great-vibes": { name: "Great Vibes", cssFamily: '"Great Vibes", cursive', weights: [400] },
+  "sofia-sans": { name: "Sofia Sans", cssFamily: '"Sofia Sans", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "sofia-sans-condensed": { name: "Sofia Sans Condensed", cssFamily: '"Sofia Sans Condensed", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "sofia-sans-extra-condensed": { name: "Sofia Sans Extra Condensed", cssFamily: '"Sofia Sans Extra Condensed", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  "ysabeau-infant": { name: "Ysabeau Infant", cssFamily: '"Ysabeau Infant", sans-serif', weights: [100, 200, 300, 400, 500, 600, 700, 800, 900] },
+  oranienbaum: { name: "Oranienbaum", cssFamily: '"Oranienbaum", serif', weights: [400] },
+  mulish: { name: "Mulish", cssFamily: '"Mulish", sans-serif', weights: [200, 300, 400, 500, 600, 700, 800, 900] },
+  "viaoda-libre": { name: "Viaoda Libre", cssFamily: '"Viaoda Libre", serif', weights: [400] },
+  "source-serif-4": { name: "Source Serif 4", cssFamily: '"Source Serif 4", serif', weights: [200, 300, 400, 500, 600, 700, 800, 900] },
+  "playfair-display": { name: "Playfair Display", cssFamily: '"Playfair Display", serif', weights: [400, 500, 600, 700, 800, 900] },
+  philosopher: { name: "Philosopher", cssFamily: '"Philosopher", sans-serif', weights: [400, 700] },
+  andika: { name: "Andika", cssFamily: '"Andika", sans-serif', weights: [400, 700] },
+  "tenor-sans": { name: "Tenor Sans", cssFamily: '"Tenor Sans", sans-serif', weights: [400] },
+  ubuntu: { name: "Ubuntu", cssFamily: '"Ubuntu", sans-serif', weights: [300, 400, 500, 700] },
+  "ubuntu-condensed": { name: "Ubuntu Condensed", cssFamily: '"Ubuntu Condensed", sans-serif', weights: [400] },
+  caveat: { name: "Caveat", cssFamily: '"Caveat", cursive', weights: [400, 500, 600, 700] },
+  bellota: { name: "Bellota", cssFamily: '"Bellota", sans-serif', weights: [300, 400, 700] },
+  "yanone-kaffeesatz": { name: "Yanone Kaffeesatz", cssFamily: '"Yanone Kaffeesatz", sans-serif', weights: [200, 300, 400, 500, 600, 700] },
+  assistant: { name: "Assistant", cssFamily: '"Assistant", sans-serif', weights: [200, 300, 400, 500, 600, 700, 800] },
+  // sites-only (дефолты тем; не среди 44 конструктора). Веса не выверены →
+  // undefined → грузим `family=Name` (дефолт 400, всегда валидно).
   nunito: { name: "Nunito", cssFamily: '"Nunito", sans-serif' },
   "nunito-sans": { name: "Nunito Sans", cssFamily: '"Nunito Sans", sans-serif' },
   "pt-sans": { name: "PT Sans", cssFamily: '"PT Sans", sans-serif' },
   "source-sans-3": { name: "Source Sans 3", cssFamily: '"Source Sans 3", sans-serif' },
-  urbanist: { name: "Urbanist", cssFamily: '"Urbanist", sans-serif' },
-  barlow: { name: "Barlow", cssFamily: '"Barlow", sans-serif' },
   "dm-sans": { name: "DM Sans", cssFamily: '"DM Sans", sans-serif' },
-  comfortaa: { name: "Comfortaa", cssFamily: '"Comfortaa", sans-serif' },
-  "playfair-display": { name: "Playfair Display", cssFamily: '"Playfair Display", serif' },
   "cormorant-garamond": { name: "Cormorant Garamond", cssFamily: '"Cormorant Garamond", serif' },
   "eb-garamond": { name: "EB Garamond", cssFamily: '"EB Garamond", serif' },
-  merriweather: { name: "Merriweather", cssFamily: '"Merriweather", serif' },
-  lora: { name: "Lora", cssFamily: '"Lora", serif' },
-  "pt-serif": { name: "PT Serif", cssFamily: '"PT Serif", serif' },
   "space-grotesk": { name: "Space Grotesk", cssFamily: '"Space Grotesk", sans-serif' },
   "josefin-sans": { name: "Josefin Sans", cssFamily: '"Josefin Sans", sans-serif' },
-  "caveat": { name: "Caveat", cssFamily: '"Caveat", cursive' },
   "bad-script": { name: "Bad Script", cssFamily: '"Bad Script", cursive' },
-  arsenal: { name: "Arsenal", cssFamily: '"Arsenal", sans-serif' },
-  bitter: { name: "Bitter", cssFamily: '"Bitter", serif' },
-  "exo-2": { name: "Exo 2", cssFamily: '"Exo 2", sans-serif' },
   "kelly-slab": { name: "Kelly Slab", cssFamily: '"Kelly Slab", serif' },
-  tinos: { name: "Tinos", cssFamily: '"Tinos", serif' },
   involve: { name: "Involve", cssFamily: '"Involve", sans-serif' },
 };
+
+// Имя семейства → веса (для сборки css2 URL по извлечённому из CSS имени).
+const WEIGHTS_BY_NAME: Record<string, number[]> = Object.fromEntries(
+  Object.values(FONT_FAMILIES)
+    .filter((f) => Array.isArray(f.weights) && f.weights.length > 0)
+    .map((f) => [f.name, f.weights as number[]]),
+);
+
+/**
+ * Собрать корректный Google Fonts css2 href для семейств по ИМЕНАМ. Для каждого
+ * шрифта — реальные веса из WEIGHTS_BY_NAME (иначе `family=Name` без wght, тоже
+ * 200). display=swap — чтобы выбранный шрифт реально применялся (optional не
+ * подменял фолбэк при первой загрузке). Пустой ввод → пустая строка.
+ */
+export function googleFontsHref(names: string[]): string {
+  const uniq = [...new Set(names.map((n) => (n ?? "").trim()).filter(Boolean))];
+  if (uniq.length === 0) return "";
+  const params = uniq
+    .map((name) => {
+      const fam = name.replace(/ /g, "+");
+      const weights = WEIGHTS_BY_NAME[name];
+      return weights && weights.length
+        ? `family=${fam}:wght@${[...weights].sort((a, b) => a - b).join(";")}`
+        : `family=${fam}`;
+    })
+    .join("&");
+  return `https://fonts.googleapis.com/css2?${params}&display=swap`;
+}
 
 function resolveFontFamily(fontKey: string): string {
   return FONT_FAMILIES[fontKey]?.cssFamily ?? `"${fontKey}", sans-serif`;
@@ -161,24 +233,14 @@ function resolveFontName(fontKey: string): string {
 }
 
 /**
- * Generate a Google Fonts URL for the given font keys.
+ * Generate a Google Fonts URL for the given font keys. Реальные веса per-font +
+ * display=swap через googleFontsHref (см. его комментарий — почему не 100..900).
  */
 export function generateGoogleFontsUrl(
   headingFont: string,
   bodyFont: string,
 ): string {
-  const fonts = new Set<string>();
-  const headingName = resolveFontName(headingFont);
-  const bodyName = resolveFontName(bodyFont);
-
-  fonts.add(headingName);
-  fonts.add(bodyName);
-
-  const families = [...fonts]
-    .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
-    .join("&");
-
-  return `https://fonts.googleapis.com/css2?${families}&display=optional`;
+  return googleFontsHref([resolveFontName(headingFont), resolveFontName(bodyFont)]);
 }
 
 /**

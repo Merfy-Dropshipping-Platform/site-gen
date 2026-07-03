@@ -24,7 +24,7 @@ import {
   type MerchantSettings,
   type ThemeDefaults,
 } from "./tokens-generator";
-import { generateGoogleFontsUrl } from "./constructor-theme-bridge";
+import { generateGoogleFontsUrl, googleFontsHref } from "./constructor-theme-bridge";
 import {
   generateProductPage,
   generateCollectionPage,
@@ -562,10 +562,9 @@ export async function buildScaffold(
         const families = new Set<string>();
         if (headingName) families.add(headingName);
         if (bodyName) families.add(bodyName);
-        const familyParams = [...families]
-          .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
-          .join("&");
-        const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=optional`;
+        // Реальные веса per-font + display=swap (css2 400-ит `wght@100..900`
+        // для узко-осных/невариативных шрифтов → шрифт не грузился).
+        const newUrl = googleFontsHref([...families]);
         // Replace existing Google Fonts import in global.css
         globalCss = globalCss.replace(
           /@import url\("https:\/\/fonts\.googleapis\.com\/css2\?[^"]+"\);/,

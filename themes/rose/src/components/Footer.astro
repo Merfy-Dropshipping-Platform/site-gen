@@ -71,10 +71,12 @@ const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
 // Классы литералами (Tailwind JIT).
 const colsJustifyCls = _ca === "center" ? "lg:justify-center lg:gap-24" : _ca === "right" ? "lg:justify-end" : "lg:justify-between";
 const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-[200px]";
-const colInnerCls = _ca === "right" ? "items-end text-right" : "";
-const contactGroupCls = _ca === "center" ? "" : _ca === "right" ? "items-end text-right" : "lg:items-end lg:text-right";
-const contactTextCls = _ca === "right" ? "lg:text-right" : _ca === "center" ? "" : "lg:text-right";
-const contactJustifyCls = _ca === "right" ? "lg:justify-end" : _ca === "center" ? "" : "lg:justify-end";
+// center = центрированный блок колонок И контент ВНУТРИ блоков по центру (юзер: «когда по
+// центру, и контент блоков был по центру»). right = к правому краю. left (дефолт) = слева/справа.
+const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
+const contactGroupCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "lg:items-end lg:text-right";
+const contactTextCls = _ca === "center" ? "text-center" : "lg:text-right";
+const contactJustifyCls = _ca === "center" ? "justify-center" : "lg:justify-end";
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только

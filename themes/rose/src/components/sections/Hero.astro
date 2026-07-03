@@ -200,6 +200,15 @@ const ctaCls =
 	p.buttonStyle === "outlined"
 		? `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`
 		: `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`;
+// Вторая кнопка = ТОТ ЖЕ каркас ctaBaseCls (один размер/радиус/шрифт/паддинг,
+// масштабируется «Размером» — раньше была отдельная захардкоженная строка + свои
+// button-2 токены → «другие стили»). Заливка ПРОТИВОПОЛОЖНА первой в ТОМ ЖЕ цвете
+// (button-1): первая залита → вторая контур того же цвета, и наоборот. Согласованная
+// пара «главная + второстепенная», а не отдельный button-2 (белый-на-белом).
+const secondaryCtaCls =
+	p.buttonStyle === "outlined"
+		? `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`
+		: `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`;
 
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
 // secondaryButton кнопки встают рядом (row) с зазором манеры.
@@ -376,7 +385,7 @@ const paddingStyle = p.padding
 						secondaryText && (
 							<a
 								href={secondaryLink}
-								class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+								class={secondaryCtaCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"

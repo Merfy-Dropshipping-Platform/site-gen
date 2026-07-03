@@ -64,6 +64,13 @@ const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-cent
 const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
 const nlSectionAlignCls = _AL_ITEMS[_ca];
 const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
+// «Выравнивание» распространяется и на секцию КОЛОНОК (юзер: «колонки не выравниваются»).
+// left (дефолт) = текущая раскладка верстальщика (justify-between, контакты справа на lg) —
+// без регрессии существующих сайтов; center/right = вся секция колонок к центру/правому краю.
+// Классы литералами (Tailwind JIT).
+const colsAlignItemsText = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
+const colsJustifyCls = _ca === "center" ? "lg:justify-center" : _ca === "right" ? "lg:justify-end" : "lg:justify-between";
+const contactAlignCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "lg:items-end lg:text-right";
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только
@@ -209,10 +216,10 @@ const footerSchemeClass =
 			)}
 
 			<section
-				class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between"
+				class={`flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls} ${colsAlignItemsText}`}
 				aria-label="Навигация по сайту"
 			>
-				<div class="flex flex-col gap-10 sm:flex-row sm:gap-[200px]">
+				<div class={`flex flex-col gap-10 sm:flex-row sm:gap-[200px] ${colsAlignItemsText}`}>
 					<ul
 						class="flex flex-col gap-3"
 						role="list"
@@ -265,7 +272,7 @@ const footerSchemeClass =
 				</div>
 
 				<div
-					class="flex flex-col gap-6 lg:max-w-[min(100%,430px)] lg:items-end lg:text-right"
+					class={`flex flex-col gap-6 lg:max-w-[min(100%,430px)] ${contactAlignCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="994"
 					data-puck-subsection-field="socialColumn"

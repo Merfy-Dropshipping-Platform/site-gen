@@ -364,6 +364,21 @@ export function buildTokensCss(
     ? 'main p[class]{font-weight:var(--weight-body) !important}'
     : '';
 
+  // «Шрифт заголовка / текста» (Типографика) — применение во ВСЕХ секциях. Часть
+  // портов верстала заголовки секций/карточек через body-класс `font-manrope`
+  // (`.font-manrope → var(--font-body)`) → эти заголовки следовали за «Шрифтом
+  // ТЕКСТА», а не заголовка (эталон — PopularProducts, где заголовки на
+  // --font-heading). Форсим роль по семантике тега: h1..h6 → --font-heading,
+  // текст (p/li/button/label) → --font-body. Гейт на «мерчант задал шрифт»
+  // (headingFontSet/bodyFontSet) → дефолтный вид тем сохранён байт-в-байт.
+  // Специфичность (0,1,2)+!important перебивает `font-manrope`/литеральные классы.
+  const fontHeadingRule = headingFontSet
+    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class]{font-family:var(--font-heading) !important}'
+    : '';
+  const fontBodyRule = bodyFontSet
+    ? 'main p[class],main li[class],main button[class],main label[class]{font-family:var(--font-body) !important}'
+    : '';
+
   return [
     rootRules,
     rootColorRules,
@@ -372,6 +387,8 @@ export function buildTokensCss(
     stickyFooterRule,
     weightHeadingRule,
     weightBodyRule,
+    fontHeadingRule,
+    fontBodyRule,
   ]
     .filter(Boolean)
     .join('\n');

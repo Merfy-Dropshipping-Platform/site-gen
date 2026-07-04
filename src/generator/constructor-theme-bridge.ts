@@ -196,7 +196,7 @@ export function googleFontsHref(names: string[]): string {
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 }
 
-function resolveFontFamily(fontKey: string): string {
+export function resolveFontFamily(fontKey: string): string {
   return FONT_FAMILIES[fontKey]?.cssFamily ?? `"${fontKey}", sans-serif`;
 }
 

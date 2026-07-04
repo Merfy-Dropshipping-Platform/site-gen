@@ -19,6 +19,7 @@
  */
 import { getThemeManifest } from './theme-manifest-loader';
 import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-defaults';
+import { resolveFontFamily } from '../generator/constructor-theme-bridge';
 
 // Список tokens которые emit'ятся явно в rootRules (с merchant cascade).
 // Catch-all iterator ниже пропускает их, чтобы не было дубликата.
@@ -390,15 +391,12 @@ function toPx(v: unknown, fallback: number): string {
 
 function fontFamily(v: unknown, fallback: string): string {
   if (typeof v !== 'string' || !v) return fallback;
-  // Known constructor keys → font stacks.
-  const known: Record<string, string> = {
-    comfortaa: '"Comfortaa", system-ui, sans-serif',
-    manrope: '"Manrope", system-ui, sans-serif',
-    inter: '"Inter", system-ui, sans-serif',
-    'playfair-display': '"Playfair Display", Georgia, serif',
-    roboto: '"Roboto", system-ui, sans-serif',
-  };
-  return known[v] ?? `"${v}", ${fallback}`;
+  // Resolve ALL 44 constructor font keys → proper CSS family via the shared
+  // map (constructor-theme-bridge). Раньше здесь был локальный список из 5
+  // шрифтов (comfortaa/manrope/inter/playfair/roboto), и любой другой ключ
+  // (e.g. 'exo-2') отдавался как есть → font-family:"exo-2" (несуществующее
+  // семейство) → браузер сваливался в фолбэк → шрифт мерчанта не применялся.
+  return resolveFontFamily(v);
 }
 
 /**

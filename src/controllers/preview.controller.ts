@@ -27,6 +27,7 @@ import { applyFooterData } from '../utils/footer-data';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
+import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
@@ -645,7 +646,7 @@ export class PreviewController {
       throw new BadRequestException('themeSettings required');
     }
     try {
-      const css = buildTokensCss(body.themeSettings ?? {}, body.themeId ?? null);
+      const css = this.previewTokensCss(body.themeSettings ?? {}, body.themeId ?? null);
       res.type('text/css').send(css);
     } catch (err: unknown) {
       const e = err as Error;
@@ -708,11 +709,33 @@ export class PreviewController {
     };
   }
 
+  /**
+   * tokens.css для превью + `@import` шрифтов мерчанта. В превью Google-линк
+   * статический (BaseLayout грузит дефолтные шрифты темы), поэтому ВЫБРАННЫЙ
+   * мерчантом шрифт (headingFont/bodyFont) сам не подгружался → --font-*
+   * объявлен, но семейство не загружено → системный фолбэк (и вес «плыл»).
+   * `@import` в содержимом __merfy_tokens_css грузит нужные шрифты и при
+   * первом рендере, и при hot-swap (смена шрифта постом /preview/tokens-css).
+   * Live не затрагивается — там свой билд-путь (assemble-from-packages).
+   */
+  private previewTokensCss(themeSettings: unknown, themeId: string | null): string {
+    const css = buildTokensCss(
+      (themeSettings as Record<string, unknown>) ?? {},
+      themeId,
+    );
+    const s = themeSettings as { headingFont?: unknown; bodyFont?: unknown } | null;
+    const hf = typeof s?.headingFont === 'string' ? s.headingFont : '';
+    const bf = typeof s?.bodyFont === 'string' ? s.bodyFont : '';
+    if (!hf && !bf) return css;
+    const url = generateGoogleFontsUrl(hf, bf);
+    return url ? `@import url("${url}");\n${css}` : css;
+  }
+
   private tokensCssFromSettings(
     data: Record<string, unknown>,
     themeId: string | null,
   ): string {
-    return buildTokensCss(data.themeSettings, themeId);
+    return this.previewTokensCss(data.themeSettings, themeId);
   }
 
   /** Инжекты в HTML превью: shopId, DaData-токен, siteId для гидрации товаров. */
@@ -969,7 +992,7 @@ export class PreviewController {
   /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +
    * мини-слушатель update-tokens (selection-агента у блоба нет и не нужно). */
   private injectTokensIntoBlobPage(htmlIn: string, siteId: string, themeId: string, themeSettings: unknown): string {
-    const css = buildTokensCss(themeSettings ?? {}, themeId);
+    const css = this.previewTokensCss(themeSettings ?? {}, themeId);
     const listener = `window.addEventListener('message',function(ev){if(!ev.data||ev.data.type!=='update-tokens')return;fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})}).then(function(r){return r.text()}).then(function(t){var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;}).catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
     htmlIn = injectTokensCssIntoHtml(htmlIn, css);
     return htmlIn.replace(/<\/head>/i, `<script>${listener}</script></head>`);

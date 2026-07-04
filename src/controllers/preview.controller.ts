@@ -26,8 +26,7 @@ import {
 import { applyFooterData } from '../utils/footer-data';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
-import { buildTokensCss } from '../themes/tokens-css';
-import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
+import { previewTokensCssWithFonts } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
@@ -719,16 +718,7 @@ export class PreviewController {
    * Live не затрагивается — там свой билд-путь (assemble-from-packages).
    */
   private previewTokensCss(themeSettings: unknown, themeId: string | null): string {
-    const css = buildTokensCss(
-      (themeSettings as Record<string, unknown>) ?? {},
-      themeId,
-    );
-    const s = themeSettings as { headingFont?: unknown; bodyFont?: unknown } | null;
-    const hf = typeof s?.headingFont === 'string' ? s.headingFont : '';
-    const bf = typeof s?.bodyFont === 'string' ? s.bodyFont : '';
-    if (!hf && !bf) return css;
-    const url = generateGoogleFontsUrl(hf, bf);
-    return url ? `@import url("${url}");\n${css}` : css;
+    return previewTokensCssWithFonts(themeSettings, themeId);
   }
 
   private tokensCssFromSettings(

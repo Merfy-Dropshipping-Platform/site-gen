@@ -19,7 +19,32 @@
  */
 import { getThemeManifest } from './theme-manifest-loader';
 import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-defaults';
-import { resolveFontFamily } from '../generator/constructor-theme-bridge';
+import { resolveFontFamily, generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
+
+/**
+ * Превью-обёртка над buildTokensCss: добавляет `@import url(<шрифты мерчанта>)`
+ * перед :root, чтобы ВЫБРАННЫЙ мерчантом шрифт реально загрузился в превью
+ * (Google-линк темы в превью статический — грузит только дефолтные шрифты, а
+ * headingFont/bodyFont мерчанта не подхватывались → --font-* объявлен, но
+ * семейство не загружено → системный фолбэк, вес «плыл»). Применяется во всех
+ * превью-путях (первичный рендер + hot-swap). Live НЕ использует — там шрифты
+ * грузятся в BaseLayout билд-путём. Гейт на «шрифт задан».
+ */
+export function previewTokensCssWithFonts(
+  themeSettings: unknown,
+  themeId: string | null,
+): string {
+  const css = buildTokensCss(
+    (themeSettings as Record<string, unknown>) ?? {},
+    themeId,
+  );
+  const s = themeSettings as { headingFont?: unknown; bodyFont?: unknown } | null;
+  const hf = typeof s?.headingFont === 'string' ? s.headingFont : '';
+  const bf = typeof s?.bodyFont === 'string' ? s.bodyFont : '';
+  if (!hf && !bf) return css;
+  const url = generateGoogleFontsUrl(hf, bf);
+  return url ? `@import url("${url}");\n${css}` : css;
+}
 
 // Список tokens которые emit'ятся явно в rootRules (с merchant cascade).
 // Catch-all iterator ниже пропускает их, чтобы не было дубликата.

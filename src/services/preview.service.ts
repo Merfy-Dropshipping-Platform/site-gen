@@ -1,7 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
-import { buildTokensCss } from '../themes/tokens-css';
+import { previewTokensCssWithFonts } from '../themes/tokens-css';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
@@ -494,7 +494,7 @@ export class PreviewService {
       blockSchemes: await Promise.all(input.blocks.map((b) => this.resolveBlockScheme(b.type, b.props, input.themeId))),
       assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
       titleOverride: input.titleOverride,
-      tokensCss: buildTokensCss(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
+      tokensCss: previewTokensCssWithFonts(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
     });
     if (composed === null) return null;
     // Агент конструктора (select/hot-replace/postMessage) — то, чего

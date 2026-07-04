@@ -373,7 +373,7 @@ export function buildTokensCss(
   // (headingFontSet/bodyFontSet) → дефолтный вид тем сохранён байт-в-байт.
   // Специфичность (0,1,2)+!important перебивает `font-manrope`/литеральные классы.
   const fontHeadingRule = headingFontSet
-    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class]{font-family:var(--font-heading) !important}'
+    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-family:var(--font-heading) !important}'
     : '';
   const fontBodyRule = bodyFontSet
     ? 'main p[class],main li[class],main button[class],main label[class]{font-family:var(--font-body) !important}'

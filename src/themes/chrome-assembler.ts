@@ -200,6 +200,16 @@ export function injectChromeIntoHtml(
         out = out.replace(re, () => target);
       }
     }
+    // Унификация хедера. Пред-собранные verbatim-страницы темы (account/*, login,
+    // register, verify, wishlist, legal, blog …) несут ДЕФОЛТНЫЙ хедер-юнит темы,
+    // а мерчантский <header> сюда доинъектирован. Мерчантский рендер приносит СВОЙ
+    // мобильный бургер-drawer (<div id="<тема>-burger">), но исходный дефолтный
+    // остаётся сиблингом → два <div id="X-burger"> с ОДИНАКОВЫМ id → бургер/скрипты
+    // хедера (getElementById) цепляются не туда, хедер «работает не как на главной».
+    // Оставляем ПЕРВЫЙ бургер (мерчантский, от инъекции), лишние удаляем. Composed-
+    // страницы (home/about/cart/catalog/product) собираются заново без дефолтного
+    // бургера → ≤1 бургер → no-op. Идемпотентно (повторный прогон → no-op).
+    out = dedupeThemeBurgerDrawers(out);
   }
 
   if (chrome.footerHtml) {
@@ -207,6 +217,47 @@ export function injectChromeIntoHtml(
   }
 
   return out;
+}
+
+/**
+ * Удаляет дубликаты мобильного бургер-drawer темы (<div id="<тема>-burger">…),
+ * оставляя первый. Балансировка <div>/</div> — точное удаление элемента без
+ * захвата соседей (HTML-парсера в проекте нет; regex по вложенным div ненадёжен).
+ * ≤1 бургер → без изменений.
+ */
+function dedupeThemeBurgerDrawers(html: string): string {
+  const BURGER_ID = /id="[a-z]+-burger"/gi;
+  let out = html;
+  // guard = число исходных совпадений (каждая итерация удаляет один) — анти-зацикл.
+  let guard = (out.match(BURGER_ID) || []).length;
+  while (guard-- > 0) {
+    const ids = [...out.matchAll(BURGER_ID)];
+    if (ids.length <= 1) break;
+    const dup = ids[ids.length - 1]!; // последний = дефолтный (мерчантский идёт первым)
+    const divStart = out.lastIndexOf('<div', dup.index);
+    if (divStart === -1) break;
+    const divEnd = matchingDivEnd(out, divStart);
+    if (divEnd === -1) break; // баланс не найден → не трогаем
+    out = out.slice(0, divStart) + out.slice(divEnd);
+  }
+  return out;
+}
+
+/**
+ * Индекс сразу ПОСЛЕ </div>, закрывающего <div>, начинающийся в startIdx
+ * (с учётом вложенности). -1, если баланс не найден.
+ */
+function matchingDivEnd(html: string, startIdx: number): number {
+  const TAG = /<div\b|<\/div>/gi;
+  TAG.lastIndex = startIdx;
+  let depth = 0;
+  let m: RegExpExecArray | null;
+  while ((m = TAG.exec(html)) !== null) {
+    if (m[0][1] === '/') depth--;
+    else depth++;
+    if (depth === 0) return m.index + m[0].length;
+  }
+  return -1;
 }
 
 /**

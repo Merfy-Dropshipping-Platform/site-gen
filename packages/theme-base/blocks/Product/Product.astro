@@ -261,20 +261,14 @@ const cartImage = view.gallery.hero?.src ?? '';
       data-photo-position={photoOnLeft ? 'left' : 'right'}
     >
       {/* MEDIA col. split раздвигается за счёт thumbs+main inline (auto-width).
-          Остальные макеты — ширина зависит от «Размер» (_size): medium=652px —
-          дефолт (как было при фикс-652 → ноль регрессии для существующих витрин),
-          small/large реально двигают фото. Раньше было захардкожено lg:w-[652px]
-          (a9b76a33), из-за чего «Размер» ничего не менял для галереи wrap-large.
-          Литералы Tailwind-классов — чтобы JIT их сгенерил. */}
+          Остальные макеты — ширина = --product-main-image-size, т.е. «Размер»:
+          440 / 552 / 640 (small/medium/large) — спек Figma 648:55733 (main image
+          440/552/640). Раньше было захардкожено lg:w-[652px] (a9b76a33), из-за чего
+          «Размер» не двигал галерею wrap-large. Внутренняя галерея (ProductGallery)
+          уже использует ту же переменную — колонка и main-image согласованы. */}
       <div class:list={[
         'w-full shrink-0',
-        layout === 'split'
-          ? 'lg:w-auto'
-          : _size === 'small'
-            ? 'lg:w-[520px]'
-            : _size === 'large'
-              ? 'lg:w-[784px]'
-              : 'lg:w-[652px]',
+        layout === 'split' ? 'lg:w-auto' : 'lg:w-[var(--product-main-image-size,552px)]',
       ]} data-product-images>
         <ProductGallery
           gallery={view.gallery}

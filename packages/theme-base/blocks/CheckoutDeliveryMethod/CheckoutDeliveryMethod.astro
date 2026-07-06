@@ -527,6 +527,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         return;
       }
 
+      // Idempotent: не пере-собираем список, если тарифы те же. Иначе повторный
+      // пересчёт (в превью конструктора блок пере-исполняется чаще) перерисовывал бы
+      // весь innerHTML списка → «моргание». Пере-сборка ТОЛЬКО при реальном изменении.
+      var __deliverySig = JSON.stringify(options) + '|' + (addressKnown ? '1' : '0');
+      if (listEl.__deliverySig !== __deliverySig) {
+      listEl.__deliverySig = __deliverySig;
       listEl.innerHTML = options.map(function (opt, idx) {
         // Без адреса — показ без предвыбора (ни одна карточка не selected).
         var selected = addressKnown && idx === 0;
@@ -554,6 +560,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
           + '<span class="' + PRICE_CLS + '">' + priceText + '</span>'
           + '</label>';
       }).join('');
+      }
       showList();
 
       // По умолчанию выбран первый — диспатчим событие чтобы Totals обновился.

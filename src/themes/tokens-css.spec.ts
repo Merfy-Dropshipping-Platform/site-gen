@@ -171,6 +171,41 @@ describe('buildTokensCss merchant precedence', () => {
 });
 
 /**
+ * Spec 2026-07-06 — «общий отступ темы» = настоящий margin МЕЖДУ секциями,
+ * развязанный от per-section padding. Слайдер темы пишет `sectionGap` →
+ * токен `--section-gap`; owl-правило `main > * + *` даёт зазор между прямыми
+ * детьми <main> (секциями), НЕ трогая header/footer (вне <main>) и НЕ трогая
+ * props.padding блоков. Дефолт 0px — нулевая визуальная регрессия.
+ */
+describe('section gap — margin между секциями', () => {
+  it('merchant sectionGap → --section-gap токен', () => {
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    expect(css).toContain('--section-gap: 40px');
+  });
+
+  it('дефолт --section-gap: 0px когда мерчант не задал (нулевая регрессия)', () => {
+    const css = buildTokensCss({}, 'rose');
+    expect(css).toContain('--section-gap: 0px');
+  });
+
+  it('sectionGap=0 от мерчанта уважается (не falsy-coerce)', () => {
+    const css = buildTokensCss({ sectionGap: 0 }, 'rose');
+    expect(css).toContain('--section-gap: 0px');
+  });
+
+  it('всегда инжектит owl-правило margin между детьми <main> (live+preview)', () => {
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    expect(css).toContain('main > * + *{margin-top:var(--section-gap, 0px)}');
+  });
+
+  it('owl-правило есть даже без темы и при нулевом зазоре', () => {
+    expect(buildTokensCss({}, null)).toContain(
+      'main > * + *{margin-top:var(--section-gap, 0px)}',
+    );
+  });
+});
+
+/**
  * Фаза 3 «Цвета» — themeSchemeToMerchantShape экспортируется и конвертирует
  * theme.json-схему (rgb-триплеты) в merchant-hex shape. Использует реальный
  * манифест rose: puck-config API отдаёт именно этот результат конструктору

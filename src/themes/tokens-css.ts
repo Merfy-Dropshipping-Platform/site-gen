@@ -51,7 +51,7 @@ export function previewTokensCssWithFonts(
 const ROOT_RULES_EXPLICIT = new Set<string>([
   '--radius-button', '--radius-card', '--radius-input', '--radius-media', '--radius-field',
   '--font-heading', '--font-body', '--weight-body', '--weight-heading',
-  '--section-padding', '--spacing-section-y', '--spacing-grid-col-gap', '--spacing-grid-row-gap',
+  '--section-padding', '--spacing-section-y', '--section-gap', '--spacing-grid-col-gap', '--spacing-grid-row-gap',
   '--catalog-sidebar-w', '--catalog-grid-row-gap',
   '--size-catalog-title', '--size-catalog-subtitle', '--weight-catalog-title',
   '--size-hero-heading', '--size-hero-button-h', '--slide-min-height',
@@ -86,6 +86,7 @@ export function buildTokensCss(
   const headingFontSet = typeof s.headingFont === 'string' && !!s.headingFont;
   const bodyFontSet = typeof s.bodyFont === 'string' && !!s.bodyFont;
   const sectionPaddingSet = typeof s.sectionPadding === 'number';
+  const sectionGapSet = typeof s.sectionGap === 'number';
   const bodyWeightSet = typeof s.bodyWeight === 'number';
   const headingWeightSet = typeof s.headingWeight === 'number';
   const logoWidthSet = typeof s.logoWidth === 'number';
@@ -101,6 +102,10 @@ export function buildTokensCss(
   const bodyFont = fontFamily(s.bodyFont, 'system-ui');
   const sectionPadding =
     typeof s.sectionPadding === 'number' ? `${s.sectionPadding}px` : '80px';
+  // Spec 2026-07-06: «общий отступ темы» = margin МЕЖДУ секциями (не padding).
+  // Дефолт 0px → нулевая регрессия на существующих сайтах.
+  const sectionGap =
+    typeof s.sectionGap === 'number' ? `${s.sectionGap}px` : '0px';
   const bodyWeight = typeof s.bodyWeight === 'number' ? s.bodyWeight : 400;
   const headingWeight =
     typeof s.headingWeight === 'number' ? s.headingWeight : 400;
@@ -140,6 +145,7 @@ export function buildTokensCss(
   --weight-heading: ${merchantFirst(String(headingWeight), headingWeightSet, themeDefaults['--weight-heading'], '400')};
   --section-padding: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
   --spacing-section-y: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
+  --section-gap: ${merchantFirst(sectionGap, sectionGapSet, themeDefaults['--section-gap'], '0px')};
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --catalog-sidebar-w: ${themeDefaults['--catalog-sidebar-w'] ?? '220px'};
@@ -372,6 +378,14 @@ export function buildTokensCss(
     'body:has(footer):not(:has(main main)){min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}' +
     'body:has(footer):not(:has(main main))>main{flex:1 0 auto}';
 
+  // Spec 2026-07-06: зазор МЕЖДУ секциями = margin-top у каждого прямого ребёнка
+  // <main>, кроме первого (owl-селектор `* + *`). Секции контента — прямые дети
+  // <main> (v2-page-composer); header/footer вне <main> → не затрагиваются; и
+  // props.padding блоков не трогается. Значение — через CSS-var --section-gap,
+  // слайдер темы обновляет её в превью мгновенно (как --radius-*). Правило
+  // константно; дефолт зазора 0px = нулевая регрессия.
+  const sectionGapRule = 'main > * + *{margin-top:var(--section-gap, 0px)}';
+
   // «Жирность заголовка / текста» (Типографика) — оживление слайдеров. Порты тем
   // хардкодят font-weight по Figma (в т.ч. Tailwind `!font-normal` = !important),
   // поэтому одной эмиссии --weight-* было мало — слайдер не влиял. Инжектим
@@ -424,6 +438,7 @@ export function buildTokensCss(
     schemeRules,
     wishlistHideRule,
     stickyFooterRule,
+    sectionGapRule,
     typographyLayer,
   ]
     .filter(Boolean)

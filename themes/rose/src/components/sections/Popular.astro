@@ -73,7 +73,7 @@ const headWrapCls = `flex w-full justify-center${headingSizeCls}${textSizeCls}`;
 // генерации Tailwind arbitrary-класса grid-cols-[...].
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 4;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
-// (canon-default) и отсутствие = литерал верстальщика 318/444 байт-в-байт;
+// (canon-default) и отсутствие = 1/1 (Квадрат по Figma 648:57355; был 318/444 verstalist);
 // portrait → 430/500 (канонный портрет), wide → 16/9.
 // Прокидывается КАЖДОЙ карточке (RoseProductCard aspectRatio / плейсхолдер /
 // гидрация renderCardHtml) как inline aspect-ratio. Прежний override
@@ -85,7 +85,7 @@ const cardAspectRatio =
 		? "430/500"
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? "16/9"
-			: "318/444";
+			: "1/1";
 // Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
 // по --cols. Гэпы оставляем как у верстальщика.
 const gridCls =

@@ -63,15 +63,15 @@ const cardsRaw =
 // идентичны на live и в превью (Container API).
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
-// canon-default ('square' puckConfig) и отсутствие = медиа карточки
-// верстальщика 430/564 дословно; portrait → 430/500, wide → 16/9
+// canon-default ('square' puckConfig) и отсутствие = 1:1 (Квадрат по Figma
+// 648:57355; был 430/564 verstalist); portrait → 430/500, wide → 16/9
 // (перекрытие медиа-дива карточки — и SSR, и гидрированной renderCardHtml).
 const tileAspectCls =
 	p.imageView === "portrait"
 		? " [&_li>article>div:first-child]:aspect-[430/500]"
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>div:first-child]:aspect-[16/9]"
-			: "";
+			: " [&_li>article>div:first-child]:aspect-square";
 // Моб 1 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
 const gridCls = "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-3" + tileAspectCls;
 const gridStyle = `--cols:${colsN}`;

@@ -15,8 +15,14 @@ const id = p.id;
 // заменён на Figma-текст. Когда мерчант задал свой heading/text/subtitle —
 // рендерим ЕГО (?? fallback срабатывает только при пустых данных).
 const sectionTitle = p.heading?.text ?? p.heading ?? "Коллекция товаров";
+// «Текст»/описание — конструктор пишет ПЛОСКУЮ строку в p.text (dynamic
+// FieldRenderer → updateProp('text', string)). Раньше читали только p.text?.content
+// → строковое описание молча выбрасывалось (и без подзаголовка NtSectionHeading не
+// рендерит <p>, из-за чего «Размер текста» тоже не на что было применить). Паритет
+// с bloom/flux/satin/vanilla: сперва строка, затем legacy {content}/subtitle.
 const sectionSubtitle =
-	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "";
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	p.subtitle?.content ?? p.subtitle ?? "";
 
 // Канон cards 2-24: лимит N карточек плейсхолдера / реальных товаров (data-cards
 // на гриде). Отсутствие → 4 (канон-дефолт конструктора).
@@ -46,7 +52,11 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
 // (canon-default) и отсутствие = NtSectionHeading верстальщика дословно (20px);
 // medium → 24px, large → 29px (≈канонный ряд small 20 / medium 24, окр. до px).
-const headingSize = p.heading?.size ?? p.headingSize;
+// Приоритет top-level headingSize (live-селект «Размер заголовка», Figma
+// 314-34614: updateProp('headingSize', ...)). Дефолт-сиды/миграции кладут ЛЕГАСИ
+// nested heading.size (напр. 'medium'), которое раньше читалось ПЕРВЫМ и глушило
+// селект. Теперь как textSize ниже — top-level первым, nested лишь фолбэк.
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[24px]"

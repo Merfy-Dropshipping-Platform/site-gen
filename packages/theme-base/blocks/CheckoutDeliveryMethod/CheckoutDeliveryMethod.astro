@@ -531,7 +531,12 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       // пересчёт (в превью конструктора блок пере-исполняется чаще) перерисовывал бы
       // весь innerHTML списка → «моргание». Пере-сборка ТОЛЬКО при реальном изменении.
       var __deliverySig = JSON.stringify(options) + '|' + (addressKnown ? '1' : '0');
-      if (listEl.__deliverySig !== __deliverySig) {
+      // Скип пере-сборки при той же сигнатуре — НО только если список реально на месте.
+      // В превью конструктора reconcile морфит блок и ОЧИЩАЕТ список (его данные не в
+      // Puck), сигнатура при этом остаётся → без проверки childElementCount список бы
+      // остался пустым («ничего не грузится»). Считаем карточки: не совпало (морф
+      // очистил) → пере-собираем; совпало → скип (нет моргания).
+      if (listEl.__deliverySig !== __deliverySig || listEl.childElementCount !== options.length) {
       listEl.__deliverySig = __deliverySig;
       listEl.innerHTML = options.map(function (opt, idx) {
         // Без адреса — показ без предвыбора (ни одна карточка не selected).

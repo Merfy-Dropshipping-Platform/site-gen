@@ -114,7 +114,7 @@
 .rose-input {
   height: 56px;
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-input, 8px);
   border: 1px solid #E5E5E5;
   background: #FFFFFF;
   padding-left: 16px;
@@ -144,14 +144,14 @@
 
 /* Кнопка авторизации — чёрная, override глобального button{background:transparent}.
    Фаза 3 (T8): фон/текст → панельные --color-button-* (носитель по tokens.map.md);
-   радиус 8px и высота 56px — per-context (≠ дефолтов 6px/48px), остаются литералами. */
+   высота 56px — per-context литерал; радиус → --radius-button (слайдер «Кнопки»), fallback 8px. */
 .rose-btn-primary {
   display: flex;
   height: 56px;
   width: 100%;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-button, 8px);
   background-color: rgb(var(--color-button-bg, 0 0 0)) !important;
   padding-left: 20px;
   padding-right: 20px;
@@ -547,12 +547,12 @@ input[type="search"]::-webkit-search-results-decoration {
   color: rgb(var(--color-muted, 153 153 153));
 }
 
-/* Поле формы (NtTextField): радиус → --radius-field; fallback = литерал DS
-   rounded-[4px] (NtTextField.astro:60). Бордер НЕ мигрирован: фактический
-   литерал strong-состояния #000000 ≠ дефолт --color-input-border темы
-   (153 153 153), и перекрытие снаружи убило бы state-цвета muted/error. */
+/* Поле формы (NtTextField): радиус → --radius-input (слайдер «Поля ввода»),
+   fallback 8px. Бордер НЕ мигрирован: фактический литерал strong-состояния
+   #000000 ≠ дефолт --color-input-border темы (153 153 153), и перекрытие
+   снаружи убило бы state-цвета muted/error. */
 [data-nt="text-field"] input {
-  border-radius: var(--radius-field, 4px);
+  border-radius: var(--radius-input, 8px);
 }
 
 /* ============================================================
@@ -655,7 +655,7 @@ input[type="search"]::-webkit-search-results-decoration {
   width: 100%;
   height: 3.5rem;
   padding: 0 1rem;
-  border-radius: 0;
+  border-radius: var(--radius-input, 8px);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;

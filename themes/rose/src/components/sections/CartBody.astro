@@ -128,7 +128,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				return `
 					<li class="flex gap-4 sm:gap-6 md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
 						<div class="flex min-w-0 flex-1 gap-3 sm:gap-4">
-							<a href="/products/${line.productId}" class="block size-20 shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] sm:size-24 md:size-[120px]">
+							<a href="/products/${line.productId}" class="block size-20 shrink-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5] sm:size-24 md:size-[120px]">
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">
@@ -151,10 +151,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 						<div class="flex shrink-0 flex-col items-end gap-3 self-start md:gap-4">
 							<button type="button" data-cart-remove data-id="${
 								line.id
-							}" class="flex size-9 items-center justify-center rounded-[4px] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:bg-[#F5F5F5] hover:opacity-80 md:size-10" aria-label="Удалить товар из корзины">
+							}" class="flex size-9 items-center justify-center rounded-[var(--radius-button,8px)] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:bg-[#F5F5F5] hover:opacity-80 md:size-10" aria-label="Удалить товар из корзины">
 								<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="pointer-events-none size-[22px] md:size-6" aria-hidden="true"><path d="M4 7h16M10 7V5a1 1 0 011-1h2a1 1 0 011 1v2M6 7l1 14a1 1 0 001 1h8a1 1 0 001-1l1-14M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 							</button>
-							<div class="inline-flex h-10 items-center rounded-[4px] border border-solid border-[#E5E5E5]">
+							<div class="inline-flex h-10 items-center rounded-[var(--radius-input,8px)] border border-solid border-[#E5E5E5]">
 								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>
 								<span class="min-w-[28px] text-center font-manrope text-[12px] text-[rgb(var(--color-text,0_0_0))] sm:text-[14px]">${line.quantity}</span>
 								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>

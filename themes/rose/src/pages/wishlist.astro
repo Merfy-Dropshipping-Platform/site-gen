@@ -45,7 +45,7 @@ const apiBase = "https://gateway.merfy.ru";
 				{Array.from({ length: 4 }).map(() => (
 					<li>
 						<div class="flex w-full flex-col gap-5">
-							<div class="aspect-[318/444] w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+							<div class="aspect-[318/444] w-full animate-pulse rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
 							<div class="flex w-full flex-col gap-1">
 								<div class="h-4 w-2/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
 								<div class="h-4 w-1/3 animate-pulse rounded bg-[rgb(var(--color-surface,245_245_245))]"></div>
@@ -226,7 +226,7 @@ const apiBase = "https://gateway.merfy.ru";
 				'<span data-wishlist-icon class="block size-[18px]">' + heartInner + "</span></button>";
 			return '<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="' + name + '">' +
 				'<div class="relative w-full">' +
-				'<a href="' + href + '" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white" aria-label="' + name + '">' + media + "</a>" +
+				'<a href="' + href + '" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white" aria-label="' + name + '">' + media + "</a>" +
 				heartBtn +
 				"</div>" +
 				'<div class="flex w-full flex-col gap-1 text-left">' +

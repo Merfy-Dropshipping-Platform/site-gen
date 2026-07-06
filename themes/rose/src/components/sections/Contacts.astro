@@ -100,7 +100,7 @@ const paddingStyle = p.padding
 										type="text"
 										autocomplete="name"
 										required={formFields.name.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -123,7 +123,7 @@ const paddingStyle = p.padding
 										type="email"
 										autocomplete="email"
 										required={formFields.email.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -146,7 +146,7 @@ const paddingStyle = p.padding
 										type="tel"
 										autocomplete="tel"
 										required={formFields.phone.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -176,7 +176,7 @@ const paddingStyle = p.padding
 								name="question"
 								rows={8}
 								required={formFields.message.required}
-								class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+								class="min-h-[232px] w-full rounded-[var(--radius-input,8px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 							></textarea>
 						</div>
 					)
@@ -189,7 +189,7 @@ const paddingStyle = p.padding
 						id="contacts-question"
 						name="question"
 						rows={8}
-						class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+						class="min-h-[232px] w-full rounded-[var(--radius-input,8px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 					></textarea>
 				</div>
 				)}

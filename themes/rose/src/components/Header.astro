@@ -465,7 +465,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						/>
 						<button
 							type="submit"
-							class="flex h-10 shrink-0 items-center justify-center rounded-[4px] border-0 !bg-[rgb(var(--color-button-bg,0_0_0))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+							class="flex h-10 shrink-0 items-center justify-center rounded-[var(--radius-button,8px)] border-0 !bg-[rgb(var(--color-button-bg,0_0_0))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 						>
 							Найти
 						</button>
@@ -546,7 +546,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				</form>
 				<a
 					href="/login" data-auth-link
-					class="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-rose-primary"
+					class="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-button,8px)] bg-rose-primary"
 					aria-label="Профиль"
 				>
 					<RoseNtIcon name="user" sizeClass="size-6" class="brightness-0 invert" />

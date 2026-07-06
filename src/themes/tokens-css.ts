@@ -382,26 +382,40 @@ export function buildTokensCss(
   // (0,1,2) > (0,1,0) у `!font-normal`, а !important перебивает !important-класс.
   // Заголовок — все h1..h6; текст — параграфы <p> (кнопки/бейджи это <a>/<button>,
   // не трогаем). Unlayered → перебивает @layer base { h*, p } из global.css тем.
+  // «Жирность / Шрифт заголовка-текста» (Типографика) — применение во ВСЕХ секциях.
+  // Часть портов верстает заголовки секций/карточек через body-класс `font-manrope`
+  // и Tailwind `!font-normal` (вес !important). Форсим роль по семантике тега:
+  // h1..h6 → --font-heading/--weight-heading, текст (p/li/button/label) →
+  // --font-body/--weight-body. Гейт на «мерчант задал» → дефолт тем сохранён.
+  // Скоуп main + footer (footer рендерится вне <main>).
+  //
+  // КРИТИЧНО — обёртка `@layer utilities`: для `!important`-объявлений порядок
+  // слоёв ОБРАТНЫЙ обычному, и БЕЗСЛОЙНОЕ правило ПРОИГРЫВАЕТ любому слою. Tailwind
+  // держит `.\!font-normal{font-weight:… !important}` в `@layer utilities`, поэтому
+  // безслойный override (даже спецификой 0,2,2) не бил Hero/Slideshow. В том же
+  // слое utilities решает специфичность: наш (0,1,2) > (0,1,0) у `.\!font-normal`.
   const weightHeadingRule = headingWeightSet
-    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class]{font-weight:var(--weight-heading) !important}'
+    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-weight:var(--weight-heading) !important}'
     : '';
   const weightBodyRule = bodyWeightSet
-    ? 'main p[class]{font-weight:var(--weight-body) !important}'
+    ? 'main p[class],main li[class],main button[class],main label[class]{font-weight:var(--weight-body) !important}'
     : '';
-
-  // «Шрифт заголовка / текста» (Типографика) — применение во ВСЕХ секциях. Часть
-  // портов верстала заголовки секций/карточек через body-класс `font-manrope`
-  // (`.font-manrope → var(--font-body)`) → эти заголовки следовали за «Шрифтом
-  // ТЕКСТА», а не заголовка (эталон — PopularProducts, где заголовки на
-  // --font-heading). Форсим роль по семантике тега: h1..h6 → --font-heading,
-  // текст (p/li/button/label) → --font-body. Гейт на «мерчант задал шрифт»
-  // (headingFontSet/bodyFontSet) → дефолтный вид тем сохранён байт-в-байт.
-  // Специфичность (0,1,2)+!important перебивает `font-manrope`/литеральные классы.
   const fontHeadingRule = headingFontSet
     ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-family:var(--font-heading) !important}'
     : '';
   const fontBodyRule = bodyFontSet
     ? 'main p[class],main li[class],main button[class],main label[class]{font-family:var(--font-body) !important}'
+    : '';
+  const typographyOverrides = [
+    weightHeadingRule,
+    weightBodyRule,
+    fontHeadingRule,
+    fontBodyRule,
+  ]
+    .filter(Boolean)
+    .join('');
+  const typographyLayer = typographyOverrides
+    ? `@layer utilities{${typographyOverrides}}`
     : '';
 
   return [
@@ -410,10 +424,7 @@ export function buildTokensCss(
     schemeRules,
     wishlistHideRule,
     stickyFooterRule,
-    weightHeadingRule,
-    weightBodyRule,
-    fontHeadingRule,
-    fontBodyRule,
+    typographyLayer,
   ]
     .filter(Boolean)
     .join('\n');

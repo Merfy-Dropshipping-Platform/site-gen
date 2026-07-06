@@ -175,7 +175,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     } as any,
     secondaryButton: {
       type: 'object',
-      label: 'Кнопка вторичная',
+      label: 'Кнопка дополнительная',
       hiddenInMainPanel: true,
       objectFields: {
         text: { type: 'text', label: 'Текст' },

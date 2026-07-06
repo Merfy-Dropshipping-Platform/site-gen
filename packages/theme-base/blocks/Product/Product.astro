@@ -261,10 +261,20 @@ const cartImage = view.gallery.hero?.src ?? '';
       data-photo-position={photoOnLeft ? 'left' : 'right'}
     >
       {/* MEDIA col. split раздвигается за счёт thumbs+main inline (auto-width).
-          Остальные макеты — фикс 652px на desktop (как до 091). */}
+          Остальные макеты — ширина зависит от «Размер» (_size): medium=652px —
+          дефолт (как было при фикс-652 → ноль регрессии для существующих витрин),
+          small/large реально двигают фото. Раньше было захардкожено lg:w-[652px]
+          (a9b76a33), из-за чего «Размер» ничего не менял для галереи wrap-large.
+          Литералы Tailwind-классов — чтобы JIT их сгенерил. */}
       <div class:list={[
         'w-full shrink-0',
-        layout === 'split' ? 'lg:w-auto' : 'lg:w-[652px]',
+        layout === 'split'
+          ? 'lg:w-auto'
+          : _size === 'small'
+            ? 'lg:w-[520px]'
+            : _size === 'large'
+              ? 'lg:w-[784px]'
+              : 'lg:w-[652px]',
       ]} data-product-images>
         <ProductGallery
           gallery={view.gallery}

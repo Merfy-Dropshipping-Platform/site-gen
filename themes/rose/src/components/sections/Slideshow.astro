@@ -170,10 +170,13 @@ const heightCls =
 // секции, max-width и радиусом медиа. Управляет обёрткой полотна (см. wrapperCls/
 // frameCls) — у contained появляется max-w + rounded, у fullscreen их нет.
 const contained = p.imagePosition === "contained" || p.imagePosition === "left" || p.imagePosition === "right";
+// Мобила = full-bleed стек (медиа во всю ширину + карточка снизу, паритет Hero):
+// боковые поля/радиус «в окне» — ТОЛЬКО с md+ (иначе на мобиле рамка + внутренняя
+// карточка = «контейнер в контейнере» + двойные боковые отступы). Десктоп-окно цело.
 const wrapperCls = contained
-	? "w-full px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
+	? "w-full md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
 	: "w-full";
-const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : "";
+const frameCls = contained ? " max-w-[1320px] md:rounded-[var(--radius-media,8px)]" : "";
 
 // Канон overlay 0-100 — «Затемнение» PER-SLIDE (Figma node 1:33170). Хелпер
 // slideOverlayN объявлен ВЫШЕ (перед маппингом slides), т.к. используется в нём.
@@ -196,17 +199,20 @@ const ctaCls =
 		: "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
-const paddingStyle = p.padding
-	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+// Стек-секция (мобила): верхний «Отступ» применяется ТОЛЬКО на десктопе (md:pt), на
+// мобиле pt=0 — медиа встык под предыдущей секцией (убрать промежуток над медиа,
+// паритет Hero). Нижний паддинг (pb) — на всех ширинах.
+const paddingVars = p.padding
+	? `--ss-pt:${p.padding.top}px;--ss-pb:${p.padding.bottom}px;`
 	: undefined;
 ---
 
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
+	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] pb-[var(--ss-pb,0px)] md:pt-[var(--ss-pt,0px)]"
 	data-puck-component-id={id}
 	data-interval={intervalMs}
 	data-autoplay={autoplay}
-	style={paddingStyle}
+	style={paddingVars}
 >
 	<div class={wrapperCls}>
 		<div

@@ -169,23 +169,33 @@
 }
 
 /* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
-   Обводка → --size-card-border, Скругление → --product-card-radius, внутр. отступ
-   → --product-card-padding. standard → все 0px (нейтрально). Выравнивание
-   (--product-card-align/justify) — в обоих стилях. Правило по data-nt покрывает
-   SSR (RoseProductCard) И client-рендеры (storefront-hydrate/wishlist renderCardHtml). */
+   фон-подложка (--product-card-bg=surface) + Обводка (--product-card-bw, цвет --color-border)
+   + Скругление (--product-card-radius) + отступ. Медиа (фото) скругляется ПО КАРТОЧКЕ
+   (--product-card-media-radius). standard → 0px/transparent (нейтрально).
+   Выравнивание (--product-card-align/justify) !important — бьёт Tailwind text-left и
+   двигает ВЕСЬ текст под товаром (имя+цену). Правило по data-nt покрывает SSR
+   (RoseProductCard) И client-рендеры (storefront-hydrate/wishlist renderCardHtml).
+   ⚠️ Каталог-блок packages/theme-rose несёт инлайн фон+радиус+отступ (инлайн бьёт CSS),
+   поэтому его радиус тоже переведён на --product-card-radius; бордер/медиа/выравнивание — отсюда. */
 @layer base {
   [data-nt="rose-product-card"] {
+    background: var(--product-card-bg, transparent);
     border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
     border-radius: var(--product-card-radius, 0px);
     padding: var(--product-card-padding, 0px);
   }
-  [data-nt="rose-product-card"] > div:last-child {
-    align-items: var(--product-card-justify, flex-start);
-    text-align: var(--product-card-align, left);
+  /* Медиа (фото) → радиус карточки в card-режиме; !important бьёт утилиту rounded-[--radius-media]. */
+  [data-nt="rose-product-card"] a.overflow-hidden {
+    border-radius: var(--product-card-media-radius, var(--radius-media, 8px)) !important;
   }
-  /* Цена — flex-строка: центр/право двигаем через justify-content (align-items не сдвинет w-full). */
+  /* Выравнивание всего текста под товаром (имя): !important бьёт класс text-left. */
+  [data-nt="rose-product-card"] > div:last-child {
+    align-items: var(--product-card-justify, flex-start) !important;
+    text-align: var(--product-card-align, left) !important;
+  }
+  /* Цена — flex-строка: центр/право через justify-content. */
   [data-nt="rose-product-card"] > div:last-child > div {
-    justify-content: var(--product-card-justify, flex-start);
+    justify-content: var(--product-card-justify, flex-start) !important;
   }
 }
 

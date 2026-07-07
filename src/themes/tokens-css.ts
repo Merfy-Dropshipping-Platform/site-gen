@@ -154,6 +154,8 @@ export function buildTokensCss(
   --product-card-padding: ${cardStyled ? '12px' : '0px'};
   --product-card-align: ${pcAlign};
   --product-card-justify: ${pcAlign === 'center' ? 'center' : pcAlign === 'right' ? 'flex-end' : 'flex-start'};
+  --product-card-bg: ${cardStyled ? 'rgb(var(--color-surface,245 245 245))' : 'transparent'};
+  --product-card-media-radius: ${cardStyled ? merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px') : merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
   --font-heading: ${merchantFirst(headingFont, headingFontSet, themeDefaults['--font-heading'], 'system-ui')};
   --font-body: ${merchantFirst(bodyFont, bodyFontSet, themeDefaults['--font-body'], 'system-ui')};
   --weight-body: ${merchantFirst(String(bodyWeight), bodyWeightSet, themeDefaults['--weight-body'], '400')};

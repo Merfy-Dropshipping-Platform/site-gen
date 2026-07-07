@@ -716,7 +716,7 @@ const skeletons = Array.from({ length: skeletonCount });
   // край-в-край). Inline-style (НЕ Tailwind arbitrary) — динамика в client-JS строке
   // не компилится Tailwind'ом; цвета через токен с фоллбеком, как в RoseProductCard.
   const CARD_CONTAINER_STYLE = cardContainerOn
-    ? "background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);padding:12px;"
+    ? "background:rgb(var(--color-surface,245 245 245));border-radius:var(--product-card-radius,8px);padding:12px;"
     : "";
 
   // renderCardHtml — зеркалит RoseProductCard.astro (картинка-ссылка + name + price

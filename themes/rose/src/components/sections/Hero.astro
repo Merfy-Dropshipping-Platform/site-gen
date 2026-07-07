@@ -203,7 +203,6 @@ const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-en
 // кнопки друг относительно друга, text-align — многострочный текст.
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : "text-center";
 const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : "items-center";
-const buttonsJustifyCls = p.alignment === "left" ? "justify-start" : p.alignment === "right" ? "justify-end" : "justify-center";
 
 // Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
 // прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
@@ -223,9 +222,14 @@ const secondaryCtaCls =
 		: `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`;
 
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
-// secondaryButton кнопки встают рядом (row) с зазором манеры.
+// secondaryButton — две кнопки РАВНОЙ ширины «по большей»: inline-grid из двух
+// равных колонок (bare 1fr = minmax(auto,1fr) → обе колонки = ширине более
+// широкой кнопки, контейнер обнимает контент). Кнопки — grid-items с дефолтным
+// justify-self:stretch + w-auto → заполняют свою колонку, поэтому «Whats'up»
+// подтягивается до ширины «Смотреть каталог» (баг «разные кнопки по размерам»).
+// Позиция блока (left/center/right) задаётся родителем через alignItemsCls.
 const buttonsCls = secondaryText
-	? `hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls} sm:gap-4`
+	? `hero-animate-3 inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3 sm:gap-4`
 	: `hero-animate-3 flex w-full flex-col ${alignItemsCls} justify-center`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).

@@ -175,7 +175,7 @@
    SSR (RoseProductCard) И client-рендеры (storefront-hydrate/wishlist renderCardHtml). */
 @layer base {
   [data-nt="rose-product-card"] {
-    border: var(--size-card-border, 0px) solid rgb(var(--color-border, 240 240 240));
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
     border-radius: var(--product-card-radius, 0px);
     padding: var(--product-card-padding, 0px);
   }

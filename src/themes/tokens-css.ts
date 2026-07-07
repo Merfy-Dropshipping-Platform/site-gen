@@ -98,6 +98,16 @@ export function buildTokensCss(
   const inputRadius = toPx(s.inputRadius, 8);
   const mediaRadius = toPx(s.mediaRadius, 8);
   const fieldRadius = toPx(s.fieldRadius, 4);
+  // Card style «Карточка» (productCardStyle=card): бордер+радиус+паддинг на карточке
+  // товара. standard → 0px (нейтрально, ноль регрессии). Выравнивание — в обоих стилях.
+  const cardBorder = toPx(s.cardBorder, 0);
+  const cardStyled = s.productCardStyle === 'card';
+  const pcAlign =
+    s.productCardAlignment === 'center'
+      ? 'center'
+      : s.productCardAlignment === 'right'
+        ? 'right'
+        : 'left';
   const headingFont = fontFamily(s.headingFont, 'system-ui');
   const bodyFont = fontFamily(s.bodyFont, 'system-ui');
   const sectionPadding =
@@ -139,6 +149,11 @@ export function buildTokensCss(
   --radius-input: ${merchantFirst(inputRadius, inputRadiusSet, themeDefaults['--radius-input'], '8px')};
   --radius-media: ${merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
   --radius-field: ${merchantFirst(fieldRadius, fieldRadiusSet, themeDefaults['--radius-field'], '4px')};
+  --product-card-bw: ${cardStyled ? cardBorder : '0px'};
+  --product-card-radius: ${cardStyled ? merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px') : '0px'};
+  --product-card-padding: ${cardStyled ? '12px' : '0px'};
+  --product-card-align: ${pcAlign};
+  --product-card-justify: ${pcAlign === 'center' ? 'center' : pcAlign === 'right' ? 'flex-end' : 'flex-start'};
   --font-heading: ${merchantFirst(headingFont, headingFontSet, themeDefaults['--font-heading'], 'system-ui')};
   --font-body: ${merchantFirst(bodyFont, bodyFontSet, themeDefaults['--font-body'], 'system-ui')};
   --weight-body: ${merchantFirst(String(bodyWeight), bodyWeightSet, themeDefaults['--weight-body'], '400')};

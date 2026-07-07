@@ -9,7 +9,7 @@ import AuthSecondaryLink from '../components/auth/AuthSecondaryLink.astro';
 const shopId = "";
 const apiUrl = "https://gateway.merfy.ru/api";
 ---
-<Layout title="Регистрация">
+<Layout title="Регистрация" promo={false}>
   <script is:inline define:vars={{ shopId, apiUrl }}>
     window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
       shopId: shopId || "",

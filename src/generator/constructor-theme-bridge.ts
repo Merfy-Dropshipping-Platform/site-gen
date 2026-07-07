@@ -262,6 +262,19 @@ export function constructorThemeToMerchantSettings(
   tokens["radius-media"] = `${theme.mediaRadius}px`;
   tokens["radius-field"] = `${theme.fieldRadius ?? 4}px`;
 
+  // Card style «Карточка» (productCardStyle=card): бордер (Обводка) + радиус +
+  // внутренний отступ на карточке товара. standard → все 0px (нейтрально, ноль
+  // регрессии). Выравнивание (align/justify) применяется в ОБОИХ стилях.
+  // Консумит global.css по [data-nt="rose-product-card"] → SSR + client-рендеры.
+  const cardStyled = theme.productCardStyle === "card";
+  tokens["size-card-border"] = cardStyled ? `${theme.cardBorder ?? 0}px` : "0px";
+  tokens["product-card-radius"] = cardStyled ? `${theme.cardRadius}px` : "0px";
+  tokens["product-card-padding"] = cardStyled ? "12px" : "0px";
+  const pcAlign = theme.productCardAlignment ?? "left";
+  tokens["product-card-align"] = pcAlign;
+  tokens["product-card-justify"] =
+    pcAlign === "center" ? "center" : pcAlign === "right" ? "flex-end" : "flex-start";
+
   // Spacing
   if (theme.sectionPadding !== undefined) {
     tokens["spacing-section"] = `${theme.sectionPadding}px`;

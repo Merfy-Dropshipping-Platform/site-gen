@@ -168,6 +168,25 @@
   opacity: 0.88;
 }
 
+/* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
+   Обводка → --size-card-border, Скругление → --product-card-radius, внутр. отступ
+   → --product-card-padding. standard → все 0px (нейтрально). Выравнивание
+   (--product-card-align/justify) — в обоих стилях. Правило по data-nt покрывает
+   SSR (RoseProductCard) И client-рендеры (storefront-hydrate/wishlist renderCardHtml). */
+[data-nt="rose-product-card"] {
+  border: var(--size-card-border, 0px) solid rgb(var(--color-border, 240 240 240));
+  border-radius: var(--product-card-radius, 0px);
+  padding: var(--product-card-padding, 0px);
+}
+[data-nt="rose-product-card"] > div:last-child {
+  align-items: var(--product-card-justify, flex-start);
+  text-align: var(--product-card-align, left);
+}
+/* Цена — flex-строка: центр/право двигаем через justify-content (align-items не сдвинет w-full). */
+[data-nt="rose-product-card"] > div:last-child > div {
+  justify-content: var(--product-card-justify, flex-start);
+}
+
 /* Те же метрики, что .rose-title, без uppercase (посты блога и т.п.) */
 .rose-heading-plain {
   font-family: var(--font-heading, "Comfortaa", sans-serif);

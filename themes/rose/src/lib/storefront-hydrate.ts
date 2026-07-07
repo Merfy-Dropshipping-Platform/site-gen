@@ -331,7 +331,7 @@ export function renderCardHtml(p: RealProduct, aspectRatio: string = "318/444"):
 		: "";
 	return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" class="relative block w-full overflow-hidden rounded-[8px] bg-white" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
+		<a href="${href}" class="relative block w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
 			${media}
 		</a>
 		${wishlistHeartHtml(p.id)}

@@ -119,12 +119,16 @@ export async function assembleChrome(
     ) {
       checkoutProps['siteTitle'] = homeHeaderProps['siteTitle'];
     }
+    // Лого чекаута = лого темы. Build кладёт branding.logoUrl в Header.props.logo
+    // (home), а CheckoutHeader.astro рендерит logoMode==='image' && logoImage —
+    // маппим сюда, а не в неиспользуемое поле `logo` (иначе logoMode остаётся
+    // 'text' → рендерится siteTitle). Всегда зеркалим шапку home.
     if (
       typeof homeHeaderProps['logo'] === 'string' &&
-      homeHeaderProps['logo'] &&
-      !checkoutProps['logo']
+      homeHeaderProps['logo']
     ) {
-      checkoutProps['logo'] = homeHeaderProps['logo'];
+      checkoutProps['logoMode'] = 'image';
+      checkoutProps['logoImage'] = homeHeaderProps['logo'];
     }
     const headerHtml = await renderChromeBlock(
       renderBlock,

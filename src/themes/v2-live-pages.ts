@@ -579,8 +579,13 @@ export async function unifyChromeInDist(
   if (typeof homeHeaderProps['siteTitle'] === 'string' && homeHeaderProps['siteTitle']) {
     checkoutProps['siteTitle'] = homeHeaderProps['siteTitle'];
   }
-  if (typeof homeHeaderProps['logo'] === 'string' && homeHeaderProps['logo'] && !checkoutProps['logo']) {
-    checkoutProps['logo'] = homeHeaderProps['logo'];
+  // Лого чекаута = лого темы (Header.props.logo home = branding.logoUrl).
+  // CheckoutHeader рендерит logoMode==='image' && logoImage — маппим сюда, а не в
+  // мёртвое поле `logo` (иначе logoMode='text' → рендерится текст siteTitle).
+  // Всегда зеркалим шапку home.
+  if (typeof homeHeaderProps['logo'] === 'string' && homeHeaderProps['logo']) {
+    checkoutProps['logoMode'] = 'image';
+    checkoutProps['logoImage'] = homeHeaderProps['logo'];
   }
   let checkoutHeader: string | null = null;
   try {

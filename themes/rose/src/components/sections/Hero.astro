@@ -110,10 +110,14 @@ const heroHeightMdCls = {
 // «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
 // (max-w/gap/padding) + кнопку — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
 // героя НЕ трогаем (у них свои поля heading.size/text.size).
+// Мобила (стек): подложка-контейнер на всю ширину гаттера (без узкого max-w-кэпа —
+// раньше small max-w-[380px] центрировался → ~47px пустые поля по бокам = «неточности
+// по бокам»). Десктоп-оверлей (md+): max-w-кэп остаётся (карточка не во всю ширину
+// поверх фото).
 const panelMaxWCls = {
-	large: "max-w-[540px] md:max-w-[640px]",
-	medium: "max-w-[460px] md:max-w-[540px]",
-	small: "max-w-[380px] md:max-w-[440px]",
+	large: "md:max-w-[640px]",
+	medium: "md:max-w-[540px]",
+	small: "md:max-w-[440px]",
 }[heroSize];
 const panelGapCls = {
 	large: "gap-6 sm:gap-10",
@@ -153,6 +157,14 @@ const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
 	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
+// Мобила-обёртка контента ПОД медиа (стек). «Контейнер» ON → карточка (boxedCls) сама
+// = плашка-контейнер, поэтому обёртка ПРОЗРАЧНАЯ (только боковой гаттер + зазор от
+// медиа) — иначе «контейнер внутри контейнера» (белая полоса-обёртка + вложенная
+// карточка). «Контейнер» OFF → обёртка = сама подложка (фон схемы + вертик.паддинги).
+// Десктоп (md+) — всегда absolute-оверлей, фон прозрачный (md:bg-transparent ниже).
+const wrapperMobileCls = boxed
+	? "px-4 pt-4 pb-8 sm:px-5"
+	: "bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (Figma 648-55404):
@@ -224,6 +236,12 @@ const clampPad = (v: number) => `clamp(20px,7vw,${v}px)`;
 const paddingStyle = p.padding
 	? `padding-top:${clampPad(p.padding.top)};padding-bottom:${clampPad(p.padding.bottom)};`
 	: undefined;
+// Стек-секция (мобила): «Отступы» как CSS-переменные → верхний паддинг применяется
+// ТОЛЬКО на десктопе (md:pt), на мобиле pt=0 — медиа встык под шапкой (убрать
+// «промежуток над медиа»). Нижний паддинг (pb) — на всех ширинах.
+const paddingVars = p.padding
+	? `--hero-pt:${clampPad(p.padding.top)};--hero-pb:${clampPad(p.padding.bottom)};`
+	: undefined;
 ---
 
 {
@@ -291,10 +309,10 @@ const paddingStyle = p.padding
 		</section>
 	) : (
 <section
-	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] ${heroHeightMdCls}`}
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${heroHeightMdCls}`}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
+	style={paddingVars}
 >
 	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка кроет ВСЮ секцию
 	    (absolute на уровне <section> → заполняет padding-box целиком, включая зону
@@ -348,7 +366,7 @@ const paddingStyle = p.padding
 
 	{/* КОНТЕНТ — мобила: блок-подложка (фон схемы) ПОД картинкой; десктоп: overlay поверх. */}
 	<div
-		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12 md:absolute md:inset-0 md:bg-transparent md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadMdCls}`}
+		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} ${wrapperMobileCls} md:absolute md:inset-0 md:bg-transparent md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadMdCls}`}
 	>
 			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>

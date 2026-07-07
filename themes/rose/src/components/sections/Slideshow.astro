@@ -216,48 +216,51 @@ const paddingStyle = p.padding
 				slides.map((s, i) => (
 					<div
 						data-slide
-						class={`!absolute inset-0 transition-opacity duration-700 ease-out ${s.active ? "opacity-100" : "pointer-events-none opacity-0"}${s.schemeCls}`}
+						class={`transition-opacity duration-700 ease-out relative md:!absolute md:inset-0 md:!block ${s.active ? "opacity-100" : "hidden pointer-events-none opacity-0"}${s.schemeCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="slides"
 					>
-						{s.image ? (
-							<img src={s.image} alt={s.heading || "Слайд"} loading={i === 0 ? "eager" : "lazy"} class="absolute inset-0 !h-full !w-full object-cover" />
-						) : (
-							<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
-						)}
-						{s.overlayN > 0 && s.image && (
-							<div class="pointer-events-none absolute inset-0 bg-black" style={`opacity:${s.overlayN / 100}`} aria-hidden="true" />
-						)}
-						{s.image && !s.boxed && (
+						{/* МЕДИА — мобила: блок 4/3 сверху (стек как Hero «Изображение»);
+						    десктоп: absolute на весь слайд (оверлей под текстом). Затемнение
+						    и градиент — ВНУТРИ медиа-обёртки (скоуп на фото, не на карточку
+						    снизу, иначе на мобиле затемняли бы и текстовый блок). */}
+						<div class="relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto">
+							{s.image ? (
+								<img src={s.image} alt={s.heading || "Слайд"} loading={i === 0 ? "eager" : "lazy"} class="!absolute inset-0 !h-full !w-full object-cover" />
+							) : (
+								<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
+							)}
+							{s.overlayN > 0 && s.image && (
+								<div class="pointer-events-none absolute inset-0 bg-black" style={`opacity:${s.overlayN / 100}`} aria-hidden="true" />
+							)}
+							{s.image && !s.boxed && (
+								<div
+									class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-1/2 bg-linear-to-t from-black/35 to-transparent md:block"
+									aria-hidden="true"
+								/>
+							)}
+						</div>
+						{/* КОНТЕНТ — мобила: блок ПОД медиа (стек); десктоп: absolute-оверлей
+						    поверх фото (сетка 3×3 через vJustify/hItems). «Контейнер» ON →
+						    карточка (boxed ниже) = единственный контейнер, обёртка прозрачная
+						    (гаттер+зазор), иначе «контейнер внутри контейнера». «Контейнер» OFF
+						    → обёртка = подложка (фон схемы) под медиа. Текст на мобиле всегда
+						    тёмный (на подложке снизу), белый — только десктоп-оверлей поверх фото. */}
+						<div class={`relative z-10 flex w-full flex-col ${s.hItemsCls} ${s.vJustifyCls} ${s.boxed ? "px-4 pt-4 pb-8 sm:px-5" : "bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12"} md:absolute md:inset-0 md:bg-transparent md:px-12 md:pb-16 md:pt-0`}>
 							<div
-								class="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-black/35 to-transparent"
-								aria-hidden="true"
-							/>
-						)}
-						{/* Контент-блок мини-Hero: внешний контейнер РАЗМЕЩАЕТ блок по сетке
-						    3×3 (vJustify=вертикаль, hItems=горизонталь — паттерн Hero), внутри
-						    alignItems+textAlign = НЕЗАВИСИМОЕ выравнивание контента. boxed —
-						    плашка-подложка слайда (порт Hero boxedCls: фон схемы + радиус +
-						    паддинги + тёмный текст override на светлой плашке). */}
-						<div class={`relative z-10 flex h-full w-full flex-col ${s.hItemsCls} ${s.vJustifyCls} px-6 pb-14 md:px-12 md:pb-16`}>
-							<div
-								class={`flex w-full max-w-[640px] flex-col gap-4 ${s.alignItemsCls} ${s.textAlignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
+								class={`flex w-full flex-col gap-4 md:max-w-[640px] ${s.alignItemsCls} ${s.textAlignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
 							>
 								{s.heading && (
 									<h2
-										class={`font-comfortaa !font-normal uppercase !leading-none ${s.headingCls} ${
-											s.image && !s.boxed ? "text-white" : "text-[rgb(var(--color-heading,0_0_0))]"
-										}`}
+										class={`font-comfortaa !font-normal uppercase !leading-none ${s.headingCls} text-[rgb(var(--color-heading,0_0_0))]${s.image && !s.boxed ? " md:text-white" : ""}`}
 									>
 										{s.heading}
 									</h2>
 								)}
 								{s.subtitle && (
 									<p
-										class={`font-manrope ${s.textCls} font-normal leading-none ${
-											s.image && !s.boxed ? "text-white" : "text-[rgb(var(--color-text,0_0_0))]"
-										}`}
+										class={`font-manrope ${s.textCls} font-normal leading-none text-[rgb(var(--color-text,0_0_0))]${s.image && !s.boxed ? " md:text-white" : ""}`}
 									>
 										{s.subtitle}
 									</p>
@@ -307,7 +310,7 @@ const paddingStyle = p.padding
 						)}
 						{pagination !== "none" && (
 							<div
-								class={`absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center ${pagination === "numbers" ? "gap-4" : "gap-2"}`}
+								class={`absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center max-md:rounded-full max-md:bg-black/35 max-md:px-4 max-md:py-2 ${pagination === "numbers" ? "gap-4" : "gap-2"}`}
 							>
 								{pagination === "dots" &&
 									slides.map((_, i) => (
@@ -386,7 +389,7 @@ const paddingStyle = p.padding
 			    шевроны white/70. Зеркалит рабочую numbers-пагинацию выше. */}
 			{
 				!hasSlides && (
-					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4" aria-hidden="true">
+					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 max-md:rounded-full max-md:bg-black/35 max-md:px-4 max-md:py-2" aria-hidden="true">
 						<span class="flex size-6 items-center justify-center text-white/70">
 							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -437,6 +440,8 @@ const paddingStyle = p.padding
 			slides.forEach(function (s, i) {
 				s.style.opacity = i === idx ? "1" : "0";
 				s.style.pointerEvents = i === idx ? "auto" : "none";
+					if (i === idx) s.classList.remove("hidden");
+					else s.classList.add("hidden"); // мобила-стек: неактивный слайд вне потока (десктоп держит md:!block)
 			});
 			dots.forEach(function (d, i) {
 				d.setAttribute("data-active", i === idx ? "true" : "false");

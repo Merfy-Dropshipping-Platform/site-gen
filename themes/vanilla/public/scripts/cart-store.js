@@ -83,7 +83,10 @@ export const cartStore = {
     loadFromStorage();
     notify('cart:updated', { items: state.items });
 
-    if (state.cartId) {
+    // НЕ перетираем НЕПУСТУЮ локальную корзину стейл-серверным снимком (иначе на
+    // чекауте корректная корзина мерцает и заменяется старой). Пул с сервера ТОЛЬКО
+    // когда локальная ПУСТА (восстановление: новое устройство/новая вкладка).
+    if (state.cartId && state.items.length === 0) {
       try {
         const res = await CartAPI.getCart(state.cartId);
         if (res.success && res.data) {

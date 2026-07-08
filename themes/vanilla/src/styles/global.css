@@ -442,6 +442,32 @@ blockquote {
 }
 }
 @layer base {
+/* Стиль карточки товара «Карточка» (productCardStyle=card): фон-подложка
+   (--product-card-bg) + Обводка (--product-card-bw, цвет --color-border) + Скругление
+   (--product-card-radius) + отступ. Медиа скругляется ПО КАРТОЧКЕ (--product-card-media-radius).
+   standard → 0px/transparent (нейтрально/инертно). Выравнивание (--product-card-align/justify)
+   !important — бьёт Tailwind text-left. Токены эмитит ОБЩИЙ buildTokensCss (gated card); консумер
+   здесь — паритет с rose [data-nt="rose-product-card"]. DOM идентичен: SSR VanillaProductCard,
+   hydrate storefront-hydrate.renderCardHtml, wishlist. Fallback media-radius 0px = дефолт vanilla. */
+[data-nt="vanilla-product-card"] {
+	background: var(--product-card-bg, transparent);
+	border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
+	border-radius: var(--product-card-radius, 0px);
+	padding: var(--product-card-padding, 0px);
+}
+[data-nt="vanilla-product-card"] a.overflow-hidden {
+	border-radius: var(--product-card-media-radius, var(--radius-media, 0px)) !important;
+}
+[data-nt="vanilla-product-card"] > div:last-child {
+	align-items: var(--product-card-justify, flex-start) !important;
+	text-align: var(--product-card-align, left) !important;
+}
+[data-nt="vanilla-product-card"] > div:last-child > div {
+	justify-content: var(--product-card-justify, flex-start) !important;
+}
+}
+
+@layer base {
 
 /* ════ Auth & Account (раскатка vanilla) ════ */
 /* ── Auth utility classes (login, register, reset-password, verify-email) ── */

@@ -27,7 +27,7 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 <html lang="ru">
 	<head>
 		<BaseHead title={pageTitle} description={description} />
-		<ViewTransitions />
+		{header !== "checkout" && <ViewTransitions />}
 	</head>
 	<body class="vanilla-page antialiased">
 		{header === "checkout" ? (

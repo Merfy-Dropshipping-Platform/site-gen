@@ -34,6 +34,12 @@ export interface NtCartCreateOptions {
 	eventPrefix: string;
 	/** Базовый путь к карточке товара в ссылках drawer */
 	productPathPrefix?: string;
+	/**
+	 * URL каталога (products.json) для само-лечения корзины: если задан, initCartUI
+	 * на загрузке (и astro:page-load) пере-резолвит цены/наличие из каталога
+	 * (см. reconcileNtLines). Не задан → пере-резолва нет (обратная совместимость).
+	 */
+	catalogUrl?: string;
 }
 
 export interface NtAddToCartOptions {
@@ -68,8 +74,122 @@ const makeLineId = (productId: string, variant?: NtCartLineVariant) => {
 	return parts.join("|");
 };
 
+/** Товар каталога (products.json) для пере-резолва позиций корзины. */
+export interface NtCatalogProduct {
+	id: string;
+	name?: string;
+	price?: number;
+	compareAtPrice?: number | null;
+	images?: string[];
+	/** Опции с фото варианта (Цвет=Чёрный→своё фото). Фото варианта живёт ЗДЕСЬ,
+	 * не в product.images[0] (= первый вариант) и не в combination. */
+	variantGroups?: Array<{
+		name?: string;
+		options?: Array<{ value?: string; images?: string[] }>;
+	}>;
+	variantCombinations?: Array<{
+		id: string;
+		price?: number;
+		compareAtPrice?: number | null;
+		options?: Record<string, string>;
+	}>;
+}
+
+/**
+ * Фото выбранного варианта из каталога по color/size строки. null если у выбранной
+ * опции своего фото нет (тогда оставляем фото позиции / дефолт — НЕ первый вариант).
+ * Экспортируется для юнит-теста.
+ */
+export function variantImageFromNtCatalog(
+	product: NtCatalogProduct | undefined,
+	variant?: { color?: string; size?: string } | null,
+): string | null {
+	if (!product || !variant) return null;
+	const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+	const selected = [variant.color, variant.size].filter(Boolean).map((v) => String(v));
+	for (const g of groups) {
+		const opts = Array.isArray(g.options) ? g.options : [];
+		for (const o of opts) {
+			if (o.value != null && selected.indexOf(String(o.value)) !== -1 && Array.isArray(o.images) && o.images[0]) {
+				return o.images[0];
+			}
+		}
+	}
+	return null;
+}
+
+/**
+ * Чистый пере-резолв строк nt-cart из АКТУАЛЬНОГО каталога (products.json).
+ * Корзина хранит снапшот (price/name/image на момент добавления) и устаревает,
+ * когда мерчант меняет цену/удаляет товар → страница корзины и оформление
+ * показывают разное. Пере-резолв: цена/имя/картинка → текущие; удалённый товар
+ * или вариант → строка ВЫКИДЫВАЕТСЯ; мёртвый variantCombinationId → ре-матч по
+ * options (Цвет/Размер). Цены nt-cart и products.json — в РУБЛЯХ (без *100).
+ * Экспортируется для юнит-теста.
+ */
+export function reconcileNtLines(
+	lines: NtCartLine[],
+	products: NtCatalogProduct[],
+): { lines: NtCartLine[]; changed: boolean; dropped: number } {
+	if (!Array.isArray(lines) || lines.length === 0) return { lines: lines || [], changed: false, dropped: 0 };
+	if (!Array.isArray(products) || products.length === 0) return { lines, changed: false, dropped: 0 };
+	const byId = new Map<string, NtCatalogProduct>();
+	for (const p of products) if (p && p.id != null) byId.set(String(p.id), p);
+	let changed = false;
+	let dropped = 0;
+	const next: NtCartLine[] = [];
+	for (const line of lines) {
+		const p = byId.get(String(line.productId));
+		if (!p) { changed = true; dropped++; continue; } // товар удалён → выкинуть
+		const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+		let combo: NonNullable<NtCatalogProduct["variantCombinations"]>[number] | null = null;
+		if (combos.length > 0) {
+			const vcId = line.variant?.variantCombinationId;
+			if (vcId) combo = combos.find((c) => String(c.id) === String(vcId)) || null;
+			if (!combo && (line.variant?.color || line.variant?.size)) {
+				combo = combos.find((c) => {
+					const o = c.options || {};
+					const colorOk = !line.variant?.color || String(o["Цвет"]) === String(line.variant.color);
+					const sizeOk = !line.variant?.size || String(o["Размер"]) === String(line.variant.size);
+					return colorOk && sizeOk;
+				}) || null;
+			}
+			if (!combo) { changed = true; dropped++; continue; } // вариант удалён → выкинуть
+		}
+		const price = combo ? Number(combo.price) : Number(p.price);
+		const rawOld = combo ? combo.compareAtPrice : p.compareAtPrice;
+		const oldPrice = rawOld != null && Number.isFinite(Number(rawOld)) ? Number(rawOld) : undefined;
+		const name = p.name || line.name;
+		// Фото выбранного варианта (Цвет) → иначе фото позиции (add-time, верное) →
+		// лишь в крайнем случае первое фото товара. НЕ клобберим на p.images[0]
+		// (= первый вариант) — баг «встаёт фото другого варианта после подгрузки».
+		const variantImg = variantImageFromNtCatalog(p, line.variant);
+		const image = variantImg || line.image || (Array.isArray(p.images) && p.images[0] ? p.images[0] : "");
+		const newVcId = combo ? String(combo.id) : line.variant?.variantCombinationId;
+		const nl: NtCartLine = {
+			...line,
+			name,
+			image,
+			price: Number.isFinite(price) ? price : line.price,
+			oldPrice,
+			variant: line.variant ? { ...line.variant, variantCombinationId: newVcId } : line.variant,
+		};
+		if (
+			nl.price !== line.price ||
+			nl.oldPrice !== line.oldPrice ||
+			nl.name !== line.name ||
+			nl.image !== line.image ||
+			nl.variant?.variantCombinationId !== line.variant?.variantCombinationId
+		) {
+			changed = true;
+		}
+		next.push(nl);
+	}
+	return { lines: next, changed, dropped };
+}
+
 export const createNtCart = (opts: NtCartCreateOptions) => {
-	const { storageKey, eventPrefix, productPathPrefix = "/products" } = opts;
+	const { storageKey, eventPrefix, productPathPrefix = "/products", catalogUrl } = opts;
 	const evUpdated = `${eventPrefix}:updated`;
 	const evOpen = `${eventPrefix}:open`;
 
@@ -82,6 +202,58 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		if (typeof window === "undefined") return;
 		window.localStorage.setItem(storageKey, JSON.stringify(lines));
 		window.dispatchEvent(new CustomEvent(evUpdated, { detail: lines }));
+	};
+
+	// Само-лечение корзины из каталога. Кэш на сессию (одна сетевая загрузка);
+	// ошибка/пустой → [], тогда reconcile НЕ трогает корзину (оффлайн-защита).
+	let catalogPromise: Promise<NtCatalogProduct[]> | null = null;
+	// Preview-фолбэк: в конструктор-превью (iframe на gateway) /data/products.json
+	// = 404. Берём каталог из storefront-data (тот же источник, что у продукт-блоков
+	// превью — storefront-hydrate.ts) → reconcile лечит стейл-корзину и в превью.
+	const fetchStorefrontDataProducts = (): Promise<NtCatalogProduct[]> => {
+		const w = window as unknown as {
+			__MERFY_SITE_ID__?: string;
+			__MERFY_CONFIG__?: { shopId?: string };
+		};
+		const siteId = w.__MERFY_SITE_ID__ || w.__MERFY_CONFIG__?.shopId;
+		if (!siteId) return Promise.resolve([]);
+		return fetch(`/api/sites/${encodeURIComponent(siteId)}/storefront-data`)
+			.then((r) => (r.ok ? r.json() : null))
+			.then((p) => {
+				const prods = (p as { products?: unknown } | null)?.products;
+				return Array.isArray(prods) ? (prods as NtCatalogProduct[]) : [];
+			})
+			.catch(() => []);
+	};
+	const loadCatalog = (url: string): Promise<NtCatalogProduct[]> => {
+		if (typeof window === "undefined") return Promise.resolve([]);
+		if (!catalogPromise) {
+			catalogPromise = fetch(url, { cache: "default" })
+				.then((r) => (r.ok ? r.json() : null))
+				.then((j) => {
+					const arr = Array.isArray(j) ? j : (j && (j.products || j.data)) || [];
+					return Array.isArray(arr) && arr.length
+						? (arr as NtCatalogProduct[])
+						: fetchStorefrontDataProducts();
+				})
+				.catch(() => fetchStorefrontDataProducts());
+		}
+		return catalogPromise;
+	};
+
+	/**
+	 * Пере-резолвить корзину (vanilla:cart:v1) из products.json и, если что-то
+	 * поменялось (цена/имя/картинка/выкинутый товар), сохранить + отправить
+	 * `${eventPrefix}:updated` → бейдж/дровер/страница корзины перерисуются
+	 * текущими данными. Так корзина всегда = оформлению.
+	 */
+	const reconcileCart = async (url = catalogUrl): Promise<void> => {
+		if (typeof window === "undefined" || !url) return;
+		const lines = getCart();
+		if (lines.length === 0) return;
+		const products = await loadCatalog(url);
+		const result = reconcileNtLines(lines, products);
+		if (result.changed) saveCart(result.lines);
 	};
 
 	const addToCart = (options: NtAddToCartOptions) => {
@@ -256,9 +428,18 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			renderBadges();
 			renderDrawer();
 		});
+		// View Transitions: init-модуль НЕ перезапускается после client-side навигации.
+		// Vanilla рендерит бейджи/дровер один раз (делегат на document/window переживает
+		// VT), но само-лечение нужно и после клиентской навигации — reconcileCart сам
+		// диспатчит `${eventPrefix}:updated` → бейдж/дровер перерисуются текущими данными.
+		document.addEventListener("astro:page-load", () => {
+			if (catalogUrl) void reconcileCart(catalogUrl);
+		});
 
 		renderBadges();
 		renderDrawer();
+		// Само-лечение цен/наличия из каталога → корзина всегда актуальна (= оформлению).
+		if (catalogUrl) void reconcileCart(catalogUrl);
 	};
 
 	return {
@@ -271,6 +452,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		getCartTotal,
 		formatCartPrice,
 		initCartUI,
+		reconcileCart,
 		events: { updated: evUpdated, open: evOpen, close: `${eventPrefix}:close`, toggle: `${eventPrefix}:toggle` },
 	};
 };

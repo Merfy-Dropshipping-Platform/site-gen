@@ -48,6 +48,42 @@ import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inlin
 // он КОНСТАНТА на приложение (не менялся бы между деплоями → кэш никогда не сбросить).
 const PREVIEW_ASSET_VERSION = (process.env.SOURCE_COMMIT || String(Date.now())).slice(0, 12);
 
+/** Настройки чекаута магазина (site.settings) — читаемое подмножество. */
+interface CheckoutSiteSettings {
+  requireCustomerAuth?: boolean;
+  addressRequired?: boolean;
+  contactMethod?: 'email-phone' | 'email';
+  customerNameMode?: 'name-surname' | 'surname' | 'name';
+}
+
+/** Рантайм-контракт канала настроек чекаута (одинаков во всех слоях). */
+interface CheckoutRuntimeConfig {
+  contactMethod: 'email-phone' | 'email';
+  customerNameMode: 'name-surname' | 'surname' | 'name';
+  addressRequired: boolean;
+}
+
+/**
+ * Нормализует site.settings → рантайм-контракт чекаута с дефолтами
+ * (contactMethod="email-phone", customerNameMode="name-surname",
+ * addressRequired=true). Единый источник дефолтов для превью-инжекта —
+ * зеркалит клиентский apply() в checkout.astro на live, чтобы превью-чекаут
+ * вёл себя идентично живому.
+ */
+function checkoutConfigFromSettings(
+  settings: CheckoutSiteSettings | null | undefined,
+): CheckoutRuntimeConfig {
+  return {
+    contactMethod: settings?.contactMethod === 'email' ? 'email' : 'email-phone',
+    customerNameMode:
+      settings?.customerNameMode === 'surname' ||
+      settings?.customerNameMode === 'name'
+        ? settings.customerNameMode
+        : 'name-surname',
+    addressRequired: settings?.addressRequired === false ? false : true,
+  };
+}
+
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
  * used by the iframe's `update-block` postMessage handler in the constructor
@@ -313,6 +349,10 @@ export class PreviewController {
               this.productBlockIdFromRevision(loaded.data),
               PreviewService.bareThemeKey(loaded.themeId!),
               this.productSectionFromRevision(loaded.data),
+              // Рантайм-канал настроек чекаута — только на checkout-маршруте.
+              route.split('/')[0] === 'checkout'
+                ? checkoutConfigFromSettings(loaded.settings)
+                : null,
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -456,6 +496,10 @@ export class PreviewController {
         this.productBlockIdFromRevision(loaded.data),
         PreviewService.bareThemeKey(loaded.themeId!),
         this.productSectionFromRevision(loaded.data),
+        // Рантайм-канал настроек чекаута — только на checkout-маршруте.
+        route.split('/')[0] === 'checkout'
+          ? checkoutConfigFromSettings(loaded.settings)
+          : null,
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -667,6 +711,7 @@ export class PreviewController {
     tenantId: string | null;
     revisionId: string;
     footerFp: string;
+    settings: CheckoutSiteSettings | null;
   } | null> {
     const [site] = await this.db
       .select({
@@ -674,6 +719,7 @@ export class PreviewController {
         publicUrl: schema.site.publicUrl,
         themeId: schema.site.themeId,
         tenantId: schema.site.tenantId,
+        settings: schema.site.settings,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -705,6 +751,7 @@ export class PreviewController {
       tenantId: site.tenantId ?? null,
       revisionId: site.currentRevisionId,
       footerFp,
+      settings: (site.settings as CheckoutSiteSettings | null) ?? null,
     };
   }
 
@@ -737,6 +784,7 @@ export class PreviewController {
     productBlockId?: string | null,
     themeName?: string | null,
     productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
+    checkoutConfig?: CheckoutRuntimeConfig | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     // Cache-bust плоских превью-скриптов (cart-store.js, cart-api.js): gateway кэширует
@@ -810,6 +858,25 @@ export class PreviewController {
       html = html.replace(
         /<head(\s[^>]*)?>/i,
         (m) => `${m}<script>window.__MERFY_CATALOG_LAYOUT__ = ${JSON.stringify(catalogLayout)};</script>`,
+      );
+    }
+    // Рантайм-канал настроек чекаута (Фаза 4a): превью серверный и имеет доступ
+    // к site.settings → инжектим window.__MERFY_CONFIG__.checkout НАПРЯМУЮ (без
+    // fetch, без зависимости от CORS/доступности gateway из iframe) и диспатчим
+    // `checkout:config-ready`, чтобы превью-чекаут вёл себя идентично живому.
+    // Head-инжект → checkout.astro-скрипт (blob) видит cfg.checkout и пропускает
+    // fetch; v2-путь checkout-скрипта не имеет → диспатч отсюда обязателен.
+    // Диспатч отложен до DOMContentLoaded — консюмеры формы регистрируют
+    // слушатель при парсинге body (ниже в DOM) и гарантированно ловят событие.
+    if (checkoutConfig) {
+      const checkoutJson = JSON.stringify(checkoutConfig);
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) =>
+          `${m}<script>window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};` +
+          `window.__MERFY_CONFIG__.checkout = ${checkoutJson};` +
+          `(function(){function f(){try{document.dispatchEvent(new CustomEvent('checkout:config-ready'));}catch(e){}}` +
+          `if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',f);}else{f();}})();</script>`,
       );
     }
     // Агент конструктора (hover/select → postMessage). На секционном пути его

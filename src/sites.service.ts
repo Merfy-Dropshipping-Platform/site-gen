@@ -297,6 +297,10 @@ export class SitesDomainService {
         publicUrl: schema.site.publicUrl,
         storageSlug: schema.site.storageSlug,
         branding: schema.site.branding,
+        // Настройки магазина (checkout contactMethod/customerNameMode/addressRequired).
+        // Зеркалит проекцию list/get — публичный чекаут читает их через
+        // sites.get_shop RPC → gateway /public/sites/:shopId/settings.
+        settings: schema.site.settings,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         theme: {

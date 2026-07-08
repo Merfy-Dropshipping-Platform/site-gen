@@ -47,13 +47,75 @@ const dadataToken = "";
   {/* Config injection (templates pattern). build.service.ts patches shopId +
       DADATA_API_KEY at deploy; for the local pilot the script just has to exist. */}
   <script is:inline define:vars={{ shopId, apiUrl, dadataToken }}>
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
-      shopId: shopId || "",
-      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
-    };
+    // НЕ клоббер: превью (preview.controller.injectPreviewGlobals) может выставить
+    // window.__MERFY_CONFIG__.checkout ДО этого скрипта. Создаём объект при
+    // отсутствии и лишь дозаполняем shopId/apiUrl, сохраняя .checkout.
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
+    if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId || "";
+    if (!window.__MERFY_CONFIG__.apiUrl)
+      window.__MERFY_CONFIG__.apiUrl = apiUrl || "https://gateway.merfy.ru/api";
     if (dadataToken) {
       window.__DADATA_TOKEN__ = dadataToken;
     }
+  </script>
+  {/* Рантайм-канал настроек чекаута (Фаза 4a): без ребилда тянем per-store
+      настройки формы из gateway и публикуем на window.__MERFY_CONFIG__.checkout
+      + событие `checkout:config-ready`. Отказоустойчиво: любой сбой / пустой
+      shopId → дефолты (полная форма), событие ВСЁ РАВНО диспатчится (консюмеры
+      формы разблокируются). Превью проставляет .checkout сервер-сайд → fetch
+      пропускается. is:inline обязателен (как у соседних checkout-скриптов).
+      No-flash: настройки тянутся в рантайме, поэтому не-дефолтные магазины на миг
+      видят дефолт-форму до `checkout:config-ready`. Принято намеренно; в будущем
+      можно повесить лоадер / придержать конфиг-зависимые поля скрытыми до
+      события, чтобы убрать мигание (Фаза 4a, no-flash вариант B). */}
+  <script is:inline>
+    (function () {
+      var cfg = (window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {});
+      function fire() {
+        try {
+          document.dispatchEvent(new CustomEvent("checkout:config-ready"));
+        } catch (e) {}
+      }
+      function apply(s) {
+        s = s || {};
+        cfg.checkout = {
+          contactMethod: s.contactMethod === "email" ? "email" : "email-phone",
+          customerNameMode:
+            s.customerNameMode === "surname" || s.customerNameMode === "name"
+              ? s.customerNameMode
+              : "name-surname",
+          addressRequired: s.addressRequired === false ? false : true,
+        };
+        fire();
+      }
+      // Превью уже проставило cfg.checkout сервер-сайд — чтим его, без fetch.
+      if (cfg.checkout) {
+        fire();
+        return;
+      }
+      var shopId = cfg.shopId;
+      var apiUrl = cfg.apiUrl || "https://gateway.merfy.ru/api";
+      if (!shopId) {
+        apply(null);
+        return;
+      }
+      try {
+        fetch(apiUrl + "/public/sites/" + encodeURIComponent(shopId) + "/settings", {
+          headers: { Accept: "application/json" },
+        })
+          .then(function (r) {
+            return r && r.ok ? r.json() : null;
+          })
+          .then(function (j) {
+            apply(j && j.settings);
+          })
+          .catch(function () {
+            apply(null);
+          });
+      } catch (e) {
+        apply(null);
+      }
+    })();
   </script>
   {/* `is:inline` is REQUIRED — without it Astro bundles these through Vite, can't
       resolve `/scripts/...` (public dir) and SILENTLY drops the tag, leaving

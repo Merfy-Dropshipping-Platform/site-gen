@@ -9,6 +9,8 @@ export const CheckoutContactFormClasses = {
   authLink:
     'text-[length:var(--size-small)] text-[rgb(var(--color-muted))] underline underline-offset-2 hover:no-underline',
   fields: 'grid grid-cols-1 md:grid-cols-2 gap-2.5',
+  // Растяжка одиночного видимого поля на всю ширину грида (contactMethod="email").
+  fieldFull: 'md:col-span-2',
   field:
     'relative bg-[rgb(var(--color-input-bg))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] h-11 transition-colors focus-within:border-[rgb(var(--color-text)/.5)]',
   input:

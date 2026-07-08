@@ -700,10 +700,12 @@ export class PreviewService {
 <body>
   ${bodyHtml}
   <script>
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
-      shopId: ${JSON.stringify(input.siteId ?? '')},
-      apiUrl: 'https://gateway.merfy.ru/api'
-    };
+    // НЕ клоббер: injectPreviewGlobals может выставить __MERFY_CONFIG__.checkout
+    // ДО этого скрипта (head) — создаём объект при отсутствии и лишь дозаполняем
+    // shopId/apiUrl, сохраняя .checkout.
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
+    if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = ${JSON.stringify(input.siteId ?? '')};
+    if (!window.__MERFY_CONFIG__.apiUrl) window.__MERFY_CONFIG__.apiUrl = 'https://gateway.merfy.ru/api';
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
   ${IDIOMORPH_INLINE}

@@ -44,6 +44,24 @@ const initialLabel = buttonText.replace('{total}', '—');
     function getShopId() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
+    // Настройки чекаута инжектятся в __MERFY_CONFIG__.checkout ПОСЛЕ блоков
+    // (producer в checkout.astro диспатчит checkout:config-ready). Читаем лениво
+    // при КАЖДОМ вызове — дефолты при отсутствии = текущее поведение (нулевая
+    // регрессия). «Выключено ли поле» определяется этим конфигом, НЕ пустым инпутом.
+    function getCheckoutConfig() {
+      return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
+    }
+    function getContactMethod() {
+      return getCheckoutConfig().contactMethod === 'email' ? 'email' : 'email-phone';
+    }
+    function getCustomerNameMode() {
+      var m = getCheckoutConfig().customerNameMode;
+      return (m === 'surname' || m === 'name') ? m : 'name-surname';
+    }
+    function getAddressRequired() {
+      // Дефолт true — физ-адрес обязателен; только явный false его выключает.
+      return getCheckoutConfig().addressRequired !== false;
+    }
     function getCartId() {
       return (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
     }
@@ -76,22 +94,57 @@ const initialLabel = buttonText.replace('{total}', '—');
       var f = document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: cross-block, секция CheckoutDeliveryForm, page-singleton checkout
       return f ? (f.getAttribute('data-selected-city-fias-id') || '') : '';
     }
+    // Отображаемое имя из ВИДИМЫХ полей согласно customerNameMode:
+    //   name-surname → «Имя Фамилия», surname → «Фамилия», name → «Имя».
+    // name-surname сохраняет legacy-fallback на поле fullName (нулевая регрессия).
+    function buildCustomerName(mode) {
+      var fn = getField('firstName');
+      var ln = getField('lastName');
+      if (mode === 'surname') return ln;
+      if (mode === 'name') return fn;
+      return getField('fullName') || (fn + ' ' + ln).trim();
+    }
 
     function canSubmit() {
       if (state.submitting) return false;
       var items = getCartItems();
       if (items.length === 0) return false;
       if (!getShopId()) return false;
-      if (!getField('email') || !getField('phone')) return false;
-      if (!getField('city') || !getField('street')) return false;
-      if (!state.deliveryMethod) return false;
-      // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
-      // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
-      // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
-      if (state.deliveryMethod.type === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
-      // Курьер/до двери (cdek_door): «Дом» обязателен — иначе CDEK получит адрес
-      // без номера дома (doorAddress = только улица) → реджект/недоставка после оплаты.
-      if (state.deliveryMethod.type === 'cdek_door' && !getField('building')) return false;
+
+      // Контакт: email обязателен всегда; телефон — только когда режим не 'email'.
+      if (!getField('email')) return false;
+      if (getContactMethod() !== 'email' && !getField('phone')) return false;
+
+      // Имя: требуем заполненности ВИДИМЫХ полей согласно customerNameMode.
+      // CheckoutDeliveryForm рендерит ЛИБО split-поля (firstName+lastName), ЛИБО одно
+      // поле fullName (splitFirstLast:false) — при fullName-раскладке split-полей нет,
+      // getField вернёт ''. Зеркалим fullName-fallback из buildCustomerName: имя
+      // заполнено, если есть соответствующее режиму split-поле ЛИБО непустой fullName.
+      var nameMode = getCustomerNameMode();
+      if (nameMode === 'surname') {
+        if (!getField('lastName') && !getField('fullName')) return false;
+      } else if (nameMode === 'name') {
+        if (!getField('firstName') && !getField('fullName')) return false;
+      } else {
+        if (!getField('fullName') && !(getField('firstName') && getField('lastName'))) return false;
+      }
+
+      // Адрес + способ доставки требуются только для физических товаров
+      // (addressRequired). Для цифровых (addressRequired=false) секцию доставки
+      // нейтрализует CheckoutDeliveryMethod (синтетический {type:'none'}), поэтому
+      // гейт пропускает этот случай без выбора метода.
+      if (getAddressRequired()) {
+        if (!getField('city') || !getField('street')) return false;
+        if (!state.deliveryMethod) return false;
+        // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
+        // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
+        // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
+        if (state.deliveryMethod.type === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
+        // Курьер/до двери (cdek_door): «Дом» обязателен — иначе CDEK получит адрес
+        // без номера дома (doorAddress = только улица) → реджект/недоставка после оплаты.
+        if (state.deliveryMethod.type === 'cdek_door' && !getField('building')) return false;
+      }
+
       if (!state.paymentMethod) return false;
       return true;
     }
@@ -104,6 +157,9 @@ const initialLabel = buttonText.replace('{total}', '—');
 
     document.addEventListener('cart:updated', refresh);
     document.addEventListener('checkout:address-changed', refresh);
+    // Настройки чекаута прилетают ПОСЛЕ init — пере-оцениваем гейт по событию.
+    // (getContactMethod/getCustomerNameMode/getAddressRequired читают конфиг лениво.)
+    document.addEventListener('checkout:config-ready', refresh);
     document.addEventListener('checkout:discount-applied', function (e) {
       // Кнопка «Оформить — {total}» должна показывать сумму со скидкой.
       state.discountCents = (e && e.detail && e.detail.discountCents) || 0;
@@ -185,18 +241,27 @@ const initialLabel = buttonText.replace('{total}', '—');
           paymentToken = await window.__checkoutTokenizeCard();
         }
 
-        var firstName = getField('firstName');
-        var lastName = getField('lastName');
-        var fullName = getField('fullName') || (firstName + ' ' + lastName).trim();
+        var nameMode = getCustomerNameMode();
+        var contactMethod = getContactMethod();
+        var addressRequired = getAddressRequired();
+        // Отображаемое имя из видимых полей (по customerNameMode).
+        var customerName = buildCustomerName(nameMode);
+        // Видимые компоненты имени для metadata — скрытые режимом остаются пустыми.
+        var firstName = nameMode === 'surname' ? '' : getField('firstName');
+        var lastName = nameMode === 'name' ? '' : getField('lastName');
         var email = getField('email');
         var phone = getField('phone');
 
-        // 1. PATCH cart с customer info (backend ищет на самой записи cart)
+        // 1. PATCH cart с customer info (backend ищет на самой записи cart).
+        //    Телефон отправляем только когда режим контакта не 'email' — иначе
+        //    ключ опускаем совсем (не шлём пустую строку).
+        var customerBody = { email: email, name: customerName };
+        if (contactMethod !== 'email') customerBody.phone = phone;
         await fetch(apiBase + '/orders/cart/' + cartId + '/customer', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ email: email, phone: phone, name: fullName }),
+          body: JSON.stringify(customerBody),
         });
 
         // 2. PATCH cart с address. CheckoutDeliveryForm теперь держит ОТДЕЛЬНЫЕ
@@ -217,19 +282,23 @@ const initialLabel = buttonText.replace('{total}', '—');
         if (addrBuilding) addrFullParts.push('д. ' + addrBuilding);
         if (addrApartment) addrFullParts.push('кв. ' + addrApartment);
         var addrFull = addrFullParts.join(', ');
-        await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            country: getField('country') || 'Россия',
-            city: getField('city'),
-            street: addrStreet,
-            building: addrBuilding,
-            apartment: addrApartment,
-            postalCode: getField('postalCode'),
-          }),
-        });
+        // Физ-адрес шлём только для физических товаров. Для цифровых
+        // (addressRequired=false) PATCH /address НЕ вызываем (адрес не собирается).
+        if (addressRequired) {
+          await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              country: getField('country') || 'Россия',
+              city: getField('city'),
+              street: addrStreet,
+              building: addrBuilding,
+              apartment: addrApartment,
+              postalCode: getField('postalCode'),
+            }),
+          });
+        }
 
         // 2.5 — CDEK самовывоз (ПВЗ/постамат): пробрасываем код точки на заказ
         // через /delivery/select. Это ЕДИНСТВЕННЫЙ путь, по которому
@@ -237,7 +306,7 @@ const initialLabel = buttonText.replace('{total}', '—');
         // metadata.deliveryMethod при checkout код точки НЕ переносит. Падение
         // НЕ глотаем — иначе СДЭК отклонит отправление уже после оплаты.
         var dm = state.deliveryMethod;
-        if (dm && dm.type === 'cdek_pickup') {
+        if (addressRequired && dm && dm.type === 'cdek_pickup') {
           var selectBody = {
             type: dm.type,
             deliveryCostCents: dm.costCents || 0,
@@ -267,26 +336,33 @@ const initialLabel = buttonText.replace('{total}', '—');
           }
         }
 
-        // 3. POST checkout (теперь cart содержит customerEmail/Phone)
-        var checkoutBody = {
-          metadata: {
-            paymentMethod: state.paymentMethod,
-            deliveryAddress: {
-              country: getField('country') || 'Россия',
-              city: getField('city'),
-              fullAddress: addrFull,
-              postalCode: getField('postalCode'),
-              fiasId: getFiasId(),
-              firstName: firstName,
-              lastName: lastName,
-              fullName: fullName,
-            },
-            deliveryMethod: state.deliveryMethod,
-            contactEmail: email,
-            contactPhone: phone,
-            customerName: fullName,
-          },
+        // 3. POST checkout (теперь cart содержит customerEmail/Phone).
+        //    Цифровые товары (addressRequired=false): deliveryMethod —
+        //    синтетический «без доставки»; deliveryAddress не собираем;
+        //    contactPhone опускаем если пусто.
+        var metadata = {
+          paymentMethod: state.paymentMethod,
+          deliveryMethod: addressRequired ? state.deliveryMethod : { type: 'none', costCents: 0 },
+          contactEmail: email,
+          customerName: customerName,
         };
+        // contactPhone в метаданные заказа — только когда режим контакта не 'email'
+        // (консистентно с PATCH /customer). Иначе телефон, введённый вручную до
+        // прихода конфига в email-only магазине, утёк бы в заказ.
+        if (contactMethod !== 'email' && phone) metadata.contactPhone = phone;
+        if (addressRequired) {
+          metadata.deliveryAddress = {
+            country: getField('country') || 'Россия',
+            city: getField('city'),
+            fullAddress: addrFull,
+            postalCode: getField('postalCode'),
+            fiasId: getFiasId(),
+            firstName: firstName,
+            lastName: lastName,
+            fullName: customerName,
+          };
+        }
+        var checkoutBody = { metadata: metadata };
         var checkoutRes = await fetch(apiBase + '/orders/cart/' + cartId + '/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

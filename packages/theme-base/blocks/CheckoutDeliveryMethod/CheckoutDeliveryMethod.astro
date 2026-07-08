@@ -114,6 +114,36 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     function getShopId() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
+    // Настройки чекаута инжектятся в __MERFY_CONFIG__.checkout ПОСЛЕ блоков
+    // (producer в checkout.astro диспатчит checkout:config-ready). Читаем лениво.
+    // addressRequired=false → цифровой товар, физ-доставки нет.
+    function getAddressRequired() {
+      var cfg = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
+      return cfg.addressRequired !== false;
+    }
+    // Цифровой режим: прячем всю секцию доставки и подставляем синтетический
+    // метод «без доставки», чтобы Totals/сабмит обновились. Идемпотентно —
+    // событие диспатчим один раз (guard-флаг), но hidden держим постоянно.
+    var digitalNeutralized = false;
+    function neutralizeForDigital() {
+      section.hidden = true;
+      if (digitalNeutralized) return;
+      digitalNeutralized = true;
+      document.dispatchEvent(new CustomEvent('checkout:delivery-changed', {
+        detail: {
+          type: 'none',
+          label: 'Без доставки',
+          costCents: 0,
+          tariffCode: null,
+          customTariffId: null,
+          pickupPointId: null,
+          pickupPointCode: null,
+          pickupPointAddress: null,
+          periodMin: null,
+          periodMax: null,
+        },
+      }));
+    }
 
     var OPTION_CLS = 'flex items-start gap-3 px-3 py-2.5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors hover:border-[rgb(var(--color-text)/.4)]';
     var OPTION_SELECTED_CLS = 'border-[rgb(var(--color-text))]';
@@ -673,6 +703,8 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     }
 
     async function recalculate(addr) {
+      // Цифровой товар — физ-доставки нет: секцию нейтрализуем, расчёт не шлём.
+      if (!getAddressRequired()) { neutralizeForDigital(); return; }
       var cityFiasId = (addr && addr.cityFiasId) || '';
       var postalCode = (addr && addr.postalCode) || '';
       var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
@@ -787,6 +819,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     // fetch к логистике + два ре-рендера списка = «скачок интерфейса»).
     var _recalcTimer = null;
     function recalcFromCart() {
+      if (!getAddressRequired()) { neutralizeForDigital(); return; }
       var lastFiasId = section.getAttribute('data-last-fias-id') || '';
       var lastPostal = section.getAttribute('data-last-postal') || '';
       if (lastFiasId) {
@@ -814,17 +847,53 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     // самовывоз показались сразу. ВАЖНО про тайминг: конфиг (__MERFY_CONFIG__)
     // инжектится ПОСЛЕ блоков, а серверная корзина (merfy:cartId) на rose создаётся
     // асинхронно уже после загрузки — поэтому СИНХРОННО здесь вызывать нельзя.
-    // Делаем отложенно (после DOMContentLoaded); если cartId ещё не готов — добьёт
-    // обработчик cart:updated выше (событие прилетит после syncToServer).
+    // Идемпотентно — повторные вызовы (config-ready + safety-net) игнорируются.
+    var initialRenderStarted = false;
     function initialDeliveryRender() {
+      if (initialRenderStarted) return;
+      initialRenderStarted = true;
+      if (!getAddressRequired()) { neutralizeForDigital(); return; }
       if (!getShopId()) return;
       var cid = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
       if (cid) recalculate(null);
     }
-    if (typeof document !== 'undefined' && document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function () { setTimeout(initialDeliveryRender, 300); });
-    } else {
-      setTimeout(initialDeliveryRender, 300);
+
+    // На чекауте НЕ запускаем первичный рендер (и запрос в логистику), пока не
+    // известен конфиг: иначе цифровой товар успеет сходить в логистику и мигнуть
+    // секцией до нейтрализации (config-ready приходит ПОЗЖЕ init). Ждём событие —
+    // оно диспатчится всегда, даже при упавшем fetch (тогда дефолты = физ-доставка).
+    // Safety-net: если config-ready почему-то не пришёл за ~1500мс — рендерим с
+    // дефолтами, чтобы доставка не зависла навсегда.
+    var _initSafetyTimer = null;
+    function scheduleInitialSafetyNet() {
+      _initSafetyTimer = setTimeout(function () {
+        _initSafetyTimer = null;
+        initialDeliveryRender();
+      }, 1500);
     }
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', scheduleInitialSafetyNet);
+    } else {
+      scheduleInitialSafetyNet();
+    }
+
+    // Настройки чекаута прилетают ПОСЛЕ init — применяем по событию. Это же событие
+    // снимает safety-net и запускает первичный рендер детерминированно (конфиг уже
+    // известен): цифровой → нейтрализация, физ → расчёт. Если safety-net успел
+    // отработать раньше конфига — досогласуем режим (нулевая регрессия).
+    document.addEventListener('checkout:config-ready', function () {
+      if (_initSafetyTimer) { clearTimeout(_initSafetyTimer); _initSafetyTimer = null; }
+      if (!initialRenderStarted) {
+        initialDeliveryRender();
+        return;
+      }
+      if (!getAddressRequired()) {
+        neutralizeForDigital();
+      } else if (digitalNeutralized || section.hidden) {
+        section.hidden = false;
+        digitalNeutralized = false;
+        recalcFromCart();
+      }
+    });
   })();
 </script>

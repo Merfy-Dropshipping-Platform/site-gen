@@ -7,6 +7,8 @@ export const CheckoutDeliveryFormClasses = {
     'mb-5 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
   fields: 'flex flex-col gap-2.5',
   fieldRow2: 'grid grid-cols-1 md:grid-cols-2 gap-2.5',
+  // Растяжка одиночного видимого поля имени на всю ширину ряда (customerNameMode).
+  fieldFull: 'md:col-span-2',
   // 65/35 split — город получает основное место, индекс компактный.
   cityIndexRow: 'grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2.5',
   field:

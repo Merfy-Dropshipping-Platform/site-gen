@@ -167,6 +167,7 @@ export class SitesDomainService {
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
         branding: schema.site.branding,
+        settings: schema.site.settings,
         createdAt: schema.site.createdAt,
         // JOIN: theme data
         theme: {
@@ -215,6 +216,7 @@ export class SitesDomainService {
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
         domainId: schema.site.domainId,
         branding: schema.site.branding,
+        settings: schema.site.settings,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,

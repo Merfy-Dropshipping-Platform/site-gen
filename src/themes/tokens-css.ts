@@ -98,14 +98,22 @@ export function buildTokensCss(
   const inputRadius = toPx(s.inputRadius, 8);
   const mediaRadius = toPx(s.mediaRadius, 8);
   const fieldRadius = toPx(s.fieldRadius, 4);
-  // Card style «Карточка» (productCardStyle=card): бордер+радиус+паддинг на карточке
-  // товара. standard → 0px (нейтрально, ноль регрессии). Выравнивание — в обоих стилях.
+  // Cascade: merchant override (revision.themeSettings) → theme manifest →
+  // hardcoded fallback. Объявлено здесь (перемещено выше), чтобы card-style
+  // дефолт читался из МАНИФЕСТА темы. Spec 082 Stage 2a N4.5.
+  const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
+  // Card style «Карточка» (productCardStyle=card): бордер+радиус+паддинг+подложка
+  // на карточке товара. Дефолт из манифеста темы (--card-style): flux=card (канон-
+  // плашка верстальщика #FBFBFB=surface), rose/bloom/satin/vanilla=standard → 0px
+  // (нейтрально, ноль регрессии). Мерчант-выбор (s.productCardStyle) перекрывает
+  // манифест. Выравнивание (--card-alignment) — в обоих стилях.
   const cardBorder = toPx(s.cardBorder, 0);
-  const cardStyled = s.productCardStyle === 'card';
+  const cardStyled = (s.productCardStyle ?? themeDefaults['--card-style']) === 'card';
+  const _pcAlignRaw = s.productCardAlignment ?? themeDefaults['--card-alignment'];
   const pcAlign =
-    s.productCardAlignment === 'center'
+    _pcAlignRaw === 'center'
       ? 'center'
-      : s.productCardAlignment === 'right'
+      : _pcAlignRaw === 'right'
         ? 'right'
         : 'left';
   const headingFont = fontFamily(s.headingFont, 'system-ui');
@@ -124,13 +132,7 @@ export function buildTokensCss(
   const navLinkSize = toPx(s.navLinkSize, 14);
   const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
-  // Cascade: merchant override (revision.themeSettings) → theme manifest →
-  // hardcoded fallback. Merchant ThemeSettingsPanel saves customizations
-  // in revision.data.themeSettings (constructor); preview + build pipelines
-  // both call buildTokensCss to apply them. Spec 082 Stage 2a N4.5 flipped
-  // precedence so merchant edits actually take effect — previously theme
-  // manifest defaults always won, silently discarding merchant input.
-  const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
+  // (themeDefaults объявлено выше — перемещено для card-style дефолта из манифеста.)
 
   // Cart variant ('drawer' | 'page'): merchant ThemeSettingsPanel choice wins,
   // then theme manifest default, then 'drawer'. Read inline at click-time by the

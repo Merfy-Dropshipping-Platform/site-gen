@@ -512,7 +512,7 @@ function saleBadgeHtml(p: RealProduct): string {
 // Чёрная CTA эталона (literal — карточка верстальщиков светлая независимо от
 // схемы; data-btn-style на гриде Popular перекрывает её через <style is:global>).
 const CARD_BTN_CLS =
-	"mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
+	"mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
 
 /**
  * Кнопка «В корзину» карточки. Вариативный товар → добавляет ПЕРВУЮ доступную
@@ -594,9 +594,9 @@ export function renderCardHtml(p: RealProduct): string {
 					.join("")}</div>`
 			: "";
 
-	return `<article class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1" data-nt="flux-product-card" aria-label="${name}">
+	return `<article class="group flex h-full w-full flex-col gap-4 transition-transform duration-300 hover:-translate-y-1" data-nt="flux-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" data-nt="flux-card-media" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]" aria-label="${name}">
+		<a href="${href}" data-nt="flux-card-media" class="relative block aspect-square w-full overflow-hidden bg-[#FBFBFB]" aria-label="${name}">
 			${imageHtml}
 			${saleBadgeHtml(p)}
 		</a>

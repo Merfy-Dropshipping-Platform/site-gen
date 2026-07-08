@@ -110,13 +110,16 @@ export const cartStore = {
    * @param {string} productId
    * @param {string|null} variantId
    * @param {number} quantity
+   * @param {Record<string,string>|null} options — опции варианта (Цвет/Размер);
+   *   сервер пере-матчит вариант по ним, если variantId (combinationId) устарел
+   *   (ресед пересоздал комбинации). Необязателен — обратная совместимость.
    */
-  async addItem(productId, variantId, quantity) {
+  async addItem(productId, variantId, quantity, options) {
     const qty = quantity || 1;
     state.loading = true;
     try {
       const cartId = await ensureCart();
-      const res = await CartAPI.addItem(cartId, productId, qty, variantId);
+      const res = await CartAPI.addItem(cartId, productId, qty, variantId, options || null);
       if (res.success) {
         await fetchAndApply();
         notify('cart:item-added', { productId, variantId, quantity: qty });
@@ -133,7 +136,7 @@ export const cartStore = {
         saveCartId();
         try {
           const cartId = await ensureCart();
-          const res = await CartAPI.addItem(cartId, productId, qty, variantId);
+          const res = await CartAPI.addItem(cartId, productId, qty, variantId, options || null);
           if (res.success) {
             await fetchAndApply();
             notify('cart:item-added', { productId, variantId, quantity: qty });

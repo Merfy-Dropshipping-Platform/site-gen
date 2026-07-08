@@ -164,14 +164,59 @@ const footerPadStyle =
 const footerContainerCls = footerPadStyle
 	? "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 md:px-20 2xl:px-80"
 	: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 py-12 md:px-20 md:py-16 2xl:px-80";
+
+// «Выравнивание» (contentAlign, canon default 'left') — ОЖИВЛЕНИЕ по rose Footer. Управляет
+// раскладкой групп колонок И контентом ВНУТРИ колонок И блоком рассылки ОДНИМ значением на
+// десктоп И адаптив (rose-фиксы c60f6206/80f57884: без md:-split для выравнивания — на мобиле
+// как на десктопе). Классы ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left = прежний рендер
+// (nav/info слева, соцколонка справа = md:justify-between + md:items-end).
+const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+// Блок рассылки: секция (items-*) + текстовая группа (items-* + text-*), одно значение везде.
+const nlSectionAlignCls = _AL_ITEMS[_ca];
+const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
+// Раскладка ГРУППЫ колонок (section nav/info + соцколонка). center = центрированный блок
+// (justify-center + узкий gap), right = к правому краю, left (дефолт) = space-between (текущий).
+const colsJustifyCls =
+	_ca === "center" ? "md:justify-center md:gap-24" : _ca === "right" ? "md:justify-end" : "md:justify-between";
+// Внутренняя группа nav+info: center сжимает межколоночный зазор (иначе block не «центрирован»).
+const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-4";
+// Контент ВНУТРИ колонок nav/info (заголовок+ссылки): center по центру, right к правому краю,
+// left (дефолт) без переопределения = как у верстальщика (по левому краю).
+const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
+// Соцколонка: у верстальщика была md:items-end (справа при 3-колоночной раскладке). По rose
+// default 'left' держит контактный блок СПРАВА (contactGroupCls=lg:items-end): left = нав слева /
+// контакты справа. center → по центру, right → к правому краю. Для center/right — ЕДИНОЕ значение
+// (без md:-split, выравнивание на мобиле = как на десктопе); для left — оставляем md:items-end
+// (мобила = левый край в потоке, десктоп = справа, как у верстальщика).
+const socialColCls =
+	_ca === "center" ? "items-center" : _ca === "right" ? "items-end" : "md:items-end";
+const socialInnerCls =
+	_ca === "center" ? "items-center" : _ca === "right" ? "items-end" : "items-start md:items-end";
+// Контактный текст (тел/почта/поля): center по центру, right вправо, left = md:text-right (как верстальщик).
+const contactTextCls = _ca === "center" ? "text-center" : _ca === "right" ? "text-right" : "md:text-right";
+const contactColCls =
+	_ca === "center" ? "items-center" : _ca === "right" ? "items-end" : "md:items-end";
+const paymentJustifyCls =
+	_ca === "center" ? "justify-center" : _ca === "right" ? "justify-end" : "md:justify-end";
+
+// Применяем СВОЮ colorScheme на <footer> (как base/rose Footer.astro). Иначе hot-render
+// одиночного блока в превью конструктора (без scheme-обёртки композитора) берёт :root
+// = тёмный BASE_DEFAULT → ЧЁРНЫЙ футер. На live обёртка композитора даёт ту же схему —
+// дубль безвреден. Пустой проп → :root (как раньше).
+const footerSchemeClass =
+	typeof p.colorScheme === "string" && p.colorScheme
+		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
+		: "";
 ---
 
-<footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
+<footer class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<!-- Newsletter «Подпишитесь на нашу рассылку» -->
 		{newsletterEnabled && (
-		<section class="flex w-full flex-col gap-6" aria-labelledby="newsletter-heading">
-			<div class="flex flex-col gap-2">
+		<section class={`flex w-full flex-col gap-6 ${nlSectionAlignCls}`} aria-labelledby="newsletter-heading">
+			<div class={`flex flex-col gap-2 ${nlCopyAlignCls}`}>
 				<h2
 					id="newsletter-heading"
 					class="font-roboto-flex text-[18px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
@@ -219,12 +264,12 @@ const footerContainerCls = footerPadStyle
 
 		<!-- Links: НАВИГАЦИЯ / ИНФОРМАЦИЯ / СОЦИАЛЬНЫЕ СЕТИ -->
 		<section
-			class="flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between"
+			class={`flex w-full flex-col gap-10 md:flex-row md:items-start ${colsJustifyCls}`}
 			aria-label="Навигация по сайту"
 		>
-			<div class="flex flex-col gap-10 sm:flex-row sm:gap-4">
+			<div class={`flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`}>
 				<div
-					class="flex flex-col gap-4 md:w-[318px]"
+					class={`flex flex-col gap-4 md:w-[318px] ${colInnerCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="996"
 					data-puck-subsection-field="navigationColumn"
@@ -243,7 +288,7 @@ const footerContainerCls = footerPadStyle
 
 				{infoLinks.length > 0 && (
 				<div
-					class="flex flex-col gap-4 md:w-[318px]"
+					class={`flex flex-col gap-4 md:w-[318px] ${colInnerCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="995"
 					data-puck-subsection-field="informationColumn"
@@ -264,27 +309,27 @@ const footerContainerCls = footerPadStyle
 
 			{socialColumnHasContent && (
 			<div
-				class="flex flex-col gap-4 md:w-[318px] md:items-end"
+				class={`flex flex-col gap-4 md:w-[318px] ${socialColCls}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="994"
 				data-puck-subsection-field="socialColumn"
 			>
 				{socialColTitle && <h3 class={columnTitleCls}>{socialColTitle}</h3>}
-				<div class="flex flex-1 flex-col items-start gap-6 md:items-end">
+				<div class={`flex flex-1 flex-col gap-6 ${socialInnerCls}`}>
 					{(phone || email || contactFields.length > 0) && (
-					<div class="flex flex-col gap-3 md:items-end">
+					<div class={`flex flex-col gap-3 ${contactColCls}`}>
 						{phone && (
-						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={`${linkCls} md:text-right`}>
+						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={`${linkCls} ${contactTextCls}`}>
 							{phone}
 						</a>
 						)}
 						{email && (
-						<a href={`mailto:${email}`} class={`${linkCls} md:text-right`}>
+						<a href={`mailto:${email}`} class={`${linkCls} ${contactTextCls}`}>
 							{email}
 						</a>
 						)}
 						{contactFields.map((f) => (
-						<div class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-right">
+						<div class={`font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${contactTextCls}`}>
 							<span class="text-[rgb(var(--color-heading,0_0_0))]">{f.label}:</span> {f.value}
 						</div>
 						))}
@@ -306,7 +351,7 @@ const footerContainerCls = footerPadStyle
 					</div>
 					)}
 					{paymentEnabled && (
-					<div class="flex flex-wrap items-center gap-3 md:justify-end" aria-label="Способы оплаты">
+					<div class={`flex flex-wrap items-center gap-3 ${paymentJustifyCls}`} aria-label="Способы оплаты">
 						<img src={withBase("/icons/MasterCard.svg")} alt="Mastercard" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/Visa.png")} alt="Visa" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/MIR.png")} alt="МИР" class="h-6 w-auto shrink-0" decoding="async" />

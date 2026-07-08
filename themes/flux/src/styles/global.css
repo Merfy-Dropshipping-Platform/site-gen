@@ -106,6 +106,41 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 }
 
+/* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
+   фон-подложка (--product-card-bg=surface) + Обводка (--product-card-bw, цвет --color-border)
+   + Скругление (--product-card-radius) + отступ (--product-card-padding). Медиа (фото)
+   скругляется ПО КАРТОЧКЕ (--product-card-media-radius). standard → 0px/transparent
+   (нейтрально; эмиттер tokens-css выдаёт эти значения). Выравнивание
+   (--product-card-align/justify) !important — бьёт Tailwind text-left и двигает ВЕСЬ
+   текст под товаром (имя+цену). Правило по data-nt покрывает SSR-карточку
+   (FluxProductCard), инлайн-копию в Popular.astro И client-рендеры
+   (storefront-hydrate renderCardHtml). Зеркало rose [data-nt=rose-product-card].
+   @layer base ОБЯЗАТЕЛЕН для element/attr-селекторов (CSS-гард check-css-layers.mjs). */
+@layer base {
+  [data-nt="flux-product-card"] {
+    background: var(--product-card-bg, transparent);
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
+    border-radius: var(--product-card-radius, 0px);
+    padding: var(--product-card-padding, 0px);
+  }
+  /* Медиа (фото) → радиус карточки в card-режиме; !important бьёт утилиту rounded-[…]. */
+  [data-nt="flux-product-card"] [data-nt="flux-card-media"] {
+    border-radius: var(--product-card-media-radius, var(--radius-media, 8px)) !important;
+  }
+  /* Выравнивание всего текст-блока под товаром (имя+цена): текст-блок карточки —
+     последний прямой потомок article (flux: <div class="flex flex-1 flex-col …">).
+     !important бьёт flex-дефолт stretch. */
+  [data-nt="flux-product-card"] > div:last-child {
+    align-items: var(--product-card-justify, flex-start) !important;
+    text-align: var(--product-card-align, left) !important;
+  }
+  /* Цена — flex-строка (имя + перечёркнутая цена, .gap-2) внутри текст-блока:
+     центр/право через justify-content (не трогаем строку свотчей .gap-1). */
+  [data-nt="flux-product-card"] > div:last-child .flex.items-center.gap-2 {
+    justify-content: var(--product-card-justify, flex-start) !important;
+  }
+}
+
 
 /* Блог (layouts/BlogPost.astro) */
 :root {
@@ -190,7 +225,7 @@ blockquote {
   width: 100%;
   height: 3.5rem;
   padding: 0 1rem;
-  border-radius: 0;
+  border-radius: var(--radius-input, 8px);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;

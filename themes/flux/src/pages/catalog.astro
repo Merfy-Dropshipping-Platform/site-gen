@@ -36,8 +36,8 @@ const totalCount = catalogProducts.length;
 
 			{/* Раскладка 'top' — фильтры/сортировка строкой над гридом (родной вид flux). */}
 			<div class="flex flex-col gap-6" data-catalog-variant="top">
-				<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
-					<div class="flex flex-wrap items-start gap-3">
+				<div class="flex flex-col items-start gap-5 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-3" data-nt="catalog-filters">
+					<div class="flex flex-col items-start gap-5 md:flex-row md:flex-wrap md:items-start md:gap-3">
 						<details class="relative">
 							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 								<span>Наличие</span>
@@ -88,7 +88,7 @@ const totalCount = catalogProducts.length;
 							<span>По популярности</span>
 							<NtIcon name="dropdown-chevron" sizeClass="size-5" />
 						</summary>
-						<div class="absolute right-0 top-full z-10 mt-1 w-[180px]">
+						<div class="absolute left-0 top-full z-10 mt-1 w-[180px] md:left-auto md:right-0">
 							<NtFilterPanel panel="sort" />
 						</div>
 					</details>
@@ -181,6 +181,14 @@ const totalCount = catalogProducts.length;
 	}
 	[data-catalog-layout="side"] [data-catalog-variant="top"] {
 		display: none;
+	}
+
+	/* Мобилка (<md): фильтры «top» идут вертикальным стеком (flex-col выше) —
+	   лейблы крупнее, как в макете каталога. На ≥md — прежняя строка 14px. */
+	@media (max-width: 767px) {
+		[data-catalog-variant="top"] [data-nt="catalog-filters"] summary {
+			font-size: 22px;
+		}
 	}
 
 	/* ——— Токены цветовых схем в зонах фильтров ———

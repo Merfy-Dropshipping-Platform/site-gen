@@ -26,6 +26,9 @@ const defaultNav: NavLink[] = [
 // logo, logoPosition, stickiness, padding, menuType, menuColorScheme.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// promo=false (Layout системных/account страниц) → скрыть встроенную промо-полосу.
+// Дефолт true: обычные статик-страницы (home/catalog/…) показывают её как раньше.
+const promo = p.promo !== false;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 const nav: NavLink[] =
@@ -144,7 +147,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 	{
 		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
 		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
-		!id && (
+		!id && promo !== false && (
 			<NtPromoBanner
 				text="Бесплатная доставка на весь ассортимент до 30.06.2026."
 				link="/catalog"

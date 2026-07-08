@@ -12,9 +12,12 @@ interface Props {
 	// "checkout" → минимальная шапка оформления (CheckoutHeader, Figma 1:13563);
 	// build.service патчит бренд CheckoutHeader под мерчанта на сборке сайта.
 	header?: "default" | "checkout";
+	// promo=false → скрыть хардкод промо-полосу в Header (системные/account страницы,
+	// паритет rose 577648f7/eb8c8bd3). Дефолт true — обычные страницы показывают промо.
+	promo?: boolean;
 }
 
-const { title, description = SITE_DESCRIPTION, header = "default" } = Astro.props;
+const { title, description = SITE_DESCRIPTION, header = "default", promo = true } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 ---
 
@@ -29,7 +32,7 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 				<CheckoutHeader siteTitle={SITE_TITLE} logoMode="text" logoImage={null} rightIcon="cart" accountLink="/account" backLink="/cart" cartLink="/cart" padding={{ top: 24, bottom: 24 }} />
 			</div>
 		) : (
-			<Header />
+			<Header promo={promo} />
 		)}
 		<main>
 			<slot />

@@ -110,16 +110,28 @@ const heroHeightCls = {
 	medium: "h-[230px] sm:h-[300px] lg:h-[400px]",
 	small: "h-[180px] sm:h-[240px] lg:h-[320px]",
 }[heroSize];
+// Мобила = стек (медиа aspect-[4/3] сверху + карточка снизу, Shopify Image banner),
+// десктоп = оверлей фикс-высоты (280/360/480). Поэтому min-h секции нужен ТОЛЬКО на
+// md+ (на мобиле высота = медиа + карточка-подложка). md-only лестница высоты (без
+// base/sm min-h), эталон верстальщика flux байт-в-байт. Паттерн rose heroHeightMdCls.
+const heroHeightMdCls = {
+	large: "md:h-[360px] lg:h-[480px]",
+	medium: "md:h-[300px] lg:h-[400px]",
+	small: "md:h-[240px] lg:h-[320px]",
+}[heroSize];
 
 // «Размер» (p.size) масштабирует не только высоту полотна, но и подложку-контейнер
 // (max-w/gap/padding) + CTA-кнопку — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
 // героя НЕ трогаем (у них свои поля heading.size/text.size). large = ТЕКУЩИЕ значения
 // верстальщика flux байт-в-байт (max-w-[520px], gap-6 lg:gap-10, p-6 md:p-8, кнопка
 // h-14 px-4 text-[16px]). Паттерн эталона rose Hero.astro.
+// Мобила (стек): подложка-контейнер на всю ширину гаттера (без узкого max-w-кэпа —
+// иначе small max-w-[380px] центрировался бы → пустые поля по бокам). Десктоп-оверлей
+// (md+): max-w-кэп остаётся (карточка не во всю ширину поверх фото). Паттерн rose.
 const panelMaxWCls = {
-	large: "max-w-[520px]",
-	medium: "max-w-[460px]",
-	small: "max-w-[380px]",
+	large: "md:max-w-[520px]",
+	medium: "md:max-w-[460px]",
+	small: "md:max-w-[380px]",
 }[heroSize];
 const panelGapCls = {
 	large: "gap-6 lg:gap-10",
@@ -160,6 +172,14 @@ const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
 	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
+// Мобила-обёртка контента ПОД медиа (стек). «Контейнер» ON → карточка (boxedCls) сама
+// = плашка-контейнер, поэтому обёртка ПРОЗРАЧНАЯ (только боковой гаттер + зазор от
+// медиа) — иначе «контейнер внутри контейнера». «Контейнер» OFF → обёртка = сама
+// подложка (фон схемы + вертик.паддинги). Десктоп (md+) — всегда absolute-оверлей,
+// фон прозрачный (md:bg-transparent ниже). Паттерн rose wrapperMobileCls.
+const wrapperMobileCls = boxed
+	? "px-4 pt-4 pb-8 sm:px-5"
+	: "bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (как rose Hero):
@@ -199,6 +219,16 @@ const hPos = posRaw.endsWith("left")
 // ЦЕНТР. Пустой vPos (родная раскладка, position:"left") → justify-center, как у
 // верстальщика. Явные top/middle/bottom продолжают работать (грид-варианты целы).
 const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : vPos === "bottom" ? "justify-end" : "justify-center";
+// Вертикальный паддинг ДЕСКТОП-оверлея (md-only — на мобиле у карточки-обёртки свой
+// py-10 через wrapperMobileCls). Позиция «центр»/дефолт-центр flux → СИММЕТРИЧНЫЙ
+// (иначе перекошенный бокс уводит контент вниз = «ниже центра»); верх/низ — asymmetric
+// (верх отодвигает от края, низ держит нижний отступ). Паттерн rose vPadMdCls.
+const vPadMdCls =
+	vPos === "top"
+		? "md:pt-10 md:pb-10"
+		: vPos === "bottom"
+			? "md:pt-10 md:pb-10"
+			: "md:py-10"; // middle + дефолт-центр flux = симметрично
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center"; // ПОЗИЦИЯ
 // alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
 // Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
@@ -210,7 +240,9 @@ const align = p.alignment === "center" || p.alignment === "right" ? p.alignment 
 const alignItemsCls = align === "right" ? "items-end" : align === "center" ? "items-center" : "items-start"; // ВЫРАВНИВАНИЕ
 const textAlignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 const buttonsJustifyCls = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
-const contentCls = `flex ${panelMaxWCls} flex-col ${panelGapCls} ${alignItemsCls}${boxedCls}`;
+// w-full — на мобиле блок контента заполняет обёртку-подложку (стек); на десктопе
+// max-w-кэп (panelMaxWCls = md:max-w-*) ограничивает ширину карточки поверх фото.
+const contentCls = `flex w-full ${panelMaxWCls} flex-col ${panelGapCls} ${alignItemsCls}${boxedCls}`;
 
 // Канон buttonStyle solid|outlined для основной кнопки. ЭТАЛОН верстальщика
 // (Hero.astro:59) = СПЛОШНАЯ ЧЁРНАЯ кнопка: h-14, bg-black, белый текст,
@@ -218,22 +250,41 @@ const contentCls = `flex ${panelMaxWCls} flex-col ${panelGapCls} ${alignItemsCls
 // solid/отсутствие = этот чёрный эталон (чёрная CTA — дизайн-интент верстальщика,
 // поверх цветосхем); outlined = контур того же чёрного языка (бордер+текст black на
 // прозрачном). Радиус остаётся токеном схемы (дефолт 6px = эталон).
+// Ширина кнопок: при ВТОРОЙ кнопке — grid-колонки 1fr_1fr, кнопки тянутся в свою
+// колонку (w-auto) → равная ширина «по большей» (rose 50d5b497). Одиночная —
+// прежний w-fit (кнопка по контенту). НЕ использовать grid-cols-2 (=minmax(0,1fr) —
+// сожмёт), только bare [grid-template-columns:1fr_1fr] (см. buttonsCls ниже).
+const btnWidthCls = secondaryText ? "w-auto" : "w-fit";
 const ctaBtnCls =
 	p.buttonStyle === "outlined"
-		? `inline-flex w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`
-		: `inline-flex w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black font-roboto-flex font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 ${ctaSizeCls}`;
+		? `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`
+		: `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] bg-black font-roboto-flex font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 ${ctaSizeCls}`;
 // Вторая кнопка — outlined в том же чёрном языке эталона (h-14, font-roboto-flex,
 // uppercase); рендерится ТОЛЬКО когда мерчант задал secondaryButton (условие ниже).
-const secondaryBtnCls = `inline-flex w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`;
+const secondaryBtnCls = `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`;
+// Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка (flex flex-wrap) с
+// выравниванием от alignment; при secondaryButton — две кнопки РАВНОЙ ширины «по
+// большей»: inline-grid из двух bare-1fr колонок (обе = ширине более широкой кнопки),
+// кнопки-grid-items с w-auto заполняют свою колонку. Позиция ряда (left/center/right)
+// задаётся alignment через buttonsJustifyCls (grid) / justify-контент (flex).
+const buttonsCls = secondaryText
+	? `inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3`
+	: `flex flex-wrap gap-3 ${buttonsJustifyCls}`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
-// T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне
-// (эталон), поэтому в rootStyle остаётся ТОЛЬКО padding (section берёт высоту от
-// потока полотна); padding не задан → undefined (Astro не печатает style-атрибут).
+// T14 / bloom Hero). Для ПУСТОГО состояния (isEmpty-ветка) остаётся простой inline
+// padding (фикс-высота полотна там прежняя).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 const rootStyle = paddingStyle;
+// Стек-секция (мобила, основная ветка): «Отступы» как CSS-переменные → верхний
+// паддинг применяется ТОЛЬКО на десктопе (md:pt через var), на мобиле pt=0 — медиа
+// встык под шапкой (убрать «промежуток над медиа»). Нижний паддинг (pb) — на всех
+// ширинах. Паттерн rose paddingVars (ac01a721).
+const paddingVars = p.padding
+	? `--hero-pt:${p.padding.top}px;--hero-pb:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 {
@@ -297,103 +348,107 @@ const rootStyle = paddingStyle;
 		</section>
 	) : (
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))]"
-	style={rootStyle}
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${heroHeightMdCls}`}
+	style={paddingVars}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 >
-	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка теперь ПРЯМОЙ ребёнок
-	    <section> с absolute inset-0 → кроет весь padding-box секции целиком (включая
+	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка кроет ВСЮ секцию
+	    (absolute на уровне <section> на md+ → заполняет padding-box целиком, включая
 	    зону «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
-	    (padding в rootStyle на <section>) теперь отодвигают КОНТЕНТ (inner-div в
-	    нормальном потоке ниже), а не создают полосы (паттерн rose Hero фикс). */}
-	{
-		backgroundImage2 ? (
-			<div class="absolute inset-0 z-0 grid grid-cols-2 overflow-hidden">
+	    (padding на <section>) отодвигают КОНТЕНТ, а не создают полосы (rose Hero). */}
+	{/* КАРТИНКА — мобила: блок-картинка сверху aspect-[4/3] (стек как Shopify Image
+	    banner); десктоп: absolute на всю секцию (оверлей под текстом, aspect-auto). */}
+	<div class="relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto">
+		{
+			backgroundImage2 ? (
+				<div class="absolute inset-0 grid grid-cols-2 overflow-hidden">
+					<FluxPicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+					<FluxPicture
+						src={backgroundImage2}
+						alt=""
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+				</div>
+			) : backgroundImage ? (
 				<FluxPicture
 					src={backgroundImage}
 					alt={title}
 					loading="eager"
 					fetchpriority="high"
-					class="size-full object-cover object-center"
+					class="absolute inset-0 size-full object-cover object-center"
 				/>
-				<FluxPicture
-					src={backgroundImage2}
-					alt=""
-					loading="eager"
-					fetchpriority="high"
-					class="size-full object-cover object-center"
-				/>
-			</div>
-		) : backgroundImage ? (
-			<FluxPicture
-				src={backgroundImage}
-				alt={title}
-				loading="eager"
-				fetchpriority="high"
-				class="absolute inset-0 z-0 size-full object-cover object-center"
-			/>
-		) : null
-	}
+			) : null
+		}
+	</div>
 
+	{/* Затемнение фото — только десктоп (на мобиле медиа в потоке, текст на подложке снизу). */}
 	{
 		overlayN > 0 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[1] bg-black"
+				class="pointer-events-none absolute inset-0 z-[1] hidden bg-black md:block"
 				style={`opacity:${overlayN / 100}`}
 			/>
 		)
 	}
 
-	<div class={`relative w-full ${heroHeightCls}`}>
-		<div
-			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 py-8 md:px-20 md:py-10 2xl:px-80`}
-		>
-			<div class={contentCls} data-reveal>
-				<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
-					<h1
-						id="hero-title"
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{title}
-					</h1>
-					<p
-						class={subtitleCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="text"
-					>
-						{subtitle}
-					</p>
-				</div>
+	{/* КОНТЕНТ — мобила: блок-подложка (фон схемы) ПОД картинкой в потоке; десктоп:
+	    absolute-оверлей поверх фото (md:bg-transparent). */}
+	<div
+		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} ${wrapperMobileCls} md:absolute md:inset-0 md:bg-transparent md:px-20 2xl:px-80 ${vPadMdCls}`}
+	>
+		<div class={contentCls} data-reveal>
+			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
+				<h1
+					id="hero-title"
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{title}
+				</h1>
+				<p
+					class={subtitleCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+				>
+					{subtitle}
+				</p>
+			</div>
 
-				<div class={`flex flex-wrap gap-3 ${buttonsJustifyCls}`}>
-					<a
-						href={ctaLink}
-						class={ctaBtnCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="102"
-						data-puck-subsection-field="primaryButton"
-					>
-						{ctaText}
-					</a>
-					{
-						secondaryText && (
-							<a
-								href={secondaryLink}
-								class={secondaryBtnCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="103"
-								data-puck-subsection-field="secondaryButton"
-							>
-								{secondaryText}
-							</a>
-						)
-					}
-				</div>
+			<div class={buttonsCls}>
+				<a
+					href={ctaLink}
+					class={ctaBtnCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="primaryButton"
+				>
+					{ctaText}
+				</a>
+				{
+					secondaryText && (
+						<a
+							href={secondaryLink}
+							class={secondaryBtnCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="secondaryButton"
+						>
+							{secondaryText}
+						</a>
+					)
+				}
 			</div>
 		</div>
 	</div>

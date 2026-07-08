@@ -13,6 +13,10 @@ import {
 const api = createNtCart({
 	storageKey: "flux:cart:v1",
 	eventPrefix: "flux:cart",
+	// Само-лечение: цены/наличие/фото варианта пере-резолвятся из актуального
+	// каталога на загрузке → корзина всегда совпадает с оформлением (не «зависает»
+	// на старой цене/удалённом товаре). Тот же источник, что у продукт-блоков flux.
+	catalogUrl: "/data/products.json",
 });
 
 export type CartLine = NtCartLine;
@@ -27,3 +31,4 @@ export const getCartCount = api.getCartCount;
 export const getCartTotal = api.getCartTotal;
 export const formatCartPrice = api.formatCartPrice;
 export const initCartUI = api.initCartUI;
+export const reconcileCart = api.reconcileCart;

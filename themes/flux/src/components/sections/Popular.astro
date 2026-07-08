@@ -57,7 +57,9 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // размеров (канон 19/23): small/дефолт = эталон, medium/large крупнее. Цвет —
 // токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
 // перекрашивает, без схемы пиксель эталона (MANNER.md §7).
-const headingSize = p.heading?.size ?? p.headingSize;
+// Приоритет top-level headingSize (live-селект «Размер заголовка»). Дефолт-сиды/
+// миграции кладут ЛЕГАСИ heading.size — nested-first глушил бы live-селект (паритет rose cc64b373).
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "medium"
 		? "text-[23px] md:text-[29px]"
@@ -333,7 +335,7 @@ const containerCls = paddingStyle
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
 				<li data-product-id={product.id}>
 					<article
-						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
+						class="group flex h-full w-full flex-col gap-4 transition-transform duration-300 hover:-translate-y-1"
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
@@ -341,7 +343,7 @@ const containerCls = paddingStyle
 							<a
 								href={`/product?id=${encodeURIComponent(product.id)}`}
 								data-nt="flux-card-media"
-								class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
+								class="relative block aspect-square w-full overflow-hidden bg-[#FBFBFB]"
 								aria-label={product.name}
 							>
 								<img
@@ -406,7 +408,7 @@ const containerCls = paddingStyle
 								data-old-price={product.oldPrice}
 								data-image={product.image}
 								data-quantity="1"
-								class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+								class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
 							>
 								В корзину
 							</button>
@@ -419,14 +421,14 @@ const containerCls = paddingStyle
 				   «2 500 ₽». Без data-add-to-cart/сердца — это не реальный товар. */
 				<li data-product-id={product.id}>
 					<article
-						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
+						class="group flex h-full w-full flex-col gap-4 transition-transform duration-300 hover:-translate-y-1"
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
 						<a
 							href="/catalog"
 							data-nt="flux-card-media"
-							class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
+							class="relative block aspect-square w-full overflow-hidden bg-[#FBFBFB]"
 							aria-label={product.name}
 						>
 							<img

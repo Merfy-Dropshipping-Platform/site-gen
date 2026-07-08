@@ -78,17 +78,27 @@ const dadataToken = "";
       var bn = null;
       try { bn = JSON.parse(sessionStorage.getItem("flux:buynow") || "null"); } catch (e) { bn = null; }
       if (bn && bn.productId) {
-        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null }, quantity: bn.quantity || 1 }];
+        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null, color: bn.variantColor || undefined, size: bn.variantSize || undefined }, quantity: bn.quantity || 1 }];
       } else {
         try { lines = JSON.parse(localStorage.getItem("flux:cart:v1") || "[]"); } catch (e) { lines = []; }
       }
       if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
+      // Опции варианта (Цвет/Размер) строки корзины → сервер пере-матчит вариант по
+      // ним, если variantCombinationId устарел (ресед пересоздал комбинации).
+      function optsFromVariant(v) {
+        var o = {};
+        if (!v) return o;
+        if (v.color) o["Цвет"] = v.color;
+        if (v.size) o["Размер"] = v.size;
+        return o;
+      }
       (async function () {
         try {
           await cs.clear();
           for (var i = 0; i < lines.length; i++) {
             var l = lines[i];
-            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity); } catch (e) {}
+            var opts = optsFromVariant(l.variant);
+            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity, Object.keys(opts).length ? opts : null); } catch (e) {}
           }
         } catch (e) { fallbackInit(); return; }
         try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}

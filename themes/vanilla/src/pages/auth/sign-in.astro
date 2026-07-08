@@ -3,9 +3,19 @@ import Layout from "../../layouts/Layout.astro";
 import NtAuthPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtAuthPanel.astro";
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
 import { V_IMG } from "../../data/imageAssets";
+
+// Конфиг auth-стора: shopId патчит build.service (patchShopIdInDist) → siteId на деплое.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
 ---
 
 <Layout title="Вход" description="Войдите в аккаунт Vanilla">
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+			shopId: shopId || "",
+			apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+		};
+	</script>
 	<section class="relative flex min-h-[620px] w-full items-center justify-end overflow-hidden bg-[var(--vanilla-green)] px-4 py-12 md:px-20">
 		<img src={V_IMG.hero(1)} alt="" class="absolute inset-0 size-full object-cover opacity-55" loading="eager" />
 		<form class="relative z-10 w-full max-w-[420px] bg-[var(--vanilla-surface)] p-8 md:p-10" data-auth-form>
@@ -36,8 +46,77 @@ import { V_IMG } from "../../data/imageAssets";
 </Layout>
 
 <script>
-	document.querySelector<HTMLFormElement>("[data-auth-form]")?.addEventListener("submit", (event) => {
-		event.preventDefault();
-		alert("Демо-вход: авторизация ещё не подключена.");
-	});
+	// Passwordless magic-link (зеркалит рабочую /login): вводишь e-mail → бэкенд
+	// шлёт ссылку + 6-значный код → /verify. Пароль не используется (поле оставлено
+	// вёрсткой верстальщика, но во флоу не участвует).
+	import { navTo, requestMagicLink, getToken } from "../../lib/auth";
+
+	function initSignInPage() {
+		const form = document.querySelector<HTMLFormElement>("[data-auth-form]");
+		if (!form || form.dataset.bound === "true") return;
+		form.dataset.bound = "true";
+
+		// Уже вошёл → в аккаунт.
+		if (getToken()) {
+			navTo("/account");
+			return;
+		}
+
+		const emailField = form.querySelector<HTMLInputElement>('input[name="email"]');
+		if (!emailField) return;
+
+		// Место под ошибку: NtAuthPanel слота ошибки не несёт → создаём минимальный
+		// inline-текст программно, разметку верстальщика не трогаем.
+		const errorEl = document.createElement("p");
+		errorEl.dataset.authError = "";
+		errorEl.setAttribute("role", "alert");
+		errorEl.className =
+			"hidden w-full text-center font-manrope text-[14px] font-normal leading-normal text-[#b42318]";
+		const fieldWrap = emailField.closest('[data-nt="text-field"]');
+		(fieldWrap?.parentElement ?? form).appendChild(errorEl);
+
+		const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+		const originalLabel = submitBtn?.textContent ?? "";
+		const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+		const showError = (msg: string) => {
+			errorEl.textContent = msg;
+			errorEl.classList.remove("hidden");
+		};
+
+		form.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			errorEl.classList.add("hidden");
+			const email = emailField.value.trim();
+			if (!email || !validEmail(email)) {
+				showError("Введите корректный e-mail");
+				emailField.focus();
+				return;
+			}
+			if (submitBtn) {
+				submitBtn.disabled = true;
+				submitBtn.textContent = "Отправляем...";
+			}
+			try {
+				const result = await requestMagicLink({ email });
+				if (result.success) {
+					sessionStorage.setItem("magicEmail", email);
+					navTo("/verify");
+				} else {
+					throw result;
+				}
+			} catch (err: any) {
+				let msg = err?.error || err?.message || "Не удалось отправить ссылку";
+				if (err?.code === "RATE_LIMIT_EXCEEDED") msg = "Письмо уже отправлено. Проверьте почту.";
+				showError(msg);
+			} finally {
+				if (submitBtn) {
+					submitBtn.disabled = false;
+					submitBtn.textContent = originalLabel;
+				}
+			}
+		});
+	}
+
+	initSignInPage();
+	document.addEventListener("astro:page-load", initSignInPage);
 </script>

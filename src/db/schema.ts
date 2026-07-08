@@ -126,7 +126,10 @@ export const site = pgTable("site", {
   }>(),
   // Настройки магазина (checkout, регистрация и т.д.)
   settings: jsonb("settings").$type<{
-    requireCustomerAuth?: boolean;
+    requireCustomerAuth?: boolean;                          // блок 1
+    addressRequired?: boolean;                              // блок 2: full→true, none→false
+    contactMethod?: "email-phone" | "email";               // блок 3
+    customerNameMode?: "name-surname" | "surname" | "name"; // блок 4
   }>(),
   // Закреплённая версия темы (e.g. "1.2.0"). Null = использовать latest.
   themeVersion: text("theme_version"),

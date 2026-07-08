@@ -668,6 +668,8 @@ export class SitesDomainService {
       .select({
         themeId: schema.site.themeId,
         status: schema.site.status,
+        // settings нужны для shallow-merge частичного settings-патча (см. ниже)
+        settings: schema.site.settings,
       })
       .from(schema.site)
       .where(
@@ -719,9 +721,21 @@ export class SitesDomainService {
     if ("branding" in (params.patch ?? {})) {
       updates.branding = params.patch.branding ?? null;
     }
-    // Handle settings (checkout config, etc.)
+    // Handle settings (checkout config, etc.) — shallow-merge, НЕ replace.
+    // Частичный сейв (напр. только addressRequired) не должен затирать другие
+    // ключи (requireCustomerAuth, contactMethod, customerNameMode): мёржим
+    // входящий объект в текущие настройки сайта. settings === null (или
+    // undefined) очищает блок целиком.
     if ("settings" in (params.patch ?? {})) {
-      updates.settings = params.patch.settings ?? null;
+      const incoming = params.patch.settings;
+      if (incoming === null || incoming === undefined) {
+        updates.settings = null;
+      } else {
+        updates.settings = {
+          ...(existingSite?.settings ?? {}),
+          ...incoming,
+        };
+      }
     }
 
     updates.updatedAt = new Date();

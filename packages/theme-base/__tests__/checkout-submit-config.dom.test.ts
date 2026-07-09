@@ -257,12 +257,15 @@ describe('CheckoutSubmit — addressRequired gate + payload', () => {
     expect(btn.disabled).toBe(false);
   });
 
-  it('дефолт → city/street обязательны (регресс: disabled без адреса)', () => {
+  it('дефолт + курьер (cdek_door) → city/street обязательны (регресс: disabled без адреса)', () => {
+    // M16: адрес требуется только для курьерских типов. Регресс-гейт «нет адреса →
+    // disabled» проверяем на cdek_door (для self_pickup адрес теперь не нужен — см.
+    // отдельный M16-suite). building заполнен, чтобы изолировать проверку city/street.
     setConfig(undefined);
     const section = mountSubmitDom({ city: '', street: '' });
     runScript(section);
     const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
-    selectDelivery(SELF_PICKUP);
+    selectDelivery({ type: 'cdek_door', label: 'CDEK курьер', costCents: 40000, tariffCode: 137 });
     expect(btn.disabled).toBe(true);
   });
 
@@ -440,5 +443,135 @@ describe('CheckoutSubmit — FIX 1: гейт имени при fullName-раск
     const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
     selectDelivery(SELF_PICKUP);
     expect(btn.disabled).toBe(false);
+  });
+});
+
+// ── M16: pickup-типы адрес-независимы в гейте canSubmit ───────────────────────
+// addressRequired=true раньше жёстко требовал city+street для ЛЮБОГО способа
+// доставки. Но самовывоз (self_pickup) и CDEK-ПВЗ (cdek_pickup) физического
+// адреса не имеют — гейт теперь пропускает их без city/street (зеркало серверного
+// «не-курьер»). Курьерские типы (cdek_door / custom) по-прежнему требуют адрес,
+// cdek_door дополнительно — building, cdek_pickup — выбранный pickupPointCode.
+describe('CheckoutSubmit — M16: pickup адрес-независим, курьер требует адрес', () => {
+  const CDEK_PICKUP_NO_CODE = { type: 'cdek_pickup', label: 'CDEK ПВЗ', costCents: 30000, tariffCode: 136 };
+  const CDEK_PICKUP_WITH_CODE = { ...CDEK_PICKUP_NO_CODE, pickupPointCode: 'MSK123' };
+  const CDEK_DOOR = { type: 'cdek_door', label: 'CDEK курьер', costCents: 40000, tariffCode: 137 };
+
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+    baseCart();
+    (window as any).fetch = jest.fn();
+    delete (window as any).location;
+    (window as any).location = { origin: 'https://shop.test', href: '' };
+  });
+  afterEach(cleanup);
+
+  it('addressRequired(дефолт) + self_pickup + пустой city/street → кнопка ENABLED', () => {
+    setConfig(undefined);
+    const section = mountSubmitDom({ city: '', street: '', building: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(SELF_PICKUP);
+    expect(btn.disabled).toBe(false); // самовывоз адрес-независим
+  });
+
+  it('cdek_pickup без pickupPointCode → кнопка DISABLED (ПВЗ не выбран)', () => {
+    setConfig(undefined);
+    const section = mountSubmitDom({ city: '', street: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(CDEK_PICKUP_NO_CODE);
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('cdek_pickup c pickupPointCode + пустой city/street → кнопка ENABLED (ПВЗ адрес-независим)', () => {
+    setConfig(undefined);
+    const section = mountSubmitDom({ city: '', street: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(CDEK_PICKUP_WITH_CODE);
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('cdek_door + пустой city/street → кнопка DISABLED (курьер требует адрес)', () => {
+    setConfig(undefined);
+    const section = mountSubmitDom({ city: '', street: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(CDEK_DOOR);
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('cdek_door + city/street есть, building пусто → кнопка DISABLED', () => {
+    setConfig(undefined);
+    const section = mountSubmitDom({ building: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(CDEK_DOOR);
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('cdek_door + полный адрес (city/street/building) → кнопка ENABLED', () => {
+    setConfig(undefined);
+    const section = mountSubmitDom(); // адрес заполнен по умолчанию
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(CDEK_DOOR);
+    expect(btn.disabled).toBe(false);
+  });
+});
+
+// ── buildCustomerName: fullName-fallback во ВСЕ режимы ─────────────────────────
+// При fullName-раскладке (splitFirstLast:false) split-полей firstName/lastName нет.
+// Без fallback surname/name вернули бы '' → PATCH /customer шлёт name='' → серверный
+// энфорс имени (H3) ложно реджектит. Fallback: surname→ln||full, name→fn||full.
+describe('CheckoutSubmit — buildCustomerName fullName-fallback (payload)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+    baseCart();
+    (window as any).fetch = jest.fn();
+    delete (window as any).location;
+    (window as any).location = { origin: 'https://shop.test', href: '' };
+  });
+  afterEach(cleanup);
+
+  it('surname-режим, только fullName (нет lastName-поля) → PATCH /customer name = fullName (не пусто)', async () => {
+    setConfig({ customerNameMode: 'surname' });
+    const fetchMock = chainFetchMock();
+    (window as any).fetch = fetchMock;
+    const section = mountSubmitDomFullNameOnly(); // fullName='Иван Петров', split-полей нет
+    runScript(section);
+    selectDelivery(SELF_PICKUP);
+    (section.querySelector('[data-checkout-submit]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 10));
+    const customer = bodyOf(fetchMock, /\/customer$/);
+    expect(customer.name).toBe('Иван Петров'); // ln='' → fallback на fullName
+    expect(bodyOf(fetchMock, /\/checkout$/).metadata.customerName).toBe('Иван Петров');
+  });
+
+  it('name-режим, только fullName (нет firstName-поля) → PATCH /customer name = fullName', async () => {
+    setConfig({ customerNameMode: 'name' });
+    const fetchMock = chainFetchMock();
+    (window as any).fetch = fetchMock;
+    const section = mountSubmitDomFullNameOnly();
+    runScript(section);
+    selectDelivery(SELF_PICKUP);
+    (section.querySelector('[data-checkout-submit]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(bodyOf(fetchMock, /\/customer$/).name).toBe('Иван Петров');
+  });
+
+  it('surname-режим со split lastName → name = «Фамилия» (fallback не перебивает заполненный ln)', async () => {
+    setConfig({ customerNameMode: 'surname' });
+    const fetchMock = chainFetchMock();
+    (window as any).fetch = fetchMock;
+    const section = mountSubmitDom({ firstName: '' }); // lastName='Петров', fullName=''
+    runScript(section);
+    selectDelivery(SELF_PICKUP);
+    (section.querySelector('[data-checkout-submit]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(bodyOf(fetchMock, /\/customer$/).name).toBe('Петров');
   });
 });

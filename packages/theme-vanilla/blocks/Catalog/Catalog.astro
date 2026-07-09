@@ -52,6 +52,9 @@ interface Props {
 	showFilter?: boolean | "true" | "false";
 	showSort?: boolean | "true" | "false";
 	columns?: number;
+	/** «Отступы» секции {top,bottom}px — как rose Catalog. Заданы → inline-стиль
+	    на носителе отступов (внутренний .vanilla-pad снимает свои py-16/md:py-20). */
+	padding?: { top?: number; bottom?: number };
 	colorScheme?: string;
 	/** Под-настройки «Карточка товара» конструктора (общая Puck-схема). Родная
 	    вёрстка vanilla читает только cardBackground («Контейнер»); прочие поля
@@ -74,6 +77,7 @@ const {
 	showFilter,
 	showSort,
 	columns,
+	padding,
 	colorScheme,
 	productCard,
 	collectionSlug,
@@ -97,6 +101,22 @@ const cardWrapClass = cardContainerOn
 // Кол-во товаров на «страницу» пагинации: columns*3 (3 ряда) или 12 по умолчанию.
 const colsNum = Number(columns);
 const pageSize = Number.isFinite(colsNum) && colsNum > 0 ? colsNum * 3 : 12;
+
+// «Колонки» грида (desktop ≥1280): clamp 2..6 → CSS-var --vanilla-cols (mobile/
+// планшет остаются классами grid-cols-2 / md:grid-cols-3). Паттерн rose Catalog
+// (--rose-cols) — без него настройка «Колонки» была мёртвой (правила пагинации
+// pageSize уже жили, но плотность грида не менялась). Дефолт rose = 4.
+const colCount = Math.max(2, Math.min(6, Number(columns) || 4));
+// «Отступы» секции {top,bottom}px (паритет rose Catalog). Заданы → inline-стиль
+// на носителе (внутренний .vanilla-pad снимает свои py-16/md:py-20 через
+// sectionPadCls); всегда несём --vanilla-cols. Пусто → родные py-16/md:py-20.
+const sectionPadStyle =
+	(padding
+		? `padding-top:${Number(padding.top) || 0}px;padding-bottom:${Number(padding.bottom) || 0}px;`
+		: "") + `--vanilla-cols:${colCount};`;
+const sectionPadCls = padding
+	? "vanilla-pad w-full bg-[var(--vanilla-surface)]"
+	: "vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20";
 
 // Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
 function pickText(v: unknown, fallback: string): string {
@@ -245,7 +265,7 @@ const rowStockOptions: RadioOption[] = [
 		))}
 	</template>
 
-	<div class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20">
+	<div class={sectionPadCls} style={sectionPadStyle}>
 		<div class="vanilla-container flex flex-col gap-10">
 			<header class="flex flex-col gap-2">
 				<h1
@@ -384,8 +404,17 @@ const rowStockOptions: RadioOption[] = [
 </section>
 
 <style is:global>
+	/* «Колонки» (desktop ≥1280): число из настройки через --vanilla-cols (секция
+	   несёт переменную, mobile/планшет — 2/3 классами grid-cols-2 / md:grid-cols-3).
+	   Явное media-правило вместо Tailwind arbitrary-класса (xl:grid-cols-[repeat(var())]
+	   не генерится @source-сканом превью). Паритет rose Catalog. */
+	@media (min-width: 1280px) {
+		[data-nt="vanilla-catalog-section"] [data-nt="catalog-grid"] {
+			grid-template-columns: repeat(var(--vanilla-cols, 4), minmax(0, 1fr)) !important;
+		}
+	}
 	/* Переключение раскладок каталога: виден только выбранный вариант.
-	   data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
+	   data-catalog-layout ставит инлайн-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
 	   (или дефолт из настройки filterPosition). */
 	@media (min-width: 1024px) {
 		[data-catalog-layout="top"] [data-catalog-variant="side"] { display: none; }

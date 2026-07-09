@@ -197,9 +197,60 @@ const footerPadStyle =
 const footerBandCls = footerPadStyle
 	? "vanilla-pad shrink-0 border-0 bg-[rgb(var(--color-bg,38_49_28))]"
 	: "vanilla-pad shrink-0 border-0 bg-[rgb(var(--color-bg,38_49_28))] py-12 md:py-16";
+
+// Канон «Выравнивание» (contentAlign) left/center/right — паритет rose Footer:
+// ОДНО значение выравнивает блок колонок И контент внутри колонок на десктопе.
+// Раньше было мёртвым (vanilla читал только heading.alignment рассылки). Классы
+// ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left = родная вёрстка байт-в-байт
+// (нав слева / контакты справа: md:grid-cols-[1fr_auto] + md:items-end).
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+// Секция колонок: left = грид 1fr/auto (нав↔контакты по краям, текущее); center/
+// right = flex-колонка, группа целиком по центру/справа на десктопе.
+const navSectionCls =
+	_ca === "center"
+		? "flex flex-col gap-10 md:items-center md:text-center max-sm:items-center max-sm:text-center"
+		: _ca === "right"
+			? "flex flex-col gap-10 md:items-end md:text-right max-sm:items-center max-sm:text-center"
+			: "grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto] md:items-stretch max-sm:items-center max-sm:text-center";
+// Левая колонка (лого + нав): center/right выравнивают её содержимое на десктопе.
+const navColCls =
+	_ca === "center"
+		? "flex flex-col gap-8 items-center max-sm:items-center"
+		: _ca === "right"
+			? "flex flex-col gap-8 md:items-end max-sm:items-center"
+			: "flex flex-col gap-8 max-sm:items-center";
+// Правая колонка (контакты/соцсети/оплата): left = прижата вправо (md:items-end);
+// center = по центру; right = вправо (как left, но группа уже справа).
+const contactColCls =
+	_ca === "center"
+		? "flex flex-col items-center gap-6 max-sm:items-center md:h-full"
+		: "flex flex-col items-start gap-6 max-sm:items-center md:h-full md:items-end";
+// Внутренние группы контакт-колонки (текст-контакты + соцсети/оплата) и ряды
+// иконок: left/right прижаты вправо (md:items-end / md:justify-end); center — по
+// центру. Литералы для JIT.
+const contactInnerCls =
+	_ca === "center" ? "max-sm:items-center md:items-center" : "max-sm:items-center md:items-end";
+const contactRowJustifyCls = _ca === "center" ? "md:justify-center" : "md:justify-end";
+// Нижний ряд (копирайт ↔ юр-ссылки): left = space-between; center = по центру;
+// right = к правому краю. Мобила всегда центр (max-sm).
+const bottomRowCls =
+	_ca === "center"
+		? "flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-center"
+		: _ca === "right"
+			? "flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-end"
+			: "flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-between";
+
+// Канон colorScheme на <footer> (паритет rose footerSchemeClass): hot-render
+// одиночного блока в превью (без scheme-обёртки композитора) берёт :root =
+// тёмный BASE_DEFAULT → не тот фон. Свою схему кладём на <footer>; на live
+// обёртка композитора даёт ту же — дубль безвреден. Пусто → :root (как раньше).
+const footerSchemeClass =
+	typeof p.colorScheme === "string" && p.colorScheme
+		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
+		: "";
 ---
 
-<footer class="flex w-full flex-col text-white" data-vanilla-footer data-puck-component-id={id}>
+<footer class:list={["flex w-full flex-col text-white", footerSchemeClass]} data-vanilla-footer data-puck-component-id={id}>
 	{
 		/* Копия блока подписки (вёрстка footer/FooterNewsletter.astro) — НОВЫЙ элемент,
 		   только при явном newsletter.enabled=true; сшивку с полотном даёт глобальный
@@ -264,10 +315,10 @@ const footerBandCls = footerPadStyle
 	<div class={footerBandCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12 md:gap-20">
 			<section
-				class="grid grid-cols-1 gap-10 md:grid-cols-[1fr_auto] md:items-stretch max-sm:items-center max-sm:text-center"
+				class={navSectionCls}
 				aria-label="Навигация по сайту"
 			>
-				<div class="flex flex-col gap-8 max-sm:items-center">
+				<div class={navColCls}>
 					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label={logoAriaLabel}>
 						<VanilaFooterLogo class="h-7 w-[89px]" />
 					</a>
@@ -296,9 +347,9 @@ const footerBandCls = footerPadStyle
 					</ul>
 				</div>
 
-				<div class="flex flex-col items-start gap-6 max-sm:items-center md:h-full md:items-end">
+				<div class={contactColCls}>
 					<div
-						class="flex flex-col gap-1 max-sm:items-center md:items-end"
+						class={`flex flex-col gap-1 ${contactInnerCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="994"
 						data-puck-subsection-field="socialColumn"
@@ -325,9 +376,9 @@ const footerBandCls = footerPadStyle
 						</div>
 						))}
 					</div>
-					<div class="flex flex-col items-start gap-6 max-sm:items-center md:mt-auto md:items-end">
+					<div class={`flex flex-col gap-6 max-sm:items-center md:mt-auto ${contactInnerCls}`}>
 						{socials.length > 0 && (
-						<div class="flex flex-wrap items-center justify-center gap-3 md:justify-end" aria-label="Социальные сети">
+						<div class={`flex flex-wrap items-center justify-center gap-3 ${contactRowJustifyCls}`} aria-label="Социальные сети">
 							{socials.map(({ platform, href, Icon }) => (
 								<a
 									href={href}
@@ -342,7 +393,7 @@ const footerBandCls = footerPadStyle
 						</div>
 						)}
 						{paymentEnabled && (
-						<div class="flex flex-wrap items-center justify-center gap-2 md:justify-end" aria-label="Способы оплаты">
+						<div class={`flex flex-wrap items-center justify-center gap-2 ${contactRowJustifyCls}`} aria-label="Способы оплаты">
 							<PaymentMastercard />
 							<PaymentVisa />
 							<PaymentMir />
@@ -353,7 +404,7 @@ const footerBandCls = footerPadStyle
 			</section>
 
 			<section
-				class="flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-between"
+				class={bottomRowCls}
 			>
 				<p
 					class="font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none"
@@ -365,7 +416,7 @@ const footerBandCls = footerPadStyle
 				</p>
 				{(infoColTitle || (infoLinks && infoLinks.length > 0)) && (
 				<nav
-					class="flex flex-wrap items-center justify-center gap-x-9 gap-y-2 md:justify-end"
+					class={`flex flex-wrap items-center justify-center gap-x-9 gap-y-2 ${contactRowJustifyCls}`}
 					aria-label="Юридическая информация"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="995"

@@ -386,7 +386,15 @@ const paddingVars = p.padding
 					fetchpriority="high"
 					class="absolute inset-0 size-full object-cover object-center"
 				/>
-			) : null
+			) : (
+				<img
+					src="/placeholders/landscape-image.png"
+					alt=""
+					aria-hidden="true"
+					loading="eager"
+					class="absolute inset-0 size-full object-cover object-center"
+				/>
+			)
 		}
 	</div>
 

@@ -54,11 +54,22 @@ const headingCls =
 		: headingSize === "medium"
 			? "font-logo text-[22px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
 			: "font-logo text-[26px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
-// Канон heading.alignment: отсутствие/center = литерал (текст-половина центрована);
-// left/right переопределяют выравнивание заголовка.
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
-const headingAlignCls =
-	headingAlignment === "left" ? " text-left" : headingAlignment === "right" ? " text-right" : "";
+// Канон alignment (top-level, ВИДИМЫЙ контрол «Выравнивание» — puckConfig:102):
+// секция-уровневое выравнивание (Figma 1:17086, паритет rose) — правит заголовок
+// + текст-кикер + кнопку одной колонкой. Back-compat: старые ревизии хранили
+// выравнивание в заголовке (headingAlignment / heading.alignment) — читаем как
+// фоллбек. Отсутствие/center = литерал satin (текст-половина центрована).
+const alignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
+// Выключка колонки ОДНИМ items-*/text-* (без дублей с литералом — иначе два
+// конфликтующих items-* решались бы порядком в CSS, не в разметке). items-*
+// двигает кнопку (flex-элемент), text-* — заголовок и кикер. Default/center =
+// манера satin (items-center text-center).
+const colAlignCls =
+	alignment === "left"
+		? "items-start text-left"
+		: alignment === "right"
+			? "items-end text-right"
+			: "items-center text-center";
 
 // Канон text: string | { content, size } → КИКЕР над заголовком (литеральная
 // роль ImageBanner.astro:45: Arsenal 16/md:20 light uppercase tracking-[0.04em]
@@ -199,7 +210,7 @@ const paddingStyle = p.padding
 				containerSchemeCls.trim(),
 			]}
 		>
-			<div class={`flex max-w-[420px] flex-col items-center gap-5${bottomPinned ? " h-full" : ""}`}>
+			<div class={`flex max-w-[420px] flex-col gap-5 ${colAlignCls}${bottomPinned ? " h-full" : ""}`}>
 				{text && (
 					<p
 						class={textCls + italicCls}
@@ -210,7 +221,7 @@ const paddingStyle = p.padding
 					/>
 				)}
 				<h2
-					class={headingCls + headingAlignCls + italicCls}
+					class={headingCls + italicCls}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"

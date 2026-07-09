@@ -69,17 +69,23 @@ const gridCls = cols
 	: gridBase;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
-// Канон gridAspect '1:1' (canon-default из blockDefaults bloom) и отсутствие →
-// квадратные плитки манеры (aspect-square §4); imageView 'portrait' → 430/500,
-// 'wide' → 16/9 (трогают вид только без канонного '1:1').
+// Канон imageView square/portrait/wide — «Вид изображения» плиток коллекций
+// (класс НА самой медиа-плитке li>a>div, не override-утилита). 'square'/отсутствие
+// = квадрат манеры (aspect-square §4); 'portrait' → 430/500, 'wide' → 16/9.
+// Паритет rose Collections: настройку ведёт imageView. Раньше тернар гейтил на
+// legacy blockDefaults `gridAspect:'1:1'` ПЕРВЫМ — а он присутствует ВСЕГДА
+// (дефолт темы), поэтому imageView (portrait/wide) до веток не доходил и был
+// МЁРТВ (плитки всегда aspect-square). gridAspect'1:1' теперь = синоним square.
 const tileAspect =
-	p.gridAspect === "1:1"
-		? "aspect-square"
-		: p.imageView === "portrait"
-			? "aspect-[430/500]"
-			: p.imageView === "wide"
-				? "aspect-[16/9]"
-				: "aspect-square";
+	p.imageView === "portrait"
+		? "aspect-[430/500]"
+		: p.imageView === "wide"
+			? "aspect-[16/9]"
+			: p.gridAspect === "portrait"
+				? "aspect-[430/500]"
+				: p.gridAspect === "wide"
+					? "aspect-[16/9]"
+					: "aspect-square";
 // Канон cardCaptionStyle: 'uppercase' (canon-default из blockDefaults) и
 // отсутствие = подпись uppercase; 'default' — обычный регистр.
 const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";

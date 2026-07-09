@@ -111,7 +111,12 @@ if (collectionRef && siteId) {
 // (canon-default) и отсутствие = шапка DS NtSectionHeading верстальщика дословно
 // (20/24/32); medium → 38px, large → 46px (§9, перекрытие утилитой на обёртке —
 // внутрь DS-компонента класс не пробрасывается).
-const headingSize = p.heading?.size ?? p.headingSize;
+// Паритет rose: top-level `headingSize` (live-селект «Размер заголовка», Figma
+// 314-34614) ПЕРВЫМ, nested legacy `heading.size` лишь фолбэк. Раньше читалось
+// наоборот (`heading?.size ?? headingSize`) → сид/миграция кладёт легаси
+// heading.size='medium', и оно ГЛУШИЛО live-селект (как textSize ниже — тот уже
+// был top-first).
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[38px]"
@@ -137,16 +142,23 @@ const headWrapCls = `${headingSizeCls}${textSizeCls}`.trim() || undefined;
 // media-query идентичны на live и в превью (Container API).
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
-// (canon-default) и отсутствие = aspect-square карточки верстальщика;
-// portrait → 430/500, wide → 16/9 (перекрытие медиа-ссылки карточки).
-const tileAspectCls =
+// (canon-default) и отсутствие = 1/1 (aspect-square карточки верстальщика);
+// portrait → 430/500, wide → 16/9. Паритет rose: прокидываем inline aspect-ratio
+// КАЖДОЙ карточке (BloomProductCard aspectRatio / плейсхолдер / гидрация
+// renderCardHtml) + data-card-aspect на гриде. Прежний override
+// `[&_li>article>a]:aspect-[...]` был МЁРТВ: реальная разметка карточки —
+// `li>article>div>a` (<a> обёрнут в relative-div под overlay-сердце wishlist),
+// прямой потомок article>a не существовал; плейсхолдер вовсе `article>div` без <a>;
+// плюс сама медиа-ссылка несла хардкод `aspect-square` → «Вид изображения» не
+// применялся ни на одной ветке.
+const cardAspectRatio =
 	p.imageView === "portrait"
-		? " [&_li>article>a]:aspect-[430/500]"
+		? "430/500"
 		: p.imageView === "wide" || p.imageView === "adaptive"
-			? " [&_li>article>a]:aspect-[16/9]"
-			: "";
+			? "16/9"
+			: "1/1";
 // Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3" + tileAspectCls;
+const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3";
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС bloom:
@@ -275,6 +287,7 @@ const paddingStyle = p.padding
 			data-animate-delay="0.1s"
 			data-nt="popular-grid"
 			data-cols={String(colsN)}
+			data-card-aspect={cardAspectRatio}
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -290,13 +303,13 @@ const paddingStyle = p.padding
 			{realProducts.length > 0
 				? realProducts.map((product: any) => (
 						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
-							<BloomProductCard product={product} />
+							<BloomProductCard product={product} aspectRatio={cardAspectRatio} />
 						</li>
 					))
 				: placeholderCards.map((ph) => (
 						<li>
 							<article class="flex flex-col gap-4" data-nt="bloom-product-card-placeholder" aria-label={ph.title}>
-								<div class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]">
+								<div class="relative block w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]" style={`aspect-ratio:${cardAspectRatio}`}>
 									<img
 										src={ph.image}
 										alt={ph.title}
@@ -370,6 +383,7 @@ const paddingStyle = p.padding
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
+			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
 			const collectionRef = grid.getAttribute("data-collection");
 			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
 			// SSR-моки (demo), не подтягиваем весь каталог магазина.
@@ -383,7 +397,7 @@ const paddingStyle = p.padding
 						wantNextPhoto && Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
-					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}</li>`;
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, cardAspect)}</li>`;
 				})
 				.join("");
 			applyQaText(grid);

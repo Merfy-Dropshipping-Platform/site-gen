@@ -5,9 +5,13 @@ import BloomPicture from "../img/BloomPicture.astro";
 interface Props {
 	product: CatalogProduct;
 	priority?: boolean;
+	// aspect-ratio (W/H) карточного медиа — «Вид изображения» секции Popular
+	// (square→1/1, portrait→430/500, wide→16/9). Дефолт 1/1 = прежний хардкод
+	// aspect-square (каталог/категория/wishlist зовут без пропа → байт-в-байт).
+	aspectRatio?: string;
 }
 
-const { product, priority = false } = Astro.props;
+const { product, priority = false, aspectRatio = "1/1" } = Astro.props;
 const href = `/products/${product.id}`;
 
 // Outline-сердце избранного — тот же heart-path, что wishlist.ts heartSvg()/
@@ -38,7 +42,8 @@ const swatchColors: Record<string, string> = {
 	<div class="relative w-full">
 		<a
 			href={href}
-			class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]"
+			class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]"
+			style={`aspect-ratio:${aspectRatio}`}
 			aria-label={product.name}
 		>
 			<BloomPicture

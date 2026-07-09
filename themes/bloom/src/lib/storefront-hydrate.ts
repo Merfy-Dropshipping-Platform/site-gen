@@ -294,7 +294,7 @@ function wishlistHeartHtml(id: string): string {
  * опускаем — реальные товары их в products.json не несут. Overlay-сердце
  * избранного (`data-wishlist-toggle`) — поверх картинки (через relative-обёртку).
  */
-export function renderCardHtml(p: RealProduct): string {
+export function renderCardHtml(p: RealProduct, aspectRatio: string = "1/1"): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
 	const image = escapeHtml(productImage(p));
@@ -324,7 +324,7 @@ export function renderCardHtml(p: RealProduct): string {
 		: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${priceStr}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`;
 	return `<article class="group flex flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
+		<a href="${href}" class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
 			<img src="${image}" alt="${name}" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
 		</a>
 		${wishlistHeartHtml(p.id)}

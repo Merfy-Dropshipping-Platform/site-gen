@@ -53,6 +53,45 @@ const newsletterEnabled = !(
 	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
 
+// Оживление полей панели «Заголовок»/«Текст» рассылки (Figma 314-34558, паритет
+// rose): заголовок из пропа heading.text с fallback на литерал верстальщика
+// (satin ALL-CAPS «Будьте в курсе наших новостей»). Подзаголовок text.content —
+// НОВЫЙ элемент, рендерится ТОЛЬКО при непустом значении (в родной вёрстке satin
+// подзаголовка нет → дефолт байт-в-байт). Раньше оба поля были мертвы.
+const newsletterHeadingText =
+	typeof p.heading?.text === "string" && p.heading.text.trim()
+		? p.heading.text
+		: "Будьте в курсе наших новостей";
+const newsletterText =
+	typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : "";
+
+// Канон «Выравнивание» (contentAlign) left/center/right — паритет rose Footer:
+// ОДНО значение выравнивает блок колонок И контент внутри на десктопе. Раньше было
+// мёртвым (satin читал только heading.alignment). Классы ЛИТЕРАЛАМИ (Tailwind JIT).
+// Дефолт left = родная вёрстка байт-в-байт (нав слева / контакты справа).
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+// Верхний ряд (нав-блок ↔ рассылка+контакты): left = justify-between (текущее);
+// center = группа по центру; right = к правому краю.
+const topRowJustifyCls =
+	_ca === "center" ? "md:justify-center md:gap-24" : _ca === "right" ? "md:justify-end" : "md:justify-between";
+// Правая колонка (рассылка+контакты): left = прижата вправо (items-end, текущее);
+// center = по центру; right = вправо.
+const rightColAlignCls =
+	_ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "items-end";
+// Нижний info-ряд (копирайт ↔ инфо-ссылки): left = space-between; center = центр;
+// right = к правому краю.
+const bottomRowJustifyCls =
+	_ca === "center" ? "justify-center" : _ca === "right" ? "justify-end" : "justify-between";
+
+// Канон colorScheme на <footer> (паритет rose): hot-render одиночного блока в
+// превью (без scheme-обёртки композитора) берёт :root = тёмный BASE_DEFAULT → не
+// тот фон. Свою схему кладём на <footer>; на live обёртка композитора даёт ту же
+// (дубль безвреден). Пусто → :root (как раньше).
+const footerSchemeClass =
+	typeof p.colorScheme === "string" && p.colorScheme
+		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
+		: "";
+
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика (навигация = leftCol Коллекции/История/Контакты F:7-11;
 // информация = правовые ссылки F:18-23); заголовок колонки — НОВЫЙ элемент,
@@ -148,13 +187,13 @@ const linkClassSm =
 	"font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-70";
 ---
 
-<footer class="w-full bg-[rgb(var(--color-surface,245_245_245))]" data-puck-component-id={id}>
+<footer class:list={["w-full bg-[rgb(var(--color-surface,245_245_245))]", footerSchemeClass]} data-puck-component-id={id}>
 	<!-- Desktop (≥ md) — Figma 905-16327 -->
 	<div class="hidden w-full md:block">
 		<div class={desktopWrapCls} style={footerPadStyle}>
 			<div class="satin-container flex flex-col gap-10">
 				<!-- Top: two columns (logo+menu | newsletter+contacts) -->
-				<div class="flex items-start justify-between">
+				<div class={`flex items-start gap-10 ${topRowJustifyCls}`}>
 					<!-- Left: logo + navigation (40px gap between logo and menu) -->
 					<div class="flex flex-col gap-10">
 						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
@@ -182,7 +221,7 @@ const linkClassSm =
 					</div>
 
 					<!-- Right: newsletter + contacts -->
-					<div class="flex flex-col items-end gap-10">
+					<div class={`flex flex-col gap-10 ${rightColAlignCls}`}>
 						{newsletterEnabled && (
 							<div class="flex w-full max-w-[320px] flex-col gap-3">
 								<p
@@ -191,8 +230,18 @@ const linkClassSm =
 									data-puck-subsection-index="100"
 									data-puck-subsection-field="newsletter"
 								>
-									Будьте в курсе наших новостей
+									{newsletterHeadingText}
 								</p>
+								{newsletterText && (
+									<p
+										class="font-manrope text-xs font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+										data-puck-subsection-parent={id}
+										data-puck-subsection-index="100"
+										data-puck-subsection-field="text"
+									>
+										{newsletterText}
+									</p>
+								)}
 								<form
 									class="flex h-10 w-full items-center justify-between border border-[rgb(var(--color-muted,153_153_153))] pl-3 pr-2.5"
 									data-newsletter-form
@@ -208,7 +257,7 @@ const linkClassSm =
 						)}
 						{(phone || email || contactFields.length > 0) && (
 							<div
-								class="flex flex-col gap-2 text-right"
+								class={`flex flex-col gap-2 ${_ca === "center" ? "text-center" : "text-right"}`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="994"
 								data-puck-subsection-field="socialColumn"
@@ -246,7 +295,7 @@ const linkClassSm =
 				</div>
 
 				<!-- D. Info row -->
-				<div class="flex items-center justify-between gap-4 border-t border-[rgb(var(--color-text,0_0_0)/13%)] pt-6">
+				<div class={`flex items-center gap-4 border-t border-[rgb(var(--color-text,0_0_0)/13%)] pt-6 ${bottomRowJustifyCls}`}>
 					<p
 						class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
 						data-puck-subsection-parent={id}
@@ -309,7 +358,10 @@ const linkClassSm =
 		<!-- Newsletter -->
 		{newsletterEnabled && (
 			<div class="mt-8 flex flex-col gap-3">
-				<p class="font-logo text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]">Будьте в курсе наших новостей</p>
+				<p class="font-logo text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]">{newsletterHeadingText}</p>
+				{newsletterText && (
+					<p class="font-manrope text-xs font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">{newsletterText}</p>
+				)}
 				<form class="flex h-10 w-full items-center justify-between border border-[rgb(var(--color-muted,153_153_153))] pl-3 pr-2.5" data-newsletter-form>
 					<input type="email" name="email" required placeholder={emailPlaceholder} aria-label="Email" class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[rgb(var(--color-muted,153_153_153))] outline-none" />
 					<button type="submit" aria-label="Подписаться" class="flex h-6 w-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"><NtIcon name="arrow-right" sizeClass="size-5" /></button>

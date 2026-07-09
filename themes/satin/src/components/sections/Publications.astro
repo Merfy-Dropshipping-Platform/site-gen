@@ -59,10 +59,13 @@ const cardsRaw =
 	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
 const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 
-// Канон showDateTime (toggle; legacy dateTime.enabled) — дефолт true =
+// Канон showDateTime (toggle; legacy dateTime.enabled) — дефолт ПОКАЗАНА =
 // дата-строка «01.05, 12:41» (Arsenal 14 light uppercase tracking-[0.04em]
-// muted — литерал Journal.astro:49); false скрывает.
-const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") === "true";
+// muted — литерал Journal.astro:49); только явный 'false' скрывает.
+// Идиома `!== "false"` (эталон theme-base/flux Publications: dateTimeEnabled =
+// enabled !== 'false') — показывает дату при любом значении кроме явного 'false'
+// (строже `=== "true"` прятало бы дату при legacy-truthy значениях ревизии).
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
 // Канон publicationType (pagePicker) — носитель платформенного резолва
 // публикаций: data-атрибут на гриде (паттерн bloom).

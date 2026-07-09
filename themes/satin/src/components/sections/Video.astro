@@ -33,7 +33,12 @@ const PLACEHOLDER_VIDEO_IMAGE = "/placeholders/landscape-video.png";
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
 // (font-logo 20 uppercase leading-[1.15], токен heading 0_0_0).
-const headingRaw = p.heading ?? p.content?.heading;
+// ВАЖНО: пустая top-level строка (heading:"") НЕ должна короткозамыкать ?? —
+// иначе legacy `content.heading.text` (куда старый конструктор писал заголовок)
+// игнорился бы и реальный заголовок ревизии подменялся плейсхолдером «Видео»
+// (тот же баг, что гардит theme-base/flux Video). Пустую строку = отсутствие.
+const headingTop = typeof p.heading === "string" ? (p.heading.trim() ? p.heading : undefined) : p.heading;
+const headingRaw = headingTop ?? p.content?.heading;
 const headingTextRaw =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Видео»:
@@ -65,6 +70,21 @@ const headingAlignCls =
 			? " text-right"
 			: "";
 const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+
+// Канон subheading «Подзаголовок» (как rose/theme-base) — string | {text} +
+// content.subheading.{text,enabled}. Рендер ТОЛЬКО при непустом тексте И
+// enabled !== 'false' (default-preserving; дефолт пустой → ничего). Стиль —
+// satin body font-light muted (§1), выравнивание общее с заголовком.
+const subEnvelope = p.content?.subheading as { text?: string; enabled?: string } | undefined;
+const subEnabled = String(subEnvelope?.enabled ?? "true") !== "false";
+const subheadingText = (() => {
+	if (!subEnabled) return "";
+	const s = p.subheading ?? subEnvelope;
+	if (typeof s === "string") return s.trim();
+	if (s && typeof s === "object") return String((s as { text?: string }).text ?? "").trim();
+	return "";
+})();
+const subheadingCls = `font-manrope text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`;
 
 // Канон position contained|fullscreen + align container|fullbleed + padded.
 // Canon-default ветка = контейнер 1320 в полях .satin-pad; fullscreen/fullbleed
@@ -113,17 +133,20 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 <section class={sectionCls} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
 	<div class={containerCls}>
 		{
-			showHeading && (
+			(showHeading || subheadingText) && (
 				<div class={headingWrapCls}>
-					<h2
-						id={titleId}
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{headingText}
-					</h2>
+					{showHeading && (
+						<h2
+							id={titleId}
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{headingText}
+						</h2>
+					)}
+					{subheadingText && <p class={`${subheadingCls} mt-2`}>{subheadingText}</p>}
 				</div>
 			)
 		}

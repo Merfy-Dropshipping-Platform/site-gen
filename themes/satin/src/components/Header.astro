@@ -76,16 +76,20 @@ const desktopLogoCls = logoLeft
 	? "font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
 	: "font-logo absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
 
-// Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 (H:42) — 'none' /
-// 'always' / отсутствие → sticky остаётся (правило canon-default → пиксель).
-// 'scroll-up' → прячем при скролле вниз, показываем при скролле вверх: is:inline
-// скрипт через data-атрибут (компилятор секций не умеет define:vars),
-// идемпотентность через data-hydrated.
+// Канон stickiness none/scroll-up/always (паритет rose Header) — 3 состояния:
+// 'always' → закреплён (sticky top-0); 'scroll-up' (ДЕФОЛТ puckConfig) → прячем
+// при скролле вниз, показываем при скролле вверх; 'none' → корень БЕЗ sticky
+// (раньше satin форсил sticky для 'none'/'always' — 'none' был мёртв == always).
+// Дефолт панели = 'scroll-up' → вид шапки satin не меняется (пиксель сохранён);
+// не-sticky включается ТОЛЬКО при явном выборе 'none'. is:inline скрипт через
+// data-атрибут (компилятор секций не умеет define:vars), идемпотентность data-hydrated.
 const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
 const rootCls =
-	stickiness === "scroll-up"
-		? "sticky top-0 z-50 w-full transition-transform duration-300"
-		: "sticky top-0 z-50 w-full";
+	stickiness === "always"
+		? "sticky top-0 z-50 w-full"
+		: stickiness === "scroll-up"
+			? "sticky top-0 z-50 w-full transition-transform duration-300"
+			: "w-full";
 const SCROLL_UP_JS = [
 	"(function(){",
 	"var root=document.querySelector('[data-satin-sticky=\"scroll-up\"]');",

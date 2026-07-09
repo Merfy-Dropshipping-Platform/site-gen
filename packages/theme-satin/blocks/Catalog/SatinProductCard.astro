@@ -25,9 +25,13 @@ interface Props {
 	    всех сторон (фото/кнопка inset, кнопка НЕ во всю ширину) + фон surface;
 	    false (дефолт) → флеш к краям (фото full-bleed, кнопка full-width). */
 	cardContainerOn?: boolean;
+	/** «Вид изображения» карточки (настройка cardStyle) — Tailwind aspect-класс.
+	    Дефолт — родной satin-портрет 430/564. Передаётся из Catalog.astro,
+	    зеркалит client renderCardHtml (parity SSG↔client). */
+	cardAspectClass?: string;
 }
 
-const { product, priority = false, cardContainerOn = false } = Astro.props;
+const { product, priority = false, cardContainerOn = false, cardAspectClass = "aspect-[430/564]" } = Astro.props;
 const href = `/products/${product.id}`;
 ---
 
@@ -39,7 +43,7 @@ const href = `/products/${product.id}`;
 	data-nt="satin-product-card"
 	aria-label={product.name}
 >
-	<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
+	<div class:list={["relative w-full shrink-0 overflow-hidden bg-[#F5F5F5]", cardAspectClass]}>
 		<a href={href} class="block size-full" aria-label={product.name}>
 			{product.image ? (
 				<SatinPicture

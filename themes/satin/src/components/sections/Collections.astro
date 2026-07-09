@@ -23,7 +23,10 @@ const sectionSubtitle =
 
 // Канон headingSize: 'medium' (canon-default) и отсутствие = роль «заголовок
 // секции» дословно (20px, TextBlock.astro:15). Лестница §9: small 17, large 24.
-const headingSize = p.heading?.size ?? p.headingSize;
+// Приоритет top-level headingSize (live-селект «Размер заголовка»); nested
+// heading.size — только legacy-фолбэк (сиды/миграции). Раньше nested читался
+// ПЕРВЫМ и глушил живой селект (паритет rose Collections: top-level первым).
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
 		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
@@ -57,11 +60,15 @@ const gridCls = cols
 	: gridBase;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
-// Канон gridAspect/imageView: canon-default (imageView 'square' из puckConfig)
-// И отсутствие = плитка верстальщика 430/564 дословно (SatinCollectionCard);
-// gridAspect '1:1' → квадрат, imageView 'wide' → 16/9.
+// Канон imageView square/portrait/wide (+legacy alias gridAspect '1:1'→square):
+// 'square' → квадрат 1:1 (Figma-паритет rose Collections), 'wide' → 16/9,
+// 'portrait'/отсутствие/canon-default = плитка верстальщика 430/564 дословно
+// (SatinCollectionCard — портретная манера satin). Раньше ветка 'square'
+// отсутствовала и проваливалась в дефолт 430/564 → «Вид изображения: Квадрат»
+// не применялся (только 'wide' работал). Класс кладётся напрямую на медиа-див
+// плитки (манера satin), паритет rose (там — override-селектор на гриде).
 const tileAspect =
-	p.gridAspect === "1:1"
+	p.imageView === "square" || p.gridAspect === "1:1"
 		? "aspect-square"
 		: p.imageView === "wide"
 			? "aspect-[16/9]"

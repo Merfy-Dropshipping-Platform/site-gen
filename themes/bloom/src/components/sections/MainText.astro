@@ -61,11 +61,21 @@ const textCls =
 			? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]"
 			: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]";
 
-// Канон position — позиция контент-колонки; alignment — выравнивание внутри.
-// canon-default обоих = 'center' = литерал верстальщика (всё по центру,
-// max-w-[1320px], mx-auto).
+// Канон «Позиция» (Figma 1230-42143, visible 'position'-контрол) = ЕДИНЫЙ
+// контрол: рулит И размещением контент-колонки (posCls), И выключкой содержимого
+// внутри (itemsCls/textAlignCls: заголовок/текст/кнопка). Отдельного видимого
+// «Выравнивание» нет — alignment скрыт (type:'hidden'), читаем его лишь как
+// back-compat fallback (паритет rose: position ведёт всё). Раньше itemsCls/
+// textAlignCls читали alignment, который конструктор не пишет → блок двигался,
+// а содержимое застревало по центру = «выравнивается только позиция».
+// canon-default = 'center' = литерал верстальщика (всё по центру, mx-auto).
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
-const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
+const alignment =
+	p.position === "left" || p.position === "right" || p.position === "center"
+		? position
+		: p.alignment === "left" || p.alignment === "right"
+			? p.alignment
+			: "center";
 const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
 const itemsCls =
 	alignment === "left" ? "items-start" : alignment === "right" ? "items-end" : "items-center";

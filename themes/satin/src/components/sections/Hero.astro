@@ -135,7 +135,12 @@ const BTN_LIGHT =
 	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent font-manrope font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
 // Канон buttonStyle: solid (canon-default) И отсутствие = dark литерал; outlined = light.
 const primaryBtnCls = p.buttonStyle === "outlined" ? BTN_LIGHT : BTN_DARK;
-// Канон secondaryButton — рендер ТОЛЬКО при непустом тексте, рядом в ряд gap-3, light.
+// Канон secondaryButton — заливка ПРОТИВОПОЛОЖНА первой (паритет rose secondaryCtaCls):
+// solid → вторая контурная (light), outlined → вторая залитая (dark). Согласованная
+// пара «главная + второстепенная». Раньше вторая была ЖЁСТКО light → при outlined обе
+// кнопки выходили контурными (ни одной залитой) — расхождение с rose.
+const secondaryBtnCls = p.buttonStyle === "outlined" ? BTN_DARK : BTN_LIGHT;
+// Канон secondaryButton — рендер ТОЛЬКО при непустом тексте, рядом в ряд gap-3.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
 		? p.secondaryButton.text
@@ -304,7 +309,7 @@ const paddingStyle = p.padding
 							</a>
 							<a
 								href={secondaryLink}
-								class={BTN_LIGHT}
+								class={secondaryBtnCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"

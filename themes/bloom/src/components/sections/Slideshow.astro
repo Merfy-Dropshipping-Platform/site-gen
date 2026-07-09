@@ -321,7 +321,10 @@ const paddingStyle = p.padding
 											data-active={i === 0 ? "true" : "false"}
 											class="font-inter text-[14px] font-light leading-none text-white data-[active=false]:hidden"
 										>
-											{i + 1} / {slides.length}
+											{/* Разделитель «/» обёрнут в <span> (паритет rose): голый « / »
+											    (пробел-слэш-пробел) иначе переписывается preview-rewriter'ом
+											    ROOT_URL_RE (whitespace+/ → /__theme/<t>/) → «1 /__theme/bloom/ 3». */}
+											{i + 1}<span class="mx-1" aria-hidden="true">/</span>{slides.length}
 										</span>
 									))}
 							</div>

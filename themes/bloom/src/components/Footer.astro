@@ -35,6 +35,30 @@ const newsletterEnabled = !(
 	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
 
+// Оживление полей панели (паритет rose): заголовок/текст рассылки из пропов
+// (Figma 314-34558 «Заголовок»/«Текст»), fallback на литералы верстальщика →
+// без правок футер байт-в-байт как раньше.
+const newsletterHeadingText =
+	typeof p.heading?.text === "string" && p.heading.text.trim()
+		? p.heading.text
+		: "ПОДПИШИТЕСЬ НА РАССЫЛКУ";
+const newsletterText =
+	typeof p.text?.content === "string" && p.text.content.trim()
+		? p.text.content
+		: "Подпишитесь на наши акции и новости";
+// item 1 — «Выравнивание» блока рассылки, ОДНО значение на десктоп И адаптив
+// (паритет rose). Классы ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left.
+const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+const nlSectionAlignCls = _AL_ITEMS[_ca];
+const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
+// «Выравнивание» центрирует ГРУППУ колонок (как rose): center → секция
+// justify-center, right → justify-end, left (дефолт) = justify-between (нав слева
+// / контакты справа, текущий рендер). Классы литералами (Tailwind JIT).
+const colsJustifyCls = _ca === "center" ? "lg:justify-center" : _ca === "right" ? "lg:justify-end" : "lg:justify-between";
+const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
+
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика (навигация = категории + О нас; информация = правовые
 // ссылки /legal/*); заголовок колонки — НОВЫЙ элемент, рендерится только при
@@ -122,18 +146,27 @@ const footerPadStyle =
 const footerContainerCls = footerPadStyle
 	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-[300px]"
 	: "mx-auto w-full max-w-[1920px] px-4 pt-16 pb-24 md:px-20 md:pb-28 2xl:px-[300px]";
+
+// Применяем СВОЮ colorScheme на <footer> (паритет rose / base Footer.astro).
+// Иначе hot-render одиночного блока в превью конструктора (без scheme-обёртки
+// композитора) берёт :root = тёмный BASE_DEFAULT. На live обёртка композитора
+// даёт ту же схему — дубль безвреден. Пустой проп → :root (как раньше).
+const footerSchemeClass =
+	typeof p.colorScheme === "string" && p.colorScheme
+		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
+		: "";
 ---
 
-<footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
+<footer class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle} data-animate>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12">
 			<!-- Block 1: Newsletter -->
 			{newsletterEnabled && (
 			<section
-				class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
+				class={`flex w-full flex-col gap-6 lg:flex-row lg:justify-between ${nlSectionAlignCls} lg:items-start`}
 				aria-labelledby="newsletter-heading"
 			>
-				<div class="flex flex-col gap-2">
+				<div class={`flex flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
 						class="font-urbanist text-[20px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
@@ -141,10 +174,10 @@ const footerContainerCls = footerPadStyle
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="newsletter"
 					>
-						ПОДПИШИТЕСЬ НА РАССЫЛКУ
+						{newsletterHeadingText}
 					</h2>
 					<p class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
-						Подпишитесь на наши акции и новости
+						{newsletterText}
 					</p>
 				</div>
 
@@ -182,10 +215,10 @@ const footerContainerCls = footerPadStyle
 
 			<!-- Block 2: Main footer -->
 			<section
-				class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-16"
+				class={`flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:gap-16 ${colsJustifyCls}`}
 				aria-label="Навигация по сайту"
 			>
-				<div class="flex flex-col items-start">
+				<div class={`flex flex-col ${colInnerCls || "items-start"}`}>
 					<a href="/" class="inline-flex transition-opacity hover:opacity-80" aria-label={siteTitle}>
 						<img
 							src="/icons/Bloom.svg"
@@ -258,7 +291,7 @@ const footerContainerCls = footerPadStyle
 				</div>
 
 				<ul
-					class="flex flex-col gap-3 lg:ml-auto lg:pt-0"
+					class={`flex flex-col gap-3 lg:pt-0 ${_ca === "left" ? "lg:ml-auto" : colInnerCls}`}
 					role="list"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="996"

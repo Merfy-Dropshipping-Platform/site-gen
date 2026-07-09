@@ -30,8 +30,12 @@ const headingCls =
 		: headingSize === "large"
 			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
 			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
-// Канон heading.alignment: отсутствие = left (текстовая колонка манеры).
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+// Канон alignment (Figma 1:17086, visible 'alignment'-контрол): выравнивание
+// стало секция-уровневым → применяется к заголовку + тексту + кнопке (паритет
+// rose). Читаем top-level p.alignment (что пишет 'alignment'-поле puckConfig);
+// старые headingAlignment / heading.alignment — fallback back-compat (прежние
+// ревизии хранили выключку в заголовке). Отсутствие = left (текст-колонка манеры).
+const headingAlignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
 
@@ -149,7 +153,7 @@ const titleId = id ? `${id}-title` : undefined;
 				{heading}
 			</h2>
 			<div
-				class={textCls + italicCls}
+				class={textCls + italicCls + headingAlignCls}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="102"
 				data-puck-subsection-field="text"
@@ -157,7 +161,7 @@ const titleId = id ? `${id}-title` : undefined;
 			/>
 			{
 				btnText && (
-					<div class={inlineCta ? "mt-2" : "mt-auto"}>
+					<div class={(inlineCta ? "mt-2" : "mt-auto") + headingAlignCls}>
 						<a
 							href={btnHref}
 							class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"

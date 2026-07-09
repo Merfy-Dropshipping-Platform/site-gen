@@ -58,16 +58,18 @@ const logoImgCls = "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
 const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
 
-// Канон stickiness: литерал верстальщика УЖЕ sticky top-0 z-50 — 'none' / 'always' /
-// canon-default / отсутствие → sticky остаётся (правило canon-default → пиксель).
-// 'scroll-up' → прячем при скролле вниз, показываем при скролле вверх: is:inline
-// скрипт через data-атрибут (компилятор секций не умеет define:vars),
-// идемпотентность через data-hydrated.
+// Канон stickiness none/scroll-up/always (паритет rose Header.classes.ts:13-16).
+// 'always' → sticky; 'scroll-up' → sticky + прячем при скролле вниз/показываем
+// вверх; 'none'/отсутствие/неизвестное → НЕ sticky (корень w-full без sticky).
+// 'scroll-up' скрипт: is:inline через data-атрибут (компилятор секций не умеет
+// define:vars), идемпотентность через data-hydrated.
 const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
 const rootCls =
-	stickiness === "scroll-up"
-		? "sticky top-0 z-50 w-full transition-transform duration-300"
-		: "sticky top-0 z-50 w-full";
+	stickiness === "always"
+		? "sticky top-0 z-50 w-full"
+		: stickiness === "scroll-up"
+			? "sticky top-0 z-50 w-full transition-transform duration-300"
+			: "w-full";
 const SCROLL_UP_JS = [
 	"(function(){",
 	"var root=document.querySelector('[data-bloom-sticky=\"scroll-up\"]');",

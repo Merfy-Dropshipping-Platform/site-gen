@@ -326,7 +326,10 @@ const paddingStyle = p.padding
 											data-active={i === 0 ? "true" : "false"}
 											class="font-manrope text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
 										>
-											{i + 1} / {slides.length}
+											{/* Разделитель «/» — в ОТДЕЛЬНОМ <span>: голый « / » текст-нода манглится
+											    preview-URL-rewriter'ом в «/__theme/satin/» (обёртка защищает — паритет
+											    rose data-slide-counter). */}
+											{i + 1}<span class="mx-1" aria-hidden="true">/</span>{slides.length}
 										</span>
 									))}
 							</div>

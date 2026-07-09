@@ -206,14 +206,18 @@ const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItems
 
 // Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
 // заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
-// дословно (токены кнопки-1 §7, rounded-full → --radius-button 100px).
-const ctaBtnCls =
-	p.buttonStyle === "outlined"
-		? `inline-flex ${ctaSizeCls} items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent font-inter font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95`
-		: `inline-flex ${ctaSizeCls} items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] font-inter font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95`;
-// Вторая кнопка — белый pill манеры (Philosophy.astro:26) на токенах кнопки-2.
-const secondaryBtnCls =
-	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
+// дословно (токены кнопки-1 §7, rounded-full → --radius-button 100px). Общий каркас
+// ctaBaseCls (размер/радиус/шрифт/паддинг — bloom-манера font-inter/100px) для ОБЕИХ
+// кнопок, чтобы вторая кнопка масштабировалась «Размером» и флипала заливку в паре.
+const ctaBaseCls = `inline-flex ${ctaSizeCls} items-center justify-center rounded-[var(--radius-button,100px)] font-inter font-light leading-none transition-opacity hover:opacity-90 active:scale-95`;
+const solidCls = `${ctaBaseCls} bg-[rgb(var(--color-button-bg,227_142_159))] text-[rgb(var(--color-button-text,255_255_255))]`;
+const outlinedCls = `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent text-[rgb(var(--color-button-bg,227_142_159))]`;
+const ctaBtnCls = p.buttonStyle === "outlined" ? outlinedCls : solidCls;
+// Вторая кнопка — СОГЛАСОВАННАЯ ПАРА с первой на ОДНОМ токене кнопки-1 (паритет rose
+// Hero): заливка ПРОТИВОПОЛОЖНА первой (solid → первая залита/вторая контур; outlined
+// → наоборот). Раньше была захардкоженная белая на токенах кнопки-2 → не флипала при
+// outlined («вторая кнопка не меняла заливку»). Bloom-манера (font-inter/100px) цела.
+const secondaryBtnCls = p.buttonStyle === "outlined" ? solidCls : outlinedCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
 const paddingStyle = p.padding
@@ -318,7 +322,13 @@ const paddingStyle = p.padding
 				fetchpriority="high"
 				class="absolute inset-0 z-0 size-full object-cover object-center"
 			/>
-		) : null
+		) : (
+			/* Ни фон-картинки, ни второго фото не задано, но блок НЕ пустой (есть
+			   заголовок/текст/кнопка): вместо `null` — surface-подложка на всю секцию
+			   (паритет rose Hero: фото-зона существует всегда). Иначе медиа-слой
+			   пропадал при «заголовок задан + фон пуст». */
+			<div class="absolute inset-0 z-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
+		)
 	}
 
 	{

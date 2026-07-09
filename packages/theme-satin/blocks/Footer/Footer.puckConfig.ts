@@ -7,11 +7,12 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 // siteTitle — hidden (как в theme-base). Схема расширена до superset theme-base
 // (siteTitle/variant/bottomStrip/copyright/colorScheme). ДЕФОЛТЫ ниже — satin'овские
 // (манера: newsletter ВКЛ + ALL-CAPS заголовок, satin-колонки), СОХРАНЕНЫ.
-// Render-safe: themes/satin/.../Footer.astro уже читает эти канон-пропсы
+// Render-safe: themes/satin/.../Footer.astro читает эти канон-пропсы
 // (siteTitle/copyright/bottomStrip/newsletter.enabled/navigationColumn/
 // informationColumn/socialColumn/padding) защитно с фолбэками — расширение схемы
-// его не ломает (verified). heading/text/colorScheme рендером не используются
-// (инертны, как у theme-base sub-panel) — вид подвала satin не меняется.
+// его не ломает (verified). heading.text/text.content (рассылка), contentAlign
+// (выравнивание подвала) и colorScheme ОЖИВЛЕНЫ рендером (паритет rose Footer):
+// заголовок/подзаголовок рассылки, выравнивание колонок, схема на <footer>.
 
 const FooterLinkSchema = z.object({
   label: z.string(),
@@ -49,6 +50,8 @@ export const FooterSchema = z.object({
     description: z.string(),
     placeholder: z.string(),
   }),
+  /** «Выравнивание» блока подвала (канон theme-base/rose — top-level responsive). */
+  contentAlign: z.enum(['left', 'center', 'right']).optional(),
   heading: z.object({
     text: z.string(),
     size: z.enum(['small', 'medium', 'large']),
@@ -130,7 +133,8 @@ export const FooterPuckConfig = {
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер заголовка', options: sizeOptions },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
+        // Выравнивание вынесено в top-level контрол contentAlign (канон theme-base/rose).
+        alignment: { type: 'hidden', label: '' },
       },
     } as any,
     text: {
@@ -164,6 +168,7 @@ export const FooterPuckConfig = {
     },
     socialColumn: { type: 'hidden' as const, label: '' },
     copyright: { type: 'hidden' as const, label: '' },
+    contentAlign: { type: 'alignment', label: 'Выравнивание' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },
@@ -180,6 +185,7 @@ export const FooterPuckConfig = {
     },
     heading: { text: '', size: 'small', alignment: 'center' },
     text: { content: '', size: 'small' },
+    contentAlign: 'left',
     navigationColumn: {
       title: 'Навигация',
       links: [

@@ -29,7 +29,13 @@ const poster =
 // Video: заголовок «Видео» НАД медиа-блоком. Дефолт = «Видео» (паттерн bloom
 // Gallery/Collections/MultiRows `?? "<Figma>"`); мерчант задал свой heading →
 // рендерим ЕГО (fallback срабатывает только при пустом тексте).
-const headingRaw = p.heading ?? p.content?.heading;
+// ВАЖНО (паритет theme-base Video.astro): пустая top-level строка (heading:"")
+// НЕ должна короткозамыкать `??` — иначе legacy `content.heading.text` игнорится
+// (реальный баг: заголовок, записанный старым конструктором в
+// content.heading.text, терялся → плейсхолдер «Видео»). Пустую строку трактуем
+// как отсутствие → fallback на content.heading.
+const headingTop = typeof p.heading === "string" ? (p.heading.trim() ? p.heading : undefined) : p.heading;
+const headingRaw = headingTop ?? p.content?.heading;
 const headingRawText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
 const headingText = headingRawText.trim() ? headingRawText : "Видео";
@@ -77,11 +83,16 @@ const subheading = (() => {
 const subheadingCls = `font-inter text-[14px] font-light leading-[17px] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`;
 
 // Канон position contained|fullscreen + padded (blockDefaults true) + align
-// container|fullbleed (blockDefaults 'container'). Canon-default ветка =
-// контейнер 1320 с горизонтальными полями §2; fullscreen/fullbleed → full-bleed
-// без скругления и клампа (align приоритетнее position — паттерн theme-base);
+// container|fullbleed. Canon-default ветка = контейнер 1320 с горизонтальными
+// полями §2; fullscreen/fullbleed → full-bleed без скругления и клампа;
 // padded=false убирает горизонтальные поля, сохраняя кламп и скругление.
-const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
+// ВАЖНО (паритет rose/theme-base): пользовательский контрол = «Положение видео»
+// (position, radio); align — HIDDEN-проп (084 additive) со значением-дефолтом
+// 'container' в theme.json blockDefaults. Только 'fullbleed' — ЯВНЫЙ full-bleed
+// оверрайд; 'container' = пассивное значение «использовать position», поэтому
+// НЕ перебивает position. Иначе blockDefaults align:'container' глушил бы
+// position:'fullscreen' (реальный баг: тумблер «На весь экран» не работал).
+const alignProp = p.align === "fullbleed" ? "fullbleed" : undefined;
 const positionProp = typeof p.position === "string" ? p.position : "contained";
 const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
 const padded = !(p.padded === false || p.padded === "false");

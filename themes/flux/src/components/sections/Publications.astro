@@ -58,9 +58,10 @@ const cardsRaw =
 	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
 const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 
-// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
-// рендерится только при true/'true'.
-const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden). Дефолт =
+// ПОКАЗАНА (эталон theme-base Publications: dateTimeEnabled = enabled !== 'false')
+// — при незаданном тумблере дата реальной публикации рендерится, а не прячется.
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
 // Канон publicationType (pagePicker) — data-атрибут на гриде для платформенного
 // резолва публикаций.
@@ -124,7 +125,7 @@ const hasRealPublications = realPublications.length > 0;
 // «Колонна» + «Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.»),
 // не привязан к товарам/гаджетам.
 const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
-type PubItem = { title: string; date: string; image: string; slug?: string; isPlaceholder: boolean };
+type PubItem = { title: string; date: string; excerpt: string; image: string; slug?: string; isPlaceholder: boolean };
 // Дизайн-ассет плейсхолдера колонки (контракт картиночных секций Figma 1:19335:
 // фото колонки = /placeholders/publication-card.png — картинка показывается
 // ВСЕГДА, НЕ пустой surface). Раздаётся на каждой теме как /placeholders/
@@ -134,6 +135,7 @@ const items: PubItem[] = hasRealPublications
 	? realPublications.slice(0, cards).map((pub) => ({
 			title: pub.title ?? "",
 			date: formatPubDate(pub.publishedAt),
+			excerpt: pub.excerpt ?? "",
 			image: pub.coverImageUrl ?? "",
 			slug: pub.slug,
 			isPlaceholder: false,
@@ -141,6 +143,7 @@ const items: PubItem[] = hasRealPublications
 	: Array.from({ length: cards }, () => ({
 			title: "Колонна",
 			date: "",
+			excerpt: "",
 			image: PLACEHOLDER_PUB_IMAGE,
 			isPlaceholder: true,
 		}));
@@ -218,6 +221,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 									{item.title}
 								</span>
+								{/* Аннотация публикации (эталон theme-base Publications рендерит
+								    item.excerpt под заголовком) — flux-манера roboto-flex muted,
+								    как текст-плейсхолдер. Реальная публикация без excerpt — ничего. */}
+								{!item.isPlaceholder && item.excerpt && (
+									<p class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
+										{item.excerpt}
+									</p>
+								)}
 								{item.isPlaceholder && (
 									<p class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
 										{PLACEHOLDER_TEXT}

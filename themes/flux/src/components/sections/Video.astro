@@ -52,7 +52,12 @@ const posterFallback = poster ?? "/placeholders/landscape-video.png";
 // content.heading-конверт. Пустое состояние = Figma-плейсхолдер «Видео» НАД медиа
 // (мерчант задал свой heading → рендерим его; fallback только при пустом тексте).
 // Роль — шапка секции flux: font-roboto-flex uppercase (эталон Collections.astro).
-const headingRaw = p.heading ?? p.content?.heading;
+// ВАЖНО: пустая top-level строка (heading:"") НЕ должна короткозамыкать ?? —
+// иначе legacy `content.heading.text` (куда старый конструктор писал заголовок)
+// игнорился бы и реальный заголовок ревизии подменялся плейсхолдером «Видео»
+// (тот же баг, что гардит theme-base Video). Пустую строку трактуем как отсутствие.
+const headingTop = typeof p.heading === "string" ? (p.heading.trim() ? p.heading : undefined) : p.heading;
+const headingRaw = headingTop ?? p.content?.heading;
 const headingRawText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
 const headingText = headingRawText.trim() ? headingRawText : "Видео";

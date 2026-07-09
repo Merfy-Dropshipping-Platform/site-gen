@@ -52,14 +52,23 @@ const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.s
 const newsletterEnabled = !(
 	p.newsletter && (p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
+// Заголовок/текст рассылки: панель конструктора (Figma 314-34558) пишет их в top-level
+// `heading.text` / `text.content` (см. Footer.puckConfig — эти поля ВИДИМЫ, а
+// newsletter.heading/description СКРЫТЫ). rose Footer читает именно `heading.text`/
+// `text.content` → паритет. Приоритет: панель (heading.text) → theme.json blockDefault
+// (newsletter.heading) → литерал верстальщика.
 const nlHeading =
-	typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
-		? p.newsletter.heading
-		: "Подпишитесь на нашу рассылку";
+	typeof p.heading?.text === "string" && p.heading.text.trim()
+		? p.heading.text
+		: typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
+			? p.newsletter.heading
+			: "Подпишитесь на нашу рассылку";
 const nlDescription =
-	typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
-		? p.newsletter.description
-		: "Введите электронную почту и получайте информацию нашего бренда";
+	typeof p.text?.content === "string" && p.text.content.trim()
+		? p.text.content
+		: typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
+			? p.newsletter.description
+			: "Введите электронную почту и получайте информацию нашего бренда";
 const nlPlaceholder =
 	typeof p.newsletter?.placeholder === "string" && p.newsletter.placeholder.trim()
 		? p.newsletter.placeholder
@@ -90,13 +99,20 @@ const CANON_NAV: Array<[string, string]> = [
 const navLinksRaw = coerceColumnLinks(p.navigationColumn, navColumnDefault);
 const navLinks = isCanonColumn(navLinksRaw, CANON_NAV) ? navColumnDefault : navLinksRaw;
 const infoLinks = coerceColumnLinks(p.informationColumn, []);
+// Ссылки инфо-колонки приходят из настроек магазина (site_policy) — в панели скрыты
+// (Footer.puckConfig informationColumn.links: hidden). Заголовок колонки («Заголовок
+// колонки») редактируем. rose показывает колонку при title ИЛИ links → паритет: колонку
+// рендерим, если задан title, даже без ссылок (иначе редактируемый title мёртв).
 
 // Заголовки колонок: дефолт = литерал верстальщика (репо ВСЕГДА показывает «Навигация» /
 // «Информация» / «Социальные сети»). Непустой title пропа перебивает.
 const columnTitleOf = (col: any): string | undefined =>
 	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
 const navColTitle = columnTitleOf(p.navigationColumn) ?? "Навигация";
-const infoColTitle = columnTitleOf(p.informationColumn) ?? "Информация";
+// Сырой (user-provided) заголовок инфо-колонки — для гейта показа колонки (как rose:
+// колонка при title ИЛИ links). Дефолт «Информация» — только для рендера заголовка.
+const infoColTitleRaw = columnTitleOf(p.informationColumn);
+const infoColTitle = infoColTitleRaw ?? "Информация";
 const socialColTitle = columnTitleOf(p.socialColumn) ?? "Социальные сети";
 
 const columnTitleCls =
@@ -286,7 +302,7 @@ const footerSchemeClass =
 					</ul>
 				</div>
 
-				{infoLinks.length > 0 && (
+				{(infoColTitleRaw || infoLinks.length > 0) && (
 				<div
 					class={`flex flex-col gap-4 md:w-[318px] ${colInnerCls}`}
 					data-puck-subsection-parent={id}

@@ -63,15 +63,19 @@ const isAbsoluteCenter = logoPosition === "center-absolute";
 // равные flex-1 фланги (лого + блок иконок), nav (auto) садится по центру.
 const logoLeft = logoPosition === "center-left";
 
-// Канон stickiness: дефолт puckConfig = 'scroll-up'. 'none' / 'always' / отсутствие →
-// обычный sticky (= эталон верстальщика `sticky top-0 z-50`). 'scroll-up' → прячем при
-// скролле вниз, показываем при скролле вверх: is:inline скрипт через data-атрибут
-// (компилятор секций не умеет define:vars), идемпотентность через data-hydrated.
+// Канон stickiness (паритет с rose + канон theme-base Header.classes.ts:13-16):
+// 'always' → sticky; 'scroll-up' → sticky + прячем при скролле вниз, показываем при
+// скролле вверх (is:inline скрипт через data-атрибут — компилятор секций не умеет
+// define:vars, идемпотентность через data-hydrated); 'none'/отсутствие → НЕ sticky
+// (обычный поток, `w-full` — как rose). Раньше 'none' давал sticky (= 'always'), т.е.
+// «Никогда» не отличалось от «Всегда» — настройка была мёртвой.
 const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
 const rootCls =
-	stickiness === "scroll-up"
-		? "sticky top-0 z-50 w-full transition-transform duration-300"
-		: "sticky top-0 z-50 w-full";
+	stickiness === "always"
+		? "sticky top-0 z-50 w-full"
+		: stickiness === "scroll-up"
+			? "sticky top-0 z-50 w-full transition-transform duration-300"
+			: "w-full";
 const SCROLL_UP_JS = [
 	"(function(){",
 	"var root=document.querySelector('[data-flux-sticky=\"scroll-up\"]');",

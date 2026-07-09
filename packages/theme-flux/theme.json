@@ -126,11 +126,11 @@
           "variant": "inline-small",
           "showDiscountBadge": false
         },
-        "variantsType": "dropdown",
+        "variantsType": "chips",
         "counter": {
           "variant": "pill"
         },
-        "showDescription": false
+        "showDescription": true
       }
     },
     "Hero": {},

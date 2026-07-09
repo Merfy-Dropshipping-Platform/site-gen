@@ -348,11 +348,17 @@ const paddingStyle = p.padding
 										aria-current={i === 0 ? "true" : undefined}
 										aria-label={`Слайд ${i + 1}`}
 									>
-										{pagination === "dots" || pagination === "lines"
-											? null
-											: pagination === "counter"
-												? `${i + 1} / ${slides.length}`
-												: i + 1}
+										{pagination === "dots" || pagination === "lines" ? null : pagination === "counter" ? (
+											// Слэш в <span> (НЕ голый « / ») — иначе preview-rewriter
+											// (ROOT_URL_RE: пробел+/) впишет « /__theme/<тема>/ » в текст.
+											<Fragment>
+												{i + 1}
+												<span class="mx-1" aria-hidden="true">/</span>
+												{slides.length}
+											</Fragment>
+										) : (
+											i + 1
+										)}
 									</button>
 								))}
 							</div>

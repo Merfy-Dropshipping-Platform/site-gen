@@ -380,7 +380,12 @@ const heroBoxed = String(p.container ?? "false") === "true";
 const heroBoxedCls = heroBoxed
 	? ` rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,238_238_238))]/95 ${panelPadCls} [&_h1]:!text-[rgb(var(--color-heading,38_49_28))] [&_p]:!text-[rgb(var(--color-text,68_68_68))]`
 	: "";
-// Вторая кнопка (только single) — рендер при непустом тексте, белый контур манеры.
+// Вторая кнопка (только single) — рендер при непустом тексте. Заливка ПРОТИВОПОЛОЖНА
+// первой (паттерн rose secondaryCtaCls): согласованная пара «главная + вторая» — при
+// «Стиль solid» первая залита оливой → вторая = контур манеры; при «outlined» первая
+// = контур → вторая заливается оливой (флип). Раньше secondaryCls был ЖЁСТКО контуром
+// → при buttonStyle=outlined ОБЕ кнопки становились прозрачными контурами (ни одной
+// залитой, потеря иерархии). Классы — vanilla-манера дословно (инверсия ctaCls-веток).
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
 		? p.secondaryButton.text
@@ -390,7 +395,9 @@ const secondaryHref =
 	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
 	"/catalog/textile";
 const secondaryCls =
-	`inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
+	p.buttonStyle === "outlined"
+		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`
+		: `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
 ---
 
 {

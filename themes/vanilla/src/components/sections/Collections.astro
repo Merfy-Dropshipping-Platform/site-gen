@@ -33,7 +33,12 @@ const sectionSubtitle =
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default, MANNER §9) и отсутствие = роль «заголовок секции»
 // верстальщика дословно (Bitter italic 20). Лестница §9: small 17, large 24.
-const headingSize = p.heading?.size ?? p.headingSize;
+// ⚠️ ИСПРАВЛЕНО (паритет rose + vanilla Popular): порядок резолва был НАОБОРОТ
+// (`p.heading?.size ?? p.headingSize`) — legacy nested heading.size читался
+// ПЕРВЫМ и глушил live-селект «Размер заголовка» (updateProp('headingSize', …)).
+// Дефолт-сиды/миграции кладут nested heading.size='medium' → селектор молча
+// игнорировался. Теперь top-level первым, nested — лишь фолбэк (как rose).
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
 		? "font-vanilla-bitter text-[17px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]"
@@ -65,17 +70,23 @@ const gridCls = cols
 	: "grid grid-cols-1 gap-4 md:grid-cols-2";
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
-// Канон gridAspect '1:1' (canon-default из blockDefaults vanilla) и
-// отсутствие = квадратные плитки верстальщика (aspect-[1/1], §4); без него
-// вид ведёт imageView: portrait → 430/500, wide → 16/9.
+// Канон imageView square/portrait/wide. ⚠️ ИСПРАВЛЕНО (паритет rose): раньше
+// `gridAspect === "1:1"` проверялся ПЕРВЫМ и, так как blockDefaults vanilla
+// (theme.json) задаёт gridAspect:'1:1' на КАЖДОМ блоке, он ВСЕГДА перекрывал
+// imageView → «Вид изображения» был МЁРТВ (portrait/wide неотличимы от square).
+// Теперь ЯВНЫЙ imageView имеет приоритет: portrait → 430/500, wide → 16/9,
+// square → 1/1. При ОТСУТСТВИИ imageView — дефолт = квадрат верстальщика
+// (aspect-[1/1], §4): vanilla home-грид квадратный (gridAspect:'1:1' — 084-пилот,
+// enum только 'auto'|'1:1', оба ведут в квадрат). imageView в ревизиях НЕ
+// сохраняется (0/35929) → реальные сайты держат квадрат; явный imageView
+// (аудит/rose-паритет) теперь уважается. Плитка — прямой потомок li>*>div,
+// aspect применяется дословно (не descendant-utility).
 const tileAspect =
-	p.gridAspect === "1:1"
-		? "aspect-[1/1]"
-		: p.imageView === "portrait"
-			? "aspect-[430/500]"
-			: p.imageView === "wide"
-				? "aspect-[16/9]"
-				: "aspect-[1/1]";
+	p.imageView === "portrait"
+		? "aspect-[430/500]"
+		: p.imageView === "wide"
+			? "aspect-[16/9]"
+			: "aspect-[1/1]";
 // Канон cardCaptionStyle: 'uppercase' (canon-default из blockDefaults) и
 // отсутствие = капс-подпись верстальщика; 'default' снимает капс.
 const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";

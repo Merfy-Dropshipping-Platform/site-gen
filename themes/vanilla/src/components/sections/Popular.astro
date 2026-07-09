@@ -91,17 +91,28 @@ const placeholderCards = Array.from({ length: placeholderN }, (_, i) => ({
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
 // 'square' (canon-default) и отсутствие = aspect-square карточки верстальщика;
-// portrait → 430/500, wide → 16/9 (перекрытие медиа-ссылки карточки — и
-// demo-SSR VanillaProductCard, и гидрированной renderCardHtml: обе article>a).
-const tileAspectCls =
+// portrait → 430/500, wide → 16/9.
+// ⚠️ ИСПРАВЛЕНО (паритет rose): прежний override `[&_li>article>a]` был МЁРТВ во
+// ВСЕХ путях — реальная разметка карточки VanillaProductCard = `li>article>div>a`
+// (<a> обёрнут в `div.relative.w-full` под overlay-сердцем wishlist), а
+// плейсхолдер = `li>article>div` (aspect-бокс — прямой потомок article, без <a>).
+// Прямого потомка `article>a` не существует → «Вид изображения» не применялся ни
+// к плейсхолдеру, ни к SSR-товарам, ни к гидрированным. Теперь как rose: значение
+// aspect-ratio прокидывается КАЖДОЙ карточке — плейсхолдеру inline-стилем (ниже),
+// а реальным (SSR VanillaProductCard + гидрация renderCardHtml, обе `article>div>a`)
+// глобальным правилом по `data-card-aspect` грида (<style> ниже). square/отсутствие
+// → без override, aspect-square карточки остаётся дословно.
+const cardAspectRatio =
 	p.imageView === "portrait"
-		? " [&_li>article>a]:aspect-[430/500]"
+		? "430/500"
 		: p.imageView === "wide" || p.imageView === "adaptive"
-			? " [&_li>article>a]:aspect-[16/9]"
+			? "16/9"
 			: "";
+// Инлайн-стиль aspect-ratio для плейсхолдер-плитки (я владею её разметкой);
+// пусто при square/отсутствии → плитка держит tailwind-класс aspect-square.
+const placeholderTileStyle = cardAspectRatio ? `aspect-ratio:${cardAspectRatio}` : undefined;
 // Моб 1 кол → sm:2; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls =
-	"grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" + tileAspectCls;
+const gridCls = "grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12";
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
@@ -301,6 +312,7 @@ const paddingStyle = p.padding
 			data-animate-delay="0.1s"
 			data-nt="popular-grid"
 			data-cols={String(colsN)}
+			data-card-aspect={cardAspectRatio || undefined}
 			style={gridStyle}
 			data-cards={cardsN !== 6 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -341,7 +353,10 @@ const paddingStyle = p.padding
 				   (add-to-cart недоступен, как в theme-base DEMO). */
 				<li>
 					<article class="group flex flex-col gap-3" aria-label={card.name}>
-						<div class="relative block aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+						<div
+							class="relative block aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]"
+							style={placeholderTileStyle}
+						>
 							<img
 								src={card.image}
 								alt={card.name}
@@ -491,5 +506,18 @@ const paddingStyle = p.padding
 		[data-nt="popular-grid"][data-cols] {
 			grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
 		}
+	}
+
+	/* «Вид изображения» для РЕАЛЬНЫХ карточек товара (SSR VanillaProductCard и
+	   гидрированный renderCardHtml — обе `li>article>div>a` с хардкодом
+	   aspect-square). Плейсхолдер-плитки получают aspect-ratio inline-стилем выше;
+	   здесь перекрываем aspect-square карточки-ссылки по значению data-card-aspect
+	   грида. Дефолт (square/без атрибута) — правило не срабатывает, aspect-square
+	   остаётся дословно. !important бьёт tailwind-класс aspect-square карточки. */
+	[data-nt="popular-grid"][data-card-aspect="430/500"] li > article > div > a {
+		aspect-ratio: 430 / 500 !important;
+	}
+	[data-nt="popular-grid"][data-card-aspect="16/9"] li > article > div > a {
+		aspect-ratio: 16 / 9 !important;
 	}
 </style>

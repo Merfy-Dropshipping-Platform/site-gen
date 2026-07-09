@@ -42,7 +42,12 @@ const merchantPoster =
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при непустом тексте и enabled !== 'false'; у верстальщика бэнд БЕЗ заголовка →
 // canon-default пуст. Роль = Bitter italic 20 white на тёмном полотне (§1).
-const headingRaw = p.heading ?? p.content?.heading;
+// ВАЖНО (эталон theme-base Video.astro:30-34): пустая top-level строка (heading:"")
+// НЕ должна короткозамыкать ?? — иначе legacy content.heading.text игнорится
+// (реальный баг: заголовок, записанный старым конструктором в content.heading.text,
+// не рендерился при top-level heading:""). Пустую строку трактуем как отсутствие.
+const topHeading = typeof p.heading === "string" ? (p.heading.trim() ? p.heading : undefined) : p.heading;
+const headingRaw = topHeading ?? p.content?.heading;
 const headingText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";

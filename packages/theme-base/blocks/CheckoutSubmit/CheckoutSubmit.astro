@@ -62,6 +62,18 @@ const initialLabel = buttonText.replace('{total}', '—');
       // Дефолт true — физ-адрес обязателен; только явный false его выключает.
       return getCheckoutConfig().addressRequired !== false;
     }
+    // Блок 1 «Обязательная регистрация»: магазин требует вход покупателя перед
+    // оплатой. Дефолт false = fail-open (гость у магазинов без флага не ломается).
+    function getRequireCustomerAuth() {
+      return getCheckoutConfig().requireCustomerAuth === true;
+    }
+    // Bearer-токен покупателя (rose lib/auth: raw-строка под 'merfy_customer_token';
+    // persistentAtom кодирует null как '' → пусто/нет ключа = гость).
+    function getAuthToken() {
+      try {
+        return (typeof localStorage !== 'undefined' && localStorage.getItem('merfy_customer_token')) || '';
+      } catch (e) { return ''; }
+    }
     function getCartId() {
       return (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
     }
@@ -116,6 +128,12 @@ const initialLabel = buttonText.replace('{total}', '—');
       if (items.length === 0) return false;
       if (!getShopId()) return false;
 
+      // Блок 1 backstop: на магазине с requireCustomerAuth гость (нет токена) не
+      // может оформить — кнопка disabled. Основной барьер — Gate A на загрузке
+      // /checkout + серверный 403; это дублирующий клиентский гейт (напр. токен
+      // потерян посреди сессии). Fail-open: без флага условие не срабатывает.
+      if (getRequireCustomerAuth() && !getAuthToken()) return false;
+
       // Контакт: email обязателен всегда; телефон — только когда режим не 'email'.
       if (!getField('email')) return false;
       if (getContactMethod() !== 'email' && !getField('phone')) return false;
@@ -162,6 +180,13 @@ const initialLabel = buttonText.replace('{total}', '—');
       var label = buttonText.replace('{total}', fmtRub(getTotalCents()));
       button.textContent = state.submitting ? loadingText : label;
       button.disabled = !canSubmit();
+      // Подсказка «войдите» — когда кнопку блокирует ИМЕННО требование входа
+      // (магазин с requireCustomerAuth, у гостя нет токена). Пишем только этот
+      // кейс, чтобы не затирать реальную ошибку сабмита (гость до неё не доходит —
+      // Gate A/B разворачивают на /login). Вход — по ссылке ИЛИ коду из письма.
+      if (!state.submitting && getRequireCustomerAuth() && !getAuthToken()) {
+        showError('Войдите в аккаунт по ссылке или коду из письма, чтобы оформить заказ.');
+      }
     }
 
     document.addEventListener('cart:updated', refresh);
@@ -214,6 +239,14 @@ const initialLabel = buttonText.replace('{total}', '—');
 
     button.addEventListener('click', async function (e) {
       e.preventDefault();
+      // Gate B (backstop): гость на магазине с requireCustomerAuth → на вход.
+      // Первой строкой, ДО canSubmit. Достижимо, когда кнопка была активна (был
+      // токен) и токен потерян посреди сессии; в стабильном состоянии кнопку
+      // гасит canSubmit + Gate A на загрузке. Fail-open: без флага не срабатывает.
+      if (getRequireCustomerAuth() && !getAuthToken()) {
+        location.href = '/login?redirect=' + encodeURIComponent('/checkout');
+        return;
+      }
       if (!canSubmit()) return;
       clearError();
       state.submitting = true;
@@ -221,6 +254,10 @@ const initialLabel = buttonText.replace('{total}', '—');
 
       try {
         var apiBase = getApiBase();
+        // Bearer покупателя (если вошёл) — прикрепляем к checkout и create-payment.
+        // Gateway soft-резолвит Bearer→customerId и привязывает заказ к клиенту;
+        // customerId в теле НЕ шлём (untrusted). Гость (пусто) → заголовок опущен.
+        var authToken = getAuthToken();
         var cartId = (window.cartStore && window.cartStore.syncToServer) ? await window.cartStore.syncToServer() : getCartId();
         if (!cartId) throw new Error('Корзина пуста. Добавьте товары.');
 
@@ -372,9 +409,11 @@ const initialLabel = buttonText.replace('{total}', '—');
           };
         }
         var checkoutBody = { metadata: metadata };
+        var checkoutHeaders = { 'Content-Type': 'application/json' };
+        if (authToken) checkoutHeaders['Authorization'] = 'Bearer ' + authToken;
         var checkoutRes = await fetch(apiBase + '/orders/cart/' + cartId + '/checkout', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: checkoutHeaders,
           credentials: 'include',
           body: JSON.stringify(checkoutBody),
         });
@@ -384,6 +423,14 @@ const initialLabel = buttonText.replace('{total}', '—');
         if (checkoutRes.status === 404) {
           try { localStorage.removeItem('merfy:cartId'); } catch (e) {}
           throw new Error('Корзина устарела. Вернитесь в каталог и добавьте товары заново.');
+        }
+        // 403 = серверный гейт requireCustomerAuth (code='customer_auth_required'):
+        // гость проскочил клиентские Gate A/B, но orders требует вход. Разворачиваем
+        // на /login (НЕ списываем — оплата ещё не создана). Проверяем статус, а не
+        // тело — устойчиво к любой форме ответа.
+        if (checkoutRes.status === 403) {
+          location.href = '/login?redirect=' + encodeURIComponent('/checkout');
+          return;
         }
         var orderId = checkoutJson && checkoutJson.data && (checkoutJson.data.orderId || checkoutJson.data.id);
         if (!checkoutRes.ok || !orderId) {
@@ -396,9 +443,11 @@ const initialLabel = buttonText.replace('{total}', '—');
         };
         if (paymentToken) paymentBody.paymentToken = paymentToken;
 
+        var paymentHeaders = { 'Content-Type': 'application/json' };
+        if (authToken) paymentHeaders['Authorization'] = 'Bearer ' + authToken;
         var paymentRes = await fetch(apiBase + '/orders/' + orderId + '/create-payment', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: paymentHeaders,
           credentials: 'include',
           body: JSON.stringify(paymentBody),
         });

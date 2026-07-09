@@ -45,13 +45,27 @@ const apiUrl = "https://gateway.merfy.ru/api";
   <script>
     import { navTo, verifyMagicLink, requestMagicLink, getToken } from '../lib/auth';
 
+    // Санитайзер redirect-параметра: только same-origin относительный путь
+    // ('/…', но не '//host'). Иначе — /account. Зеркалит login.astro.
+    const safeRedirect = (r: string | null): string =>
+      r && /^\/(?![\/\\])[^\u0000-\u001f\u007f]*$/.test(r) ? r : '/account';
+    // Возврат после входа: обязательная регистрация кладёт цель в sessionStorage
+    // 'authRedirect' (login/register перед /verify). Тот же tab → стор жив → назад
+    // в /checkout. Ссылка из письма в НОВОЙ вкладке: стор пуст → грациозно /account
+    // (известное ограничение — проброс redirect в письмо требует бэкенд-правок).
+    const goAfterAuth = (): void => {
+      const r = sessionStorage.getItem('authRedirect') || '/account';
+      sessionStorage.removeItem('authRedirect');
+      navTo(safeRedirect(r));
+    };
+
     function initVerifyPage() {
       const root = document.getElementById('magic-actions');
       if (!root || root.dataset.bound === 'true') return;
       root.dataset.bound = 'true';
 
-      // Уже вошёл → редирект.
-      if (getToken()) { navTo('/account'); return; }
+      // Уже вошёл → редирект (чтим отложенный authRedirect, если есть).
+      if (getToken()) { goAfterAuth(); return; }
 
       const loadingEl = document.getElementById('magic-loading')!;
       const codeView = document.getElementById('magic-code-view')!;
@@ -83,7 +97,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
           .then((result) => {
             if (result.success) {
               sessionStorage.removeItem('magicEmail');
-              navTo('/account');
+              goAfterAuth();
             } else {
               throw result;
             }
@@ -151,7 +165,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
             const result = await verifyMagicLink({ email, code: value });
             if (result.success) {
               sessionStorage.removeItem('magicEmail');
-              navTo('/account');
+              goAfterAuth();
               return;
             }
             throw result;

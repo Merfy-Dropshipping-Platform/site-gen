@@ -98,7 +98,31 @@ const dadataToken = "";
               ? s.customerNameMode
               : "name-surname",
           addressRequired: s.addressRequired === false ? false : true,
+          // Блок 1 «Обязательная регистрация»: гость не может оформить заказ, пока
+          // не вошёл. Fail-open — фиксируем true ТОЛЬКО при явном флаге; любой сбой
+          // fetch / пустой shopId → apply(null) → false → без гейта (гость у
+          // магазинов без флага не ломается). Настоящий барьер — серверный гейт
+          // в orders (403); клиентский разворот ниже — только UX.
+          requireCustomerAuth: s.requireCustomerAuth === true,
         };
+        // Gate A (клиентский, ТОЛЬКО live-вкладка): токен-less покупатель на
+        // магазине с requireCustomerAuth разворачивается на /login ДО события
+        // checkout:config-ready. Значит блоки чекаута не разблокируются и submit
+        // не активируется — «держим submit заблокированным до config-ready».
+        // Токен читаем из localStorage напрямую: window.__roseAuth на /checkout
+        // НЕ инициализирован (persistentAtom кодирует null как '' → пусто = гость).
+        // window.self===window.top исключает превью конструктора: iframe не
+        // навигируем (там cfg.checkout уже проставлен сервером → ранний выход выше).
+        if (window.self === window.top && cfg.checkout.requireCustomerAuth) {
+          var token = null;
+          try {
+            token = localStorage.getItem("merfy_customer_token");
+          } catch (e) {}
+          if (!token) {
+            location.href = "/login?redirect=" + encodeURIComponent("/checkout");
+            return;
+          }
+        }
         fire();
       }
       // Превью уже проставило cfg.checkout сервер-сайд — чтим его, без fetch.

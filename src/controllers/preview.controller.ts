@@ -61,6 +61,7 @@ interface CheckoutRuntimeConfig {
   contactMethod: 'email-phone' | 'email';
   customerNameMode: 'name-surname' | 'surname' | 'name';
   addressRequired: boolean;
+  requireCustomerAuth: boolean;
 }
 
 /**
@@ -81,6 +82,9 @@ function checkoutConfigFromSettings(
         ? settings.customerNameMode
         : 'name-surname',
     addressRequired: settings?.addressRequired === false ? false : true,
+    // Блок 1 «Обязательная регистрация» — fail-open (только явный true включает),
+    // зеркалит live checkout.astro apply().
+    requireCustomerAuth: settings?.requireCustomerAuth === true,
   };
 }
 

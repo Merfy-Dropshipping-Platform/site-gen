@@ -40,13 +40,21 @@ const apiUrl = "https://gateway.merfy.ru/api";
   <script>
     import { navTo, requestMagicLink, getToken } from '../lib/auth';
 
+    // Санитайзер redirect-параметра: только same-origin относительный путь
+    // ('/…', но не '//host'). Иначе — /account. Зеркалит login.astro.
+    const safeRedirect = (r: string | null): string =>
+      r && /^\/(?![\/\\])[^\u0000-\u001f\u007f]*$/.test(r) ? r : '/account';
+
     function initRegisterPage() {
       const form = document.getElementById('magic-form') as HTMLFormElement | null;
       if (!form || form.dataset.bound === 'true') return;
       form.dataset.bound = 'true';
 
-      // Уже вошёл → редирект.
-      if (getToken()) { navTo('/account'); return; }
+      // Уже вошёл → редирект (чтим ?redirect, паритет с login).
+      if (getToken()) {
+        navTo(safeRedirect(new URLSearchParams(window.location.search).get('redirect')));
+        return;
+      }
 
       const errorEl = document.getElementById('reg-error')!;
       const emailField = document.getElementById('reg-email') as HTMLInputElement;
@@ -77,6 +85,10 @@ const apiUrl = "https://gateway.merfy.ru/api";
           const result = await requestMagicLink({ email });
           if (result.success) {
             sessionStorage.setItem('magicEmail', email);
+            // Паритет с login: проводим ?redirect сквозь /register → /verify
+            // (sessionStorage, same-tab). verify.astro прочитает на успехе.
+            const rd = safeRedirect(new URLSearchParams(window.location.search).get('redirect'));
+            if (rd !== '/account') sessionStorage.setItem('authRedirect', rd);
             navTo('/verify');
           } else { throw result; }
         } catch (err: any) {

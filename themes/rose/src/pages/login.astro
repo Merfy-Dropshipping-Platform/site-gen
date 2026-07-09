@@ -38,15 +38,21 @@ const apiUrl = "https://gateway.merfy.ru/api";
   <script>
     import { navTo, requestMagicLink, getToken } from '../lib/auth';
 
+    // Санитайзер redirect-параметра: только same-origin относительный путь
+    // ('/…', но не '//host' — protocol-relative open-redirect). Иначе — /account.
+    const safeRedirect = (r: string | null): string =>
+      r && /^\/(?![\/\\])[^\u0000-\u001f\u007f]*$/.test(r) ? r : '/account';
+
     function initLoginPage() {
       const magicForm = document.getElementById('magic-form') as HTMLFormElement | null;
       if (!magicForm || magicForm.dataset.bound === 'true') return;
       magicForm.dataset.bound = 'true';
 
-      // Уже вошёл → редирект.
+      // Уже вошёл → редирект (обязательная регистрация: сюда разворачивает Gate A
+      // с ?redirect=/checkout — возвращаем прямо в чекаут, корзина в localStorage цела).
       if (getToken()) {
         const params = new URLSearchParams(window.location.search);
-        navTo(params.get('redirect') || '/account');
+        navTo(safeRedirect(params.get('redirect')));
         return;
       }
 
@@ -80,6 +86,12 @@ const apiUrl = "https://gateway.merfy.ru/api";
           const result = await requestMagicLink({ email });
           if (result.success) {
             sessionStorage.setItem('magicEmail', email);
+            // Проводим ?redirect сквозь /login → /verify через sessionStorage
+            // (переживает same-tab навигацию, как magicEmail). Основной путь —
+            // ввод 6-значного кода в той же вкладке; verify.astro прочитает его
+            // на успехе. Пишем только валидный не-дефолтный путь (чистим стор).
+            const rd = safeRedirect(new URLSearchParams(window.location.search).get('redirect'));
+            if (rd !== '/account') sessionStorage.setItem('authRedirect', rd);
             navTo('/verify');
           } else { throw result; }
         } catch (err: any) {

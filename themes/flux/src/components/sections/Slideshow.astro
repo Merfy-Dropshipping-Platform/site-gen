@@ -373,16 +373,18 @@ const paddingVars = p.padding
 										</button>
 									</>
 								)}
-								{pagination === "counter" &&
-									slides.map((_, i) => (
+								{/* Счётчик «текущий/всего» = единый span с JS-обновляемым текущим числом
+										(паритет rose): слэш обёрнут в <span>, иначе preview-rewrite
+										(ROOT_URL_RE: пробел+«/») манглит « / » → «/__theme/flux/». */}
+									{pagination === "counter" && (
 										<span
-											data-slide-dot
-											data-active={i === 0 ? "true" : "false"}
-											class="font-roboto-flex text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
+											data-slide-counter
+											data-total={slides.length}
+											class="font-roboto-flex text-[14px] font-normal leading-none text-white"
 										>
-											{i + 1} / {slides.length}
+											<span data-slide-counter-current>1</span><span class="mx-1" aria-hidden="true">/</span>{slides.length}
 										</span>
-									))}
+									)}
 							</div>
 						)}
 					</>
@@ -426,6 +428,8 @@ const paddingVars = p.padding
 			var autoplay = root.dataset.autoplay !== "false";
 			var slides = root.querySelectorAll("[data-slide]");
 			var dots = root.querySelectorAll("[data-slide-dot]");
+			// Счётчик «текущий/всего» (pagination='counter'): JS обновляет текущий номер (паритет rose).
+			var counterCurrent = root.querySelector("[data-slide-counter-current]");
 			if (slides.length < 2) return;
 			var idx = 0,
 				timer = null;
@@ -444,6 +448,7 @@ const paddingVars = p.padding
 				for (var k = 0; k < dots.length; k++) {
 					dots[k].setAttribute("data-active", k === idx ? "true" : "false");
 				}
+				if (counterCurrent) counterCurrent.textContent = String(idx + 1);
 			}
 			function restart() {
 				if (timer) clearInterval(timer);

@@ -255,13 +255,20 @@ const contentCls = `flex w-full ${panelMaxWCls} flex-col ${panelGapCls} ${alignI
 // прежний w-fit (кнопка по контенту). НЕ использовать grid-cols-2 (=minmax(0,1fr) —
 // сожмёт), только bare [grid-template-columns:1fr_1fr] (см. buttonsCls ниже).
 const btnWidthCls = secondaryText ? "w-auto" : "w-fit";
-const ctaBtnCls =
-	p.buttonStyle === "outlined"
-		? `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`
-		: `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] bg-black font-roboto-flex font-normal uppercase leading-none text-white transition-opacity hover:opacity-90 ${ctaSizeCls}`;
-// Вторая кнопка — outlined в том же чёрном языке эталона (h-14, font-roboto-flex,
-// uppercase); рендерится ТОЛЬКО когда мерчант задал secondaryButton (условие ниже).
-const secondaryBtnCls = `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] border border-black font-roboto-flex font-normal uppercase leading-none text-black transition-colors hover:bg-black/5 ${ctaSizeCls}`;
+// Единый каркас чёрного языка эталона (h-14, font-roboto-flex, uppercase, radius-токен,
+// размер от «Размера»). Два варианта заливки в ЭТОМ ЖЕ чёрном языке: solid = залитая
+// чёрная (белый текст), outlined = контур того же чёрного (текст black, прозрачный фон).
+const btnBaseCls = `inline-flex ${btnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] font-roboto-flex font-normal uppercase leading-none ${ctaSizeCls}`;
+const btnSolidCls = `${btnBaseCls} bg-black text-white transition-opacity hover:opacity-90`;
+const btnOutlinedCls = `${btnBaseCls} border border-black text-black transition-colors hover:bg-black/5`;
+// buttonStyle solid|outlined управляет заливкой ОСНОВНОЙ кнопки: solid/отсутствие =
+// залитая чёрная эталона; outlined = контур того же чёрного.
+const ctaBtnCls = p.buttonStyle === "outlined" ? btnOutlinedCls : btnSolidCls;
+// Вторая кнопка = ПРОТИВОПОЛОЖНАЯ заливка в том же чёрном языке (паритет rose
+// secondaryCtaCls «согласованная пара»): при solid первой → вторая контур; при outlined
+// первой → вторая ЗАЛИТАЯ (контрастная пара, а не обе-контур). Рендер ТОЛЬКО когда
+// мерчант задал secondaryButton (условие ниже).
+const secondaryBtnCls = p.buttonStyle === "outlined" ? btnSolidCls : btnOutlinedCls;
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка (flex flex-wrap) с
 // выравниванием от alignment; при secondaryButton — две кнопки РАВНОЙ ширины «по
 // большей»: inline-grid из двух bare-1fr колонок (обе = ширине более широкой кнопки),

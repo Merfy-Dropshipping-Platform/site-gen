@@ -65,17 +65,23 @@ const headWrapCls = `flex flex-col gap-2${titleAlignCls}`;
 const variant = p.variant === "standard" ? "standard" : "tile";
 const isTile = variant === "tile";
 const nameWeightCls = isTile ? "font-light" : "font-normal";
-// Канон imageView (настройка как rose): square / канон-дефолт (tile) → aspect-square
-// (репо); 'wide' → 16/9; 'portrait' → 430/500 только для легаси standard. Конструктор
-// шлёт imageView='portrait' по дефолту, но flux-tile → square (эталон верстальщиков).
+// Канон imageView (настройка как rose): square → aspect-square (репо); 'wide' → 16/9;
+// 'portrait' → 430/500 (паритет rose Collections: ЯВНЫЙ выбор портрета = высокие
+// плитки 430/500). Канон-дефолт flux-tile (imageView ОТСУТСТВУЕТ в ревизии — проверено
+// 0 из 35929) → aspect-square (эталон верстальщиков): конструкторный defaultProps
+// 'portrait' в реальные данные не сохраняется, потому дефолтная ветка isTile держит
+// square. ЯВНО присланный imageView='portrait' раньше проваливался в ту же square-ветку
+// (square == portrait, настройка была неотличима) — теперь отдельная ветка → 430/500.
 const tileAspect =
 	p.gridAspect === "1:1" || p.imageView === "square"
 		? "aspect-square"
 		: p.imageView === "wide"
 			? "aspect-[16/9]"
-			: isTile
-				? "aspect-square"
-				: "aspect-[430/500]";
+			: p.imageView === "portrait"
+				? "aspect-[430/500]"
+				: isTile
+					? "aspect-square"
+					: "aspect-[430/500]";
 // Канон cardCaptionStyle: 'default'/отсутствие = обычный регистр подписи; 'uppercase' — капсом.
 const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
 // Название коллекции = эталон верстальщиков: font-roboto-flex text-[16px]

@@ -35,8 +35,13 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 	);
 
 	// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
-	// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик
-	// панели (DS NtCartDrawer). page → /cart; drawer (дефолт) → панель сама.
+	// корзины ([data-cart-open]) в capture-фазе. page → /cart. drawer →
+	// открываем панель САМИ через rose:cart:open, а не полагаемся на bubble-
+	// обработчик DS NtCartDrawer: он отбрасывает клики с target=<svg>
+	// (`if (!(target instanceof HTMLElement)) return`), а иконка корзины — это
+	// <svg> (SVGElement, не HTMLElement) → по прямому клику в иконку дровер НЕ
+	// открывался («наполовину работает»/«при повторном не открывается»).
+	// closest() на svg работает, поэтому здесь открытие надёжно при любой точке.
 	document.addEventListener(
 		"click",
 		(e) => {
@@ -46,7 +51,11 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 				.getPropertyValue("--cart-type")
 				.trim()
 				.replace(/['"]/g, "");
-			if (cartType !== "page") return;
+			if (cartType !== "page") {
+				// drawer: открыть панель напрямую (см. коммент про svg выше).
+				window.dispatchEvent(new CustomEvent("rose:cart:open"));
+				return;
+			}
 			e.preventDefault();
 			e.stopImmediatePropagation();
 			if (window.self === window.top) {

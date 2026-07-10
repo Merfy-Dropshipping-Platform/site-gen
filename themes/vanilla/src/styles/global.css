@@ -88,6 +88,18 @@ body {
   background: var(--vanilla-surface);
 }
 
+/* Корзина-drawer vanilla: при выбранной цветовой схеме корзины ремапим
+   --vanilla-* на scheme-токены. StorefrontRuntime вешает .color-scheme-N на
+   корень [data-nt="vanilla-cart-drawer"] (он же #vanilla-cart-drawer-root).
+   Без схемы селектор не матчится → дефолтные --vanilla-* (ноль регрессии). */
+[data-nt="vanilla-cart-drawer"][class*="color-scheme-"] {
+  --vanilla-surface: rgb(var(--color-bg));
+  --vanilla-dark: rgb(var(--color-heading));
+  --vanilla-muted: rgb(var(--color-muted));
+  --vanilla-header-bg: rgb(var(--color-button-bg, var(--color-heading)));
+  --vanilla-line: rgb(var(--color-muted) / 0.3);
+}
+
 /* NB: img/video max-width:100% даёт Tailwind preflight в @layer base (утилиты
    max-w-[..] перекрывают). Unlayered-дубликат бил утилиту лого max-w-[160px]. */
 

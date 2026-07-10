@@ -1,6 +1,7 @@
 ---
 import type { MultiColumnsProps } from './MultiColumns.puckConfig';
 import { MultiColumnsClasses as C } from './MultiColumns.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 // MultiColumns placeholder per Figma 1:33303 — маленький decorative
 // square icon (НЕ landscape), потому что MultiColumns в Figma это
 // 3 узких текстовых колонки с маленьким accent icon наверху.
@@ -59,7 +60,7 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
 >
   <div class={C.container}>
     {headingText && (
-      <h2 class:list={[C.columnHeading, headingAlignClass, headingSizeClass, 'mb-8']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+      <h2 class:list={[C.columnHeading, headingAlignClass, headingSizeClass, 'mb-8']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(headingText)} /></h2>
     )}
     <div class={C.grid} style={gridTemplateCols}>
       {columns.map((column: any, i: number) => {
@@ -87,7 +88,7 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
             ) : (
               <div class="w-8 h-8 rounded bg-[rgb(var(--color-accent))] mb-3" aria-hidden="true" />
             )}
-            {colTitle && <h3 class={C.columnHeading}>{colTitle}</h3>}
+            {colTitle && <h3 class={C.columnHeading}><Fragment set:html={sanitizeInline(colTitle)} /></h3>}
             {colDescription && <p class={C.columnText}>{colDescription}</p>}
             {colLink?.text && (
               <a href={colLink.href ?? '#'} class="mt-2 inline-block underline">{colLink.text}</a>

@@ -2,6 +2,7 @@
 import type { CollectionsProps } from './Collections.puckConfig';
 import { CollectionsClasses as C } from './Collections.classes';
 import { buildCollectionHref } from './card-href';
+import { sanitizeInline } from '../../runtime/rich-text';
 // Collections placeholder per Figma 1:33070 — пустые квадратные карточки
 // (gray fill, no illustration) с лейблом «Коллекция» под каждой.
 
@@ -195,10 +196,10 @@ const hasRealCollections = hasManualCollections;
       <h2 class:list={[
         C.heading,
         isTile ? 'text-left mb-6 [font-family:var(--font-body)] !text-[20px] !leading-[24px] tracking-normal text-[rgb(var(--color-heading))]' : `${titleAlignClass} ${titleSizeClass}`,
-      ]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="title">{heading}</h2>
+      ]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="title"><Fragment set:html={sanitizeInline(heading)} /></h2>
     )}
     {subtitle && (
-      <p class:list={[C.subtitle, isTile ? 'text-left mb-10' : `${titleAlignClass} ${subtitleSizeClass}`]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="subtitle">{subtitle}</p>
+      <p class:list={[C.subtitle, isTile ? 'text-left mb-10' : `${titleAlignClass} ${subtitleSizeClass}`]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="subtitle"><Fragment set:html={sanitizeInline(subtitle)} /></p>
     )}
     <div class:list={[C.grid, gridResponsiveClass]}>
       {effectiveCollections.map((item, i) => (

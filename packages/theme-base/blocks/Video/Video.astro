@@ -2,6 +2,7 @@
 import type { VideoProps } from './Video.puckConfig';
 import { VideoClasses as C } from './Video.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends VideoProps {
   id?: string;
@@ -172,8 +173,8 @@ const video = parseVideo(videoUrl);
   style={paddingStyle}
 >
   <div class={containerClass}>
-    {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}>{heading}</h2>}
-    {subheading && <p class:list={[C.subheading, headingAlignClass]}>{subheading}</p>}
+    {heading && <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]}><Fragment set:html={sanitizeInline(heading)} /></h2>}
+    {subheading && <p class:list={[C.subheading, headingAlignClass]}><Fragment set:html={sanitizeInline(subheading)} /></p>}
     {/* style=aspect-ratio — «Размер» (высота блока): small 21:9 / medium 16:9 /
         large 4:3. Inline перебивает `aspect-video` из C.media и одновременно
         страхует геометрию, если Tailwind-утилита не сгенерирована в CSS темы

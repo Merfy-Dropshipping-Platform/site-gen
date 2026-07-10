@@ -2,6 +2,7 @@
 import type { PublicationsProps } from './Publications.puckConfig';
 import { PublicationsClasses as C } from './Publications.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends PublicationsProps {
   id?: string;
@@ -169,7 +170,7 @@ const pubGridResponsiveCss =
 >
   <div class={C.container}>
     {headingText && (
-      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} style={headingGuardStyle} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} style={headingGuardStyle} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(headingText)} /></h2>
     )}
     <style set:html={pubGridResponsiveCss}></style>
     <div class={C.grid} data-pub-grid style={gridGuardStyle}>

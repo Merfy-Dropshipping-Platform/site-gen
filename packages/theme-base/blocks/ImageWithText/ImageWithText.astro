@@ -2,6 +2,7 @@
 import type { ImageWithTextProps } from './ImageWithText.puckConfig';
 import { ImageWithTextClasses as C } from './ImageWithText.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends ImageWithTextProps {
   id?: string;
@@ -118,10 +119,10 @@ const widthClass =
       </div>
       <div class:list={[textColClass, headingAlignClass, textColFlexClass]}>
         {heading && (
-          <h2 class:list={[C.heading, headingSizeClass, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="heading">{heading}</h2>
+          <h2 class:list={[C.heading, headingSizeClass, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(heading)} /></h2>
         )}
         {text && (
-          <p class:list={[C.text, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="text">{text}</p>
+          <p class:list={[C.text, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="text"><Fragment set:html={sanitizeInline(text)} /></p>
         )}
         {buttonText && (
           <a href={buttonHref} class:list={[C.button, ctaPositionClass]} data-puck-subsection-parent={id} data-puck-subsection-index="103" data-puck-subsection-field="button">{buttonText}</a>

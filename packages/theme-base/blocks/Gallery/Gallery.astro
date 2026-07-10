@@ -2,6 +2,7 @@
 import type { GalleryProps } from './Gallery.puckConfig';
 import { GalleryClasses as C } from './Gallery.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends GalleryProps {
   id?: string;
@@ -15,25 +16,38 @@ const {
   padding,
 } = Astro.props as Props;
 
-// Accept both flat heading + object envelope from legacy revisions.
-const headingText = (() => {
-  const h = raw.heading;
-  if (typeof h === 'string') return h || undefined;
-  if (h && typeof h === 'object') {
-    const o = h as { text?: string };
-    return o.text || undefined;
+// heading/text приходят строкой ИЛИ объектом {text/content} (legacy + конструктор).
+const pickText = (v: unknown): string | undefined => {
+  if (typeof v === 'string') return v || undefined;
+  if (v && typeof v === 'object') {
+    const o = v as { text?: string; content?: string };
+    return o.text || o.content || undefined;
   }
   return undefined;
-})();
-const subheadingText = (() => {
-  const s = raw.subheading ?? raw.text;
-  if (typeof s === 'string') return s || undefined;
-  if (s && typeof s === 'object') {
-    const o = s as { content?: string; text?: string };
-    return o.content || o.text || undefined;
-  }
-  return undefined;
-})();
+};
+const headingText = pickText(raw.heading);
+// Подзаголовок: конструктор пишет его в `text.content`. Легаси-дефолт
+// `subheading:''` (ПУСТАЯ строка, не nullish) раньше глушил `text` через `??`
+// → подзаголовок исчезал и не возвращался. Читаем `text` первым; пустое =
+// отсутствие (порт rose: `p.text?.content ?? p.subtitle`).
+const subheadingText = pickText(raw.text) ?? pickText(raw.subheading);
+
+// «Размер заголовка»: конструктор пишет `heading.size` (nested), плюс плоский
+// `headingSize`. Раньше не читались вовсе → все 3 опции выглядели одинаково.
+// Масштабируем ОТ дефолта темы (--gallery-heading-font-size) чтобы сохранить
+// per-theme размер: small ≈0.82×, large ≈1.35×, medium = дефолт класса.
+const headingSize =
+  (raw.heading && typeof raw.heading === 'object'
+    ? (raw.heading as { size?: string }).size
+    : undefined) ??
+  (typeof raw.headingSize === 'string' ? raw.headingSize : undefined) ??
+  'medium';
+const headingSizeStyle =
+  headingSize === 'small'
+    ? 'font-size:calc(var(--gallery-heading-font-size, 14px) * 0.82)'
+    : headingSize === 'large'
+      ? 'font-size:calc(var(--gallery-heading-font-size, 14px) * 1.35)'
+      : undefined;
 
 // Figma Rose default is "featured": big left + 2 small right (when there
 // are at least 3 items). Fall back to "grid" when the merchant picked it
@@ -204,10 +218,10 @@ const resolvedItems: ResolvedItem[] = effectiveItems.map((item) => resolveItem(i
 >
   <div class={C.container}>
     {headingText && (
-      <h2 class={C.heading} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+      <h2 class={C.heading} style={headingSizeStyle} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading" set:html={sanitizeInline(headingText)}></h2>
     )}
     {subheadingText && (
-      <p class={C.subheading} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subheadingText}</p>
+      <p class={C.subheading} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text" set:html={sanitizeInline(subheadingText)}></p>
     )}
     <div class={innerClass}>
       {layout === 'featured'

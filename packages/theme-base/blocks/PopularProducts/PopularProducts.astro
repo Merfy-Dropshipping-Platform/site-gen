@@ -4,6 +4,7 @@ import { PopularProductsClasses as C } from './PopularProducts.classes';
 import { resolveActiveCollection } from './url-filter';
 import PopularProductRichCard from './PopularProductRichCard.astro';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends PopularProductsProps {
   id?: string;
@@ -333,10 +334,10 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       <div class={(C as Record<string, string>).headerGroup ?? 'flex w-full justify-center'}>
         <div class={(C as Record<string, string>).headerInner ?? 'flex max-w-[90vw] flex-col items-center gap-2'}>
           {heading && (
-            <h2 class:list={[C.heading, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+            <h2 class:list={[C.heading, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(heading)} /></h2>
           )}
           {subtitle && (
-            <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{subtitle}</p>
+            <p class:list={[C.subtitle, textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text"><Fragment set:html={sanitizeInline(subtitle)} /></p>
           )}
         </div>
       </div>

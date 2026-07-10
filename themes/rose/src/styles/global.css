@@ -596,6 +596,10 @@ input[type="search"]::-webkit-search-results-decoration {
    JS не модифицируется). Оверлей bg-black/35 — без панельного токена. */
 [data-nt="cart-drawer"] [data-cart-panel] {
   background-color: rgb(var(--color-bg, 255 255 255));
+  /* Базовый цвет текста панели — по схеме КОРЗИНЫ (--color-text), а не наследованный
+     со страницы. Без этого JS-строки товаров (data-cart-items, не покрытые точечными
+     правилами ниже) брали page-color: на светлой scheme-2 = белый текст на белом фоне. */
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 /* Заголовок «Корзина» (font-comfortaa #000000) */

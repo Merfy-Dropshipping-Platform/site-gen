@@ -1216,6 +1216,33 @@ export async function runBuildPipeline(
       } catch (layErr) {
         logger.warn(`[themes-v2] catalog layout inject failed: ${(layErr as Error)?.message ?? layErr}`);
       }
+      // Цветовая схема корзины-дровера: дровер (chrome на каждой странице) красится
+      // scheme-токенами, но живёт вне color-scheme-обёртки → берёт :root-дефолт, а
+      // не выбранную схему корзины. Достаём CartBody.colorScheme (главная секция
+      // page-cart; fallback — CartSummary) и доставляем глобалом; StorefrontRuntime
+      // темы вешает .color-scheme-N на #cart-drawer-root + рендерит дисклеймер.
+      // Без корзины/схемы — глобал не инжектится (дровер как раньше).
+      try {
+        const cartContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { colorScheme?: unknown } }> }> } | null)
+          ?.pagesData?.['page-cart']?.content;
+        const findScheme = (t: string) => {
+          const blk = Array.isArray(cartContent) ? cartContent.find((b) => b?.type === t) : undefined;
+          const s = blk?.props?.colorScheme;
+          return typeof s === 'string' && /^scheme-\d+$/.test(s) ? s : undefined;
+        };
+        const cartScheme = findScheme('CartBody') ?? findScheme('CartSummary');
+        if (cartScheme) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, {
+            __MERFY_CART_DRAWER__: {
+              scheme: cartScheme,
+              disclaimer: 'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.',
+            },
+          });
+          logger.log(`[themes-v2] Injected cart drawer scheme "${cartScheme}" into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (cdErr) {
+        logger.warn(`[themes-v2] cart drawer global inject failed: ${(cdErr as Error)?.message ?? cdErr}`);
+      }
       // Инжект реального products.json — на статичном nginx-live гидрация читает
       // /data/products.json (fallback на storefront-data НЕ резолвится: origin сайта
       // ≠ API). themes-v2 копирует pre-built dist БЕЗ products.json → без этого live

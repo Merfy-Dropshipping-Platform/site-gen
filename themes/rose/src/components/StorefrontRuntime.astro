@@ -20,6 +20,40 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 	// auth/guest-only элементы; фоновая подгрузка профиля при наличии токена.
 	initAuthUI();
 
+	// Корзина-дровер тянет настройки корзины: цветовую схему (CartBody.colorScheme,
+	// доставлено build-глобалом __MERFY_CART_DRAWER__) и дисклеймер CartSummary.
+	// Дровер — chrome вне color-scheme-обёртки → его scheme-токены (--color-bg/
+	// heading/button-*, см. global.css) резолвятся в :root-дефолт. Вешаем
+	// .color-scheme-N на #cart-drawer-root → цвета совпадают со страницей корзины.
+	// Идемпотентно; повторяем на VT-навигации (дровер ре-рендерится макетом).
+	const applyCartDrawerSettings = () => {
+		const cfg = (window as unknown as {
+			__MERFY_CART_DRAWER__?: { scheme?: string; disclaimer?: string };
+		}).__MERFY_CART_DRAWER__;
+		if (!cfg) return;
+		const root = document.getElementById("cart-drawer-root");
+		if (!root) return;
+		if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
+			Array.from(root.classList).forEach((c) => {
+				if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
+			});
+			root.classList.add("color-scheme-" + cfg.scheme.replace("scheme-", ""));
+		}
+		if (cfg.disclaimer) {
+			const summary = root.querySelector("[data-cart-summary]");
+			if (summary && !summary.querySelector(".cart-drawer-disclaimer")) {
+				const p = document.createElement("p");
+				p.className = "cart-drawer-disclaimer";
+				p.style.cssText =
+					"font-family:var(--font-body);font-size:14px;line-height:20px;color:rgb(var(--color-muted));margin:0 0 4px;";
+				p.textContent = cfg.disclaimer;
+				summary.insertBefore(p, summary.firstChild);
+			}
+		}
+	};
+	applyCartDrawerSettings();
+	document.addEventListener("astro:page-load", applyCartDrawerSettings);
+
 	// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
 	// сбрасывает express «Купить сейчас» (sessionStorage rose:buynow) — чтобы
 	// чекаут показал корзину покупателя, а не залипший buy-now товар.

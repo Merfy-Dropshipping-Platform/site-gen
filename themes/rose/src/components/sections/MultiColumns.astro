@@ -88,8 +88,10 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		// в отличие от «Ряд» где seed пишется в title).
 		heading: (typeof c.title === "string" && c.title) || (typeof c.heading === "string" && c.heading) || "",
 		text:
-			(typeof c.text === "string" && c.text) ||
+			// Конструктор саб-панели колонны пишет текст в `description` — читаем ЕГО первым;
+			// legacy seed `c.text:'Сочетай текст…'` только fallback (иначе seed глушил правку → не синкалось).
 			(typeof c.description === "string" && c.description) ||
+			(typeof c.text === "string" && c.text) ||
 			"",
 		image:
 			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||

@@ -99,8 +99,10 @@ const slideLayoutCls = (s: any) => {
 const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
-		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
-		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
+		// Конструктор пишет button.text — читаем ЕГО первым; legacy s.ctaText только fallback
+		// (иначе seed-ctaText глушил правку кнопки → не синкалось в превью).
+		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined) ??
+		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined);
 	// Figma node 1236-42150 (пустое/дефолтное состояние секции): слайд БЕЗ картинки
 	// мерчанта = дизайн-подсказка — фото-плейсхолдер landscape-slideshow.png ФОНОМ +
 	// белая карточка (boxed) по ЦЕНТРУ полотна (заголовок/подзаголовок/кнопка). Слайд
@@ -123,8 +125,10 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),
 		subtitle:
-			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
-			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined),
+			// Конструктор пишет text.content — читаем ЕГО первым; legacy s.subtitle только fallback
+			// (иначе seed-subtitle глушил правку описания → не синкалось в превью).
+			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined) ??
+			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined),
 		ctaText,
 		ctaHref:
 			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??

@@ -83,7 +83,10 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		(typeof c.link === "string" && c.link ? c.link : undefined) ??
 		"/catalog";
 	return {
-		heading: (typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
+		// Конструктор саб-панели колонны пишет `title` — читаем ЕГО первым; legacy seed
+		// `heading:'Колонна'` только fallback (иначе seed-heading глушил правку → не синкалось,
+		// в отличие от «Ряд» где seed пишется в title).
+		heading: (typeof c.title === "string" && c.title) || (typeof c.heading === "string" && c.heading) || "",
 		text:
 			(typeof c.text === "string" && c.text) ||
 			(typeof c.description === "string" && c.description) ||

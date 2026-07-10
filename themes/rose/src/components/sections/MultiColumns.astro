@@ -3,6 +3,7 @@
 // Схема полей = packages/theme-base/blocks/MultiColumns/MultiColumns.puckConfig.ts.
 // Секции нет у верстальщика — композиция из манеры: сетка секций §2, зазор шапки
 // gap-8 md:gap-10, поверхность контейнера #F5F5F5 §4, типографика §1, кнопка §3.
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -199,7 +200,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{heading}
+					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)
 		}

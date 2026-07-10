@@ -4,6 +4,7 @@
 // Дизайн = блок подписки подвала верстальщика (Footer.astro:132-176, перенесён
 // КОПИЕЙ — подвал не тронут): заголовок rose-title, подзаголовок Manrope muted,
 // форма-рамка radius-input/border-input с инпутом; сетка секций §2.
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -109,7 +110,7 @@ const titleId = id ? `${id}-title` : undefined;
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{heading}
+					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 				<p
 					class={descCls}
@@ -117,7 +118,7 @@ const titleId = id ? `${id}-title` : undefined;
 					data-puck-subsection-index="101"
 					data-puck-subsection-field="text"
 				>
-					{description}
+					<Fragment set:html={inlineFormat(description)} />
 				</p>
 			</div>
 

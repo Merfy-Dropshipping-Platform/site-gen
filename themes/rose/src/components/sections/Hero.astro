@@ -1,6 +1,7 @@
 ---
 import { SITE_TITLE } from "../../consts";
 import RosePicture from "../img/RosePicture.astro";
+import { inlineFormat } from "../../lib/rich-text";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
@@ -286,7 +287,7 @@ const paddingVars = p.padding
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{PH_LABEL}
+							<Fragment set:html={inlineFormat(PH_LABEL)} />
 						</h1>
 						<p
 							class="max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]"
@@ -294,7 +295,7 @@ const paddingVars = p.padding
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"
 						>
-							{PH_HELPER}
+							<Fragment set:html={inlineFormat(PH_HELPER)} />
 						</p>
 					</div>
 					<div class="flex w-full flex-col items-center justify-center">
@@ -381,7 +382,7 @@ const paddingVars = p.padding
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						{title}
+						<Fragment set:html={inlineFormat(title)} />
 					</h1>
 					<p
 						class={subtitleCls}
@@ -389,7 +390,7 @@ const paddingVars = p.padding
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
 					>
-						{subtitle}
+						<Fragment set:html={inlineFormat(subtitle)} />
 					</p>
 				</div>
 

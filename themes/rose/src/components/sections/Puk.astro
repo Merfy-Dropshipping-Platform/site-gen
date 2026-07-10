@@ -9,6 +9,8 @@
 // (blue→yellow→red→green, /placeholders/sweater-<color>.png, object-contain),
 // подпись «Товар», цена «2 500 ₽». Реальный SSR-рендер при наличии данных
 // НЕ ломаем — он идёт по той же карточной разметке.
+import { inlineFormat } from "../../lib/rich-text";
+
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -142,8 +144,8 @@ const cards: Card[] = hasRealData
   <div class="puk-container">
     {(sectionTitle || sectionSubtitle) && (
       <div class="puk-header">
-        {sectionTitle && <h2 class="puk-title">{sectionTitle}</h2>}
-        {sectionSubtitle && <p class="puk-subtitle">{sectionSubtitle}</p>}
+        {sectionTitle && <h2 class="puk-title"><Fragment set:html={inlineFormat(sectionTitle)} /></h2>}
+        {sectionSubtitle && <p class="puk-subtitle"><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
       </div>
     )}
 

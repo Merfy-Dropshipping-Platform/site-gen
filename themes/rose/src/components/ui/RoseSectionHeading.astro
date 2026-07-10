@@ -1,0 +1,52 @@
+---
+// Локальная замена внешнего NtSectionHeading (@merfy-dropshipping-platform/
+// design-systems-theme), который рендерит {title}/{subtitle} экранированно →
+// форматирование из конструктора (<em>/<strong>) показывалось сырыми тегами.
+// Здесь заголовок/подзаголовок рендерятся через set:html={inlineFormat(...)}
+// (XSS-safe allow-list). Разметка/классы 1:1 с оригиналом (variant default/rose),
+// чтобы витрина не поехала. Порты импортируют этот файл под именем NtSectionHeading.
+import { inlineFormat } from "../../lib/rich-text";
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  titleId?: string;
+  variant?: "default" | "rose";
+}
+
+const { title, subtitle, titleId, variant = "default" } = Astro.props;
+const isRose = variant === "rose";
+---
+
+<div
+  class:list={[
+    "flex max-w-[90vw] flex-col items-center",
+    isRose ? "gap-2" : "gap-[5px]",
+  ]}
+  data-nt="section-heading"
+  data-nt-variant={variant}
+>
+  <h2
+    id={titleId}
+    class:list={[
+      "text-center font-comfortaa font-normal uppercase text-[#000000]",
+      isRose
+        ? "!text-[20px] !leading-none tracking-normal"
+        : "text-xl md:text-2xl lg:text-[32px] leading-[1.115]",
+    ]}
+    set:html={inlineFormat(title)}
+  ></h2>
+  {
+    subtitle && (
+      <p
+        class:list={[
+          "text-center font-manrope font-normal text-[#999999]",
+          isRose
+            ? "max-w-[780px] px-2 !text-[16px] !leading-none tracking-normal"
+            : "px-2 text-sm md:text-lg xl:text-[24px] leading-[1.366]",
+        ]}
+        set:html={inlineFormat(subtitle)}
+      />
+    )
+  }
+</div>

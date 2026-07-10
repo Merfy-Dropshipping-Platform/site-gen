@@ -3,6 +3,7 @@
 // Схема полей = packages/theme-base/blocks/MultiRows/MultiRows.puckConfig.ts.
 // Секции нет у верстальщика — ряд «картинка + текст» в чередующейся раскладке;
 // сетка/зазоры/медиа/кнопки — из манеры §2-4 (паттерн ImageWithText T15).
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -178,7 +179,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{heading}
+					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)
 		}

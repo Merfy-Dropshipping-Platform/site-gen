@@ -30,12 +30,18 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 		const w = window as unknown as {
 			__MERFY_CART_DRAWER_SCHEME__?: string;
 			__MERFY_CART_DRAWER_DISCLAIMER__?: string;
+			__MERFY_CART_DRAWER_TITLE__?: string;
+			__MERFY_CART_DRAWER_CHECKOUT__?: string;
+			__MERFY_CART_DRAWER_EMPTY__?: string;
 		};
 		const cfg = {
 			scheme: w.__MERFY_CART_DRAWER_SCHEME__,
 			disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
+			title: w.__MERFY_CART_DRAWER_TITLE__,
+			checkout: w.__MERFY_CART_DRAWER_CHECKOUT__,
+			empty: w.__MERFY_CART_DRAWER_EMPTY__,
 		};
-		if (!cfg.scheme && !cfg.disclaimer) return;
+		if (!cfg.scheme && !cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
 		const root = document.getElementById("cart-drawer-root");
 		if (!root) return;
 		if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
@@ -54,6 +60,20 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 				p.textContent = cfg.disclaimer;
 				summary.insertBefore(p, summary.firstChild);
 			}
+		}
+		// Редактируемые тексты дровера (панель «Корзина» конструктора): заголовок
+		// панели, текст кнопки оформления, текст пустой корзины. Хуки DS-разметки.
+		if (cfg.title) {
+			const h2 = root.querySelector("[data-cart-panel] h2");
+			if (h2) h2.textContent = cfg.title;
+		}
+		if (cfg.checkout) {
+			const btn = root.querySelector("[data-cart-summary] > a");
+			if (btn) btn.textContent = cfg.checkout;
+		}
+		if (cfg.empty) {
+			const emptyP = root.querySelector("[data-cart-empty] > p");
+			if (emptyP) emptyP.textContent = cfg.empty;
 		}
 	};
 	applyCartDrawerSettings();

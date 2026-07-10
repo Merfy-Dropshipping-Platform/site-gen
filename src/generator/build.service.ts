@@ -1231,13 +1231,26 @@ export async function runBuildPipeline(
           return typeof s === 'string' && /^scheme-\d+$/.test(s) ? s : undefined;
         };
         const cartScheme = findScheme('CartBody') ?? findScheme('CartSummary');
+        // Редактируемые тексты дровера из настроек темы конструктора (панель
+        // «Корзина»): заголовок / текст кнопки оформления / текст пустой корзины.
+        // Пусто → глобал не инжектится, дровер показывает дефолт темы (DS).
+        const cartTs = (ctx.revisionData as { themeSettings?: { cartDrawerTitle?: unknown; cartDrawerCheckoutText?: unknown; cartDrawerEmptyText?: unknown } } | null)?.themeSettings;
+        const trimStr = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+        const drawerGlobals: Record<string, string> = {};
         if (cartScheme) {
-          const n = await injectGlobalsIntoDist(ctx.distDir, {
-            __MERFY_CART_DRAWER_SCHEME__: cartScheme,
-            __MERFY_CART_DRAWER_DISCLAIMER__:
-              'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.',
-          });
-          logger.log(`[themes-v2] Injected cart drawer scheme "${cartScheme}" into ${n} HTML files for site ${params.siteId}`);
+          drawerGlobals.__MERFY_CART_DRAWER_SCHEME__ = cartScheme;
+          drawerGlobals.__MERFY_CART_DRAWER_DISCLAIMER__ =
+            'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.';
+        }
+        const dTitle = trimStr(cartTs?.cartDrawerTitle);
+        if (dTitle) drawerGlobals.__MERFY_CART_DRAWER_TITLE__ = dTitle;
+        const dCheckout = trimStr(cartTs?.cartDrawerCheckoutText);
+        if (dCheckout) drawerGlobals.__MERFY_CART_DRAWER_CHECKOUT__ = dCheckout;
+        const dEmpty = trimStr(cartTs?.cartDrawerEmptyText);
+        if (dEmpty) drawerGlobals.__MERFY_CART_DRAWER_EMPTY__ = dEmpty;
+        if (Object.keys(drawerGlobals).length > 0) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, drawerGlobals);
+          logger.log(`[themes-v2] Injected cart drawer globals [${Object.keys(drawerGlobals).join(', ')}] into ${n} HTML files for site ${params.siteId}`);
         }
       } catch (cdErr) {
         logger.warn(`[themes-v2] cart drawer global inject failed: ${(cdErr as Error)?.message ?? cdErr}`);

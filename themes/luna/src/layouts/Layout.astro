@@ -43,7 +43,14 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 							.getPropertyValue("--cart-type")
 							.trim()
 							.replace(/['"]/g, "");
-						if (cartType !== "page") return;
+						if (cartType !== "page") {
+							// drawer: открыть панель напрямую — DS NtCartDrawer отбрасывает клики с
+							// target=<svg> (`if (!(target instanceof HTMLElement)) return`), а иконка
+							// корзины это <svg> → по прямому клику дровер не открывался. closest() на
+							// svg работает, поэтому открываем сами через событие.
+							window.dispatchEvent(new CustomEvent("luna:cart:open"));
+							return;
+						}
 						e.preventDefault();
 						e.stopImmediatePropagation();
 						if (window.self === window.top) {

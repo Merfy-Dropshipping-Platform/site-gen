@@ -54,6 +54,61 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			initWishlistUI();
 			initAuthUI();
 
+			// Корзина-дровер тянет настройки корзины из конструктора: цветовую схему,
+			// дисклеймер и редактируемые тексты (build-глобалы __MERFY_CART_DRAWER_*).
+			// Дровер — chrome вне color-scheme-обёртки → вешаем .color-scheme-N на его
+			// корень (scheme-токены из global.css резолвятся в схему корзины).
+			const applyCartDrawerSettings = () => {
+				const w = window as unknown as {
+					__MERFY_CART_DRAWER_SCHEME__?: string;
+					__MERFY_CART_DRAWER_DISCLAIMER__?: string;
+					__MERFY_CART_DRAWER_TITLE__?: string;
+					__MERFY_CART_DRAWER_CHECKOUT__?: string;
+					__MERFY_CART_DRAWER_EMPTY__?: string;
+				};
+				const cfg = {
+					scheme: w.__MERFY_CART_DRAWER_SCHEME__,
+					disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
+					title: w.__MERFY_CART_DRAWER_TITLE__,
+					checkout: w.__MERFY_CART_DRAWER_CHECKOUT__,
+					empty: w.__MERFY_CART_DRAWER_EMPTY__,
+				};
+				if (!cfg.scheme && !cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
+				const root = document.getElementById("satin-cart-drawer-root");
+				if (!root) return;
+				if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
+					Array.from(root.classList).forEach((c) => {
+						if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
+					});
+					root.classList.add("color-scheme-" + cfg.scheme.replace("scheme-", ""));
+				}
+				if (cfg.disclaimer) {
+					const summary = root.querySelector("[data-cart-summary]");
+					if (summary && !summary.querySelector(".cart-drawer-disclaimer")) {
+						const p = document.createElement("p");
+						p.className = "cart-drawer-disclaimer";
+						p.style.cssText =
+							"font-family:var(--font-body);font-size:14px;line-height:20px;color:rgb(var(--color-muted));margin:0 0 4px;";
+						p.textContent = cfg.disclaimer;
+						summary.insertBefore(p, summary.firstChild);
+					}
+				}
+				if (cfg.title) {
+					const h2 = root.querySelector("[data-cart-panel] h2");
+					if (h2) h2.textContent = cfg.title;
+				}
+				if (cfg.checkout) {
+					const btn = root.querySelector("[data-cart-summary] > a");
+					if (btn) btn.textContent = cfg.checkout;
+				}
+				if (cfg.empty) {
+					const emptyP = root.querySelector("[data-cart-empty] > p");
+					if (emptyP) emptyP.textContent = cfg.empty;
+				}
+			};
+			applyCartDrawerSettings();
+			document.addEventListener("astro:page-load", applyCartDrawerSettings);
+
 			// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
 			// сбрасывает express «Купить сейчас» (sessionStorage satin:buynow) — чтобы
 			// чекаут показал корзину покупателя, а не залипший buy-now товар.
@@ -81,7 +136,14 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 							.getPropertyValue("--cart-type")
 							.trim()
 							.replace(/['"]/g, "");
-						if (cartType !== "page") return;
+						if (cartType !== "page") {
+							// drawer: открыть панель напрямую — DS NtCartDrawer отбрасывает клики с
+							// target=<svg> (`if (!(target instanceof HTMLElement)) return`), а иконка
+							// корзины это <svg> → по прямому клику дровер не открывался. closest() на
+							// svg работает, поэтому открываем сами через событие.
+							window.dispatchEvent(new CustomEvent("satin:cart:open"));
+							return;
+						}
 						e.preventDefault();
 						e.stopImmediatePropagation();
 						if (window.self === window.top) {

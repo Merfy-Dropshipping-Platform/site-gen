@@ -271,6 +271,16 @@ blockquote {
 [data-button-text].hidden {
   display: none !important;
 }
+
+/* Корзина-drawer (DS NtCartDrawer) → scheme-токены (как rose). Fallback = литерал DS. */
+[data-nt="cart-drawer"] [data-cart-panel] { background-color: rgb(var(--color-bg, 255 255 255)); }
+[data-nt="cart-drawer"] [data-cart-panel] h2 { color: rgb(var(--color-heading, 0 0 0)); }
+[data-nt="cart-drawer"] [data-cart-panel] > div > button[data-cart-close] { color: rgb(var(--color-muted, 153 153 153)); }
+[data-nt="cart-drawer"] [data-cart-empty] p { color: rgb(var(--color-muted, 153 153 153)); }
+[data-nt="cart-drawer"] [data-cart-empty] p a { color: rgb(var(--color-text, 0 0 0)); }
+[data-nt="cart-drawer"] [data-cart-summary] > div { color: rgb(var(--color-text, 0 0 0)); }
+[data-nt="cart-drawer"] [data-cart-empty] > a,
+[data-nt="cart-drawer"] [data-cart-summary] > a { background-color: rgb(var(--color-button-bg, 0 0 0)); color: rgb(var(--color-button-text, 255 255 255)); border-radius: var(--radius-button, 6px); }
 }
 
 

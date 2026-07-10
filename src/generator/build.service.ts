@@ -1233,10 +1233,9 @@ export async function runBuildPipeline(
         const cartScheme = findScheme('CartBody') ?? findScheme('CartSummary');
         if (cartScheme) {
           const n = await injectGlobalsIntoDist(ctx.distDir, {
-            __MERFY_CART_DRAWER__: {
-              scheme: cartScheme,
-              disclaimer: 'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.',
-            },
+            __MERFY_CART_DRAWER_SCHEME__: cartScheme,
+            __MERFY_CART_DRAWER_DISCLAIMER__:
+              'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.',
           });
           logger.log(`[themes-v2] Injected cart drawer scheme "${cartScheme}" into ${n} HTML files for site ${params.siteId}`);
         }

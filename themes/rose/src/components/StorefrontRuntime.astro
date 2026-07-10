@@ -27,10 +27,15 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 	// .color-scheme-N на #cart-drawer-root → цвета совпадают со страницей корзины.
 	// Идемпотентно; повторяем на VT-навигации (дровер ре-рендерится макетом).
 	const applyCartDrawerSettings = () => {
-		const cfg = (window as unknown as {
-			__MERFY_CART_DRAWER__?: { scheme?: string; disclaimer?: string };
-		}).__MERFY_CART_DRAWER__;
-		if (!cfg) return;
+		const w = window as unknown as {
+			__MERFY_CART_DRAWER_SCHEME__?: string;
+			__MERFY_CART_DRAWER_DISCLAIMER__?: string;
+		};
+		const cfg = {
+			scheme: w.__MERFY_CART_DRAWER_SCHEME__,
+			disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
+		};
+		if (!cfg.scheme && !cfg.disclaimer) return;
 		const root = document.getElementById("cart-drawer-root");
 		if (!root) return;
 		if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {

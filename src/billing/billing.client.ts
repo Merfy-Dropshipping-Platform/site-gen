@@ -36,7 +36,9 @@ export interface BillingEntitlements {
  * checkSiteAvailability so the predicate cannot drift between them.
  */
 export function isStorefrontSuspended(
-  e: Pick<BillingEntitlements, "storefrontSuspended" | "frozen" | "status">,
+  e: Partial<
+    Pick<BillingEntitlements, "storefrontSuspended" | "frozen" | "status">
+  >,
 ): boolean {
   return e.storefrontSuspended ?? (e.frozen || e.status === "canceled");
 }
@@ -149,7 +151,11 @@ export class BillingClient {
   ): Promise<{ allowed: boolean; limit: number; reason?: string }> {
     const entitlements = await this.getEntitlements(tenantId);
 
-    if (entitlements.frozen) {
+    // Block create when the storefront is suspended ({frozen, canceled}), not
+    // just on raw `frozen` — a terminal `canceled` has frozen=false and would
+    // otherwise be allowed to create a new site. `account_frozen` reason reused
+    // (its consumer only distinguishes it from the quota case).
+    if (isStorefrontSuspended(entitlements)) {
       return {
         allowed: false,
         limit: entitlements.shopsLimit,

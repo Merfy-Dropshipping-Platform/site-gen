@@ -191,5 +191,74 @@ describe("BillingClient", () => {
         reason: "account_frozen",
       });
     });
+
+    it("blocks canceled (storefrontSuspended signal, frozen=false)", async () => {
+      const userClient = makeClient(() => ({ success: true, accountId: "a" }), []);
+      const billingClient = makeClient(
+        () => ({
+          success: true,
+          shopsLimit: 5,
+          staffLimit: 3,
+          frozen: false,
+          storefrontSuspended: true,
+          status: "canceled",
+        }),
+        [],
+      );
+      const client = new BillingClient(billingClient, userClient);
+
+      await expect(client.canCreateSite("t", 1)).resolves.toEqual({
+        allowed: false,
+        limit: 5,
+        reason: "account_frozen",
+      });
+    });
+
+    it("blocks canceled via fallback (no storefrontSuspended, status=canceled)", async () => {
+      const userClient = makeClient(() => ({ success: true, accountId: "a" }), []);
+      const billingClient = makeClient(
+        () => ({
+          success: true,
+          shopsLimit: 5,
+          staffLimit: 3,
+          frozen: false,
+          status: "canceled",
+        }),
+        [],
+      );
+      const client = new BillingClient(billingClient, userClient);
+
+      await expect(client.canCreateSite("t", 1)).resolves.toEqual({
+        allowed: false,
+        limit: 5,
+        reason: "account_frozen",
+      });
+    });
+
+    it("allows trialing and past_due (not suspended, under limit)", async () => {
+      for (const status of ["trialing", "past_due"]) {
+        const userClient = makeClient(
+          () => ({ success: true, accountId: "a" }),
+          [],
+        );
+        const billingClient = makeClient(
+          () => ({
+            success: true,
+            shopsLimit: 5,
+            staffLimit: 3,
+            frozen: false,
+            storefrontSuspended: false,
+            status,
+          }),
+          [],
+        );
+        const client = new BillingClient(billingClient, userClient);
+
+        await expect(client.canCreateSite("t", 1)).resolves.toEqual({
+          allowed: true,
+          limit: 5,
+        });
+      }
+    });
   });
 });

@@ -9,6 +9,7 @@ import { Cron } from "@nestjs/schedule";
 import { ClientProxy } from "@nestjs/microservices";
 import { BILLING_RMQ_SERVICE, USER_RMQ_SERVICE } from "../constants";
 import { SitesDomainService } from "../sites.service";
+import { isStorefrontSuspended } from "../billing/billing.client";
 
 interface UserWithoutSite {
   userId: string;
@@ -19,6 +20,9 @@ interface UserWithoutSite {
 interface EntitlementsResponse {
   success: boolean;
   frozen?: boolean;
+  // Carried on the wire by billing.get_entitlements; used via isStorefrontSuspended.
+  storefrontSuspended?: boolean;
+  status?: string;
   shopsLimit?: number | null;
 }
 
@@ -188,7 +192,7 @@ export class SiteProvisioningScheduler implements OnModuleInit {
 
       if (!this.canCreateSite(entitlements)) {
         this.logger.debug(
-          `User ${userId} cannot create site: frozen or no quota`,
+          `User ${userId} cannot create site: suspended (frozen/canceled) or no quota`,
         );
         return;
       }
@@ -229,8 +233,13 @@ export class SiteProvisioningScheduler implements OnModuleInit {
   }
 
   private canCreateSite(entitlements: EntitlementsResponse): boolean {
+    // success guard MUST stay first: unknown billing ({success:false}) is
+    // refused before the suspend check (which would read undefined -> allow).
     if (!entitlements.success) return false;
-    if (entitlements.frozen) return false;
+    // Suspended storefront ({frozen, canceled}) — do not auto-provision. Keys
+    // on the same signal as checkSiteAvailability/reconcile, not raw `frozen`
+    // (which is false for a terminal `canceled`).
+    if (isStorefrontSuspended(entitlements)) return false;
 
     const limit = entitlements.shopsLimit;
     return limit === null || limit === undefined || limit > 0;

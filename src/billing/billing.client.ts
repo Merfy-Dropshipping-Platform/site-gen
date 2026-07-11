@@ -26,6 +26,21 @@ export interface BillingEntitlements {
   status?: string;
 }
 
+/**
+ * Whether the public storefront should be suspended for these entitlements:
+ * billing's authoritative `storefrontSuspended` = {frozen, canceled}, with a
+ * fallback of `frozen || status==='canceled'` for old billing builds /
+ * success:false payloads that omit the field. `??` (NOT `||`) so an explicit
+ * billing `false` (past_due, active, trialing) is honored and never overridden
+ * by the status fallback. Shared by billing-sync reconcile and
+ * checkSiteAvailability so the predicate cannot drift between them.
+ */
+export function isStorefrontSuspended(
+  e: Pick<BillingEntitlements, "storefrontSuspended" | "frozen" | "status">,
+): boolean {
+  return e.storefrontSuspended ?? (e.frozen || e.status === "canceled");
+}
+
 @Injectable()
 export class BillingClient {
   private readonly logger = new Logger(BillingClient.name);

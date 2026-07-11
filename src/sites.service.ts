@@ -35,7 +35,7 @@ import { SitesEventsService } from "./events/events.service";
 import { DeploymentsService } from "./deployments/deployments.service";
 import { S3StorageService } from "./storage/s3.service";
 import { DomainClient } from "./domain";
-import { BillingClient } from "./billing/billing.client";
+import { BillingClient, isStorefrontSuspended } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
@@ -1813,7 +1813,11 @@ export class SitesDomainService {
 
     const entitlements = await this.billingClient.getEntitlements(tenantId);
     const checks = {
-      billingAllowed: !entitlements.frozen,
+      // Key on the storefront-suspend signal ({frozen, canceled}), not raw
+      // `frozen` — which is false for a terminal `canceled`, so this endpoint
+      // reported a churned storefront as available (and, once frozen, gave the
+      // wrong 'site_not_published' reason instead of the suspend reason).
+      billingAllowed: !isStorefrontSuspended(entitlements),
       isPublished: site.status === "published",
       isDeployed: Boolean(site.coolifyAppUuid),
     };

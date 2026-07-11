@@ -12,6 +12,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { SitesDomainService } from "../sites.service";
 import { S3StorageService } from "../storage/s3.service";
 import { SiteGeneratorService } from "../generator/generator.service";
+import { isStorefrontSuspended } from "../billing/billing.client";
 
 @Injectable()
 export class BillingSyncScheduler implements OnModuleInit {
@@ -107,13 +108,11 @@ export class BillingSyncScheduler implements OnModuleInit {
           // `canceled` (frozenAt=null), so keying on it here unfroze churned
           // storefronts every hour — the flip-flop against the event consumer.
           // Single source of truth = billing.storefrontSuspended = {frozen,
-          // canceled}; the local fallback keeps this correct before billing
+          // canceled}; the helper's fallback keeps this correct before billing
           // ships the field. `past_due` is intentionally NOT suspended (the
-          // storefront stays live through the dunning grace window).
-          const suspended = Boolean(
-            entitlements.storefrontSuspended ??
-              (entitlements.frozen || entitlements.status === "canceled"),
-          );
+          // storefront stays live through the dunning grace window). Same
+          // predicate as checkSiteAvailability — shared to avoid drift.
+          const suspended = isStorefrontSuspended(entitlements);
           if (suspended) {
             const res = await this.sites.freezeTenant(tenantId);
             this.logger.debug(

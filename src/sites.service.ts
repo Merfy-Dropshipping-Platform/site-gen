@@ -1655,8 +1655,13 @@ export class SitesDomainService {
       }
     }
 
-    // Автопубликация draft сайтов при активной подписке
-    await this.autoPublishDraftSites(tenantId);
+    // Автопубликация draft сайтов ТОЛЬКО при реальной разморозке (frozen→live
+    // этим вызовом). Раньше вызов был безусловным и на каждом reconcile-тике
+    // форс-публиковал намеренные черновики любого live-тенанта; для погашенного
+    // canceled/suspended он теперь недостижим (reconcile в unfreeze-ветку не идёт).
+    if (res.length > 0) {
+      await this.autoPublishDraftSites(tenantId);
+    }
 
     return { affected: res.length };
   }

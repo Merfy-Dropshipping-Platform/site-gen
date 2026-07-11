@@ -90,6 +90,7 @@ describe("BillingClient", () => {
         shopsLimit: 1,
         staffLimit: 1,
         frozen: false,
+        storefrontSuspended: false,
       });
     });
 
@@ -117,6 +118,7 @@ describe("BillingClient", () => {
         shopsLimit: 1,
         staffLimit: 1,
         frozen: false,
+        storefrontSuspended: false,
       });
     });
   });

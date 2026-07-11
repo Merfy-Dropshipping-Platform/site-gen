@@ -549,6 +549,39 @@ describe('Freeze/Unfreeze Integration', () => {
       // Then autoPublishDraftSites should attempt to publish it
       // This triggers publish() for each draft site
     });
+
+    it('gates autoPublishDraftSites on a real unfreeze (res>0), skips it on an idle unfreeze (res=0)', async () => {
+      // J5: previously autoPublishDraftSites ran on EVERY unfreeze call, so the
+      // hourly billing reconcile force-published a tenant's intentional drafts
+      // on each idle tick. It must now run only when this call actually
+      // transitioned frozen->live (res.length > 0).
+
+      // Real unfreeze: a frozen site is restored -> res>0 -> autoPublish fires.
+      const dbFrozen = createMockDb([
+        { id: 's1', tenantId: 't1', name: 'Frozen', status: 'frozen', prevStatus: 'published', frozenAt: new Date(), publicUrl: 'https://s1.merfy.ru' },
+      ]);
+      const svcFrozen = createService(dbFrozen);
+      const spyFrozen = jest
+        .spyOn(svcFrozen, 'autoPublishDraftSites')
+        .mockResolvedValue(undefined as any);
+
+      const r1 = await svcFrozen.unfreezeTenant('t1');
+      expect(r1.affected).toBe(1);
+      expect(spyFrozen).toHaveBeenCalledWith('t1');
+
+      // Idle unfreeze: nothing was frozen (live tenant) -> res=0 -> skip.
+      const dbLive = createMockDb([
+        { id: 's2', tenantId: 't2', name: 'Live', status: 'published', publicUrl: 'https://s2.merfy.ru' },
+      ]);
+      const svcLive = createService(dbLive);
+      const spyLive = jest
+        .spyOn(svcLive, 'autoPublishDraftSites')
+        .mockResolvedValue(undefined as any);
+
+      const r2 = await svcLive.unfreezeTenant('t2');
+      expect(r2.affected).toBe(0);
+      expect(spyLive).not.toHaveBeenCalled();
+    });
   });
 
   // ==================== Subscription integration ====================

@@ -67,11 +67,12 @@ export class BillingListenerController {
         payload?.previousStatus ?? "",
       ).toLowerCase();
 
-      // 1. Обработка заморозки/разморозки
-      const shouldFreeze = ["past_due", "frozen", "canceled"].includes(status);
-      const wasFreeze = ["past_due", "frozen", "canceled"].includes(
-        previousStatus,
-      );
+      // 1. Обработка заморозки/разморозки. Набор = {frozen, canceled} (зеркало
+      // billing.storefrontSuspended); past_due исключён — витрина жива на окне
+      // dunning. Синхронизировать с billing-events.consumer.ts и billing-sync.scheduler.ts.
+      const suspendStatuses = ["frozen", "canceled"];
+      const shouldFreeze = suspendStatuses.includes(status);
+      const wasFreeze = suspendStatuses.includes(previousStatus);
 
       if (shouldFreeze && !wasFreeze) {
         const result = await this.sites.freezeTenant(tenantId);

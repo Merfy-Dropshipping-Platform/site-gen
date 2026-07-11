@@ -15,6 +15,13 @@ export interface BillingEntitlements {
   shopsLimit: number;
   staffLimit: number;
   frozen: boolean;
+  /**
+   * Authoritative storefront-suspend signal from billing = {frozen, canceled}
+   * (NOT past_due). The billing-sync reconcile keys on this instead of `frozen`
+   * so a terminal `canceled` storefront stays suspended (no hourly flip-flop).
+   * Optional for backward-compat while billing rolls out the field.
+   */
+  storefrontSuspended?: boolean;
   planName?: string;
   status?: string;
 }
@@ -102,6 +109,7 @@ export class BillingClient {
         shopsLimit: result?.shopsLimit ?? 1,
         staffLimit: result?.staffLimit ?? 1,
         frozen: result?.frozen ?? false,
+        storefrontSuspended: result?.storefrontSuspended,
         planName: result?.planName,
         status: result?.status,
       };
@@ -161,6 +169,7 @@ export class BillingClient {
       shopsLimit: 1,
       staffLimit: 1,
       frozen: false,
+      storefrontSuspended: false,
     };
   }
 }

@@ -102,5 +102,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call Coolify deploy webhook
-        run: |
-          curl -X POST -H "Content-Type: application/json" ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+        env:
+          COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: >-
+          curl
+          --fail-with-body
+          --silent
+          --show-error
+          --request GET
+          "$COOLIFY_DEPLOY_WEBHOOK"
+          --header "Authorization: Bearer $COOLIFY_TOKEN"

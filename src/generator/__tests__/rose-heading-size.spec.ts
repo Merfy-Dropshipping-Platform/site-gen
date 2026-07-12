@@ -71,4 +71,36 @@ describe("Rose heading sizes", () => {
       /<div[^>]*class=\{headWrapCls\}[^>]*style=\{headingSizeStyle\}[^>]*data-puck-subsection-field="heading"[^>]*>/s,
     );
   });
+
+  it("prefers the top-level Collections size and wires compiled heading variables to its wrapper", () => {
+    const size = resolveRoseHeadingSize("large", "small", "top-level");
+
+    expect(size).toBe("large");
+    expect(roseHeadingStyle("collections", size)).toContain(
+      "--collections-heading-size:24px",
+    );
+    expect(roseHeadingStyle("collections", size)).toContain(
+      "--collections-heading-size-mobile:17px",
+    );
+
+    const collectionsSource = readFileSync(
+      join(
+        process.cwd(),
+        "themes/rose/src/components/sections/Collections.astro",
+      ),
+      "utf8",
+    );
+
+    expect(collectionsSource).toContain(
+      'const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "top-level");',
+    );
+    expect(collectionsSource).toContain(
+      'const headingSizeStyle = roseHeadingStyle("collections", headingSize);',
+    );
+    expect(collectionsSource).toMatch(
+      /<div[^>]*class=\{headWrapCls\}[^>]*style=\{headingSizeStyle\}[^>]*data-puck-subsection-field="heading"[^>]*>/s,
+    );
+    expect(collectionsSource).not.toContain("[--size-section-heading:");
+    expect(collectionsSource).not.toContain("[--size-section-heading-m:");
+  });
 });

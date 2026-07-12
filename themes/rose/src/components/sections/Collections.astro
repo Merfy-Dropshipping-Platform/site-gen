@@ -1,5 +1,6 @@
 ---
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
+import { resolveRoseHeadingSize, roseHeadingStyle } from "../../lib/heading-size";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
 // T13: полная канон-схема (headingSize/subtitleSize/titleAlignment/columns/imageView/
@@ -15,18 +16,10 @@ const id = p.id;
 const sectionTitle = p.heading ?? "Список коллекций";
 const sectionSubtitle = p.subtitle ?? "";
 
-// Канон headingSize: 'medium' (canon-default) и отсутствие = NtSectionHeading
-// верстальщика дословно (20px). small ≈0.85× (17px), large ≈1.2× (24px) — окр. до px.
-// Размер — через --size-section-heading (её читает #collections-title в <style> ниже);
-// [&_h2]:!text-[ бьётся ID-правилом #collections-title{...!important} (особенно на
-// мобиле). Мобильный размер — через --size-section-heading-m (паттерн .rose-title /
-// Gallery): small→12px, large→17px, дефолт→14px (fallback).
-const headingSizeCls =
-	p.headingSize === "small"
-		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
-		: p.headingSize === "large"
-			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
-			: "";
+// Канон headingSize: top-level приоритетнее legacy heading.size. Локальные
+// inline-переменные гарантированно попадают в compiled CSS bridge.
+const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "top-level");
+const headingSizeStyle = roseHeadingStyle("collections", headingSize);
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
 // Desktop — утилита [&_p]:!text-[ (работает на десктопе); мобиле — через
 // --size-section-text-m (её читает #collections-title ~ p в <style> ниже),
@@ -38,12 +31,12 @@ const subtitleSizeCls =
 			? " [&_p]:!text-[23px] [--size-section-text-m:23px]"
 			: "";
 // Канон titleAlignment: 'center'/отсутствие = строка верстальщика байт-в-байт.
-const headWrapBase = `flex w-full justify-center md:justify-center${headingSizeCls}${subtitleSizeCls}`;
+const headWrapBase = `flex w-full justify-center md:justify-center${subtitleSizeCls}`;
 const headWrapCls =
 	p.titleAlignment === "left"
-		? `flex w-full justify-start [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left${headingSizeCls}${subtitleSizeCls}`
+		? `flex w-full justify-start [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left${subtitleSizeCls}`
 		: p.titleAlignment === "right"
-			? `flex w-full justify-end [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right${headingSizeCls}${subtitleSizeCls}`
+			? `flex w-full justify-end [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right${subtitleSizeCls}`
 			: headWrapBase;
 
 // Канон columns 1-6: 3 (canon-default = md:grid-cols-3 верстальщика) и отсутствие →
@@ -188,7 +181,7 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+		<div class={headWrapCls} style={headingSizeStyle} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="collections-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 
@@ -328,16 +321,15 @@ const paddingStyle = p.padding
 
 <style>
 	/* NtSectionHeading из DS не пробрасывает class на h2/p — размер заголовка читаем
-	   из --size-section-heading (ставит class-сеттер на обёртке), fallback = 20px
-	   верстальщика. ID-правило перебивает утилиту !text-[20px] на h2. */
+	   из локальной переменной на обёртке. ID-правило перебивает утилиту !text-[20px] на h2. */
 	:global(#collections-title) {
-		font-size: var(--size-section-heading, 20px) !important;
+		font-size: var(--collections-heading-size, 20px) !important;
 	}
 
 	/* Figma 375: section title Comfortaa 14, subtitle Manrope 12. NtSectionHeading не пробрасывает class на h2/p. */
 	@media (max-width: 639.98px) {
 		:global(#collections-title) {
-			font-size: var(--size-section-heading-m, 14px) !important;
+			font-size: var(--collections-heading-size-mobile, 14px) !important;
 			line-height: 1 !important;
 		}
 

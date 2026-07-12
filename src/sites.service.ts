@@ -142,7 +142,7 @@ export class SitesDomainService {
   }
 
   async listAllForDev(): Promise<
-    Array<{ id: string; name: string; themeId: string | null; tenantId: string; storageSlug: string | null }>
+    Array<{ id: string; name: string; themeId: string | null; tenantId: string; storageSlug: string | null; createdAt: Date | null }>
   > {
     return this.db
       .select({
@@ -151,6 +151,7 @@ export class SitesDomainService {
         themeId: schema.site.themeId,
         tenantId: schema.site.tenantId,
         storageSlug: schema.site.storageSlug,
+        createdAt: schema.site.createdAt,
       })
       .from(schema.site)
       .orderBy(schema.site.name);

@@ -1,5 +1,6 @@
 ---
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
+import { resolveRoseHeadingSize, roseHeadingStyle } from "../../lib/heading-size";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Gallery (heading/subtitle union). Тело + данные verbatim.
 // T13: полная канон-схема (items[] ≤3, imagePosition, headingSize, textSize, padding).
@@ -15,19 +16,9 @@ const sectionTitle = p.heading?.text ?? p.heading ?? "Галерея";
 const sectionSubtitle =
 	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "";
 
-// Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
-// (canon-default) и отсутствие = clamp верстальщика (14px→20px) дословно;
-// small/large масштабируют clamp в манере (≈0.85× / ≈1.2×).
-// Размер — через ПРИВАТНУЮ --gallery-heading-size (её читает #gallery-title ниже).
-// НЕ глобальная --size-section-heading: она задана в :root=20px → fallback clamp не
-// сработал бы и адаптивный дефолт-clamp поехал бы в фикс. 20px (регресс на мобиле).
-const headingSize = p.heading?.size ?? p.headingSize;
-const headingSizeCls =
-	headingSize === "small"
-		? " [--gallery-heading-size:clamp(12px,3.2vw,17px)]"
-		: headingSize === "large"
-			? " [--gallery-heading-size:clamp(17px,4.6vw,24px)]"
-			: "";
+// Канон headingSize: top-level приоритетнее legacy heading.size.
+const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "top-level");
+const headingSizeStyle = roseHeadingStyle("gallery", headingSize);
 // Канон textSize (top-level приоритетнее legacy text.size): 'medium' (canon-default)
 // и отсутствие = 16px верстальщика; small → 14px, large → 19px.
 const textSize = p.textSize ?? p.text?.size;
@@ -37,7 +28,7 @@ const textSizeCls =
 		: textSize === "large"
 			? " [&_p]:!text-[19px] [--size-section-text-m:19px]"
 			: "";
-const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center${headingSizeCls}${textSizeCls}`;
+const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center${textSizeCls}`;
 
 // Канон imagePosition left/right: 'left' (canon-default) и отсутствие = большая
 // плитка слева (пиксель верстальщика); 'right' → зеркало раскладки на lg
@@ -142,7 +133,7 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+		<div class={headWrapCls} style={headingSizeStyle} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
 
@@ -375,6 +366,7 @@ const paddingStyle = p.padding
 	@media (max-width: 639.98px) {
 		:global(#gallery-title) {
 			white-space: normal !important;
+			font-size: var(--gallery-heading-size-mobile, 14px) !important;
 		}
 
 		:global(#gallery-title ~ p) {

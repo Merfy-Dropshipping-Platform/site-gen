@@ -2,6 +2,10 @@
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
 import { SITE_TITLE } from "../consts";
+import {
+	roseFooterHeadingStyle,
+	roseFooterTextClass,
+} from "../lib/section-settings";
 
 const today = new Date();
 
@@ -57,6 +61,8 @@ const newsletterText =
 	typeof p.text?.content === "string" && p.text.content.trim()
 		? p.text.content
 		: "Получайте информацию от нашего бренда";
+const newsletterHeadingSizeStyle = roseFooterHeadingStyle(p.heading?.size);
+const newsletterTextSizeCls = roseFooterTextClass(p.text?.size);
 // item 1 — выравнивание блока рассылки, ОДНО значение на десктоп И адаптив. Классы
 // ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left (раньше был захардкожен text-left + @media center).
 const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
@@ -178,14 +184,18 @@ const footerSchemeClass =
 				<div class={`flex max-w-[1320px] flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
-						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap !text-[clamp(14px,2.2vw,20px)]"
+						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap"
+						style={newsletterHeadingSizeStyle}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="newsletter"
 					>
 						{newsletterHeadingText}
 					</h2>
-					<p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]">
+					<p class:list={[
+						"font-manrope font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]",
+						newsletterTextSizeCls,
+					]}>
 						{newsletterText}
 					</p>
 				</div>
@@ -359,11 +369,6 @@ const footerSchemeClass =
 
 		:global(#newsletter-heading) {
 			font-weight: 400 !important;
-		}
-
-		:global([aria-labelledby="newsletter-heading"] > div:first-child > p) {
-			font-size: 12px !important;
-			line-height: 1 !important;
 		}
 
 		:global([data-newsletter-form]) {

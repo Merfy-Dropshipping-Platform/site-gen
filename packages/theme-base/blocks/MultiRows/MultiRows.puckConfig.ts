@@ -39,7 +39,7 @@ export const MultiRowsSchema = z.object({
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   rowsPosition: z.enum(['left', 'right', 'alternate']).optional(),
-  buttonStyle: z.enum(['primary', 'black', 'white']).optional(),
+  buttonStyle: z.enum(['primary', 'black', 'white', 'secondary']).optional(),
   alignment: z.enum(['left', 'center', 'right']).optional(),
   colorScheme: z.string().optional(),
   containerEnabled: z.enum(['true', 'false']).optional(),

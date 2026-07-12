@@ -1,4 +1,6 @@
 ---
+import { rosePromoBannerSize } from "../../lib/section-settings";
+
 // ОЖИВЛЕНИЕ: канон-схема PromoBanner (theme-base PromoBanner.puckConfig).
 // Поля канона: text, link {text, href}, size (small/medium/large), textTransform
 // (none/uppercase), padding {top,bottom}; legacy linkText/linkUrl.
@@ -16,13 +18,7 @@ const linkText = p.link?.text ?? p.linkText ?? "Перейти";
 // Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
 //   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
 // Дефолт (нет пропа) = large (48/16) — дословно прежняя полоса верстальщика.
-const size = typeof p.size === "string" ? p.size : "large";
-const SIZE_MAP: Record<string, { mh: string; text: string }> = {
-	small: { mh: "min-h-8", text: "text-[12px]" },
-	medium: { mh: "min-h-10", text: "text-[14px]" },
-	large: { mh: "min-h-12", text: "text-[16px]" },
-};
-const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
+const sz = rosePromoBannerSize(p.size);
 const upper = p.textTransform === "uppercase";
 // «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
 // (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
@@ -31,9 +27,9 @@ const upper = p.textTransform === "uppercase";
 // Заполнено → цвета цветовой схемы (Цветовая схема секции); пусто → surface-полоса
 // плейсхолдера. Шрифт/высота от «Размер текста» в обоих состояниях.
 const barCls = hasText
-	? `flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-bg,0_0_0))] px-4 text-[rgb(var(--color-text,255_255_255))] md:px-20 xl:px-[300px] 2xl:px-[680px]`
-	: `flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]`;
-const pCls = `max-w-full text-center font-manrope ${sz.text} font-light leading-normal${upper ? " uppercase" : ""}`;
+	? `flex ${sz.minHeightClass} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-bg,0_0_0))] px-4 text-[rgb(var(--color-text,255_255_255))] md:px-20 xl:px-[300px] 2xl:px-[680px]`
+	: `flex ${sz.minHeightClass} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]`;
+const pCls = `max-w-full text-center font-manrope ${sz.textClass} font-light leading-normal${upper ? " uppercase" : ""}`;
 ---
 
 <div

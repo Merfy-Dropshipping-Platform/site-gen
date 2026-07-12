@@ -1,4 +1,6 @@
 ---
+import { normalizeRoseSlidePosition } from "../../lib/section-settings";
+
 // Фаза 3 (T17): новая канон-секция Slideshow в манере rose (см. themes/rose/MANNER.md).
 // Схема полей = packages/theme-base/blocks/Slideshow/Slideshow.puckConfig.ts.
 // Композиция = hero-полотно манеры: фон-фото, белый текст лестницей героя §1,
@@ -63,26 +65,24 @@ const slideTextCls = (s: string | undefined) =>
 // position (РАЗМЕЩЕНИЕ блока по сетке 3×3) + alignment (выравнивание КОНТЕНТА
 // внутри блока, независимо) + container (плашка-подложка boxed).
 //   Позиция: вертикаль top / center(=середина) / bottom; горизонталь left/center/
-//   right. Пустой проп = дефолт верстальщика (низ). Явное 'center' = СЕРЕДИНА.
+//   right. Пустой/невалидный проп = безопасный legacy fallback center.
 //   defaultItemProps пишет position:'center' → дефолтный слайд = середина-центр.
 //   Legacy left/right (3-опционная схема) → center-left/center-right.
 const slideLayoutCls = (s: any) => {
-	const posRaw = typeof s.position === "string" && s.position ? s.position : "";
-	// legacy одиночные left/right (без вертикали) → середина по вертикали.
-	const norm = posRaw === "left" ? "center-left" : posRaw === "right" ? "center-right" : posRaw;
+	const norm = normalizeRoseSlidePosition(s.position);
 	const vPos = norm.startsWith("top")
 		? "top"
 		: norm.startsWith("bottom")
 			? "bottom"
 			: norm === "center" || norm.startsWith("center")
 				? "middle"
-				: ""; // пусто = дефолт верстальщика (низ)
+				: "middle";
 	const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
 	// Внешний контейнер слайда: vJustify = вертикаль (justify-* при flex-col),
-	// hItems = горизонталь (items-*). Top-level contentAlign 'left' = legacy старт.
+	// hItems = горизонталь (items-*).
 	const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
 	const hItemsCls =
-		hPos === "left" || (!norm && p.contentAlign === "left")
+		hPos === "left"
 			? "items-start"
 			: hPos === "right"
 				? "items-end"

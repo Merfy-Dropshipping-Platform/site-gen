@@ -44,6 +44,20 @@ describe('MultiRows block', () => {
     expect(ok.success).toBe(true);
   });
 
+  it('accepts legacy secondary without exposing it as a canonical option', () => {
+    const parsed = MultiRowsSchema.safeParse({
+      rows: [{ id: 'r1' }],
+      buttonStyle: 'secondary',
+      padding: { top: 0, bottom: 0 },
+    });
+    expect(parsed.success).toBe(true);
+
+    const field = MultiRowsPuckConfig.fields.buttonStyle as {
+      options: Array<{ value: string }>;
+    };
+    expect(field.options.map(({ value }) => value)).toEqual(['primary', 'black', 'white']);
+  });
+
   it('MultiRowsTokens lists hero-heading and button tokens', () => {
     expect(MultiRowsTokens.length).toBeGreaterThan(0);
     expect(MultiRowsTokens).toContain('--size-hero-heading');

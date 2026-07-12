@@ -4,6 +4,7 @@
 // Секции нет у верстальщика — ряд «картинка + текст» в чередующейся раскладке;
 // сетка/зазоры/медиа/кнопки — из манеры §2-4 (паттерн ImageWithText T15).
 import { inlineFormat } from "../../lib/rich-text";
+import { normalizeRoseMultiRowsButtonStyle } from "../../lib/section-settings";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -134,8 +135,9 @@ const alignCls =
 // манера hero CTA).
 const btnBase =
 	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
+const buttonStyle = normalizeRoseMultiRowsButtonStyle(p.buttonStyle);
 const btnCls =
-	p.buttonStyle === "white"
+	buttonStyle === "white"
 		? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 		: `${btnBase} bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
 

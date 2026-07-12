@@ -4,13 +4,13 @@
 
 **Goal:** Исправить no-op размеров заголовка ContactForm, Gallery и Collections в legacy Rose renderer без изменения revision schema.
 
-**Architecture:** В `themes/rose/src/lib/heading-size.ts` появится маленький pure resolver и генератор локальных CSS variables. Три Astro renderer'а явно выбирают правильный источник props и передают переменные inline; section-local CSS остаётся единственной точкой применения размера к `NtSectionHeading`.
+**Architecture:** В `themes/rose/src/lib/heading-size.ts` появится маленький pure resolver и генератор локальных CSS variables. Три Astro renderer'а явно выбирают правильный источник props и передают переменные inline; section-local CSS остаётся единственной точкой применения размера к `NtSectionHeading`. Legacy adapter сохраняет размер при flatten только для `ContactForm` и `Gallery`, чтобы preview/live reload не терял значение.
 
 **Tech Stack:** Astro 4, TypeScript, Jest, Playwright, pnpm 10/Corepack.
 
 ## Global Constraints
 
-- Изменять только Rose renderer boundary, tests и эти design/plan docs.
+- Изменять только Rose renderer boundary, legacy adapter для `ContactForm`/`Gallery`, tests и эти design/plan docs.
 - Не менять Puck schemas, migrations, revision payloads, другие темы или theme-base.
 - Desktop/mobile mapping: small `17/12px`, medium `20/14px`, large `24/17px`.
 - Gallery precedence: top-level `headingSize` перед legacy `heading.size`.
@@ -189,15 +189,15 @@ git diff --check
 
 - [ ] **Step 4: Prepare post-deploy live restore-safe smoke**
 
-Record the exact post-deploy scenario: use the existing authenticated Playwright state outside git; for each of ContactForm, Gallery and Collections capture full block props, select an adjacent size, wait for preview/revision `201`, assert computed desktop/mobile size, restore, reload, and require full props equality. Save screenshots under `/tmp/merfy-rose-qa/fixed-heading-sizes/`. Do not click Save/publish. Do not run this against production before the branch is deployed, because it would exercise the old renderer.
+Record the exact post-deploy scenario: use the existing authenticated Playwright state outside git; for each of ContactForm, Gallery and Collections capture full block props, select an adjacent size, wait for the preview update to return HTTP `200` and update the DOM, then wait for the revision write to return HTTP `201`; assert computed desktop/mobile size, restore, reload, and require full props equality. Save screenshots under `/tmp/merfy-rose-qa/fixed-heading-sizes/`. Do not click Save/publish. Do not run this against production before the branch is deployed, because it would exercise the old renderer.
 
 Post-deploy runbook (execute only after this branch is deployed):
 
 1. Load the existing authenticated Playwright storage state from its untracked path; create `/tmp/merfy-rose-qa/fixed-heading-sizes/` and open the Rose constructor without clicking Save/publish.
 2. For each block in order (`ContactForm`, `Gallery`, `Collections`), read and deep-clone the complete original block props from the current revision before editing anything.
-3. Select an adjacent heading size (`small → medium`, `medium → large`, `large → medium`), wait for both the preview update and the revision request to return HTTP `201`, then assert the heading's computed `font-size` at viewport widths `1280` and `375` against `17/12`, `20/14`, or `24/17px`.
+3. Select an adjacent heading size (`small → medium`, `medium → large`, `large → medium`), wait for the preview update to return HTTP `200` and confirm the DOM update, then wait for the revision write to return HTTP `201`; assert the heading's computed `font-size` at viewport widths `1280` and `375` against `17/12`, `20/14`, or `24/17px`.
 4. Save desktop and mobile evidence as `/tmp/merfy-rose-qa/fixed-heading-sizes/<block>-<size>-desktop.png` and `/tmp/merfy-rose-qa/fixed-heading-sizes/<block>-<size>-mobile.png`.
-5. Restore the complete cloned props (not only the size field), again wait for preview and revision HTTP `201`, reload the constructor, and require deep equality between the reloaded full props and the original clone before continuing to the next block.
+5. Restore the complete cloned props (not only the size field), again wait for preview HTTP `200` plus the DOM update and revision HTTP `201`, reload the constructor, and require deep equality between the reloaded full props and the original clone before continuing to the next block.
 6. If any assertion or restore fails, stop immediately and retain the screenshots/logs; do not leave the block modified and do not proceed to another block until full original props equality is restored.
 
 - [ ] **Step 5: Commit verification assets**

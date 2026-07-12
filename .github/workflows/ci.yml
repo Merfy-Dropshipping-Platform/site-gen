@@ -43,9 +43,16 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies
+      - name: Configure GitHub Packages auth
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+        run: >-
+          pnpm config set
+          "//npm.pkg.github.com/:_authToken"
+          "$NODE_AUTH_TOKEN"
+          --location=user
+
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Prepare environment variables

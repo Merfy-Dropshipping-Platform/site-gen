@@ -44,4 +44,31 @@ describe("Rose heading sizes", () => {
       /<div[^>]*data-puck-subsection-field="heading"[^>]*style=\{headingSizeStyle\}[^>]*>/s,
     );
   });
+
+  it("prefers the top-level Gallery size and wires its variables to the heading wrapper", () => {
+    const size = resolveRoseHeadingSize("small", "medium", "top-level");
+
+    expect(size).toBe("small");
+    expect(roseHeadingStyle("gallery", size)).toContain(
+      "--gallery-heading-size:17px",
+    );
+    expect(roseHeadingStyle("gallery", size)).toContain(
+      "--gallery-heading-size-mobile:12px",
+    );
+
+    const gallerySource = readFileSync(
+      join(process.cwd(), "themes/rose/src/components/sections/Gallery.astro"),
+      "utf8",
+    );
+
+    expect(gallerySource).toContain(
+      'const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "top-level");',
+    );
+    expect(gallerySource).toContain(
+      'const headingSizeStyle = roseHeadingStyle("gallery", headingSize);',
+    );
+    expect(gallerySource).toMatch(
+      /<div[^>]*class=\{headWrapCls\}[^>]*style=\{headingSizeStyle\}[^>]*data-puck-subsection-field="heading"[^>]*>/s,
+    );
+  });
 });

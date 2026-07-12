@@ -11,6 +11,10 @@ on:
       - 'scripts/visual-diff-themes.mjs'
       - 'visual-diff-thresholds.json'
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   visual-diff:
     runs-on: ubuntu-latest
@@ -31,6 +35,8 @@ jobs:
           cache: 'pnpm'
 
       - name: Install deps
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
         run: pnpm install --frozen-lockfile --ignore-workspace
 
       - name: Install Playwright chromium

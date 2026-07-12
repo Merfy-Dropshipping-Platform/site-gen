@@ -30,10 +30,7 @@ describe("Rose heading sizes", () => {
 
   it("wires the ContactForm heading style to its wrapper", () => {
     const contactsSource = readFileSync(
-      join(
-        process.cwd(),
-        "themes/rose/src/components/sections/Contacts.astro",
-      ),
+      join(process.cwd(), "themes/rose/src/components/sections/Contacts.astro"),
       "utf8",
     );
 

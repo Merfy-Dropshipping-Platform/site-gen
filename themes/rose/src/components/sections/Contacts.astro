@@ -1,6 +1,7 @@
 ---
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
+import { resolveRoseHeadingSize, roseHeadingStyle } from "../../lib/heading-size";
 
 // ОЖИВЛЕНИЕ: канон-схема ContactForm. Секция рендерит форму обратной связи.
 // Схема описывает поля ФОРМЫ. Когда мерчант настроил поля (fields-проп) —
@@ -56,6 +57,9 @@ const formFields = fieldsProp
 const buttonText =
 	typeof p.buttonText === "string" && p.buttonText.length > 0 ? p.buttonText : "Отправить";
 
+const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "nested");
+const headingSizeStyle = roseHeadingStyle("contacts", headingSize);
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -71,7 +75,7 @@ const paddingStyle = p.padding
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
 		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
-		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading" style={headingSizeStyle}>
 			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} />
 		</div>
 		<div class="flex flex-col">
@@ -214,11 +218,15 @@ const paddingStyle = p.padding
 </section>
 
 <style>
+	:global(#contacts-title) {
+		font-size: var(--contacts-heading-size, 20px) !important;
+	}
+
 	/* Figma 375: section title Comfortaa 14 на мобиле (как Collections/Popular).
 	   NtSectionHeading не пробрасывает class на h2 — задаём через ID-правило. */
 	@media (max-width: 639.98px) {
 		:global(#contacts-title) {
-			font-size: 14px !important;
+			font-size: var(--contacts-heading-size-mobile, 14px) !important;
 			line-height: 1 !important;
 		}
 

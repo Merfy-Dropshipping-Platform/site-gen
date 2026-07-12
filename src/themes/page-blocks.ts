@@ -245,6 +245,9 @@ export function adaptLegacyProps(
     case 'ContactForm':
       coerceContactFormProps(out);
       break;
+    case 'Gallery':
+      coerceGalleryProps(out);
+      break;
     case 'Collections':
       coerceCollectionsProps(out, publicUrl);
       break;
@@ -258,9 +261,9 @@ export function adaptLegacyProps(
       coerceMainTextProps(out);
       break;
     default:
-      // Generic fallback for the 19 blocks without a hand-written coercer
-      // (MainText, Newsletter, ImageWithText, Slideshow, MultiColumns,
-      // MultiRows, CollapsibleSection, Gallery, Video, Publications,
+      // Generic fallback for the 16 blocks without a hand-written coercer
+      // (Newsletter, Slideshow, MultiColumns, MultiRows,
+      // CollapsibleSection, Video, Publications,
       // Product, PromoBanner, CartSection, CheckoutSection, AuthModal,
       // CartDrawer, CheckoutLayout, CheckoutHeader, AccountLayout).
       // Any legacy `{text|content, size|enabled, ...}` envelope that
@@ -501,6 +504,12 @@ function coercePopularProductsProps(out: Record<string, unknown>): void {
 }
 
 function coerceContactFormProps(out: Record<string, unknown>): void {
+  const headingEnvelope = isPlainObject(out.heading)
+    ? out.heading
+    : null;
+  if (isHeadingSize(headingEnvelope?.size)) {
+    out.headingSize = headingEnvelope.size;
+  }
   const heading = unwrapTextSize(out.heading);
   out.heading = heading.present ? heading.value : 'Связаться с нами';
   if (typeof out.description !== 'string') out.description = '';
@@ -515,6 +524,19 @@ function coerceContactFormProps(out: Record<string, unknown>): void {
   }
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // padding: absent → undefined lets blockDefaults win.
+}
+
+function coerceGalleryProps(out: Record<string, unknown>): void {
+  const headingEnvelope = isPlainObject(out.heading)
+    ? out.heading
+    : null;
+  const nestedHeadingSize = headingEnvelope?.size;
+
+  coerceGenericLegacyProps(out);
+
+  if (!isHeadingSize(out.headingSize) && isHeadingSize(nestedHeadingSize)) {
+    out.headingSize = nestedHeadingSize;
+  }
 }
 
 function coerceImageWithTextProps(
@@ -680,6 +702,10 @@ function coerceCollectionsProps(
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
+}
+
+function isHeadingSize(v: unknown): v is 'small' | 'medium' | 'large' {
+  return v === 'small' || v === 'medium' || v === 'large';
 }
 
 // buildTokensCss + scheme helpers moved to `src/themes/tokens-css.ts` so the

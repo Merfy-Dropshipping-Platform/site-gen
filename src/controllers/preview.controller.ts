@@ -357,6 +357,7 @@ export class PreviewController {
               route.split('/')[0] === 'checkout'
                 ? checkoutConfigFromSettings(loaded.settings)
                 : null,
+              this.cartDrawerGlobalsFromRevision(loaded.data),
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -789,6 +790,7 @@ export class PreviewController {
     themeName?: string | null,
     productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
     checkoutConfig?: CheckoutRuntimeConfig | null,
+    cartDrawerGlobals?: Record<string, string> | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     // Cache-bust плоских превью-скриптов (cart-store.js, cart-api.js): gateway кэширует
@@ -883,6 +885,29 @@ export class PreviewController {
           `if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',f);}else{f();}})();</script>`,
       );
     }
+    // Глобалы корзины-дровера — ЗЕРКАЛО live build.service.injectGlobalsIntoDist
+    // (__MERFY_CART_DRAWER_SCHEME__ / _DISCLAIMER_ / _TITLE_ / _CHECKOUT_ / _EMPTY_).
+    // Без них превью-дровер брал :root-схему темы, а не выбранную на page-cart
+    // (баг «корзина не принимает цв схему со страницы корзины»). StorefrontRuntime
+    // читает эти window-глобалы в <head> и вешает .color-scheme-N на #cart-drawer-root.
+    if (cartDrawerGlobals) {
+      for (const [k, v] of Object.entries(cartDrawerGlobals)) {
+        html = html.replace(
+          /<head(\s[^>]*)?>/i,
+          (m) => `${m}<script>window.${k} = ${JSON.stringify(v)};</script>`,
+        );
+      }
+    }
+    // Демо-товар в превью-корзине (#4): в редакторе корзину не наполнить, поэтому
+    // дровер показывал пустое состояние без кнопки «Оформить». Сеем 1 реальный
+    // товар (только если корзина превью пуста) → мерчант видит полный дизайн.
+    // Требует известной темы (префикс ключа/события nt-cart). Перед </body>.
+    if (themeName) {
+      html = html.replace(
+        /<\/body>/i,
+        (m) => `${this.previewCartDemoScript(siteId, themeName)}${m}`,
+      );
+    }
     // Агент конструктора (hover/select → postMessage). На секционном пути его
     // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
     // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет
@@ -898,6 +923,91 @@ export class PreviewController {
    * — конкретная коллекция). Возвращает последний сегмент как slug
    * (`preview` для пресета) либо null, если маршрут не коллекционный.
    */
+  /**
+   * Глобалы корзины-дровера из ревизии — ЗЕРКАЛО live build.service.injectGlobalsIntoDist:
+   * cartScheme из page-cart CartBody/CartSummary.colorScheme + тексты дровера из
+   * themeSettings. Пусто — превью-дровер как раньше (дефолт темы). Так превью-дровер
+   * берёт ту же схему/тексты, что живой (баг «корзина не принимает цв схему»).
+   */
+  private cartDrawerGlobalsFromRevision(data: unknown): Record<string, string> {
+    const g: Record<string, string> = {};
+    try {
+      const cartContent = (
+        data as {
+          pagesData?: Record<
+            string,
+            { content?: Array<{ type?: string; props?: { colorScheme?: unknown } }> }
+          >;
+        } | null
+      )?.pagesData?.['page-cart']?.content;
+      const findScheme = (t: string): string | undefined => {
+        const blk = Array.isArray(cartContent)
+          ? cartContent.find((b) => b?.type === t)
+          : undefined;
+        const s = blk?.props?.colorScheme;
+        return typeof s === 'string' && /^scheme-\d+$/.test(s) ? s : undefined;
+      };
+      const scheme = findScheme('CartBody') ?? findScheme('CartSummary');
+      const ts = (
+        data as {
+          themeSettings?: {
+            cartDrawerTitle?: unknown;
+            cartDrawerCheckoutText?: unknown;
+            cartDrawerEmptyText?: unknown;
+          };
+        } | null
+      )?.themeSettings;
+      const trim = (v: unknown): string | undefined =>
+        typeof v === 'string' && v.trim() ? v.trim() : undefined;
+      if (scheme) {
+        g.__MERFY_CART_DRAWER_SCHEME__ = scheme;
+        g.__MERFY_CART_DRAWER_DISCLAIMER__ =
+          'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.';
+      }
+      const t = trim(ts?.cartDrawerTitle);
+      if (t) g.__MERFY_CART_DRAWER_TITLE__ = t;
+      const c = trim(ts?.cartDrawerCheckoutText);
+      if (c) g.__MERFY_CART_DRAWER_CHECKOUT__ = c;
+      const e = trim(ts?.cartDrawerEmptyText);
+      if (e) g.__MERFY_CART_DRAWER_EMPTY__ = e;
+    } catch {
+      /* пусто — дефолт темы */
+    }
+    return g;
+  }
+
+  /**
+   * Демо-товар в корзине ТОЛЬКО для превью конструктора: в редакторе реальный
+   * товар в корзину не добавить, поэтому дровер/страница корзины показывали пустое
+   * состояние и мерчант не видел дизайн (итог + кнопка «Оформить»). Инжектим
+   * инлайн-скрипт: если корзина превью пуста (`<тема>:cart:v1`), берём ПЕРВЫЙ
+   * реальный товар из storefront-data (тот же каталог, что reconcile — значит
+   * строка не выкидывается) и сеем 1 позицию + диспатчим `<тема>:cart:updated`
+   * → nt-cart рендерит товар, итог и кнопку. Живого сайта НЕ касается (это
+   * localStorage превью-iframe на gateway, отдельный origin). Не трогаем непустую
+   * корзину (мерчант мог тестово что-то добавить).
+   */
+  private previewCartDemoScript(siteId: string, themeName: string): string {
+    const key = `${themeName}:cart:v1`;
+    const evUpdated = `${themeName}:cart:updated`;
+    return (
+      `<script>(function(){try{` +
+      `var K=${JSON.stringify(key)};` +
+      `if(window.localStorage.getItem(K))return;` +
+      `fetch('/api/sites/'+${JSON.stringify(siteId)}+'/storefront-data').then(function(r){return r.json();}).then(function(d){` +
+      `var ps=(d&&d.products)||[];var p=ps[0];if(!p)return;` +
+      `if(window.localStorage.getItem(K))return;` +
+      `var cs=Array.isArray(p.variantCombinations)?p.variantCombinations:[];var c=cs[0]||null;` +
+      `var line={id:'preview-demo',productId:String(p.id),quantity:1,name:p.name||'Товар',` +
+      `image:(Array.isArray(p.images)&&p.images[0])||'',price:c?Number(c.price):(Number(p.price)||0),` +
+      `variant:c?{variantCombinationId:String(c.id)}:{}};` +
+      `window.localStorage.setItem(K,JSON.stringify([line]));` +
+      `window.dispatchEvent(new CustomEvent(${JSON.stringify(evUpdated)},{detail:[line]}));` +
+      `}).catch(function(){});` +
+      `}catch(e){}})();</script>`
+    );
+  }
+
   private collectionSlugFromRoute(route: string): string | null {
     const trimmed = route.replace(/^\/+|\/+$/g, '');
     const segments = trimmed.split('/');

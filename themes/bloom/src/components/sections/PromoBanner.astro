@@ -5,6 +5,8 @@
 // textTransform (none/uppercase), colorScheme (обёртку даёт композитор), padding {top,bottom}.
 // Тело = инлайн-полоса объявления верстальщика (Header.astro:43-47) дословно; в
 // канон-композиции Header свою полосу не рендерит (там она только в статик-режиме).
+// D-028: адаптивный шрифт/паддинг полосы восстановлены дословно из верстальщицкого
+// puck-рендера (config.tsx:237-249) — 5 брейкпоинтов, а НЕ фиксированный per-size кегль.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
@@ -29,31 +31,38 @@ const placeholderLinkText = linkText ?? "Перейти";
 const linkHref =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/";
 
-// Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
-//   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
-// Дефолт (нет пропа) = large (48/16) — эталон rose PromoBanner.astro SIZE_MAP.
-// Высоты — лестница шагом 8px (min-h-8/10/12), текст центрируется флексом; шрифт
-// масштабируется (text-[12px]/[14px]/[16px]) и применяется к тексту полосы.
+// ВЕРСТКА (D-028): нормативный источник полосы — верстальщицкий рендер
+// (/tmp/bloom-theme-ref/src/puck/config.tsx:237-249). Он масштабирует И шрифт, И
+// вертикальный padding ПО БРЕЙКПОИНТАМ (5 шагов), а НЕ фиксированным per-size
+// кеглем. Восстанавливаем адаптив дословно:
+//   шрифт   text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl
+//   паддинг py-2 sm:py-2.5 md:py-3 lg:py-3.5 xl:py-4
+const RESPONSIVE_FONT = "text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl";
+const RESPONSIVE_PADDING = "py-2 sm:py-2.5 md:py-3 lg:py-3.5 xl:py-4";
+
+// Платформенная надстройка «Размер» (Figma 648:57318) СОХРАНЯЕТСЯ, но больше не
+// подменяет верстальщицкий адаптивный кегль — задаёт лишь МИНИМАЛЬНУЮ высоту
+// полосы (пол лестницы 32/40/48px). Адаптивный шрифт/паддинг верстки — поверх.
 const size = typeof p.size === "string" ? p.size : "large";
-const SIZE_MAP: Record<string, { mh: string; text: string }> = {
-	small: { mh: "min-h-8", text: "text-[12px]" },
-	medium: { mh: "min-h-10", text: "text-[14px]" },
-	large: { mh: "min-h-12", text: "text-[16px]" },
+const MIN_HEIGHT_MAP: Record<string, string> = {
+	thin: "min-h-8",
+	small: "min-h-8",
+	medium: "min-h-10",
+	large: "min-h-12",
 };
-const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
-const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center`;
+const minH = MIN_HEIGHT_MAP[size] ?? MIN_HEIGHT_MAP.large;
+const rootCls = `flex ${minH} w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] ${RESPONSIVE_PADDING} text-center`;
 
 // Канон textTransform: 'uppercase' (canon-default из blockDefaults) И отсутствие =
-// литерал верстальщика uppercase; явный 'none' снимает капс. Размер шрифта (sz.text)
-// от «Размер текста».
+// литерал верстальщика uppercase; явный 'none' снимает капс. Кегль — адаптивный
+// (RESPONSIVE_FONT), дословно из верстки.
 const textCls =
 	p.textTransform === "none"
-		? `font-inter ${sz.text} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`
-		: `font-inter ${sz.text} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`;
+		? `font-inter ${RESPONSIVE_FONT} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`
+		: `font-inter ${RESPONSIVE_FONT} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`;
 
-// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
-// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
-// с padding {12,12} выходят за макетную высоту (полоса толще макета). Эталон rose.
+// «Отступы» из ревизии не применяются: вертикальный ритм задаёт адаптивная
+// лестница верстки (RESPONSIVE_PADDING), высоту-пол — «Размер» (min-h 32/40/48).
 ---
 
 {

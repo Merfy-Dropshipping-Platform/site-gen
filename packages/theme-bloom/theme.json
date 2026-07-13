@@ -39,6 +39,11 @@
   },
   "blockDefaults": {
     "PromoBanner": {
+      "text": "Скидка 10% на общую сумму заказа от 9 000₽",
+      "link": {
+        "text": "Перейти",
+        "href": "/delivery"
+      },
       "size": "thin",
       "textTransform": "uppercase",
       "colorScheme": "scheme-1"
@@ -117,7 +122,11 @@
         "text": "© 2026 Bloom Theme. Powered by Merfy"
       }
     },
-    "Gallery": {},
+    "Gallery": {
+      "text": {
+        "content": "Стиль для каждой ситуации - найдите свой в каталоге."
+      }
+    },
     "MultiRows": {},
     "MultiColumns": {}
   },
@@ -324,6 +333,13 @@
       "slug": "/checkout",
       "role": "system",
       "contentFile": "pages/checkout.json"
+    },
+    {
+      "id": "page-checkout-result",
+      "name": "Спасибо за заказ",
+      "slug": "/checkout-result",
+      "role": "system",
+      "contentFile": "pages/checkout-result.json"
     }
   ]
 }

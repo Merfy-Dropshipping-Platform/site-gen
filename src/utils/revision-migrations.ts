@@ -614,8 +614,8 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * theme.json ПОСЛЕ того как существующие сайты достигли ревизии 2.0, поэтому
  * version-миграции её не бэкфилят. Аддитивно добавляем в pages[] + pagesData
  * (идемпотентно). Оперирует полной ревизией (нужен pages[]), а не только
- * pagesData. Вызывается ТОЛЬКО для rose — единственной темы с зарегистрированным
- * блоком OrderConfirmation.
+ * pagesData. Вызывается для тем с зарегистрированным блоком OrderConfirmation
+ * (rose, flux, bloom) — см. гейт в orchestrate-миграции.
  */
 function seedCheckoutResultPage(
   out: Record<string, unknown>,
@@ -1476,7 +1476,7 @@ export function migrateRevisionData(
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.
-  if (themeId === 'rose' || themeId === 'flux') {
+  if (themeId === 'rose' || themeId === 'flux' || themeId === 'bloom') {
     return seedCheckoutResultPage(out);
   }
   return out;

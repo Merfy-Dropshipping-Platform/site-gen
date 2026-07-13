@@ -1,64 +1,82 @@
 ---
-// ОЖИВЛЕНИЕ (Фаза B, контракт rose Collections T13): конструкторная схема
-// theme-base Collections.puckConfig поверх разметки верстальщика. Тело +
-// плейсхолдер verbatim (страницы зовут <Collections /> без пропсов — дефолты
-// дают прежний рендер). Канон-дефолты конструктора (headingSize medium /
-// subtitleSize small / titleAlignment 'left' и gridAspect '1:1' из blockDefaults
-// bloom / columns 3) → пиксель верстальщика; дефолтная ветка каждого
-// тернарника = прежняя строка классов байт-в-байт (цвета → токены с
-// пиксель-фоллбеком родных литералов, MANNER.md §7).
+// D-028 (авторитетно): верстка Bloom = НОРМАТИВ. Порт РЕ-ПРОФИЛИРОВАЛ секцию
+// «Коллекции» в навигационную сетку плиток-коллекций (collectionPicker → ссылки
+// /catalog?collection=) — это регрессия относительно верстки. Здесь секция
+// возвращена к НОРМАТИВНОМУ назначению верстальщика: СЕТКА КАРТОЧЕК ТОВАРА
+// (src/components/sections/../.. → /tmp/bloom-theme-ref/.../Collections.astro):
+// заголовок «Сейчас в тренде», 6 реальных товаров (catalogProducts.slice(0,6))
+// через BloomProductCard (картинка + имя + цена + свотчи/размеры + pill
+// «В корзину»), без подзаголовка. Рендер карточек переиспользует ту же
+// разметку, что PopularProducts порта (BloomProductCard SSR + renderCardHtml
+// на гидрации) — чтобы «Коллекции» и «Коллекция товаров» рисовали товары
+// единообразно.
+//
+// Секция остаётся Puck-редактируемой: сохранён section chrome верстальщика
+// (заголовок #e38e9f Urbanist 18/md:20 uppercase, контейнер max-w-[1320px],
+// паддинги, 1→sm:2→lg:3 сетка + gaps), + редактируемые поля (заголовок/размер,
+// текст/размер, колонки, отступы, цветовая схема, выбор коллекции-источника
+// товаров). Дефолт и назначение — сетка товаров.
+import BloomProductCard from "../products/BloomProductCard.astro";
+import { catalogProducts } from "../../data/products";
+
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// Figma 1:19335 — ПУСТОЕ состояние секции «Список коллекций»: дословный заголовок
-// «Список коллекций» (без подзаголовка), а НЕ дефолт-копирайт верстальщика
-// («Сейчас в тренде»). Мерчант задал свой heading/title → его и рендерим.
+
+// Заголовок секции: дефолт верстальщика «Сейчас в тренде». aiText пишет плоскую
+// строку; nested {text} — legacy-фолбэк. title — ещё один legacy-алиас.
 const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Список коллекций";
-// Подзаголовка у верстальщика НЕТ — рендер ТОЛЬКО при непустом пропе.
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Сейчас в тренде";
+// Подзаголовка у верстальщика НЕТ (только заголовок + карточки). Рендерим <p>
+// ТОЛЬКО когда мерчант задал непустой текст. aiText → плоская строка; nested
+// {content} — legacy-фолбэк.
 const sectionSubtitle =
-	typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : undefined;
+	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) &&
+	String(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content).trim()
+		? String(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content)
+		: undefined;
 
-// КОНТРАКТ-ПЛЕЙСХОЛДЕР (Figma 1:19335 / theme-base Collections.astro
-// DEMO_COLLECTIONS): пустой пикер → НЕ мок-товары верстальщика, а 3 пустые
-// квадратные карточки (gray fill = rgb(var(--color-surface)) ≈ #FBFBFB) с
-// лейблом «Коллекция» под каждой. Реальные коллекции магазина подменяют их
-// гидрацией autofillCollections (ниже) — паритет PopularProducts DEMO_PRODUCTS.
-const DEMO_COLLECTIONS = [
-	{ name: "Коллекция" },
-	{ name: "Коллекция" },
-	{ name: "Коллекция" },
-];
+// Канон cards (2-24): сколько товаров показать. 6 = срез верстальщика (и
+// отсутствие пропа) → дефолт-ветка. Носитель гидрации — data-cards на гриде.
+const cardsN =
+	typeof p.cards === "number" && p.cards > 0 ? Math.max(2, Math.min(24, Math.round(p.cards))) : 6;
 
-// Канон headingSize: 'medium' (canon-default) и отсутствие = роль «заголовок
-// секции» верстальщика дословно (18/md:20). Лестница §9: small 15/17, large 22/24.
+// Канон headingSize: 'medium'/отсутствие = заголовок верстальщика дословно
+// (18/md:20 uppercase #e38e9f, токен с пиксель-фоллбеком). Лестница: small
+// 15/17, large 22/24 — как было в порте (стиль заголовка не меняем).
 const headingCls =
 	p.headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
 		: p.headingSize === "large"
 			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
 			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
-// Канон subtitleSize: 'small' (canon-default) и отсутствие = body-роль манеры
-// (Inter 300 16px, muted §1); medium ≈1.2× (19), large ≈1.44× (23) — ряд rose.
+// Канон subtitleSize: 'small'/отсутствие = body-роль манеры (Inter 300 16px,
+// muted); medium ≈1.2× (19), large ≈1.44× (23).
 const subtitleCls =
 	p.subtitleSize === "medium"
 		? "font-inter text-[19px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
 		: p.subtitleSize === "large"
 			? "font-inter text-[23px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
 			: "font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
-// Канон titleAlignment: 'left' (canon-default из blockDefaults) и отсутствие =
-// литерал верстальщика (заголовок слева, без класса). Двигают только center/right.
-const titleAlignCls =
-	p.titleAlignment === "center" ? "text-center" : p.titleAlignment === "right" ? "text-right" : "";
-// Обёртке заголовка класс нужен только при выравнивании или подзаголовке
-// (дефолт = прежний `<div data-animate>` без class байт-в-байт).
-const headWrapCls =
-	[titleAlignCls, sectionSubtitle ? "flex flex-col gap-2" : ""].filter(Boolean).join(" ") ||
-	undefined;
+// Обёртке заголовка класс нужен только при подзаголовке (flex-col gap-2); дефолт
+// = прежний `<div data-animate>` без class байт-в-байт (заголовок верстальщика).
+const headWrapCls = sectionSubtitle ? "flex flex-col gap-2" : undefined;
+
+// Канон imageView square/portrait/wide (+legacy alias adaptive→wide) — aspect
+// карточного медиа. 'square'/отсутствие = 1/1 (aspect-square карточки
+// верстальщика); portrait → 430/500, wide → 16/9. Прокидываем inline
+// aspect-ratio КАЖДОЙ карточке (BloomProductCard aspectRatio / гидрация
+// renderCardHtml) + data-card-aspect на гриде (паритет Popular).
+const cardAspectRatio =
+	p.imageView === "portrait"
+		? "430/500"
+		: p.imageView === "wide" || p.imageView === "adaptive"
+			? "16/9"
+			: "1/1";
 
 // Канон columns 1-6: 3 (canon-default = lg:grid-cols-3 верстальщика) и
-// отсутствие → дефолт-ветка (1→sm:2→lg:3). Заданное значение применяется уже
-// с sm: раньше — только с lg, потому на sm-md (640-1023px) залипало 2 и слайдер
-// игнорировался. Моб (<sm) всегда 1.
+// отсутствие → дефолт-ветка (1→sm:2→lg:3). Заданное значение применяется c sm:
+// раньше — только с lg, потому на sm-md (640-1023px) залипало 2 и слайдер
+// игнорировался. Моб (<sm) всегда 1 (как верстальщик).
 const colsRaw =
 	typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : undefined;
 const cols = colsRaw && colsRaw !== 3 ? colsRaw : undefined;
@@ -69,113 +87,79 @@ const gridCls = cols
 	: gridBase;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
-// Канон imageView square/portrait/wide — «Вид изображения» плиток коллекций
-// (класс НА самой медиа-плитке li>a>div, не override-утилита). 'square'/отсутствие
-// = квадрат манеры (aspect-square §4); 'portrait' → 430/500, 'wide' → 16/9.
-// Паритет rose Collections: настройку ведёт imageView. Раньше тернар гейтил на
-// legacy blockDefaults `gridAspect:'1:1'` ПЕРВЫМ — а он присутствует ВСЕГДА
-// (дефолт темы), поэтому imageView (portrait/wide) до веток не доходил и был
-// МЁРТВ (плитки всегда aspect-square). gridAspect'1:1' теперь = синоним square.
-const tileAspect =
-	p.imageView === "portrait"
-		? "aspect-[430/500]"
-		: p.imageView === "wide"
-			? "aspect-[16/9]"
-			: p.gridAspect === "portrait"
-				? "aspect-[430/500]"
-				: p.gridAspect === "wide"
-					? "aspect-[16/9]"
-					: "aspect-square";
-// Канон cardCaptionStyle: 'uppercase' (canon-default из blockDefaults) и
-// отсутствие = подпись uppercase; 'default' — обычный регистр.
-const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
+// Канон collection (collectionPicker, id или slug) — ИСТОЧНИК товаров секции.
+// Носитель — data-collection на гриде; фильтрацию делает гидрация ниже
+// (resolveCollectionProducts). Пусто → SSG-демо (catalogProducts верстальщика).
+const collectionRef =
+	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
 
-// Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве
-// (название/картинка/ссылка по shape схемы; без картинки — пустая surface-плитка
-// как канон-плейсхолдер). Иначе — пустое состояние (Figma 1:19335): плейсхолдер-
-// плитки DEMO_COLLECTIONS, НЕ мок-демо верстальщика. SSR рендерит сохранённые поля
-// item; резолв collectionId→имя/обложка делает SSR-фетч (ниже) + живая гидрация
-// (data-collection-ref): live — /data/collections.json, превью — storefront-data;
-// паритет theme-base (имя коллекции перебивает ручной heading, обложка — при пустой своей).
-const cardLinkBase =
-	typeof p.cardLinkBase === "string" && p.cardLinkBase.trim() ? p.cardLinkBase : "/catalog?collection=";
-const propCollections = (Array.isArray(p.collections) ? p.collections : [])
-	.filter((c: any) => c && typeof c === "object")
-	.slice(0, 10)
-	.map((c: any, i: number) => {
-		const collectionId =
-			typeof c.collectionId === "string" && c.collectionId.trim() ? c.collectionId.trim() : null;
-		return {
-			collectionId,
-			name:
-				(typeof c.heading === "string" && c.heading) ||
-				(typeof c.name === "string" && c.name) ||
-				"Коллекция",
-			// Плейсхолдер пустого состояния (Figma 1:19335): карточка без выбранной
-			// картинки = ПУСТАЯ surface-плитка (НЕ мок-фото верстальщика). На live/SSR
-			// (data-collection-ref / SSR-резолв ниже) подставится реальное фото коллекции.
-			image: typeof c.image === "string" && c.image ? c.image : "",
-			hasOwnImage: !!(typeof c.image === "string" && c.image),
-			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
-		};
-	});
-const usePropCollections = propCollections.length > 0;
+// SSG-дефолт: 6 реальных demo-товаров верстальщика (catalogProducts). При
+// публикации конкретного сайта клиентская гидрация (ниже) подменяет их
+// реальными товарами (или товарами выбранной коллекции). Первые 3 — priority.
+const demoProducts = catalogProducts.slice(0, cardsN);
 
-// SSR-резолв реальных коллекций по collectionId (Figma-цель: коллекция ВЫБРАНА →
-// реальное имя/обложка ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора —
-// Astro Container не исполняет клиентскую module-гидрацию ниже). Эталон —
-// rose Collections.astro / rose Popular.astro (siteId инжектит рендер-пайплайн
-// preview.service / build). Нет siteId / выбранных collectionId / ошибка →
-// resolved пуст → остаётся SSR (heading/обложка из пропса), живая гидрация ниже
-// освежит данные на live. Паритет theme-base resolveManual: имя коллекции
-// перебивает ручной heading, обложка — только при пустой своей (hasOwnImage).
+// SSR-фетч реальных товаров ВЫБРАННОЙ коллекции (Figma-цель: коллекция выбрана →
+// реальные товары ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора — Astro
+// Container не исполняет клиентскую module-гидрацию ниже). Паритет Popular.astro.
+// siteId инжектит рендер-пайплайн (preview.service / build). Нет коллекции /
+// siteId / ошибка → realProducts пуст → секция рендерит demo-товары верстальщика.
 const siteId = typeof p.siteId === "string" ? p.siteId : "";
-const wantResolve = usePropCollections && propCollections.some((c) => c.collectionId);
-const resolvedCols = new Map<string, { name?: string; image?: string }>();
-if (wantResolve && siteId) {
+const fmtPrice = (v: unknown): string => {
+	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
+	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
+};
+let realProducts: any[] = [];
+if (collectionRef && siteId) {
 	try {
 		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
 		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
 		if (res && res.ok) {
 			const data: any = await res.json();
+			const all: any[] = Array.isArray(data?.products) ? data.products : [];
 			const cols: any[] = Array.isArray(data?.collections) ? data.collections : [];
-			for (const c of propCollections) {
-				if (!c.collectionId) continue;
-				const m = cols.find(
-					(x) =>
-						x &&
-						(x.id === c.collectionId ||
-							x.slug === c.collectionId ||
-							x.name === c.collectionId ||
-							x.handle === c.collectionId),
-				);
-				if (!m) continue;
-				const cover =
-					(typeof m.image === "string" && m.image) ||
-					(Array.isArray(m.images) && typeof m.images[0] === "string" ? m.images[0] : "");
-				resolvedCols.set(c.collectionId, {
-					name: typeof m.name === "string" ? m.name : undefined,
-					image: cover || undefined,
-				});
-			}
+			const matched = cols.find(
+				(c) =>
+					c &&
+					(c.id === collectionRef ||
+						c.slug === collectionRef ||
+						c.name === collectionRef ||
+						c.handle === collectionRef),
+			);
+			const ids =
+				matched && Array.isArray(matched.productIds) && matched.productIds.length
+					? new Set(matched.productIds)
+					: null;
+			const picked = (ids ? all.filter((pr) => pr?.id && ids.has(pr.id)) : all).slice(0, cardsN);
+			realProducts = picked.map((pr) => {
+				const img =
+					Array.isArray(pr?.images) && pr.images[0]
+						? typeof pr.images[0] === "string"
+							? pr.images[0]
+							: (pr.images[0]?.url ?? "")
+						: (pr?.image ?? "");
+				return {
+					id: String(pr?.id ?? ""),
+					name: String(pr?.name ?? pr?.title ?? "Товар"),
+					image: String(img ?? ""),
+					price: fmtPrice(pr?.basePrice ?? pr?.price),
+					oldPrice: fmtPrice(pr?.compareAtPrice ?? pr?.oldPrice),
+					discount: !!(pr?.compareAtPrice || pr?.oldPrice),
+					// BloomProductCard читает colors.length / inStock напрямую — без них
+					// SSR падает. storefront-data их не несёт → дефолты: без свотчей, в
+					// наличии (как реальный сайт).
+					colors: [] as string[],
+					inStock: pr?.inStock !== false,
+					volume: typeof pr?.volume === "string" ? pr.volume : undefined,
+				};
+			});
 		}
 	} catch {
-		/* нет данных — остаётся SSR из пропса, гидрация освежит на live */
+		realProducts = [];
 	}
 }
-// Применяем резолв к карточкам пропса: реальное имя перебивает ручной heading,
-// обложка — только если мерчант не загрузил свою.
-const resolvedCollections = propCollections.map((c) => {
-	const r = c.collectionId ? resolvedCols.get(c.collectionId) : undefined;
-	if (!r) return c;
-	return {
-		...c,
-		name: r.name || c.name,
-		image: c.hasOwnImage ? c.image : r.image || c.image,
-	};
-});
+const products = realProducts.length > 0 ? realProducts : demoProducts;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
@@ -202,58 +186,20 @@ const paddingStyle = p.padding
 			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
-		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle} data-collections-autofill={!usePropCollections ? "" : undefined}>
-			{usePropCollections ? resolvedCollections.map((c, i) => (
-				<li>
-					<a
-						href={c.href}
-						class="group flex w-full cursor-pointer flex-col gap-4"
-						aria-label={c.name}
-						data-nt="bloom-collection-card"
-						data-collection-ref={c.collectionId ?? undefined}
-						data-own-image={c.hasOwnImage ? "true" : undefined}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index={i}
-						data-puck-subsection-field="collections"
-					>
-						<div
-							class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]`}
-							aria-hidden={c.image ? undefined : "true"}
-						>
-							{c.image && (
-								<img
-									src={c.image}
-									alt={c.name}
-									loading="lazy"
-									class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
-								/>
-							)}
-						</div>
-						<h3
-							class={`bloom-collection-name w-full text-left font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70 max-sm:text-[12px]${captionCase}`}
-						>
-							{c.name}
-						</h3>
-					</a>
-				</li>
-			)) : DEMO_COLLECTIONS.map((c) => (
-				<li>
-					<a
-						href="#"
-						class="group flex w-full cursor-pointer flex-col gap-4"
-						aria-label={c.name}
-						data-nt="bloom-collection-card"
-					>
-						<div
-							class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,251_251_251))]`}
-							aria-hidden="true"
-						></div>
-						<h3
-							class={`bloom-collection-name w-full text-left font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70 max-sm:text-[12px]${captionCase}`}
-						>
-							{c.name}
-						</h3>
-					</a>
+		<ul
+			class={gridCls}
+			role="list"
+			data-animate
+			data-animate-delay="0.1s"
+			data-nt="collections-grid"
+			data-cards={cardsN !== 6 ? String(cardsN) : undefined}
+			data-card-aspect={cardAspectRatio}
+			data-collection={collectionRef}
+			style={gridStyle}
+		>
+			{products.map((product: any, index: number) => (
+				<li data-product-id={product.id}>
+					<BloomProductCard product={product} priority={index < 3} aspectRatio={cardAspectRatio} />
 				</li>
 			))}
 		</ul>
@@ -261,76 +207,36 @@ const paddingStyle = p.padding
 </section>
 
 <script>
-	import { loadRealCollections, findCollection, escapeHtml } from "../../lib/storefront-hydrate";
+	import { loadRealProducts, loadRealCollections, resolveCollectionProducts, renderCardHtml, escapeHtml } from "../../lib/storefront-hydrate";
 
-	// Резолв collectionId→имя/обложка на плитках (data-collection-ref).
-	// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading;
-	// обложка коллекции подставляется, только если мерчант не загрузил свою
-	// (data-own-image). Без данных (demo-сборка) — no-op, SSG остаётся.
-	const hydrateCollectionTiles = async () => {
-		const tiles = Array.from(
-			document.querySelectorAll<HTMLElement>('[data-nt="bloom-collection-card"][data-collection-ref]'),
-		);
-		if (tiles.length === 0) return;
-		const collections = await loadRealCollections();
-		if (!collections) return;
-		for (const tile of tiles) {
-			const col = findCollection(collections, tile.getAttribute("data-collection-ref"));
-			if (!col) continue;
-			if (col.name) {
-				const h3 = tile.querySelector(".bloom-collection-name");
-				if (h3 && h3.textContent !== col.name) h3.textContent = col.name;
-				tile.setAttribute("aria-label", col.name);
-			}
-			const cover = col.image || (Array.isArray(col.images) ? col.images[0] : "");
-			if (cover && tile.getAttribute("data-own-image") !== "true") {
-				const img = tile.querySelector("img");
-				if (img && img.getAttribute("src") !== cover) {
-					img.setAttribute("src", cover);
-					if (col.name) img.setAttribute("alt", col.name);
-				}
-			}
+	// Реальные товары (Option B, паритет Popular): первые N из /data/products.json
+	// (N = data-cards грида, дефолт 6 — срез верстальщика). Выбранная коллекция
+	// (data-collection) → фильтр по товарам коллекции. Demo-сборка → no-op
+	// (остаётся SSG-разметка demo-товаров верстальщика).
+	const hydrateCollections = async () => {
+		const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-nt="collections-grid"]'));
+		if (grids.length === 0) return;
+		const products = await loadRealProducts();
+		if (!products) return;
+		const needCollections = grids.some((g) => g.getAttribute("data-collection"));
+		const collections = needCollections ? await loadRealCollections() : null;
+		for (const grid of grids) {
+			const limitRaw = Number(grid.getAttribute("data-cards"));
+			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 6;
+			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
+			const collectionRef = grid.getAttribute("data-collection");
+			// Выбрана коллекция → её товары; иначе — первые N всего каталога магазина.
+			const pool = collectionRef
+				? resolveCollectionProducts(products, collections, collectionRef)
+				: products;
+			if (pool.length === 0) continue;
+			const items = pool.slice(0, limit);
+			grid.innerHTML = items
+				.map((pr) => `<li data-product-id="${escapeHtml(pr.id)}">${renderCardHtml(pr, cardAspect)}</li>`)
+				.join("");
 		}
 	};
 
-	// АВТОПОДСТАНОВКА: пустой пикер (SSR = плейсхолдер-карточки «Коллекция») →
-	// реальные коллекции магазина из /data/collections.json (live) / storefront-data
-	// (превью). Явный выбор в пикере имеет приоритет (грид не помечен
-	// data-collections-autofill). Реальных нет (demo-сборка без collections.json) →
-	// no-op, плейсхолдер остаётся (контракт-заглушка Figma 1:19335, НЕ мок-фото
-	// верстальщика). Разметка плитки = propCollections-ветка bloom (canon-default при
-	// пустом пикере: gridAspect '1:1' → aspect-square, cardCaptionStyle 'uppercase').
-	// Обложка: своя картинка коллекции, иначе ПУСТАЯ surface-плитка (паритет rose
-	// Collections — не дизайнерский мок верстальщика).
-	const autofillCollections = async () => {
-		const grids = Array.from(document.querySelectorAll<HTMLElement>("ul[data-collections-autofill]"));
-		if (grids.length === 0) return;
-		const collections = await loadRealCollections();
-		if (!collections || collections.length === 0) return;
-		const visible = collections.filter((c) => c && c.slug !== "general").slice(0, 6);
-		if (visible.length === 0) return;
-		const html = visible
-			.map((c) => {
-				const name = escapeHtml(c.name || "Коллекция");
-				const ref = c.slug || c.id || "";
-				const href = "/catalog?collection=" + encodeURIComponent(ref);
-				const cover = c.image || (Array.isArray(c.images) ? c.images[0] : "") || "";
-				const media = cover
-					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="!h-full !w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]" />`
-					: "";
-				return `<li><a href="${href}" class="group flex w-full cursor-pointer flex-col gap-4" aria-label="${name}" data-nt="bloom-collection-card">
-			<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">${media}</div>
-			<h3 class="bloom-collection-name w-full text-left font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70 max-sm:text-[12px] uppercase">${name}</h3>
-		</a></li>`;
-			})
-			.join("");
-		for (const grid of grids) grid.innerHTML = html;
-	};
-
-	hydrateCollectionTiles();
-	autofillCollections();
-	document.addEventListener("astro:page-load", () => {
-		hydrateCollectionTiles();
-		autofillCollections();
-	});
+	hydrateCollections();
+	document.addEventListener("astro:page-load", hydrateCollections);
 </script>

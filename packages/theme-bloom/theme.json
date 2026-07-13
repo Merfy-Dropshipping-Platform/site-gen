@@ -61,6 +61,10 @@
       "contentAlign": "left"
     },
     "Collections": {
+      "heading": "Сейчас в тренде",
+      "cards": 6,
+      "columns": 3,
+      "imageView": "square",
       "cardCaptionStyle": "uppercase",
       "gridAspect": "1:1",
       "titleAlignment": "left"
@@ -78,6 +82,10 @@
       "ctaPosition": "bottom-pinned"
     },
     "PopularProducts": {
+      "heading": "Главные хиты",
+      "text": "Бестселлеры бренда — формулы, за которыми возвращаются снова и снова.",
+      "cards": 4,
+      "imageView": "square",
       "cardCaptionStyle": "uppercase",
       "headingAlignment": "left"
     },

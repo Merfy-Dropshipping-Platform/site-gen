@@ -2,6 +2,7 @@
   "name": "sites",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.14.0",
   "scripts": {
     "start": "NODE_ENV=production node dist/src/main.js",
     "start:dev": "nest start --watch",
@@ -31,8 +32,13 @@
     "figma:theme-readiness": "tsx scripts/figma/theme-readiness.ts",
     "validate:blocks": "tsx scripts/validate-blocks.mjs",
     "validate:page-seeds": "node scripts/validate-page-seeds.mjs",
+    "theme:validate:bloom": "tsx packages/theme-contract/cli/validate.ts --theme bloom --themes-dir packages",
     "smoke:sites": "node scripts/smoke-99-sites.mjs",
-    "new:block": "node scripts/new-block.mjs"
+    "new:block": "node scripts/new-block.mjs",
+    "conformance:bloom:propose-requirements": "tsx scripts/theme-conformance.ts --theme bloom --report-dir conformance-results/bloom --propose-requirements conformance-results/bloom/requirements.proposal.json",
+    "conformance:bloom": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom",
+    "conformance:bloom:diagnose": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom --diagnose",
+    "conformance:bloom:release": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom --require-zero"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

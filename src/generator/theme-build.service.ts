@@ -19,6 +19,11 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { constants as fsConstants } from "fs";
 import { runCommand } from "./build.service";
+import {
+  resolvePnpmInvocation,
+  PNPM_INSTALL_ARGS,
+  PNPM_ASTRO_BUILD_ARGS,
+} from "./pnpm-invocation";
 
 /**
  * URL prefix under which built theme previews are served as static assets
@@ -180,10 +185,16 @@ export class ThemeBuildService {
     // join the monorepo pnpm workspace (which carries Astro 4 / lacks theme deps,
     // leaving node_modules empty). Verified required — the .npmrc key alone does
     // not isolate when a parent pnpm-workspace.yaml exists.
-    this.logger.log(`[theme-build] "${themeName}" pnpm install ...`);
+    //
+    // Resolve the pnpm invocation explicitly (F-048): a bare `pnpm` spawn can
+    // drift to an incompatible global pnpm even under `corepack pnpm exec`. The
+    // Nest/runtime + build-all-themes keep the bare fallback (Docker installs
+    // 10.14.0); the diagnostic runner opts into MERFY_PNPM_MODE=corepack.
+    const pnpm = resolvePnpmInvocation();
+    this.logger.log(`[theme-build] "${themeName}" ${pnpm.command} install ...`);
     const install = await runCommand(
-      "pnpm",
-      ["install", "--ignore-workspace", "--prefer-offline"],
+      pnpm.command,
+      [...pnpm.argsPrefix, ...PNPM_INSTALL_ARGS],
       themeDir,
       300_000,
       { NODE_AUTH_TOKEN: authToken },
@@ -209,9 +220,12 @@ export class ThemeBuildService {
     themeDir: string,
   ): Promise<void> {
     this.logger.log(`[theme-build] "${themeName}" astro build ...`);
+    // Same resolved pnpm invocation as install (F-048): both the standalone
+    // install and this `exec astro build` must go through the same pinned binary.
+    const pnpm = resolvePnpmInvocation();
     const build = await runCommand(
-      "pnpm",
-      ["exec", "astro", "build"],
+      pnpm.command,
+      [...pnpm.argsPrefix, ...PNPM_ASTRO_BUILD_ARGS],
       themeDir,
       300_000,
       { NODE_AUTH_TOKEN: process.env.NODE_AUTH_TOKEN ?? "" },

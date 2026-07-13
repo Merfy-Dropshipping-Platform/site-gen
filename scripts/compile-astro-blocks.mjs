@@ -18,6 +18,15 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+// Extracted block source-root + flat-artifact-naming rules (spec Task 3). Single
+// source of truth shared with the conformance source snapshot.
+import {
+  isThemePackage,
+  blockSourceRoot,
+  flatArtifactName,
+  flatIndexArtifactName,
+  blockArtifactBaseName,
+} from './lib/block-source-layout.mjs';
 
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
@@ -34,9 +43,9 @@ async function findAstroBlocks() {
   for (const pkg of pkgs) {
     if (!pkg.isDirectory()) continue;
     // Only packages starting with "theme-" (theme-base, theme-rose, etc.)
-    if (!pkg.name.startsWith('theme-')) continue;
+    if (!isThemePackage(pkg.name)) continue;
 
-    const blocksDir = path.join(PACKAGES_DIR, pkg.name, 'blocks');
+    const blocksDir = blockSourceRoot(SITES_ROOT, pkg.name);
     try {
       const blockDirs = await fs.readdir(blocksDir, { withFileTypes: true });
       for (const blockDir of blockDirs) {
@@ -75,10 +84,10 @@ async function findTsOnlyBlocks() {
   const pkgs = await fs.readdir(PACKAGES_DIR, { withFileTypes: true });
   for (const pkg of pkgs) {
     if (!pkg.isDirectory()) continue;
-    if (!pkg.name.startsWith('theme-')) continue;
+    if (!isThemePackage(pkg.name)) continue;
     if (pkg.name === 'theme-base') continue; // base is covered by findAstroBlocks
 
-    const blocksDir = path.join(PACKAGES_DIR, pkg.name, 'blocks');
+    const blocksDir = blockSourceRoot(SITES_ROOT, pkg.name);
     try {
       const blockDirs = await fs.readdir(blocksDir, { withFileTypes: true });
       for (const blockDir of blockDirs) {
@@ -323,8 +332,8 @@ async function compileSiblingTs(pkg, blockName, blockDirPath, tsFileName) {
   const stripped = stripTypes(source, srcPath);
   const rewritten = rewriteRelativeImports(stripped, pkg, blockName);
 
-  const baseName = tsFileName.replace(/\.ts$/, '');
-  const outName = `${pkg}__${blockName}__${baseName}.mjs`;
+  const baseName = blockArtifactBaseName(tsFileName);
+  const outName = flatArtifactName(pkg, blockName, baseName);
   const outPath = path.join(DIST_DIR, outName);
   await fs.writeFile(outPath, rewritten, 'utf-8');
   return outPath;
@@ -359,9 +368,9 @@ async function compileOne(entry) {
   // For non-block entries, blockName already contains the category (e.g. 'layouts__BaseLayout'),
   // so fileName is the same as blockName's trailing segment — to avoid double-suffix we still
   // append the bare file base just once.
-  const baseName = entry.fileName.replace(/\.astro$/, '');
+  const baseName = blockArtifactBaseName(entry.fileName);
   const outName = entry.kind === 'block'
-    ? `${entry.pkg}__${entry.blockName}__${baseName}.mjs`
+    ? flatArtifactName(entry.pkg, entry.blockName, baseName)
     : `${entry.pkg}__${entry.blockName}.mjs`;
   const outPath = path.join(DIST_DIR, outName);
   await fs.mkdir(DIST_DIR, { recursive: true });
@@ -400,7 +409,7 @@ async function compileTsOnlyBlock(entry) {
   }
   return {
     entry: { ...entry, fileName: 'index.ts', kind: 'ts-only-block' },
-    outPath: path.join(DIST_DIR, `${entry.pkg}__${entry.blockName}__index.mjs`),
+    outPath: path.join(DIST_DIR, flatIndexArtifactName(entry.pkg, entry.blockName)),
     byteLength: 0,
     siblings: siblingOutputs,
   };

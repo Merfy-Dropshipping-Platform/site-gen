@@ -1,0 +1,4 @@
+packages:
+  - packages/theme-contract
+  - packages/theme-base
+  - packages/theme-bloom

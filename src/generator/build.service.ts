@@ -19,6 +19,9 @@ import { timeout } from "rxjs/operators";
 import { resolveAssetUrls } from "../themes/asset-resolver";
 import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
+// Shared cart-drawer globals resolver — same export the preview controller
+// uses, so live ≡ preview byte-for-byte (F-054).
+import { resolveCartDrawerGlobals } from "../themes/cart-drawer-contract";
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
@@ -1221,31 +1224,9 @@ export async function runBuildPipeline(
       // темы вешает .color-scheme-N на #cart-drawer-root + рендерит дисклеймер.
       // Без корзины/схемы — глобал не инжектится (дровер как раньше).
       try {
-        const cartContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { colorScheme?: unknown } }> }> } | null)
-          ?.pagesData?.['page-cart']?.content;
-        const findScheme = (t: string) => {
-          const blk = Array.isArray(cartContent) ? cartContent.find((b) => b?.type === t) : undefined;
-          const s = blk?.props?.colorScheme;
-          return typeof s === 'string' && /^scheme-\d+$/.test(s) ? s : undefined;
-        };
-        const cartScheme = findScheme('CartBody') ?? findScheme('CartSummary');
-        // Редактируемые тексты дровера из настроек темы конструктора (панель
-        // «Корзина»): заголовок / текст кнопки оформления / текст пустой корзины.
-        // Пусто → глобал не инжектится, дровер показывает дефолт темы (DS).
-        const cartTs = (ctx.revisionData as { themeSettings?: { cartDrawerTitle?: unknown; cartDrawerCheckoutText?: unknown; cartDrawerEmptyText?: unknown } } | null)?.themeSettings;
-        const trimStr = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
-        const drawerGlobals: Record<string, string> = {};
-        if (cartScheme) {
-          drawerGlobals.__MERFY_CART_DRAWER_SCHEME__ = cartScheme;
-          drawerGlobals.__MERFY_CART_DRAWER_DISCLAIMER__ =
-            'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.';
-        }
-        const dTitle = trimStr(cartTs?.cartDrawerTitle);
-        if (dTitle) drawerGlobals.__MERFY_CART_DRAWER_TITLE__ = dTitle;
-        const dCheckout = trimStr(cartTs?.cartDrawerCheckoutText);
-        if (dCheckout) drawerGlobals.__MERFY_CART_DRAWER_CHECKOUT__ = dCheckout;
-        const dEmpty = trimStr(cartTs?.cartDrawerEmptyText);
-        if (dEmpty) drawerGlobals.__MERFY_CART_DRAWER_EMPTY__ = dEmpty;
+        // Shared resolver (F-054): identical algorithm the preview controller
+        // uses → live drawer globals ≡ preview drawer globals byte-for-byte.
+        const drawerGlobals = resolveCartDrawerGlobals(ctx.revisionData);
         if (Object.keys(drawerGlobals).length > 0) {
           const n = await injectGlobalsIntoDist(ctx.distDir, drawerGlobals);
           logger.log(`[themes-v2] Injected cart drawer globals [${Object.keys(drawerGlobals).join(', ')}] into ${n} HTML files for site ${params.siteId}`);

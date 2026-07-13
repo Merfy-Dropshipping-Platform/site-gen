@@ -32,3 +32,8 @@ docs/figma-snapshots/
 
 # Migration backups from migrate-block-to-tokens.mjs (timestamped .bak.<ms>)
 *.bak.[0-9]*
+
+# Theme structural-conformance local evidence (JSON/Markdown reports).
+# The TRACKED inventory (conformance/inventory/) and baselines
+# (conformance/baselines/) are intentionally NOT ignored.
+conformance-results/

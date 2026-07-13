@@ -16,6 +16,10 @@ import {
   type BaseBlockEntry,
   type ThemeConfigForResolver,
 } from '../../packages/theme-contract/resolver/resolveBlocks';
+import {
+  THEME_PUCK_BASE_BLOCK_NAMES,
+  THEME_PUCK_BASE_BLOCKS,
+} from '../themes/theme-puck-block-catalog';
 
 const ROOT = resolve(__dirname, '..', '..');
 
@@ -70,11 +74,18 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
     expect(vanilla.id).toBe('vanilla');
     expect(rose.id).toBe('rose');
     expect(vanilla.defaults['--container-max-width']).toBe('1320px');
-    // Фаза 3 defaults-сверка под верстальщика: внешняя обёртка rose 1920px
-    // (Header/Footer max-w-[1920px]), CTA радиус 6px (MANNER.md §3).
-    expect(rose.defaults['--container-max-width']).toBe('1920px');
+    // F-047: intentional commit 6d052b54 changed Rose --container-max-width
+    // 1920→1320 ("контент-блоки по сетке"). The old 1920px expectation/comment
+    // below was stale test debt — updated to the current manifest value. Rose
+    // production defaults are NOT changed as part of Bloom conformance.
+    expect(rose.defaults['--container-max-width']).toBe('1320px');
     expect(vanilla.defaults['--radius-button']).toBe('0px');
-    expect(rose.defaults['--radius-button']).toBe('6px');
+    // Same stale-test class as F-047: commit 57b5f75c ("оживить theme-настройку
+    // «Скругления» — токенизировать захардкоженные радиусы") intentionally moved
+    // rose --radius-button 6→8px. This assertion was masked by the container
+    // expectation above throwing first; updated to the current manifest value.
+    // Rose production defaults are NOT changed as part of Bloom conformance.
+    expect(rose.defaults['--radius-button']).toBe('8px');
   });
 
   it('bloom manifest inherits Header + Footer from base (spec 089 — no overrides)', () => {
@@ -157,6 +168,79 @@ describe('Theme manifest resolver (Phase 2a multi-theme wiring)', () => {
       expect(resolved.Footer.source).toBe('base');
       expect(resolved.Hero.source).toBe('base');
       expect(resolved.AuthModal.source).toBe('base');
+    }
+  });
+});
+
+describe('ThemePuckConfigController base-block catalog parity (extraction)', () => {
+  // The controller previously hard-coded a 35-entry BASE_BLOCKS array inline.
+  // Task 3 extracted it byte-for-byte into theme-puck-block-catalog.ts and the
+  // controller now imports THEME_PUCK_BASE_BLOCKS. These assertions pin the
+  // canonical list + shape so a future edit to either the controller or the
+  // catalog cannot silently diverge.
+  const EXPECTED_NAMES = [
+    // 18 content blocks
+    'Hero',
+    'PromoBanner',
+    'PopularProducts',
+    'Collections',
+    'Gallery',
+    'Product',
+    'MainText',
+    'ImageWithText',
+    'Slideshow',
+    'MultiColumns',
+    'MultiRows',
+    'CollapsibleSection',
+    'Newsletter',
+    'ContactForm',
+    'Video',
+    'Publications',
+    'Page',
+    'CartSection',
+    'CheckoutSection',
+    'CartBody',
+    'CartSummary',
+    'CartTotals',
+    'CartCheckoutButton',
+    'CheckoutForm',
+    'CheckoutSummary',
+    'OrderConfirmation',
+    'Catalog',
+    // 7 chrome blocks
+    'Header',
+    'Footer',
+    'CheckoutHeader',
+    'AuthModal',
+    'CartDrawer',
+    'CheckoutLayout',
+    'AccountLayout',
+  ];
+
+  it('preserves the exact ordered base-block name list', () => {
+    expect([...THEME_PUCK_BASE_BLOCK_NAMES]).toEqual(EXPECTED_NAMES);
+  });
+
+  it('derives { source:"base", path:<name> } for every catalog entry', () => {
+    expect(Object.keys(THEME_PUCK_BASE_BLOCKS)).toEqual(EXPECTED_NAMES);
+    for (const name of EXPECTED_NAMES) {
+      expect(THEME_PUCK_BASE_BLOCKS[name]).toEqual({
+        source: 'base',
+        path: name,
+      });
+    }
+  });
+
+  it('resolves every base block to `base` for a no-override manifest (controller wiring)', () => {
+    const noOverride: ThemeConfigForResolver = {
+      blocks: {},
+      features: {},
+      customBlocks: {},
+    };
+    const resolved = resolveBlocks(THEME_PUCK_BASE_BLOCKS, noOverride);
+    for (const name of EXPECTED_NAMES) {
+      expect(resolved[name].source).toBe('base');
+      expect(resolved[name].path).toBe(name);
     }
   });
 });

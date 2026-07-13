@@ -32,6 +32,12 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { buildTokensCss } from "../themes/tokens-css";
 import { googleFontsHref } from "./constructor-theme-bridge";
+// Assembler destination mapping — extracted so conformance can prove generator
+// importPath matches the real assembler destination (single source of truth).
+import {
+  blocksDestinationDir,
+  customBlocksDestinationDir,
+} from "./block-assembly-layout";
 
 /**
  * Env-var flag for new assembly path.
@@ -289,7 +295,7 @@ async function copyBlocksFromPackage(
 ): Promise<string[]> {
   const blocksRoot = path.join(pkgDir, "blocks");
   if (!(await dirExists(blocksRoot))) return [];
-  const componentsDir = path.join(outputDir, "src", "components");
+  const componentsDir = blocksDestinationDir(outputDir);
   await fs.mkdir(componentsDir, { recursive: true });
   const copiedBlocks: string[] = [];
   const blockDirs = await fs.readdir(blocksRoot, { withFileTypes: true });
@@ -356,7 +362,7 @@ async function copyCustomBlocks(
 ): Promise<void> {
   const src = path.join(pkgDir, "customBlocks");
   if (!(await dirExists(src))) return;
-  const dest = path.join(outputDir, "src", "customBlocks");
+  const dest = customBlocksDestinationDir(outputDir);
   await copyRecursive(src, dest, tracked, outputDir);
 }
 

@@ -4,6 +4,11 @@ import {
   themeLiveDistFor,
   copyThemeV2Dist,
 } from "../build.service";
+import {
+  BLOCK_ASSEMBLY_DESTINATIONS,
+  blocksDestinationDir,
+  customBlocksDestinationDir,
+} from "../block-assembly-layout";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import * as os from "os";
@@ -30,6 +35,26 @@ describe("themeLiveDistFor", () => {
   it("anchors at dist/theme-live/<theme> under cwd", () => {
     expect(themeLiveDistFor("rose")).toBe(
       path.join(process.cwd(), "dist", "theme-live", "rose"),
+    );
+  });
+});
+
+describe("assembler destination mapping preserved (block-assembly-layout extraction)", () => {
+  // The assembler (assemble-from-packages.ts) now consumes the extracted
+  // destination helpers. Pin the mapping so the generator importPath and the
+  // real copy destination cannot drift.
+  it("maps blocks -> src/components and customBlocks -> src/customBlocks", () => {
+    expect(BLOCK_ASSEMBLY_DESTINATIONS).toEqual({
+      blocks: "src/components",
+      customBlocks: "src/customBlocks",
+    });
+  });
+  it("resolves absolute destination dirs under an outputDir", () => {
+    expect(blocksDestinationDir("/out")).toBe(
+      path.join("/out", "src", "components"),
+    );
+    expect(customBlocksDestinationDir("/out")).toBe(
+      path.join("/out", "src", "customBlocks"),
     );
   });
 });

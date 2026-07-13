@@ -36,6 +36,11 @@ import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
+// Shared cart-drawer globals resolver (extracted; live BuildService uses the
+// same export → preview ≡ live byte-for-byte).
+import { resolveCartDrawerGlobals } from '../themes/cart-drawer-contract';
+// Preview-only demo cart seed script (extracted generator).
+import { buildPreviewCartDemoScript } from '../themes/preview-cart-contract';
 
 // Версия для cache-bust превью-скриптов. ОБЯЗАНА меняться на каждый деплой.
 // gateway отдаёт /__theme/*.js с max-age=3600 БЕЗ content-хэша → превью-iframe
@@ -934,50 +939,9 @@ export class PreviewController {
    * берёт ту же схему/тексты, что живой (баг «корзина не принимает цв схему»).
    */
   private cartDrawerGlobalsFromRevision(data: unknown): Record<string, string> {
-    const g: Record<string, string> = {};
-    try {
-      const cartContent = (
-        data as {
-          pagesData?: Record<
-            string,
-            { content?: Array<{ type?: string; props?: { colorScheme?: unknown } }> }
-          >;
-        } | null
-      )?.pagesData?.['page-cart']?.content;
-      const findScheme = (t: string): string | undefined => {
-        const blk = Array.isArray(cartContent)
-          ? cartContent.find((b) => b?.type === t)
-          : undefined;
-        const s = blk?.props?.colorScheme;
-        return typeof s === 'string' && /^scheme-\d+$/.test(s) ? s : undefined;
-      };
-      const scheme = findScheme('CartBody') ?? findScheme('CartSummary');
-      const ts = (
-        data as {
-          themeSettings?: {
-            cartDrawerTitle?: unknown;
-            cartDrawerCheckoutText?: unknown;
-            cartDrawerEmptyText?: unknown;
-          };
-        } | null
-      )?.themeSettings;
-      const trim = (v: unknown): string | undefined =>
-        typeof v === 'string' && v.trim() ? v.trim() : undefined;
-      if (scheme) {
-        g.__MERFY_CART_DRAWER_SCHEME__ = scheme;
-        g.__MERFY_CART_DRAWER_DISCLAIMER__ =
-          'Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.';
-      }
-      const t = trim(ts?.cartDrawerTitle);
-      if (t) g.__MERFY_CART_DRAWER_TITLE__ = t;
-      const c = trim(ts?.cartDrawerCheckoutText);
-      if (c) g.__MERFY_CART_DRAWER_CHECKOUT__ = c;
-      const e = trim(ts?.cartDrawerEmptyText);
-      if (e) g.__MERFY_CART_DRAWER_EMPTY__ = e;
-    } catch {
-      /* пусто — дефолт темы */
-    }
-    return g;
+    // Delegates to the shared resolver so preview ≡ live (F-054). Live
+    // BuildService.injectGlobalsIntoDist consumes the SAME export.
+    return resolveCartDrawerGlobals(data);
   }
 
   /**
@@ -992,24 +956,8 @@ export class PreviewController {
    * корзину (мерчант мог тестово что-то добавить).
    */
   private previewCartDemoScript(siteId: string, themeName: string): string {
-    const key = `${themeName}:cart:v1`;
-    const evUpdated = `${themeName}:cart:updated`;
-    return (
-      `<script>(function(){try{` +
-      `var K=${JSON.stringify(key)};` +
-      `if(window.localStorage.getItem(K))return;` +
-      `fetch('/api/sites/'+${JSON.stringify(siteId)}+'/storefront-data').then(function(r){return r.json();}).then(function(d){` +
-      `var ps=(d&&d.products)||[];var p=ps[0];if(!p)return;` +
-      `if(window.localStorage.getItem(K))return;` +
-      `var cs=Array.isArray(p.variantCombinations)?p.variantCombinations:[];var c=cs[0]||null;` +
-      `var line={id:'preview-demo',productId:String(p.id),quantity:1,name:p.name||'Товар',` +
-      `image:(Array.isArray(p.images)&&p.images[0])||'',price:c?Number(c.price):(Number(p.price)||0),` +
-      `variant:c?{variantCombinationId:String(c.id)}:{}};` +
-      `window.localStorage.setItem(K,JSON.stringify([line]));` +
-      `window.dispatchEvent(new CustomEvent(${JSON.stringify(evUpdated)},{detail:[line]}));` +
-      `}).catch(function(){});` +
-      `}catch(e){}})();</script>`
-    );
+    // Delegates to the extracted preview-only generator (byte-identical).
+    return buildPreviewCartDemoScript(siteId, themeName);
   }
 
   private collectionSlugFromRoute(route: string): string | null {

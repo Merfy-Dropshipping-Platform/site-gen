@@ -13,8 +13,17 @@ RUN npm install -g pnpm@10.14.0
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=${NODE_AUTH_TOKEN}
 
-COPY package.json pnpm-lock.yaml .npmrc ./
-RUN pnpm install
+# Dependency layer: copy the narrow workspace manifest + the three workspace
+# package manifests BEFORE install so the clean image creates the package-local
+# importers (theme-contract/theme-base/theme-bloom → their own Zod 3), not just
+# root Zod 4 (F-044/F-046). All workspace importers are now locked, so this is
+# a --frozen-lockfile install. Cache boundary (this layer only invalidates when
+# a manifest/lock/workspace/npmrc changes) is preserved.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY packages/theme-contract/package.json ./packages/theme-contract/package.json
+COPY packages/theme-base/package.json ./packages/theme-base/package.json
+COPY packages/theme-bloom/package.json ./packages/theme-bloom/package.json
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 # cache-bust: 2026-05-10-popular-rich-card

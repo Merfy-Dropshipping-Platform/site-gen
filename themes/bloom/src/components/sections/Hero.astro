@@ -77,7 +77,8 @@ const PH_BACKGROUND_IMAGE = "/placeholders/landscape-image.png";
 const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:
-//   • p.size — ВЫСОТА секции (heroHeightCls ниже). НЕ шрифт.
+//   • p.size — ВЫСОТА-ЭТАЖ секции (min-h-модификатор поверх aspect-лесенки верстки,
+//     heroHeightCls ниже). НЕ шрифт, НЕ ломает нормативный силуэт.
 //   • heading.size / text.size — размер ШРИФТА заголовка/текста (поля «Размер
 //     заголовка»/«Размер текста»). Возвращены по решению владельца (откат unify
 //     ee611471). font-size берётся ТОЛЬКО из heading.size/text.size, БЕЗ фолбэка
@@ -100,18 +101,25 @@ const subtitleCls =
 		: textSize === "medium"
 			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
 			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
-// «Размер» → высота секции (вьюпорт). Раньше высоту Hero диктовал aspect-[...] на
-// height-div'е, перебивая min-h от size → регулятор «Размер» не влиял (паритет бага
-// rose). Фикс: aspect убран с обоих height-div'ов (empty + filled), высоту ведёт
-// ТОЛЬКО heroHeightCls. large (дефолт bloom blockDefaults) ≈ прежней высоте полотна
-// (aspect 1920/925 на десктопе) — подняты значения и добавлены брейкпоинты; medium/
-// small заметно ниже. Дефолт (p.size не задан) = large.
+// ОЖИВЛЕНИЕ (F-002): силуэт Hero диктует ПОБРЕЙКПОИНТНАЯ aspect-ratio-лесенка
+// верстальщика (нормативный визуал) — это ДЕФОЛТ-геометрия. Ранее порт заменил её
+// на size-driven min-h-лесенку, из-за чего силуэт секции менялся на каждом брейкпоинте
+// (потеря пропорций верстки 375/716 → 768/968 → 1280/968 → 1920/925). Возвращаем
+// aspect-лесенку как форму, а «Размер» (p.size) делаем МОДИФИКАТОРОМ поверх неё через
+// min-h-этаж: aspect держит пропорцию, min-h гарантирует минимальную высоту. large
+// (дефолт bloom blockDefaults) = базовый этаж верстки (min-h-[560px]); medium/small
+// понижают этаж. Так силуэт верстальщика — дефолт, «Размер» — редактируемый регулятор.
+const HERO_ASPECT_CLS =
+	"aspect-[375/716] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]";
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
-const heroHeightCls = {
-	large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[620px] xl:min-h-[680px] 2xl:min-h-[720px]",
-	medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[500px] xl:min-h-[540px]",
-	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[380px] xl:min-h-[400px]",
+const heroMinHCls = {
+	large: "min-h-[560px]",
+	medium: "min-h-[440px]",
+	small: "min-h-[340px]",
 }[heroSize];
+// Форма = aspect верстки; высота-этаж = size-модификатор. Порядок классов не важен
+// (обе группы — utility'и Tailwind), но держим aspect первым как «нормативную форму».
+const heroHeightCls = `${HERO_ASPECT_CLS} ${heroMinHCls}`;
 
 // «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
 // (max-w/gap/padding) + кнопку CTA — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
@@ -339,6 +347,17 @@ const paddingStyle = p.padding
 			/>
 		)
 	}
+
+	{/* ОЖИВЛЕНИЕ (F-002): mobile-only градиент-скрим верстальщика снизу-вверх за
+	    текстом для читаемости на мобиле (на десктопе md:hidden — контент уходит в
+	    боковой блок с достаточным контрастом). Порт этот скрим потерял; возвращаем
+	    дословно (z-[5] между фото z-0 и контентом z-10). pointer-events-none — чтобы
+	    не перехватывать клики. */}
+	<div
+		class="pointer-events-none absolute inset-0 z-[5] bg-gradient-to-t from-black/75 via-black/40 via-40% to-transparent md:hidden"
+		aria-hidden="true"
+	>
+	</div>
 
 	<div
 		class={`relative w-full ${heroHeightCls}`}

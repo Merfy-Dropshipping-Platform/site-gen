@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { validateBlock } from '@merfy/theme-contract/validators/validateBlock';
 import {
@@ -92,6 +93,73 @@ describe('Publications block', () => {
       expect(parsed.data.cardsCount).toBe(4);
       expect(parsed.data.columnsCount).toBe(4);
     }
+  });
+
+  it('uses current count fields and synchronizes their legacy aliases', () => {
+    const parsed = PublicationsStoredSchema.parse({
+      heading: 'Publications',
+      cards: 3,
+      cardsCount: 5,
+      columns: 2,
+      columnsCount: 4,
+      padding: { top: 80, bottom: 80 },
+    });
+
+    expect(parsed).toMatchObject({
+      cards: 4,
+      cardsCount: 4,
+      columns: 4,
+      columnsCount: 4,
+    });
+    expect(PublicationsStoredSchema.parse(parsed)).toEqual(parsed);
+  });
+
+  it('keeps legacy-only count fields as the effective values', () => {
+    const parsed = PublicationsStoredSchema.parse({
+      heading: 'Publications',
+      cards: 2,
+      columns: 1,
+      padding: { top: 80, bottom: 80 },
+    });
+
+    expect(parsed).toMatchObject({
+      cards: 2,
+      cardsCount: 2,
+      columns: 1,
+      columnsCount: 1,
+    });
+  });
+
+  it('direct Astro selects current count aliases before clamping legacy fallbacks', () => {
+    const astro = readFileSync(
+      path.resolve(__dirname, '../blocks/Publications/Publications.astro'),
+      'utf8',
+    );
+
+    expect(astro).toContain(
+      'const cardsResolved = clampPublicationCount(raw.cardsCount ?? raw.cards);',
+    );
+    expect(astro).toContain(
+      'const columnsResolved = clampPublicationCount(raw.columnsCount ?? raw.columns);',
+    );
+  });
+
+  it('malformed current count aliases use the canonical fallback before legacy values', () => {
+    const parsed = PublicationsStoredSchema.parse({
+      heading: 'Publications',
+      cards: 2,
+      cardsCount: 'bad',
+      columns: 1,
+      columnsCount: 'bad',
+      padding: { top: 80, bottom: 80 },
+    });
+
+    expect(parsed).toMatchObject({
+      cards: 3,
+      cardsCount: 3,
+      columns: 3,
+      columnsCount: 3,
+    });
   });
 
   it('flat showDateTime wins and legacy dateTime.enabled remains a fallback', () => {

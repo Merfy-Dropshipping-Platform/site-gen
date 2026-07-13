@@ -98,8 +98,8 @@ const items: Article[] = (hasRealPublications
 );
 
 // Pupa parity: cardsCount, columnsCount, headingAlignment, headingSize, dateTime.enabled, colorScheme.
-const cardsResolved = clampPublicationCount(raw.cardsCount, cards);
-const columnsResolved = clampPublicationCount(raw.columnsCount, columns);
+const cardsResolved = clampPublicationCount(raw.cardsCount ?? raw.cards);
+const columnsResolved = clampPublicationCount(raw.columnsCount ?? raw.columns);
 const headingObj = raw.heading;
 const headingAlignment =
   (typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined) ??

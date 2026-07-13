@@ -1,5 +1,11 @@
 ---
-import type { PublicationsProps } from './Publications.puckConfig';
+import {
+  clampPublicationCount,
+  filterPublicationsByType,
+  resolvePublicationsDateTime,
+  resolvePublicationsType,
+  type PublicationsProps,
+} from './Publications.puckConfig';
 import { PublicationsClasses as C } from './Publications.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 import { sanitizeInline } from '../../runtime/rich-text';
@@ -78,8 +84,9 @@ const DEMO_ARTICLES: Article[] = [
 ];
 
 const hasRealPublications = realPublications.length > 0;
+const filteredPublications = filterPublicationsByType(realPublications, resolvePublicationsType(raw));
 const items: Article[] = (hasRealPublications
-  ? realPublications.map((p) => ({
+  ? filteredPublications.map((p) => ({
       id: p.id,
       slug: p.slug,
       date: formatDate(p.publishedAt),
@@ -88,11 +95,11 @@ const items: Article[] = (hasRealPublications
       image: p.coverImageUrl ?? undefined,
     }))
   : DEMO_ARTICLES
-).slice(0, cards);
+);
 
 // Pupa parity: cardsCount, columnsCount, headingAlignment, headingSize, dateTime.enabled, colorScheme.
-const cardsResolved = typeof raw.cardsCount === 'number' ? raw.cardsCount : cards;
-const columnsResolved = typeof raw.columnsCount === 'number' ? raw.columnsCount : columns;
+const cardsResolved = clampPublicationCount(raw.cardsCount, cards);
+const columnsResolved = clampPublicationCount(raw.columnsCount, columns);
 const headingObj = raw.heading;
 const headingAlignment =
   (typeof headingObj === 'object' ? (headingObj as { alignment?: string })?.alignment : undefined) ??
@@ -100,7 +107,7 @@ const headingAlignment =
 const headingSize =
   (typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined) ??
   (typeof raw.headingSize === 'string' ? raw.headingSize : undefined);
-const dateTimeEnabled = (raw.dateTime as { enabled?: string } | undefined)?.enabled !== 'false';
+const dateTimeEnabled = resolvePublicationsDateTime(raw);
 const colorScheme = raw.colorScheme as string | undefined;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 const headingAlignClass =

@@ -1,5 +1,12 @@
 ---
-import type { MultiColumnsProps } from './MultiColumns.puckConfig';
+import {
+  resolveMultiColumnsContainerEnabled,
+  resolveMultiColumnsDisplayColumns,
+  resolveMultiColumnsSectionLink,
+  getVisibleMultiColumnEntries,
+  resolveMultiColumnLink,
+  type MultiColumnsProps,
+} from './MultiColumns.puckConfig';
 import { MultiColumnsClasses as C } from './MultiColumns.classes';
 import { sanitizeInline } from '../../runtime/rich-text';
 // MultiColumns placeholder per Figma 1:33303 — маленький decorative
@@ -14,15 +21,12 @@ const raw = Astro.props as Record<string, unknown>;
 const {
   id,
   columns = [],
-  displayColumns = 3,
   colorScheme,
   padding,
 } = raw as Props;
 
-const normalizedDisplayColumns =
-  typeof displayColumns === 'string'
-    ? parseInt(displayColumns, 10)
-    : Number(displayColumns);
+const normalizedDisplayColumns = resolveMultiColumnsDisplayColumns(raw);
+const visibleColumnEntries = getVisibleMultiColumnEntries(columns);
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
@@ -48,9 +52,17 @@ const headingSizeClass =
 const textPosition = typeof raw.textPosition === 'string' ? raw.textPosition : 'center';
 const colTextAlignClass = textPosition === 'left' ? 'text-left items-start' : 'text-center items-center';
 
+// Current flat toggle wins; older revisions stored the same choice in
+// background.enabled. The container is a surface card per column.
+const containerEnabled = resolveMultiColumnsContainerEnabled(raw);
+const containerColorScheme = typeof raw.containerColorScheme === 'string' ? raw.containerColorScheme : '';
+const containerSchemeClass = containerEnabled && containerColorScheme
+  ? `color-scheme-${containerColorScheme.replace('scheme-', '')}`
+  : '';
+
 // Pupa: section button (text + link).
 const buttonText = typeof raw.buttonText === 'string' ? raw.buttonText : (typeof raw.button === 'string' ? raw.button : '');
-const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof raw.link === 'string' ? raw.link : '/');
+const buttonLink = resolveMultiColumnsSectionLink(raw);
 ---
 <section
   class:list={[C.root, schemeClass]}
@@ -63,24 +75,24 @@ const buttonLink = typeof raw.buttonLink === 'string' ? raw.buttonLink : (typeof
       <h2 class:list={[C.columnHeading, headingAlignClass, headingSizeClass, 'mb-8']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(headingText)} /></h2>
     )}
     <div class={C.grid} style={gridTemplateCols}>
-      {columns.map((column: any, i: number) => {
+      {visibleColumnEntries.map(({ item: column, originalIndex }, i: number) => {
         const colImage = column.image || column.imageUrl;
         const colTitle = column.title ?? column.heading;
         const colDescription = column.description ?? column.text;
         // New schema (Figma 314:34941): linkText + link (string).
         // Legacy schema: link.text + link.href object.
-        const newLinkText = typeof column.linkText === 'string' ? column.linkText : undefined;
-        const newLinkHref = typeof column.link === 'string' ? column.link : undefined;
-        const legacyLink = (column.link && typeof column.link === 'object') ? column.link as { text?: string; href?: string } : null;
-        const linkText = newLinkText ?? legacyLink?.text;
-        const linkHref = newLinkHref ?? legacyLink?.href ?? '#';
-        const colLink = linkText ? { text: linkText, href: linkHref } : null;
+        const colLink = resolveMultiColumnLink(column);
         return (
           <div
-            class:list={[C.column, colTextAlignClass]}
+            class:list={[
+              C.column,
+              colTextAlignClass,
+              containerEnabled ? C.columnContainer : '',
+              containerSchemeClass,
+            ]}
             data-column-id={column.id}
             data-puck-subsection-parent={id}
-            data-puck-subsection-index={i}
+            data-puck-subsection-index={originalIndex}
             data-puck-subsection-field="columns"
           >
             {colImage ? (

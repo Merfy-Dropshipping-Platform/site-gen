@@ -1,5 +1,10 @@
 ---
-import type { VideoProps } from './Video.puckConfig';
+import {
+  resolveVideoUrl,
+  resolveVideoHeadingSize,
+  resolveVideoPosition,
+  type VideoProps,
+} from './Video.puckConfig';
 import { VideoClasses as C } from './Video.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 import { sanitizeInline } from '../../runtime/rich-text';
@@ -58,20 +63,14 @@ const subheading = (() => {
   return undefined;
 })();
 
-// Merchant uploads go through the constructor which currently writes
-// video props as { video: { url, coverImage } } — older revisions used a
-// top-level `videoUrl` string. Accept both shapes. Critical: reject
+// Current uploads write canonical `videoUrl`; older revisions used the
+// nested { video: { url, coverImage } } envelope. Accept both shapes. Reject
 // `blob:` URLs (transient ObjectURLs created in the constructor's
 // browser tab — they do not survive the page closing, so live storefront
 // would 404). Falls back to the placeholder so merchant sees "Видео
 // появится здесь" instead of a broken video element.
 const videoObj = raw.video as { url?: string; coverImage?: string } | undefined;
-const rawVideoUrl = typeof videoObj?.url === 'string'
-  ? videoObj.url
-  : typeof raw.videoUrl === 'string'
-    ? (raw.videoUrl as string)
-    : '';
-const videoUrl = rawVideoUrl.startsWith('blob:') ? '' : rawVideoUrl;
+const videoUrl = resolveVideoUrl(raw);
 const poster = (videoObj?.coverImage as string | undefined) ?? (raw.poster as string | undefined) ?? undefined;
 
 const paddingStyle = padding
@@ -81,8 +80,8 @@ const colorSchemeRaw = typeof raw.colorScheme === 'string' ? raw.colorScheme : u
 const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('scheme-', '')}` : '';
 
 // `position=fullscreen` removes the container clamp so video spans the
-// viewport. Default contained → merchants get Figma-style padded video.
-const positionProp = typeof raw.position === 'string' ? raw.position : 'contained';
+// viewport. Public `window` (plus legacy `contained`) keeps the padded video.
+const positionProp = resolveVideoPosition(raw.position);
 
 // Pupa parity: size, overlay, content.heading.{alignment,enabled,size}.
 const overlayPctRaw = typeof raw.overlay === 'number' ? raw.overlay : 0;
@@ -92,12 +91,12 @@ const overlayStyle = overlayPctRaw > 0
   : '';
 
 const contentObj = raw.content as { heading?: { text?: string; alignment?: string; enabled?: string; size?: string } } | undefined;
-const headingAlignment = contentObj?.heading?.alignment;
-const headingEnabled = contentObj?.heading?.enabled !== 'false';
+const headingAlignment = typeof raw.headingAlignment === 'string' ? raw.headingAlignment : contentObj?.heading?.alignment;
+const headingEnabled = (raw.headingEnabled ?? contentObj?.heading?.enabled) !== 'false';
 // «Размер заголовка» — кегль <h2>. Панель конструктора пишет его в
 // `content.heading.size`; top-level `size` теперь = ВЫСОТА блока (не кегль),
 // поэтому из цепочки заголовка исключён.
-const headingSize = contentObj?.heading?.size;
+const headingSize = resolveVideoHeadingSize(raw);
 const headingAlignClass =
   headingAlignment === 'left' ? 'text-left' :
   headingAlignment === 'right' ? 'text-right' :

@@ -108,6 +108,8 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
       // billingClient (BILLING_RMQ_SERVICE) — роутинг-тесты стабят loadRevisionData
       // и до applyFooterData не доходят; presence-мока ClientProxy достаточно.
       { send: jest.fn(), emit: jest.fn() } as never,
+      // productClient (PRODUCT_RMQ_SERVICE) — нужен только для product context.
+      { send: jest.fn(), emit: jest.fn() } as never,
     );
     // loadRevisionData is private and hits the DB — stub it on the instance.
     jest
@@ -126,7 +128,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/about', undefined, res);
+    await ctrl.getPreview('site-1', '/about', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about');
     expect(res._body).toBe('<!DOCTYPE html><html>ABOUT</html>');
@@ -143,7 +145,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-about', undefined, res);
+    await ctrl.getPreview('site-1', 'page-about', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about');
   });
@@ -158,7 +160,22 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
+
+    expect(tryLoad).toHaveBeenCalledWith('rose', '');
+  });
+
+  it('page=/ resolves to the same root route as home', async () => {
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue('<!DOCTYPE html><html>HOME</html>');
+    const ctrl = makeController({
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', '/', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', '');
   });
@@ -177,7 +194,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/checkout', undefined, res);
+    await ctrl.getPreview('site-1', '/checkout', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'checkout');
     expect(extractPageBlocksMock).toHaveBeenCalled();
@@ -209,7 +226,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Product', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/product', undefined, res);
+    await ctrl.getPreview('site-1', '/product', undefined, undefined, res);
 
     // unified-тема: НЕ remap в firstBuiltProductRoute, НЕ блоб-путь.
     expect(firstBuiltProductRoute).not.toHaveBeenCalled();
@@ -261,7 +278,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+    await ctrl.getPreview('site-1', 'page-collection', undefined, undefined, res);
 
     expect(getPageResolverMock).toHaveBeenCalledWith('rose');
     // Route resolves to the manifest slug, NOT the raw 'page-collection'.
@@ -310,7 +327,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+    await ctrl.getPreview('site-1', 'page-collection', undefined, undefined, res);
 
     // Route resolves via the constant, NOT the raw 'page-collection'.
     expect(tryLoad).toHaveBeenCalledWith('bloom', 'collections/preview');
@@ -349,7 +366,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('bloom', '');
   });
@@ -387,7 +404,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-about', undefined, res);
+    await ctrl.getPreview('site-1', 'page-about', undefined, undefined, res);
 
     // Revision slug '/about-us' wins over manifest '/about'.
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about-us');
@@ -412,7 +429,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     ]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalledWith(
       expect.objectContaining({ themeId: 'rose', route: '' }),
@@ -436,7 +453,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalled();
     expect(tryLoad).toHaveBeenCalledWith('rose', '');
@@ -454,7 +471,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/checkout', undefined, res);
+    await ctrl.getPreview('site-1', '/checkout', undefined, undefined, res);
 
     expect(renderV2ContentPage).not.toHaveBeenCalled();
     expect(tryLoad).toHaveBeenCalledWith('rose', 'checkout');
@@ -475,7 +492,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(res._status).toBe(200);
     expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
@@ -503,7 +520,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     ]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-catalog', undefined, res);
+    await ctrl.getPreview('site-1', 'page-catalog', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalledWith(
       expect.objectContaining({ themeId: 'rose', route: 'catalog' }),
@@ -531,7 +548,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     ]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+    await ctrl.getPreview('site-1', 'page-collection', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalledWith(
       expect.objectContaining({ themeId: 'rose', route: 'collections/preview' }),

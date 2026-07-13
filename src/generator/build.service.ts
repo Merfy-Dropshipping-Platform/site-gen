@@ -29,7 +29,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
 import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
-import { escapeHtml, patchPdpMetaTags } from "./seo-meta";
+import { escapeHtml, patchPdpMetaTags, patchCollectionMetaTags } from "./seo-meta";
 import { migrateRevisionData } from "../utils/revision-migrations";
 import { applyFooterData } from "../utils/footer-data";
 import {
@@ -1425,109 +1425,14 @@ export async function runBuildPipeline(
             const cSiteTitle = cDashIdx >= 0 ? cRawTitle.slice(cDashIdx + 3).trim() : "";
             const pub = ctx.publicUrl ? ctx.publicUrl.replace(/\/+$/, "") : "";
 
-            // Per-collection патч меты. Возвращает HTML с подставленными SEO-тегами.
-            // Зеркало patchPdpMeta (тот же escapeHtml + толерантные regex по атрибутам).
+            // Per-collection патч меты — форвард в чистую seo-meta.patchCollectionMetaTags
+            // (cSiteTitle/pub захвачены из внешнего скоупа). Реализация + unit-тесты
+            // (canonical/og:*/twitter:*/title/description + body-патч + XSS-экранирование) — seo-meta.ts.
             const patchCollectionMeta = (
               html: string,
               c: Record<string, unknown>,
               slug: string,
-            ): string => {
-              let out = html;
-              const name = typeof c.name === "string" && c.name.trim()
-                ? c.name
-                : (typeof c.title === "string" ? c.title : "");
-              // description: metaDescription (явное SEO-поле) → description.
-              const descRaw =
-                (typeof c.metaDescription === "string" && c.metaDescription.trim()
-                  ? c.metaDescription
-                  : typeof c.description === "string"
-                    ? c.description
-                    : "") ?? "";
-              const desc = descRaw.trim();
-              // обложка: image / images[0] (поддержка строки и {url}) — как у PDP.
-              const pickImg = (v: unknown): string | null => {
-                if (typeof v === "string" && v.trim()) return v.trim();
-                if (v && typeof v === "object" && typeof (v as { url?: unknown }).url === "string")
-                  return (v as { url: string }).url;
-                return null;
-              };
-              const cImgs = Array.isArray((c as { images?: unknown[] }).images)
-                ? ((c as { images: unknown[] }).images)
-                : [];
-              const mainImage = pickImg(c.image) ?? pickImg(cImgs[0]);
-
-              const canonical = pub ? `${pub}/collections/${slug}` : "";
-              if (canonical) {
-                out = out.replace(
-                  /(<link\b[^>]*\brel=["']canonical["'][^>]*\bhref=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-              }
-              if (name) {
-                const fullTitle = cSiteTitle ? `${name} — ${cSiteTitle}` : name;
-                out = out.replace(
-                  /<title>[^<]*<\/title>/i,
-                  `<title>${escapeHtml(fullTitle)}</title>`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(fullTitle)}$2`,
-                );
-              }
-              if (desc) {
-                const trimmed =
-                  desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}…` : desc;
-                const ed = escapeHtml(trimmed);
-                out = out.replace(
-                  /(<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']twitter:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-              }
-              if (mainImage) {
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(mainImage)}$2`,
-                );
-              }
-              // --- BODY (не только SEO): per-collection страница = копия шелла
-              // collections/preview, поэтому тело показывает хардкод «Каталог» и
-              // не скоуплено. Патчим тело под коллекцию. No-op если тема рендерит
-              // иначе (regex не совпал) — безопасно. ---
-              // 1. Скоуп Catalog на товары коллекции (клиент читает data-collection-slug).
-              out = out.replace(
-                /(\bdata-collection-slug=["'])[^"']*(["'])/gi,
-                `$1${escapeHtml(slug)}$2`,
-              );
-              if (name) {
-                // 2. Заголовок каталога → имя коллекции (id="catalog-title" —
-                //    цель aria-labelledby секции Catalog во всех темах).
-                out = out.replace(
-                  /(<(h1|h2)\b[^>]*\bid=["']catalog-title["'][^>]*>)[\s\S]*?(<\/\2>)/i,
-                  `$1${escapeHtml(name)}$3`,
-                );
-              }
-              if (desc) {
-                // 3. Подзаголовок каталога → описание коллекции (замена известных
-                //    тема-хардкодов; vanilla подзаголовок пуст).
-                const edSub = escapeHtml(desc);
-                out = out
-                  .replace("Здесь начинается персональный стиль", () => edSub)
-                  .replace("Следующее поколение уже с вами", () => edSub);
-              }
-              return out;
-            };
+            ): string => patchCollectionMetaTags(html, c, slug, cSiteTitle, pub);
 
             let cmade = 0;
             let cmadeId = 0;

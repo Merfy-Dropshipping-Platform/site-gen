@@ -82,6 +82,10 @@
       "ctaPosition": "bottom-pinned"
     },
     "PopularProducts": {
+      "heading": "Главные хиты",
+      "text": "Бестселлеры бренда — формулы, за которыми возвращаются снова и снова.",
+      "cards": 4,
+      "imageView": "square",
       "cardCaptionStyle": "uppercase",
       "headingAlignment": "left"
     },

@@ -1,6 +1,7 @@
 ---
 import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 import BloomProductCard from "../products/BloomProductCard.astro";
+import { catalogProducts } from "../../data/products";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Popular T13): полная конструкторная схема
 // theme-base PopularProducts.puckConfig поверх разметки верстальщика. Тело +
@@ -13,17 +14,18 @@ import BloomProductCard from "../products/BloomProductCard.astro";
 // PopularProducts.columns на 4.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
-// заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
-// карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
-// заменён на Figma-текст. Когда мерчант задал свой heading/text/subtitle —
-// рендерим ЕГО (?? fallback срабатывает только при пустых данных).
+// D-028 (верстка Bloom = НОРМАТИВ): дефолт секции = разметка верстальщика
+// `/tmp/bloom-theme-ref/.../Popular.astro` — заголовок «Главные хиты» + реальный
+// подзаголовок-бестселлеры. Дефолты приходят из theme.json blockDefaults.PopularProducts
+// (heading/text/cards/imageView), поэтому фолбэки-литералы ниже — лишь страховка,
+// если ни blockDefaults, ни мерчант не задали данные. Когда мерчант задал свой
+// heading/text/subtitle — рендерим ЕГО (?? fallback срабатывает только при пустых данных).
 const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Коллекция товаров";
+	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Главные хиты";
 const sectionSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
 	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
-	"";
+	"Бестселлеры бренда — формулы, за которыми возвращаются снова и снова.";
 
 // Канон cards 2-24: лимит среза demo-витрины и гидрации (data-cards на гриде).
 // 4 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
@@ -36,29 +38,20 @@ const cardsN =
 const collectionRef =
 	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
 
-// Пустое/некурированное состояние (Figma 1:19335) = ПЛЕЙСХОЛДЕР, не мок-демо
-// верстальщика. Гейт = наличие выбранной коллекции (collectionRef). НЕТ выбора →
-// плейсхолдер-карточки (цветные куртки, «Товар», «2 500 ₽»). ЕСТЬ выбор → SSR-фетч
-// РЕАЛЬНЫХ товаров коллекции прямо на рендере (паритет rose Popular), плюс
-// клиентская гидрация ниже освежает грид на live. Паритет theme-base
-// PopularProducts.astro (DEMO_PRODUCTS на гейте collectionRef).
-const SWEATER_PLACEHOLDERS = [
-	"/placeholders/sweater-blue.svg",
-	"/placeholders/sweater-yellow.svg",
-	"/placeholders/sweater-red.svg",
-	"/placeholders/sweater-green.svg",
-];
-const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
-	image: SWEATER_PLACEHOLDERS[i % SWEATER_PLACEHOLDERS.length],
-	title: "Товар",
-	price: "2 500 ₽",
-}));
+// D-028 (верстка Bloom = НОРМАТИВ): дефолтное (некурированное) состояние =
+// РЕАЛЬНЫЕ demo-товары верстальщика (catalogProducts.slice(0,4)), КАК в
+// Collections.astro и в верстке Popular.astro — НЕ плейсхолдер-куртки. При
+// публикации конкретного сайта клиентская гидрация (ниже) подменяет их
+// реальными товарами магазина (или товарами выбранной коллекции). Первые 3 —
+// priority. Гейт collectionRef ниже влияет только на SSR-фетч КОНКРЕТНОЙ
+// коллекции (реальные товары прямо в статике для превью-Container).
+const demoProducts = catalogProducts.slice(0, cardsN);
 
 // SSR-фетч реальных товаров выбранной коллекции (Figma-цель: коллекция выбрана →
 // реальные товары ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора — Astro
 // Container не исполняет клиентскую module-гидрацию ниже). siteId инжектит
 // рендер-пайплайн (preview.service / build). Нет коллекции / siteId / ошибка →
-// realProducts пуст → секция рендерит плейсхолдер-куртки.
+// realProducts пуст → секция рендерит demo-товары верстальщика (catalogProducts).
 const siteId = typeof p.siteId === "string" ? p.siteId : "";
 const fmtPrice = (v: unknown): string => {
 	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
@@ -106,6 +99,10 @@ if (collectionRef && siteId) {
 		realProducts = [];
 	}
 }
+// D-028: единый источник карточек SSR — реальные товары выбранной коллекции
+// (realProducts) либо demo-товары верстальщика (catalogProducts). Плейсхолдер-куртки
+// в дефолте больше не рендерятся (паритет Collections.astro и верстки Popular.astro).
+const products = realProducts.length > 0 ? realProducts : demoProducts;
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
 // (canon-default) и отсутствие = шапка DS NtSectionHeading верстальщика дословно
@@ -296,38 +293,16 @@ const paddingStyle = p.padding
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-btn-style={btnStyle}
 		>
-			{/* SSR-цель (Figma 1:19335): коллекция ВЫБРАНА → реальные товары (фетч в
-			    frontmatter, работает и в превью-Container); НЕ выбрана/пусто →
-			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
-			    live освежает данные. */}
-			{realProducts.length > 0
-				? realProducts.map((product: any) => (
-						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
-							<BloomProductCard product={product} aspectRatio={cardAspectRatio} />
-						</li>
-					))
-				: placeholderCards.map((ph) => (
-						<li>
-							<article class="flex flex-col gap-4" data-nt="bloom-product-card-placeholder" aria-label={ph.title}>
-								<div class="relative block w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]" style={`aspect-ratio:${cardAspectRatio}`}>
-									<img
-										src={ph.image}
-										alt={ph.title}
-										loading="lazy"
-										class="absolute inset-0 h-full w-full object-contain p-[15%]"
-									/>
-								</div>
-								<div class="flex flex-col gap-2">
-									<span class="bloom-product-name font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">
-										{ph.title}
-									</span>
-									<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">
-										{ph.price}
-									</span>
-								</div>
-							</article>
-						</li>
-					))}
+			{/* D-028: коллекция ВЫБРАНА → реальные товары коллекции (фетч в frontmatter,
+			    работает и в превью-Container); НЕ выбрана/пусто → demo-товары
+			    верстальщика (catalogProducts) — как Collections.astro и верстка.
+			    data-collection остаётся → клиентская гидрация на live освежает
+			    грид реальными товарами магазина. */}
+			{products.map((product: any, index: number) => (
+				<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
+					<BloomProductCard product={product} priority={index < 3} aspectRatio={cardAspectRatio} />
+				</li>
+			))}
 		</ul>{viewAllShow && (
 			<div class="flex w-full justify-center">
 				<a
@@ -385,10 +360,12 @@ const paddingStyle = p.padding
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
 			const collectionRef = grid.getAttribute("data-collection");
-			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
-			// SSR-моки (demo), не подтягиваем весь каталог магазина.
-			if (!collectionRef) continue;
-			const pool = resolveCollectionProducts(products, collections, collectionRef);
+			// D-028 (паритет Collections.astro): выбрана коллекция → её товары; иначе —
+			// первые N реальных товаров каталога магазина (не demo-верстальщика,
+			// который остаётся лишь SSG-плейсхолдером для превью/пустого магазина).
+			const pool = collectionRef
+				? resolveCollectionProducts(products, collections, collectionRef)
+				: products;
 			if (pool.length === 0) continue;
 			const items = pool.slice(0, limit);
 			grid.innerHTML = items

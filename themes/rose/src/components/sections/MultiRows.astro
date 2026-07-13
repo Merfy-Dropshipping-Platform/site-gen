@@ -204,7 +204,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							)}
 						</div>
 						<div class={`flex w-full flex-col gap-6 items-center text-center ${alignCls}${r.right ? " lg:order-1" : ""}`}>
-							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={r.heading} />}
+							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={inlineFormat(r.heading)} />}
 							{r.text && (
 								<div
 									class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${r.textSizeCls}`}

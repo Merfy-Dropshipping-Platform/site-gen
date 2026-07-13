@@ -1,5 +1,6 @@
 ---
 import { normalizeRoseSlidePosition } from "../../lib/section-settings";
+import { inlineFormat } from "../../lib/rich-text";
 
 // Фаза 3 (T17): новая канон-секция Slideshow в манере rose (см. themes/rose/MANNER.md).
 // Схема полей = packages/theme-base/blocks/Slideshow/Slideshow.puckConfig.ts.
@@ -266,14 +267,14 @@ const paddingVars = p.padding
 									<h2
 										class={`font-comfortaa !font-normal uppercase !leading-none ${s.headingCls} text-[rgb(var(--color-heading,0_0_0))]${s.image && !s.boxed ? " md:text-white" : ""}`}
 									>
-										{s.heading}
+										<Fragment set:html={inlineFormat(s.heading)} />
 									</h2>
 								)}
 								{s.subtitle && (
 									<p
 										class={`font-manrope ${s.textCls} font-normal leading-none text-[rgb(var(--color-text,0_0_0))]${s.image && !s.boxed ? " md:text-white" : ""}`}
 									>
-										{s.subtitle}
+										<Fragment set:html={inlineFormat(s.subtitle)} />
 									</p>
 								)}
 								{s.ctaText && (

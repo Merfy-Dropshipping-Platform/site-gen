@@ -14,7 +14,10 @@ const id = p.id;
 // subtitle рендерится как есть; пустой subtitle → NtSectionHeading его не выводит.
 const sectionTitle = p.heading?.text ?? p.heading ?? "Галерея";
 const sectionSubtitle =
-	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "";
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	p.subtitle?.content ??
+	p.subtitle ??
+	"";
 
 // Канон headingSize: top-level приоритетнее legacy heading.size.
 const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "top-level");

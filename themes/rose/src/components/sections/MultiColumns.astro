@@ -233,7 +233,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						) : null}
 						{c.heading && (
 							<h3 class={`font-manrope ${itemHeadingCls(c.headingSize)} font-normal !leading-none text-[rgb(var(--color-heading,0_0_0))]`}>
-								{c.heading}
+								<Fragment set:html={inlineFormat(c.heading)} />
 							</h3>
 						)}
 						{c.text && (

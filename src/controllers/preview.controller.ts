@@ -901,11 +901,15 @@ export class PreviewController {
     // Демо-товар в превью-корзине (#4): в редакторе корзину не наполнить, поэтому
     // дровер показывал пустое состояние без кнопки «Оформить». Сеем 1 реальный
     // товар (только если корзина превью пуста) → мерчант видит полный дизайн.
-    // Требует известной темы (префикс ключа/события nt-cart). Перед </body>.
+    // Требует известной темы (префикс ключа/события nt-cart). Инжектим в <head>
+    // (как остальные глобалы) — НЕ перед </body>: nav-агент (idiomorph) уже в HTML
+    // и содержит строку "</body>" в своём JS (parseFromString "<body>…</body>"),
+    // так что /<\/body>/ попал бы В СЕРЕДИНУ его кода. Скрипт async (fetch) —
+    // сработает после init nt-cart, событие `:updated` перерисует дровер.
     if (themeName) {
       html = html.replace(
-        /<\/body>/i,
-        (m) => `${this.previewCartDemoScript(siteId, themeName)}${m}`,
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}${this.previewCartDemoScript(siteId, themeName)}`,
       );
     }
     // Агент конструктора (hover/select → postMessage). На секционном пути его

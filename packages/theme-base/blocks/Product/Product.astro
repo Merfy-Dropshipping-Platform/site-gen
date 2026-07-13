@@ -420,6 +420,26 @@ const cartImage = view.gallery.hero?.src ?? '';
     let productData = null;
     let selectedOptions = {};
 
+    // Пул фото товара (SSR-дефолт галереи = product.images): снимок текущих src
+    // hero + миниатюр ДО любого свапа. Служит фолбэком, когда у выбранного
+    // варианта нет своих фото. __thumbTemplate — клон SSR-миниатюры (сохраняет
+    // классы активного макета split/carousel/two-columns/stacked): им наращиваем
+    // полосу, когда у варианта БОЛЬШЕ фото, чем в исходном пуле («много фото на
+    // вариант»).
+    let productPoolImages = (function () {
+      var urls = [];
+      if (heroImg && heroImg.getAttribute('src')) urls.push(heroImg.getAttribute('src'));
+      root.querySelectorAll('[data-product-thumb] img').forEach(function (im) {
+        var s = im && im.getAttribute('src');
+        if (s) urls.push(s);
+      });
+      return urls;
+    })();
+    const __thumbTemplate = (function () {
+      var t = root.querySelector('[data-product-thumb]');
+      return t ? t.cloneNode(true) : null;
+    })();
+
     function escAttr(s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
@@ -468,20 +488,68 @@ const cartImage = view.gallery.hero?.src ?? '';
       // buyable; undefined/false → unchanged (quantity gate still applies).
       return v.available !== false && (v.quantity == null || Number(v.quantity) > 0 || v.allowBackorder === true);
     }
-    // Фото под выбранный вариант: опция (напр. «Цвет») несёт images[] → меняем
-    // hero. Нет медиа у опции → null (оставляем текущее фото товара).
-    function variantImageFor(sel) {
+    // Медиа выбранного варианта: опция (напр. «Цвет») несёт ПОЛНЫЙ images[] →
+    // возвращаем ВЕСЬ массив URL (hero = [0], thumbs = остальные). Нет медиа у
+    // опции → null (галерея откатывается на пул фото товара). «Много фото на вариант».
+    function variantImagesFor(sel) {
       if (!productData || !Array.isArray(productData.variantGroups)) return null;
       for (const g of productData.variantGroups) {
         const val = sel[g.name];
         if (!val || !Array.isArray(g.options)) continue;
         const opt = g.options.find((o) => o && o.value === val);
         if (opt && Array.isArray(opt.images) && opt.images.length) {
-          const im = opt.images[0];
-          return typeof im === 'string' ? im : (im && im.url) || null;
+          return opt.images
+            .map((im) => (typeof im === 'string' ? im : (im && im.url) || null))
+            .filter(Boolean);
         }
       }
       return null;
+    }
+
+    // Перестроение ВСЕЙ галереи (hero + thumbs) из списка URL. Пусто → пул фото
+    // товара. Работает для всех макетов ProductGallery (split/carousel/two-columns/
+    // stacked): hero — единственный [data-product-hero-image]; миниатюры — узлы
+    // [data-product-thumb] (в two-columns hero — первая ячейка сетки, миниатюры —
+    // остальные ячейки). Если у варианта фото БОЛЬШЕ, чем слотов, — клонируем
+    // SSR-шаблон миниатюры; лишние слоты (у варианта меньше фото) удаляем. Клик-
+    // свап по миниатюре делегирован на контейнер → работает и для доклонированных.
+    function rebuildGallery(list) {
+      var urls = (Array.isArray(list) ? list : [])
+        .map(function (it) { return typeof it === 'string' ? it : (it && it.url) || ''; })
+        .filter(Boolean);
+      if (!urls.length) urls = productPoolImages.slice();
+      if (!urls.length || !heroImg) return;
+      var alt = (productData && (productData.name || productData.title)) || heroImg.getAttribute('alt') || '';
+      heroImg.setAttribute('src', urls[0]);
+      if (alt) heroImg.setAttribute('alt', alt);
+      var thumbUrls = urls.slice(1);
+      var thumbNodes = Array.prototype.slice.call(root.querySelectorAll('[data-product-thumb]'));
+      // Наращиваем полосу клоном SSR-миниатюры, когда у варианта больше фото.
+      if (__thumbTemplate) {
+        while (thumbNodes.length < thumbUrls.length) {
+          var host = thumbNodes.length ? thumbNodes[thumbNodes.length - 1].parentElement : (thumbsEl || root);
+          if (!host) break;
+          var clone = __thumbTemplate.cloneNode(true);
+          host.appendChild(clone);
+          thumbNodes.push(clone);
+        }
+      }
+      for (var i = 0; i < thumbNodes.length; i++) {
+        if (i < thumbUrls.length) {
+          thumbNodes[i].hidden = false;
+          var tImg = thumbNodes[i].querySelector('img');
+          if (tImg) { tImg.setAttribute('src', thumbUrls[i]); if (alt) tImg.setAttribute('alt', alt); }
+        } else if (thumbNodes[i] && thumbNodes[i].parentElement) {
+          thumbNodes[i].parentElement.removeChild(thumbNodes[i]);
+        }
+      }
+      updateCartAttrs();
+    }
+
+    // Галерея под текущий выбор варианта: полный opt.images, иначе пул товара.
+    function applyVariantGallery() {
+      const v = variantImagesFor(selectedOptions);
+      rebuildGallery(v && v.length ? v : productPoolImages);
     }
     function refreshPriceFromVariant() {
       if (priceCur) {
@@ -520,11 +588,10 @@ const cartImage = view.gallery.hero?.src ?? '';
         buyBtn.classList.toggle('opacity-50', !_avail);
         buyBtn.classList.toggle('pointer-events-none', !_avail);
       }
-      // Свотч-вариант с фото → меняем hero под выбранный цвет.
-      if (heroImg) {
-        const _vimg = variantImageFor(selectedOptions);
-        if (_vimg) heroImg.setAttribute('src', _vimg);
-      }
+      // Галерея варианта (hero + thumbs) перестраивается ТОЛЬКО при смене выбора
+      // варианта — см. applyVariantGallery() в обработчиках чипов/дропдауна. Здесь
+      // (общий refresh, зовётся и при ± количества) её НЕ трогаем, чтобы qty не
+      // сбрасывал выбранную пользователем миниатюру.
       // Keep the declarative add-to-cart payload in sync (nt-cart delegate reads
       // it on click). Runs even when price is hidden — `if (priceCur)` only
       // guards the price DOM update, not the cart contract.
@@ -574,12 +641,12 @@ const cartImage = view.gallery.hero?.src ?? '';
       const imgs = (Array.isArray(p.images) ? p.images : [])
         .map((it) => (typeof it === 'string' ? it : (it && it.url) || null))
         .filter(Boolean);
-      const heroSrc = imgs[0] || null;
-      if (heroSrc && heroImg) {
-        heroImg.setAttribute('src', heroSrc);
-        heroImg.setAttribute('alt', p.title || p.name || '');
-      }
+      // Preview меняет товар целиком → обновляем пул фото товара из его images[]
+      // (фолбэк галереи и источник миниатюр).
+      if (imgs.length) productPoolImages = imgs;
       if (titleEl) titleEl.textContent = p.title || p.name || '';
+      // Галерея (hero + thumbs) под текущий выбор варианта, иначе пул товара.
+      applyVariantGallery();
       refreshPriceFromVariant();
     }
 
@@ -645,6 +712,7 @@ const cartImage = view.gallery.hero?.src ?? '';
         );
       });
       refreshPriceFromVariant();
+      applyVariantGallery();
     });
 
     // «Закрытый список»: свернуть открытый дропдаун при клике вне него
@@ -661,6 +729,7 @@ const cartImage = view.gallery.hero?.src ?? '';
         const key = sel.getAttribute('data-variant-key');
         if (key) selectedOptions[key] = sel.value;
         refreshPriceFromVariant();
+        applyVariantGallery();
       });
     });
 

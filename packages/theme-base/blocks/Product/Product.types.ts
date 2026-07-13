@@ -45,7 +45,14 @@ export interface RawProduct {
    *  «цвет из платформы» для секции вариантов. */
   variantGroups?: Array<{
     name?: string;
-    options?: Array<{ value: string; swatchHex?: string | null }>;
+    options?: Array<{
+      value: string;
+      /** Полный набор фото значения оси (напр. «Цвет» → все кадры цвета).
+       *  Клиентский свап галереи PDP берёт hero = [0], thumbs = остальные;
+       *  пусто/нет → откат на пул `RawProduct.images`. */
+      images?: Array<string | RawImage>;
+      swatchHex?: string | null;
+    }>;
   }>;
   hasVariants?: boolean;
   metaTitle?: string | null;

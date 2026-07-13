@@ -3,6 +3,7 @@ import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { previewTokensCssWithFonts } from '../themes/tokens-css';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
+import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -287,10 +288,17 @@ export class PreviewService {
       // 095: deep-merge so blockDefaults sub-keys (e.g. Footer.newsletter.heading,
       // description, placeholder) survive when revision has partial sub-object
       // like `newsletter: { enabled: true }`. Arrays are replaced wholesale.
-      const mergedProps = deepMergeBlockProps(blockDefaults, (input.props ?? {}) as Record<string, unknown>);
+      const mergedProps = deepMergeBlockProps(
+        blockDefaults,
+        (input.props ?? {}) as Record<string, unknown>,
+      );
+      const renderProps =
+        input.blockName === 'Slideshow'
+          ? normalizeSlideshowProps(mergedProps)
+          : mergedProps;
       const container = await this.getContainer();
       const html = await container.renderToString(Component, {
-        props: mergedProps,
+        props: renderProps,
       });
       return html;
     } catch (err) {

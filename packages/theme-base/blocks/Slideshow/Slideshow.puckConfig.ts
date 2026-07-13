@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
+const PageLinkSchema = z.union([
+  z.string(),
+  z.object({
+    href: z.string(),
+    text: z.string().optional(),
+  }),
+]);
+
 const SlideSchema = z.object({
   id: z.string(),
   imageUrl: z.string(),
@@ -20,7 +28,7 @@ const SlideSchema = z.object({
   ctaUrl: z.string().optional(),
   button: z.object({
     text: z.string().optional(),
-    link: z.string().optional(),
+    link: PageLinkSchema.optional(),
   }).optional(),
   // Pupa parity: per-slide layout + theme.
   image: z.string().optional(),
@@ -244,6 +252,8 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
     ],
     interval: 5,
     autoplay: true,
+    imagePosition: 'fullscreen',
+    size: 'large',
     pagination: 'numbers',
     padding: { top: 80, bottom: 80 },
   },

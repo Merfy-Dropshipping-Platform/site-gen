@@ -7,6 +7,7 @@ import {
   roseFooterHeadingStyle,
   roseFooterTextClass,
   rosePromoBannerSize,
+  roseSlideshowHeightClass,
 } from "../../../themes/rose/src/lib/section-settings";
 
 describe("Rose section setting normalizers", () => {
@@ -16,6 +17,15 @@ describe("Rose section setting normalizers", () => {
     expect(normalizeRoseSlidePosition("left")).toBe("center-left");
     expect(normalizeRoseSlidePosition("right")).toBe("center-right");
     expect(normalizeRoseSlidePosition("bottom-right")).toBe("bottom-right");
+  });
+
+  it("uses the constructor-compatible large Slideshow fallback", () => {
+    expect(roseSlideshowHeightClass(undefined)).toBe(
+      "md:min-h-[min(100svh,900px)]",
+    );
+    expect(roseSlideshowHeightClass("medium")).toBe(
+      "md:min-h-[min(75svh,680px)]",
+    );
   });
 
   it("maps footer heading sizes and preserves the current missing default", () => {
@@ -61,6 +71,7 @@ describe("Rose section setting renderer wiring", () => {
     );
 
     expect(source).toContain("normalizeRoseSlidePosition(s.position)");
+    expect(source).toContain("roseSlideshowHeightClass(p.size)");
     expect(source).not.toContain('s.position ? s.position : ""');
   });
 

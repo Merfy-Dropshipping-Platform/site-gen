@@ -420,6 +420,92 @@ const cartImage = view.gallery.hero?.src ?? '';
     let productData = null;
     let selectedOptions = {};
 
+    // ─── Deep-link на выбранный вариант (Фаза 1: прод-витрина). ───
+    // Ось варианта = имя группы → значение (это runtime selectedOptions). В URL —
+    // по одному query-параметру на ось с неймспейс-префиксом «opt.» (collision-safe:
+    // не пересекается с ?id=/?collection=/фильтрами каталога). Кириллица и спец-
+    // символы round-trip'ятся через URLSearchParams. Канон логики и юнит-тесты —
+    // blocks/Product/variantAnchor.ts; здесь ЗЕРКАЛО (is:inline нельзя импортировать),
+    // сходимость пиннится DOM-тестом (product-variant-anchor.dom.test.ts сверяет URL
+    // инлайна с модулем-оракулом — дрейф ловится).
+    var VARIANT_ANCHOR_PREFIX = 'opt.';
+    function parseVariantAnchor(search) {
+      var out = {};
+      var params = new URLSearchParams(search || '');
+      params.forEach(function (value, key) {
+        if (key.indexOf(VARIANT_ANCHOR_PREFIX) === 0 && key.length > VARIANT_ANCHOR_PREFIX.length) {
+          var axis = key.slice(VARIANT_ANCHOR_PREFIX.length);
+          if (axis && value) out[axis] = value;
+        }
+      });
+      return out;
+    }
+    function writeVariantAnchorToSearch(search, selected) {
+      var params = new URLSearchParams(search || '');
+      var drop = [];
+      params.forEach(function (_value, key) { if (key.indexOf(VARIANT_ANCHOR_PREFIX) === 0) drop.push(key); });
+      drop.forEach(function (key) { params.delete(key); });
+      Object.keys(selected).forEach(function (axis) {
+        var val = selected[axis];
+        if (axis && val) params.set(VARIANT_ANCHOR_PREFIX + axis, val);
+      });
+      return params.toString();
+    }
+    // Превью-iframe? В Фазе 1 URL внутри превью НЕ трогаем и якорь не применяем —
+    // это Фаза 2. try/catch: cross-origin доступ к window.parent может бросить.
+    var __inIframe = (function () { try { return !!(window.parent && window.parent !== window); } catch (e) { return true; } })();
+    var __applyingAnchor = false;
+    // Применить якорь из URL: для каждой оси диспатчим синтетический клик по чипу
+    // (всплывёт до делегата варианта → выставит selectedOptions, перекрасит активный
+    // чип, refreshPriceFromVariant + applyVariantGallery) ЛИБО select.value+change.
+    // Неизвестное/переименованное/out-of-stock значение — мягко игнор (дефолт остаётся).
+    function applyAnchorAxis(key, val) {
+      var chips = root.querySelectorAll('[data-variant-chip]');
+      for (var i = 0; i < chips.length; i++) {
+        var c = chips[i];
+        if (c.getAttribute('data-variant-key') !== key) continue;
+        if (c.getAttribute('data-variant-value') !== val) continue;
+        if (c.getAttribute('data-variant-available') === 'false') return false;
+        try { c.click(); } catch (e) { return false; }
+        return true;
+      }
+      var selects = root.querySelectorAll('[data-variant-select]');
+      for (var j = 0; j < selects.length; j++) {
+        var s = selects[j];
+        if (s.getAttribute('data-variant-key') !== key) continue;
+        var opts = s.options || [];
+        for (var o = 0; o < opts.length; o++) {
+          if (opts[o].value === val) {
+            s.value = val;
+            s.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    function applyVariantAnchor() {
+      if (__inIframe || !isPdp) return; // прод-витрина, только PDP (Фаза 1)
+      var want = parseVariantAnchor(location.search);
+      var keys = Object.keys(want);
+      if (!keys.length) return;
+      // Подавляем запись во время авто-выбора: чтение URL не должно его переписывать.
+      __applyingAnchor = true;
+      try { keys.forEach(function (k) { applyAnchorAxis(k, want[k]); }); }
+      finally { __applyingAnchor = false; }
+    }
+    // Записать текущий выбор в URL через history.replaceState (НЕ push — без записи
+    // в историю), сохранив pathname/hash и посторонние query-параметры; стирает лишь
+    // устаревшие opt.*. Только на PDP и вне превью-iframe; во время apply — пропуск.
+    function writeVariantAnchor() {
+      if (__inIframe || __applyingAnchor || !isPdp) return;
+      try {
+        var qs = writeVariantAnchorToSearch(location.search, selectedOptions);
+        var url = location.pathname + (qs ? '?' + qs : '') + location.hash;
+        history.replaceState(history.state, '', url);
+      } catch (e) { /* no-op */ }
+    }
+
     // Пул фото товара (SSR-дефолт галереи = product.images): снимок текущих src
     // hero + миниатюр ДО любого свапа. Служит фолбэком, когда у выбранного
     // варианта нет своих фото. __thumbTemplate — клон SSR-миниатюры (сохраняет
@@ -552,7 +638,10 @@ const cartImage = view.gallery.hero?.src ?? '';
       rebuildGallery(v && v.length ? v : productPoolImages);
     }
     function refreshPriceFromVariant() {
-      if (priceCur) {
+      // Пока данные товара не подгрузились (productData === null, напр. во время
+      // авто-выбора по deep-link якорю до async-фетча) — НЕ трогаем цену, иначе
+      // base=0 → fmtPrice('') затрёт SSR-цену в пусто. Держим SSR-цену до данных.
+      if (priceCur && productData) {
         const v = getActiveVariant();
         // Цена варианта берётся только если она положительная; 0/null/NaN →
         // базовая цена товара (зеркало rose applyCombo: combo.price ? combo.price
@@ -713,6 +802,7 @@ const cartImage = view.gallery.hero?.src ?? '';
       });
       refreshPriceFromVariant();
       applyVariantGallery();
+      writeVariantAnchor();
     });
 
     // «Закрытый список»: свернуть открытый дропдаун при клике вне него
@@ -730,6 +820,7 @@ const cartImage = view.gallery.hero?.src ?? '';
         if (key) selectedOptions[key] = sel.value;
         refreshPriceFromVariant();
         applyVariantGallery();
+        writeVariantAnchor();
       });
     });
 
@@ -1000,6 +1091,12 @@ const cartImage = view.gallery.hero?.src ?? '';
         if (nm) { try { document.title = nm; } catch (e) {} }
       }
     }
+
+    // Deep-link: авто-выбор варианта из URL (?opt.*). Чипы — SSR, уже в DOM;
+    // applyProduct/onResolved их НЕ перерисовывает (обновляет только title/цену/
+    // галерею, а selectedOptions читает как есть), поэтому одного применения после
+    // навешивания хендлеров достаточно — последующий refresh отразит выбранный якорь.
+    applyVariantAnchor();
 
     // 0) Мгновенно: товары, запечённые в глобал страницы (если есть).
     try { const hit = pickFromList(window.__MERFY_PRODUCTS__ || []); if (hit) onResolved(hit); } catch (e) {}

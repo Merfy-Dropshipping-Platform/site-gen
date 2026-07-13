@@ -21,7 +21,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import {
   COOLIFY_RMQ_SERVICE,
   PG_CONNECTION,
@@ -1428,10 +1428,44 @@ export class SitesDomainService {
     meta?: any;
     actorUserId?: string;
     setCurrent?: boolean;
+    expectedCurrentRevisionId?: string | null;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
     const id = crypto.randomUUID();
+    if (params.setCurrent && params.expectedCurrentRevisionId !== undefined) {
+      const expectedCurrentRevisionId = params.expectedCurrentRevisionId;
+      await this.db.transaction(async (tx) => {
+        await tx.insert(schema.siteRevision).values({
+          id,
+          siteId: params.siteId,
+          data: params.data ?? {},
+          meta: params.meta ?? {},
+          createdAt: new Date(),
+          createdBy: params.actorUserId,
+        });
+
+        const expectedPredicate =
+          expectedCurrentRevisionId === null
+            ? isNull(schema.site.currentRevisionId)
+            : eq(schema.site.currentRevisionId, expectedCurrentRevisionId);
+
+        const updated = await tx
+          .update(schema.site)
+          .set({ currentRevisionId: id, updatedAt: new Date() })
+          .where(
+            and(
+              eq(schema.site.id, params.siteId),
+              eq(schema.site.tenantId, params.tenantId),
+              expectedPredicate,
+            ),
+          )
+          .returning({ id: schema.site.id });
+
+        if (updated.length === 0) throw new Error("revision_conflict");
+      });
+      return { revisionId: id };
+    }
     await this.db.insert(schema.siteRevision).values({
       id,
       siteId: params.siteId,

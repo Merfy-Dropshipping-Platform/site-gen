@@ -286,6 +286,7 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
+        expectedCurrentRevisionId,
       } = data ?? {};
       if (!tenantId || !siteId)
         return { success: false, message: "tenantId and siteId required" };
@@ -296,10 +297,18 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
+        expectedCurrentRevisionId,
       });
       return { success: true, ...res };
     } catch (e: any) {
       this.logger.error(`revisions.create failed: ${e?.message}`, e?.stack);
+      if (e?.message === "revision_conflict") {
+        return {
+          success: false,
+          code: "REVISION_CONFLICT",
+          message: "revision_conflict",
+        };
+      }
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }

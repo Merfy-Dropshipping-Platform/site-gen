@@ -41,10 +41,28 @@ const escapeHtml = (value: string) =>
 
 const productHref = (productId: string) => `/products/${encodeURIComponent(productId)}`;
 
+// Строгое совпадение по конкретному варианту (verstka: карточка отражает «В
+// корзине» именно выбранного цвета/размера). Порт добавляет variantCombinationId
+// (спек 098) в id-ключ, поэтому строим его тем же makeLineId-набором. Мягкий
+// фолбэк «по productId» УБРАН: он ломал per-variant toggle-состояние (#17).
+const lineIdOf = (productId: string, variant?: NtCartLineVariant) =>
+	[productId, variant?.variantCombinationId, variant?.color, variant?.size].filter(Boolean).join("|");
+
 const findLine = (productId: string, variant?: NtCartLineVariant) => {
-	const id = [productId, variant?.color, variant?.size].filter(Boolean).join("|");
-	return getCart().find((line) => line.id === id) ?? getCart().find((line) => line.productId === productId);
+	const id = lineIdOf(productId, variant);
+	return getCart().find((line) => line.id === id);
 };
+
+// Карточная «В корзину» (toggle) отражает вариант карточки. combinationId в id
+// карточки нет (SSR-демо не несёт комбинаций), поэтому для сопоставления с уже
+// добавленной строкой матчим по productId+color+size, игнорируя combinationId.
+const findCardLine = (productId: string, variant?: NtCartLineVariant) =>
+	getCart().find(
+		(line) =>
+			line.productId === productId &&
+			(line.variant?.color ?? "") === (variant?.color ?? "") &&
+			(line.variant?.size ?? "") === (variant?.size ?? ""),
+	);
 
 const setBodyModalLock = (locked: boolean) => {
 	document.body.style.overflow = locked ? "hidden" : "";
@@ -191,13 +209,49 @@ export const initCartUI = () => {
 		total.textContent = formatCartPrice(getCartTotal(lines));
 	};
 
+	// Кнопки-карточки «В корзину» с data-cart-toggle отражают, лежит ли выбранный
+	// вариант товара в корзине: «Inactive»-стиль (data-in-cart) + метка «В корзине»
+	// (#17). Гоняется из syncCartChrome — на astro:page-load и на bloom:cart:updated.
+	const syncProductCards = () => {
+		document.querySelectorAll<HTMLButtonElement>("[data-add-to-cart][data-cart-toggle]").forEach((btn) => {
+			const inCart = Boolean(
+				findCardLine(btn.dataset.productId ?? "", {
+					color: btn.dataset.variantColor || undefined,
+					size: btn.dataset.variantSize || undefined,
+				}),
+			);
+			btn.dataset.inCart = inCart ? "true" : "false";
+			btn.setAttribute("aria-pressed", inCart ? "true" : "false");
+			const label = inCart ? btn.dataset.labelInCart : btn.dataset.labelDefault;
+			if (label) btn.textContent = label;
+		});
+	};
+
 	const syncCartChrome = () => {
 		renderBadges();
 		renderDrawer();
+		syncProductCards();
 	};
 
 	const onClick = (event: MouseEvent) => {
 		const target = event.target as HTMLElement;
+
+		// Свотч цвета на карточке товара (#16): выбор варианта для «В корзину».
+		// Переключает aria-checked внутри radiogroup и переносит выбранный цвет на
+		// кнопку добавления, затем пересинхронивает toggle-состояние карточек.
+		const swatch = target.closest<HTMLButtonElement>("[data-card-color]");
+		if (swatch) {
+			const card = swatch.closest<HTMLElement>('[data-nt="bloom-product-card"]');
+			if (!card) return;
+			card.querySelectorAll<HTMLButtonElement>("[data-card-color]").forEach((b) => {
+				b.setAttribute("aria-checked", b === swatch ? "true" : "false");
+			});
+			card
+				.querySelector<HTMLButtonElement>("[data-add-to-cart]")
+				?.setAttribute("data-variant-color", swatch.dataset.cardColor ?? "");
+			syncProductCards();
+			return;
+		}
 
 		const addBtn = target.closest<HTMLButtonElement>("[data-add-to-cart]");
 		if (addBtn) {
@@ -213,6 +267,17 @@ export const initCartUI = () => {
 			const price = addBtn.dataset.price ?? "0";
 			const image = addBtn.dataset.image ?? "";
 			const volume = addBtn.dataset.volume ?? "";
+
+			// Toggle-кнопки карточек (#17): повторный клик по товару «в корзине» —
+			// удаляет его (без модалки). Кнопки без data-cart-toggle (PDP/гидрация)
+			// всегда добавляют. combinationId в SSR-карточке нет → матчим findCardLine.
+			if (addBtn.hasAttribute("data-cart-toggle")) {
+				const existing = findCardLine(productId, variant);
+				if (existing) {
+					removeFromCart(existing.id);
+					return;
+				}
+			}
 
 			addToCart({
 				productId,

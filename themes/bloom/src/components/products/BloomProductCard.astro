@@ -23,15 +23,30 @@ const wishlistOutlineSvg =
 	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
 	"</svg>";
 
-const swatchColors: Record<string, string> = {
-	pink: "#e38e9f",
-	"light-pink": "#f7a2b3",
-	white: "#ffffff",
-	brown: "#8b5a4a",
-	black: "#000000",
-	olive: "#6b705c",
-	gray: "#cccccc",
+// Соответствие имени цвета → русская метка и hex (верстальщик: src/data/colors.ts).
+// Порт не несёт отдельного data/colors.ts, поэтому карта локальна. Используется
+// интерактивным radiogroup свотчей (#16) и декоративным overlay-кластером.
+const COLORS: Record<string, { label: string; hex: string }> = {
+	pink: { label: "Розовый", hex: "#e38e9f" },
+	"light-pink": { label: "Светло-розовый", hex: "#e8b1b7" },
+	coral: { label: "Коралловый", hex: "#ea7c7f" },
+	berry: { label: "Ягодный", hex: "#d76b69" },
+	nude: { label: "Нюд", hex: "#e9c9b5" },
+	beige: { label: "Бежевый", hex: "#ffddca" },
+	ivory: { label: "Слоновая кость", hex: "#fff1de" },
+	white: { label: "Белый", hex: "#ffffff" },
+	black: { label: "Чёрный", hex: "#111111" },
+	brown: { label: "Коричневый", hex: "#8b5e3c" },
+	olive: { label: "Оливковый", hex: "#6b705c" },
+	gray: { label: "Серый", hex: "#cccccc" },
 };
+const colorHex = (name: string): string => COLORS[name]?.hex ?? "#e38e9f";
+
+// Верстальщик показывает ИНТЕРАКТИВНЫЙ radiogroup свотчей, когда у товара >1
+// цвета (и нет размеров). Иначе — декоративный overlay-кластер (platform-доп).
+const hasSizePills = Boolean(product.sizes && product.sizes.length > 1);
+const hasColorSwatches = !hasSizePills && product.colors.length > 1;
+const defaultColor = product.colors[0] ?? "";
 ---
 
 <article
@@ -60,7 +75,7 @@ const swatchColors: Record<string, string> = {
 					Скидка
 				</span>
 			)}
-			{product.colors.length > 0 && (
+			{!hasColorSwatches && product.colors.length > 0 && (
 				<div
 					class="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 p-1"
 					aria-hidden="true"
@@ -68,7 +83,7 @@ const swatchColors: Record<string, string> = {
 					{product.colors.map((color) => (
 						<span
 							class="size-2 shrink-0 rounded-full border border-[#F5F5F5]"
-							style={`background-color: ${swatchColors[color] ?? swatchColors.pink}`}
+							style={`background-color: ${colorHex(color)}`}
 						/>
 					))}
 				</div>
@@ -102,16 +117,56 @@ const swatchColors: Record<string, string> = {
 				</span>
 			)}
 		</div>
+		{hasSizePills && (
+			<div class="flex flex-wrap items-center gap-[3px]" aria-hidden="true">
+				{product.sizes!.map((size, index) => (
+					<span
+						class:list={[
+							"flex h-6 items-center justify-center rounded-full px-1.5 font-inter text-[12px] font-light leading-normal",
+							index === 0 ? "bg-[#e38e9f] text-white" : "border border-[#e38e9f] text-[#e38e9f]",
+						]}
+					>
+						{size}
+					</span>
+				))}
+			</div>
+		)}
+		{hasColorSwatches && (
+			<div class="flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Цвет">
+				{product.colors.map((color, index) => (
+					<button
+						type="button"
+						role="radio"
+						aria-checked={index === 0 ? "true" : "false"}
+						aria-label={COLORS[color]?.label ?? color}
+						data-card-color={color}
+						class="bloom-card-swatch"
+					>
+						<span
+							class="bloom-card-swatch-dot"
+							style={`background-color: ${colorHex(color)};${color === "white" ? "box-shadow:inset 0 0 0 1px #d9d9d9;" : ""}`}
+						/>
+					</button>
+				))}
+			</div>
+		)}
 		{product.inStock ? (
 			<button
 				type="button"
 				data-add-to-cart
+				data-cart-toggle
+				data-in-cart="false"
+				data-label-default="В корзину"
+				data-label-in-cart="В корзине"
+				aria-pressed="false"
 				data-product-id={product.id}
 				data-name={product.name}
 				data-price={product.price}
 				data-old-price={product.oldPrice ?? ""}
 				data-image={product.image}
 				data-volume={product.volume ?? ""}
+				data-variant-color={defaultColor}
+				data-variant-size={product.volume ?? ""}
 				class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95"
 			>
 				В корзину
@@ -120,7 +175,7 @@ const swatchColors: Record<string, string> = {
 			<button
 				type="button"
 				disabled
-				class="flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-[#fdf4f6] px-4 font-inter text-[16px] font-light leading-none text-[#e38e9f]/60"
+				class="flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full border border-[#e38e9f] bg-transparent px-4 font-inter text-[16px] font-light leading-none text-[#e38e9f]"
 			>
 				Нет в наличии
 			</button>
@@ -135,5 +190,40 @@ const swatchColors: Record<string, string> = {
 		.bloom-product-oldprice {
 			font-size: 12px;
 		}
+	}
+
+	/* Товар уже в корзине — «Inactive» из дизайн-системы кнопок (Figma 905:13034):
+	   приглушённый фон/текст. Селектор с атрибутами перебивает Tailwind bg/text. */
+	button[data-add-to-cart][data-in-cart="true"] {
+		background-color: #fdf4f6;
+		color: #ffd4e5;
+	}
+
+	/* Свотчи цвета: состояние управляется aria-checked (переключает lib/cart.ts).
+	   Выбранный — кольцо #e38e9f с 16px точкой внутри, остальные — 20px круг. */
+	.bloom-card-swatch {
+		display: flex;
+		width: 20px;
+		height: 20px;
+		align-items: center;
+		justify-content: center;
+		border-radius: 9999px;
+		border: 1px solid transparent;
+	}
+	.bloom-card-swatch[aria-checked="true"] {
+		border-color: #e38e9f;
+	}
+	.bloom-card-swatch-dot {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+		border-radius: 9999px;
+		transition:
+			width 0.15s ease,
+			height 0.15s ease;
+	}
+	.bloom-card-swatch[aria-checked="true"] .bloom-card-swatch-dot {
+		width: 16px;
+		height: 16px;
 	}
 </style>

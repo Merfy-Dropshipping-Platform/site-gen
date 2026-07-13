@@ -1,0 +1,36 @@
+{
+  "content": [
+    {
+      "type": "CheckoutHeader",
+      "props": { "id": "CheckoutHeader-1", "siteTitle": "Мой магазин", "logo": "/logo.svg", "colorScheme": "scheme-2" }
+    },
+    {
+      "type": "OrderConfirmation",
+      "props": {
+        "id": "OrderConfirmation-1",
+        "banner": { "enabled": false, "src": "", "placement": "order", "align": "center", "width": 580 },
+        "orderBg": "",
+        "summaryBg": "",
+        "accentColor": "",
+        "buttonColor": "",
+        "errorColor": "",
+        "headingFont": "",
+        "headingWeight": "",
+        "bodyFont": "",
+        "bodyWeight": "",
+        "greetingTemplate": "Спасибо за заказ, {name}!",
+        "confirmedTitle": "Ваш заказ подтверждён",
+        "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+        "detailsTitle": "Детали заказа",
+        "helpText": "Нужна помощь? Обратитесь к нам",
+        "returnButtonText": "Вернуться к магазину",
+        "returnButtonHref": "/",
+        "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+        "colorScheme": "scheme-2",
+        "padding": { "top": 0, "bottom": 0 }
+      }
+    }
+  ],
+  "root": { "props": { "title": "Спасибо за заказ" } },
+  "zones": {}
+}

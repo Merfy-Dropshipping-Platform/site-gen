@@ -4,9 +4,11 @@
       "type": "PromoBanner",
       "props": {
         "id": "PromoBanner-1",
-        "text": "Акция на новую коллекцию",
-        "linkText": "Узнать больше",
-        "linkUrl": "/catalog",
+        "text": "Скидка 10% на общую сумму заказа от 9 000₽",
+        "link": {
+          "text": "Перейти",
+          "href": "/delivery"
+        },
         "colorScheme": "scheme-2",
         "padding": {
           "top": 12,
@@ -136,7 +138,7 @@
           "size": "small"
         },
         "text": {
-          "content": "",
+          "content": "Стиль для каждой ситуации - найдите свой в каталоге.",
           "size": "small"
         },
         "displayMode": "products",

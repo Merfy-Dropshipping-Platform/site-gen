@@ -1,5 +1,8 @@
 ---
-import { normalizeRoseSlidePosition } from "../../lib/section-settings";
+import {
+	normalizeRoseSlidePosition,
+	roseSlideshowHeightClass,
+} from "../../lib/section-settings";
 import { inlineFormat } from "../../lib/rich-text";
 
 // Фаза 3 (T17): новая канон-секция Slideshow в манере rose (см. themes/rose/MANNER.md).
@@ -39,6 +42,15 @@ const PLACEHOLDER_SLIDES = [
 ];
 const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
 const rawSlides = hasSlides ? p.slides : PLACEHOLDER_SLIDES;
+const hasOwn = (value: unknown, key: string) =>
+	!!value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, key);
+const resolveSlideLink = (value: unknown) => {
+	if (typeof value === "string") return value;
+	if (value && typeof value === "object" && typeof (value as { href?: unknown }).href === "string") {
+		return (value as { href: string }).href;
+	}
+	return undefined;
+};
 
 // Заголовок слайда — лестница героя (20→28→36→40); size small ≈0.85, large ≈1.2.
 const slideHeadingCls = (s: string | undefined) =>
@@ -100,18 +112,21 @@ const slideLayoutCls = (s: any) => {
 const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
-		// Конструктор пишет button.text — читаем ЕГО первым; legacy s.ctaText только fallback
-		// (иначе seed-ctaText глушил правку кнопки → не синкалось в превью).
-		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined) ??
-		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined);
+		hasOwn(s.button, "text") && typeof s.button.text === "string"
+			? s.button.text
+			: typeof s.ctaText === "string"
+				? s.ctaText
+				: undefined;
 	// Figma node 1236-42150 (пустое/дефолтное состояние секции): слайд БЕЗ картинки
 	// мерчанта = дизайн-подсказка — фото-плейсхолдер landscape-slideshow.png ФОНОМ +
 	// белая карточка (boxed) по ЦЕНТРУ полотна (заголовок/подзаголовок/кнопка). Слайд
 	// С фото мерчанта — full-bleed как раньше (boxed управляется флагом «Контейнер»).
 	const merchantImage =
-		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
-		(typeof s.image === "string" && s.image.trim()) ||
-		"";
+		hasOwn(s, "image") && typeof s.image === "string"
+			? s.image.trim()
+			: typeof s.imageUrl === "string"
+				? s.imageUrl.trim()
+				: "";
 	const isPromptCard = !merchantImage;
 	// Карточка-подсказка включена по умолчанию (Figma), но тумблер «Контейнер: Скрыть»
 	// (container==='false') её выключает — тогда слайд без фото = пустая surface-карточка
@@ -126,16 +141,15 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),
 		subtitle:
-			// Конструктор пишет text.content — читаем ЕГО первым; legacy s.subtitle только fallback
-			// (иначе seed-subtitle глушил правку описания → не синкалось в превью).
-			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined) ??
-			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined),
+			hasOwn(s.text, "content") && typeof s.text.content === "string"
+				? s.text.content
+				: typeof s.subtitle === "string"
+					? s.subtitle
+					: undefined,
 		ctaText,
-		ctaHref:
-			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
-			s.button?.link?.href ??
-			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
-			"/catalog",
+		ctaHref: (hasOwn(s.button, "link") || hasOwn(s.button, "href")
+			? resolveSlideLink(hasOwn(s.button, "link") ? s.button.link : s.button.href)
+			: resolveSlideLink(s.ctaUrl)) ?? "/catalog",
 		// Подсказка → карточка (если не выключена тумблером). Реальный слайд с фото → по «Контейнеру».
 		boxed: isPromptCard ? promptBoxed : String(s.container ?? "false") === "true",
 		schemeCls:
@@ -163,12 +177,7 @@ const autoplay = p.autoplay === false || p.autoplay === "false" ? "false" : "tru
 // снизу, в потоке). Раньше min-h держался и на мобиле (min(40svh,320px)) → полотно
 // было выше стек-контента → карточка «съезжала» вниз с пустотой сверху. Десктоп-
 // оверлей: min-h держит высоту фона (все слайды absolute), кап min(svh,px).
-const heightCls =
-	p.size === "small"
-		? "md:min-h-[min(50svh,460px)]"
-		: p.size === "large"
-			? "md:min-h-[min(100svh,900px)]"
-			: "md:min-h-[min(75svh,680px)]";
+const heightCls = roseSlideshowHeightClass(p.size);
 
 // Канон imagePosition («Положение изображения»): fullscreen (canon-default;
 // полотно во всю ширину секции, как hero — без боковых полей и радиуса) |

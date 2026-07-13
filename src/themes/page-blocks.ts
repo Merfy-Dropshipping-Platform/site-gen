@@ -1,6 +1,7 @@
 import type { Logger } from '@nestjs/common';
 import { getThemeManifest } from './theme-manifest-loader';
 import { getPageResolver } from './page-resolver-instance';
+import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.
@@ -264,9 +265,11 @@ export function adaptLegacyProps(
       coerceGenericLegacyProps(out);
       coercePublicationsProps(out);
       break;
+    case 'Slideshow':
+      return normalizeSlideshowProps(out);
     default:
       // Generic fallback for the 15 blocks without a hand-written coercer
-      // (Newsletter, Slideshow, MultiColumns, MultiRows,
+      // (Newsletter, MultiColumns, MultiRows,
       // CollapsibleSection, Video,
       // Product, PromoBanner, CartSection, CheckoutSection, AuthModal,
       // CartDrawer, CheckoutLayout, CheckoutHeader, AccountLayout).

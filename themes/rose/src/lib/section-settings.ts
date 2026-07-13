@@ -32,6 +32,12 @@ const FOOTER_TEXT: Record<RoseSize, string> = {
   large: "!text-[16px]",
 };
 
+const SLIDESHOW_HEIGHT: Record<RoseSize, string> = {
+  small: "md:min-h-[min(50svh,460px)]",
+  medium: "md:min-h-[min(75svh,680px)]",
+  large: "md:min-h-[min(100svh,900px)]",
+};
+
 const PROMO_BANNER: Record<
   RosePromoBannerSize,
   { minHeightClass: string; textClass: string }
@@ -53,6 +59,10 @@ export function normalizeRoseSlidePosition(value: unknown): RoseSlidePosition {
     SLIDE_POSITIONS.has(value as RoseSlidePosition)
     ? (value as RoseSlidePosition)
     : "center";
+}
+
+export function roseSlideshowHeightClass(value: unknown): string {
+  return SLIDESHOW_HEIGHT[isRoseSize(value) ? value : "large"];
 }
 
 export function roseFooterHeadingStyle(value: unknown): string {

@@ -898,6 +898,16 @@ export class PreviewController {
         );
       }
     }
+    // Демо-товар в превью-корзине (#4): в редакторе корзину не наполнить, поэтому
+    // дровер показывал пустое состояние без кнопки «Оформить». Сеем 1 реальный
+    // товар (только если корзина превью пуста) → мерчант видит полный дизайн.
+    // Требует известной темы (префикс ключа/события nt-cart). Перед </body>.
+    if (themeName) {
+      html = html.replace(
+        /<\/body>/i,
+        (m) => `${this.previewCartDemoScript(siteId, themeName)}${m}`,
+      );
+    }
     // Агент конструктора (hover/select → postMessage). На секционном пути его
     // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
     // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет
@@ -964,6 +974,38 @@ export class PreviewController {
       /* пусто — дефолт темы */
     }
     return g;
+  }
+
+  /**
+   * Демо-товар в корзине ТОЛЬКО для превью конструктора: в редакторе реальный
+   * товар в корзину не добавить, поэтому дровер/страница корзины показывали пустое
+   * состояние и мерчант не видел дизайн (итог + кнопка «Оформить»). Инжектим
+   * инлайн-скрипт: если корзина превью пуста (`<тема>:cart:v1`), берём ПЕРВЫЙ
+   * реальный товар из storefront-data (тот же каталог, что reconcile — значит
+   * строка не выкидывается) и сеем 1 позицию + диспатчим `<тема>:cart:updated`
+   * → nt-cart рендерит товар, итог и кнопку. Живого сайта НЕ касается (это
+   * localStorage превью-iframe на gateway, отдельный origin). Не трогаем непустую
+   * корзину (мерчант мог тестово что-то добавить).
+   */
+  private previewCartDemoScript(siteId: string, themeName: string): string {
+    const key = `${themeName}:cart:v1`;
+    const evUpdated = `${themeName}:cart:updated`;
+    return (
+      `<script>(function(){try{` +
+      `var K=${JSON.stringify(key)};` +
+      `if(window.localStorage.getItem(K))return;` +
+      `fetch('/api/sites/'+${JSON.stringify(siteId)}+'/storefront-data').then(function(r){return r.json();}).then(function(d){` +
+      `var ps=(d&&d.products)||[];var p=ps[0];if(!p)return;` +
+      `if(window.localStorage.getItem(K))return;` +
+      `var cs=Array.isArray(p.variantCombinations)?p.variantCombinations:[];var c=cs[0]||null;` +
+      `var line={id:'preview-demo',productId:String(p.id),quantity:1,name:p.name||'Товар',` +
+      `image:(Array.isArray(p.images)&&p.images[0])||'',price:c?Number(c.price):(Number(p.price)||0),` +
+      `variant:c?{variantCombinationId:String(c.id)}:{}};` +
+      `window.localStorage.setItem(K,JSON.stringify([line]));` +
+      `window.dispatchEvent(new CustomEvent(${JSON.stringify(evUpdated)},{detail:[line]}));` +
+      `}).catch(function(){});` +
+      `}catch(e){}})();</script>`
+    );
   }
 
   private collectionSlugFromRoute(route: string): string | null {

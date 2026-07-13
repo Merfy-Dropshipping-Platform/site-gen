@@ -1,17 +1,18 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
-export const PublicationsSchema = z.object({
+export const PublicationsAuthoringSchema = z.object({
   heading: z.string(),
   columns: z.number().int().min(1).max(4),
   cards: z.number().int().min(1).max(4),
   // Pupa parity.
   publicationType: z.string().optional(),
-  cardsCount: z.number().int().optional(),
-  columnsCount: z.number().int().optional(),
+  cardsCount: z.number().int().min(1).max(4).optional(),
+  columnsCount: z.number().int().min(1).max(4).optional(),
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   dateTime: z.object({ enabled: z.enum(['true', 'false']) }).optional(),
+  showDateTime: z.enum(['true', 'false']).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -19,7 +20,59 @@ export const PublicationsSchema = z.object({
   }),
 });
 
-export type PublicationsProps = z.infer<typeof PublicationsSchema>;
+export type PublicationsProps = z.infer<typeof PublicationsAuthoringSchema>;
+
+export const PublicationsSchema = PublicationsAuthoringSchema;
+
+export interface PublicationsStoredInput {
+  heading?: unknown;
+  headingSize?: unknown;
+  headingAlignment?: unknown;
+  columns?: unknown;
+  cards?: unknown;
+  publicationType?: unknown;
+  categoryFilter?: unknown;
+  cardsCount?: unknown;
+  columnsCount?: unknown;
+  dateTime?: unknown;
+  showDateTime?: unknown;
+  colorScheme?: unknown;
+  padding?: unknown;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+export function normalizePublicationsStoredProps(input: unknown): PublicationsProps | unknown {
+  if (!isRecord(input)) return input;
+  const raw = input as PublicationsStoredInput;
+  const heading = isRecord(raw.heading) ? raw.heading : undefined;
+  const cards = clampPublicationCount(raw.cards ?? raw.cardsCount);
+  const columns = clampPublicationCount(raw.columns ?? raw.columnsCount);
+  const dateTime = isRecord(raw.dateTime) ? raw.dateTime : undefined;
+  return {
+    heading: typeof raw.heading === 'string'
+      ? raw.heading
+      : heading?.enabled === 'false' ? '' : typeof heading?.text === 'string' ? heading.text : 'Публикации',
+    headingSize: raw.headingSize === 'small' || raw.headingSize === 'large'
+      ? raw.headingSize
+      : heading?.size === 'small' || heading?.size === 'large' ? heading.size : 'medium',
+    ...(raw.headingAlignment === 'left' || raw.headingAlignment === 'center' || raw.headingAlignment === 'right'
+      ? { headingAlignment: raw.headingAlignment }
+      : {}),
+    columns,
+    cards,
+    columnsCount: clampPublicationCount(raw.columnsCount, columns),
+    cardsCount: clampPublicationCount(raw.cardsCount, cards),
+    publicationType: resolvePublicationsType(raw),
+    showDateTime: String(raw.showDateTime ?? dateTime?.enabled ?? 'true') === 'false' ? 'false' : 'true',
+    ...(typeof raw.colorScheme === 'string' ? { colorScheme: raw.colorScheme } : {}),
+    padding: isRecord(raw.padding) ? raw.padding : { top: 80, bottom: 80 },
+  };
+}
+
+export const PublicationsStoredSchema: z.ZodType<PublicationsProps, z.ZodTypeDef, unknown> =
+  z.preprocess(normalizePublicationsStoredProps, PublicationsAuthoringSchema);
 
 export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
   label: 'Публикации',
@@ -29,7 +82,7 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
   // Колонки (slider) / Дата и время (toggle) / Цветовая схема / Отступы.
   fields: {
     publicationType: { type: 'pagePicker', label: 'Выбор публикации' } as any,
-    cardsCount: { type: 'slider', label: 'Карточки', min: 1, max: 12, step: 1 },
+    cardsCount: { type: 'slider', label: 'Карточки', min: 1, max: 4, step: 1 },
     ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {
       type: 'aiText',
@@ -46,7 +99,7 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
-    columnsCount: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
+    columnsCount: { type: 'slider', label: 'Колонки', min: 1, max: 4, step: 1 },
     // user #31: упростил object с вложенным toggle до flat toggle
     // (rendering FieldRenderer same as другие — mobile pattern с
     // animated "Показать"/"Скрыть").
@@ -70,10 +123,13 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
     heading: 'Публикации',
     columns: 3,
     cards: 3,
+    cardsCount: 3,
+    columnsCount: 3,
     headingSize: 'medium',
+    showDateTime: 'true',
     padding: { top: 80, bottom: 80 },
   },
-  schema: PublicationsSchema,
+  schema: PublicationsAuthoringSchema,
   maxInstances: null,
   constraints: {
     padding: { min: 0, max: 160, step: 8 },
@@ -83,3 +139,48 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
     maxColumns: 4,
   },
 };
+
+export function clampPublicationCount(value: unknown, fallback = 3): number {
+  const numeric = typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : fallback;
+  return Math.min(4, Math.max(1, numeric));
+}
+
+export function resolvePublicationsDateTime(raw: {
+  showDateTime?: unknown;
+  dateTime?: { enabled?: unknown };
+}): boolean {
+  const value = raw.showDateTime ?? raw.dateTime?.enabled ?? 'true';
+  return String(value) !== 'false';
+}
+
+const PUBLICATION_TYPE_ALIASES: Record<string, string> = {
+  news: 'news',
+  'новости': 'news',
+  blog: 'blog',
+  'блог': 'blog',
+  articles: 'articles',
+  'статьи': 'articles',
+};
+
+export function resolvePublicationsType(raw: {
+  publicationType?: unknown;
+  categoryFilter?: unknown;
+}): string {
+  const value = typeof raw.publicationType === 'string' && raw.publicationType.trim()
+    ? raw.publicationType
+    : raw.categoryFilter;
+  if (typeof value !== 'string' || !value.trim()) return 'all';
+  const normalized = value.trim().toLowerCase();
+  return PUBLICATION_TYPE_ALIASES[normalized] ?? normalized;
+}
+
+export function filterPublicationsByType<T extends { category?: string }>(
+  items: readonly T[],
+  publicationType: unknown,
+): T[] {
+  if (typeof publicationType !== 'string' || !publicationType.trim() || publicationType === 'all') {
+    return [...items];
+  }
+  const category = PUBLICATION_TYPE_ALIASES[publicationType.trim().toLowerCase()];
+  return category ? items.filter((item) => item.category === category) : [...items];
+}

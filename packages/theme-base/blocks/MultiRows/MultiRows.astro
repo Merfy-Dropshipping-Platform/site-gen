@@ -1,5 +1,13 @@
 ---
-import type { MultiRowsProps } from './MultiRows.puckConfig';
+import {
+  resolveMultiRowsButtonStyle,
+  resolveMultiRowsImagePosition,
+  resolveMultiRowsItemSize,
+  resolveMultiRowsWidth,
+  getVisibleMultiRowEntries,
+  resolveMultiRowsButton,
+  type MultiRowsProps,
+} from './MultiRows.puckConfig';
 import { MultiRowsClasses as C } from './MultiRows.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 import { sanitizeInline } from '../../runtime/rich-text';
@@ -18,7 +26,7 @@ const {
 const colorScheme = raw.colorScheme as string | undefined;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 
-// containerColorScheme (hidden в Figma) — отдельная схема на контейнере рядов
+// containerColorScheme — отдельная видимая схема контейнера рядов по Figma
 // (мирроль rose-порта + паттерн CollapsibleSection / Catalog). Когда не задана —
 // контейнер наследует схему секции (визуально не отличается).
 const containerColorScheme = raw.containerColorScheme as string | undefined;
@@ -26,12 +34,8 @@ const containerSchemeClass = containerColorScheme
   ? `color-scheme-${String(containerColorScheme).replace('scheme-', '')}`
   : '';
 
-// size секционный (Высота) → aspect медиа ряда; per-row size приоритетнее
-// (мирроль rose aspectFor(r.size ?? p.size)). Нормализуем к ключу C.imageAspect.
-const sectionSize = (raw.size === 'small' || raw.size === 'large' ? raw.size : 'medium') as
-  | 'small'
-  | 'medium'
-  | 'large';
+// Section Height is the authored control and wins when present. Old revisions
+// without it can still use their per-row size as a compatibility fallback.
 const aspectKey = (s: unknown, fallback: 'small' | 'medium' | 'large') =>
   s === 'small' || s === 'medium' || s === 'large' ? s : fallback;
 
@@ -55,43 +59,42 @@ const headingSizeClass =
 
 // Pupa: rowsPosition (alternate, left, right).
 const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '';
+const alignment = raw.alignment === 'center' || raw.alignment === 'right' ? raw.alignment : 'left';
+const textAlignmentClass = C.textAlignment[alignment];
+const buttonStyle = resolveMultiRowsButtonStyle(raw.buttonStyle);
+const buttonClass = buttonStyle === 'secondary' ? C.buttonSecondary : C.button;
+const widthClass = C.width[resolveMultiRowsWidth(raw.width)];
+const visibleRowEntries = getVisibleMultiRowEntries(rows);
 ---
 <section
   class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   style={paddingStyle}
 >
-  <div class:list={[C.container, containerSchemeClass]}>
+  <div class:list={[C.container, widthClass, containerSchemeClass]}>
     {headingText && (
       <h2 class:list={['[font-family:var(--font-heading)] text-[rgb(var(--color-heading))]', headingAlignClass, headingSizeClass, 'mb-8 font-medium']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(headingText)} /></h2>
     )}
     <div class={C.stack}>
-      {rows.map((row: any, i: number) => {
+      {visibleRowEntries.map(({ item: row, originalIndex }, i: number) => {
         // Pupa: rowsPosition alternate → odd rows mirror.
-        let imagePos = row.imagePosition;
-        if (rowsPosition === 'alternate') imagePos = i % 2 === 0 ? 'left' : 'right';
-        else if (rowsPosition === 'left') imagePos = 'left';
-        else if (rowsPosition === 'right') imagePos = 'right';
+        const imagePos = resolveMultiRowsImagePosition(rowsPosition, i, row.imagePosition);
         const variantKey = imagePos === 'right' ? 'imageRight' : 'imageLeft';
         const rowImage = row.image || row.imageUrl;
         const rowTitle = row.title ?? row.heading;
         const rowDescription = row.description ?? row.text;
-        // Per-row size/headingSize/textSize (мирроль rose-порта). Per-row size
-        // приоритетнее секционной Высоты; размеры заголовка/текста — per-row.
-        const rowAspectClass = C.imageAspect[aspectKey(row.size, sectionSize)];
+        // Top-level Height wins; legacy per-row size is only a fallback.
+        const rowAspectClass = C.imageAspect[resolveMultiRowsItemSize(raw.size, row.size)];
         const rowHeadingSizeClass = C.rowHeadingSize[aspectKey(row.headingSize, 'medium')];
         const rowTextSizeClass = C.rowTextSize[aspectKey(row.textSize, 'medium')];
-        const buttonHref =
-          (row.button && typeof row.button === 'object' && 'link' in row.button && typeof row.button.link === 'string')
-            ? row.button.link
-            : row.button?.href;
+        const button = resolveMultiRowsButton(row.button);
         return (
           <div
             class={C.row[variantKey]}
             data-row-id={row.id}
             data-image-position={imagePos}
             data-puck-subsection-parent={id}
-            data-puck-subsection-index={i}
+            data-puck-subsection-index={originalIndex}
             data-puck-subsection-field="rows"
           >
             <div class={C.imageCol[variantKey]}>
@@ -101,11 +104,11 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
                 <img src={PLACEHOLDER_ASSETS.landscape.multirows} alt="" class:list={[C.image, rowAspectClass]} aria-hidden="true" loading="lazy" />
               )}
             </div>
-            <div class={C.textCol[variantKey]}>
+            <div class:list={[C.textCol[variantKey], C.textColBase, textAlignmentClass]}>
               {rowTitle && <h3 class:list={[C.rowHeading, rowHeadingSizeClass]}><Fragment set:html={sanitizeInline(rowTitle)} /></h3>}
               {rowDescription && <p class:list={[C.rowText, rowTextSizeClass]}>{rowDescription}</p>}
-              {row.button?.text && (
-                <a href={buttonHref ?? '#'} class={C.button}>{row.button.text}</a>
+              {button && (
+                <a href={button.href} class={buttonClass}>{button.text}</a>
               )}
             </div>
           </div>

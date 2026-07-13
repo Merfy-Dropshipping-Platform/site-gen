@@ -29,6 +29,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
 import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
+import { escapeHtml, patchPdpMetaTags } from "./seo-meta";
 import { migrateRevisionData } from "../utils/revision-migrations";
 import { applyFooterData } from "../utils/footer-data";
 import {
@@ -157,20 +158,6 @@ export async function patchShopIdInDist(
     await fs.writeFile(file, html, "utf8");
   }
   return htmlFiles.length;
-}
-
-/**
- * SEO: экранирование для безопасной подстановки текста в HTML-атрибуты
- * (content="…", href="…") и текстовые узлы (<title>…</title>). Имена/описания
- * товаров — пользовательский ввод, без экранирования рвут разметку или дают XSS.
- */
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 /**
@@ -1310,89 +1297,14 @@ export async function runBuildPipeline(
             // может быть null — тогда canonical/og:url не патчим, остальное патчим).
             const pub = ctx.publicUrl ? ctx.publicUrl.replace(/\/+$/, "") : "";
 
-            // Per-product патч мета. Возвращает HTML с подставленными SEO-тегами.
+            // Per-product патч мета — форвард в чистую seo-meta.patchPdpMetaTags
+            // (siteTitle/pub захвачены из внешнего скоупа). Реализация + unit-тесты
+            // (canonical/og:*/twitter:*/title/description + XSS-экранирование) — seo-meta.ts.
             const patchPdpMeta = (
               html: string,
               p: Record<string, unknown>,
               slug: string,
-            ): string => {
-              let out = html;
-              const name = typeof p.name === "string" ? p.name : "";
-              // description: предпочитаем metaDescription (явное SEO-поле), иначе description.
-              const descRaw =
-                (typeof p.metaDescription === "string" && p.metaDescription.trim()
-                  ? p.metaDescription
-                  : typeof p.description === "string"
-                    ? p.description
-                    : "") ?? "";
-              const desc = descRaw.trim();
-              // главное изображение: image / images[0] / gallery[0] (поддержка строки и {url}).
-              const pickImg = (v: unknown): string | null => {
-                if (typeof v === "string" && v.trim()) return v.trim();
-                if (v && typeof v === "object" && typeof (v as { url?: unknown }).url === "string")
-                  return (v as { url: string }).url;
-                return null;
-              };
-              const imgs = Array.isArray(p.images) ? p.images : [];
-              const gallery = Array.isArray((p as { gallery?: unknown[] }).gallery)
-                ? ((p as { gallery: unknown[] }).gallery)
-                : [];
-              const mainImage =
-                pickImg(p.image) ?? pickImg(imgs[0]) ?? pickImg(gallery[0]);
-
-              const canonical = pub ? `${pub}/product/${slug}` : "";
-              // canonical href (ВСЕГДА slug) — толерантный regex по атрибутам link.
-              if (canonical) {
-                out = out.replace(
-                  /(<link\b[^>]*\brel=["']canonical["'][^>]*\bhref=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-                // og:url (та же canonical) — property до/после content, толерантно.
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-              }
-              // <title> и og:title → "<name> — <siteTitle>" (или просто name без суффикса).
-              if (name) {
-                const fullTitle = siteTitle ? `${name} — ${siteTitle}` : name;
-                out = out.replace(
-                  /<title>[^<]*<\/title>/i,
-                  `<title>${escapeHtml(fullTitle)}</title>`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(fullTitle)}$2`,
-                );
-              }
-              // description / og:description / twitter:description → обрезка ~160 симв.
-              // Пусто → не трогаем (оставляем скелет, чтобы не было пустых тегов).
-              if (desc) {
-                const trimmed =
-                  desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}…` : desc;
-                const ed = escapeHtml(trimmed);
-                out = out.replace(
-                  /(<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']twitter:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-              }
-              // og:image → абсолютный URL главного изображения (если есть).
-              if (mainImage) {
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(mainImage)}$2`,
-                );
-              }
-              return out;
-            };
+            ): string => patchPdpMetaTags(html, p, slug, siteTitle, pub);
 
             let made = 0;
             let madeId = 0;

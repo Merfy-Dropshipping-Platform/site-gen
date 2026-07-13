@@ -167,24 +167,80 @@ describe('write: variant pick → URL via history.replaceState', () => {
   });
 });
 
-describe('preview iframe: URL untouched (Phase 2 territory)', () => {
-  afterEach(() => Object.defineProperty(window, 'parent', { value: window, configurable: true }));
+describe('preview iframe (Phase 2): read opt.*, postMessage up, no history write', () => {
+  let parentPostMessage: jest.Mock;
 
-  it('does not write to the URL on select when inside an iframe', () => {
+  /** Simulate being inside a constructor preview iframe with a mockable parent. */
+  function enterIframe(): void {
+    parentPostMessage = jest.fn();
+    Object.defineProperty(window, 'parent', { value: { postMessage: parentPostMessage }, configurable: true });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(window, 'parent', { value: window, configurable: true });
+    jest.restoreAllMocks();
+  });
+
+  // (а) apply reads ?opt.* injected by PreviewFrame into the iframe src → search.
+  it('apply: reads ?opt.* from search and auto-selects inside an iframe', () => {
+    window.history.replaceState({}, '', '/product/tshirt?' + serializeVariantAnchor({ Цвет: 'Синий', Размер: 'M' }));
+    enterIframe();
+    const section = mountDom();
+    run(section);
+    expect(active(section, 'Цвет', 'Синий')).toBe('true');
+    expect(active(section, 'Цвет', 'Белый')).toBe('false');
+    expect((section.querySelector('[data-variant-select]') as HTMLSelectElement).value).toBe('M');
+  });
+
+  // (в) during apply (__applyingAnchor) the synthetic selects must NOT echo upward.
+  it('apply: does NOT postMessage while applying (no echo loop with constructor)', () => {
+    window.history.replaceState({}, '', '/product/tshirt?' + serializeVariantAnchor({ Цвет: 'Синий' }));
+    enterIframe();
+    const section = mountDom();
+    run(section);
+    expect(parentPostMessage).not.toHaveBeenCalled();
+  });
+
+  // (б) a real user pick posts {type:'variant-change', opt} with the axis map.
+  it('select: posts {type:"variant-change", opt} to parent with the axis map', () => {
+    window.history.replaceState({}, '', '/product/tshirt');
+    enterIframe();
+    const section = mountDom();
+    run(section);
+    parentPostMessage.mockClear(); // ignore any apply-time noise (there is none)
+    chip(section, 'Цвет', 'Синий').click();
+    expect(parentPostMessage).toHaveBeenCalledWith({ type: 'variant-change', opt: { Цвет: 'Синий' } }, '*');
+
+    const sel = section.querySelector('[data-variant-select]') as HTMLSelectElement;
+    sel.value = 'M';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    // Latest message carries the accumulated selection (both axes).
+    expect(parentPostMessage).toHaveBeenLastCalledWith(
+      { type: 'variant-change', opt: { Цвет: 'Синий', Размер: 'M' } },
+      '*',
+    );
+  });
+
+  // (г) in an iframe the URL is never mutated — history.replaceState is not called.
+  it('select: does NOT touch history.replaceState / URL inside an iframe', () => {
+    window.history.replaceState({}, '', '/product/tshirt');
+    enterIframe();
+    const section = mountDom();
+    run(section);
+    const spy = jest.spyOn(window.history, 'replaceState');
+    chip(section, 'Цвет', 'Синий').click();
+    expect(spy).not.toHaveBeenCalled();
+    expect(window.location.search).toBe('');
+  });
+
+  // Cross-origin parent whose access throws: __inIframe still true; postMessage
+  // guarded — no throw, no URL write.
+  it('cross-origin parent that throws: silent, no URL write, no throw', () => {
     window.history.replaceState({}, '', '/product/tshirt');
     Object.defineProperty(window, 'parent', { get() { throw new Error('cross-origin'); }, configurable: true });
     const section = mountDom();
     run(section);
-    chip(section, 'Цвет', 'Синий').click();
+    expect(() => chip(section, 'Цвет', 'Синий').click()).not.toThrow();
     expect(window.location.search).toBe('');
-  });
-
-  it('does not auto-select from the URL when inside an iframe', () => {
-    window.history.replaceState({}, '', '/product/tshirt?' + serializeVariantAnchor({ Цвет: 'Синий' }));
-    Object.defineProperty(window, 'parent', { value: {}, configurable: true });
-    const section = mountDom();
-    run(section);
-    expect(active(section, 'Цвет', 'Синий')).toBe('false');
-    expect(active(section, 'Цвет', 'Белый')).toBe('true');
   });
 });

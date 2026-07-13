@@ -485,7 +485,7 @@ const cartImage = view.gallery.hero?.src ?? '';
       return false;
     }
     function applyVariantAnchor() {
-      if (__inIframe || !isPdp) return; // прод-витрина, только PDP (Фаза 1)
+      if (!isPdp) return; // только PDP; в превью-iframe читаем проброшенные opt.* (Фаза 2)
       var want = parseVariantAnchor(location.search);
       var keys = Object.keys(want);
       if (!keys.length) return;
@@ -494,11 +494,18 @@ const cartImage = view.gallery.hero?.src ?? '';
       try { keys.forEach(function (k) { applyAnchorAxis(k, want[k]); }); }
       finally { __applyingAnchor = false; }
     }
-    // Записать текущий выбор в URL через history.replaceState (НЕ push — без записи
-    // в историю), сохранив pathname/hash и посторонние query-параметры; стирает лишь
-    // устаревшие opt.*. Только на PDP и вне превью-iframe; во время apply — пропуск.
+    // Записать текущий выбор. Только на PDP; во время apply — пропуск (иначе авто-
+    // выбор переписал бы URL / устроил эхо-петлю с конструктором).
+    //   • прод-витрина → в URL через history.replaceState (НЕ push — без записи в
+    //     историю), сохранив pathname/hash и посторонние query; стирает лишь opt.*.
+    //   • превью-iframe → URL внутри iframe не трогаем (бессмысленно/вредно) — шлём
+    //     выбор наверх конструктору тем же каналом, что checkout-navigate.
     function writeVariantAnchor() {
-      if (__inIframe || __applyingAnchor || !isPdp) return;
+      if (__applyingAnchor || !isPdp) return;
+      if (__inIframe) {
+        try { window.parent.postMessage({ type: 'variant-change', opt: selectedOptions }, '*'); } catch (e) { /* cross-origin — silent */ }
+        return;
+      }
       try {
         var qs = writeVariantAnchorToSearch(location.search, selectedOptions);
         var url = location.pathname + (qs ? '?' + qs : '') + location.hash;

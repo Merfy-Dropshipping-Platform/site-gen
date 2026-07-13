@@ -59,8 +59,8 @@
       "props": {
         "id": "Hero-1",
         "variant": "split",
-        "title": "ИСКУССТВО ЗАБОТЫ О СЕБЕ",
-        "subtitle": "Уходовая косметика, которая дарит здоровье и сияние твоей коже и волосам",
+        "title": "Искусство заботы о себе",
+        "subtitle": "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам",
         "image": {
           "url": "/main-image.png",
           "alt": "Bloom hero"
@@ -75,7 +75,7 @@
           "bottom": 0
         },
         "backgroundImages": {
-          "url1": "https://minio.merfy.ru/product-images/52a3d7a3-c4ef-4cee-839a-9c3cc4138d5f.webp"
+          "url1": "/images/hero-photo.webp"
         }
       }
     },

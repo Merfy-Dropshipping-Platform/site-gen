@@ -47,8 +47,8 @@ export function normalizePublicationsStoredProps(input: unknown): PublicationsPr
   if (!isRecord(input)) return input;
   const raw = input as PublicationsStoredInput;
   const heading = isRecord(raw.heading) ? raw.heading : undefined;
-  const cards = clampPublicationCount(raw.cards ?? raw.cardsCount);
-  const columns = clampPublicationCount(raw.columns ?? raw.columnsCount);
+  const cards = clampPublicationCount(raw.cardsCount ?? raw.cards);
+  const columns = clampPublicationCount(raw.columnsCount ?? raw.columns);
   const dateTime = isRecord(raw.dateTime) ? raw.dateTime : undefined;
   return {
     heading: typeof raw.heading === 'string'
@@ -62,8 +62,8 @@ export function normalizePublicationsStoredProps(input: unknown): PublicationsPr
       : {}),
     columns,
     cards,
-    columnsCount: clampPublicationCount(raw.columnsCount, columns),
-    cardsCount: clampPublicationCount(raw.cardsCount, cards),
+    columnsCount: columns,
+    cardsCount: cards,
     publicationType: resolvePublicationsType(raw),
     showDateTime: String(raw.showDateTime ?? dateTime?.enabled ?? 'true') === 'false' ? 'false' : 'true',
     ...(typeof raw.colorScheme === 'string' ? { colorScheme: raw.colorScheme } : {}),

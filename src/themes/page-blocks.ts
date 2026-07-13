@@ -260,10 +260,14 @@ export function adaptLegacyProps(
     case 'MainText':
       coerceMainTextProps(out);
       break;
+    case 'Publications':
+      coerceGenericLegacyProps(out);
+      coercePublicationsProps(out);
+      break;
     default:
-      // Generic fallback for the 16 blocks without a hand-written coercer
+      // Generic fallback for the 15 blocks without a hand-written coercer
       // (Newsletter, Slideshow, MultiColumns, MultiRows,
-      // CollapsibleSection, Video, Publications,
+      // CollapsibleSection, Video,
       // Product, PromoBanner, CartSection, CheckoutSection, AuthModal,
       // CartDrawer, CheckoutLayout, CheckoutHeader, AccountLayout).
       // Any legacy `{text|content, size|enabled, ...}` envelope that
@@ -299,6 +303,23 @@ function coerceGenericLegacyProps(out: Record<string, unknown>): void {
   if (typeof out.copyrightColorScheme === 'string') {
     out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
   }
+}
+
+function coercePublicationsProps(out: Record<string, unknown>): void {
+  const cards = coercePublicationCount(out.cardsCount ?? out.cards);
+  const columns = coercePublicationCount(out.columnsCount ?? out.columns);
+  out.cards = cards;
+  out.cardsCount = cards;
+  out.columns = columns;
+  out.columnsCount = columns;
+}
+
+function coercePublicationCount(value: unknown, fallback = 3): number {
+  const numeric =
+    typeof value === 'number' && Number.isFinite(value)
+      ? Math.trunc(value)
+      : fallback;
+  return Math.min(4, Math.max(1, numeric));
 }
 
 function coerceLegacyValue(v: unknown): unknown {

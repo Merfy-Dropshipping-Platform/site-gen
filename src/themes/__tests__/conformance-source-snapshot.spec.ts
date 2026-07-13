@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadThemeSourceSnapshot } from '../conformance/source-snapshot';
+import { bloomRegistry } from '../../generator/registries/bloom';
 
 // Task 3: the real Bloom source + compiled snapshot. Requires build
 // prerequisites (build → build:blocks → build:theme-sections bloom →
@@ -91,6 +92,40 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
       (m) => m.module === snap.publications.module,
     );
     expect(pub?.defaultExport).toBe(true);
+  });
+
+  it('marks EVERY registry renderer with a compiled default export as reachable', async () => {
+    const snap = await loadThemeSourceSnapshot('bloom');
+    // The real snapshot must import-check every bloomRegistry renderer against
+    // its real compiled artifact (mapped → dist/theme-sections/bloom via the
+    // section manifest; unmapped → dist/astro-blocks/<pkg>__<Block>__<Block>.mjs)
+    // and mark it reachable on a REAL default export — NOT infer reachability
+    // from a physical theme-bloom .astro (which only Benefits/Catalog have).
+    const reachable = new Set(snap.renderersReachable);
+    const registryNames = Object.keys(bloomRegistry).sort();
+
+    // On the target ref every registry renderer resolves to a compiled module
+    // with a default export, so ALL of them must be reachable (renderer-
+    // unreachable must be 0). Previously falsely-"unreachable" blocks:
+    for (const name of [
+      'Hero',
+      'Header',
+      'Footer',
+      'MainText',
+      'Publications',
+      'Product',
+      'Page',
+    ]) {
+      expect(reachable.has(name)).toBe(true);
+    }
+    // Coverage is complete: no registry renderer is left out.
+    for (const name of registryNames) {
+      expect(reachable.has(name)).toBe(true);
+    }
+    // Reachability is derived only from registry renderers (no stray extras).
+    for (const name of snap.renderersReachable) {
+      expect(registryNames).toContain(name);
+    }
   });
 
   it('captures the generated Bloom preview-cart script + cart-drawer descriptors', async () => {

@@ -107,6 +107,16 @@ export interface ThemeSourceSnapshot {
   physicalBlocks: PhysicalBlockRecord[];
   /** generator registry reachability records. */
   registry: RegistryReachabilityRecord[];
+  /**
+   * Registry renderer names whose REAL compiled artifact imports with a genuine
+   * default export. Mapped renderers resolve through the compiled theme-section
+   * manifest (`dist/theme-sections/<theme>/<file>.mjs`); unmapped renderers
+   * resolve through `resolveBlockArtifact` to
+   * `dist/astro-blocks/<pkg>__<Block>__<Block>.mjs`. A renderer whose compiled
+   * module genuinely fails to import / lacks a default export is omitted so it
+   * remains a real `renderer-unreachable` finding.
+   */
+  renderersReachable: string[];
   /** required Bloom runtime source files (repo-relative, sorted). */
   runtimeSources: string[];
   /** presence of the standalone live output index.html files. */

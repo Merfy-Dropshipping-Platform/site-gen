@@ -267,24 +267,68 @@ export async function loadThemeSourceSnapshot(
   modulesToCheck.push(
     join(distAstroBlocks, "theme-bloom__Benefits__index.mjs"),
   );
-  // Mapped Publications section module (from the section manifest).
+  // Read the compiled theme-section manifest ONCE (authority for mapped
+  // renderers — the exact modules the live/preview pipeline imports).
   let publicationsModule = "";
   const sectionManifestBuf = readOptional(
     join(distThemeSections, "manifest.json"),
   );
-  if (sectionManifestBuf) {
-    const sm = JSON.parse(sectionManifestBuf.toString("utf-8")) as Record<
-      string,
-      string
-    >;
-    if (sm.Publications) {
-      publicationsModule = relative(
-        SITES_ROOT,
-        join(distThemeSections, sm.Publications),
-      );
-      modulesToCheck.push(join(distThemeSections, sm.Publications));
-    }
+  const sectionManifest: Record<string, string> = sectionManifestBuf
+    ? (JSON.parse(sectionManifestBuf.toString("utf-8")) as Record<
+        string,
+        string
+      >)
+    : {};
+  // Mapped Publications section module (from the section manifest).
+  if (sectionManifest.Publications) {
+    publicationsModule = relative(
+      SITES_ROOT,
+      join(distThemeSections, sectionManifest.Publications),
+    );
+    modulesToCheck.push(
+      join(distThemeSections, sectionManifest.Publications),
+    );
   }
+
+  // --- renderer reachability: import-check EVERY generator-registry renderer ---
+  // Resolve each registry renderer to its REAL compiled artifact and mark it
+  // reachable only on a genuine default export (F-052). A mapped renderer
+  // (present in the compiled section manifest) resolves to
+  // `dist/theme-sections/<theme>/<file>.mjs`; an unmapped renderer resolves via
+  // `resolveBlockArtifact` to `dist/astro-blocks/<pkg>__<Block>__<Block>.mjs`
+  // (the compiled `.astro` component with the default export — NOT the
+  // `__index.mjs` Puck-config module). A theme package that physically owns the
+  // block (e.g. theme-bloom/blocks/Benefits) routes to its theme override,
+  // exactly like a `./blocks/<Name>` manifest override; everything else routes
+  // to theme-base. A renderer whose compiled module genuinely fails to import /
+  // lacks a default export is omitted, so it stays a real GAP.
+  const rendererArtifacts = Object.keys(bloomRegistry)
+    .sort()
+    .map((name) => {
+      const mapped = sectionManifest[name];
+      if (mapped) {
+        return { name, abs: join(distThemeSections, mapped) };
+      }
+      // Unmapped: theme-owned iff a physical block source exists in the theme
+      // package, mirroring resolveBlockArtifact's `./blocks/<Name>` routing.
+      const themeOwned = existsSync(
+        join(pkgDir, "blocks", name, `${name}.astro`),
+      );
+      const ref = resolveBlockArtifact(
+        themeId,
+        themeOwned ? `./blocks/${name}` : name,
+      );
+      const rendererArtifact = `${ref.pkg}__${ref.blockName}__${ref.blockName}.mjs`;
+      return { name, abs: join(distAstroBlocks, rendererArtifact) };
+    });
+  const rendererChecks = checkCompiledModules(
+    rendererArtifacts.map((r) => r.abs),
+  );
+  const renderersReachable = rendererArtifacts
+    .filter((_, i) => rendererChecks[i]?.defaultExport === true)
+    .map((r) => r.name)
+    .sort();
+
   const compiledModules = checkCompiledModules(modulesToCheck).sort((a, b) =>
     a.module.localeCompare(b.module),
   );
@@ -389,6 +433,7 @@ export async function loadThemeSourceSnapshot(
     resolutions,
     physicalBlocks,
     registry,
+    renderersReachable,
     runtimeSources,
     standaloneOutputs,
     compiledModules,

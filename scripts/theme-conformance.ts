@@ -156,12 +156,14 @@ function toStructuralSnapshot(
       liveBuild: snapshot.cartDrawer.reachability.liveBuild,
     },
     runtimeSourcesPresent: snapshot.runtimeSources,
-    // Reachable when the generator registry entry has a physical source to feed
-    // its assembler destination; refined against compiled default-exports in
-    // Task 8's real capture/diagnose review.
-    renderersReachable: snapshot.registry
-      .filter((r) => r.physicalSourcePresent)
-      .map((r) => r.name),
+    // Reachable = the renderer's REAL compiled artifact imports with a genuine
+    // default export (mapped renderers via the compiled theme-section manifest;
+    // unmapped renderers via resolveBlockArtifact →
+    // dist/astro-blocks/<pkg>__<Block>__<Block>.mjs). Import-checked in the same
+    // child-process checker by the snapshot, so a renderer that resolves to a
+    // base theme-section (Hero/Footer/… — no physical theme-bloom .astro) is
+    // correctly reachable, while a genuinely broken renderer stays a GAP.
+    renderersReachable: snapshot.renderersReachable,
     sectionMappingsResolved: true,
   };
 }

@@ -9,6 +9,7 @@ import { SitesDomainService } from "./sites.service";
  * publish() спаим (реальная сборка не нужна), таймер debounce гоняем фейк-таймерами.
  */
 function makeDb(existingRow: any) {
+  const captured: { updates?: any } = {};
   const db: any = {
     select: () => ({
       from: (_t: any) => ({
@@ -18,14 +19,17 @@ function makeDb(existingRow: any) {
       }),
     }),
     update: () => ({
-      set: (_u: any) => ({
-        where: (_w: any) => ({
-          returning: (_r: any) => Promise.resolve([{ id: "s1" }]),
-        }),
-      }),
+      set: (u: any) => {
+        captured.updates = u;
+        return {
+          where: (_w: any) => ({
+            returning: (_r: any) => Promise.resolve([{ id: "s1" }]),
+          }),
+        };
+      },
     }),
   };
-  return { db };
+  return { db, captured };
 }
 
 function makeService(db: any) {
@@ -239,5 +243,127 @@ describe("SitesDomainService.update — branding republish (debounced)", () => {
     await Promise.resolve();
     jest.advanceTimersByTime(DEBOUNCE_MS);
     expect(publishSpy).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("SitesDomainService.update — branding shallow-merge (follow-up #2)", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it("partial branding-патч (цвета) мёржится, сохраняя favicons и logoUrl", async () => {
+    const existing = {
+      logoUrl: "https://s3/logo.png",
+      primaryColor: "#000000",
+      favicons: { universal: "https://s3/u.png", dark: "https://s3/d.png" },
+    };
+    const { db, captured } = makeDb({ themeId: "rose", status: "draft", settings: null, branding: existing });
+    const service = makeService(db);
+
+    await service.update({
+      tenantId: "t1",
+      siteId: "s1",
+      patch: { branding: { primaryColor: "#00ff00" } }, // partial: только цвет
+    });
+
+    expect(captured.updates.branding).toEqual({
+      logoUrl: "https://s3/logo.png", // сохранён
+      primaryColor: "#00ff00", // обновлён
+      favicons: { universal: "https://s3/u.png", dark: "https://s3/d.png" }, // НЕ затёрт
+    });
+  });
+
+  it("branding: null очищает блок целиком (не merge)", async () => {
+    const { db, captured } = makeDb({
+      themeId: "rose",
+      status: "draft",
+      settings: null,
+      branding: { favicons: { universal: "https://s3/u.png" } },
+    });
+    const service = makeService(db);
+
+    await service.update({ tenantId: "t1", siteId: "s1", patch: { branding: null } });
+
+    expect(captured.updates.branding).toBeNull();
+  });
+
+  it("logoRemoved (logoUrl:null) зануляет лого, но favicons целы", async () => {
+    const { db, captured } = makeDb({
+      themeId: "rose",
+      status: "draft",
+      settings: null,
+      branding: { logoUrl: "https://s3/logo.png", favicons: { apple: "https://s3/a.png" } },
+    });
+    const service = makeService(db);
+
+    await service.update({
+      tenantId: "t1",
+      siteId: "s1",
+      patch: { branding: { logoUrl: null, primaryColor: "#111", secondaryColor: "#eee" } },
+    });
+
+    expect(captured.updates.branding.logoUrl).toBeNull();
+    expect(captured.updates.branding.favicons).toEqual({ apple: "https://s3/a.png" });
+    expect(captured.updates.branding.primaryColor).toBe("#111");
+  });
+
+  it("change-detection по MERGED: partial смена цвета на published → republish", async () => {
+    const { db } = makeDb({
+      themeId: "rose",
+      status: "published",
+      settings: null,
+      branding: { primaryColor: "#000", favicons: { universal: "https://s3/u.png" } },
+    });
+    const service = makeService(db);
+    const publishSpy = jest.spyOn(service as any, "publish").mockResolvedValue(true);
+
+    await service.update({ tenantId: "t1", siteId: "s1", patch: { branding: { primaryColor: "#00ff00" } } });
+
+    jest.advanceTimersByTime(DEBOUNCE_MS);
+    expect(publishSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("входящий favicons РЕПЛЕЙСИТ существующий целиком (top-level merge, НЕ deep-merge)", async () => {
+    // На это опирается deleteFavicon: он шлёт полный favicons-объект после delete
+    // ключа. Тест ловит будущую регрессию в сторону deep-merge favicons.
+    const { db, captured } = makeDb({
+      themeId: "rose",
+      status: "draft",
+      settings: null,
+      branding: {
+        favicons: { universal: "https://s3/u.png", dark: "https://s3/d.png" },
+        logoUrl: "https://s3/l.png",
+      },
+    });
+    const service = makeService(db);
+
+    await service.update({
+      tenantId: "t1",
+      siteId: "s1",
+      patch: { branding: { favicons: { universal: "https://s3/u.png" } } }, // dark опущен ВНУТРИ favicons
+    });
+
+    // favicons заменён целиком (dark ушёл), а logoUrl (top-level, опущен в patch) сохранён merge'ом
+    expect(captured.updates.branding.favicons).toEqual({ universal: "https://s3/u.png" });
+    expect(captured.updates.branding.logoUrl).toBe("https://s3/l.png");
+  });
+
+  it("change-detection по MERGED: no-op partial (тот же цвет) на published → НЕ republish", async () => {
+    // Ключевой фикс over-fire: сырой partial всегда != full existing, но merged == existing.
+    const { db } = makeDb({
+      themeId: "rose",
+      status: "published",
+      settings: null,
+      branding: { primaryColor: "#000", favicons: { universal: "https://s3/u.png" } },
+    });
+    const service = makeService(db);
+    const publishSpy = jest.spyOn(service as any, "publish").mockResolvedValue(true);
+
+    await service.update({ tenantId: "t1", siteId: "s1", patch: { branding: { primaryColor: "#000" } } });
+
+    jest.advanceTimersByTime(DEBOUNCE_MS);
+    expect(publishSpy).not.toHaveBeenCalled();
   });
 });

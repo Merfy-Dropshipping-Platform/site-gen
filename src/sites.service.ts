@@ -758,9 +758,27 @@ export class SitesDomainService {
       nextThemeId = params.patch.theme.id;
       updates.themeId = nextThemeId;
     }
-    // Handle branding (logo + colors); null clears branding
+    // Handle branding (logo + цвета + favicons) — shallow-merge, НЕ replace
+    // (зеркалит settings-merge ниже). Частичный сейв цветов/лого из BrandingModal
+    // НЕ должен затирать branding.favicons, записанные server-authoritative
+    // favicon-эндпоинтом: иначе stale-снапшот FE-кэша ['sites'] клобберил бы
+    // только что загруженный фавикон. branding === null|undefined очищает блок.
+    let brandingChanged = false;
     if ("branding" in (params.patch ?? {})) {
-      updates.branding = params.patch.branding ?? null;
+      const incoming = params.patch.branding;
+      const nextBranding =
+        incoming === null || incoming === undefined
+          ? null
+          : {
+              ...((existingSite?.branding as Record<string, unknown>) ?? {}),
+              ...incoming,
+            };
+      updates.branding = nextBranding;
+      // change-detection сравнивает ЭФФЕКТИВНЫЙ (merged) branding, а не сырой
+      // partial: partial всегда != full existing → republish палил бы вхолостую.
+      brandingChanged =
+        stableStringify(existingSite?.branding ?? null) !==
+        stableStringify(nextBranding ?? null);
     }
     // Handle settings (checkout config, etc.) — shallow-merge, НЕ replace.
     // Частичный сейв (напр. только addressRequired) не должен затирать другие
@@ -898,9 +916,7 @@ export class SitesDomainService {
       row &&
       existingSite?.status === "published" &&
       !themeAlreadyRepublished &&
-      "branding" in (params.patch ?? {}) &&
-      stableStringify(existingSite?.branding ?? null) !==
-        stableStringify(params.patch.branding ?? null)
+      brandingChanged
     ) {
       this.scheduleBrandingRepublish(params.tenantId, params.siteId);
     }

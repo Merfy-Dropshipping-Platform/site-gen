@@ -1434,6 +1434,81 @@ function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<str
   return changed ? out : pagesData;
 }
 
+/**
+ * Bloom «оживление» Collections: секция переехала с навигационной сетки плиток-
+ * коллекций (grid из `collections[]`, ссылки `/catalog?collection=<id>`) на СЕТКУ
+ * КАРТОЧЕК ТОВАРА одной коллекции (новый Collections.astro читает СИНГУЛЯРНЫЙ
+ * строковый проп `collection` = id/slug источника товаров). Старые ревизии
+ * bloom-сайтов держат МАССИВ `collections[]` + `cardLinkBase` (nav-tile shape) и
+ * НЕ имеют `collection` — на новой разметке их выбор коллекций был бы потерян
+ * (секция упала бы на SSG-демо).
+ *
+ * Миграция (только bloom): для Collections-блоков со старым shape (есть непустой
+ * `collections[]` И нет непустого `collection`) берёт ПЕРВЫЙ/приоритетный
+ * `collectionId` из старого массива и кладёт его в новый сингулярный `collection`,
+ * затем удаляет устаревшие `collections[]` и `cardLinkBase`. Прочие пропы
+ * (heading/subtitle/columns/imageView/padding/colorScheme) сохраняются.
+ *
+ * Идемпотентна:
+ *   • блок уже в новом shape (нет `collections[]`) — не трогаем;
+ *   • блок с `collection` (строкой) уже задан — только чистим stale nav-tile
+ *     пропы, `collection` не перезаписываем.
+ * Старый массив без единого валидного `collectionId` (все null — «пустое
+ * состояние») → `collection` не выставляем (остаётся SSG-демо), но stale
+ * `collections[]`/`cardLinkBase` всё равно вычищаем (даёт новый чистый shape).
+ */
+function migrateBloomCollectionsProps(
+  pagesData: Record<string, unknown>,
+  themeId?: string | null,
+): Record<string, unknown> {
+  if (themeId !== 'bloom') return pagesData;
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    const pd = page as PageData | undefined;
+    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    if (!content) continue;
+    let pageChanged = false;
+    const newContent = content.map((block) => {
+      if (block?.type !== 'Collections') return block;
+      const props = (block.props ?? {}) as Record<string, unknown>;
+      const oldItems = Array.isArray(props.collections)
+        ? (props.collections as Array<Record<string, unknown>>)
+        : null;
+      // Уже новый shape (нет nav-tile массива и cardLinkBase) — no-op.
+      const hasStaleTileProps = !!oldItems || props.cardLinkBase !== undefined;
+      if (!hasStaleTileProps) return block;
+
+      const nextProps: Record<string, unknown> = { ...props };
+      // Сингулярный источник товаров: не перезаписываем, если мерчант уже задал.
+      const currentCollection =
+        typeof props.collection === 'string' && props.collection.trim()
+          ? props.collection.trim()
+          : '';
+      if (!currentCollection && oldItems) {
+        const primary = oldItems.find(
+          (c) =>
+            c &&
+            typeof c.collectionId === 'string' &&
+            (c.collectionId as string).trim() !== '',
+        );
+        if (primary) nextProps.collection = (primary.collectionId as string).trim();
+      }
+      // Чистим устаревшие nav-tile пропы (новый Collections.astro их игнорирует).
+      delete nextProps.collections;
+      delete nextProps.cardLinkBase;
+
+      pageChanged = true;
+      return { ...block, props: nextProps };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(pd as object), content: newContent };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -1473,6 +1548,11 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillHeroLegacyProps(out.pagesData as Record<string, unknown>);
+  }
+  // Bloom «оживление» Collections: nav-tile `collections[]` → сингулярный
+  // `collection` (product-grid). Theme-gated (bloom). После prop-бэкфиллов.
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = migrateBloomCollectionsProps(out.pagesData as Record<string, unknown>, themeId);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.

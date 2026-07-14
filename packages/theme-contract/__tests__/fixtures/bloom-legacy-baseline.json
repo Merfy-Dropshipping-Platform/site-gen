@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "theme": "bloom",
+  "reviewDigest": "sha256:0521f3b33c89398fb6a37013171b134edc312747c59abdada00ea22e7ee5b5bc",
+  "inventoryDigest": "sha256:d0537c1235b629efcf9f30f9e333b2534586eabb0c2265dfbdeb1f07e74a5a44",
+  "sourceDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "parentBaselineDigest": null,
+  "requirements": [
+    {
+      "id": "bloom.block.Benefits.items",
+      "fingerprint": "sha256:660df16f755c60d4ced419c4fde5f9b6197d94c781a8713e42318c0108cbc8ae"
+    },
+    {
+      "id": "bloom.block.Hero.title",
+      "fingerprint": "sha256:4c884fd332c6e222136a18424d8af2e86cfbcf9c7329b839713bab44d426c402"
+    }
+  ],
+  "findings": [
+    {
+      "id": "bloom.block.Benefits.items.requirement-label-mismatch",
+      "fingerprint": "sha256:c3894784dc134f71683a9fc06606b265d044f8f23fe3cc726e4e3c0a30ac6acf"
+    },
+    {
+      "id": "bloom.block.Benefits.items.status-gap",
+      "fingerprint": "sha256:b5da8056bc9fe2011ae22e3e92283673e13c9de5f16f6209c388887bd1606f54"
+    },
+    {
+      "id": "bloom.block.Benefits.items.status-open",
+      "fingerprint": "sha256:fb9b139af8aa5348e70ae15ba2699d2f3c58bfa4784b00ceafd711e226746d89"
+    },
+    {
+      "id": "bloom.block.Hero.title.requirement-label-mismatch",
+      "fingerprint": "sha256:57cb1433e8ead7f0ef62df6f68d9338c08a8a79a5a26454ff2f3dc80da3938c6"
+    }
+  ]
+}

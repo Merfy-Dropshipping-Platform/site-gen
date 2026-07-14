@@ -156,3 +156,60 @@ function buildContract(): BloomReleaseContract {
 }
 
 export const BLOOM_RELEASE_CONTRACT: BloomReleaseContract = buildContract();
+
+// ---------------------------------------------------------------------------
+// Generic `ThemeReleaseContract<'bloom'>` projection (Task 3).
+//
+// The central release-contract map (`release-contracts.ts`) is generic over
+// every supported theme, so Bloom is projected into the exact
+// `ThemeReleaseContract` shape WITHOUT changing any landed value: the same
+// pages, features, runtime sources, renderer names and the two audited Bloom
+// cart-drawer defects (built-theme drawer-global injection GAP) already encoded
+// above. No NEW Bloom policy is invented here — every value is read back from
+// `BLOOM_RELEASE_CONTRACT`.
+// ---------------------------------------------------------------------------
+
+import type {
+  ThemeReleaseContract,
+  ReleasePageRequirement,
+  ReleaseFlowRequirement,
+} from './release-contracts';
+
+const BLOOM_PAGES: readonly ReleasePageRequirement[] =
+  BLOOM_RELEASE_CONTRACT.pages.map((p) => ({
+    id: p.id,
+    route: p.route,
+    // Bloom pages are all composed content pages; the landed contract carries
+    // no per-page standalone-only content file (verbatim routes reuse the
+    // theme shell), so the content file is null and no home-shell fallback flag
+    // diverges from the landed behavior.
+    contentFile: null,
+    shellFallbackAllowed: p.kind === 'verbatim',
+  }));
+
+/**
+ * Bloom required flows, projected verbatim from the landed cart-drawer contract.
+ * The built-theme drawer-global injection is a landed structural GAP (F-053), so
+ * it is a required STRUCTURAL flow; behavior tiers are out of Bloom's scope here.
+ */
+const BLOOM_FLOWS: readonly ReleaseFlowRequirement[] = [
+  {
+    capabilityId: 'bloom.flow.cart-drawer.preview-built-theme-global-injection',
+    requiredTiers: ['structural'],
+    sourceRefs: ['src/themes/cart-drawer-contract.ts#/reachability/builtTheme'],
+  },
+];
+
+export const BLOOM_THEME_RELEASE_CONTRACT: ThemeReleaseContract<'bloom'> = {
+  theme: 'bloom',
+  pages: BLOOM_PAGES,
+  requiredFeatures: {
+    benefits: true,
+    wishlist: true,
+  },
+  requiredRuntimeSources: [...BLOOM_RELEASE_CONTRACT.runtimeSources],
+  requiredRendererNames: BLOOM_RELEASE_CONTRACT.renderers.map((r) => r.name),
+  requiredFlows: BLOOM_FLOWS,
+  decisionCapabilityIds: [],
+  externalAudits: [],
+};

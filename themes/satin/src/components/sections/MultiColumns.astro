@@ -57,31 +57,35 @@ const rawColumns = hasManualColumns
 		: p.items
 	: [];
 const columns = rawColumns.slice(0, 10).map((c: any) => {
-	// Ссылка карточки: canon link {text,href} ИЛИ flat-пара linkText + link
-	// (string из arrayFields конструктора) → текстовая ссылка-CTA манеры
-	// «Перейти» + arrow-right size-5 (литерал Journal.astro:53-56). Рендер
-	// ТОЛЬКО при непустом тексте.
+	// Ссылка карточки — КАНОН (Figma 314:34941): flat-пара linkText + link(string href),
+	// эталон theme-base resolveMultiColumnLink. Legacy link:{text,href} — fallback.
+	// Рендер ТОЛЬКО при непустом тексте.
 	const linkText =
+		(typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined) ??
 		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
 			? c.link.text
-			: undefined) ?? (typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined);
+			: undefined);
 	const linkHref =
+		(typeof c.link === "string" && c.link ? c.link : undefined) ??
 		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
 			? c.link.href
 			: undefined) ??
-		(typeof c.link === "string" && c.link ? c.link : undefined) ??
 		"/catalog";
+	// CANONICAL-FIRST (фикс alias-precedence, эталон theme-base MultiColumns.astro:80-81):
+	// canon-ключи title/description/image читаются РАНЬШЕ legacy heading/text/imageUrl —
+	// именно их пишет FieldRenderer (defaultItemProps: title/description/image), и рендер
+	// больше не «угадывает» при коэксистенции алиасов.
 	return {
 		heading:
-			(typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
+			(typeof c.title === "string" && c.title) || (typeof c.heading === "string" && c.heading) || "",
 		text:
-			(typeof c.text === "string" && c.text) ||
 			(typeof c.description === "string" && c.description) ||
+			(typeof c.text === "string" && c.text) ||
 			(typeof c.body === "string" && c.body) ||
 			"",
 		image:
-			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
 			(typeof c.image === "string" && c.image.trim()) ||
+			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||
 			(typeof c.icon === "string" && c.icon.trim()) ||
 			"",
 		headingSize: c.headingSize,

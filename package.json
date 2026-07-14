@@ -33,12 +33,19 @@
     "validate:blocks": "tsx scripts/validate-blocks.mjs",
     "validate:page-seeds": "node scripts/validate-page-seeds.mjs",
     "theme:validate:bloom": "tsx packages/theme-contract/cli/validate.ts --theme bloom --themes-dir packages",
+    "theme:validate:satin": "tsx packages/theme-contract/cli/validate.ts --theme satin --themes-dir packages",
     "smoke:sites": "node scripts/smoke-99-sites.mjs",
     "new:block": "node scripts/new-block.mjs",
+    "test:conformance:shared": "pnpm exec jest --config packages/theme-contract/jest.config.ts --runInBand --testPathPattern=conformance- && pnpm exec jest --runInBand src/themes/__tests__/conformance-cli.spec.ts src/themes/__tests__/conformance-source-snapshot-core.spec.ts src/themes/__tests__/conformance-storefront-inventory.spec.ts src/themes/__tests__/conformance-structural-checks.spec.ts src/themes/__tests__/conformance-theme-adapters.spec.ts src/themes/__tests__/conformance-theme-digest-isolation.spec.ts src/themes/__tests__/conformance-tier-selection.spec.ts",
+    "test:conformance:satin": "pnpm exec jest --runInBand src/themes/__tests__/satin-conformance-source-snapshot.spec.ts src/themes/__tests__/satin-conformance-mapped-renderers.spec.ts src/themes/__tests__/satin-conformance-route-matrix.spec.ts src/themes/__tests__/satin-conformance-storefront-inventory.spec.ts src/themes/__tests__/satin-conformance-structural-checks.spec.ts src/themes/__tests__/satin-conformance-slideshow-renderer.spec.ts src/themes/__tests__/satin-conformance-multicolumns-contract.spec.ts src/themes/__tests__/satin-conformance-tier-transaction.spec.ts",
     "conformance:bloom:propose-requirements": "tsx scripts/theme-conformance.ts --theme bloom --report-dir conformance-results/bloom --propose-requirements conformance-results/bloom/requirements.proposal.json",
     "conformance:bloom": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom",
     "conformance:bloom:diagnose": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom --diagnose",
-    "conformance:bloom:release": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom --require-zero"
+    "conformance:bloom:release": "tsx scripts/theme-conformance.ts --theme bloom --baseline conformance/baselines/bloom.structural.json --inventory conformance/inventory/bloom.generated.json --report-dir conformance-results/bloom --require-zero",
+    "conformance:satin:propose-requirements": "tsx scripts/theme-conformance.ts --theme satin --report-dir conformance-results/satin --propose-requirements conformance-results/satin/requirements.proposal.json",
+    "conformance:satin": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin",
+    "conformance:satin:diagnose": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin --diagnose",
+    "conformance:satin:release": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin --require-zero"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

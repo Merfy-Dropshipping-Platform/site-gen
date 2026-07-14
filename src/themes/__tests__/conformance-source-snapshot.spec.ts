@@ -1,17 +1,32 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadThemeSourceSnapshot } from '../conformance/source-snapshot';
+import { resolveRunnableTheme } from '../conformance/theme-adapters';
+import type { ThemeSourceSnapshot } from '../conformance/source-types';
 import { bloomRegistry } from '../../generator/registries/bloom';
 
 // Task 3: the real Bloom source + compiled snapshot. Requires build
 // prerequisites (build → build:blocks → build:theme-sections bloom →
 // run-theme-build bloom).
+//
+// Task 1: the Bloom source adapter is now reached THROUGH its runnable bundle
+// (`resolveRunnableTheme('bloom').loadSourceSnapshot`) rather than importing the
+// snapshot loader directly. This proves Bloom is registered as a COMPLETE
+// runnable bundle (descriptor + source-adapter + release-contract) while keeping
+// every landed real-artifact assertion byte-for-byte unchanged.
 
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 
+/** Load the Bloom source snapshot through its runnable bundle's source adapter. */
+async function loadBloomSnapshot(
+  opts?: { reviewedRequirementsFixture?: Buffer | null },
+): Promise<ThemeSourceSnapshot> {
+  const bundle = await resolveRunnableTheme('bloom');
+  return bundle.loadSourceSnapshot('bloom', opts);
+}
+
 describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   it('sees Benefits under blocks (physical, keyed by location,name)', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     const benefits = snap.physicalBlocks.find(
       (b) => b.name === 'Benefits' && b.location === 'blocks',
     );
@@ -29,7 +44,7 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('sees Catalog physical in bloom but base-resolved', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     // Physical copy exists in theme-bloom/blocks/Catalog.
     const physical = snap.physicalBlocks.find(
       (b) => b.name === 'Catalog' && b.location === 'blocks',
@@ -44,7 +59,7 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('records Bloom runtime sources and the standalone build outputs', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     expect(snap.runtimeSources).toEqual(
       expect.arrayContaining([
         expect.stringContaining('nt-cart.ts'),
@@ -57,7 +72,7 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('records generator registry reachability (Benefits importPath → src/components)', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     const benefits = snap.registry.find((r) => r.name === 'Benefits');
     expect(benefits).toBeDefined();
     // F-040: Benefits registry importPath (../components/Benefits.astro) maps to
@@ -69,12 +84,12 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('checkout-result / OrderConfirmation page is absent', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     expect(snap.hasCheckoutResultPage).toBe(false);
   });
 
   it('compiled Puck index (named exports) + mapped Publications renderer (default export) import', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     // The compiled Puck INDEX module used by the controller is a config module:
     // it succeeds on its named exports (CatalogPuckConfig, …), not a `default`.
     const catalog = snap.compiledModules.find((m) =>
@@ -95,7 +110,7 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('marks EVERY registry renderer with a compiled default export as reachable', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     // The real snapshot must import-check every bloomRegistry renderer against
     // its real compiled artifact (mapped → dist/theme-sections/bloom via the
     // section manifest; unmapped → dist/astro-blocks/<pkg>__<Block>__<Block>.mjs)
@@ -129,7 +144,7 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('captures the generated Bloom preview-cart script + cart-drawer descriptors', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     expect(snap.previewCart.script).toContain('"bloom:cart:v1"');
     expect(snap.previewCart.scriptDigest).toMatch(/^[0-9a-f]{64}$/);
     // Cart-drawer fixture: valid scheme → coupled SCHEME+DISCLAIMER + title.
@@ -144,7 +159,7 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
   });
 
   it('raw theme.json retains pages/blockDefaults that Zod parse strips', async () => {
-    const snap = await loadThemeSourceSnapshot('bloom');
+    const snap = await loadBloomSnapshot();
     const tj = snap.themeJson as Record<string, unknown>;
     expect(Array.isArray(tj.pages)).toBe(true);
     expect(tj.blockDefaults).toBeDefined();
@@ -153,8 +168,8 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
 
 describe('loadThemeSourceSnapshot(bloom) — determinism', () => {
   it('two snapshots are byte-identical (compiledAt / absolute roots stripped)', async () => {
-    const a = await loadThemeSourceSnapshot('bloom');
-    const b = await loadThemeSourceSnapshot('bloom');
+    const a = await loadBloomSnapshot();
+    const b = await loadBloomSnapshot();
     // No volatile timestamps / absolute paths anywhere in the serialized form.
     const sa = JSON.stringify(a);
     const sb = JSON.stringify(b);
@@ -169,7 +184,7 @@ describe('loadThemeSourceSnapshot(bloom) — determinism', () => {
     // The snapshot never reads dist manifest compiledAt nor hashes compiled
     // .mjs bytes, so two runs (dist unchanged) already prove invariance; this
     // guards the property explicitly against accidental serialization.
-    const a = await loadThemeSourceSnapshot('bloom');
+    const a = await loadBloomSnapshot();
     expect(JSON.stringify(a)).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   });
 });
@@ -183,16 +198,16 @@ describe('loadThemeSourceSnapshot(bloom) — digest churn', () => {
       'block-source-layout.mjs',
     );
     const original = readFileSync(helper);
-    const base = (await loadThemeSourceSnapshot('bloom')).sourceDigest;
+    const base = (await loadBloomSnapshot()).sourceDigest;
     try {
       writeFileSync(helper, Buffer.concat([original, Buffer.from('\n// churn\n')]));
-      const mutated = (await loadThemeSourceSnapshot('bloom')).sourceDigest;
+      const mutated = (await loadBloomSnapshot()).sourceDigest;
       expect(mutated).not.toBe(base);
     } finally {
       writeFileSync(helper, original);
     }
     // Restored → digest returns to baseline.
-    expect((await loadThemeSourceSnapshot('bloom')).sourceDigest).toBe(base);
+    expect((await loadBloomSnapshot()).sourceDigest).toBe(base);
   });
 
   it('mutating a conformance rule/requirement source changes sourceDigest', async () => {
@@ -204,25 +219,25 @@ describe('loadThemeSourceSnapshot(bloom) — digest churn', () => {
       'requirements.ts',
     );
     const original = readFileSync(rule);
-    const base = (await loadThemeSourceSnapshot('bloom')).sourceDigest;
+    const base = (await loadBloomSnapshot()).sourceDigest;
     try {
       writeFileSync(rule, Buffer.concat([original, Buffer.from('\n// churn\n')]));
-      const mutated = (await loadThemeSourceSnapshot('bloom')).sourceDigest;
+      const mutated = (await loadBloomSnapshot()).sourceDigest;
       expect(mutated).not.toBe(base);
     } finally {
       writeFileSync(rule, original);
     }
-    expect((await loadThemeSourceSnapshot('bloom')).sourceDigest).toBe(base);
+    expect((await loadBloomSnapshot()).sourceDigest).toBe(base);
   });
 
   it('a different reviewed-requirements fixture changes sourceDigest', async () => {
     const base = (
-      await loadThemeSourceSnapshot('bloom', {
+      await loadBloomSnapshot({
         reviewedRequirementsFixture: Buffer.from('{"v":1}'),
       })
     ).sourceDigest;
     const other = (
-      await loadThemeSourceSnapshot('bloom', {
+      await loadBloomSnapshot({
         reviewedRequirementsFixture: Buffer.from('{"v":2}'),
       })
     ).sourceDigest;

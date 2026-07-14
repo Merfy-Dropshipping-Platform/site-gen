@@ -8,7 +8,7 @@
 // root Zod 4 instead of its own Zod 3 (F-044/F-046).
 //
 // This test asserts the BUILDER-stage dependency layer copies
-// pnpm-workspace.yaml AND the three workspace package manifests BEFORE the
+// pnpm-workspace.yaml AND the four workspace package manifests BEFORE the
 // first `pnpm install`, and that this install is now `--frozen-lockfile`
 // (all workspace importers are locked). The multi-stage flow and cache
 // boundary are preserved elsewhere; we only pin the dependency layer here.
@@ -27,6 +27,7 @@ const REQUIRED_MANIFESTS = [
   'packages/theme-contract/package.json',
   'packages/theme-base/package.json',
   'packages/theme-bloom/package.json',
+  'packages/theme-satin/package.json',
 ];
 
 function readDockerfile() {
@@ -77,7 +78,7 @@ test('COPY pnpm-workspace.yaml precedes the first frozen install', () => {
   );
 });
 
-test('each of the three workspace package manifests is COPYed before the frozen install', () => {
+test('each of the four workspace package manifests is COPYed before the frozen install', () => {
   const text = readDockerfile();
   const installIdx = firstFrozenInstallIndex(text);
   assert.ok(installIdx !== -1, 'no `pnpm install --frozen-lockfile` found');
@@ -114,7 +115,7 @@ test('full source `COPY . .` still happens AFTER the dependency install (multi-s
   );
 });
 
-test('the three referenced package manifests actually exist on disk', () => {
+test('the four referenced package manifests actually exist on disk', () => {
   for (const manifest of REQUIRED_MANIFESTS) {
     const abs = path.join(REPO_ROOT, manifest);
     assert.doesNotThrow(

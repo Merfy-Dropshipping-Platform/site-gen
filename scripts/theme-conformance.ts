@@ -26,15 +26,16 @@ import {
   readFileSync,
   renameSync,
   writeFileSync,
-} from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { readFile as readFileAsync } from 'node:fs/promises';
+} from "node:fs";
+import { dirname, resolve } from "node:path";
+import { readFile as readFileAsync } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 
 import {
   runThemeConformance,
   type ConformancePipelineResult,
   type ThemeConformanceDeps,
-} from '../src/themes/conformance';
+} from "../src/themes/conformance";
 import {
   loadThemeSourceSnapshot,
   loadRuntimePuckConfig,
@@ -47,27 +48,39 @@ import {
   type StructuralCheckSnapshot,
   type StructuralCheckFieldRow,
   type StructuralCheckSettingRow,
-} from '../src/themes/conformance';
+} from "../src/themes/conformance";
 import {
   inventoryFields,
   inventoryThemeSettings,
+  fingerprintStructuralIssue,
+  collectTierGateFindings,
   type CapabilityRecord,
   type StructuralIssue,
+  type TieredStructuralIssue,
   type FieldInventoryBlockInput,
   type RawPuckField,
   type ThemeSchemeInput,
-} from '../packages/theme-contract/conformance';
-import { themeSchemeToMerchantShape } from '../src/themes/tokens-css';
-import { PAGE_REGISTRY } from '../src/themes/page-registry';
+} from "../packages/theme-contract/conformance";
+import { themeSchemeToMerchantShape } from "../src/themes/tokens-css";
+import { PAGE_REGISTRY } from "../src/themes/page-registry";
+import { SATIN_RELEASE_CONTRACT } from "../src/themes/conformance/satin-release-contract";
+import {
+  runSatinStructuralChecks,
+} from "../src/themes/conformance/satin-structural-checks";
+import { buildSatinStructuralFacts } from "../src/themes/conformance/satin-structural-facts";
 
-const SITES_ROOT = resolve(__dirname, '..');
+const SITES_ROOT = resolve(__dirname, "..");
 
 // ---------------------------------------------------------------------------
 // Real pipeline assembly
 // ---------------------------------------------------------------------------
 
 interface BloomThemeJson {
-  colorSchemes?: Array<{ id?: string; name?: string; tokens?: Record<string, string> }>;
+  colorSchemes?: Array<{
+    id?: string;
+    name?: string;
+    tokens?: Record<string, string>;
+  }>;
   defaults?: Record<string, string>;
   tokens?: Record<string, unknown>;
   features?: Record<string, boolean> | string[];
@@ -76,8 +89,8 @@ interface BloomThemeJson {
 
 /** Read the tracked Bloom `theme.json` (the raw manifest, pre-Zod). */
 function readThemeManifest(): BloomThemeJson {
-  const path = resolve(SITES_ROOT, 'packages', 'theme-bloom', 'theme.json');
-  return JSON.parse(readFileSync(path, 'utf8')) as BloomThemeJson;
+  const path = resolve(SITES_ROOT, "packages", "theme-bloom", "theme.json");
+  return JSON.parse(readFileSync(path, "utf8")) as BloomThemeJson;
 }
 
 /** Collect the required storefront runtime sources as AST inventory inputs. */
@@ -86,8 +99,8 @@ async function loadStorefrontSources(): Promise<StorefrontSourceInput[]> {
   for (const ref of BLOOM_RELEASE_CONTRACT.runtimeSources) {
     const abs = resolve(SITES_ROOT, ref);
     if (!existsSync(abs)) continue;
-    const code = await readFileAsync(abs, 'utf8');
-    const kind = ref.endsWith('.astro') ? 'astro' : 'ts';
+    const code = await readFileAsync(abs, "utf8");
+    const kind = ref.endsWith(".astro") ? "astro" : "ts";
     out.push({ kind, ref, code } as StorefrontSourceInput);
   }
   return out;
@@ -95,14 +108,17 @@ async function loadStorefrontSources(): Promise<StorefrontSourceInput[]> {
 
 /** Build the runtime field-inventory blocks from the compiled Puck config. */
 function fieldBlocksFromRuntime(
-  components: Record<string, { fields?: Record<string, unknown>; defaultProps?: unknown }>,
+  components: Record<
+    string,
+    { fields?: Record<string, unknown>; defaultProps?: unknown }
+  >,
 ): FieldInventoryBlockInput[] {
   return Object.entries(components).map(([name, cfg]) => ({
     name,
     runtime: {
       fields: (cfg.fields ?? {}) as Record<string, RawPuckField>,
       defaults:
-        cfg.defaultProps && typeof cfg.defaultProps === 'object'
+        cfg.defaultProps && typeof cfg.defaultProps === "object"
           ? (cfg.defaultProps as Record<string, unknown>)
           : undefined,
     },
@@ -116,9 +132,11 @@ function toStructuralSnapshot(
 ): StructuralCheckSnapshot {
   const manifestPages = (manifest.pages ?? []).map((p) => ({
     id: p.id,
-    slug: (p.slug ?? p.route ?? '').replace(/^\//, ''),
+    slug: (p.slug ?? p.route ?? "").replace(/^\//, ""),
   }));
-  const homeEntry = PAGE_REGISTRY.find((e) => e.route === '' || e.route === '/');
+  const homeEntry = PAGE_REGISTRY.find(
+    (e) => e.route === "" || e.route === "/",
+  );
   const featureFlags: Record<string, boolean> = Array.isArray(manifest.features)
     ? Object.fromEntries(manifest.features.map((f) => [f, true]))
     : (manifest.features ?? {});
@@ -126,7 +144,7 @@ function toStructuralSnapshot(
   return {
     themeId: snapshot.themeId,
     manifestPages,
-    homePageId: homeEntry?.id ?? manifestPages[0]?.id ?? '',
+    homePageId: homeEntry?.id ?? manifestPages[0]?.id ?? "",
     seedIds: manifestPages.map((p) => p.id),
     seedNonEmpty: true,
     seedNestedAuthorable: true,
@@ -140,9 +158,11 @@ function toStructuralSnapshot(
       name: r.name,
       source: r.source,
       // A theme-owned resolution implies a manifest override of the base block.
-      manifestOverride: r.source === 'theme',
+      manifestOverride: r.source === "theme",
     })),
-    baseBlockNames: snapshot.resolutions.filter((r) => r.source === 'base').map((r) => r.name),
+    baseBlockNames: snapshot.resolutions
+      .filter((r) => r.source === "base")
+      .map((r) => r.name),
     customBlockDeclarations: {},
     features: featureFlags,
     customPipeline: {},
@@ -169,20 +189,29 @@ function toStructuralSnapshot(
 }
 
 /** Theme-setting rows for the token-constraint invariant (only known limits). */
-function settingRowsFromManifest(manifest: BloomThemeJson): StructuralCheckSettingRow[] {
+function settingRowsFromManifest(
+  manifest: BloomThemeJson,
+): StructuralCheckSettingRow[] {
   const rows: StructuralCheckSettingRow[] = [];
-  const radius = manifest.defaults?.['--radius-button'];
+  const radius = manifest.defaults?.["--radius-button"];
   if (radius !== undefined) {
     const value = Number.parseFloat(radius);
     if (Number.isFinite(value)) {
-      rows.push({ token: '--radius-button', value, constraintMax: 48, withinConstraint: value <= 48 });
+      rows.push({
+        token: "--radius-button",
+        value,
+        constraintMax: 48,
+        withinConstraint: value <= 48,
+      });
     }
   }
   return rows;
 }
 
 /** The real Bloom pipeline: snapshot + inventories + structural checks. */
-async function buildBloomPipeline(theme: string): Promise<ConformancePipelineResult> {
+async function buildBloomPipeline(
+  theme: string,
+): Promise<ConformancePipelineResult> {
   const [snapshot, puckConfig] = await Promise.all([
     loadThemeSourceSnapshot(theme),
     loadRuntimePuckConfig(theme),
@@ -192,7 +221,7 @@ async function buildBloomPipeline(theme: string): Promise<ConformancePipelineRes
   // 1) Puck field inventory (runtime authoring fields).
   const colorSchemeIds = (manifest.colorSchemes ?? [])
     .map((s) => s.id)
-    .filter((id): id is string => typeof id === 'string');
+    .filter((id): id is string => typeof id === "string");
   const fieldRows = inventoryFields({
     theme,
     colorSchemeIds,
@@ -200,14 +229,16 @@ async function buildBloomPipeline(theme: string): Promise<ConformancePipelineRes
   });
 
   // 2) Theme-settings inventory.
-  const schemes: ThemeSchemeInput[] = (manifest.colorSchemes ?? []).map((s, i) => ({
-    id: s.id ?? `scheme-${i + 1}`,
-    name: s.name ?? `Scheme ${i + 1}`,
-    tokens: s.tokens ?? {},
-  }));
+  const schemes: ThemeSchemeInput[] = (manifest.colorSchemes ?? []).map(
+    (s, i) => ({
+      id: s.id ?? `scheme-${i + 1}`,
+      name: s.name ?? `Scheme ${i + 1}`,
+      tokens: s.tokens ?? {},
+    }),
+  );
   const settingRows = inventoryThemeSettings({
     theme,
-    tokens: (manifest.defaults ?? {}) as Record<string, string>,
+    tokens: manifest.defaults ?? {},
     schemes,
     manifestConstraints: { colorSchemes: { max: 4 } },
     normalizeMerchantShape: (scheme) =>
@@ -215,22 +246,34 @@ async function buildBloomPipeline(theme: string): Promise<ConformancePipelineRes
         id: scheme.id,
         name: scheme.name,
         tokens: scheme.tokens,
-      }) as Record<string, unknown>,
+      }),
   });
 
   // 3) Storefront AST inventory.
-  const storefrontRows = await inventoryStorefrontContracts(theme, await loadStorefrontSources());
+  const storefrontRows = await inventoryStorefrontContracts(
+    theme,
+    await loadStorefrontSources(),
+  );
 
   // 4) Requirement-independent structural checks.
   const structuralSnapshot = toStructuralSnapshot(snapshot, manifest);
   const structuralFieldRows: StructuralCheckFieldRow[] = [];
   const structuralSettingRows = settingRowsFromManifest(manifest);
   const issues: StructuralIssue[] = [
-    ...runStructuralChecks(structuralSnapshot, BLOOM_RELEASE_CONTRACT, structuralFieldRows, structuralSettingRows),
+    ...runStructuralChecks(
+      structuralSnapshot,
+      BLOOM_RELEASE_CONTRACT,
+      structuralFieldRows,
+      structuralSettingRows,
+    ),
   ];
 
   // 5) Link structural failures onto the capability rows + reject duplicates.
-  let rows: CapabilityRecord[] = [...fieldRows, ...settingRows, ...storefrontRows];
+  let rows: CapabilityRecord[] = [
+    ...fieldRows,
+    ...settingRows,
+    ...storefrontRows,
+  ];
   const duplicateIssues = findDuplicateCapabilityIssues(rows, theme);
   issues.push(...duplicateIssues);
   rows = linkCapabilityFailures(rows, issues);
@@ -241,22 +284,121 @@ async function buildBloomPipeline(theme: string): Promise<ConformancePipelineRes
     capabilities: rows,
     structuralIssues: issues,
     releaseContract: {
-      pages: BLOOM_RELEASE_CONTRACT.pages.map((p) => ({ id: p.id, label: p.id })),
+      pages: BLOOM_RELEASE_CONTRACT.pages.map((p) => ({
+        id: p.id,
+        label: p.id,
+      })),
       flows: [],
     },
   };
 }
 
 // ---------------------------------------------------------------------------
+// Real Satin pipeline: snapshot + real source/renderer facts + structural checks
+//
+// Symmetric to `buildBloomPipeline`, but anchored on `SATIN_RELEASE_CONTRACT`.
+// It loads the REAL Satin source snapshot, derives the observed Satin facts from
+// the real source bytes + compiled mapped-renderer probes, runs the Satin
+// structural checks (which emit TieredStructuralIssues purely from those facts +
+// the contract) and routes them through the tiered gate collector so a future
+// authoring/effect/browser UNKNOWN can never leak into the structural set.
+// ---------------------------------------------------------------------------
+
+async function buildSatinPipeline(
+  theme: string,
+): Promise<ConformancePipelineResult> {
+  const snapshot = await loadThemeSourceSnapshot(theme);
+
+  // 1) Observed Satin facts (real snapshot + real source/renderer probes).
+  const facts = buildSatinStructuralFacts(snapshot);
+
+  // 2) Structural issues DERIVED from facts + the confirmed release contract.
+  const tieredIssues: TieredStructuralIssue[] = runSatinStructuralChecks(
+    facts,
+    SATIN_RELEASE_CONTRACT,
+  );
+
+  // 3) Route through the landed tier-gate collector (structural tier only). No
+  //    tiered capabilities participate yet (authoring/effect/browser tiers are a
+  //    later plan); the collector re-tags every finding `structural` and rejects
+  //    any behavior-tier leak by construction.
+  const requirementFingerprints = new Map<string, string>(
+    tieredIssues.map((i) => [i.id, fingerprintStructuralIssue(i)]),
+  );
+  // The gate findings are the fingerprinted (id → fingerprint) projection used by
+  // the baseline/ratchet; they must exactly mirror the issue set.
+  collectTierGateFindings("structural", tieredIssues, [], requirementFingerprints);
+
+  const issues: StructuralIssue[] = tieredIssues;
+
+  // 4) The propose-requirements input: every required page + every required flow
+  //    and open decision, so a proposal captures the full Satin surface.
+  const pages = SATIN_RELEASE_CONTRACT.pages.map((p) => ({
+    id: p.id,
+    label: p.id,
+  }));
+  const flowIds = new Set<string>();
+  const flows: Array<{ id: string; label: string }> = [];
+  for (const f of SATIN_RELEASE_CONTRACT.requiredFlows) {
+    if (flowIds.has(f.capabilityId)) continue;
+    flowIds.add(f.capabilityId);
+    flows.push({ id: f.capabilityId, label: f.capabilityId });
+  }
+  for (const id of SATIN_RELEASE_CONTRACT.decisionCapabilityIds) {
+    if (flowIds.has(id)) continue;
+    flowIds.add(id);
+    flows.push({ id, label: id });
+  }
+
+  return {
+    theme,
+    sourceDigest: snapshot.sourceDigest as `sha256:${string}`,
+    // Satin's behavior capabilities are a later plan; the structural tier ships
+    // its findings as structuralIssues. No capability rows are synthesized here.
+    capabilities: [],
+    structuralIssues: issues,
+    releaseContract: { pages, flows },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline dispatch — a registered theme selects its OWN real pipeline.
+// ---------------------------------------------------------------------------
+
+const THEME_PIPELINES: Record<
+  string,
+  (theme: string) => Promise<ConformancePipelineResult>
+> = {
+  bloom: buildBloomPipeline,
+  satin: buildSatinPipeline,
+};
+
+/** Select a registered theme's real pipeline; an unknown theme is a hard error. */
+async function buildPipeline(
+  theme: string,
+): Promise<ConformancePipelineResult> {
+  const build = THEME_PIPELINES[theme];
+  if (!build) {
+    throw new Error(`no conformance pipeline registered for theme "${theme}"`);
+  }
+  return build(theme);
+}
+
+// ---------------------------------------------------------------------------
 // Prerequisite check (compiled artifacts required by the real pipeline)
 // ---------------------------------------------------------------------------
 
-async function checkPrerequisites(): Promise<{ ok: boolean; missing: string[] }> {
+async function checkPrerequisites(): Promise<{
+  ok: boolean;
+  missing: string[];
+}> {
   const required = [
-    'dist/src/controllers/theme-puck-config.controller.js',
-    'dist/astro-blocks/manifest.json',
+    "dist/src/controllers/theme-puck-config.controller.js",
+    "dist/astro-blocks/manifest.json",
   ];
-  const missing = required.filter((rel) => !existsSync(resolve(SITES_ROOT, rel)));
+  const missing = required.filter(
+    (rel) => !existsSync(resolve(SITES_ROOT, rel)),
+  );
   return { ok: missing.length === 0, missing };
 }
 
@@ -264,7 +406,7 @@ async function checkPrerequisites(): Promise<{ ok: boolean; missing: string[] }>
 // Node fs adapter (real, atomic-capable)
 // ---------------------------------------------------------------------------
 
-const nodeFs: ThemeConformanceDeps['fs'] = {
+const nodeFs: ThemeConformanceDeps["fs"] = {
   readFile: (path) => (existsSync(path) ? readFileSync(path) : null),
   writeFile: (path, data) => {
     mkdirSync(dirname(path), { recursive: true });
@@ -288,29 +430,52 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const deps: ThemeConformanceDeps = {
     schemaVersion: 1,
-    generatorVersion: '1',
-    isCI: process.env.CI === 'true' || process.env.CI === '1',
+    generatorVersion: "1",
+    isCI: process.env.CI === "true" || process.env.CI === "1",
     env: process.env,
-    buildPipeline: buildBloomPipeline,
+    buildPipeline,
     checkPrerequisites,
     fs: nodeFs,
+    // Git provenance for tiered (Satin) mutations. Uses the exact
+    // `git ls-tree -r -z --full-tree <ref>` algorithm the tier baseline pins.
+    git: {
+      headCommit: () =>
+        execFileSync("git", ["rev-parse", "HEAD"], { cwd: SITES_ROOT })
+          .toString("utf8")
+          .trim(),
+      isClean: () =>
+        execFileSync("git", ["status", "--porcelain"], { cwd: SITES_ROOT })
+          .toString("utf8")
+          .trim().length === 0,
+      lsTree: (ref) =>
+        execFileSync("git", ["ls-tree", "-r", "-z", "--full-tree", ref], {
+          cwd: SITES_ROOT,
+          maxBuffer: 256 * 1024 * 1024,
+        }),
+    },
   };
 
   const result = await runThemeConformance(argv, deps);
 
   if (result.buildOrder) {
-    process.stderr.write('Build prerequisites must run in order:\n');
+    process.stderr.write("Build prerequisites must run in order:\n");
     for (const cmd of result.buildOrder) process.stderr.write(`  ${cmd}\n`);
   }
   if (result.error) process.stderr.write(`${result.error}\n`);
   if (result.compare) {
     if (result.compare.unexpected.length > 0) {
-      process.stderr.write(`Unexpected findings (${result.compare.unexpected.length}):\n`);
-      for (const f of result.compare.unexpected) process.stderr.write(`  + ${f.id}\n`);
+      process.stderr.write(
+        `Unexpected findings (${result.compare.unexpected.length}):\n`,
+      );
+      for (const f of result.compare.unexpected)
+        process.stderr.write(`  + ${f.id}\n`);
     }
     if (result.compare.stale.length > 0) {
-      process.stderr.write(`Stale findings (${result.compare.stale.length}):\n`);
-      for (const f of result.compare.stale) process.stderr.write(`  - ${f.id}\n`);
+      process.stderr.write(
+        `Stale findings (${result.compare.stale.length}):\n`,
+      );
+      for (const f of result.compare.stale)
+        process.stderr.write(`  - ${f.id}\n`);
     }
   }
   if (result.reportPath) process.stdout.write(`report: ${result.reportPath}\n`);

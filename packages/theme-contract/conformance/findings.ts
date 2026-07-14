@@ -42,11 +42,16 @@ import { createHash } from 'node:crypto';
 import type {
   CapabilityRecord,
   CapabilityCaseResult,
+  CapabilityStatus,
+  ConformanceTier,
   RequirementRecord,
   RequirementSource,
   StructuralIssue,
   BaselineFinding,
   RequirementExpectedCase,
+  TieredCapabilityRecord,
+  TieredGateFinding,
+  TieredStructuralIssue,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -429,4 +434,115 @@ export function collectGateFindings(
     requirements,
     unreviewed: [...new Set(unreviewed)].sort(),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Tier routing (Task 3)
+//
+// `collectTierGateFindings(tier, ...)` projects a set of tiered inputs onto ONE
+// tier and reuses the exact `collectGateFindings` synthesis, so a structural
+// gate can never accept a future authoring/effect/browser UNKNOWN. It:
+//   - keeps only structural issues when the requested tier is `structural`
+//     (structural issues are structural by construction; they never leak into a
+//     behavior tier);
+//   - projects each tiered capability onto a legacy capability whose `status`
+//     is that tier's `tierStatuses[tier]` and whose `caseResults` are only the
+//     cases tagged with that tier;
+//   - drops a capability entirely from a tier it does not require.
+// Every synthesized finding is re-tagged with the requested tier.
+// ---------------------------------------------------------------------------
+
+/** A capability MUST report every required tier; a gap here is a harness bug. */
+function tierStatusOrThrow(
+  cap: TieredCapabilityRecord,
+  tier: ConformanceTier,
+): CapabilityStatus {
+  const status = cap.tierStatuses[tier];
+  if (status === undefined) {
+    throw new Error(
+      `collectTierGateFindings: capability "${cap.id}" requires tier "${tier}" but has no tierStatuses["${tier}"]`,
+    );
+  }
+  return status;
+}
+
+/** Project a tiered capability onto the legacy shape for exactly one tier. */
+function projectCapabilityToTier(
+  cap: TieredCapabilityRecord,
+  tier: ConformanceTier,
+): CapabilityRecord {
+  const status = tierStatusOrThrow(cap, tier);
+  const caseResults: CapabilityCaseResult[] = (cap.caseResults ?? [])
+    .filter((cr) => cr.tier === tier)
+    .map(({ tier: _tier, ...rest }) => rest);
+  const { requiredTiers: _r, tierStatuses: _s, ...base } = cap;
+  return { ...base, status, caseResults };
+}
+
+export function collectTierGateFindings(
+  tier: ConformanceTier,
+  issues: readonly TieredStructuralIssue[],
+  capabilities: readonly TieredCapabilityRecord[],
+  requirementFingerprints: ReadonlyMap<string, string>,
+): TieredGateFinding[] {
+  // Structural issues only enter the structural tier. Behavior tiers carry no
+  // structural issue set (their debt is expressed through tiered capabilities).
+  const scopedIssues: StructuralIssue[] =
+    tier === 'structural'
+      ? issues.filter((i) => i.tier === 'structural')
+      : [];
+
+  // Only capabilities that REQUIRE this tier participate in it.
+  const scopedCaps = capabilities
+    .filter((c) => c.requiredTiers.includes(tier))
+    .map((c) => projectCapabilityToTier(c, tier));
+
+  // Rebuild the RequirementFingerprint[] shape collectGateFindings expects from
+  // the id→fingerprint map. The map form carries no normative sources, so the
+  // synthesized open identity stays logical-only (which is correct: the release
+  // requirement fingerprints are the normative lock, supplied separately when a
+  // full run assembles them).
+  const rfList: RequirementFingerprint[] = [...requirementFingerprints].map(
+    ([id, fingerprint]) => ({
+      id,
+      fingerprint: fingerprint as `sha256:${string}`,
+      requirement: {
+        id,
+        sources: [],
+        required: true,
+        label: '',
+        contract: null,
+      },
+    }),
+  );
+
+  const { findings } = collectGateFindings(scopedIssues, scopedCaps, rfList);
+  return findings.map((f) => ({ ...f, tier }));
+}
+
+/**
+ * Aggregate the overall release status across every required tier of every
+ * capability. Priority mirrors `aggregateCapabilityStatus`: GAP > NEEDS_DECISION
+ * > UNKNOWN > PASS. A release with any behavior tier still UNKNOWN is `UNKNOWN`
+ * (never PASS): structural PASS is not behavior PASS. An empty set is `PASS`
+ * only in the vacuous sense (no required tier is open); callers that require a
+ * non-empty tier set enforce that separately.
+ */
+export function aggregateReleaseStatus(
+  capabilities: readonly TieredCapabilityRecord[],
+): CapabilityStatus {
+  const priority: Record<CapabilityStatus, number> = {
+    GAP: 3,
+    NEEDS_DECISION: 2,
+    UNKNOWN: 1,
+    PASS: 0,
+  };
+  let winner: CapabilityStatus = 'PASS';
+  for (const cap of capabilities) {
+    for (const tier of cap.requiredTiers) {
+      const status = tierStatusOrThrow(cap, tier);
+      if (priority[status] > priority[winner]) winner = status;
+    }
+  }
+  return winner;
 }

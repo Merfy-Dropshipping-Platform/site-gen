@@ -42,6 +42,8 @@ export {
   fingerprintRequirement,
   fingerprintRequirements,
   collectGateFindings,
+  collectTierGateFindings,
+  aggregateReleaseStatus,
 } from './findings';
 export type {
   RequirementFingerprint,
@@ -81,3 +83,53 @@ export type {
   ReviewEnvelope,
   ReviewEnvelopeInput,
 } from './inventory-artifact';
+export {
+  orderFindings,
+  orderSources,
+  orderScenarios,
+  orderRequirementSources,
+  isValidCaptureSourceRef,
+  captureSourceRef,
+  isValidBaselinePath,
+  baselinePath,
+  capabilityShapeDigest,
+  caseSetDigest,
+  requirementsDigest,
+  findingsDigest,
+  canonicalTierBaseline,
+  serializeTierBaseline,
+  baselineDigest,
+  captureTreeDigest,
+  buildTierReviewEnvelope,
+  computeTierReviewDigest,
+  canonicalManifest,
+  serializeManifest,
+  manifestDigest,
+} from './tier-baseline';
+export type {
+  TierBaseline,
+  TierManifestEntry,
+  ThemeBaselineManifest,
+  CapabilityShapeInput,
+  CaseSetScenarioInput,
+  TierReviewEnvelope,
+} from './tier-baseline';
+export {
+  initialLedger,
+  canonicalRevisionEntry,
+  revisionEntryDigest,
+  semanticRevisionDigest,
+  latestSemanticRevisionDigest,
+  validateRevisionChain,
+  manifestMatchesLedger,
+  validateSemanticRevision,
+} from './semantic-revision';
+export type {
+  SemanticRequirementChange,
+  SemanticRequirementRevision,
+  SemanticRevisionLedger,
+  ChainValidation,
+  RequirementSnapshotEntry,
+  RevisionProposalInput,
+  RevisionValidation,
+} from './semantic-revision';

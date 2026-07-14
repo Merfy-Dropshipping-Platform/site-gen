@@ -205,3 +205,66 @@ export interface StructuralBaseline {
   requirements: BaselineFinding[];
   findings: BaselineFinding[];
 }
+
+// ---------------------------------------------------------------------------
+// Tier routing (Task 3)
+//
+// A tiered theme (Satin) separates STRUCTURAL conformance (source/contract
+// shape, deterministic on disk) from behavior tiers that a later plan will
+// execute: AUTHORING (constructor field wiring), EFFECT (rendered output) and
+// BROWSER (Playwright). Only the structural tier may enter the tracked
+// `<theme>.structural.json` baseline; authoring/effect/browser rows stay in the
+// inventory/report as UNKNOWN until their runner lands.
+//
+// These are EXPLICIT tiered variants of the legacy records — the plan forbids
+// bolting an optional `tier` onto the legacy Bloom records (that would let a
+// future behavior UNKNOWN silently pollute a structural finding set). A selector
+// (`collectTierGateFindings`) filters a single tier's issues/cases so a future
+// UNKNOWN never baselines as structural debt.
+// ---------------------------------------------------------------------------
+
+export type ConformanceTier =
+  | 'structural'
+  | 'authoring'
+  | 'effect'
+  | 'browser';
+
+/** A capability case result carrying the tier it was produced for. */
+export interface TieredCapabilityCaseResult extends CapabilityCaseResult {
+  tier: ConformanceTier;
+}
+
+/**
+ * A tiered capability record. It replaces the legacy single-status view with a
+ * per-tier status map; `requiredTiers` names the tiers this capability MUST
+ * report (a missing `tierStatuses[tier]` for a required tier is a harness
+ * failure). Case results are tier-tagged so the selector can filter them.
+ */
+export interface TieredCapabilityRecord
+  extends Omit<CapabilityRecord, 'caseResults'> {
+  requiredTiers: readonly ConformanceTier[];
+  tierStatuses: Partial<Record<ConformanceTier, CapabilityStatus>>;
+  caseResults?: TieredCapabilityCaseResult[];
+}
+
+/** A requirement expected-case carrying its tier. */
+export interface TieredRequirementExpectedCase
+  extends RequirementExpectedCase {
+  tier: ConformanceTier;
+}
+
+/** A tiered requirement record (expected cases are tier-tagged). */
+export interface TieredRequirementRecord
+  extends Omit<RequirementRecord, 'expectedCases'> {
+  expectedCases?: TieredRequirementExpectedCase[];
+}
+
+/** A structural issue is, by construction, always in the structural tier. */
+export interface TieredStructuralIssue extends StructuralIssue {
+  tier: 'structural';
+}
+
+/** A gate finding carrying the tier it was collected for. */
+export interface TieredGateFinding extends BaselineFinding {
+  tier: ConformanceTier;
+}

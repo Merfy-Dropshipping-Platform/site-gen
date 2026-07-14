@@ -63,14 +63,104 @@ const slideTextCls = (s: string | undefined) =>
 // чёрный слой ПОВЕРХ штатного градиента about-полотна. Читаем s.overlay с fallback
 // на section-level p.overlay (backward-compat). Хелпер ВЫШЕ маппинга slides.
 const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
+
+// Канон «Расположение фото» (Figma node 1:33170 «Слайд» — 9 позиций 3×3):
+// вертикаль (сверху/центр/снизу = justify-start/center/end на flex-row полотна) ×
+// горизонталь (слева/центр/справа = items-start/center/end + выключка контента).
+// Legacy left/center/right (и top-level contentAlign='left') резолвятся как
+// center-left/center/center-right для backward-compat. ДО фикса рендер схлопывал
+// все 9 в justify-center (position renderer-domain GAP) — теперь каждая из 9
+// позиций реально двигает контент-карточку.
+// Полотно = flex-row: горизонталь позиции → justify (главная ось), вертикаль
+// позиции → items (поперечная ось = верх/центр/низ).
+const POSITION_JUSTIFY: Record<string, string> = {
+	"top-left": "justify-start",
+	"top-center": "justify-center",
+	"top-right": "justify-end",
+	"center-left": "justify-start",
+	center: "justify-center",
+	"center-right": "justify-end",
+	"bottom-left": "justify-start",
+	"bottom-center": "justify-center",
+	"bottom-right": "justify-end",
+};
+const POSITION_ITEMS: Record<string, string> = {
+	"top-left": "items-start",
+	"top-center": "items-start",
+	"top-right": "items-start",
+	"center-left": "items-center",
+	center: "items-center",
+	"center-right": "items-center",
+	"bottom-left": "items-end",
+	"bottom-center": "items-end",
+	"bottom-right": "items-end",
+};
+// Горизонталь позиции → выключка контента (items на КОЛОНКЕ + text-align).
+const POSITION_ALIGN: Record<string, string> = {
+	"top-left": "items-start text-left",
+	"top-center": "items-center text-center",
+	"top-right": "items-end text-right",
+	"center-left": "items-start text-left",
+	center: "items-center text-center",
+	"center-right": "items-end text-right",
+	"bottom-left": "items-start text-left",
+	"bottom-center": "items-center text-center",
+	"bottom-right": "items-end text-right",
+};
+// Горизонталь позиции решает, нужны ли поля satin-pad (край) или центр px-4.
+const POSITION_HORIZ: Record<string, "left" | "center" | "right"> = {
+	"top-left": "left",
+	"top-center": "center",
+	"top-right": "right",
+	"center-left": "left",
+	center: "center",
+	"center-right": "right",
+	"bottom-left": "left",
+	"bottom-center": "center",
+	"bottom-right": "right",
+};
+// Нормализация legacy-/alias-позиций к 9-сетке (top-level contentAlign='left' →
+// левый край). `middle-left`/`middle-right` — alias для `center-left`/`center-right`
+// (встречается в conformance-фикстурах как синоним «по центру слева/справа»).
+const normalizePosition = (raw: string | undefined): string => {
+	if (raw === "left") return "center-left";
+	if (raw === "right") return "center-right";
+	if (raw === "middle-left") return "center-left";
+	if (raw === "middle-right") return "center-right";
+	if (raw === "middle-center" || raw === "center-center") return "center";
+	if (raw && POSITION_JUSTIFY[raw]) return raw;
+	if (!raw && p.contentAlign === "left") return "center-left";
+	return "center";
+};
+
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
 		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
+	// Канон canonical-first (фикс alias-precedence GAP): вложенный `image` и
+	// `button.link.href` читаются РАНЬШЕ legacy-алиасов `imageUrl`/`ctaUrl`.
+	// legacy-значения остаются fallback'ом для старых ревизий.
+	const buttonLinkHref =
+		(s.button?.link && typeof s.button.link === "object" && typeof s.button.link.href === "string"
+			? s.button.link.href
+			: undefined) ??
+		(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined);
+	const position = normalizePosition(typeof s.position === "string" ? s.position : undefined);
+	const horiz = POSITION_HORIZ[position];
+	// alignment per-slide имеет приоритет над горизонталью позиции (явная выключка
+	// текста); иначе выключка следует горизонтали позиции (POSITION_ALIGN).
+	const alignCls =
+		s.alignment === "left"
+			? "items-start text-left"
+			: s.alignment === "center"
+				? "items-center text-center"
+				: s.alignment === "right"
+					? "items-end text-right"
+					: POSITION_ALIGN[position];
 	return {
 		image:
-			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
+			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			"",
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
@@ -80,32 +170,19 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		textCls: slideTextCls(s.text?.size),
 		ctaText,
 		ctaHref:
+			buttonLinkHref ??
 			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
-			s.button?.link?.href ??
-			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
 			"/catalog",
 		boxed: String(s.container ?? "false") === "true",
 		schemeCls:
 			typeof s.colorScheme === "string" && s.colorScheme
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
-		// position per-slide (приоритет) | top-level contentAlign: 'center'
-		// (canon-default puckConfig) И отсутствие = центр about-полотна (литерал
-		// `justify-center px-4`, about.astro:47); left/right — в полях satin-pad.
-		posCls:
-			s.position === "left" || (!s.position && p.contentAlign === "left")
-				? "satin-pad justify-start"
-				: s.position === "right"
-					? "satin-pad justify-end"
-					: "justify-center px-4",
-		// alignment per-slide: 'center' (canon-default) И отсутствие =
-		// items-center text-center литерала about.astro:48-49.
-		alignCls:
-			s.alignment === "left"
-				? "items-start text-left"
-				: s.alignment === "right"
-					? "items-end text-right"
-					: "items-center text-center",
+		// Полотно слайда — flex-row: горизонталь через justify + поля (satin-pad у
+		// края, px-4 в центре), вертикаль через items (верх/центр/низ полотна).
+		rowCls: `${horiz === "center" ? "px-4" : "satin-pad"} ${POSITION_JUSTIFY[position]} ${POSITION_ITEMS[position]}`,
+		// Горизонталь контента (items) + выключка текста — из alignment/позиции.
+		alignCls,
 		overlayN: slideOverlayN(s),
 		active: i === 0,
 	};
@@ -218,9 +295,12 @@ const paddingStyle = p.padding
 								aria-hidden="true"
 							/>
 						)}
-						{/* Контент about-полотна: вертикальный центр, кикер → заголовок → CTA
-						    (gap-8 / gap-2.5 — литерал about.astro:48-49). */}
-						<div class={`absolute inset-0 z-10 flex items-center ${s.posCls}`}>
+						{/* Контент about-полотна: расположение по 9-сетке (rowCls = justify
+						    горизонталь + items вертикаль), кикер → заголовок → CTA
+						    (gap-8 / gap-2.5 — литерал about.astro:48-49). Вертикальные поля
+						    полотна py-10/md:py-16 не дают контенту прилипать к краю при
+						    top/bottom позициях. */}
+						<div class={`absolute inset-0 z-10 flex py-10 md:py-16 ${s.rowCls}`}>
 							<div class={`flex w-full max-w-[540px] flex-col gap-8 text-white ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
 								<div class={`flex flex-col gap-2.5 ${s.alignCls}`}>
 									{s.subtitle && (

@@ -8,22 +8,33 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 // Рендер satin (themes/satin/.../MultiColumns.astro) читает канон-пропсы и при
 // этих дефолтах даёт вид satin байт-в-байт.
 
+// КАНОН theme-base MultiColumnItemSchema (единая форма колонны, Figma 314:34941):
+// canon-ключи image/title/description + imageSize/headingSize/textSize + flat-пара
+// linkText(строка) + link(строка href). legacy heading/text/imageUrl оставлены
+// optional для обратной совместимости старых ревизий; РЕНДЕР читает canon-first
+// (title→heading, description→text, image→imageUrl) — эталон theme-base
+// MultiColumns.astro:80-81. `link` — СТРОКА (pagePicker пишет href-строку), НЕ
+// объект {text,href} (это и есть форм-рассинхрон field↔schema↔renderer до фикса).
 const MultiColumnItemSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   heading: z.string().optional(),
   text: z.string().optional(),
   imageUrl: z.string().optional(),
-  // Pupa parity per-column: image/title/headingSize/description/textSize/link.
   image: z.string().optional(),
   imageSize: z.enum(['small', 'medium', 'large']).optional(),
   title: z.string().optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   description: z.string().optional(),
   textSize: z.enum(['small', 'medium', 'large']).optional(),
-  link: z.object({
-    text: z.string().optional(),
-    href: z.string().optional(),
-  }).optional(),
+  linkText: z.string().optional(),
+  // Канон field = pagePicker → пишет СТРОКУ href (единая форма). Union принимает
+  // legacy-объект {text,href} только для парса старых ревизий; рендер читает
+  // строку-href ПЕРВОЙ (canonical-first), затем legacy-объект — форма остаётся
+  // одной (строковой) на стороне конструктора.
+  link: z.union([
+    z.string(),
+    z.object({ text: z.string().optional(), href: z.string().optional() }),
+  ]).optional(),
 });
 
 export const MultiColumnsSchema = z.object({
@@ -42,8 +53,13 @@ export const MultiColumnsSchema = z.object({
   imageAspectRatio: z.enum(['adapt', 'square', 'portrait', 'landscape']).optional(),
   buttonText: z.string().optional(),
   buttonLink: z.string().optional(),
-  // Pupa parity: nested heading {text,alignment,size} + textPosition + background + containerColorScheme.
+  // Pupa parity: nested heading {text,alignment,size} + textPosition + container + containerColorScheme.
   textPosition: z.enum(['left', 'center']).optional(),
+  // КАНОН theme-base: `containerEnabled` — ключ СХЕМЫ (не только field). До фикса
+  // field `containerEnabled` существовал, а в схеме был только legacy `background`,
+  // → safeParse СРЕЗАЛ значение тумблера (field↔schema drift). legacy `background`
+  // остаётся optional для миграции старых ревизий (рендер читает оба).
+  containerEnabled: z.enum(['true', 'false']).optional(),
   background: z.object({ enabled: z.enum(['true', 'false']) }).optional(),
   containerColorScheme: z.string().optional(),
   link: z.string().optional(),
@@ -233,10 +249,12 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   // ширина .satin-container; иконка 56×56; колонки text-center; серая подложка).
   defaults: {
     // Figma 1:19335 — плейсхолдер пустого состояния (3 пустые колонки «Колонна»).
+    // КАНОН-ключи title/description/image (единая форма, как defaultItemProps) —
+    // НЕ legacy heading/text/imageUrl (иначе коэксистенция алиасов в сторе).
     columns: [
-      { id: 'col-1', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
-      { id: 'col-2', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
-      { id: 'col-3', heading: 'Колонна', text: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', imageUrl: '' },
+      { id: 'col-1', title: 'Колонна', description: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', image: '' },
+      { id: 'col-2', title: 'Колонна', description: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', image: '' },
+      { id: 'col-3', title: 'Колонна', description: 'Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.', image: '' },
     ],
     displayColumns: 3,
     padding: { top: 80, bottom: 80 },

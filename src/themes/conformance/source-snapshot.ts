@@ -14,13 +14,37 @@ import { validateThemeV2 } from "../../../packages/theme-contract/validators/val
 import { buildPreviewCartDemoScript } from "../preview-cart-contract";
 import { resolveCartDrawerGlobals } from "../cart-drawer-contract";
 import { bloomRegistry } from "../../generator/registries/bloom";
+import { satinRegistry } from "../../generator/registries/satin";
+import type { ComponentRegistryEntry } from "../../generator/page-generator";
+import { getThemeSourceAdapter } from "./source-adapters";
 import type {
   ThemeSourceSnapshot,
   PhysicalBlockRecord,
   BlockPolicyCode,
   BlockAnatomy,
   CompiledModuleRecord,
+  SectionsMapRecord,
+  RequiredRuntimeSourceRecord,
+  StandaloneRouteRecord,
 } from "./source-types";
+
+/**
+ * Theme → generator registry. The snapshot resolves the registry for the
+ * requested theme; a theme name can only select a registered registry, never an
+ * arbitrary module path. Bloom uses `bloomRegistry`, Satin uses `satinRegistry`.
+ */
+const THEME_REGISTRIES: Record<string, Record<string, ComponentRegistryEntry>> = {
+  bloom: bloomRegistry,
+  satin: satinRegistry,
+};
+
+function resolveThemeRegistry(
+  themeId: string,
+): Record<string, ComponentRegistryEntry> {
+  const reg = THEME_REGISTRIES[themeId];
+  if (!reg) throw new Error(`no generator registry registered for theme "${themeId}"`);
+  return reg;
+}
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const IMPORT_CHECKER = resolve(__dirname, "check-compiled-imports.mjs");
@@ -163,6 +187,11 @@ export async function loadThemeSourceSnapshot(
 ): Promise<ThemeSourceSnapshot> {
   const pkgDir = resolve(SITES_ROOT, "packages", `theme-${themeId}`);
   const themeDir = resolve(SITES_ROOT, "themes", themeId);
+  // Resolve the theme's source adapter (digest partition + required sources) and
+  // its generator registry. A theme name can only select a registered adapter/
+  // registry, never an arbitrary filesystem root.
+  const adapter = getThemeSourceAdapter(themeId);
+  const registryMap = resolveThemeRegistry(themeId);
 
   // --- theme.json (post-validate; pages/blockDefaults retained via raw read) ---
   const themeJsonRaw = readFileSync(join(pkgDir, "theme.json"), "utf-8");
@@ -212,7 +241,7 @@ export async function loadThemeSourceSnapshot(
   ];
 
   // --- generator registry reachability ---
-  const registry = Object.entries(bloomRegistry)
+  const registry = Object.entries(registryMap)
     .map(([name, entry]) => {
       const importPath = (entry as any).importPath as string;
       // ../components/<X>.astro → src/components destination (blocks mapping).
@@ -251,6 +280,25 @@ export async function loadThemeSourceSnapshot(
     themeDistIndexHtml: existsSync(resolve(themeDir, "dist", "index.html")),
   };
 
+  // --- required runtime source presence (adapter-declared subset) ---
+  // Every adapter-declared required source is recorded with its presence. A
+  // missing source is a REPORTED structural fact, never silently dropped.
+  const requiredRuntimeSources: RequiredRuntimeSourceRecord[] = [
+    ...adapter.requiredRuntimeSources,
+  ]
+    .sort()
+    .map((p) => ({ path: p, present: existsSync(resolve(SITES_ROOT, p)) }));
+
+  // --- standalone Astro/JS route tree (recursive, dynamic segments kept) ---
+  const pagesRoot = resolve(themeDir, "src", "pages");
+  const standaloneRoutes: StandaloneRouteRecord[] = listFiles(pagesRoot)
+    .filter((f) => /\.(astro|js)$/.test(f))
+    .map((f) => {
+      const rel = relative(SITES_ROOT, f);
+      return { file: rel, dynamic: /\[[^\]]+\]/.test(rel) };
+    })
+    .sort((a, b) => a.file.localeCompare(b.file));
+
   // --- compiled modules: Puck loader index (Catalog base-resolved) + mapped Publications ---
   const distAstroBlocks = resolve(SITES_ROOT, "dist", "astro-blocks");
   const distThemeSections = resolve(
@@ -263,10 +311,14 @@ export async function loadThemeSourceSnapshot(
   // Catalog resolves to base → theme-base__Catalog__index.mjs (controller Puck index).
   const catalogRef = resolveBlockArtifact(themeId, "Catalog");
   modulesToCheck.push(join(distAstroBlocks, catalogRef.artifact));
-  // Benefits is a theme-bloom physical block; its compiled loader index.
-  modulesToCheck.push(
-    join(distAstroBlocks, "theme-bloom__Benefits__index.mjs"),
-  );
+  // Benefits is a theme-bloom-owned physical block; its compiled loader index is
+  // a Bloom-specific probe (Satin has no Benefits block, so this probe is
+  // Bloom-only — it never fabricates a `missing` compiled module for Satin).
+  if (themeId === "bloom") {
+    modulesToCheck.push(
+      join(distAstroBlocks, "theme-bloom__Benefits__index.mjs"),
+    );
+  }
   // Read the compiled theme-section manifest ONCE (authority for mapped
   // renderers — the exact modules the live/preview pipeline imports).
   let publicationsModule = "";
@@ -302,7 +354,7 @@ export async function loadThemeSourceSnapshot(
   // exactly like a `./blocks/<Name>` manifest override; everything else routes
   // to theme-base. A renderer whose compiled module genuinely fails to import /
   // lacks a default export is omitted, so it stays a real GAP.
-  const rendererArtifacts = Object.keys(bloomRegistry)
+  const rendererArtifacts = Object.keys(registryMap)
     .sort()
     .map((name) => {
       const mapped = sectionManifest[name];
@@ -333,6 +385,43 @@ export async function loadThemeSourceSnapshot(
     a.module.localeCompare(b.module),
   );
 
+  // --- sections-map reachability (standalone sections.map.json) ---------------
+  // Load the theme's standalone `sections.map.json` and, for each of its keys,
+  // record its source mapping, whether the source file exists, the exact
+  // compiled section module the manifest names, and whether that EXACT mapped
+  // Satin renderer imports with a genuine default export. A mapped block is
+  // proved reachable ONLY by its own compiled section module — a passing base
+  // renderer can never mask a mapped-renderer failure. Empty for Bloom (Bloom
+  // has no sections.map.json).
+  const sectionsMapBuf = readOptional(
+    resolve(SITES_ROOT, adapter.sectionMapPath),
+  );
+  const sectionsMapRaw: Record<string, string> = sectionsMapBuf
+    ? (JSON.parse(sectionsMapBuf.toString("utf-8")) as Record<string, string>)
+    : {};
+  const sectionsMapKeys = Object.keys(sectionsMapRaw).sort();
+  const sectionsMapAbs = sectionsMapKeys.map((name) => {
+    const mapped = sectionManifest[name];
+    return mapped ? join(distThemeSections, mapped) : "";
+  });
+  const sectionsMapChecks = checkCompiledModules(
+    sectionsMapAbs.map((p) => p || join(distThemeSections, "__missing__.mjs")),
+  );
+  const sectionsMap: SectionsMapRecord[] = sectionsMapKeys.map((name, i) => {
+    const sourceTarget = sectionsMapRaw[name];
+    const mapped = sectionManifest[name];
+    return {
+      name,
+      sourceTarget,
+      compiledModule: mapped
+        ? relative(SITES_ROOT, join(distThemeSections, mapped))
+        : null,
+      sourceExists: existsSync(resolve(themeDir, sourceTarget)),
+      mappedRendererReachable:
+        !!mapped && sectionsMapChecks[i]?.defaultExport === true,
+    };
+  });
+
   // --- generated Bloom preview-cart script + digest ---
   const script = buildPreviewCartDemoScript("__SITE__", themeId);
   const scriptDigest = sha256(script);
@@ -353,47 +442,25 @@ export async function loadThemeSourceSnapshot(
     reachability: { v2Sections: true, builtTheme: false, liveBuild: true },
   };
 
-  // --- deterministic source digests over tracked repo bytes + module identity ---
-  const digestFiles = [
-    ...listFiles(pkgDir, DIGEST_EXCLUDES),
-    ...listFiles(themeDir, DIGEST_EXCLUDES),
-    ...listFiles(runtimeDir, DIGEST_EXCLUDES),
-    // extracted pipeline helpers + resolver/validator/controller/generator sources
-    resolve(SITES_ROOT, "scripts", "lib", "block-source-layout.mjs"),
-    resolve(SITES_ROOT, "src", "themes", "block-artifact-resolver.ts"),
-    resolve(SITES_ROOT, "src", "generator", "block-assembly-layout.ts"),
-    resolve(SITES_ROOT, "src", "themes", "cart-drawer-contract.ts"),
-    resolve(SITES_ROOT, "src", "themes", "preview-cart-contract.ts"),
-    resolve(SITES_ROOT, "src", "themes", "theme-puck-block-catalog.ts"),
-    resolve(
-      SITES_ROOT,
-      "src",
-      "controllers",
-      "theme-puck-config.controller.ts",
-    ),
-    resolve(SITES_ROOT, "src", "controllers", "preview.controller.ts"),
-    resolve(SITES_ROOT, "src", "generator", "assemble-from-packages.ts"),
-    resolve(SITES_ROOT, "src", "generator", "build.service.ts"),
-    resolve(SITES_ROOT, "src", "generator", "registries", "bloom.ts"),
-    resolve(SITES_ROOT, "src", "themes", "page-blocks.ts"),
-    resolve(SITES_ROOT, "scripts", "compile-astro-blocks.mjs"),
-    resolve(SITES_ROOT, "scripts", "compile-theme-sections.mjs"),
-    // conformance generator inputs (exclude generated inventory/baselines)
-    ...listFiles(
-      resolve(SITES_ROOT, "packages", "theme-contract", "conformance"),
-      DIGEST_EXCLUDES,
-    ),
-    ...listFiles(
-      resolve(SITES_ROOT, "src", "themes", "conformance"),
-      DIGEST_EXCLUDES,
-    ),
-    // workspace/lock/dockerfile/manifests
-    resolve(SITES_ROOT, "pnpm-workspace.yaml"),
-    resolve(SITES_ROOT, "pnpm-lock.yaml"),
-    resolve(SITES_ROOT, "Dockerfile"),
-    resolve(SITES_ROOT, "package.json"),
-  ];
-  const uniqueSorted = Array.from(new Set(digestFiles)).sort();
+  // --- deterministic source digests: EXPLICIT provenance partition ------------
+  // The digest inputs come from the theme's source adapter, split into a shared
+  // core (identical across bloom/satin) and a theme-owned list (only the
+  // selected theme's files). No directory is hashed merely because it contains
+  // conformance code: the broad `src/themes/conformance/**` glob the landed
+  // Bloom loader used is replaced ONCE with this explicit partition. A directory
+  // entry is hashed recursively (excluding node_modules/dist/generated dumps); a
+  // file entry is hashed directly. Every read is ENOENT-tolerant so pre-Task-3
+  // normative artifacts (which do not exist yet) do not fake a failure.
+  const expandDigestEntry = (entry: string): string[] => {
+    const abs = resolve(SITES_ROOT, entry);
+    if (existsSync(abs) && statSync(abs).isDirectory()) {
+      return listFiles(abs, DIGEST_EXCLUDES);
+    }
+    return [abs];
+  };
+  const sharedFiles = adapter.sharedDigestInputs.flatMap(expandDigestEntry);
+  const themeFiles = adapter.themeDigestInputs.flatMap(expandDigestEntry);
+  const uniqueSorted = Array.from(new Set([...sharedFiles, ...themeFiles])).sort();
 
   const sourceDigests: Record<string, string> = {};
   for (const f of uniqueSorted) {
@@ -435,6 +502,9 @@ export async function loadThemeSourceSnapshot(
     registry,
     renderersReachable,
     runtimeSources,
+    requiredRuntimeSources,
+    sectionsMap,
+    standaloneRoutes,
     standaloneOutputs,
     compiledModules,
     publications: { module: publicationsModule, probes: [] },

@@ -1,5 +1,5 @@
 /**
- * Types for the real Bloom source + compiled snapshot
+ * Types for the real theme source + compiled snapshot
  * (`loadThemeSourceSnapshot`). The snapshot records enough facts to prove the
  * compile → loader → assembler reachability of every block WITHOUT inferring
  * support from comments or filename regexes.
@@ -10,6 +10,69 @@
  * export success or a normalized failure code. Source digests hash the original
  * repo bytes instead.
  */
+
+import type { SupportedConformanceTheme } from './theme-adapter';
+
+// ---------------------------------------------------------------------------
+// Source adapter — the provenance-boundary metadata for one theme's source.
+// ---------------------------------------------------------------------------
+
+/**
+ * An external repository whose audited ref informs a Satin requirement but which
+ * site-gen CI never reads. This is EVIDENCE-ONLY literal metadata: it records
+ * the exact SHA a human reviewer audited, and asserts nothing about CI having
+ * exercised that repository. The outer Merfy repo and sibling repositories are
+ * never read by the digest code.
+ */
+export interface ExternalAuditRef {
+  repository: 'MerfyFrontend' | 'orders' | 'api-gateway';
+  ref: string;
+  scope: readonly string[];
+  evidenceOnly: true;
+}
+
+/**
+ * A theme's source adapter: the exact repo-relative roots + digest partition for
+ * ONE theme. It carries no snapshot logic — only the metadata the generic
+ * `loadThemeSourceSnapshot` needs to hash the right bytes and resolve the right
+ * artifacts. Every path is repo-relative and normalized as a child of the sites
+ * worktree; a theme name can never smuggle an arbitrary filesystem root.
+ *
+ * Provenance boundary (the central rule of this file):
+ *  - `themeDigestInputs` may reference ONLY the selected theme's owned files
+ *    (its descriptor, source adapter, release contract, generator registry,
+ *    package/standalone bytes and tracked normative artifacts).
+ *  - `sharedDigestInputs` are IDENTICAL for Bloom/Satin and enumerate the
+ *    generic implementation + central registry wiring + workspace topology.
+ * No digest input hashes a directory merely because it contains conformance
+ * code; the partition is explicit, not a glob over `src/themes/conformance/**`.
+ */
+export interface ThemeSourceAdapter<T extends SupportedConformanceTheme> {
+  theme: T;
+  packageRoot: `packages/theme-${T}`;
+  standaloneRoot: `themes/${T}`;
+  sectionMapPath: `themes/${T}/sections.map.json`;
+  generatorRegistryPath: `src/generator/registries/${T}.ts`;
+  /**
+   * A REQUIRED SUBSET of the theme's runtime sources (layouts/lib/pages/scripts),
+   * repo-relative. Recursive route discovery adds every additional `.astro`/`.js`
+   * route; this list is a floor, never a filter.
+   */
+  requiredRuntimeSources: readonly string[];
+  /** repo-relative dirs whose compiled `.mjs` prove renderer/section reach. */
+  compiledArtifactRoots: readonly string[];
+  /** theme-owned bytes — input ONLY to this theme's digest. */
+  themeDigestInputs: readonly string[];
+  /** shared generic core — identical across bloom/satin. */
+  sharedDigestInputs: readonly string[];
+  /** evidence-only external audit refs; never read by CI digest code. */
+  externalAudits: readonly ExternalAuditRef[];
+}
+
+/** The full source-adapter registry: every supported theme mapped to its adapter. */
+export type ThemeSourceAdapterMap = {
+  readonly [T in SupportedConformanceTheme]: ThemeSourceAdapter<T>;
+};
 
 /** Normalized policy code for a package `validateBlock` message (F-041). */
 export type BlockPolicyCode =
@@ -79,6 +142,39 @@ export interface RegistryReachabilityRecord {
   physicalSourcePresent: boolean;
 }
 
+/**
+ * One `themes/<t>/sections.map.json` entry with its mapped-renderer reachability.
+ * A mapped block is proved reachable ONLY by importing the exact Satin renderer
+ * the compiled section manifest names for it; a passing base renderer can never
+ * mask a mapped-renderer failure.
+ */
+export interface SectionsMapRecord {
+  /** canonical section key (Header, Hero, Catalog, …). */
+  name: string;
+  /** value in the standalone sections.map.json (the source-side mapping). */
+  sourceTarget: string;
+  /** the compiled section module the manifest names, repo-relative (or null). */
+  compiledModule: string | null;
+  /** whether the standalone source file the map points at exists on disk. */
+  sourceExists: boolean;
+  /** true only when the exact mapped compiled module imports with a default. */
+  mappedRendererReachable: boolean;
+}
+
+/** Presence of one required runtime source (repo-relative). */
+export interface RequiredRuntimeSourceRecord {
+  path: string;
+  present: boolean;
+}
+
+/** A discovered standalone Astro/JS route (recursive, dynamic segments kept). */
+export interface StandaloneRouteRecord {
+  /** repo-relative source file. */
+  file: string;
+  /** true when the file name/path contains a `[...]` / `[x]` dynamic segment. */
+  dynamic: boolean;
+}
+
 /** Cart-drawer descriptor: which resolver globals a fixture produces + reach. */
 export interface CartDrawerDescriptor {
   /** Globals produced by resolveCartDrawerGlobals for the fixture. */
@@ -117,8 +213,24 @@ export interface ThemeSourceSnapshot {
    * remains a real `renderer-unreachable` finding.
    */
   renderersReachable: string[];
-  /** required Bloom runtime source files (repo-relative, sorted). */
+  /** required theme runtime source files (repo-relative, sorted). */
   runtimeSources: string[];
+  /**
+   * Presence of every adapter-declared required runtime source (repo-relative,
+   * sorted by path). A missing entry is a real, reported structural fact — this
+   * NEVER silently drops a required source.
+   */
+  requiredRuntimeSources: RequiredRuntimeSourceRecord[];
+  /**
+   * Every `themes/<t>/sections.map.json` entry with mapped-renderer reachability.
+   * Empty for Bloom (Bloom uses the generator registry, not a sections map).
+   */
+  sectionsMap: SectionsMapRecord[];
+  /**
+   * The standalone Astro/JS route tree discovered recursively under
+   * `themes/<t>/src/pages`, dynamic segments retained. Sorted by file.
+   */
+  standaloneRoutes: StandaloneRouteRecord[];
   /** presence of the standalone live output index.html files. */
   standaloneOutputs: { liveIndexHtml: boolean; themeDistIndexHtml: boolean };
   /** compiled Puck index + mapped/package renderer import outcomes. */

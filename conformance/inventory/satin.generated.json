@@ -1,0 +1,4869 @@
+{
+  "capabilities": [],
+  "findings": [
+    {
+      "fingerprint": "sha256:ba784ef76c38be87f146deeffab34f814cde914d502e0acd3e251df531c8f373",
+      "id": "home.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:5df43f72637b0d885aa4186bcbfe052bc5b9184aabc4ed7b8f8cfa3f37495c56",
+      "id": "home.status-gap"
+    },
+    {
+      "fingerprint": "sha256:e5fb093c87d600eaaa72c3bcb291923909208d36c3a4d1b2cd56d34d05be3e60",
+      "id": "home.status-open"
+    },
+    {
+      "fingerprint": "sha256:2872665c5dcc900a1a9f0f59b707241a50f49897e16d1e556f9583f6dd36a10d",
+      "id": "page-about.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:7d8132c642713943d7bdcda30e1300b4302d522a88ed6081ea76500906c7434e",
+      "id": "page-about.status-gap"
+    },
+    {
+      "fingerprint": "sha256:83b2e39c0d88e523c1978a38983db1435f19168a351f021ac4250593c5e60b40",
+      "id": "page-about.status-open"
+    },
+    {
+      "fingerprint": "sha256:a8e0eb5dba0c8fd8c8684461a6a88daeb58aae33de21a5dd2b35ad4b8425b940",
+      "id": "page-cart.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:2ab09d66c80342b0495f5db2d122e0494c3ee5393cd377cfa8a4ccb4d547330a",
+      "id": "page-cart.status-gap"
+    },
+    {
+      "fingerprint": "sha256:8f5053e38c636dcb98b053c3d12e828ec6913cb7c4a59eace5ee8601a32aebf2",
+      "id": "page-cart.status-open"
+    },
+    {
+      "fingerprint": "sha256:414b37fdc8689b2a65e8dfff97f8dc3ba1e4c062818b04458af63f3e0e5df7bc",
+      "id": "page-catalog.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:cbecd2ee4244bc68cb421a5510e97b00b162ae0861da39a44eaa9c2075b9c73b",
+      "id": "page-catalog.status-gap"
+    },
+    {
+      "fingerprint": "sha256:984a6274d2838b7fee71570f696bd02e831f1af016f5f4a76da64fa3b2b15251",
+      "id": "page-catalog.status-open"
+    },
+    {
+      "fingerprint": "sha256:c2042fe07c8d94374e031895177f872e3c5b8c3c66f3aa7a901913eb8548007d",
+      "id": "page-checkout-result.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:4397e92fde929a0e0bdb940d19c25a066e522d0254870d7723e0a4ca794428eb",
+      "id": "page-checkout-result.status-gap"
+    },
+    {
+      "fingerprint": "sha256:2f81f4c45984239f498cd492500e46c8e08c0a707d4df8140ba096e155d59ff2",
+      "id": "page-checkout-result.status-open"
+    },
+    {
+      "fingerprint": "sha256:a41e7f56413a82e16341042a43efca7b8eab226de92b464f2b0584f99a8408e1",
+      "id": "page-checkout.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:bc0f09e55a99e50ad9ce26d8106c4f5d4bf352b2ebd2dc7ee045f931f4429cfc",
+      "id": "page-checkout.status-gap"
+    },
+    {
+      "fingerprint": "sha256:93081ee2fbb9f5fcdcac8ecbb3962fda1e7de45f2831fdab22532fde42313166",
+      "id": "page-checkout.status-open"
+    },
+    {
+      "fingerprint": "sha256:5a897f696c020dbdf12284e85dc976b511e98240360dfdbd3a6ff40e45b5032c",
+      "id": "page-collection.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:ea10712e9b58b0028b07c082580a4f889ac9adcb29826db92df7f6966809c0f8",
+      "id": "page-collection.status-gap"
+    },
+    {
+      "fingerprint": "sha256:1707e9b1eeddd0b14711f34158d596d2efe4950954bbfb1d9aeeb713029912bc",
+      "id": "page-collection.status-open"
+    },
+    {
+      "fingerprint": "sha256:a35e1799cb702db4e35d91b2f87f39f9223b3267e769b74ce1d5ccddd7831329",
+      "id": "page-contacts.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:402ebba7e76ebe406919334d6485b324b34b78b6b75e8d0a7d35239001f7f2cf",
+      "id": "page-contacts.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ddcab354cd44a8d2beda514ce1936c24fdd68e705c8dfae93e124a9ad5832b42",
+      "id": "page-contacts.status-open"
+    },
+    {
+      "fingerprint": "sha256:32074f8d69973a84592d841d221c93fc984f01a3bafdf7093c27ad4b8065e043",
+      "id": "page-delivery.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:925b4b128db9048cdc0c008e577fc6f84722c449743954d3af3a3f78752d6958",
+      "id": "page-delivery.status-gap"
+    },
+    {
+      "fingerprint": "sha256:2cd0a5cf691f1d3d701ae7a74e2cc5f7b43c6d4043dc7305979154d0f3b506fe",
+      "id": "page-delivery.status-open"
+    },
+    {
+      "fingerprint": "sha256:ac8c68139a8e6e789aecefe7c737f9dc89345988481ffdba7af88f8f1e32ea08",
+      "id": "page-product.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:ea1055a878c074f3673ec97fb50c91fd9ba10955c3f73860e9658d5aa6104ede",
+      "id": "page-product.status-gap"
+    },
+    {
+      "fingerprint": "sha256:0d3aa6e7b9f7d478e48e52fbd3bbe873ff5d20aa938da27b23aa8a27a5fe1bf1",
+      "id": "page-product.status-open"
+    },
+    {
+      "fingerprint": "sha256:43e51003bfb16ab5bd25abe9641763216fae7239a96bc9b4d67637a3d988961c",
+      "id": "satin.block.Catalog.manifest-declaration"
+    },
+    {
+      "fingerprint": "sha256:3cf0ced0dd342123e85a12dd7559e76b2fc786f8297a05621c9a5178147b2a47",
+      "id": "satin.block.Catalog.manifest-declaration.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:8126f54cb8d3e4debf98011356d72c7a7d31a954a3efdac3c60f6cfac1a99d86",
+      "id": "satin.block.Catalog.manifest-declaration.status-gap"
+    },
+    {
+      "fingerprint": "sha256:c2635967b1d02e9e480330df53b7ae3621bdbae8bbde4604caaaeb4c55526ebd",
+      "id": "satin.block.Catalog.manifest-declaration.status-open"
+    },
+    {
+      "fingerprint": "sha256:43221c4c198ab791c9cabd527bb95600b61e647dec5623e7268be42745cb74ba",
+      "id": "satin.decision.collapsiblesection.sidebar-layout"
+    },
+    {
+      "fingerprint": "sha256:46a70884945a006bbd91b655edbf8ef941e2c64232db718cff6f87427c40468b",
+      "id": "satin.decision.collapsiblesection.sidebar-layout.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:d660d754db57108b68e11035a44128fb1f05d12343ab3abd49627ac605a6bd23",
+      "id": "satin.decision.collapsiblesection.sidebar-layout.status-gap"
+    },
+    {
+      "fingerprint": "sha256:bf249b12a386bf2a725c3d602609db44caff7dc3d7b53d1d0ea9d59cb4945a2e",
+      "id": "satin.decision.collapsiblesection.sidebar-layout.status-open"
+    },
+    {
+      "fingerprint": "sha256:c9f62a3121878eea13653b7fa14e13a22815019ca0638ad411bffc14c82f157a",
+      "id": "satin.decision.footer.groups-defaults"
+    },
+    {
+      "fingerprint": "sha256:cbdb5c49d0f9c40199e058acfa799430a23d5fe41439a7e225d27821c16a6656",
+      "id": "satin.decision.footer.groups-defaults.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:3dc6bf7611f52eee67a73ae3a1ca3efc7890e350a007d77404390fda5cb3f9d2",
+      "id": "satin.decision.footer.groups-defaults.status-gap"
+    },
+    {
+      "fingerprint": "sha256:475e32f0cfcd9058336164abe67b3ba0d777345feba6223bcae7d908839302e8",
+      "id": "satin.decision.footer.groups-defaults.status-open"
+    },
+    {
+      "fingerprint": "sha256:f033537fc0a4d390b39a70d1e2592a32c0bdb64069effe0bd4b482920ac32ddf",
+      "id": "satin.decision.header.recursion-depth"
+    },
+    {
+      "fingerprint": "sha256:359e7caea030437e4c59556f98d25a6601cb91f03336cc7ef33022417d8b7dbf",
+      "id": "satin.decision.header.recursion-depth.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:8cc097bf8358c71cc4b2f9a4589e5549e7b9f3b5d6ab4cb371039edb7d64fa27",
+      "id": "satin.decision.header.recursion-depth.status-gap"
+    },
+    {
+      "fingerprint": "sha256:3e718da749c42d1da37781e1f659052539bd2f5b1dbb9f5876a48d1c5f158df4",
+      "id": "satin.decision.header.recursion-depth.status-open"
+    },
+    {
+      "fingerprint": "sha256:d323ec7869b97faa12c11b7eaab49e01265120e0c3b67669be26dbe812a64038",
+      "id": "satin.decision.imagewithtext.alignment"
+    },
+    {
+      "fingerprint": "sha256:f29fda20b272416c4b13d5d32db33dbeac3c0b3c0e984a3f320feb33c446c39f",
+      "id": "satin.decision.imagewithtext.alignment.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:2f1bf7f2a37b7fae126e038ca8a3765bd4c8e228db4159f3dd3f62a4870d264c",
+      "id": "satin.decision.imagewithtext.alignment.status-gap"
+    },
+    {
+      "fingerprint": "sha256:1576bc2a3d1289602d619694bcced9a4b94e22e486e80274ba6c90894105a231",
+      "id": "satin.decision.imagewithtext.alignment.status-open"
+    },
+    {
+      "fingerprint": "sha256:f0e0e8012a56706b1f71673134c1ebfbb58104f769c0a48f6bcd452e1033d59c",
+      "id": "satin.decision.lifecycle.fresh-default-cohort"
+    },
+    {
+      "fingerprint": "sha256:9c6327b3326fedf9760e53b9d923877a8275c487a674056efd5dc50239e83c8b",
+      "id": "satin.decision.lifecycle.fresh-default-cohort.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:1f5b87fab190f9bc425d87fce4bd7ff3d25f54223133d7c43f12209c3aeb50dc",
+      "id": "satin.decision.lifecycle.fresh-default-cohort.status-gap"
+    },
+    {
+      "fingerprint": "sha256:9942cca14f2caa0d662e030a38c1b6ee047813c2fa7424d0d5b97876d7c58ab2",
+      "id": "satin.decision.lifecycle.fresh-default-cohort.status-open"
+    },
+    {
+      "fingerprint": "sha256:db604aa345363cbe46a99f9ea0ff2dcb359f47808862780e3de86cdf36792159",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation"
+    },
+    {
+      "fingerprint": "sha256:060840a4b6f06095ca97b6893d0113f18a547fbdd3b06e2b53fcc3fa45afb363",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:7232d129a9cf02bf0afb9e36ac21bb8539651ad33f5f66a7fb9514572da72c32",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation.status-gap"
+    },
+    {
+      "fingerprint": "sha256:b7631d86c672fc226acec578457b749cb338e7e38e648b8b071d68f65e3f39fb",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation.status-open"
+    },
+    {
+      "fingerprint": "sha256:ad3c220cf0276359dcb7310a9901d3502621c2cb9d7d55e4b39d6f3542a77df1",
+      "id": "satin.decision.logo.migration-cohorts"
+    },
+    {
+      "fingerprint": "sha256:4be797340d241a8213b07f0ac44cd11d3dd4c35b074432d4efc71db0611cb8cb",
+      "id": "satin.decision.logo.migration-cohorts.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:801ede0cc534d962f82adce464450faa0af45334bff0fa067839639aa5f04a84",
+      "id": "satin.decision.logo.migration-cohorts.status-gap"
+    },
+    {
+      "fingerprint": "sha256:5c4c87acb1e7bde826301c647503a9bdfc88e165a22431e3c60af5913b793be3",
+      "id": "satin.decision.logo.migration-cohorts.status-open"
+    },
+    {
+      "fingerprint": "sha256:a50e0afc965e6fc31e84a164d84b9fa357bd8cc94abd1ecaece1bb14fa2e870b",
+      "id": "satin.decision.multirows.behavior"
+    },
+    {
+      "fingerprint": "sha256:c8e7c9f57b331ce22779539d3264e3abb62c3afbbcef9bed5f17ed01a1fe2a14",
+      "id": "satin.decision.multirows.behavior.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:a53f2a9bbfb5a9aa9021e84dcdf32d4ac614c3aa719bd42e1509f39067c6b876",
+      "id": "satin.decision.multirows.behavior.status-gap"
+    },
+    {
+      "fingerprint": "sha256:edf2730040032d6f48fe3503c5d62f17f874543df168e81bc499d4fe9154ce00",
+      "id": "satin.decision.multirows.behavior.status-open"
+    },
+    {
+      "fingerprint": "sha256:522057c8d7174d687c4f523c20b332c190a9e341fb55acae3832558cf3e9c70d",
+      "id": "satin.decision.version-domain.meaning"
+    },
+    {
+      "fingerprint": "sha256:bf3153e918808fbe3ff928e2acc5554d1257493a6806b63c68b12fb88c350a9a",
+      "id": "satin.decision.version-domain.meaning.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:aedd9ff5e235c723233134523f1f92fae9dd9f9db3d7fc0a88772fbb28d88a08",
+      "id": "satin.decision.version-domain.meaning.status-gap"
+    },
+    {
+      "fingerprint": "sha256:d850aeb3833faa35210b35cce3e26ace07614f45873029ca678705f3600f58d5",
+      "id": "satin.decision.version-domain.meaning.status-open"
+    },
+    {
+      "fingerprint": "sha256:2edeac0896f6e239c42ddd283c3a4dd9659213913725f35a539e01b684f4801e",
+      "id": "satin.flow.account.order-detail-safe-dom"
+    },
+    {
+      "fingerprint": "sha256:02773bc1994e91d8d382bfea021359ec06422d41391314bf9d2caabe1a46164a",
+      "id": "satin.flow.account.order-detail-safe-dom.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:61e49dbfc69754ce20a52d47760f5c4fab16a0dc809ff211e0253c2c08cf3560",
+      "id": "satin.flow.account.order-detail-safe-dom.status-gap"
+    },
+    {
+      "fingerprint": "sha256:d34848bb90a8a392e8eecdd49c9544fb8df12981100957390730b1423b19082b",
+      "id": "satin.flow.account.order-detail-safe-dom.status-open"
+    },
+    {
+      "fingerprint": "sha256:6370143bb4950d3d30619dbd56e4fcc6192895d84e75f02e8bb0e2600d8ef39c",
+      "id": "satin.flow.account.orders-safe-dom"
+    },
+    {
+      "fingerprint": "sha256:dc9560b9aad4426108721cb4ae4404dacd914f7717de1c88d5ceb9da6384b40c",
+      "id": "satin.flow.account.orders-safe-dom.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:e6643ad05a7fccbd2991a6ad27e8571da33bc7df0c08833dccb6072851a15862",
+      "id": "satin.flow.account.orders-safe-dom.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ff5f3d40fc08934ea73bcc6f7c85150a1e10bee57016f8306d7578b3616e58c2",
+      "id": "satin.flow.account.orders-safe-dom.status-open"
+    },
+    {
+      "fingerprint": "sha256:900725bed59dc91790eb557b8cb20e8f823fb3d0f9059dd1f2b1ae0079fc4b22",
+      "id": "satin.flow.account.route-index.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:c974726645d8e13bbe9cf2ec2e57cb5753b4bb63397a1e99321dfb5c3f6023fb",
+      "id": "satin.flow.account.route-index.status-gap"
+    },
+    {
+      "fingerprint": "sha256:0b46b4d987c19983f263f73e673a2a0667d86a61a782ec95a91ad7facab9fad3",
+      "id": "satin.flow.account.route-index.status-open"
+    },
+    {
+      "fingerprint": "sha256:d543e29b6b31a1060eac452adcd50a03c96ae1d27f89e8c09030dd5fab947410",
+      "id": "satin.flow.account.route-order-detail.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b2929cb456787e547ae78a11723244d046615be4254806aceac9596c33b93fb1",
+      "id": "satin.flow.account.route-order-detail.status-gap"
+    },
+    {
+      "fingerprint": "sha256:48834eaa62bdfa06e2ea1a20034a803c01f7cae004a27ef5f444c4fb3dd8c559",
+      "id": "satin.flow.account.route-order-detail.status-open"
+    },
+    {
+      "fingerprint": "sha256:1a7a62ac04f0a0fb44492519cc9bcaa2c5b3efbacea99cbd89b56d191f652669",
+      "id": "satin.flow.account.route-orders.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:64888d2d9d3092f63c92ce1a9dea4dca2f5106a002d34cc176558c632ab0e124",
+      "id": "satin.flow.account.route-orders.status-gap"
+    },
+    {
+      "fingerprint": "sha256:a677117d5b6accf4b36428012e66b6a3b429c8a6bcf8dc0182e5744f88d849f5",
+      "id": "satin.flow.account.route-orders.status-open"
+    },
+    {
+      "fingerprint": "sha256:124dc9abc0cdbe433147c5dac9bc60d96963ffddbf95ca189eac738d1757c18e",
+      "id": "satin.flow.account.route-profile.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:ffb40373c45cf043dbf4ec068eff6b1b6ab5d19805088c6118bc35878b91a5aa",
+      "id": "satin.flow.account.route-profile.status-gap"
+    },
+    {
+      "fingerprint": "sha256:52dbe7450bc8a01fe4036cae69d924c31e2293cc75b3a5e7a93df0cd19003648",
+      "id": "satin.flow.account.route-profile.status-open"
+    },
+    {
+      "fingerprint": "sha256:2b74d87a131a0a5a1363e9ded0046f7a62a77966cd609144a1d4957381d3212a",
+      "id": "satin.flow.auth.canonical-links.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:ed57c90d010f209e93be3dbc83414f50f9d92cdf20187a77a09ee750d3da3b0d",
+      "id": "satin.flow.auth.canonical-links.status-gap"
+    },
+    {
+      "fingerprint": "sha256:0bd08adb5538db72ce5d91442b4b3bf60830c99b938b21137e9e16d07c37c403",
+      "id": "satin.flow.auth.canonical-links.status-open"
+    },
+    {
+      "fingerprint": "sha256:b9351a5484ec516fa13f809999ab4eeab837e2a914a74e628e87537840d13af5",
+      "id": "satin.flow.auth.demo-routes"
+    },
+    {
+      "fingerprint": "sha256:36385b304e46119e234abfb71ecde2bf25e4b8c77ee29b52aa4b10054fc4b7c9",
+      "id": "satin.flow.auth.demo-routes.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:e0bd9d63daa925fbb53ce626cfb271d1d4aeb1c8a9a2495d69ba4dec7ad53201",
+      "id": "satin.flow.auth.demo-routes.status-gap"
+    },
+    {
+      "fingerprint": "sha256:af84013519e4f392e5f887db500855ae4d40ec77ce03aa1057cb65452be6f915",
+      "id": "satin.flow.auth.demo-routes.status-open"
+    },
+    {
+      "fingerprint": "sha256:494fe8f1e49570c22a543a2cff96c916c3f913e263f5cd2f3f8a35062df30536",
+      "id": "satin.flow.auth.login-return-propagation"
+    },
+    {
+      "fingerprint": "sha256:2aad5c657a9682638b9709cb440179a7ac17b0eac3555ef5e2154a0c156a2c1c",
+      "id": "satin.flow.auth.login-return-propagation.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:2e450166bfc612971c73347f1e51cf77a04550a83139260022e079249fab8c98",
+      "id": "satin.flow.auth.login-return-propagation.status-gap"
+    },
+    {
+      "fingerprint": "sha256:9e84e518a2b717426161a6979a22958a179ef15bb4586af8a2f0bf27f327599a",
+      "id": "satin.flow.auth.login-return-propagation.status-open"
+    },
+    {
+      "fingerprint": "sha256:145fc7a917e08a81a7c71bb01c66f6d3fe96d5e2cb54378a4e2ca27dff260eb5",
+      "id": "satin.flow.auth.return-parameter"
+    },
+    {
+      "fingerprint": "sha256:c6bb7bb9989daddb439998dc3c4a941f64e3cd04bcd238743e88dbce88279f91",
+      "id": "satin.flow.auth.return-parameter.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b5a7c463276bf6f68d905b44a2d1370bdf52a9f3d0649d701ea753b98c9cd106",
+      "id": "satin.flow.auth.return-parameter.status-gap"
+    },
+    {
+      "fingerprint": "sha256:5171ea569808b9991b64673a0a531141bdf1a96edc20f5f0db54a1fe93472fb1",
+      "id": "satin.flow.auth.return-parameter.status-open"
+    },
+    {
+      "fingerprint": "sha256:d15a5da9a9e326adcccd22facbefa869003b569b4977924c9f81114c544c8df3",
+      "id": "satin.flow.auth.verify-return-propagation"
+    },
+    {
+      "fingerprint": "sha256:633c8f1b7cdddc2a6e24320ec78ca45375eb0ea17755637552c90030264ea239",
+      "id": "satin.flow.auth.verify-return-propagation.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:7a1d37344db213a42d026f5339835f9f49fd58a402bc9782a38193c43551b4ec",
+      "id": "satin.flow.auth.verify-return-propagation.status-gap"
+    },
+    {
+      "fingerprint": "sha256:04b02461f4ad84839f6b8fb32167fc45dd2ed35a2801bb6ca655fd74130a2369",
+      "id": "satin.flow.auth.verify-return-propagation.status-open"
+    },
+    {
+      "fingerprint": "sha256:36cd54afe15436b29391d71d47b0dcb8030cd596b2e995716e44b8bf915e5ed5",
+      "id": "satin.flow.cart.cart-section-target.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:f599d40300fe5d1a36f4f1f1ac373fb6d7a26e7263941b56f088f695a7a79e0a",
+      "id": "satin.flow.cart.cart-section-target.status-gap"
+    },
+    {
+      "fingerprint": "sha256:57f520fb2879bd6735c944a6a9b4a91e87c621e6a557b9ebfb45a9c4ba99ed08",
+      "id": "satin.flow.cart.cart-section-target.status-open"
+    },
+    {
+      "fingerprint": "sha256:c57d66bdd28a81e3123d5d54ea2c7eaae0d7088aabdc3afc0dd09915517d4f90",
+      "id": "satin.flow.cart.disclaimer-coupling.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:0a40a826f0b4cf29366c27a255777f5cc3b353ede10aa2763b7128146035a9e8",
+      "id": "satin.flow.cart.disclaimer-coupling.status-gap"
+    },
+    {
+      "fingerprint": "sha256:fd8cba116b65ef8c482fba91024a942744a3c204249fa1d80455290b9093d1b4",
+      "id": "satin.flow.cart.disclaimer-coupling.status-open"
+    },
+    {
+      "fingerprint": "sha256:6899261c71400d6533aba4cb1e0606d20b386303bcfac9edc15b4317647935a5",
+      "id": "satin.flow.cart.drawer-cart-section-source"
+    },
+    {
+      "fingerprint": "sha256:1d3be4a6e69c41589f2b185094b5abb6e6ed6b2887fad0a57f89bc498bdb7b96",
+      "id": "satin.flow.cart.drawer-cart-section-source.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:74389937bdd60a4e93c7afbae6431ce492cee6598b5f794ed0cf58e0d081082d",
+      "id": "satin.flow.cart.drawer-cart-section-source.status-gap"
+    },
+    {
+      "fingerprint": "sha256:c18dbaed4e1e3a218fa648b847fa669e20382cf83207516d18c1b542f5d2dea1",
+      "id": "satin.flow.cart.drawer-cart-section-source.status-open"
+    },
+    {
+      "fingerprint": "sha256:eb9f4a7b2a6c62a8c3a5253cc9f0eff19a2712d70f86dfa1b3ba60919387ef7e",
+      "id": "satin.flow.cart.preview-empty-array.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:5f5900cc50df8a941d7bf53e5578e8e90bd76a091c700b8c610f65161b588f13",
+      "id": "satin.flow.cart.preview-empty-array.status-gap"
+    },
+    {
+      "fingerprint": "sha256:9d5258d15c7957c0291ea5729ee1b4664724ea4bf951a5664ab12043608a14f8",
+      "id": "satin.flow.cart.preview-empty-array.status-open"
+    },
+    {
+      "fingerprint": "sha256:c81a48a9fdaa9337adfbb0cc76f0eb5de30aafc2e3ab20114cc9ec2f1e79b847",
+      "id": "satin.flow.cart.preview-product-context.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:6c3855897012a868bf07b2051b69b2f9e805ce13714053f3a0582371c3d000fd",
+      "id": "satin.flow.cart.preview-product-context.status-gap"
+    },
+    {
+      "fingerprint": "sha256:26cb56c06a60eb88d41cd7385dc1e9d68ea743ecdcd474a3ad18be79a769d31b",
+      "id": "satin.flow.cart.preview-product-context.status-open"
+    },
+    {
+      "fingerprint": "sha256:f28950b785c89e42760d5db285ea058964316bba273253b8b74e186f00921067",
+      "id": "satin.flow.cart.safe-dom"
+    },
+    {
+      "fingerprint": "sha256:2ffac23e98f7ba7108b75eb40471385529024031e4cf8d296f961a76b38eaf28",
+      "id": "satin.flow.cart.safe-dom.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:94f3d7ee77558191c136bc9001df121941105179fe84a99427f264d38d08c644",
+      "id": "satin.flow.cart.safe-dom.status-gap"
+    },
+    {
+      "fingerprint": "sha256:a2581f5f55284e7e6adf561e35bd67dd34608df5954880e49945867fbb418000",
+      "id": "satin.flow.cart.safe-dom.status-open"
+    },
+    {
+      "fingerprint": "sha256:2d0cddb73b5b955c19428b7f0584ca201525db6d829e4da762ff31b1cb3dd670",
+      "id": "satin.flow.checkout-config.require-auth-live"
+    },
+    {
+      "fingerprint": "sha256:1962e4477fed86b6ad2e8d86c76a3eb85924be933ceed2b8a39a652ef6b39fee",
+      "id": "satin.flow.checkout-config.require-auth-live.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:3d7f241c9d24de820040ce0937f9e7a7390fb2e87f47bc567c8e83c925471f5b",
+      "id": "satin.flow.checkout-config.require-auth-live.status-gap"
+    },
+    {
+      "fingerprint": "sha256:4412507fac97e765b9311da21496a9b0ebec1f25456ab0e6d6e12a9e3ae05b8a",
+      "id": "satin.flow.checkout-config.require-auth-live.status-open"
+    },
+    {
+      "fingerprint": "sha256:fc1de09c563804cf5c496dec4ba98e981a3a8b399dcd6f7288a29f79c2bf8d8a",
+      "id": "satin.flow.checkout-config.require-auth-preview.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:9e9dca9a3455a35ca704bfaab9ddab330058a041ae8d915055c00c4d897fe880",
+      "id": "satin.flow.checkout-config.require-auth-preview.status-gap"
+    },
+    {
+      "fingerprint": "sha256:f6b3e50d29a8329d1e05af7393c169184dc99ccbd87ff0337742587e26b0ceb2",
+      "id": "satin.flow.checkout-config.require-auth-preview.status-open"
+    },
+    {
+      "fingerprint": "sha256:5ea1f692855153872c824be26b901d42c0edc3666e5fc302c823b68c3dfcf996",
+      "id": "satin.flow.checkout-config.scheme-initial-injection"
+    },
+    {
+      "fingerprint": "sha256:9daf358e11cc3295c96941b0091887562cf0290b04771b1c6cedad27298c1c49",
+      "id": "satin.flow.checkout-config.scheme-initial-injection.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:49a5be188ee0f79d72c355ab091a340365b6433247d26891045aa417de884393",
+      "id": "satin.flow.checkout-config.scheme-initial-injection.status-gap"
+    },
+    {
+      "fingerprint": "sha256:712f0c05b44c8deb1e278de953ba07f54d2b8411d64e06c1f152f9c3688c6d12",
+      "id": "satin.flow.checkout-config.scheme-initial-injection.status-open"
+    },
+    {
+      "fingerprint": "sha256:2b56ddec03bbd474187aca1009023091e08652124157919fec45c6fe4b9236a1",
+      "id": "satin.flow.checkout-result.confirmation-grant"
+    },
+    {
+      "fingerprint": "sha256:f58b15c78138b96324a7a87ebee5a17f3fa2b9d1c7e23fd522ca258d6fe1d17d",
+      "id": "satin.flow.checkout-result.confirmation-grant.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:677560c1fee88d18dc611d4c9ea5336e50ab2d48423452e01a5da1e689dedcc7",
+      "id": "satin.flow.checkout-result.confirmation-grant.status-gap"
+    },
+    {
+      "fingerprint": "sha256:66b22b4d500b240c4c629acf14c6840df5f6ef7b7b97a8101cb04479e24fad10",
+      "id": "satin.flow.checkout-result.confirmation-grant.status-open"
+    },
+    {
+      "fingerprint": "sha256:60375f85ce4c9c0a0f9c9733ef2e8d764adc26591381c9ff8e610d5cb9c2a676",
+      "id": "satin.flow.checkout-result.redirect-target.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:1f316074d48b87aef5a355a1b5a3522c4d72b65e44aae106dc295f977aa3d4cc",
+      "id": "satin.flow.checkout-result.redirect-target.status-gap"
+    },
+    {
+      "fingerprint": "sha256:5f52a5c2cdd4a9658ddd23a72bed3fedd12c9125f0cf0a634e2fc773f976ca16",
+      "id": "satin.flow.checkout-result.redirect-target.status-open"
+    },
+    {
+      "fingerprint": "sha256:32ab2f79a3ab68017d71b9fe4a2a67bb934e1bf6082623e2d44b9b42b7f51bfd",
+      "id": "satin.flow.checkout-result.status-endpoint.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:f9bed924778a4e4daa889c74f1c645fa47ef832f68eabd1aedc7849f294d044e",
+      "id": "satin.flow.checkout-result.status-endpoint.status-gap"
+    },
+    {
+      "fingerprint": "sha256:1da8928d860f45dec672f6eb2d1f50233963adb70d40a816d9dc10b028af59e9",
+      "id": "satin.flow.checkout-result.status-endpoint.status-open"
+    },
+    {
+      "fingerprint": "sha256:8ecff778cb05b2624da72660df40fd8d3347ab7356062d73fcc0b31aff457804",
+      "id": "satin.flow.checkout-result.status-not-found"
+    },
+    {
+      "fingerprint": "sha256:4e6ab9139726c3f8cde4c43ab135e3112829c87e8cd3a6728bf31f898f47b82f",
+      "id": "satin.flow.checkout-result.status-not-found.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:3863a0ee629be04217917aa4a54f341957e33ca3c5cf3ab669fe502f43c013de",
+      "id": "satin.flow.checkout-result.status-not-found.status-gap"
+    },
+    {
+      "fingerprint": "sha256:9428297bb465e3c733c8c2c6eccd408394c22c21c43333bdb1d81980087f03d5",
+      "id": "satin.flow.checkout-result.status-not-found.status-open"
+    },
+    {
+      "fingerprint": "sha256:8ef4396132a9eb9d8ada8ba3841f023194892c0c8e6179107bb579258f41903e",
+      "id": "satin.flow.checkout-result.summary-endpoint.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:c6f94f9c55b8d92ebc5b1d765401918fd33aa2dc87f439a1fc6481500a89446f",
+      "id": "satin.flow.checkout-result.summary-endpoint.status-gap"
+    },
+    {
+      "fingerprint": "sha256:7dd30aac024452a72c380b2d8cc1a6a9620ae1f61eb6097d64e463a77866a829",
+      "id": "satin.flow.checkout-result.summary-endpoint.status-open"
+    },
+    {
+      "fingerprint": "sha256:3770c92ec2a52bde08e4ded90dc299b6b462e96ad89f34a98a886828d938bc39",
+      "id": "satin.flow.legal.checkout-cookies"
+    },
+    {
+      "fingerprint": "sha256:084ff5a1020a05fafdd4868024f5095ea2063519fde6e3dffd52024a319320ca",
+      "id": "satin.flow.legal.checkout-cookies.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:8c4c21883dd3854a5c05cfaf8a60d4e2d545ea85b7b96d22facf35b11a1621cd",
+      "id": "satin.flow.legal.checkout-cookies.status-gap"
+    },
+    {
+      "fingerprint": "sha256:c616ba0b25af5d4b4afd69a29dc860d39700fc5c00e868356fd789de2c68e6ce",
+      "id": "satin.flow.legal.checkout-cookies.status-open"
+    },
+    {
+      "fingerprint": "sha256:f4e1e1597a454c1f377039190ab1233e1a0c6abfb9168f49c525ad752e5bba2c",
+      "id": "satin.flow.legal.footer-privacy"
+    },
+    {
+      "fingerprint": "sha256:c10e1c5ce7d3a50a2199c498a0b1e4bdd044c853be713efd42343beef4d47ac3",
+      "id": "satin.flow.legal.footer-privacy.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:10becf1b79622b9f696b7b485affee574b04ecd36516e22a98019995e69b263a",
+      "id": "satin.flow.legal.footer-privacy.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ae35a15577f64b12e35890f2dc87cdc60b4939031d9e97cce1f32e4ae5795767",
+      "id": "satin.flow.legal.footer-privacy.status-open"
+    },
+    {
+      "fingerprint": "sha256:ddb2be3f0c428942adb6860269738abee924a85fc88c119773d72d3ff518d269",
+      "id": "satin.flow.legal.footer-refund"
+    },
+    {
+      "fingerprint": "sha256:1a7571d721f980aa43999040b06f5023ef3918a0fc49677787ad02235a68b900",
+      "id": "satin.flow.legal.footer-refund.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:2a3875960eaca3e8b8de4d87d162b6cafdae9987e07151cac9d8d88d380fd0d0",
+      "id": "satin.flow.legal.footer-refund.status-gap"
+    },
+    {
+      "fingerprint": "sha256:aa547bca29ea76181271a6b22d5ff7457cdbaad1f256403e00f4cef677f2c670",
+      "id": "satin.flow.legal.footer-refund.status-open"
+    },
+    {
+      "fingerprint": "sha256:bfad85ecbed18918fad923abc2a0a4274896945e2f121464d0e8d91b0f872a43",
+      "id": "satin.flow.legal.footer-shipping"
+    },
+    {
+      "fingerprint": "sha256:14eb01b7fb65fac3eb4699af40d6bfcc127f7d334f690273023d478bed00a4e5",
+      "id": "satin.flow.legal.footer-shipping.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:24b67d915bc56fd000efeec87d04ae265de0630004ddbd24fbb4e6a0fda802d7",
+      "id": "satin.flow.legal.footer-shipping.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ea6851a5fef1edc5b7a8c03022f6a88dec4bf3eb6b6173c6fccee1477d6ab88a",
+      "id": "satin.flow.legal.footer-shipping.status-open"
+    },
+    {
+      "fingerprint": "sha256:0a3547a5122beb444c42e7d630b7bcb5da618c2a2ffc89bca7bd6de039b745ba",
+      "id": "satin.flow.legal.footer-tos"
+    },
+    {
+      "fingerprint": "sha256:d394a17a9eed09b80332c7bfffc2645924fe67bd589b7cca40edc3011408f5d3",
+      "id": "satin.flow.legal.footer-tos.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:e6b69d1358c6bb8dc286c22d03f86f38f95035b9e5d8e0f103656444602e8019",
+      "id": "satin.flow.legal.footer-tos.status-gap"
+    },
+    {
+      "fingerprint": "sha256:d7ec2183942a739883d41736b367b066ae917756d605eac92efdb4b3a5f21bfb",
+      "id": "satin.flow.legal.footer-tos.status-open"
+    },
+    {
+      "fingerprint": "sha256:8ff1aa66c56c6a3f81a566d2d545cdff56376ffd601e4fd5e1cc2753f8a35c00",
+      "id": "satin.flow.legal.generator-prefix.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b5016e5930a7d6ff650ae91a1df36c4e535b823b25aa8c615638b9f401d73533",
+      "id": "satin.flow.legal.generator-prefix.status-gap"
+    },
+    {
+      "fingerprint": "sha256:d460f9b5e1bce7ebcaf9c3c22f016ac35ce249148c5381b6628adea49075e3ce",
+      "id": "satin.flow.legal.generator-prefix.status-open"
+    },
+    {
+      "fingerprint": "sha256:40dba537ce07073fa1debd0474decc63b306b959ad4407ac870b7a334929d296",
+      "id": "satin.flow.legal.static-demo-exclusion.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:d4fac1d364ba5db851f4488390e4fc53687468cbdddd37b28829c1b9c1145cbd",
+      "id": "satin.flow.legal.static-demo-exclusion.status-gap"
+    },
+    {
+      "fingerprint": "sha256:77eee10d6b7b7db5de096cb54339359d88c6ba1568251bd8ac563c6e589ab368",
+      "id": "satin.flow.legal.static-demo-exclusion.status-open"
+    },
+    {
+      "fingerprint": "sha256:0a0ee372e77c63cb4d33eea55f7ca4296195abe83cc4c32aff6922ac483955fa",
+      "id": "satin.flow.merchant-order-settings.address.persistence"
+    },
+    {
+      "fingerprint": "sha256:178a879234df14580163276bcc5bc38bfd780309075ee5cc890fe7056dd4c42e",
+      "id": "satin.flow.merchant-order-settings.address.persistence.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:50e4c6401a83047c524c24bdc69a93118d87ddb485e8f419f35be05d68aaedcb",
+      "id": "satin.flow.merchant-order-settings.address.persistence.status-gap"
+    },
+    {
+      "fingerprint": "sha256:4ae72057230ecde1c103cd25b5af5ea40a06e573058fbe37aff37c377b7dba44",
+      "id": "satin.flow.merchant-order-settings.address.persistence.status-open"
+    },
+    {
+      "fingerprint": "sha256:1e57ca7f1ab494267fca7dbf38079080d790599705d3d0acd27d599cc399eec9",
+      "id": "satin.flow.merchant-order-settings.contact.persistence"
+    },
+    {
+      "fingerprint": "sha256:02c450b7482e5791b93118c621bfe57b7cddc23e5abd8da2c69e901677aa1190",
+      "id": "satin.flow.merchant-order-settings.contact.persistence.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:706d0b79233c6c56b1fb250b0bca8820c2a82e89109528b1be3a2ba5ae4368a3",
+      "id": "satin.flow.merchant-order-settings.contact.persistence.status-gap"
+    },
+    {
+      "fingerprint": "sha256:913788168ecd965cce2dea7289f14ad6f843fd0663e2f62f59fb598c50879b92",
+      "id": "satin.flow.merchant-order-settings.contact.persistence.status-open"
+    },
+    {
+      "fingerprint": "sha256:2460bcee6d1592d9875945d1e45b814714a2a191426bd8ae5aa5bf4c07fdf90b",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence"
+    },
+    {
+      "fingerprint": "sha256:533052cd4f53d5c81500f8656821eedd7c50ff655bdcab2eb93613bb81ed5361",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:1d54733707e5374c42367d6278929e4d1b6abbe5e69107b83855dd787a985179",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence.status-gap"
+    },
+    {
+      "fingerprint": "sha256:73894edc520795d78c5e894ec4ec3fa3f22ad5ce8a60839d09cdfdb3154e7f84",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence.status-open"
+    },
+    {
+      "fingerprint": "sha256:d4df76e6294ce4a85141509d0240f572ac4b929dfb268ca7f9eeec474899bddf",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping"
+    },
+    {
+      "fingerprint": "sha256:e6aacaf216b46b32607f7f8d28965f59084f8f8b08f85422f86d32a0ae79b700",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:a42365430782d6964a20d9061cdde4d0b9aeb5a9dc1c0fb2dfd6cb29b5334248",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping.status-gap"
+    },
+    {
+      "fingerprint": "sha256:911ed0af46bc10cdcc478f10f67f39225444fec803830df2c5de9e0cd3657a57",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping.status-open"
+    },
+    {
+      "fingerprint": "sha256:a71b618b4d313f305477e44051331c99072baa113c2f912777ad048f5cb4f1bb",
+      "id": "satin.flow.merchant-order-settings.processing.persistence"
+    },
+    {
+      "fingerprint": "sha256:924bc4331cae0bdc63d06758fff50e4dc4ed65a38f630aafe969ef41bcc6d531",
+      "id": "satin.flow.merchant-order-settings.processing.persistence.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:2216cffbceccac2f2ba5855ef0f611c09c6f7fb73f98cd9645b4d3246a059a41",
+      "id": "satin.flow.merchant-order-settings.processing.persistence.status-gap"
+    },
+    {
+      "fingerprint": "sha256:936bc7295e65d528403d8c7a309ee08b1e795aa0a510618efe58bb1c08285304",
+      "id": "satin.flow.merchant-order-settings.processing.persistence.status-open"
+    },
+    {
+      "fingerprint": "sha256:89904b0fbd31441bc0adcb483cb02462a08a7f0bc1a904ab7287a91689d8484c",
+      "id": "satin.flow.page-generation.puck-driven-pages"
+    },
+    {
+      "fingerprint": "sha256:c2d15a42b96fe601a058a8b9caa7edea04b399fce514290b5df85af2c7a1e4a1",
+      "id": "satin.flow.page-generation.puck-driven-pages.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b918544261d17edef8c08821177430408586c73784627b8706f374db28045589",
+      "id": "satin.flow.page-generation.puck-driven-pages.status-gap"
+    },
+    {
+      "fingerprint": "sha256:c4584a2c2a79946ae3fb88259833dd532cb65459a47dfc0dd76a5d8b9b5040a7",
+      "id": "satin.flow.page-generation.puck-driven-pages.status-open"
+    },
+    {
+      "fingerprint": "sha256:3795af48d349604599edacd9f7df5392fc5467e1f804396c5974d5cbf1e72c96",
+      "id": "satin.flow.publications.canonical-route"
+    },
+    {
+      "fingerprint": "sha256:504f616f7d5734e49ae57d89e6a96e52424fc5b99b057f94938041941c62e707",
+      "id": "satin.flow.publications.canonical-route.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b83710e81d898c826f4ce9aec2417c1dcb5ad2815ed264f5a27499b110956faf",
+      "id": "satin.flow.publications.canonical-route.status-gap"
+    },
+    {
+      "fingerprint": "sha256:8f0454fbad59eb957928a051f1444bd75e6836f4908ba4277f63c03328eee3a0",
+      "id": "satin.flow.publications.canonical-route.status-open"
+    },
+    {
+      "fingerprint": "sha256:baa378bbf4a4d0336948bc4491396e703d6f62cc7ac00001c4927cc49c47f710",
+      "id": "satin.flow.publications.detail-route"
+    },
+    {
+      "fingerprint": "sha256:513887675b211f4ccff024a68bd3f35c21f11b01eadcae4f73dd5cb07b167d71",
+      "id": "satin.flow.publications.detail-route.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:ad666b73781c92bc17bdecd3012eb6c9c544ebbbf6f4c5f6713237057b3df1fa",
+      "id": "satin.flow.publications.detail-route.status-gap"
+    },
+    {
+      "fingerprint": "sha256:91731f06cde7e29e31cde0f3863c384aca9ffb31203c5be3ec1abd091a363b48",
+      "id": "satin.flow.publications.detail-route.status-open"
+    },
+    {
+      "fingerprint": "sha256:1cd9c522d8eaed67b196ffabc10e53bb747e165ddbf2f1d8a3c78810c822bc5b",
+      "id": "satin.flow.publications.list-route.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:f98010ded18e6a25cf8d3adb5f6978d60a2ef254ab10afaa4aac5b4eaea10f56",
+      "id": "satin.flow.publications.list-route.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ef1289850eefdc11cfdc16747abf3d98512c2583dd66f53584639fdb043828f2",
+      "id": "satin.flow.publications.list-route.status-open"
+    },
+    {
+      "fingerprint": "sha256:6d7e06a5e879190997927147e5afd826284fa65282b8be5432eb1a10fd71ebee",
+      "id": "satin.flow.publications.live-demo-exclusion.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:8cdeffa495025fb6286ef0348f92b14334b28bb04912c3d0e33949fd1b4e4c54",
+      "id": "satin.flow.publications.live-demo-exclusion.status-gap"
+    },
+    {
+      "fingerprint": "sha256:5556e3b9c7510ec5517c27e12947ff558c6ca0eed2013a84a732392d099830db",
+      "id": "satin.flow.publications.live-demo-exclusion.status-open"
+    },
+    {
+      "fingerprint": "sha256:2790837df6485f1d5838593f9e0e37d4c5405cc149f42f03ec0bed1867a8e803",
+      "id": "satin.flow.publications.merchant-data"
+    },
+    {
+      "fingerprint": "sha256:8238c2a6666e8ab6bd25800977f9d4032dace9d8c90157d284a2d5c85fd6febe",
+      "id": "satin.flow.publications.merchant-data.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:d91095dec1d811d2ce9dd4a25ce2e58af497c4af07eb48a7b4f11ca217565df2",
+      "id": "satin.flow.publications.merchant-data.status-gap"
+    },
+    {
+      "fingerprint": "sha256:2eafc0ab3b9449a88a522814f462b1a3fcf2aa0f0cebfc7d2de58a8c9dd6489d",
+      "id": "satin.flow.publications.merchant-data.status-open"
+    },
+    {
+      "fingerprint": "sha256:27b90352393a59a9e50627f6a7da6e714621929c29f191b9ac41b9944adba403",
+      "id": "satin.flow.publications.rich-text-sanitizer.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:fdd24b15c290f748a22a87e263d750aab746346a2ee2a82efa1d354df6b0d25c",
+      "id": "satin.flow.publications.rich-text-sanitizer.status-gap"
+    },
+    {
+      "fingerprint": "sha256:c2906c1155aff06a812e680b2b21472e3cb405a4e8fd2680d4295b29c42dad43",
+      "id": "satin.flow.publications.rich-text-sanitizer.status-open"
+    },
+    {
+      "fingerprint": "sha256:87ca0b96f479114ca3540d2a4a325d334415e498bb9672fb92f8086b827cd1d7",
+      "id": "satin.flow.publications.rss-data-source.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:9693088b2b8c51d3b2032b701bd75b03d7fc0eb326d0ebc652ed3ef2d442bbb7",
+      "id": "satin.flow.publications.rss-data-source.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ce17a5af08a6631ac70dc10ec9e0ec29817dc3cf5fd63f53d83644a7c63c7471",
+      "id": "satin.flow.publications.rss-data-source.status-open"
+    },
+    {
+      "fingerprint": "sha256:bdf323abeb47d61678fbd496aff0d69a483164ef65b91b22af45b78c500c439b",
+      "id": "satin.flow.search.catalog-forward-q.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:bd923aadbe842eedbabe4b479102c524c7f706b35df9e956f2ec8c6ad05a13be",
+      "id": "satin.flow.search.catalog-forward-q.status-gap"
+    },
+    {
+      "fingerprint": "sha256:d397b457598f20037f61f09a7e65a1a896312755b933b7f9ca0404ecdf851a22",
+      "id": "satin.flow.search.catalog-forward-q.status-open"
+    },
+    {
+      "fingerprint": "sha256:59e52cdd6f8e1e3d917184a413ab2f11fd5c9c42936f791e3fae75f938ec4bc5",
+      "id": "satin.flow.search.catalog-read-q"
+    },
+    {
+      "fingerprint": "sha256:cb3671330da4c1e49ec57460c3cfb2286ba77ae5e4059839056d62682f28ba02",
+      "id": "satin.flow.search.catalog-read-q.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:2e64899dda8bc55e5b75956cf0c5c05a8bd8fc915a1755fc7d59c25bff87ea85",
+      "id": "satin.flow.search.catalog-read-q.status-gap"
+    },
+    {
+      "fingerprint": "sha256:83132b5112ac6f35e4bbf55461bcbd42752a67da51c9b7f88975eeb35ecb007e",
+      "id": "satin.flow.search.catalog-read-q.status-open"
+    },
+    {
+      "fingerprint": "sha256:2151b781006def7f0cb777a2d4c494b5f2a6a9ca03032dfbb6066c2eb6999592",
+      "id": "satin.flow.search.form-action.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:9bbb99952b59abf0ece92f71740a238447ae6ac439b996f346ef23080e940554",
+      "id": "satin.flow.search.form-action.status-gap"
+    },
+    {
+      "fingerprint": "sha256:b7d3c377b7207793672f90bf1c8e332e9f1c21fce187aafc0c2cc7d9e15daf69",
+      "id": "satin.flow.search.form-action.status-open"
+    },
+    {
+      "fingerprint": "sha256:e1ff7763e01a8fb403d173ca6304cef85aae32ef1979b3683c6bc67a61747d16",
+      "id": "satin.flow.search.suggestions-data-source"
+    },
+    {
+      "fingerprint": "sha256:9e9c91e81bfa28822ca1db5339ee7ebcc66b83f1722834aadbe7e27f3a72948c",
+      "id": "satin.flow.search.suggestions-data-source.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:51935651ed70134251a91b47a4b974d91586bc14c9edce52ce65ccb2282577f6",
+      "id": "satin.flow.search.suggestions-data-source.status-gap"
+    },
+    {
+      "fingerprint": "sha256:4527d014b6f058e59e5c52572c272b156ada47e2757a0e3c85f8d090c93c9ef4",
+      "id": "satin.flow.search.suggestions-data-source.status-open"
+    },
+    {
+      "fingerprint": "sha256:d0d1ee3a58adbf8f3e74ac1b0384f3e05ceb18e744b1a0cf7b469ee6e718621c",
+      "id": "satin.flow.wishlist.feature"
+    },
+    {
+      "fingerprint": "sha256:8b33b5301e760dc9d43b9d11d442c58f13fe8b4c72bd980207193ce6ebeb9bf7",
+      "id": "satin.flow.wishlist.feature.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b306dd25829cc703a14eeb0e08d909e9ebbd9076bdc3afeecc91d66542d22ac7",
+      "id": "satin.flow.wishlist.feature.status-gap"
+    },
+    {
+      "fingerprint": "sha256:89c409da2e9efe98b298f5835e875f3b3e9da4403fb723bfae6bfc8bdc0aad16",
+      "id": "satin.flow.wishlist.feature.status-open"
+    },
+    {
+      "fingerprint": "sha256:1de66c93ebeef40506e04217db8b3108b077dc0e16e814b4137827004c7a581c",
+      "id": "satin.page.page-checkout-result.live-output"
+    },
+    {
+      "fingerprint": "sha256:dfb83e9c8c86bcf7a0ddcbc0c98dfc3ba261bd8a9c25229d4e86d0e76f449bad",
+      "id": "satin.page.page-checkout-result.live-output.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:bc588c4da2e06a67b452c36d64eeb37047660cb13d9ca4ed8df83a12576eb341",
+      "id": "satin.page.page-checkout-result.live-output.status-gap"
+    },
+    {
+      "fingerprint": "sha256:27021441e8ed719727b2e85f997518fcabd07c46ce925d0938bc28e3253870e8",
+      "id": "satin.page.page-checkout-result.live-output.status-open"
+    },
+    {
+      "fingerprint": "sha256:6f596f52aa20fd78daa6b4af30f5ec1bfbbc3c2224af7b0ead90cd55b63a88dd",
+      "id": "satin.page.page-checkout-result.manifest"
+    },
+    {
+      "fingerprint": "sha256:beac6f8010a00c0609568ed4ae1ad6a342a8160bf6ffa7c9026da7283f160be8",
+      "id": "satin.page.page-checkout-result.manifest.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:88f3f264e5d538008e5918b152c8a852230e43ed268d24766292dab2fcfcaf6a",
+      "id": "satin.page.page-checkout-result.manifest.status-gap"
+    },
+    {
+      "fingerprint": "sha256:1dd9ff471916e906ec26943f997b2af48a6659e702332882a683fd14043e1488",
+      "id": "satin.page.page-checkout-result.manifest.status-open"
+    },
+    {
+      "fingerprint": "sha256:7a6443ad21dde95926322dfbd2ff71a20dff3066011bd76f78850feb849d8d87",
+      "id": "satin.page.page-checkout-result.seed"
+    },
+    {
+      "fingerprint": "sha256:c43e7ecc59e42bdbb797789f0fdadd7833d0f86c04dc94f53dcc72786b312cf0",
+      "id": "satin.page.page-checkout-result.seed.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:b6c43575a91b46c11a30bcbee84dd8196fed640017b54ecce8807c31a08adb29",
+      "id": "satin.page.page-checkout-result.seed.status-gap"
+    },
+    {
+      "fingerprint": "sha256:e3083fc15031c58a264ed13b3c173e6f28682d0c21f9c224a88d47526eea1116",
+      "id": "satin.page.page-checkout-result.seed.status-open"
+    },
+    {
+      "fingerprint": "sha256:534dab9cddb783b119e4360b6ccbb098c5d23c595bcf7f735efdb294a07fee05",
+      "id": "satin.section.MultiColumns.columns[].stored-shape.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:36f462404b57cc42fcac749409fa8b82690c294e7d0acb746d2a8d28deee0194",
+      "id": "satin.section.MultiColumns.columns[].stored-shape.status-gap"
+    },
+    {
+      "fingerprint": "sha256:6a73e40baa55716f327c235c92265c8806c890b89b6d2d33bf5fc2f2fadef073",
+      "id": "satin.section.MultiColumns.columns[].stored-shape.status-open"
+    },
+    {
+      "fingerprint": "sha256:3a452407525d47178452a937cbd6ac5b0a107452af38022400d566428b66ab3d",
+      "id": "satin.section.Slideshow.slides[].alias-precedence.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:974516cf251be97fe2e35431f197e9c66397a061c6a6e4d88514cf20f5fe1286",
+      "id": "satin.section.Slideshow.slides[].alias-precedence.status-gap"
+    },
+    {
+      "fingerprint": "sha256:a718a17ebc295d70fd65e267bd9bc16c6950331cee2d867f5272b5d3535a6078",
+      "id": "satin.section.Slideshow.slides[].alias-precedence.status-open"
+    },
+    {
+      "fingerprint": "sha256:e3a402fe6bc969ac55023f310a9a143d02d9a92492730f41905f68b037868e2e",
+      "id": "satin.section.Slideshow.slides[].position.renderer-domain.requirement-missing"
+    },
+    {
+      "fingerprint": "sha256:a19316de77a17a392ff0659f1af00b06e9a5c4f0894b89eec28209c294108638",
+      "id": "satin.section.Slideshow.slides[].position.renderer-domain.status-gap"
+    },
+    {
+      "fingerprint": "sha256:ee1ce8de36ab457259e56b162d7f2e2cb1db40d93cf2f2c6f04ac88fc15ddc44",
+      "id": "satin.section.Slideshow.slides[].position.renderer-domain.status-open"
+    }
+  ],
+  "generatorVersion": "1",
+  "requirements": [
+    {
+      "fingerprint": "sha256:4f7dcef2bcd12c77f6a43da3cfa64e25e5fbe768bb947abf8427e0a722a9156f",
+      "id": "home"
+    },
+    {
+      "fingerprint": "sha256:f5190042133f7532c5d4375e03acd9f822cfa4f82444820d7b35762193abc5fd",
+      "id": "page-about"
+    },
+    {
+      "fingerprint": "sha256:291f6f4bc7242135ee884887e140dcc1602115d441436c626a1174eea6fffe98",
+      "id": "page-cart"
+    },
+    {
+      "fingerprint": "sha256:0719b167db9b0640e8c6b06d12ef10946601b82fa4772ee445a67f7f4e78a4f8",
+      "id": "page-catalog"
+    },
+    {
+      "fingerprint": "sha256:f55c5affa8734bfc6be03d327755115b428d19ab9b9fc45da86c01ecbf1afd81",
+      "id": "page-checkout"
+    },
+    {
+      "fingerprint": "sha256:7f499f3f951fac00536cd8aef70fdbb35f72a084aada31f5057d989ba25440b6",
+      "id": "page-checkout-result"
+    },
+    {
+      "fingerprint": "sha256:9a346ae0eb5c60e25939303b636753093d23be9b473cc6e1b05e07d550943078",
+      "id": "page-collection"
+    },
+    {
+      "fingerprint": "sha256:d1be9637d114f48f3d335b6f34a7d1d29692c5eded3b2abdfc25f9e35d217f41",
+      "id": "page-contacts"
+    },
+    {
+      "fingerprint": "sha256:96ef886724a940fa3cfa60da6fb5d5c4f55564da7d59b8b2ea8d21b455d2eb53",
+      "id": "page-delivery"
+    },
+    {
+      "fingerprint": "sha256:80990436e8ca156fe63e15ae5cc811be1be6fecec50e91ced4b564208401cb42",
+      "id": "page-product"
+    },
+    {
+      "fingerprint": "sha256:5303578ac1c81547c8dadb5499db5085f2c05286c87de55d6739a69709ad599c",
+      "id": "satin.block.Catalog.manifest-declaration"
+    },
+    {
+      "fingerprint": "sha256:4b1c6219ae894f30cd55bbb07d54f4b332c25e527c29793709adf688430ea659",
+      "id": "satin.decision.collapsiblesection.sidebar-layout"
+    },
+    {
+      "fingerprint": "sha256:f2adf8caf59daf0868c3d169c78374fa25ea6dedea6f34c10f00928cdcea51fc",
+      "id": "satin.decision.footer.groups-defaults"
+    },
+    {
+      "fingerprint": "sha256:a537807b96e6aa415d2008e14b0fa341a7a8ed9719c5738848276c5f87b21d30",
+      "id": "satin.decision.header.recursion-depth"
+    },
+    {
+      "fingerprint": "sha256:e3c8abf3538a1181025bbb52fda3fa41536cdf23e120843831dfd3a60fff69fb",
+      "id": "satin.decision.imagewithtext.alignment"
+    },
+    {
+      "fingerprint": "sha256:2fffd110a7b1d75410f2a06135af58686143d311d1a22c9b65c92fd3b0fb0842",
+      "id": "satin.decision.lifecycle.fresh-default-cohort"
+    },
+    {
+      "fingerprint": "sha256:fe8369532875d778daccec0578ab6740e7833eb3c7998f5a3567d42ddc9a10e2",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation"
+    },
+    {
+      "fingerprint": "sha256:911430843d5ed2e34bd6add0a826101e0f73396384ede7d12572b6e14306f9a1",
+      "id": "satin.decision.logo.migration-cohorts"
+    },
+    {
+      "fingerprint": "sha256:ff0e9bf33c77f0e11987f4642e643d2a93c27e953bcca931a22dc6cedc9d4d1d",
+      "id": "satin.decision.multirows.behavior"
+    },
+    {
+      "fingerprint": "sha256:637861724310fd243d3c8b60f5cd3a9e60872db1546584a772e1127ed90dbfe6",
+      "id": "satin.decision.version-domain.meaning"
+    },
+    {
+      "fingerprint": "sha256:078098f8596be03a83d4e2df51b3caae07621a0aaad0bef4fc52073a31d7fbf2",
+      "id": "satin.flow.account.order-detail-safe-dom"
+    },
+    {
+      "fingerprint": "sha256:dd67f155f51fcedda26ec079c7270db9f8f9d7183d7dfc06b4ab2664e3d1d138",
+      "id": "satin.flow.account.orders-safe-dom"
+    },
+    {
+      "fingerprint": "sha256:dbd3ba478511e983ba7ffa53702dc4e4bea1130b7e65c853b9eaa25f05f6a573",
+      "id": "satin.flow.account.route-index"
+    },
+    {
+      "fingerprint": "sha256:bd87d0e98866aae9a93837373658911466cc6b8dffa3a40512cc8d7d548e47f7",
+      "id": "satin.flow.account.route-order-detail"
+    },
+    {
+      "fingerprint": "sha256:fadd3ef8a6d93051df2e77c279d982fb1ed658689ff55331065d3d1954fa246a",
+      "id": "satin.flow.account.route-orders"
+    },
+    {
+      "fingerprint": "sha256:b123c72c17e3e4fe935526b4eab6603b0b28925ecb08c06367d351f6e9a79b01",
+      "id": "satin.flow.account.route-profile"
+    },
+    {
+      "fingerprint": "sha256:a72a6d9d157101f9fd85a5eb657e425fb1752b5fc1ffae966a5fd70315c564c3",
+      "id": "satin.flow.auth.canonical-links"
+    },
+    {
+      "fingerprint": "sha256:394089e9216d6c4d52481b93cbbde828cd94a8cdbafebfafde23bb4fb00e84ee",
+      "id": "satin.flow.auth.demo-routes"
+    },
+    {
+      "fingerprint": "sha256:cbf241e12bf528c0e302c4d9138d8577cdedc73588d799c31dd437609982911c",
+      "id": "satin.flow.auth.login-return-propagation"
+    },
+    {
+      "fingerprint": "sha256:451526b22b62c98f2f0c2ee5fe6905cc534f21d8230250af018ef23777b08d31",
+      "id": "satin.flow.auth.return-parameter"
+    },
+    {
+      "fingerprint": "sha256:9dc689e2e37ccdeba71eedcd1c1dcfa6075add97f5b2212ef342488bf043145e",
+      "id": "satin.flow.auth.verify-return-propagation"
+    },
+    {
+      "fingerprint": "sha256:616dae2b59397c53e8abe3959b1791169983dfb27479cf5589ec91369d7d7159",
+      "id": "satin.flow.cart.cart-section-target"
+    },
+    {
+      "fingerprint": "sha256:c776bbe6ecef5fd4bb5837e31aa15df10a30b42e8d6d34398a907214b6fb2b57",
+      "id": "satin.flow.cart.disclaimer-coupling"
+    },
+    {
+      "fingerprint": "sha256:4f3c6e12cb6619164cb0dfa00d3594dcb3adf73469f704fd8e997e455395d09f",
+      "id": "satin.flow.cart.drawer-cart-section-source"
+    },
+    {
+      "fingerprint": "sha256:b07aa53a574757b37364048018fb5b94d366059ba285147225cd54af3074fac9",
+      "id": "satin.flow.cart.preview-empty-array"
+    },
+    {
+      "fingerprint": "sha256:1b30409794b065c23390a7d1b6ccda1d73fdb91ceedc281b1d9bab09ead0ab30",
+      "id": "satin.flow.cart.preview-product-context"
+    },
+    {
+      "fingerprint": "sha256:5ebc4cf3e1e27c4de7ce6653ea133ce9b319a11a8676ed7b3d26e3a5a38afed0",
+      "id": "satin.flow.cart.safe-dom"
+    },
+    {
+      "fingerprint": "sha256:8bd048442240daf40ab6a03012cb0e12bef034b7bde4ead6c764e26b3cd0da29",
+      "id": "satin.flow.checkout-config.require-auth-live"
+    },
+    {
+      "fingerprint": "sha256:7c3146346e82718452492600c143d7d593e7712c117f83bd20de857a23b102ad",
+      "id": "satin.flow.checkout-config.require-auth-preview"
+    },
+    {
+      "fingerprint": "sha256:20c03121251d9667d0fc6089c478b5ff56e99049656bcfc877d2d6708783f195",
+      "id": "satin.flow.checkout-config.scheme-initial-injection"
+    },
+    {
+      "fingerprint": "sha256:a4b013dbf07eac1cee2aa91c01fc7d42ee126a202496a01540819ad49264caa0",
+      "id": "satin.flow.checkout-result.confirmation-grant"
+    },
+    {
+      "fingerprint": "sha256:cc76303a2e452a984e97d0ebae03ba972048803990c93748d63d4a7d2595e661",
+      "id": "satin.flow.checkout-result.redirect-target"
+    },
+    {
+      "fingerprint": "sha256:5628a1efa7bed807e6b5a086972b4898ad541654e31f401ea2acaae3294355e4",
+      "id": "satin.flow.checkout-result.status-endpoint"
+    },
+    {
+      "fingerprint": "sha256:552d9d7accb6c8e4e8d0876f818244e6bd63b39b9d66127b80f285b64119b001",
+      "id": "satin.flow.checkout-result.status-not-found"
+    },
+    {
+      "fingerprint": "sha256:ef9958b09d4cea3663ef6233714a4e43cf5a0a92e1513b5f7c6d4981317d47e5",
+      "id": "satin.flow.checkout-result.summary-endpoint"
+    },
+    {
+      "fingerprint": "sha256:c0d41df45a5c2b418ea5bb1028988606ba2023f6c13adb6d4a00ba1cce236dd1",
+      "id": "satin.flow.legal.checkout-cookies"
+    },
+    {
+      "fingerprint": "sha256:718a10191be4776c07b184cb59b0f96aefa05197551c5412c0bb15d2365aad2f",
+      "id": "satin.flow.legal.footer-privacy"
+    },
+    {
+      "fingerprint": "sha256:833faaa938c7e2a918e9fdcecc75ff0f215760ef15bc4437dc09dcb99820f3b6",
+      "id": "satin.flow.legal.footer-refund"
+    },
+    {
+      "fingerprint": "sha256:b7981a3fbebb4b0801119208d73391d4e58a3f90589f761fc53dd596f8806931",
+      "id": "satin.flow.legal.footer-shipping"
+    },
+    {
+      "fingerprint": "sha256:6aba0d19935be01a199f12b577e9dc32f2933ceaaba6428938cb262773b4aae1",
+      "id": "satin.flow.legal.footer-tos"
+    },
+    {
+      "fingerprint": "sha256:c77907ae5c11c95aa19f6ef9d1294a5e016b5e2f0a8349136cf906735a97838c",
+      "id": "satin.flow.legal.generator-prefix"
+    },
+    {
+      "fingerprint": "sha256:90f589f166d7241758edbb9319ee07ff705fd63e43cda266b0857a25f3e10ff3",
+      "id": "satin.flow.legal.static-demo-exclusion"
+    },
+    {
+      "fingerprint": "sha256:72a1cc4143ad06400493a16c0a20f7d262ca298d5e3085d664122c88f55ae105",
+      "id": "satin.flow.merchant-order-settings.address.persistence"
+    },
+    {
+      "fingerprint": "sha256:bd090748206b2c12f473575a6e99f8a82e673e83e84e040403b26a057d357afd",
+      "id": "satin.flow.merchant-order-settings.contact.persistence"
+    },
+    {
+      "fingerprint": "sha256:041e672b4e93d2741c770276433531f7ed0e368f3acfbf6918dcca614a3dbcae",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence"
+    },
+    {
+      "fingerprint": "sha256:2127e3e7de911b00fc87b3fe52403fea69b2f2441b26f6cb3be5a5d5c50abb5f",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping"
+    },
+    {
+      "fingerprint": "sha256:3a9d284a94ac90f342a5402ea7258edf3a61069e0cc3306f5bc2a76394259a99",
+      "id": "satin.flow.merchant-order-settings.processing.persistence"
+    },
+    {
+      "fingerprint": "sha256:72efe6d2a63a5ce096383bdc3b3277b24405191e6e6775d584023972098b187f",
+      "id": "satin.flow.page-generation.puck-driven-pages"
+    },
+    {
+      "fingerprint": "sha256:557ce8bf59d1a041d31ac3d96e5db873fbf56009d0c67e0ed7c5f13c59bf702d",
+      "id": "satin.flow.publications.canonical-route"
+    },
+    {
+      "fingerprint": "sha256:f289bf868cbb5843930ab3d4a6887d4e3c9bb2802fedca3950cec1d59118bd56",
+      "id": "satin.flow.publications.detail-route"
+    },
+    {
+      "fingerprint": "sha256:808d9ac83448da7cc01c0d0193968d568995465a8766e52837d103b633caae74",
+      "id": "satin.flow.publications.list-route"
+    },
+    {
+      "fingerprint": "sha256:950acff6a0ed39e6ccb186f5c7c195856fbc1e4673bb55ee2d4ce7de9873ec1a",
+      "id": "satin.flow.publications.live-demo-exclusion"
+    },
+    {
+      "fingerprint": "sha256:1abc6facdee6bbd3a15f58833581f1ed8c0408fd85f6f299ae9661e32b135cd4",
+      "id": "satin.flow.publications.merchant-data"
+    },
+    {
+      "fingerprint": "sha256:9849bb19513eb09b8574472e78ee055e71b3705449449b03327de585381d9828",
+      "id": "satin.flow.publications.rich-text-sanitizer"
+    },
+    {
+      "fingerprint": "sha256:193b162f8be9b451cfa1628f81a344b795d2fbf8c4c5595d82b6ecee051ac7b2",
+      "id": "satin.flow.publications.rss-data-source"
+    },
+    {
+      "fingerprint": "sha256:51eb52d4e803a5c6bb9fcc9d92288e322c0f987c1d7484517d206313ca92d2df",
+      "id": "satin.flow.search.catalog-forward-q"
+    },
+    {
+      "fingerprint": "sha256:6198a94380570c36fc6b1431edd557a365f122e811c97aa2ba34a986d2b39612",
+      "id": "satin.flow.search.catalog-read-q"
+    },
+    {
+      "fingerprint": "sha256:4a460c7a1f3d864419d5c4f820f6e67c1d3d244e871ba3fe9b17b57cc94a01c1",
+      "id": "satin.flow.search.form-action"
+    },
+    {
+      "fingerprint": "sha256:da207afa1afbb30e58acd78662f97578b79fb235e862043800b92aa9dc43818e",
+      "id": "satin.flow.search.suggestions-data-source"
+    },
+    {
+      "fingerprint": "sha256:2cf670489b82803df2ec13dceb73aa6e1e0e5b49935c06b707a379a288a59a74",
+      "id": "satin.flow.wishlist.feature"
+    },
+    {
+      "fingerprint": "sha256:4ec027290b722c2c7a5039015a817bed947813a3177822e6d992be0a2d547002",
+      "id": "satin.page.page-checkout-result.live-output"
+    },
+    {
+      "fingerprint": "sha256:65737369c2b79e456a11ccc37a9b4b71f156efc28350f08e08dbbb99671333b1",
+      "id": "satin.page.page-checkout-result.manifest"
+    },
+    {
+      "fingerprint": "sha256:1c013543c63c283952f4701381b6f4d02329b298f24b625a0ffa2e0a6cc93cda",
+      "id": "satin.page.page-checkout-result.seed"
+    },
+    {
+      "fingerprint": "sha256:154602be9cce337d58a3b217b127e8198b30de609c0f6887d9acefa328dc3659",
+      "id": "satin.section.MultiColumns.columns[].stored-shape"
+    },
+    {
+      "fingerprint": "sha256:6ba3cf4287334d852d495d60af60ade9d5a700f62852d8558e1088a8940b35b5",
+      "id": "satin.section.Slideshow.slides[].alias-precedence"
+    },
+    {
+      "fingerprint": "sha256:9f8e5a1a241976e63734dd0bebf470b219352da706d13b3e7d86f843b5816e43",
+      "id": "satin.section.Slideshow.slides[].position.renderer-domain"
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceDigest": "4254dd5b34470b8065d2146a15f14df27a0c37577f6866452958f06c10fdcff9",
+  "structuralIssues": [
+    {
+      "canonicalFacts": {
+        "requirementLabel": "home"
+      },
+      "detail": "required capability \"home\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "home.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "home"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-about"
+      },
+      "detail": "required capability \"page-about\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-about.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-about"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-cart"
+      },
+      "detail": "required capability \"page-cart\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-cart.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-cart"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-catalog"
+      },
+      "detail": "required capability \"page-catalog\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-catalog.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-catalog"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-checkout-result"
+      },
+      "detail": "required capability \"page-checkout-result\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-checkout-result.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-checkout-result"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-checkout"
+      },
+      "detail": "required capability \"page-checkout\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-checkout.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-checkout"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-collection"
+      },
+      "detail": "required capability \"page-collection\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-collection.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-collection"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-contacts"
+      },
+      "detail": "required capability \"page-contacts\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-contacts.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-contacts"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-delivery"
+      },
+      "detail": "required capability \"page-delivery\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-delivery.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-delivery"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "page-product"
+      },
+      "detail": "required capability \"page-product\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "page-product.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-page"
+        }
+      ],
+      "status": "GAP",
+      "theme": "page-product"
+    },
+    {
+      "canonicalFacts": {
+        "registryHasCatalog": true,
+        "themeJsonHasCatalog": false
+      },
+      "detail": "Catalog is a registry/physical block absent from theme.json.blocks",
+      "expectedCode": "catalog-declared-in-theme-json",
+      "id": "satin.block.Catalog.manifest-declaration",
+      "observedCode": "catalog-absent-from-theme-json-blocks",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/blocks"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "Catalog is a registry/physical block absent from theme.json.blocks"
+      },
+      "detail": "required capability \"satin.block.Catalog.manifest-declaration\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.block.Catalog.manifest-declaration.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/blocks"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.block.Catalog.manifest-declaration"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.collapsiblesection.sidebar-layout: collapsiblesection-sidebar-layout-open",
+      "expectedCode": "reviewed-collapsiblesection-sidebar-layout",
+      "id": "satin.decision.collapsiblesection.sidebar-layout",
+      "observedCode": "collapsiblesection-sidebar-layout-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/sections/CollapsibleSection.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.collapsiblesection.sidebar-layout: collapsiblesection-sidebar-layout-open"
+      },
+      "detail": "required capability \"satin.decision.collapsiblesection.sidebar-layout\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.collapsiblesection.sidebar-layout.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:src/components/sections/Faq.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:src/pages/catalog.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/sections/CollapsibleSection.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.collapsiblesection.sidebar-layout"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.footer.groups-defaults: footer-groups-defaults-open",
+      "expectedCode": "reviewed-footer-groups-defaults",
+      "id": "satin.decision.footer.groups-defaults",
+      "observedCode": "footer-groups-defaults-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/Footer.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.footer.groups-defaults: footer-groups-defaults-open"
+      },
+      "detail": "required capability \"satin.decision.footer.groups-defaults\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.footer.groups-defaults.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:src/components/Footer.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/Footer.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.footer.groups-defaults"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.header.recursion-depth: header-recursion-depth-open",
+      "expectedCode": "reviewed-header-recursion-depth",
+      "id": "satin.decision.header.recursion-depth",
+      "observedCode": "header-recursion-depth-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/Header.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.header.recursion-depth: header-recursion-depth-open"
+      },
+      "detail": "required capability \"satin.decision.header.recursion-depth\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.header.recursion-depth.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:src/components/Header.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/Header.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.header.recursion-depth"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.imagewithtext.alignment: imagewithtext-alignment-open",
+      "expectedCode": "reviewed-imagewithtext-alignment",
+      "id": "satin.decision.imagewithtext.alignment",
+      "observedCode": "imagewithtext-alignment-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/sections/ImageWithText.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.imagewithtext.alignment: imagewithtext-alignment-open"
+      },
+      "detail": "required capability \"satin.decision.imagewithtext.alignment\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.imagewithtext.alignment.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:src/components/sections/ImageBanner.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/sections/ImageWithText.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.imagewithtext.alignment"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.lifecycle.fresh-default-cohort: fresh-default-cohort-open",
+      "expectedCode": "reviewed-fresh-default-cohort",
+      "id": "satin.decision.lifecycle.fresh-default-cohort",
+      "observedCode": "fresh-default-cohort-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/pages"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.lifecycle.fresh-default-cohort: fresh-default-cohort-open"
+      },
+      "detail": "required capability \"satin.decision.lifecycle.fresh-default-cohort\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.lifecycle.fresh-default-cohort.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/pages"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.lifecycle.fresh-default-cohort"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.lifecycle.switch-reseed-preservation: switch-reseed-preservation-open",
+      "expectedCode": "reviewed-switch-reseed-preservation",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation",
+      "observedCode": "switch-reseed-preservation-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/pages"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.lifecycle.switch-reseed-preservation: switch-reseed-preservation-open"
+      },
+      "detail": "required capability \"satin.decision.lifecycle.switch-reseed-preservation\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.lifecycle.switch-reseed-preservation.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/pages"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.lifecycle.switch-reseed-preservation"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.logo.migration-cohorts: logo-migration-cohorts-open",
+      "expectedCode": "reviewed-logo-migration-cohorts",
+      "id": "satin.decision.logo.migration-cohorts",
+      "observedCode": "logo-migration-cohorts-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/layouts/Layout.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.logo.migration-cohorts: logo-migration-cohorts-open"
+      },
+      "detail": "required capability \"satin.decision.logo.migration-cohorts\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.logo.migration-cohorts.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/layouts/Layout.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.logo.migration-cohorts"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.multirows.behavior: multirows-behavior-open",
+      "expectedCode": "reviewed-multirows-behavior",
+      "id": "satin.decision.multirows.behavior",
+      "observedCode": "multirows-behavior-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/sections/MultiRows.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.multirows.behavior: multirows-behavior-open"
+      },
+      "detail": "required capability \"satin.decision.multirows.behavior\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.multirows.behavior.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:src/components/sections/CollectionRows.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/sections/MultiRows.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.multirows.behavior"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "open": true
+      },
+      "detail": "satin.decision.version-domain.meaning: version-domain-meaning-open",
+      "expectedCode": "reviewed-version-domain-meaning",
+      "id": "satin.decision.version-domain.meaning",
+      "observedCode": "version-domain-meaning-open",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.decision.version-domain.meaning: version-domain-meaning-open"
+      },
+      "detail": "required capability \"satin.decision.version-domain.meaning\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.decision.version-domain.meaning.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.decision.version-domain.meaning"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "sanitizerDominates": false
+      },
+      "detail": "API/product data reaches an unsafe HTML sink without an allowlisted adapter",
+      "expectedCode": "sanitizer-dominates-sink",
+      "id": "satin.flow.account.order-detail-safe-dom",
+      "observedCode": "unsafe-html-sink",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/account/order.astro#/sink"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "API/product data reaches an unsafe HTML sink without an allowlisted adapter"
+      },
+      "detail": "required capability \"satin.flow.account.order-detail-safe-dom\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.account.order-detail-safe-dom.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/account/order.astro#/sink"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.account.order-detail-safe-dom"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "sanitizerDominates": false
+      },
+      "detail": "API/product data reaches an unsafe HTML sink without an allowlisted adapter",
+      "expectedCode": "sanitizer-dominates-sink",
+      "id": "satin.flow.account.orders-safe-dom",
+      "observedCode": "unsafe-html-sink",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/account/orders.astro#/sink"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "API/product data reaches an unsafe HTML sink without an allowlisted adapter"
+      },
+      "detail": "required capability \"satin.flow.account.orders-safe-dom\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.account.orders-safe-dom.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/account/orders.astro#/sink"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.account.orders-safe-dom"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.account.route-index"
+      },
+      "detail": "required capability \"satin.flow.account.route-index\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.account.route-index.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.account.route-order-detail"
+      },
+      "detail": "required capability \"satin.flow.account.route-order-detail\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.account.route-order-detail.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.account.route-orders"
+      },
+      "detail": "required capability \"satin.flow.account.route-orders\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.account.route-orders.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.account.route-profile"
+      },
+      "detail": "required capability \"satin.flow.account.route-profile\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.account.route-profile.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.auth.canonical-links"
+      },
+      "detail": "required capability \"satin.flow.auth.canonical-links\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.auth.canonical-links.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "demoFormsPresent": true
+      },
+      "detail": "/auth/* demo forms coexist with the working auth route",
+      "expectedCode": "no-demo-forms",
+      "id": "satin.flow.auth.demo-routes",
+      "observedCode": "demo-forms-coexist",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/login.astro"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "/auth/* demo forms coexist with the working auth route"
+      },
+      "detail": "required capability \"satin.flow.auth.demo-routes\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.auth.demo-routes.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/login.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.auth.demo-routes"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "fallback": "/account"
+      },
+      "detail": "successful login falls back to /account and loses the checkout return",
+      "expectedCode": "login-preserves-return",
+      "id": "satin.flow.auth.login-return-propagation",
+      "observedCode": "login-goes-to-account",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/login.astro#/navTo"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "successful login falls back to /account and loses the checkout return"
+      },
+      "detail": "required capability \"satin.flow.auth.login-return-propagation\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.auth.login-return-propagation.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/login.astro#/navTo"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.auth.login-return-propagation"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "params": [
+          "next",
+          "redirect"
+        ]
+      },
+      "detail": "auth surfaces read divergent return parameters",
+      "expectedCode": "single-canonical-return-param",
+      "id": "satin.flow.auth.return-parameter",
+      "observedCode": "next-and-redirect-diverge",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/login.astro#/return"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "auth surfaces read divergent return parameters"
+      },
+      "detail": "required capability \"satin.flow.auth.return-parameter\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.auth.return-parameter.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/login.astro#/return"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.auth.return-parameter"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "canonicalReturnPreserved": false
+      },
+      "detail": "verify flow does not preserve one canonical return target",
+      "expectedCode": "verify-preserves-return",
+      "id": "satin.flow.auth.verify-return-propagation",
+      "observedCode": "verify-return-lost",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/verify.astro"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "verify flow does not preserve one canonical return target"
+      },
+      "detail": "required capability \"satin.flow.auth.verify-return-propagation\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.auth.verify-return-propagation.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/verify.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.auth.verify-return-propagation"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.cart.cart-section-target"
+      },
+      "detail": "required capability \"satin.flow.cart.cart-section-target\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.cart.cart-section-target.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.cart.disclaimer-coupling"
+      },
+      "detail": "required capability \"satin.flow.cart.disclaimer-coupling\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.cart.disclaimer-coupling.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "inspects": [
+          "CartBody",
+          "CartSummary"
+        ],
+        "migratedTarget": "CartSection"
+      },
+      "detail": "the cart-drawer scheme resolver inspects legacy CartBody/CartSummary, not the migrated CartSection",
+      "expectedCode": "resolver-reads-cart-section",
+      "id": "satin.flow.cart.drawer-cart-section-source",
+      "observedCode": "resolver-reads-legacy-cartbody",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/scripts/gsap/cart-drawer.ts#/source"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "the cart-drawer scheme resolver inspects legacy CartBody/CartSummary, not the migrated CartSection"
+      },
+      "detail": "required capability \"satin.flow.cart.drawer-cart-section-source\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.cart.drawer-cart-section-source.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/scripts/gsap/cart-drawer.ts#/source"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.cart.drawer-cart-section-source"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.cart.preview-empty-array"
+      },
+      "detail": "required capability \"satin.flow.cart.preview-empty-array\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.cart.preview-empty-array.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.cart.preview-product-context"
+      },
+      "detail": "required capability \"satin.flow.cart.preview-product-context\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.cart.preview-product-context.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "sanitizerDominates": false
+      },
+      "detail": "API/product data reaches an unsafe HTML sink without an allowlisted adapter",
+      "expectedCode": "sanitizer-dominates-sink",
+      "id": "satin.flow.cart.safe-dom",
+      "observedCode": "unsafe-html-sink",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/lib/cart.ts#/sink"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "API/product data reaches an unsafe HTML sink without an allowlisted adapter"
+      },
+      "detail": "required capability \"satin.flow.cart.safe-dom\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.cart.safe-dom.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/lib/cart.ts#/sink"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.cart.safe-dom"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "live": false,
+        "preview": true
+      },
+      "detail": "preview injects the checkout auth config while the live path drops it",
+      "expectedCode": "live-receives-auth-config",
+      "id": "satin.flow.checkout-config.require-auth-live",
+      "observedCode": "live-loses-auth-config",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "src/generator/build.service.ts#/checkout-auth"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "preview injects the checkout auth config while the live path drops it"
+      },
+      "detail": "required capability \"satin.flow.checkout-config.require-auth-live\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-config.require-auth-live.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:src/generator/build.service.ts#/checkout-auth"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.checkout-config.require-auth-live"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.checkout-config.require-auth-preview"
+      },
+      "detail": "required capability \"satin.flow.checkout-config.require-auth-preview\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-config.require-auth-preview.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "liveVsInitialPreview": "differ"
+      },
+      "detail": "live composition and initial preview inject a different scheme/context",
+      "expectedCode": "same-scheme-live-and-preview",
+      "id": "satin.flow.checkout-config.scheme-initial-injection",
+      "observedCode": "scheme-context-diverges",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "src/generator/build.service.ts#/checkout-scheme"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "live composition and initial preview inject a different scheme/context"
+      },
+      "detail": "required capability \"satin.flow.checkout-config.scheme-initial-injection\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-config.scheme-initial-injection.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:src/generator/build.service.ts#/checkout-scheme"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.checkout-config.scheme-initial-injection"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "scopedGrant": false
+      },
+      "detail": "raw order UUID access lacks the approved scoped confirmation grant",
+      "expectedCode": "scoped-confirmation-grant",
+      "id": "satin.flow.checkout-result.confirmation-grant",
+      "observedCode": "raw-uuid-access",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout-result.astro#/order-access"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "raw order UUID access lacks the approved scoped confirmation grant"
+      },
+      "detail": "required capability \"satin.flow.checkout-result.confirmation-grant\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-result.confirmation-grant.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout-result.astro#/order-access"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.checkout-result.confirmation-grant"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.checkout-result.redirect-target"
+      },
+      "detail": "required capability \"satin.flow.checkout-result.redirect-target\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-result.redirect-target.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.checkout-result.status-endpoint"
+      },
+      "detail": "required capability \"satin.flow.checkout-result.status-endpoint\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-result.status-endpoint.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "absentOrderStatus": "pending"
+      },
+      "detail": "a valid but absent order is reported as pending instead of terminal not-found",
+      "expectedCode": "terminal-not-found",
+      "id": "satin.flow.checkout-result.status-not-found",
+      "observedCode": "reported-as-pending",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout-result.astro#/status"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "a valid but absent order is reported as pending instead of terminal not-found"
+      },
+      "detail": "required capability \"satin.flow.checkout-result.status-not-found\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-result.status-not-found.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout-result.astro#/status"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.checkout-result.status-not-found"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.checkout-result.summary-endpoint"
+      },
+      "detail": "required capability \"satin.flow.checkout-result.summary-endpoint\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.checkout-result.summary-endpoint.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "hasGeneratedRoute": false
+      },
+      "detail": "the cookies link is emitted without a generated policy route",
+      "expectedCode": "cookies-policy-model",
+      "id": "satin.flow.legal.checkout-cookies",
+      "observedCode": "cookies-link-without-route",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout.astro#/cookies"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "the cookies link is emitted without a generated policy route"
+      },
+      "detail": "required capability \"satin.flow.legal.checkout-cookies\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.checkout-cookies.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout.astro#/cookies"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.legal.checkout-cookies"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "expected": "/legal/privacy"
+      },
+      "detail": "footer does not map the canonical legal target /legal/privacy",
+      "expectedCode": "footer-target-/legal/privacy",
+      "id": "satin.flow.legal.footer-privacy",
+      "observedCode": "footer-target-mismatch",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/Footer.astro#/privacy"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "footer does not map the canonical legal target /legal/privacy"
+      },
+      "detail": "required capability \"satin.flow.legal.footer-privacy\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.footer-privacy.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/Footer.astro#/privacy"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.legal.footer-privacy"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "expected": "/legal/refund"
+      },
+      "detail": "footer does not map the canonical legal target /legal/refund",
+      "expectedCode": "footer-target-/legal/refund",
+      "id": "satin.flow.legal.footer-refund",
+      "observedCode": "footer-target-mismatch",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/Footer.astro#/refund"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "footer does not map the canonical legal target /legal/refund"
+      },
+      "detail": "required capability \"satin.flow.legal.footer-refund\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.footer-refund.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/Footer.astro#/refund"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.legal.footer-refund"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "expected": "/legal/shipping-policy"
+      },
+      "detail": "footer does not map the canonical legal target /legal/shipping-policy",
+      "expectedCode": "footer-target-/legal/shipping-policy",
+      "id": "satin.flow.legal.footer-shipping",
+      "observedCode": "footer-target-mismatch",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/Footer.astro#/shipping"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "footer does not map the canonical legal target /legal/shipping-policy"
+      },
+      "detail": "required capability \"satin.flow.legal.footer-shipping\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.footer-shipping.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/Footer.astro#/shipping"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.legal.footer-shipping"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "expected": "/legal/terms"
+      },
+      "detail": "footer does not map the canonical legal target /legal/terms",
+      "expectedCode": "footer-target-/legal/terms",
+      "id": "satin.flow.legal.footer-tos",
+      "observedCode": "footer-target-mismatch",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/components/Footer.astro#/tos"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "footer does not map the canonical legal target /legal/terms"
+      },
+      "detail": "required capability \"satin.flow.legal.footer-tos\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.footer-tos.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/Footer.astro#/tos"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.legal.footer-tos"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.legal.generator-prefix"
+      },
+      "detail": "required capability \"satin.flow.legal.generator-prefix\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.generator-prefix.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.legal.static-demo-exclusion"
+      },
+      "detail": "required capability \"satin.flow.legal.static-demo-exclusion\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.legal.static-demo-exclusion.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "persists": false
+      },
+      "detail": "visible address order-settings options are no-op (not applied by the storefront form)",
+      "expectedCode": "address-options-persist",
+      "id": "satin.flow.merchant-order-settings.address.persistence",
+      "observedCode": "address-options-noop",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout.astro#/address"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "visible address order-settings options are no-op (not applied by the storefront form)"
+      },
+      "detail": "required capability \"satin.flow.merchant-order-settings.address.persistence\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.merchant-order-settings.address.persistence.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout.astro#/address"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.merchant-order-settings.address.persistence"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "persists": false
+      },
+      "detail": "visible contact order-settings options are no-op (not applied by the storefront form)",
+      "expectedCode": "contact-options-persist",
+      "id": "satin.flow.merchant-order-settings.contact.persistence",
+      "observedCode": "contact-options-noop",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout.astro#/contact"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "visible contact order-settings options are no-op (not applied by the storefront form)"
+      },
+      "detail": "required capability \"satin.flow.merchant-order-settings.contact.persistence\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.merchant-order-settings.contact.persistence.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout.astro#/contact"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.merchant-order-settings.contact.persistence"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "persists": false
+      },
+      "detail": "visible customer-info order-settings options are no-op (not applied by the storefront form)",
+      "expectedCode": "customer-info-options-persist",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence",
+      "observedCode": "customer-info-options-noop",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout.astro#/customer-info"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "visible customer-info order-settings options are no-op (not applied by the storefront form)"
+      },
+      "detail": "required capability \"satin.flow.merchant-order-settings.customer-info.persistence\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.merchant-order-settings.customer-info.persistence.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout.astro#/customer-info"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.merchant-order-settings.customer-info.persistence"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "unmergedKeysNormative": false
+      },
+      "detail": "satin.flow.merchant-order-settings.persisted-mapping: mapping-unresolved",
+      "expectedCode": "canonical-key-value-mapping",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping",
+      "observedCode": "mapping-unresolved",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout.astro#/persisted-mapping"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.merchant-order-settings.persisted-mapping: mapping-unresolved"
+      },
+      "detail": "required capability \"satin.flow.merchant-order-settings.persisted-mapping\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.merchant-order-settings.persisted-mapping.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout.astro#/persisted-mapping"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.merchant-order-settings.persisted-mapping"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "persists": false
+      },
+      "detail": "visible processing order-settings options are no-op (not applied by the storefront form)",
+      "expectedCode": "processing-options-persist",
+      "id": "satin.flow.merchant-order-settings.processing.persistence",
+      "observedCode": "processing-options-noop",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/checkout.astro#/processing"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "visible processing order-settings options are no-op (not applied by the storefront form)"
+      },
+      "detail": "required capability \"satin.flow.merchant-order-settings.processing.persistence\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.merchant-order-settings.processing.persistence.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/checkout.astro#/processing"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.merchant-order-settings.processing.persistence"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "featureDeclared": false,
+        "packagePagesExist": true
+      },
+      "detail": "Satin package pages exist while features.puckDrivenPages is absent",
+      "expectedCode": "puck-driven-pages-declared",
+      "id": "satin.flow.page-generation.puck-driven-pages",
+      "observedCode": "puck-driven-pages-absent",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/features"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "Satin package pages exist while features.puckDrivenPages is absent"
+      },
+      "detail": "required capability \"satin.flow.page-generation.puck-driven-pages\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.page-generation.puck-driven-pages.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/features"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.page-generation.puck-driven-pages"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "candidates": [
+          "/publication",
+          "/publications",
+          "/blog"
+        ]
+      },
+      "detail": "satin.flow.publications.canonical-route: route-conflict",
+      "expectedCode": "canonical-publications-route",
+      "id": "satin.flow.publications.canonical-route",
+      "observedCode": "route-conflict",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/blog/index.astro"
+        }
+      ],
+      "status": "NEEDS_DECISION",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.publications.canonical-route: route-conflict"
+      },
+      "detail": "required capability \"satin.flow.publications.canonical-route\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.canonical-route.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/blog/index.astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-005"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.publications.canonical-route"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "cardLinkResolves": false
+      },
+      "detail": "the emitted publication card link has no working merchant detail route",
+      "expectedCode": "working-merchant-detail-route",
+      "id": "satin.flow.publications.detail-route",
+      "observedCode": "detail-route-missing",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/blog/[...slug].astro"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "the emitted publication card link has no working merchant detail route"
+      },
+      "detail": "required capability \"satin.flow.publications.detail-route\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.detail-route.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/blog/[...slug].astro"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-005"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.publications.detail-route"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.publications.list-route"
+      },
+      "detail": "required capability \"satin.flow.publications.list-route\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.list-route.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.publications.live-demo-exclusion"
+      },
+      "detail": "required capability \"satin.flow.publications.live-demo-exclusion\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.live-demo-exclusion.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "fallsBackToDemo": true
+      },
+      "detail": "the publications list/detail source falls back to a static/demo collection",
+      "expectedCode": "merchant-data-source",
+      "id": "satin.flow.publications.merchant-data",
+      "observedCode": "demo-fallback",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/blog/index.astro#/data-source"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "the publications list/detail source falls back to a static/demo collection"
+      },
+      "detail": "required capability \"satin.flow.publications.merchant-data\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.merchant-data.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/blog/index.astro#/data-source"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-005"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.publications.merchant-data"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.publications.rich-text-sanitizer"
+      },
+      "detail": "required capability \"satin.flow.publications.rich-text-sanitizer\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.rich-text-sanitizer.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.publications.rss-data-source"
+      },
+      "detail": "required capability \"satin.flow.publications.rss-data-source\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.publications.rss-data-source.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.search.catalog-forward-q"
+      },
+      "detail": "required capability \"satin.flow.search.catalog-forward-q\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.search.catalog-forward-q.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "readsSubmittedQ": false
+      },
+      "detail": "the Satin catalog page does not consume the submitted q query key",
+      "expectedCode": "catalog-consumes-q",
+      "id": "satin.flow.search.catalog-read-q",
+      "observedCode": "catalog-ignores-q",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/pages/catalog.astro#/q"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "the Satin catalog page does not consume the submitted q query key"
+      },
+      "detail": "required capability \"satin.flow.search.catalog-read-q\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.search.catalog-read-q.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/pages/catalog.astro#/q"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.search.catalog-read-q"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "satin.flow.search.form-action"
+      },
+      "detail": "required capability \"satin.flow.search.form-action\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.search.form-action.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "source": "local-demo-products"
+      },
+      "detail": "header search suggestions are built from local demo products",
+      "expectedCode": "suggestions-from-catalog",
+      "id": "satin.flow.search.suggestions-data-source",
+      "observedCode": "suggestions-from-demo",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "themes/satin/src/scripts/gsap/search.ts"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "header search suggestions are built from local demo products"
+      },
+      "detail": "required capability \"satin.flow.search.suggestions-data-source\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.search.suggestions-data-source.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/scripts/gsap/search.ts"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.search.suggestions-data-source"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "declaredFeature": false,
+        "routePresent": true
+      },
+      "detail": "wishlist route/UI/runtime exists while theme.json declares wishlist:false",
+      "expectedCode": "wishlist-feature-true",
+      "id": "satin.flow.wishlist.feature",
+      "observedCode": "wishlist-feature-false",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/features/wishlist"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "wishlist route/UI/runtime exists while theme.json declares wishlist:false"
+      },
+      "detail": "required capability \"satin.flow.wishlist.feature\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.flow.wishlist.feature.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/features/wishlist"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.flow.wishlist.feature"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "liveOutput": false
+      },
+      "detail": "checkout success target is not generated for Satin",
+      "expectedCode": "checkout-result-generated",
+      "id": "satin.page.page-checkout-result.live-output",
+      "observedCode": "checkout-result-not-generated",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "src/generator/build.service.ts#/composeContentPagesIntoDist"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "checkout success target is not generated for Satin"
+      },
+      "detail": "required capability \"satin.page.page-checkout-result.live-output\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.page.page-checkout-result.live-output.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:src/generator/build.service.ts#/composeContentPagesIntoDist"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.page.page-checkout-result.live-output"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "inManifest": false,
+        "requiredByRegistry": true
+      },
+      "detail": "checkout-result is required by the registry but absent from the manifest",
+      "expectedCode": "page-in-manifest",
+      "id": "satin.page.page-checkout-result.manifest",
+      "observedCode": "page-absent",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/pages"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "checkout-result is required by the registry but absent from the manifest"
+      },
+      "detail": "required capability \"satin.page.page-checkout-result.manifest\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.page.page-checkout-result.manifest.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/pages"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.page.page-checkout-result.manifest"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "seedPresent": false
+      },
+      "detail": "checkout-result has no Satin seed",
+      "expectedCode": "page-seed-present",
+      "id": "satin.page.page-checkout-result.seed",
+      "observedCode": "page-seed-absent",
+      "sources": [
+        {
+          "kind": "code",
+          "ref": "packages/theme-satin/theme.json#/pages"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin",
+      "tier": "structural"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "checkout-result has no Satin seed"
+      },
+      "detail": "required capability \"satin.page.page-checkout-result.seed\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.page.page-checkout-result.seed.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/theme.json#/pages"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.page.page-checkout-result.seed"
+        },
+        {
+          "kind": "user",
+          "ref": "required-flow"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "MultiColumns stored column keeps aliased leaves that fields/schema/renderer disagree on"
+      },
+      "detail": "required capability \"satin.section.MultiColumns.columns[].stored-shape\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.section.MultiColumns.columns[].stored-shape.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42153"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:PRESENT#MultiColumns=themes/satin/src/components/sections/MultiColumns.astro~figma=1236:42153"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:packages/theme-satin/blocks/MultiColumns/MultiColumns.puckConfig.ts#/MultiColumnItemSchema"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.section.MultiColumns.columns[].stored-shape"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "compiled Slideshow renderer reads legacy aliases before canonical nested values"
+      },
+      "detail": "required capability \"satin.section.Slideshow.slides[].alias-precedence\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.section.Slideshow.slides[].alias-precedence.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42150"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:PRESENT#Slideshow=themes/satin/src/components/sections/Slideshow.astro~figma=1236:42150"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/sections/Slideshow.astro#/slides/imageUrl"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.section.Slideshow.slides[].alias-precedence"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    },
+    {
+      "canonicalFacts": {
+        "requirementLabel": "Slideshow renderer distinguishes fewer positions than the sidebar exposes"
+      },
+      "detail": "required capability \"satin.section.Slideshow.slides[].position.renderer-domain\" is not exposed by code/runtime",
+      "expectedCode": "capability-present",
+      "id": "satin.section.Slideshow.slides[].position.renderer-domain.requirement-missing",
+      "observedCode": "capability-absent",
+      "sources": [
+        {
+          "kind": "figma",
+          "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42150"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "Satin-theme:PRESENT#Slideshow=themes/satin/src/components/sections/Slideshow.astro~figma=1236:42150"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "code:code:themes/satin/src/components/sections/Slideshow.astro#/slides/posCls"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+        },
+        {
+          "kind": "project-doc",
+          "ref": "structural:satin.section.Slideshow.slides[].position.renderer-domain"
+        }
+      ],
+      "status": "GAP",
+      "theme": "satin"
+    }
+  ],
+  "theme": "satin"
+}

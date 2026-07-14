@@ -1,0 +1,21 @@
+{
+  "parentManifestDigest": null,
+  "schemaVersion": 1,
+  "theme": "satin",
+  "tiers": {
+    "structural": {
+      "baselineDigest": "sha256:e0ba11091ff58ba91abb1e71da3cfaa2a07bcf3ed9d9058ccdbef63e4fb5cf5a",
+      "baselinePath": "conformance/baselines/satin.structural.json",
+      "capabilityShapeDigest": "sha256:993f0edbe6e6bf1436af9063c6ffcdfa705bd0f65d8eac47614929a4258ad777",
+      "captureReviewDigest": "sha256:85cc34a0aa8ce788e29c5045eefb08b07cc2e6b0444c4e708fd48a08454eb202",
+      "captureSourceRef": "da890ea088e7d0fbd7e2ff5b1384465ed56471aa",
+      "captureTreeDigest": "sha256:64b3d80567c9bca8766a671e563029fa169cb3a3cf5e9a6fe0e49141ef39f3dc",
+      "caseSetDigest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "findingsDigest": "sha256:3c796758fe3091f282a28d66f712ec7e0b8168a90bbb05d50897438486a4ea47",
+      "parentBaselineDigest": null,
+      "requirementsDigest": "sha256:dcff0b4539ee30515d1e22337e6f57fa725c9c9a205a34c80b0b4b2175d10b86",
+      "semanticRevisionDigest": null,
+      "tier": "structural"
+    }
+  }
+}

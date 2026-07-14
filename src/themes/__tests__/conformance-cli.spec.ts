@@ -310,11 +310,14 @@ describe("theme validation", () => {
       ["--theme", "satin", "--report-dir", h.reportDir, "--diagnose"],
       deps,
     );
-    // Reviewed requirements are absent in this bloom-shaped harness, so a Satin
-    // diagnose fails on the missing reviewed artifact — but ONLY AFTER dispatching
-    // into the tiered runner (prerequisites checked, pipeline reached).
-    expect(res.error).not.toBe("tier-runner-not-implemented");
-    expect(res.error).not.toMatch(
+    // Satin diagnose dispatches into the tiered runner (prerequisites checked,
+    // pipeline reached) and reports current findings. Diagnose is lenient — it
+    // does NOT require a captured baseline/reviewed artifact — so it returns no
+    // error here (res.error undefined). It must NEVER surface the old deferral
+    // or missing-adapter markers. Guard `?? ""` keeps the marker assertions
+    // valid when diagnose succeeds with no error string.
+    expect(res.error ?? "").not.toBe("tier-runner-not-implemented");
+    expect(res.error ?? "").not.toMatch(
       /incomplete|missing adapter|release-contract/i,
     );
     expect(checked).toBe(true);

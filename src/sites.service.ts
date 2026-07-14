@@ -53,6 +53,27 @@ function slugify(input: string) {
 }
 
 /**
+ * JSON.stringify с рекурсивной сортировкой ключей объектов. Нужно для
+ * стабильного сравнения branding: Postgres нормализует порядок ключей jsonb,
+ * поэтому наивный JSON.stringify давал бы «отличие» на no-op-сохранении и лишний
+ * (безобидный, но напрасный) republish.
+ */
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, val) => {
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as Record<string, unknown>;
+      return Object.keys(obj)
+        .sort()
+        .reduce<Record<string, unknown>>((acc, k) => {
+          acc[k] = obj[k];
+          return acc;
+        }, {});
+    }
+    return val;
+  });
+}
+
+/**
  * Темы, для которых переключение НА них применяет полный канон верстальщиков
  * (defaults/<theme>.json, либо PageResolver+theme.json fallback для rose):
  * дизайн/раскладка/палитра/хром + товарные секции заполняются с нуля.
@@ -103,6 +124,17 @@ export function shouldReseedOnThemeSwitch(p: {
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
   private static readonly MAX_THEME_BYTES = 512 * 1024; // 512KB
+  /** Окно коалесценции republish при сохранении branding (см. scheduleBrandingRepublish). */
+  private static readonly BRANDING_REPUBLISH_DEBOUNCE_MS = 8_000;
+  /** Активные debounce-таймеры republish по siteId (branding-save). */
+  private readonly brandingRepublishTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
+  /** siteId с идущей publish() — не даём перекрывающимся сборкам гоняться за S3-префиксом. */
+  private readonly brandingRepublishInFlight = new Set<string>();
+  /** siteId, которым нужна ещё одна пересборка после текущей (правки прилетели во время сборки). */
+  private readonly brandingRepublishPending = new Set<string>();
 
   constructor(
     @Inject(PG_CONNECTION)
@@ -677,6 +709,8 @@ export class SitesDomainService {
         status: schema.site.status,
         // settings нужны для shallow-merge частичного settings-патча (см. ниже)
         settings: schema.site.settings,
+        // branding нужен для change-detection republish при сохранении favicon/лого/цветов
+        branding: schema.site.branding,
       })
       .from(schema.site)
       .where(
@@ -851,6 +885,26 @@ export class SitesDomainService {
       });
     }
 
+    // Сохранение branding (favicon/лого/цвета) у опубликованного сайта: live
+    // собран со старым брендингом и сам не пересоберётся (sites.site.updated —
+    // no-op). Мирроринг theme-switch republish выше, но с debounce по siteId: FE
+    // шлёт отдельный PATCH на КАЖДЫЙ вариант фавикона → без коалесценции это N
+    // пересборок за сессию правки. Гейт status==='published' как у theme-switch
+    // (черновики подхватят брендинг при явной публикации). Дедуп: если тема уже
+    // сменилась (publish дёрнут выше синхронно) — branding-ветку пропускаем.
+    const themeAlreadyRepublished =
+      typeof nextThemeId === "string" && nextThemeId && nextThemeId !== prevThemeId;
+    if (
+      row &&
+      existingSite?.status === "published" &&
+      !themeAlreadyRepublished &&
+      "branding" in (params.patch ?? {}) &&
+      stableStringify(existingSite?.branding ?? null) !==
+        stableStringify(params.patch.branding ?? null)
+    ) {
+      this.scheduleBrandingRepublish(params.tenantId, params.siteId);
+    }
+
     if (row)
       this.events.emit("sites.site.updated", {
         tenantId: params.tenantId,
@@ -858,6 +912,51 @@ export class SitesDomainService {
         patch: params.patch ?? {},
       });
     return Boolean(row);
+  }
+
+  /**
+   * Debounced republish после сохранения branding. Сбрасывает предыдущий таймер
+   * по siteId — серия быстрых сохранений (4 фавикона по одному) коалесцируется в
+   * одну пересборку live. Best-effort и неблокирующе, как theme-switch republish;
+   * .unref() чтобы pending-таймер не держал event loop при остановке процесса.
+   */
+  private scheduleBrandingRepublish(tenantId: string, siteId: string): void {
+    const existing = this.brandingRepublishTimers.get(siteId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(
+      () => this.fireBrandingRepublish(tenantId, siteId),
+      SitesDomainService.BRANDING_REPUBLISH_DEBOUNCE_MS,
+    );
+    if (typeof timer.unref === "function") timer.unref();
+    this.brandingRepublishTimers.set(siteId, timer);
+  }
+
+  /**
+   * Запуск debounced republish — но НЕ параллельно уже идущей публикации того же
+   * сайта: перекрывающиеся publish() гонятся за S3-префиксом sites/<slug>/
+   * (removePrefix()+uploadDirectory() не атомарны). Если сборка идёт — помечаем
+   * pending и до-пересобираем ОДИН раз после её завершения (догнать новейший branding).
+   */
+  private fireBrandingRepublish(tenantId: string, siteId: string): void {
+    this.brandingRepublishTimers.delete(siteId);
+    if (this.brandingRepublishInFlight.has(siteId)) {
+      this.brandingRepublishPending.add(siteId);
+      return;
+    }
+    this.brandingRepublishInFlight.add(siteId);
+    this.logger.log(`branding republish (debounced): site=${siteId}`);
+    void this.publish({ tenantId, siteId, mode: "production" })
+      .catch((e) => {
+        this.logger.error(
+          `branding republish failed for ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      })
+      .finally(() => {
+        this.brandingRepublishInFlight.delete(siteId);
+        if (this.brandingRepublishPending.delete(siteId)) {
+          this.scheduleBrandingRepublish(tenantId, siteId);
+        }
+      });
   }
 
   async softDelete(tenantId: string, siteId: string) {

@@ -316,6 +316,8 @@ export interface BuildContext {
   branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string } };
   /** Site settings (checkout config, etc.) */
   settings?: { requireCustomerAuth?: boolean };
+  /** Название магазина (site.name) — для name/short_name в web-manifest. */
+  siteName?: string;
 }
 
 const ANALYTICS_COLLECTOR_URL = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
@@ -728,6 +730,7 @@ export async function trySnapshotDeploy(
   const [siteRow] = await deps.db
     .select({
       id: schema.site.id,
+      name: schema.site.name,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
       storageSlug: schema.site.storageSlug,
@@ -871,6 +874,14 @@ export async function trySnapshotDeploy(
 
     // ── Inject analytics tracker + pixel loader ──
     await injectAnalyticsTracker(distDir, params.siteId);
+
+    // ── Inject favicons + web manifest ──
+    // Снапшот-ctx не несёт branding (снапшот скипается на colors/logo, но НЕ на
+    // favicons) → передаём siteRow.branding напрямую. Пустой набор → noop.
+    {
+      const { injectFavicons } = await import("../themes/favicon-inject");
+      await injectFavicons(distDir, branding, { name: siteRow.name ?? undefined });
+    }
 
     // ── Inject islands script if enabled ──
     const siteIslandsEnabled = siteRow.islandsEnabled ?? false;
@@ -1528,6 +1539,21 @@ export async function runBuildPipeline(
     // === Stage 4.6: INJECT ANALYTICS TRACKER ===
     await injectAnalyticsTracker(ctx.distDir, params.siteId);
 
+    // === Stage 4.65: INJECT FAVICONS + WEB MANIFEST (v2 + legacy) ===
+    // Мерчантские favicon (universal/dark/light/apple) + web-manifest в <head>
+    // каждой страницы. Стоит в пост-ветке (после закрытия v2/legacy) → кроет оба
+    // пути. Пустой набор → noop (дефолт темы цел). Публичные S3 URL как есть;
+    // cache-bust ниже их не трогает (только js/css/шрифты, не .webmanifest/иконки).
+    {
+      const { injectFavicons } = await import("../themes/favicon-inject");
+      const faviconFiles = await injectFavicons(ctx.distDir, ctx.branding, {
+        name: ctx.siteName,
+      });
+      logger.log(
+        `[favicons] Injected into ${faviconFiles} HTML files for site ${params.siteId}`,
+      );
+    }
+
     // === Stage 4.7: INJECT ISLANDS SCRIPT (legacy path only) ===
     if (!useThemeV2 && ctx.islandsEnabled) {
       const islandsServerUrl =
@@ -1604,6 +1630,7 @@ async function stageMerge(
   const [siteRow] = await deps.db
     .select({
       id: schema.site.id,
+      name: schema.site.name,
       themeId: schema.site.themeId,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
@@ -1627,6 +1654,7 @@ async function stageMerge(
   ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
   ctx.branding = (siteRow.branding as BuildContext["branding"]) ?? undefined;
   ctx.settings = (siteRow.settings as BuildContext["settings"]) ?? undefined;
+  ctx.siteName = siteRow.name ?? undefined;
 
   // Load or create revision
   let revisionId: string | null = null;

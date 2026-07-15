@@ -3,13 +3,7 @@ import { TOKEN_REGISTRY, type TokenKey } from '../tokens/registry';
 
 const TokenKeySchema = z.string().refine(
   (k): k is TokenKey => k in TOKEN_REGISTRY,
-  {
-    // zod v4: the custom-error callback receives the issue (not the raw value)
-    // and returns a string. Previously this used the removed v3 form
-    // `(val) => ({ message })`, which no longer type-checks under zod ^4.
-    error: (issue) =>
-      `Unknown token "${String((issue as { input?: unknown }).input)}". Must be in TOKEN_REGISTRY.`,
-  },
+  (k) => ({ message: `Unknown token "${k}". Must be in TOKEN_REGISTRY.` }),
 );
 
 const TokensMapSchema = z.record(TokenKeySchema, z.string());

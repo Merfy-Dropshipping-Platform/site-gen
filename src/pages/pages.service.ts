@@ -22,6 +22,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { getPageResolver } from "../themes/page-resolver-instance";
+import { getThemeManifest } from "../themes/theme-manifest-loader";
 
 @Injectable()
 export class PagesService {
@@ -217,5 +218,105 @@ export class PagesService {
       .where(eq(schema.siteRevision.id, rev.id));
 
     return { deleted: params.pageId };
+  }
+
+  /**
+   * listPages — лёгкий листинг метаданных страниц сайта (БЕЗ pagesData).
+   *
+   * Оптимизация относительно тяжёлого GET /sites/:id/revisions/:revisionId,
+   * который тянет весь Puck-контент. Читаем current revision, нормализуем ТЕМ
+   * ЖЕ resolver-путём, что deletePage (гарантирует role/isCustom/slug на каждой
+   * странице, включая legacy-ревизии без `role`), и возвращаем только
+   * метаданные. `revision.data.pagesData` в ответ не попадает — в этом суть
+   * оптимизации.
+   */
+  async listPages(params: { tenantId: string; siteId: string }) {
+    const [site] = await this.db
+      .select()
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      );
+    if (!site) throw new NotFoundException("site_not_found");
+
+    // Свежий сайт без ревизии → страниц ещё нет. Для read-роута отдаём пустой
+    // список (терпимость к отсутствию данных — как в page-meta.controller),
+    // а не 404.
+    if (!site.currentRevisionId) return { pages: [] };
+
+    const [rev] = await this.db
+      .select()
+      .from(schema.siteRevision)
+      .where(eq(schema.siteRevision.id, site.currentRevisionId));
+    if (!rev) return { pages: [] };
+
+    const revData = rev.data as Record<string, any>;
+    let pages: any[] = Array.isArray(revData.pages) ? revData.pages : [];
+
+    // Нормализуем тем же resolver-путём, что deletePage — гарантирует
+    // role/isCustom/slug на каждой странице (legacy-ревизии без `role`).
+    // pagesData из нормализованного результата НЕ используем.
+    if (site.themeId) {
+      try {
+        const resolver = getPageResolver(site.themeId);
+        pages = resolver.normalizeRevision(revData).pages;
+      } catch (e) {
+        // resolver недоступен — отдаём сырые pages как есть
+      }
+    }
+
+    // Определяем home-страницу по манифесту темы (та же логика, что
+    // buildInitialRevision: страница с isHome, иначе первая), с фолбэком на
+    // slug '/' — чистого home-маркера на RevisionPage нет. Манифест
+    // resolveJsonModule-инлайнится: обращение суб-миллисекундное. TS-интерфейс
+    // ThemeManifest не декларирует `pages`, но рантайм-JSON их содержит.
+    let homePageId: string | null = null;
+    if (site.themeId) {
+      const manifest = getThemeManifest(site.themeId) as
+        | { pages?: Array<{ id?: string; isHome?: boolean }> }
+        | null;
+      const manifestPages = manifest?.pages ?? [];
+      const homeEntry =
+        manifestPages.find((p) => p?.isHome) ?? manifestPages[0];
+      homePageId =
+        homeEntry && typeof homeEntry.id === "string" ? homeEntry.id : null;
+    }
+
+    return {
+      pages: pages.map((p: any) => {
+        const slug = typeof p.slug === "string" ? p.slug : "";
+        // isHome: authoritative match is the manifest home id; slug '/' is the
+        // canonical home slug (always trusted). The legacy "home" string
+        // fallbacks are merchant-controllable (a custom page could use slug
+        // "home" / id "home"), so gate them to the unknown-manifest case only —
+        // otherwise a custom "home"-slugged page would falsely collapse to '/'.
+        const isHome =
+          (homePageId != null && p.id === homePageId) ||
+          slug === "/" ||
+          (homePageId == null && (slug === "home" || p.id === "home"));
+        // path: home → '/', иначе slug как есть (если с ведущим '/') либо
+        // '/'+slug. Зеркалит page-meta.controller.
+        const path = isHome
+          ? "/"
+          : slug.startsWith("/")
+            ? slug
+            : slug
+              ? `/${slug}`
+              : "/";
+        return {
+          id: p.id,
+          name: typeof p.name === "string" ? p.name : "",
+          slug,
+          role:
+            p.role === "custom" ? ("custom" as const) : ("system" as const),
+          isCustom: p.role === "custom" || Boolean(p.isCustom),
+          isHome,
+          path,
+        };
+      }),
+    };
   }
 }

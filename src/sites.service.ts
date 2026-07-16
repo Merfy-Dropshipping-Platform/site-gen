@@ -766,13 +766,29 @@ export class SitesDomainService {
     let brandingChanged = false;
     if ("branding" in (params.patch ?? {})) {
       const incoming = params.patch.branding;
-      const nextBranding =
-        incoming === null || incoming === undefined
-          ? null
-          : {
-              ...((existingSite?.branding as Record<string, unknown>) ?? {}),
-              ...incoming,
-            };
+      const base = (existingSite?.branding as Record<string, unknown>) ?? {};
+      let nextBranding: Record<string, unknown> | null;
+      if (incoming === null || incoming === undefined) {
+        nextBranding = null;
+      } else {
+        const merged: Record<string, unknown> = { ...base, ...incoming };
+        // seo — DEEP-merge по ключам (title/description/keywords): SEO-блок шлёт
+        // партиал ОДНОГО поля, и top-level replace терял бы соседние seo-поля при
+        // последовательных сохранениях (тихая потеря). favicons/logo/цвета остаются
+        // top-level replace (их пишет server-authoritative RMW полным объектом).
+        if (
+          incoming.seo &&
+          typeof incoming.seo === "object" &&
+          base.seo &&
+          typeof base.seo === "object"
+        ) {
+          merged.seo = {
+            ...(base.seo as Record<string, unknown>),
+            ...(incoming.seo as Record<string, unknown>),
+          };
+        }
+        nextBranding = merged;
+      }
       updates.branding = nextBranding;
       // change-detection сравнивает ЭФФЕКТИВНЫЙ (merged) branding, а не сырой
       // partial: partial всегда != full existing → republish палил бы вхолостую.

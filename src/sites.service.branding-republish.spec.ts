@@ -350,6 +350,48 @@ describe("SitesDomainService.update — branding shallow-merge (follow-up #2)", 
     expect(captured.updates.branding.logoUrl).toBe("https://s3/l.png");
   });
 
+  it("seo deep-merge: partial {seo:{title}} сохраняет соседние seo-поля и favicons", async () => {
+    const { db, captured } = makeDb({
+      themeId: "rose",
+      status: "draft",
+      settings: null,
+      branding: {
+        favicons: { universal: "https://s3/u.png" },
+        seo: { title: "old", description: "keep-desc", keywords: "keep-kw" },
+      },
+    });
+    const service = makeService(db);
+
+    await service.update({
+      tenantId: "t1",
+      siteId: "s1",
+      patch: { branding: { seo: { title: "new" } } }, // только title
+    });
+
+    // соседние seo-поля сохранены (deep-merge), title обновлён, favicons целы
+    expect(captured.updates.branding.seo).toEqual({
+      title: "new",
+      description: "keep-desc",
+      keywords: "keep-kw",
+    });
+    expect(captured.updates.branding.favicons).toEqual({ universal: "https://s3/u.png" });
+  });
+
+  it("seo при отсутствии существующего seo просто кладётся (top-level merge)", async () => {
+    const { db, captured } = makeDb({
+      themeId: "rose",
+      status: "draft",
+      settings: null,
+      branding: { favicons: { universal: "U" } },
+    });
+    const service = makeService(db);
+
+    await service.update({ tenantId: "t1", siteId: "s1", patch: { branding: { seo: { title: "T" } } } });
+
+    expect(captured.updates.branding.seo).toEqual({ title: "T" });
+    expect(captured.updates.branding.favicons).toEqual({ universal: "U" });
+  });
+
   it("change-detection по MERGED: no-op partial (тот же цвет) на published → НЕ republish", async () => {
     // Ключевой фикс over-fire: сырой partial всегда != full existing, но merged == existing.
     const { db } = makeDb({

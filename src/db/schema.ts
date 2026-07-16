@@ -123,6 +123,13 @@ export const site = pgTable("site", {
       light?: string;
       apple?: string;
     };
+    // Site-level SEO Главной (title/description/keywords) — пишется FE-партиалом,
+    // доставляется injectHomeSeo в dist/index.html. jsonb-ключ, без миграции.
+    seo?: {
+      title?: string;
+      description?: string;
+      keywords?: string;
+    };
   }>(),
   // Настройки магазина (checkout, регистрация и т.д.)
   settings: jsonb("settings").$type<{

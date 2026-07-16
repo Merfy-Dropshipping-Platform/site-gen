@@ -315,8 +315,8 @@ export interface BuildContext {
   storeData: FetchedStoreData;
   /** Whether the site uses server-island smart revalidation */
   islandsEnabled: boolean;
-  /** Branding overrides (logo, colors) from site table */
-  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string } };
+  /** Branding overrides (logo, colors, favicons, home SEO) from site table */
+  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string }; seo?: { title?: string; description?: string; keywords?: string } };
   /** Site settings (checkout config, etc.) */
   settings?: { requireCustomerAuth?: boolean };
   /** Название магазина (site.name) — для name/short_name в web-manifest. */
@@ -884,6 +884,12 @@ export async function trySnapshotDeploy(
     {
       const { injectFavicons } = await import("../themes/favicon-inject");
       await injectFavicons(distDir, branding, { name: siteRow.name ?? undefined });
+    }
+
+    // ── Inject home SEO (title/description/keywords → index.html) ──
+    {
+      const { injectHomeSeo } = await import("./home-seo-inject");
+      await injectHomeSeo(distDir, branding?.seo);
     }
 
     // ── Inject islands script if enabled ──
@@ -1533,6 +1539,17 @@ export async function runBuildPipeline(
       logger.log(
         `[favicons] Injected into ${faviconFiles} HTML files for site ${params.siteId}`,
       );
+    }
+
+    // === Stage 4.66: INJECT HOME SEO (title/description/keywords → dist/index.html) ===
+    // Site-level SEO Главной из branding.seo. Пустой SEO → noop. Трогает ТОЛЬКО
+    // index.html (Главная); заодно закрывает v2-дыру «description дропнут».
+    {
+      const { injectHomeSeo } = await import("./home-seo-inject");
+      const seoPatched = await injectHomeSeo(ctx.distDir, ctx.branding?.seo);
+      if (seoPatched) {
+        logger.log(`[home-seo] Patched index.html for site ${params.siteId}`);
+      }
     }
 
     // === Stage 4.7: INJECT ISLANDS SCRIPT (legacy path only) ===

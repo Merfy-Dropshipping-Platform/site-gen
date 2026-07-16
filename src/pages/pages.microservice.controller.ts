@@ -32,6 +32,14 @@ interface ListPagesPayload {
   siteId: string;
 }
 
+interface UpdatePagePayload {
+  tenantId: string;
+  siteId: string;
+  pageId: string;
+  seo?: { title?: string; description?: string; keywords?: string };
+  name?: string;
+}
+
 @Controller()
 export class PagesMicroserviceController {
   private readonly logger = new Logger(PagesMicroserviceController.name);
@@ -110,6 +118,38 @@ export class PagesMicroserviceController {
       return { success: true, ...result };
     } catch (e: any) {
       this.logger.error("pages.list failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  @MessagePattern("sites.pages.update")
+  async updatePage(
+    @Payload() data: UpdatePagePayload,
+    @Ctx() _ctx: RmqContext,
+  ) {
+    try {
+      this.logger.log(`pages.update request: ${JSON.stringify(data)}`);
+      const { tenantId, siteId, pageId, seo, name } =
+        data ?? ({} as UpdatePagePayload);
+      if (!tenantId || !siteId || !pageId) {
+        return {
+          success: false,
+          message: "tenantId, siteId, pageId are required",
+        };
+      }
+      if (seo === undefined && name === undefined) {
+        return { success: false, message: "nothing_to_update" };
+      }
+      const result = await this.pagesService.updatePage({
+        tenantId,
+        siteId,
+        pageId,
+        ...(seo !== undefined ? { seo } : {}),
+        ...(name !== undefined ? { name } : {}),
+      });
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error("pages.update failed", e);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }

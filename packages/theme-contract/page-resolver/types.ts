@@ -46,8 +46,11 @@ export interface RevisionPage {
 export interface SeoMeta {
   title?: string;
   description?: string;
-  og?: Record<string, string>;
-  structured?: unknown;
+  /** Мета keywords Главной/страницы. Единая форма с HomeSeo (branding.seo)
+   * и FE-панелью (seoKeywords) — снимает drift между тремя SEO-формами. */
+  keywords?: string;
+  og?: Record<string, string>;    // reserved (og:image и т.п.) — вне текущего scope
+  structured?: unknown;           // reserved (JSON-LD) — вне текущего scope
 }
 
 /**

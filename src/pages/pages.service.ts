@@ -221,6 +221,69 @@ export class PagesService {
   }
 
   /**
+   * updatePage — редактирование метаданных существующей страницы (SEO + опц. name).
+   * RMW-зеркало deletePage: site (scope tenant) → current revision → найти страницу
+   * в revData.pages → deep-merge seo по ключам (частичный сейв поля не теряет
+   * соседние) → lockVersion+1 → update. Create/delete — вне scope. Доставка в live
+   * <head> — на следующей публикации сайта (revision-изменение, как у create/delete),
+   * через injectCustomPagesSeo. Гейта на role==='system' НЕТ: редактировать seo
+   * любой страницы легально, но инжектор системные пропускает (home = branding.seo).
+   */
+  async updatePage(params: {
+    tenantId: string;
+    siteId: string;
+    pageId: string;
+    seo?: { title?: string; description?: string; keywords?: string };
+    name?: string;
+  }) {
+    const [site] = await this.db
+      .select()
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      );
+    if (!site) throw new NotFoundException("site_not_found");
+
+    const [rev] = await this.db
+      .select()
+      .from(schema.siteRevision)
+      .where(eq(schema.siteRevision.id, site.currentRevisionId!));
+    if (!rev) throw new NotFoundException("revision_not_found");
+
+    const revData = rev.data as Record<string, any>;
+    const pages = Array.isArray(revData.pages) ? revData.pages : [];
+    const idx = pages.findIndex((p: any) => p.id === params.pageId);
+    if (idx === -1) throw new NotFoundException("page_not_found");
+
+    const target = pages[idx];
+    const nextPage = { ...target };
+    if (params.seo !== undefined) {
+      nextPage.seo = { ...(target.seo ?? {}), ...params.seo };
+    }
+    if (typeof params.name === "string" && params.name.trim()) {
+      nextPage.name = params.name.trim();
+    }
+
+    const newPages = [...pages];
+    newPages[idx] = nextPage;
+    const newRevData = {
+      ...revData,
+      pages: newPages,
+      lockVersion: (revData.lockVersion ?? 1) + 1,
+    };
+
+    await this.db
+      .update(schema.siteRevision)
+      .set({ data: newRevData })
+      .where(eq(schema.siteRevision.id, rev.id));
+
+    return { page: nextPage };
+  }
+
+  /**
    * listPages — лёгкий листинг метаданных страниц сайта (БЕЗ pagesData).
    *
    * Оптимизация относительно тяжёлого GET /sites/:id/revisions/:revisionId,
@@ -315,6 +378,13 @@ export class PagesService {
           isCustom: p.role === "custom" || Boolean(p.isCustom),
           isHome,
           path,
+          // seo — чтобы редактор гидратировался текущими значениями (иначе пустой
+          // редактор затрёт сохранённое). null если не задано.
+          seo: (p.seo ?? null) as {
+            title?: string;
+            description?: string;
+            keywords?: string;
+          } | null,
         };
       }),
     };

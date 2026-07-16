@@ -1552,6 +1552,19 @@ export async function runBuildPipeline(
       }
     }
 
+    // === Stage 4.67: INJECT PER-PAGE SEO (кастомные страницы → dist/<slug>/index.html) ===
+    // SEO кастомных страниц из revision.pages[i].seo. Системные/home пропускаются
+    // (home = branding.seo, Stage 4.66). Пустой набор → noop.
+    {
+      const { injectCustomPagesSeo } = await import("./custom-pages-seo-inject");
+      const pagesSeo = await injectCustomPagesSeo(ctx.distDir, ctx.revisionData);
+      if (pagesSeo) {
+        logger.log(
+          `[per-page-seo] Patched ${pagesSeo} custom page(s) for site ${params.siteId}`,
+        );
+      }
+    }
+
     // === Stage 4.7: INJECT ISLANDS SCRIPT (legacy path only) ===
     if (!useThemeV2 && ctx.islandsEnabled) {
       const islandsServerUrl =

@@ -485,13 +485,19 @@ export class PagesService {
             : slug
               ? `/${slug}`
               : "/";
+        // role и isCustom — из ОДНОГО предиката. Иначе кастомная страница, чей
+        // сохранённый p.role ≠ 'custom' (создана до нормализации / role потерян
+        // → normalizeRevision дефолтит его в 'system'), приходила как
+        // role:'system'+isCustom:true. Это ломало выбор/удаление в редакторе
+        // (гейт по role!=='system'), хотя deletePage её удалить даёт (её нет в
+        // манифесте темы). Единый источник истины «кастомная» = isCustom.
+        const isCustomPage = p.role === "custom" || Boolean(p.isCustom);
         return {
           id: p.id,
           name: typeof p.name === "string" ? p.name : "",
           slug,
-          role:
-            p.role === "custom" ? ("custom" as const) : ("system" as const),
-          isCustom: p.role === "custom" || Boolean(p.isCustom),
+          role: isCustomPage ? ("custom" as const) : ("system" as const),
+          isCustom: isCustomPage,
           isHome,
           path,
           // seo — чтобы редактор гидратировался текущими значениями (иначе пустой

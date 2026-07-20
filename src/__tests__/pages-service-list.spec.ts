@@ -147,6 +147,30 @@ describe('PagesService.listPages — metadata-only listing', () => {
     }
   });
 
+  it('чинит аномалию role:system+isCustom:true → единый предикат делает страницу role:custom (её можно удалить в редакторе)', async () => {
+    const data: RevData = {
+      // Реальный прод-кейс «тест»: кастомная страница, чей сохранённый role ≠
+      // 'custom' (потерян/нормализован в 'system'), но isCustom:true. listPages
+      // обязан вернуть role:'custom', иначе фронт-гейт role!=='system' не даст
+      // её выделить/удалить (хотя deletePage её удаляет — нет в манифесте).
+      pages: [
+        { id: 'page-custom-test', name: 'тест', slug: '/test', role: 'system', isCustom: true },
+      ],
+      pagesData: {
+        'page-custom-test': { content: [], root: { props: {} }, zones: {} },
+      },
+    };
+    const db = makeDb({ site: makeSite(), rev: makeRev(data) });
+    const service = new PagesService(db);
+
+    const res = await service.listPages({ tenantId: TENANT_ID, siteId: SITE_ID });
+
+    const page = res.pages.find((p) => p.id === 'page-custom-test');
+    expect(page).toBeDefined();
+    expect(page!.isCustom).toBe(true);
+    expect(page!.role).toBe('custom');
+  });
+
   it('normalizes a legacy revision (no role) via the theme resolver — home stays system + isHome', async () => {
     // Real 'rose' theme → resolver.normalizeRevision guarantees role/isCustom/slug
     // and manifest home id, even though the raw rows lack `role`.

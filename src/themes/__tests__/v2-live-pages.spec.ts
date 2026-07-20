@@ -206,6 +206,48 @@ describe('composeContentPagesIntoDist', () => {
     expect(deliveryHtml).toContain('<title>Доставка</title>'); // titleOverride
   });
 
+  it('bound-режим: секция «Страница» (pageId→кастомная) подтягивает тело и имя из pages[].name, когда heading цели пуст', async () => {
+    const { renderBlock } = getMockFns();
+    const dist = await fs.mkdtemp(path.join(os.tmpdir(), 'v2live-'));
+    await fs.writeFile(path.join(dist, 'index.html'), SHELL);
+
+    const data = revisionData() as Record<string, unknown>;
+    (data as { pages: unknown[] }).pages = [
+      { id: 'page-custom-host', slug: '/host', isCustom: true, name: 'Хост' },
+      { id: 'page-custom-target', slug: '/target', isCustom: true, name: 'Доставка' },
+    ];
+    // Хост: секция «Страница», привязанная (bound) к целевой странице.
+    (data as { pagesData: Record<string, unknown> }).pagesData['page-custom-host'] = {
+      content: [{ type: 'Page', props: { id: 'Page-host', pageId: 'page-custom-target' } }],
+    };
+    // Цель: Page-блок с телом, но БЕЗ heading (createPage его не сеет — имя
+    // должно подтянуться из pages[].name через фолбэк pageName).
+    (data as { pagesData: Record<string, unknown> }).pagesData['page-custom-target'] = {
+      content: [
+        {
+          type: 'Page',
+          props: { id: 'Page-target', pageId: '', content: '<p>Как мы доставляем</p>' },
+        },
+      ],
+    };
+
+    const ctx = {
+      distDir: dist,
+      siteId: 'site-1',
+      publicUrl: 'https://shop.example',
+      revisionData: data,
+    } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
+
+    await composeContentPagesIntoDist(ctx, 'rose');
+
+    // renderBlock для host-секции получает мутированные транслюдом props:
+    // content = тело цели, heading = имя цели (фолбэк на pages[].name).
+    const hostCall = renderBlock.mock.calls.find((c) => c[0]?.props?.id === 'Page-host');
+    expect(hostCall).toBeDefined();
+    expect(hostCall![0].props.content).toBe('<p>Как мы доставляем</p>');
+    expect(hostCall![0].props.heading).toBe('Доставка');
+  });
+
   it('098 live-паритет: page-catalog пересаживается в dist/catalog/index.html (Catalog с data-puck-component-id), поверх собственного шелла каталога', async () => {
     const dist = await fs.mkdtemp(path.join(os.tmpdir(), 'v2live-'));
     await fs.writeFile(path.join(dist, 'index.html'), SHELL);

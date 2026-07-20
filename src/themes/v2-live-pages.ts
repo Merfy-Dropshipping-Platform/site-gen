@@ -128,8 +128,10 @@ export async function composeContentPagesIntoDist(
     if (!blocks || blocks.length === 0) continue;
     // Spec 101: «Страница»-секция с привязкой (pageId) к созданной странице —
     // подгружаем (transclude) заголовок+контент целевой страницы в эту секцию
-    // при сборке. Пусто = свободный режим (heading/content секции). Изолировано:
-    // при сбое/пустом контенте секция остаётся со своими heading/content.
+    // при сборке. Пустой/само-ссылка pageId = свободный режим. Изолировано: при
+    // сбое/несуществующей цели секция остаётся со своими heading/content; при
+    // пустом теле цели, но известном имени — heading получает авторитетное имя
+    // страницы (фолбэк pageName), собственный content секции сохраняется.
     for (const b of blocks) {
       if (b.type !== 'Page') continue;
       const props = b.props as { pageId?: unknown };
@@ -150,11 +152,21 @@ export async function composeContentPagesIntoDist(
           | { heading?: unknown; content?: unknown }
           | undefined;
         const srcContent = typeof src?.content === 'string' ? src.content : '';
-        if (srcContent.trim()) {
+        // Имя секции: приоритет — собственный heading целевого Page-блока (если
+        // мерчант задал заголовок в самой секции), иначе авторитетное имя
+        // страницы из revPages[].name (pageName). Без фолбэка имя не подтянулось
+        // бы у страниц, чей Page-блок heading пуст: createPage его не сеет, он
+        // появляется лишь как побочный эффект updatePage(name), а редактор
+        // «Страницы» шлёт content/seo без name.
+        const srcHeading =
+          typeof src?.heading === 'string' && src.heading.trim()
+            ? src.heading
+            : pageName(boundId);
+        if (srcContent.trim() || srcHeading) {
           b.props = {
             ...b.props,
-            content: srcContent,
-            ...(typeof src?.heading === 'string' ? { heading: src.heading } : {}),
+            ...(srcContent.trim() ? { content: srcContent } : {}),
+            ...(srcHeading ? { heading: srcHeading } : {}),
           };
         }
       } catch (err) {

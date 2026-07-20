@@ -24,6 +24,22 @@ import * as schema from "../db/schema";
 import { getPageResolver } from "../themes/page-resolver-instance";
 import { getThemeManifest } from "../themes/theme-manifest-loader";
 
+/**
+ * Извлекает тело («Описание») контент-страницы из её Puck-дерева: props.content
+ * первой секции «Страница». Пусто, если секции/тела нет. Нужно для гидратации
+ * редактора «Страницы» текущим содержимым (иначе пустой редактор затрёт сейв).
+ */
+function extractPageBodyContent(pageData: unknown): string {
+  const content = (pageData as { content?: unknown } | undefined)?.content;
+  if (!Array.isArray(content)) return "";
+  const pageBlock = content.find(
+    (b: unknown) => (b as { type?: string })?.type === "Page",
+  );
+  const body = (pageBlock as { props?: { content?: unknown } } | undefined)
+    ?.props?.content;
+  return typeof body === "string" ? body : "";
+}
+
 @Injectable()
 export class PagesService {
   private readonly logger = new Logger(PagesService.name);
@@ -221,13 +237,13 @@ export class PagesService {
   }
 
   /**
-   * updatePage — редактирование метаданных существующей страницы (SEO + опц. name).
-   * RMW-зеркало deletePage: site (scope tenant) → current revision → найти страницу
-   * в revData.pages → deep-merge seo по ключам (частичный сейв поля не теряет
-   * соседние) → lockVersion+1 → update. Create/delete — вне scope. Доставка в live
-   * <head> — на следующей публикации сайта (revision-изменение, как у create/delete),
-   * через injectCustomPagesSeo. Гейта на role==='system' НЕТ: редактировать seo
-   * любой страницы легально, но инжектор системные пропускает (home = branding.seo).
+   * updatePage — редактирование метаданных + тела существующей страницы
+   * (SEO + опц. name + опц. content). RMW-зеркало deletePage: site (scope tenant) →
+   * current revision → найти страницу в revData.pages → merge seo → name → тело
+   * (content→секция «Страница» дерева pagesData[pageId]; heading=name) → lockVersion+1
+   * → update. Create/delete — вне scope. Доставка в live: seo → <head>
+   * (injectCustomPagesSeo) на следующей публикации; тело → секция «Страница» рендерит
+   * heading/content на витрине. Тело правим только для страниц с секцией «Страница».
    */
   async updatePage(params: {
     tenantId: string;
@@ -235,6 +251,7 @@ export class PagesService {
     pageId: string;
     seo?: { title?: string; description?: string; keywords?: string };
     name?: string;
+    content?: string;
   }) {
     const [site] = await this.db
       .select()
@@ -269,9 +286,102 @@ export class PagesService {
 
     const newPages = [...pages];
     newPages[idx] = nextPage;
+
+    // Тело контент-страницы («Описание» + заголовок) живёт в секции «Страница»
+    // Puck-дерева этой страницы (revData.pagesData[pageId].content[Page].props) —
+    // именно оттуда билд берёт heading/content на витрину. Метаданные pages[i] не
+    // рендерятся. Трогаем дерево только при изменении name/content (иначе чистый
+    // SEO-патч не дёргает pagesData). Тело хранится как есть — авторитетная
+    // санитизация на рендере (Page.astro sanitizePageContent), XSS в дерево не течёт.
+    let nextPagesData = revData.pagesData;
+    const touchesBody =
+      params.content !== undefined ||
+      (typeof params.name === "string" && !!params.name.trim());
+    if (touchesBody) {
+      const allPagesData =
+        revData.pagesData && typeof revData.pagesData === "object"
+          ? (revData.pagesData as Record<string, any>)
+          : {};
+      const pd = allPagesData[params.pageId] as
+        | { content?: unknown }
+        | undefined;
+      const blocks =
+        pd && Array.isArray(pd.content) ? [...(pd.content as any[])] : null;
+
+      // heading нового блока «Страница»: имя из патча, иначе текущее имя страницы.
+      const headingFromName =
+        typeof params.name === "string" && params.name.trim()
+          ? params.name.trim()
+          : typeof target.name === "string"
+            ? target.name
+            : "";
+      // Форма блока Page зеркалит createPage (+ heading/content тела). Строим
+      // лениво — нужен только на D4-путях создания секции.
+      const buildPageBlock = () => ({
+        type: "Page",
+        props: {
+          id: `Page-${params.pageId}`,
+          pageId: "",
+          heading: headingFromName,
+          content: params.content ?? "",
+          headingSize: "medium",
+          colorScheme: "scheme-1",
+          padding: { top: 80, bottom: 80 },
+        },
+      });
+
+      if (blocks) {
+        const pageIdx = blocks.findIndex((b: any) => b?.type === "Page");
+        if (pageIdx !== -1) {
+          // Секция «Страница» есть — правим тело/заголовок на месте.
+          const block = blocks[pageIdx];
+          const nextBlock = { ...block, props: { ...(block?.props ?? {}) } };
+          if (typeof params.name === "string" && params.name.trim()) {
+            nextBlock.props.heading = params.name.trim();
+          }
+          if (params.content !== undefined) {
+            nextBlock.props.content = params.content;
+          }
+          blocks[pageIdx] = nextBlock;
+          nextPagesData = {
+            ...allPagesData,
+            [params.pageId]: { ...(pd ?? {}), content: blocks },
+          };
+        } else if (params.content !== undefined) {
+          // D4: content-массив есть, но секции «Страница» нет — иначе тело
+          // молча терялось бы. Вставляем блок Page перед завершающим Footer
+          // (если он есть), иначе в конец.
+          const footerIdx = blocks.findIndex((b: any) => b?.type === "Footer");
+          const insertAt = footerIdx !== -1 ? footerIdx : blocks.length;
+          blocks.splice(insertAt, 0, buildPageBlock());
+          nextPagesData = {
+            ...allPagesData,
+            [params.pageId]: { ...(pd ?? {}), content: blocks },
+          };
+        }
+      } else if (params.content !== undefined) {
+        // D4: записи pagesData[pageId] нет (или content не массив) — создаём
+        // корректное Puck-дерево (Header + Page + Footer) по образцу createPage,
+        // иначе тело молча терялось бы.
+        nextPagesData = {
+          ...allPagesData,
+          [params.pageId]: {
+            content: [
+              { type: "Header", props: { id: `Header-${params.pageId}` } },
+              buildPageBlock(),
+              { type: "Footer", props: { id: `Footer-${params.pageId}` } },
+            ],
+            root: { props: { title: headingFromName } },
+            zones: {},
+          },
+        };
+      }
+    }
+
     const newRevData = {
       ...revData,
       pages: newPages,
+      pagesData: nextPagesData,
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 
@@ -348,6 +458,12 @@ export class PagesService {
         homeEntry && typeof homeEntry.id === "string" ? homeEntry.id : null;
     }
 
+    // Тело секции «Страница» тянем из raw pagesData (для гидратации редактора).
+    const rawPagesData =
+      revData.pagesData && typeof revData.pagesData === "object"
+        ? (revData.pagesData as Record<string, unknown>)
+        : {};
+
     return {
       pages: pages.map((p: any) => {
         const slug = typeof p.slug === "string" ? p.slug : "";
@@ -385,6 +501,8 @@ export class PagesService {
             description?: string;
             keywords?: string;
           } | null,
+          // Тело («Описание») из секции «Страница» — для гидратации формы.
+          content: extractPageBodyContent(rawPagesData[p.id]),
         };
       }),
     };

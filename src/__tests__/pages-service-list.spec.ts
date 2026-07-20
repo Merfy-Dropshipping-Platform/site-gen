@@ -49,6 +49,10 @@ const CONTRACT_KEYS = [
   'path',
   'role',
   'slug',
+  // seo + content отдаются для гидратации редактора «Страницы» (значения полей,
+  // НЕ полный pagesData). content — тело секции «Страница» (короткое «Описание»).
+  'seo',
+  'content',
 ].sort();
 
 function makeSite(overrides: Partial<any> = {}) {
@@ -108,6 +112,8 @@ describe('PagesService.listPages — metadata-only listing', () => {
         isCustom: false,
         isHome: true,
         path: '/',
+        seo: null,
+        content: '',
       },
       {
         id: 'page-custom-1',
@@ -117,6 +123,8 @@ describe('PagesService.listPages — metadata-only listing', () => {
         isCustom: true,
         isHome: false,
         path: '/promo',
+        seo: null,
+        content: '',
       },
       {
         id: 'page-custom-2',
@@ -126,15 +134,16 @@ describe('PagesService.listPages — metadata-only listing', () => {
         isCustom: true,
         isHome: false,
         path: '/contacts',
+        seo: null,
+        content: '',
       },
     ]);
 
-    // Metadata-only guarantee: every entry exposes exactly the contract keys —
-    // no pagesData / content / seo leakage.
+    // Контракт-ключи: метаданные + seo/content для гидратации редактора, но НЕ
+    // полный pagesData (в этом суть лёгкого листинга).
     for (const p of res.pages) {
       expect(Object.keys(p).sort()).toEqual(CONTRACT_KEYS);
       expect(p).not.toHaveProperty('pagesData');
-      expect(p).not.toHaveProperty('content');
     }
   });
 

@@ -4,7 +4,7 @@
   "referenceUrl": "https://flux.merfy.ru/",
   "scope": "home",
   "sourceFiles": {
-    "PromoBanner": "src/components/header/PromoBanner.astro",
+    "PromoBanner": "src/components/sections/PromoBanner.astro",
     "Header": "src/components/Header.astro",
     "Hero": "src/components/sections/Hero.astro",
     "Collections": "src/components/sections/Collections.astro",

@@ -32,3 +32,6 @@ docs/figma-snapshots/
 
 # Migration backups from migrate-block-to-tokens.mjs (timestamped .bak.<ms>)
 *.bak.[0-9]*
+
+# Local git worktrees (isolated task workspaces)
+.worktrees/

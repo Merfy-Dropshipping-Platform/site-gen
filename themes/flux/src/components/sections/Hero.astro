@@ -12,8 +12,17 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 const nonEmpty = (v: unknown): string | undefined =>
 	typeof v === "string" && v.trim() ? v : undefined;
-const title = p.heading?.text ?? p.title ?? SITE_TITLE;
-const subtitle = p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
+// heading/text принимают И канон-объект ({text}/{content}), И плоскую строку
+// (паритет с Collections/Gallery/Popular/Puk/MainText/Newsletter в этой же теме —
+// везде `typeof p.heading === "string" ? p.heading : p.heading?.text`). Раньше
+// Hero проверял ТОЛЬКО p.heading?.text — плоская строка тихо терялась (rawHeadingText
+// ниже её тоже не видел → секция с реальным заголовком мерчанта ошибочно считалась
+// isEmpty и рисовала плейсхолдер «Изображение» вместо заданного текста).
+const title = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? SITE_TITLE;
+const subtitle =
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	p.subtitle ??
+	"Там, где классика встречается с характером";
 const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
 const ctaLink =
 	p.primaryButton?.link?.href ??
@@ -45,17 +54,21 @@ const backgroundImage2 = nonEmpty(p.backgroundImages?.url2) ?? nonEmpty(p.backgr
 // (он для Popular/Collections/Gallery). Когда хоть что-то задано — рендер мерчанта
 // дословно (нижняя ветка не трогается). Паттерн эталона rose Hero.astro.
 const rawHeadingText =
-	typeof p.heading?.text === "string"
-		? p.heading.text
-		: typeof p.title === "string"
-			? p.title
-			: "";
+	typeof p.heading === "string"
+		? p.heading
+		: typeof p.heading?.text === "string"
+			? p.heading.text
+			: typeof p.title === "string"
+				? p.title
+				: "";
 const rawSubtitleText =
-	typeof p.text?.content === "string"
-		? p.text.content
-		: typeof p.subtitle === "string"
-			? p.subtitle
-			: "";
+	typeof p.text === "string"
+		? p.text
+		: typeof p.text?.content === "string"
+			? p.text.content
+			: typeof p.subtitle === "string"
+				? p.subtitle
+				: "";
 const rawPrimaryText =
 	typeof p.primaryButton?.text === "string"
 		? p.primaryButton.text

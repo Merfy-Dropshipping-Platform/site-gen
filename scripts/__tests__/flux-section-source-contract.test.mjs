@@ -535,3 +535,106 @@ for (const block of BLOCKS) {
     });
   });
 }
+
+// ───────── Task 4 (Step 1): точечные assertions Hero + Collections ─────────
+//
+// Матрица выше (BLOCKS) — это генерик regex-присутствие ("ссылка на p.heading
+// где-то в файле"), которое проходит даже если поле молча ломается (см. ниже).
+// Эмпирическая проверка через render-probe (Task 4 investigation) нашла
+// РЕАЛЬНЫЙ баг: Hero.astro читал heading/text ТОЛЬКО как канон-объект
+// (`p.heading?.text` / `p.text?.content`), в отличие от ВСЕХ остальных 10
+// секций этой темы (Collections/Gallery/Popular/Puk/MainText/Newsletter/
+// CollapsibleSection/MultiRows/MultiColumns/Publications/ImageWithText),
+// которые ЕДИНООБРАЗНО принимают И объект, И плоскую строку
+// (`typeof p.heading === "string" ? p.heading : p.heading?.text`). Плоская
+// строка на Hero молча пропадала — и хуже: `rawHeadingText`/`rawSubtitleText`
+// (детектор пустой секции) её тоже не видели, поэтому секция с РЕАЛЬНЫМ
+// заголовком мерчанта ошибочно считалась `isEmpty` и рисовала Figma-плейсхолдер
+// «Изображение» вместо заданного текста. Пруф: `node render-probe.mjs flux Hero
+// '{"id":"Hero-test","heading":"Новый заголовок"}'` до фикса рендерил
+// "Изображение" (см. task-4-report.md).
+//
+// «search bar» из брифа Task 4 Step 1 ("Hero должен сохранять upstream CTA и
+// search bar") НЕ проверяется ниже — по факту чтения пин-коммита upstream
+// (SOURCE.lock.json `e29b70920ffe4469744386b51b9c8ee0fcf68bd0`,
+// src/components/sections/Hero.astro) и живого https://flux.merfy.ru/ (curl,
+// 2026-07-27) поиска в Hero НЕТ ни там, ни там — он живёт только в Header.
+// Код несёт явный комментарий "Поиск в Hero УБРАН (2026-06-15, баг тестера
+// «два поиска на главной»)" — уже решённый баг, добавление search в Hero было
+// бы РЕГРЕССИЕЙ этого фикса. Assertion на search bar не добавлен намеренно
+// (см. task-4-report.md).
+
+test('Hero (src/components/sections/Hero.astro): heading/text принимают плоскую строку (паритет с сестринскими секциями)', async (t) => {
+  const absPath = path.resolve(THEME_ROOT, 'src/components/sections/Hero.astro');
+  const content = await readFileOrNull(absPath);
+  assert.ok(content !== null, 'ожидался файл Hero.astro');
+
+  await t.test('heading: typeof p.heading === "string" учитывается ДО/наравне с p.heading?.text', () => {
+    assert.match(
+      content,
+      /typeof\s+p\.heading\s*===\s*["']string["']/,
+      'ожидалась проверка typeof p.heading === "string" (плоская строка heading не должна ' +
+        'молча теряться и не должна ошибочно детектироваться как isEmpty)',
+    );
+  });
+
+  await t.test('text: typeof p.text === "string" учитывается ДО/наравне с p.text?.content', () => {
+    assert.match(
+      content,
+      /typeof\s+p\.text\s*===\s*["']string["']/,
+      'ожидалась проверка typeof p.text === "string" (плоская строка text/subtitle не должна ' +
+        'молча теряться и не должна ошибочно детектироваться как isEmpty)',
+    );
+  });
+
+  await t.test('upstream CTA: primaryButton/cta рендерится реальной ссылкой с href', () => {
+    assert.match(
+      content,
+      /<a\s+href=\{ctaLink\}/,
+      'ожидалась ссылка <a href={ctaLink}> — upstream CTA (Figma/reference: кнопка-ссылка, не button без href)',
+    );
+  });
+});
+
+test('Collections (src/components/sections/Collections.astro): upstream card aspect/gap/hover сохранены', async (t) => {
+  const absPath = path.resolve(THEME_ROOT, 'src/components/sections/Collections.astro');
+  const content = await readFileOrNull(absPath);
+  assert.ok(content !== null, 'ожидался файл Collections.astro');
+
+  // Эталон — живой https://flux.merfy.ru/ (curl, 2026-07-27), секция
+  // #collections: `<a class="group flex flex-col gap-4 transition-transform
+  // duration-300 hover:-translate-y-1" data-nt="flux-category-card">
+  // <div class="aspect-square ... rounded-[12px] ...">
+  // <img class="... group-hover:scale-[1.03]" ...>`.
+  await t.test('card aspect: aspect-square — канон-дефолт (tile) эталона', () => {
+    assert.match(content, /aspect-square/, 'ожидался aspect-square (upstream card aspect ratio)');
+  });
+
+  await t.test('card gap: gap-4 на карточке (flex flex-col gap-4)', () => {
+    assert.match(
+      content,
+      /flex\s+flex-col\s+gap-4/,
+      'ожидался gap-4 между медиа и подписью карточки (upstream Collections.astro)',
+    );
+  });
+
+  await t.test('card hover: hover:-translate-y-1 на ссылке карточки', () => {
+    assert.match(
+      content,
+      /hover:-translate-y-1/,
+      'ожидался hover:-translate-y-1 на карточке (upstream hover lift)',
+    );
+  });
+
+  await t.test('card hover: group-hover:scale-[1.03] на изображении', () => {
+    assert.match(
+      content,
+      /group-hover:scale-\[1\.03\]/,
+      'ожидался group-hover:scale-[1.03] на медиа карточки (upstream hover zoom)',
+    );
+  });
+
+  await t.test('rounded-[12px] — upstream радиус плитки', () => {
+    assert.match(content, /rounded-\[12px\]/, 'ожидался rounded-[12px] (upstream card radius)');
+  });
+});

@@ -1,0 +1,780 @@
+---
+/**
+ * FeaturedProduct — секция «Товар» на главной (spec 111-flux-constructor-live-
+ * markup, Task 5). Отсутствовала на локальной главной — оживлена с нуля.
+ *
+ * Источник DOM/классов (SOURCE.lock.json, pinned upstream commit
+ * e29b70920ffe4469744386b51b9c8ee0fcf68bd0):
+ *   - src/components/sections/FeaturedProduct.astro — тонкая обёртка
+ *     `<section id="featured">` вокруг `<ProductConfigurator product={demo} />`;
+ *   - src/components/products/ProductConfigurator.astro — РЕАЛЬНАЯ разметка
+ *     (галерея слева/инфо справа desktop `hidden md:flex`, карусель mobile
+ *     `flex md:hidden`, счётчик, кнопки «Добавить в корзину»/«Купить сейчас»,
+ *     аккордеон «Описание», «Поделиться»). Файл не существовал в этом
+ *     репозитории как отдельный компонент — тело ProductConfigurator слито
+ *     СЮДА (та же разметка/классы 1:1), т.к. бриф Task 5 просит создать ровно
+ *     один новый файл, а не пару.
+ *
+ * Что ИЗМЕНЕНО относительно пина (принцип «Оживление секции» — только точки
+ * данных, не разметка):
+ *   - demo `catalogProducts[0]` заменён на канонический `Product` (theme-base
+ *     `packages/theme-base/blocks/Product/Product.puckConfig.ts`): productId/
+ *     layout/photoPosition/text/title/price/quantity/buttons/description/
+ *     share/dynamicButton/colorScheme/padding;
+ *   - добавлена подсекция «Варианты» (variants) — ЕЁ НЕ БЫЛО в пине
+ *     (комментарий верстальщиков: «Без выбора цвета/памяти — цвет задаётся
+ *     товаром»), но канонический контракт Product требует variants. Взята
+ *     разметка/стиль установленного flux-паттерна PDP
+ *     (`FluxProductDetail.astro` + `lib/storefront-hydrate.ts`
+ *     `renderVariantGroupsHtml`), НЕ придумана заново — переиспользована
+ *     готовая функция (чёрно-белые чипы, font-manrope — тот же вид, что уже
+ *     на живом PDP).
+ *   - плейсхолдер пустого состояния = Figma 1:19335 (ТОТ ЖЕ контракт, что
+ *     `FluxProductDetail.astro`: /placeholders/sweater-blue-large.svg,
+ *     «Новая коллекция!», «Товар», «2 500 ₽») — НЕ upstream demo-товар
+ *     («M Phone 17» и т.п.), это установленный flux-паттерн gating.
+ *   - quantity/add-to-cart используют существующий cart runtime
+ *     (`data-add-to-cart` → глобальный делегат `initCartUI` из
+ *     `lib/cart.ts` → `lib/nt-cart-flux.ts`, подключён в Layout.astro — сам
+ *     клик обрабатывать не нужно).
+ *   - GSAP-анимация аккордеона (upstream) заменена на простой class-toggle:
+ *     ни одна другая секция flux не импортирует gsap напрямую в компонент
+ *     (только `lib/animations.ts` — глобальный `[data-reveal]` scroll-reveal,
+ *     который эта секция получает бесплатно через тот же атрибут на
+ *     контейнере, без импорта).
+ *   - "uid" проп ProductConfigurator (никогда не читался скриптом по
+ *     значению, только как маркер-селектор) убран как мёртвый — заменён на
+ *     обычные boolean data-атрибуты.
+ *
+ * SSR-резолв реального товара (siteId+productId → sites-service
+ * storefront-data) — паритет Popular/Collections/theme-base Product.astro:
+ * Astro Container (превью-рендер `/preview/block`) не исполняет клиентскую
+ * module-гидрацию ниже, поэтому без SSR превью выбранного товара показывало
+ * бы плейсхолдер даже при реальном productId. Живой сайт освежает данные
+ * клиентским скриптом (loadRealProducts, тот же каскад источников, что
+ * Popular/FluxProductDetail).
+ */
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import FluxPicture from "../img/FluxPicture.astro";
+import {
+	deriveVariantGroups,
+	findCombination,
+	renderVariantGroupsHtml,
+	renderVariantSelectsHtml,
+	formatPrice,
+	productHref,
+} from "../../lib/storefront-hydrate";
+
+const p = Astro.props as Record<string, any>;
+const id = p.id;
+const siteId = typeof p.siteId === "string" ? p.siteId : "";
+
+// Figma 1:19335 — ТОТ ЖЕ контракт пустого состояния, что FluxProductDetail.astro
+// (PDP). Товар не выбран мерчантом / не резолвится → рендерим ЭТОТ дизайн, а не
+// upstream demo-товар верстальщиков.
+const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue-large.svg";
+const PLACEHOLDER_BRAND = "Новая коллекция!";
+const PLACEHOLDER_NAME = "Товар";
+const PLACEHOLDER_PRICE = "2 500 ₽";
+
+const productIdRef = typeof p.productId === "string" ? p.productId.trim() : "";
+
+// Layout switch (Figma 648:55733 семантика, канон theme-base Product.puckConfig).
+// Upstream ProductConfigurator реализует ОДИН макет (главное фото + ряд миниатюр
+// снизу, ближе всего к 'carousel'). Полноценные 'two-columns'/'split' сетки —
+// вне бюджета этой задачи (не в контракте Step 1); 'stacked' — единственный
+// дешёвый и осмысленный альтернативный рендер (миниатюры сеткой 3×N вместо
+// скролл-ленты), остальные значения используют дефолтный ряд.
+const layoutRaw = typeof p.layout === "string" ? p.layout : "";
+const layout = layoutRaw === "stacked" ? "stacked" : "carousel";
+const photoPosition = p.photoPosition === "right" ? "right" : "left";
+const photoOnLeft = photoPosition !== "right";
+
+// SSR-резолв: товар ВЫБРАН мерчантом → тянем реальные данные ПРЯМО в статике
+// (паритет Popular.astro/Collections.astro SITES_INTERNAL_BASE fetch).
+let realProduct: any = null;
+if (productIdRef && siteId) {
+	try {
+		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
+		const qs = `?product=${encodeURIComponent(productIdRef)}`;
+		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data${qs}`).catch(() => null);
+		if (res && res.ok) {
+			const data: any = await res.json();
+			realProduct =
+				data?.product ??
+				(Array.isArray(data?.products)
+					? data.products.find(
+							(x: any) => x && (x.id === productIdRef || x.slug === productIdRef || x.handle === productIdRef),
+						) ?? data.products[0] ?? null
+					: null);
+		}
+	} catch {
+		realProduct = null;
+	}
+}
+const isPlaceholder = !realProduct;
+
+// — Текст (canon "text" — брендлайн над названием). Мерчантский текст ВСЕГДА
+//   приоритетнее плейсхолдера/реального brand (паритет theme-base Product.astro
+//   textContent ?? badge?.text, brandText = textContent || view.brand). —
+const textContent = (typeof p.text === "string" ? p.text : p.text?.content) ?? p.badge?.text ?? "";
+const displayBrand =
+	textContent || (isPlaceholder ? PLACEHOLDER_BRAND : realProduct.collection || realProduct.brand || realProduct.vendor || "");
+
+const displayName = isPlaceholder ? PLACEHOLDER_NAME : realProduct.name || realProduct.title || PLACEHOLDER_NAME;
+
+// — Варианты: peреиспользуем storefront-hydrate.ts (без дублирования логики).
+const combos: any[] = isPlaceholder
+	? []
+	: Array.isArray(realProduct.variantCombinations)
+		? realProduct.variantCombinations
+		: Array.isArray(realProduct.variants)
+			? realProduct.variants
+			: [];
+const hasVariants = combos.length > 0;
+const variantGroups = hasVariants ? deriveVariantGroups(combos) : [];
+let selectedOptions: Record<string, string> = {};
+if (hasVariants) {
+	const firstAvailable = combos.find((c: any) => c && c.available !== false) ?? combos[0];
+	selectedOptions = { ...(firstAvailable.options || {}) };
+}
+const activeCombo = hasVariants ? findCombination(combos, selectedOptions) : null;
+// Figma 1:21431 — «Стиль» (variants.displayStyle): button = чипы (дефолт),
+// list = выпадающий <select> (canon theme-base Product.puckConfig; "Вариации"
+// shape circle/square/none — форма свотча — здесь не применима: и upstream
+// pin, и переиспользуемый render*Html не рисуют цветные свотчи, только
+// текстовые чипы/список, поэтому shape не влияет на рендер этой секции).
+const variantsDisplayStyle = p.variants?.displayStyle === "list" ? "list" : "button";
+const variantsHtml = hasVariants
+	? variantsDisplayStyle === "list"
+		? renderVariantSelectsHtml(variantGroups, selectedOptions)
+		: renderVariantGroupsHtml(variantGroups, selectedOptions)
+	: "";
+
+function pickOpt(opts: Record<string, string> | undefined, keys: string[]): string {
+	for (const k of keys) if (opts && opts[k] != null) return opts[k];
+	return "";
+}
+const cartColor = pickOpt(selectedOptions, ["Цвет", "Color"]);
+const cartSize = pickOpt(selectedOptions, ["Размер", "Size"]);
+
+function toNum(v: unknown): number | null {
+	if (v === null || v === undefined || v === "") return null;
+	if (typeof v === "number") return Number.isFinite(v) ? v : null;
+	const n = parseFloat(String(v).replace(/[^\d.]/g, ""));
+	return Number.isFinite(n) ? n : null;
+}
+
+// — Цена: активная комбинация (если положительная) перебивает базовую цену
+//   товара (паритет theme-base/FluxProductDetail applyCombo). —
+const comboPriceRaw =
+	activeCombo && toNum(activeCombo.price) && toNum(activeCombo.price)! > 0
+		? activeCombo.price
+		: (realProduct?.price ?? realProduct?.basePrice);
+const comboOldRaw = (activeCombo && activeCombo.compareAtPrice) || realProduct?.oldPrice || realProduct?.compareAtPrice || null;
+
+const displayPrice = isPlaceholder ? PLACEHOLDER_PRICE : formatPrice(comboPriceRaw) || PLACEHOLDER_PRICE;
+const displayOldPrice = isPlaceholder ? "" : formatPrice(comboOldRaw);
+
+const priceNumForBadge = toNum(comboPriceRaw);
+const oldNumForBadge = toNum(comboOldRaw);
+const salePercentText =
+	!isPlaceholder && oldNumForBadge && priceNumForBadge && oldNumForBadge > priceNumForBadge
+		? `-${Math.round(((oldNumForBadge - priceNumForBadge) / oldNumForBadge) * 100)}%`
+		: "";
+const showBadges = !!salePercentText;
+
+// — Галерея. thumbs = первые 5 фото ВКЛЮЧАЯ главное (буквально как в пине:
+//   `const [mainImage] = gallery; const thumbs = gallery.slice(0, 5);`). —
+const realImages: string[] = isPlaceholder
+	? []
+	: Array.isArray(realProduct.images)
+		? realProduct.images.filter((x: unknown) => typeof x === "string" && x)
+		: [];
+const galleryImages = realImages.length > 0 ? realImages : [PLACEHOLDER_IMAGE];
+const [mainImage] = galleryImages;
+const thumbs = galleryImages.slice(0, 5);
+const href = isPlaceholder ? "/catalog" : productHref(realProduct);
+
+const thumbsTrackCls =
+	layout === "stacked" ? "grid grid-cols-3 gap-3" : "no-scrollbar flex flex-1 items-center gap-3 overflow-x-auto";
+
+// — Количество: canon quantity.enabled (object) + плоский legacy-алиас
+//   showQuantity (dual-support паттерн, единый для секций flux). —
+const quantityEnabledRaw =
+	p.quantity && typeof p.quantity === "object" ? p.quantity.enabled : (p.showQuantity ?? p.quantity);
+const quantityVisible = quantityEnabledRaw !== false && quantityEnabledRaw !== "false";
+
+// — Кнопки: «Основная» (buttons.addToCart.text, пусто = скрыть) + «Динамическая»
+//   (dynamicButton toggle, дефолт показана) — канон theme-base Product.astro. —
+const addBtnTextRaw = p.buttons?.addToCart?.text;
+const addBtnText = addBtnTextRaw === undefined ? "Добавить в корзину" : addBtnTextRaw;
+const showAddToCart = String(addBtnText).trim() !== "";
+const buyBtnText = "Купить сейчас";
+const dynRaw = p.dynamicButton && typeof p.dynamicButton === "object" ? p.dynamicButton.enabled : p.dynamicButton;
+const showBuyNow = dynRaw !== "false" && dynRaw !== false;
+
+// — Описание: canon disabledHint-поле (контент ТОЛЬКО из реального товара,
+//   мерчант его не редактирует) + visualConfig.showDescription/showDescription
+//   плоский алиас (дефолт true — DEFAULT_VISUAL_CONFIG.showDescription). —
+const showDescRaw =
+	p.visualConfig && typeof p.visualConfig.showDescription === "boolean" ? p.visualConfig.showDescription : p.showDescription;
+const descriptionEnabled = showDescRaw !== false;
+const description = isPlaceholder ? "" : realProduct.description || realProduct.metaDescription || "";
+const hasDescription = descriptionEnabled && !isPlaceholder && !!description.trim();
+
+const shareText = typeof p.share?.text === "string" && p.share.text.trim() ? p.share.text : "Поделиться";
+
+// — Cart-атрибуты (declarative, глобальный делегат initCartUI/lib/cart.ts). —
+const cartProductId = (realProduct && realProduct.id) || productIdRef || "";
+const addToCartAttrs = {
+	"data-add-to-cart": true,
+	"data-product-id": cartProductId,
+	"data-name": displayName,
+	"data-price": displayPrice,
+	"data-old-price": displayOldPrice || "",
+	"data-image": mainImage,
+	"data-variant-color": cartColor,
+	"data-variant-size": cartSize,
+	"data-variant-combination-id": activeCombo?.id || "",
+	"data-quantity": "1",
+};
+
+// — Цветовая схема + отступы (канон Product.puckConfig colorScheme/padding,
+//   паттерн CartSection.astro/Footer flux). —
+const paddingStyle = p.padding
+	? `padding-top:${Math.min(Number(p.padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(p.padding.bottom) || 0, 160)}px;`
+	: undefined;
+const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-", "")}`;
+---
+
+<section
+	id="featured"
+	class:list={["w-full bg-white", schemeClass]}
+	aria-label={displayName}
+	data-puck-component-id={id}
+	data-block="featured-product"
+	data-site-id={siteId}
+	data-product-id={cartProductId}
+>
+	<div class:list={["flux-container", paddingStyle ? "" : "py-10 md:py-16"]} style={paddingStyle} data-reveal>
+		<!-- ============================= DESKTOP (≥768px) ============================= -->
+		<div
+			class:list={[
+				"hidden w-full flex-col items-start gap-8 md:flex lg:flex-row lg:justify-between lg:gap-10",
+				photoOnLeft ? "" : "lg:flex-row-reverse",
+			]}
+			data-nt="product-configurator"
+		>
+			<!-- Изображения -->
+			<div class="flex w-full flex-col gap-4 lg:w-[652px] lg:min-w-0">
+				<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+					{isPlaceholder ? (
+						<img src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
+					) : (
+						<FluxPicture src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
+					)}
+				</a>
+				{thumbs.length > 1 && (
+					<div class="flex items-center gap-3">
+						<div class={thumbsTrackCls} data-cfg-thumbs-track>
+							{thumbs.map((img, i) => (
+								<button
+									type="button"
+									class:list={[
+										"size-[88px] shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] transition-opacity hover:opacity-90 md:size-[120px]",
+										i === 0 ? "border border-solid border-[#1e2952]/50" : "",
+									]}
+									data-cfg-thumb
+									data-image={img}
+									aria-label="Показать изображение"
+								>
+									<FluxPicture src={img} alt={displayName} width="120" height="120" loading="eager" class="h-full w-full object-cover" />
+								</button>
+							))}
+						</div>
+						{thumbs.length >= 5 && layout !== "stacked" && (
+							<button type="button" class="flex size-11 shrink-0 items-center justify-center transition-opacity hover:opacity-70" data-cfg-thumbs-next aria-label="Следующие изображения">
+								<NtIcon name="arrow-slide-right" sizeClass="size-6" />
+							</button>
+						)}
+					</div>
+				)}
+			</div>
+
+			<!-- Блок -->
+			<div class="flex w-full flex-col gap-10 lg:w-[628px] lg:min-w-0">
+				<!-- Текст -->
+				<div class="flex flex-col gap-2">
+					{displayBrand && (
+						<p
+							class="font-roboto-flex text-[14px] font-light uppercase leading-normal text-[#999999] md:text-[16px]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="text"
+						>
+							{displayBrand}
+						</p>
+					)}
+					<h2
+						class="font-roboto-flex text-[20px] font-light uppercase leading-normal text-[#000000] md:text-[24px]"
+						data-cfg-name
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="title"
+					>
+						{displayName}
+					</h2>
+					<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
+						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000] md:text-[20px]" data-cfg-price>
+							{displayPrice}
+						</span>
+						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[#999999] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
+							{displayOldPrice}
+						</span>
+					</div>
+				</div>
+
+				<!-- Варианты (НЕ было в pin — добавлено по канон-контракту Product, стиль
+				     переиспользован из установленного PDP-паттерна renderVariantGroupsHtml). -->
+				<div
+					class="flex flex-col gap-4"
+					data-cfg-variants
+					data-variants-style={variantsDisplayStyle}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="103"
+					data-puck-subsection-field="variants"
+					hidden={!hasVariants}
+					set:html={variantsHtml}
+				/>
+
+				<!-- Счётчик -->
+				{quantityVisible && (
+					<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
+						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
+							<NtIcon name="minus" sizeClass="size-4" />
+						</button>
+						<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[#1e2952]" data-cfg-qty-value>1</span>
+						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
+							<NtIcon name="plus" sizeClass="size-4" />
+						</button>
+					</div>
+				)}
+
+				<!-- Кнопки -->
+				{(showAddToCart || showBuyNow) && (
+					<div class="flex flex-col gap-3" data-puck-subsection-parent={id} data-puck-subsection-index="105" data-puck-subsection-field="buttons">
+						{showAddToCart && (
+							<button
+								type="button"
+								data-cfg-add
+								{...addToCartAttrs}
+								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[#1e2952] bg-white px-6 font-roboto-flex text-[16px] font-light uppercase leading-none text-[#1e2952] transition-colors hover:bg-[#1e2952] hover:text-white"
+							>
+								{addBtnText}
+							</button>
+						)}
+						{showBuyNow && (
+							<button
+								type="button"
+								data-cfg-buy
+								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[#1e2952] px-6 font-roboto-flex text-[16px] font-light uppercase leading-none text-white transition-opacity hover:opacity-90"
+							>
+								{buyBtnText}
+							</button>
+						)}
+					</div>
+				)}
+
+				<!-- Описание (аккордеон) -->
+				{hasDescription && (
+					<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
+						<button type="button" class="flex min-h-11 w-full items-center justify-between gap-2 text-left" data-cfg-spec-toggle aria-expanded="false">
+							<span class="font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[#000000]">Описание</span>
+							<NtIcon name="plus" sizeClass="size-6" />
+						</button>
+						<div class="hidden pt-2" data-cfg-spec-body>
+							<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]">{description}</p>
+						</div>
+					</div>
+				)}
+
+				<!-- Поделиться -->
+				<button
+					type="button"
+					data-cfg-share
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="107"
+					data-puck-subsection-field="share"
+					class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light uppercase leading-normal text-[#000000] transition-opacity hover:opacity-70"
+					aria-label={shareText}
+				>
+					<NtIcon name="share" sizeClass="size-6" />
+					<span>{shareText}</span>
+				</button>
+			</div>
+		</div>
+
+		<!-- ============================= MOBILE (<768px) ============================= -->
+		<div class="flex w-full flex-col gap-6 md:hidden" data-nt="product-configurator">
+			<!-- Фото: карусель + бейджи -->
+			<div class="relative w-full" data-cfg-carousel data-cfg-images={galleryImages.join("|")}>
+				<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+					{isPlaceholder ? (
+						<img src={mainImage} alt={displayName} width="343" height="343" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
+					) : (
+						<FluxPicture src={mainImage} alt={displayName} width="343" height="343" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
+					)}
+				</a>
+
+				{showBadges && (
+					<div class="absolute left-[18px] top-1 flex flex-col items-start gap-1">
+						<span class="inline-flex items-center justify-center rounded-[2px] bg-[#1e2952] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white">{salePercentText}</span>
+					</div>
+				)}
+
+				{galleryImages.length > 1 && (
+					<>
+						<button type="button" class="absolute left-2 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center transition-opacity hover:opacity-70" data-cfg-prev aria-label="Предыдущее изображение">
+							<NtIcon name="arrow-slide-left" sizeClass="size-6" />
+						</button>
+						<button type="button" class="absolute right-2 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center transition-opacity hover:opacity-70" data-cfg-next aria-label="Следующее изображение">
+							<NtIcon name="arrow-slide-right" sizeClass="size-6" />
+						</button>
+					</>
+				)}
+			</div>
+
+			<!-- Текст -->
+			<div class="flex flex-col gap-2">
+				{displayBrand && (
+					<p class="font-roboto-flex text-[14px] font-light uppercase leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text">
+						{displayBrand}
+					</p>
+				)}
+				<h2 class="font-roboto-flex text-[19px] font-light uppercase leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
+					{displayName}
+				</h2>
+				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
+					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000]" data-cfg-price>{displayPrice}</span>
+					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[#999999] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
+				</div>
+			</div>
+
+			<!-- Варианты -->
+			<div
+				class="flex flex-col gap-4"
+				data-cfg-variants
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="103"
+				data-puck-subsection-field="variants"
+				hidden={!hasVariants}
+				set:html={variantsHtml}
+			/>
+
+			<!-- Счётчик -->
+			{quantityVisible && (
+				<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
+					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
+						<NtIcon name="minus" sizeClass="size-4" />
+					</button>
+					<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[#1e2952]" data-cfg-qty-value>1</span>
+					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
+						<NtIcon name="plus" sizeClass="size-4" />
+					</button>
+				</div>
+			)}
+
+			<!-- Кнопки -->
+			{(showAddToCart || showBuyNow) && (
+				<div class="flex flex-col gap-3" data-puck-subsection-parent={id} data-puck-subsection-index="105" data-puck-subsection-field="buttons">
+					{showAddToCart && (
+						<button
+							type="button"
+							data-cfg-add
+							{...addToCartAttrs}
+							class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[#1e2952] bg-white px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[#1e2952] transition-colors hover:bg-[#1e2952] hover:text-white"
+						>
+							{addBtnText}
+						</button>
+					)}
+					{showBuyNow && (
+						<button type="button" data-cfg-buy class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[#1e2952] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-white transition-opacity hover:opacity-90">
+							{buyBtnText}
+						</button>
+					)}
+				</div>
+			)}
+
+			<!-- Описание (аккордеон) -->
+			{hasDescription && (
+				<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
+					<button type="button" class="flex w-full items-center justify-between gap-2 text-left" data-cfg-spec-toggle aria-expanded="false">
+						<span class="font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[#000000]">Описание</span>
+						<NtIcon name="plus" sizeClass="size-6" />
+					</button>
+					<div class="hidden pt-2" data-cfg-spec-body>
+						<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999]">{description}</p>
+					</div>
+				</div>
+			)}
+
+			<!-- Поделиться -->
+			<button
+				type="button"
+				data-cfg-share
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="107"
+				data-puck-subsection-field="share"
+				class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light uppercase leading-normal text-[#000000] transition-opacity hover:opacity-70"
+				aria-label={shareText}
+			>
+				<NtIcon name="share" sizeClass="size-6" />
+				<span>{shareText}</span>
+			</button>
+		</div>
+	</div>
+</section>
+
+<script>
+	// Оживление секции (общее для desktop+mobile деревьев, каждое своё —
+	// паттерн 1:1 с upstream ProductConfigurator: forEach по
+	// [data-nt="product-configurator"], счётчик/галерея/аккордеон/поделиться
+	// независимы в каждом дереве). ЖИВОЙ рефреш данных (loadRealProducts) —
+	// тот же каскад источников, что Popular.astro/FluxProductDetail.astro;
+	// вызывается ОДИН раз на секцию (siteId у секции только один инстанс,
+	// maxInstances:1), затем применяется к обоим деревьям.
+	import {
+		loadRealProducts,
+		formatPrice,
+		deriveVariantGroups,
+		findCombination,
+		renderVariantGroupsHtml,
+		renderVariantSelectsHtml,
+	} from "../../lib/storefront-hydrate";
+
+	function pick(opts: Record<string, string> | undefined, keys: string[]): string {
+		for (const k of keys) if (opts && opts[k] != null) return opts[k];
+		return "";
+	}
+
+	async function hydrateFeaturedProduct() {
+		const section = document.querySelector<HTMLElement>('[data-block="featured-product"]');
+		if (!section) return;
+
+		const ref = section.getAttribute("data-product-id") || "";
+
+		// UI-интерактивность (счётчик/миниатюры/карусель/аккордеон/поделиться)
+		// работает НЕЗАВИСИМО от живых данных — вешаем всегда, на то, что уже
+		// отрендерил SSR (плейсхолдер или SSR-резолв превью).
+		const cfgs = Array.from(section.querySelectorAll<HTMLElement>('[data-nt="product-configurator"]'));
+
+		let liveProduct: any = null;
+		if (ref) {
+			try {
+				const products = await loadRealProducts();
+				if (products) {
+					liveProduct = products.find((x: any) => x && (x.id === ref || x.slug === ref || x.handle === ref)) ?? null;
+				}
+			} catch {
+				liveProduct = null;
+			}
+		}
+
+		for (const cfg of cfgs) {
+			const mainImg = cfg.querySelector<HTMLImageElement>("[data-cfg-main]");
+			const nameEl = cfg.querySelector<HTMLElement>("[data-cfg-name]");
+			const priceEl = cfg.querySelector<HTMLElement>("[data-cfg-price]");
+			const oldPriceEl = cfg.querySelector<HTMLElement>("[data-cfg-oldprice]");
+			const addBtn = cfg.querySelector<HTMLButtonElement>("[data-cfg-add]");
+			const buyBtn = cfg.querySelector<HTMLButtonElement>("[data-cfg-buy]");
+			const variantsWrap = cfg.querySelector<HTMLElement>("[data-cfg-variants]");
+			const qtyValEl = cfg.querySelector<HTMLElement>("[data-cfg-qty-value]");
+
+			// ── Живой рефреш (только если реальный товар найден клиентским фетчем). ──
+			let combos: any[] = [];
+			let groups: { name: string; values: string[] }[] = [];
+			let selected: Record<string, string> = {};
+
+			if (liveProduct) {
+				if (nameEl) nameEl.textContent = liveProduct.name || nameEl.textContent || "";
+				if (mainImg && Array.isArray(liveProduct.images) && liveProduct.images[0]) {
+					mainImg.setAttribute("src", liveProduct.images[0]);
+				}
+				combos = Array.isArray(liveProduct.variantCombinations) ? liveProduct.variantCombinations : [];
+				if (combos.length) {
+					groups = deriveVariantGroups(combos);
+					const firstAvailable = combos.find((c: any) => c && c.available !== false) ?? combos[0];
+					selected = { ...(firstAvailable.options || {}) };
+				}
+			}
+
+			function activeCombo() {
+				return combos.length ? findCombination(combos, selected) : null;
+			}
+
+			function applyCombo() {
+				const combo = activeCombo();
+				const priceVal = combo && Number(combo.price) > 0 ? combo.price : liveProduct ? (liveProduct.price ?? liveProduct.basePrice) : null;
+				const oldVal = (combo && combo.compareAtPrice) || (liveProduct && (liveProduct.oldPrice ?? liveProduct.compareAtPrice)) || null;
+				if (liveProduct) {
+					const priceStr = formatPrice(priceVal);
+					const oldStr = formatPrice(oldVal);
+					if (priceEl) priceEl.textContent = priceStr;
+					if (oldPriceEl) {
+						oldPriceEl.textContent = oldStr;
+						oldPriceEl.hidden = !oldStr;
+					}
+					if (addBtn) {
+						addBtn.setAttribute("data-price", priceStr);
+						addBtn.setAttribute("data-old-price", oldStr);
+						addBtn.setAttribute("data-name", liveProduct.name || "");
+						addBtn.setAttribute("data-product-id", liveProduct.id || ref);
+						if (mainImg?.getAttribute("src")) addBtn.setAttribute("data-image", mainImg.getAttribute("src")!);
+					}
+				}
+				const available = combo ? combo.available !== false && (combo.quantity == null || Number(combo.quantity) > 0) : true;
+				for (const btn of [addBtn, buyBtn]) {
+					if (!btn) continue;
+					btn.disabled = !available;
+					btn.classList.toggle("opacity-50", !available);
+					btn.classList.toggle("pointer-events-none", !available);
+				}
+				if (addBtn) {
+					addBtn.setAttribute("data-variant-combination-id", (combo && combo.id) || "");
+					addBtn.setAttribute("data-variant-color", pick(selected, ["Цвет", "Color"]));
+					addBtn.setAttribute("data-variant-size", pick(selected, ["Размер", "Size"]));
+				}
+			}
+
+			// displayStyle (variants.displayStyle, canon Product.puckConfig "Стиль")
+			// проставлен на wrap SSR-стороной — читаем, чтобы живой рефреш
+			// перерисовывал ТЕМ ЖЕ режимом (чипы или <select>), а не молча
+			// переключался на дефолт.
+			const isListStyle = variantsWrap?.getAttribute("data-variants-style") === "list";
+			const renderVariants = (gs: { name: string; values: string[] }[], sel: Record<string, string>) =>
+				isListStyle ? renderVariantSelectsHtml(gs, sel) : renderVariantGroupsHtml(gs, sel);
+
+			if (variantsWrap && groups.length) {
+				variantsWrap.hidden = false;
+				variantsWrap.innerHTML = renderVariants(groups, selected);
+				variantsWrap.onclick = (e) => {
+					const target = e.target as HTMLElement;
+					const btn = target.closest<HTMLElement>("[data-variant-value]");
+					if (!btn) return;
+					const groupEl = btn.closest<HTMLElement>("[data-pdp-variant-group]");
+					const group = groupEl?.getAttribute("data-pdp-variant-group");
+					const value = btn.getAttribute("data-variant-value");
+					if (!group || value == null) return;
+					selected[group] = value;
+					variantsWrap.innerHTML = renderVariants(groups, selected);
+					applyCombo();
+				};
+				variantsWrap.onchange = (e) => {
+					const target = e.target as HTMLElement;
+					const select = target.closest<HTMLSelectElement>("[data-variant-select]");
+					if (!select) return;
+					const group = select.getAttribute("data-variant-key");
+					if (!group) return;
+					selected[group] = select.value;
+					applyCombo();
+				};
+			}
+			if (combos.length || liveProduct) applyCombo();
+
+			// ── Миниатюры → главное фото (обмен, как в SSR-шаблоне). ──
+			cfg.querySelectorAll<HTMLButtonElement>("[data-cfg-thumb]").forEach((thumb) => {
+				thumb.addEventListener("click", () => {
+					const src = thumb.dataset.image;
+					if (mainImg && src) mainImg.setAttribute("src", src);
+					cfg.querySelectorAll("[data-cfg-thumb]").forEach((t) => t.classList.remove("border", "border-solid", "border-[#1e2952]/50"));
+					thumb.classList.add("border", "border-solid", "border-[#1e2952]/50");
+				});
+			});
+
+			// Стрелка ленты миниатюр (шаг = миниатюра 120px + gap 12px).
+			const track = cfg.querySelector<HTMLElement>("[data-cfg-thumbs-track]");
+			cfg.querySelector<HTMLButtonElement>("[data-cfg-thumbs-next]")?.addEventListener("click", () => {
+				if (!track) return;
+				const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+				track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + 132, behavior: "smooth" });
+			});
+
+			// Мобильная карусель (prev/next меняют главное фото).
+			const carousel = cfg.querySelector<HTMLElement>("[data-cfg-carousel]");
+			if (carousel) {
+				const slides = (carousel.dataset.cfgImages || "").split("|").filter(Boolean);
+				let idx = 0;
+				const go = (delta: number) => {
+					if (slides.length < 2) return;
+					idx = (idx + delta + slides.length) % slides.length;
+					if (mainImg) mainImg.setAttribute("src", slides[idx]);
+				};
+				carousel.querySelector<HTMLButtonElement>("[data-cfg-prev]")?.addEventListener("click", () => go(-1));
+				carousel.querySelector<HTMLButtonElement>("[data-cfg-next]")?.addEventListener("click", () => go(1));
+			}
+
+			// Счётчик количества → синкаем data-quantity на кнопки корзины.
+			const syncQty = (n: number) => {
+				if (qtyValEl) qtyValEl.textContent = String(n);
+				if (addBtn) addBtn.setAttribute("data-quantity", String(n));
+			};
+			cfg.querySelector<HTMLButtonElement>("[data-cfg-qty-dec]")?.addEventListener("click", () => {
+				syncQty(Math.max(1, Number(qtyValEl?.textContent || 1) - 1));
+			});
+			cfg.querySelector<HTMLButtonElement>("[data-cfg-qty-inc]")?.addEventListener("click", () => {
+				syncQty(Number(qtyValEl?.textContent || 1) + 1);
+			});
+
+			// «Купить сейчас» — как в пине: добавляем в корзину (клик по добавить),
+			// затем переходим в /cart (упрощённый upstream-путь, НЕ express-чекаут
+			// FluxProductDetail — это ДРУГАЯ секция/страница со своим контрактом).
+			cfg.querySelector<HTMLButtonElement>("[data-cfg-buy]")?.addEventListener("click", () => {
+				if (addBtn && !addBtn.disabled) addBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+				window.location.href = "/cart";
+			});
+
+			// Аккордеон описания — простой class-toggle (без gsap: ни одна другая
+			// секция flux не импортирует gsap напрямую в компонент).
+			cfg.querySelectorAll<HTMLElement>("[data-cfg-spec]").forEach((spec) => {
+				const toggle = spec.querySelector<HTMLButtonElement>("[data-cfg-spec-toggle]");
+				const body = spec.querySelector<HTMLElement>("[data-cfg-spec-body]");
+				const icon = toggle?.querySelector<HTMLImageElement>("img");
+				if (!toggle || !body) return;
+				toggle.addEventListener("click", () => {
+					const wasOpen = toggle.getAttribute("aria-expanded") === "true";
+					const open = !wasOpen;
+					toggle.setAttribute("aria-expanded", open ? "true" : "false");
+					body.classList.toggle("hidden", !open);
+					if (icon) icon.src = icon.src.replace(/\/(plus|minus)\.svg/, open ? "/minus.svg" : "/plus.svg");
+				});
+			});
+
+			// Поделиться: clipboard/navigator.share + временная подпись.
+			const shareBtn = cfg.querySelector<HTMLButtonElement>("[data-cfg-share]");
+			const shareLabel = shareBtn?.querySelector<HTMLElement>("span");
+			shareBtn?.addEventListener("click", async () => {
+				const url = location.href;
+				try {
+					if (navigator.share) {
+						await navigator.share({ title: document.title, url });
+						return;
+					}
+					await navigator.clipboard.writeText(url);
+				} catch {
+					/* пользователь отменил / нет доступа к clipboard */
+				}
+				if (shareLabel) {
+					const orig = shareLabel.textContent;
+					shareLabel.textContent = "Ссылка скопирована!";
+					setTimeout(() => {
+						shareLabel.textContent = orig;
+					}, 1500);
+				}
+			});
+		}
+	}
+
+	hydrateFeaturedProduct();
+	document.addEventListener("astro:page-load", hydrateFeaturedProduct);
+</script>

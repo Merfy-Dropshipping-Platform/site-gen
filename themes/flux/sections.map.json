@@ -3,6 +3,7 @@
   "Header": "src/components/Header.astro",
   "Hero": "src/components/sections/Hero.astro",
   "Collections": "src/components/sections/Collections.astro",
+  "Product": "src/components/sections/FeaturedProduct.astro",
   "PopularProducts": "src/components/sections/Popular.astro",
   "Gallery": "src/components/sections/Gallery.astro",
   "Footer": "src/components/Footer.astro",

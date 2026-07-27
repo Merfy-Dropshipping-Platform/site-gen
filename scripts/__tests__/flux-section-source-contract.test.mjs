@@ -382,6 +382,15 @@ const BLOCKS = [
           /p\.description\b/,
         ],
       },
+      // Task 5 brief Step 1 расширяет матрицу: variants, add-to-cart, share
+      // (productId/layout/photoPosition/quantity/description уже были покрыты
+      // выше до Task 5 — см. историю файла).
+      { key: 'variants', patterns: [/p\.variants\b/] },
+      // add-to-cart — не проп-имя, а declarative cart-wiring контракт (canon
+      // паттерн nt-cart delegate: `[data-add-to-cart]` + data-* атрибуты,
+      // используемый всеми секциями flux с корзиной — Popular/FluxProductDetail).
+      { key: 'add-to-cart', patterns: [/data-add-to-cart/] },
+      { key: 'share', patterns: [/p\.share\b/] },
     ],
     // Product.puckConfig не объявляет type:'array' полей.
     subsectionFields: [],

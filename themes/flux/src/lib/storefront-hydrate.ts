@@ -713,3 +713,32 @@ export function renderVariantGroupsHtml(
 		})
 		.join("");
 }
+
+/**
+ * HTML-разметка групп вариантов как `<select>`-дропдаунов — альтернативный
+ * displayStyle="list" канон-поля `variants.displayStyle` (theme-base
+ * `Product.puckConfig` "Стиль" радио: Кнопка/Список). Marker
+ * `data-variant-select` + `data-variant-key` (group name) — контракт
+ * потребляется тем же делегатом, что хендлит `[data-variant-value]` chips
+ * (FeaturedProduct.astro / FluxProductDetail.astro), просто другой DOM-узел
+ * (`change`, не `click`).
+ */
+export function renderVariantSelectsHtml(
+	groups: VariantGroup[],
+	selected: Record<string, string>,
+): string {
+	return groups
+		.map((g) => {
+			const options = g.values
+				.map((v) => {
+					const isSel = selected[g.name] === v;
+					return `<option value="${escapeHtml(v)}"${isSel ? " selected" : ""}>${escapeHtml(v)}</option>`;
+				})
+				.join("");
+			return `<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="${escapeHtml(g.name)}">
+	<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">${escapeHtml(g.name)}</span>
+	<select class="h-10 w-full rounded-[6px] border border-solid border-[#000000] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] outline-none" data-variant-select data-variant-key="${escapeHtml(g.name)}" aria-label="${escapeHtml(g.name)}">${options}</select>
+</div>`;
+		})
+		.join("");
+}

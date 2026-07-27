@@ -1,24 +1,22 @@
 ---
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-
-// ОЖИВЛЕНИЕ (Фаза B, контракт bloom Gallery): конструкторная схема theme-base
-// Gallery.puckConfig поверх разметки верстальщика. Тело + demo-данные verbatim
-// (страницы зовут <Gallery /> без пропсов — дефолт-ветка даёт прежний рендер,
-// Gallery.astro:12-84 дословно). Подзаголовок у flux в литерале ЕСТЬ
-// (инверсия bloom) — рендерится и дефолтом. Канон-дефолты конструктора
-// (headingSize/textSize medium → у flux размер шапки задаёт DS-литерал,
-// imagePosition left) → пиксель верстальщика; цвета → токены с
-// пиксель-фоллбеком родных литералов (MANNER.md §7). Скролл-анимаций нет —
+// ОЖИВЛЕНИЕ (контракт rose Gallery / flux Popular,Collections): полная
+// конструкторная схема theme-base Gallery.puckConfig поверх ВЁРСТКИ
+// ВЕРСТАЛЬЩИКОВ (репо flux-theme Gallery.astro: крупная плитка слева
+// lg:grid-cols-[1fr_429px] + правая колонка карточек, ВСЁ font-roboto-flex
+// font-light, плитки rounded-[8/12px], aspect-square / aspect-[429/314]).
+// НЕ DS-компонент-шапка (он рендерил Comfortaa h2 / Manrope подзаголовок —
+// мимо манеры flux): шапка = простой <h2>/<p> font-roboto-flex (как
+// Popular/Collections). Канон-дефолты конструктора (headingSize/textSize medium →
+// эталон, imagePosition left → большая плитка слева) дают пиксель верстальщика;
+// цвета → токены с пиксель-фоллбеком (MANNER.md §7). Скролл-анимаций нет —
 // манера flux статична (MANNER.md §6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустое состояние (Figma 1:19335, контракт Gallery) — ДОСЛОВНЫЙ плейсхолдер:
 // заголовок «Галерея», БЕЗ подзаголовка (в контракте Gallery подзаголовка нет →
-// дефолт пуст). Дефолт-текст верстальщика («Вдохновение в деталях» + болванка
-// «Технологии, которые приятно держать в руках…») заменён на Figma-текст.
-// Заданный мерчантом heading/text/subtitle рендерится как есть (?? fallback
-// срабатывает только при пустых данных); пустой subtitle → NtSectionHeading его
-// не выводит.
+// дефолт пуст). Заданный мерчантом heading/text/subtitle рендерится как есть
+// (?? fallback срабатывает только при пустых данных); пустой subtitle →
+// блок <p> не выводится.
 const sectionTitle =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Галерея";
 const sectionSubtitle =
@@ -26,35 +24,43 @@ const sectionSubtitle =
 	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
 	"";
 
-// Шапка — DS-компонент NtSectionHeading: размеры через перекрытия на обёртке
-// (лестница §9). Дефолт ('medium' canon-default трактуем как DS-литерал
-// 20/24/32 + 14/18/24, прецедент bloom «canon-default → пиксель верстальщика»);
-// large → 46px (small оставляет литерал — меньше базы DS не уходим).
+// Шапка секции = простой <h2> font-roboto-flex uppercase (манера flux,
+// как Popular/Collections), ЦЕНТРИРОВАНА (эталон rose Gallery + текущий flux).
+// headingSize/textSize — ступени small/medium/large КАК rose, но на базе
+// ЭТАЛОННЫХ размеров верстальщика (текст карточек 16/18/20px), НЕ раздутых
+// DS-значений (46/35px). Цвет — токены (color-heading/color-muted) с фоллбеком
+// чёрный/серый → colorScheme перекрашивает, без схемы пиксель эталона.
 const headingSize = p.heading?.size ?? p.headingSize;
-const headingSizeCls = headingSize === "large" ? " [&_h2]:!text-[46px]" : headingSize === "small" ? " [&_h2]:!text-[18px] md:[&_h2]:!text-[20px]" : "";
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[16px] md:text-[18px]"
+		: headingSize === "large"
+			? "text-[20px] md:text-[24px]"
+			: "text-[18px] md:text-[20px]"; // medium (canon-default) + absent → эталон
 const textSize = p.textSize ?? p.text?.size;
-const textSizeCls = textSize === "large" ? " [&_p]:!text-[35px]" : textSize === "small" ? " [&_p]:!text-[12px] md:[&_p]:!text-[14px]" : "";
-// Схемы flux включают ТЁМНЫЕ (scheme-1 bg 0 0 0) — хардкоды DS-шапки
-// (#000000/#999999) всегда перекрываются токенами; фоллбеки = литералы DS →
-// без схемы пиксель не меняется (MANNER.md §7).
-const headColorCls =
-	" [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]";
-const headWrapCls = [headingSizeCls, textSizeCls, headColorCls].join("").trim();
+const textSizeCls =
+	textSize === "small"
+		? "text-[14px]"
+		: textSize === "large"
+			? "text-[19px]"
+			: "text-[16px]"; // medium (canon-default) + absent → 16px (как rose)
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
+const headWrapCls = "flex flex-col items-center gap-2 text-center";
 
-// Канон imagePosition left/right: 'left' (canon-default) и отсутствие =
-// большая квадратная плитка слева (литерал lg:grid-cols-[1fr_429px]);
+// Канон imagePosition left/right (как rose): 'left' (canon-default) и
+// отсутствие = большая плитка слева (литерал lg:grid-cols-[1fr_429px]);
 // 'right' — зеркало: шаблон колонок переворачивается + lg:order.
 const mirror = p.imagePosition === "right";
 const gridColsCls = mirror ? "lg:grid-cols-[429px_1fr]" : "lg:grid-cols-[1fr_429px]";
 const heroOrderCls = mirror ? " lg:order-2" : "";
 const sideOrderCls = mirror ? " lg:order-1" : "";
 
-// Канон items[] (≤3, типы image/product/collection): плитки из пропсов с
-// fallback на разметку верстальщика ДОСЛОВНО. SSR рендерит канон-плейсхолдеры
-// («Товар» 2 500 ₽ / «Выбери коллекцию»); резолв productId/collectionId →
-// имя/цена/картинка/href делает гидрация ниже (data-gallery-product/
-// -collection): live — /data/{products,collections}.json, превью —
-// storefront-data.
+// Канон items[] (≤3, типы image/product/collection): плитки из пропсов. SSR
+// рендерит канон-плейсхолдеры («Товар» 2 500 ₽ / «Выбери коллекцию»); резолв
+// productId/collectionId → имя/цена/картинка/href делает гидрация ниже
+// (data-gallery-product / -collection): live — /data/{products,collections}.json,
+// превью — storefront-data.
 type GalleryTile = {
 	kind: "image" | "product" | "collection";
 	url: string;
@@ -103,53 +109,66 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 		};
 	});
 // ПЛЕЙСХОЛДЕР пустой плитки (Figma 1:19335, контракт theme-base Gallery):
-// НЕ фото верстальщика, а нейтральная заглушка по типу плитки.
-//  • product (любой) и collection С ВЫБОРОМ → куртка-плейсхолдер blue
-//    (/placeholders/sweater-blue.svg; build-пайплайн копирует ассет из
-//    packages/theme-base/public по скану .astro, assemble-from-packages.ts:376).
-//    Этот <img> служит И визуальным плейсхолдером, И целью гидрации: когда товар/
-//    коллекция ВЫБРАНЫ, скрипт ниже (data-gallery-product / -collection)
-//    подменяет src/alt реальной картинкой — поведение «данные выбраны» цело.
-//  • collection без выбора и image без url → пустой image-rect (фон
-//    --color-surface, без <img>) + лейбл «Выбери коллекцию».
-// Полностью пустое состояние секции (нет items) рендерит ниже фикс-плейсхолдер:
-// большая плитка = /placeholders/landscape-gallery.png, карточка-товар = sweater
-// blue + «Товар»/«2 500 ₽», карточка-коллекция = пустая surface + «Выбери коллекцию».
+// НЕ фото верстальщика, а нейтральная заглушка-куртка по типу плитки. product
+// (любой) и collection С ВЫБОРОМ → куртка-плейсхолдер blue
+// (/placeholders/sweater-blue.svg; build-пайплайн копирует ассет из
+// packages/theme-base/public по скану .astro, assemble-from-packages.ts:376).
+// Этот <img> служит И визуальным плейсхолдером, И целью гидрации: когда товар/
+// коллекция ВЫБРАНЫ, скрипт ниже (data-gallery-product / -collection) подменяет
+// src/alt реальной картинкой — поведение «данные выбраны» цело.
 const SWEATER_BLUE = "/placeholders/sweater-blue.svg";
 galleryTiles.forEach((t) => {
 	if (t.url) return;
 	if (t.kind === "product") t.url = SWEATER_BLUE;
 	else if (t.kind === "collection" && t.ref) t.url = SWEATER_BLUE;
 });
-// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
-// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
-// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже. Читаем ref
-// для product/collection (не url): forEach выше присваивает product url=SWEATER_BLUE.
+// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте
+// плитки (image с непустым url, product/collection с выбранным ref). Пустые
+// seed-плитки (url='' / ref=null) → false → рендерится empty-state плейсхолдер
+// ниже. Читаем ref для product/collection (не url): forEach выше присваивает
+// product url=SWEATER_BLUE.
 const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
 
 // Аспекты и ховеры правой колонки — по позициям литерала верстальщика:
-// плитка 1 — 429/444 (scale-105 300ms), плитка 2 — 429/309 (scale-[1.03] 500ms).
-const SIDE_ASPECTS = ["aspect-[429/444]", "aspect-[429/309]"];
+// плитка 1 (карточка товара) — aspect-square (scale-105 300ms), плитка 2
+// (карточка коллекции) — aspect-[429/314] (scale-[1.03] 500ms ease-out).
+const SIDE_ASPECTS = ["aspect-square", "aspect-[429/314]"];
 const SIDE_HOVERS = [
 	"transition-transform duration-300 group-hover:scale-105",
 	"transition-transform duration-500 ease-out group-hover:scale-[1.03]",
 ];
+// Подписи карточек = эталон верстальщика: товар text-[18px] md:text-[20px],
+// коллекция text-[16px], ВСЁ font-roboto-flex font-light. Хук-классы гидрации
+// (gallery-product-title / -price, gallery-collection-title) сохранены.
+const productTitleCls =
+	"gallery-product-title font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]";
+const productPriceCls =
+	"gallery-product-price font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]";
+const collectionTitleCls =
+	"gallery-collection-title font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]";
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
+// Контейнер = flux-container эталона (как Popular/Collections/Footer/Header:
+// mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80) + flex flex-col gap-8.
+// Вертикаль py-10 md:py-16 (эталон); при заданном padding (настройка) py-классы
+// убираются — inline-стиль ставит padding-top/bottom (паттерн Popular/Footer,
+// чтобы не было двойного отступа).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+const containerCls = paddingStyle
+	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80"
+	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80";
 ---
+
 <section
 	id="gallery"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="gallery-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+	<div class={containerCls} style={paddingStyle}>
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}
@@ -157,14 +176,15 @@ const paddingStyle = p.padding
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<NtSectionHeading titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
+			<h2 id="gallery-title" class={headingCls}>{sectionTitle}</h2>
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
-		<div class={`grid grid-cols-1 gap-6 ${gridColsCls} md:gap-8`}>
+		<div class={`flex flex-col gap-4 lg:grid ${gridColsCls} lg:gap-4`}>
 			{heroTile ? (
 				<a
 					href={heroTile.href}
-					class={`group relative block aspect-square w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]${heroOrderCls}`}
+					class={`gallery-hero-tile group relative block aspect-square w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:aspect-auto lg:h-full${heroOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}
@@ -177,17 +197,16 @@ const paddingStyle = p.padding
 							src={heroTile.url}
 							alt={heroTile.alt}
 							loading="lazy"
-							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+							class="absolute inset-0 size-full object-cover object-left transition-transform duration-500 ease-out group-hover:scale-[1.02]"
 						/>
 					)}
 				</a>
 			) : (
-				/* Пустое состояние (Figma 1:19335, контракт картиночных секций):
-				   большая левая плитка = дизайн-ассет /placeholders/landscape-
-				   gallery.png (картинка показывается ВСЕГДА, НЕ пустой surface).
-				   Сырой <img> (у плейсхолдера нет соимённого .webp). */
+				/* Плейсхолдер пустого состояния (Figma 1:19335): большая левая плитка =
+				   дизайн-ассет /placeholders/landscape-gallery.png (картинка показывается
+				   ВСЕГДА, НЕ пустой surface и НЕ мок-фото верстальщика). */
 				<div
-					class={`relative block aspect-square w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]${heroOrderCls}`}
+					class={`gallery-hero-tile group relative block aspect-square w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:aspect-auto lg:h-full${heroOrderCls}`}
 					aria-hidden="true"
 				>
 					<img
@@ -195,17 +214,17 @@ const paddingStyle = p.padding
 						alt=""
 						aria-hidden="true"
 						loading="lazy"
-						class="absolute inset-0 size-full object-cover"
+						class="absolute inset-0 size-full object-cover object-left"
 					/>
 				</div>
 			)}
 
 			{useItems ? sideTiles.length > 0 && (
-				<div class={`flex flex-col gap-6 md:gap-8${sideOrderCls}`}>
+				<div class={`grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}
-							class="group flex flex-col gap-4"
+							class="group flex min-w-0 flex-col gap-4"
 							aria-label={tile.label || tile.alt || "Изображение"}
 							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
 							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
@@ -214,7 +233,7 @@ const paddingStyle = p.padding
 							data-puck-subsection-field="items"
 						>
 							<div
-								class={`relative ${SIDE_ASPECTS[i] ?? SIDE_ASPECTS[0]} w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]`}
+								class={`relative ${SIDE_ASPECTS[i] ?? SIDE_ASPECTS[0]} w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`}
 							>
 								{tile.url && (
 									<img
@@ -228,34 +247,24 @@ const paddingStyle = p.padding
 							{(tile.label || tile.price) && (
 								<div class="flex flex-col gap-1">
 									{tile.label && (
-										<h3
-											class={
-												tile.kind === "collection"
-													? "gallery-collection-title font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]"
-													: "gallery-product-title font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]"
-											}
-										>
+										<h3 class={tile.kind === "collection" ? collectionTitleCls : productTitleCls}>
 											{tile.label}
 										</h3>
 									)}
-									{tile.price && (
-										<span class="gallery-product-price font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-											{tile.price}
-										</span>
-									)}
+									{tile.price && <span class={productPriceCls}>{tile.price}</span>}
 								</div>
 							)}
 						</a>
 					))}
 				</div>
 			) : (
-				<div class={`flex flex-col gap-6 md:gap-8${sideOrderCls}`}>
-					{/* ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335, контракт theme-base
-					    Gallery): карточка-товар (куртка blue + «Товар» / «2 500 ₽») +
-					    карточка-коллекция (пустой image-rect + «Выбери коллекцию») вместо
-					    мок-товаров верстальщика («M Phone 17» / «Ноутбуки»). */}
-					<div class="flex flex-col gap-4" aria-label="Товар">
-						<div class="relative aspect-[429/444] w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]">
+				/* ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335, контракт theme-base
+				   Gallery): карточка-товар (куртка blue + «Товар» / «2 500 ₽») +
+				   карточка-коллекция (пустой image-rect + «Выбери коллекцию») вместо
+				   мок-товаров верстальщика («M Phone 17» / «Смартфоны»). */
+				<div class={`grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4${sideOrderCls}`}>
+					<div class="flex min-w-0 flex-col gap-4" aria-label="Товар">
+						<div class="relative aspect-square w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]">
 							<img
 								src="/placeholders/sweater-blue.svg"
 								alt="Товар"
@@ -264,23 +273,17 @@ const paddingStyle = p.padding
 							/>
 						</div>
 						<div class="flex flex-col gap-1">
-							<h3 class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								Товар
-							</h3>
-							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								2 500 ₽
-							</span>
+							<h3 class={productTitleCls}>Товар</h3>
+							<span class={productPriceCls}>2 500 ₽</span>
 						</div>
 					</div>
 
-					<div class="flex flex-col gap-4" aria-label="Выбери коллекцию">
+					<div class="flex min-w-0 flex-col gap-4" aria-label="Выбери коллекцию">
 						<div
-							class="relative aspect-[429/309] w-full min-h-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"
+							class="relative aspect-[429/314] w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"
 							aria-hidden="true"
 						/>
-						<h3 class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-							Выбери коллекцию
-						</h3>
+						<h3 class={collectionTitleCls}>Выбери коллекцию</h3>
 					</div>
 				</div>
 			)}

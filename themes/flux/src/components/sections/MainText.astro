@@ -1,73 +1,88 @@
 ---
-// Фаза B (flux): новая канон-секция MainText в манере flux (см.
-// themes/flux/MANNER.md). Донора-манифеста у верстальщика НЕТ (секций всего 4,
-// MANNER §10) — секция написана с нуля: сетка главной §2 (px-4 md:px-20
-// 2xl:px-80, вертикаль 64/96), текст-манифест = роль внутреннего h2
-// (Comfortaa uppercase 24/md:28, contacts.astro:40; cart.astro:76), чёрная CTA
-// §3 (contacts.astro:76). Скролл-анимаций НЕТ — манера flux статична (§6).
-// Схема полей = packages/theme-base/blocks/MainText/MainText.puckConfig.ts;
-// процесс-эталон — bloom MainText.
+// Секция MainText («Основной текст») в манере flux. Донора-манифеста у
+// верстальщика flux НЕТ (секций всего 4, MANNER §10) — но есть родственная Puk
+// («Основной текст» / CTA репо), потому MainText дизайним в ЕДИНОМ flux-языке:
+// ВСЯ секция — font-roboto-flex (заголовок/текст/кнопка); прежний дрейф на
+// comfortaa/manrope (наследие разошедшегося product-grid порта) УДАЛЁН. Шрифт-
+// токены flux: .font-roboto-flex = var(--font-body, Roboto Flex). Заголовок —
+// roboto-flex uppercase (как Popular/Collections/Gallery/Puk), тело — roboto-flex
+// 300, чёрная CTA h-14 (эталон Hero/Puk). Скролл-анимаций НЕТ — манера flux
+// статична (MANNER §6), только hover-opacity на кнопке.
+//
+// НАСТРОЙКИ = паритет rose MainText (themes/rose/.../MainText.astro): читаем те
+// же поля heading/headingSize/text/textSize/button(+legacy cta)/buttonStyle/
+// position/padding/colorScheme. Ступени размеров — НА БАЗЕ flux-размеров (19/23
+// заголовок, 16/19 текст), НЕ раздутые. «Позиция» (Figma 1230-42143) управляет И
+// размещением колонки, И выравниванием контента — отдельного «Выравнивание» в
+// дизайне нет (как у rose). colorScheme навешивается обёрткой composeV2Page; фон
+// секции = bg-токен с белым фоллбеком (у flux нет цветных полотен, MANNER §7).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Figma 1:19335 — ПУСТОЕ состояние секции (тип "MainText"): дословный
-// плейсхолдер (НЕ дефолт-контент верстальщика). MainText — чисто текстовая
-// секция (нет товаров/коллекций для SSR-фетча, эталон rose MainText), потому
-// пустое состояние = дефолтные значения полей: заголовок «Расскажи о своем
-// бренде». Роль = внутрисекционный h2 (Comfortaa uppercase leading-[1.115],
-// МАННЕРА §1). Лестница §9 «Внутренний h2 24/28»: large/отсутствие = литерал
-// 24/md:28, medium 20/24, small 17/20. Когда мерчант задаёт heading —
-// рендерится ЕГО значение (?? fallback только при пустых данных).
+// Figma 1:19335 — ПУСТОЕ состояние секции (тип «MainText»): дословный плейсхолдер
+// (НЕ дефолт-контент верстальщика). MainText — чисто текстовая секция (нет
+// товаров/коллекций для SSR-фетча, эталон rose MainText), потому пустое состояние
+// = дефолтные значения полей: заголовок «Расскажи о своем бренде», текст
+// «Расскажи подробнее о своем онлайн-магазине в этом блоке», кнопка «Кнопка».
+// Когда мерчант задаёт heading/text/button — рендерится ЕГО значение (?? fallback
+// только при пустых данных).
 const heading =
 	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Расскажи о своем бренде");
-const headingSize = p.heading?.size ?? p.headingSize;
-const headingCls =
-	headingSize === "small"
-		? "font-comfortaa text-[17px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
-		: headingSize === "medium"
-			? "font-comfortaa text-[20px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]"
-			: "font-comfortaa text-[24px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[28px]";
-
-// Канон text: string | { content, size }. Figma 1:19335 — пустое состояние:
-// дословный хелпер-текст плейсхолдера «Расскажи подробнее о своем онлайн-
-// магазине в этом блоке» (НЕ болванка-манифест верстальщика). Мерчант задал
-// text — рендерим его.
 const text =
 	typeof p.text === "string"
 		? p.text
 		: (p.text?.content ?? "Расскажи подробнее о своем онлайн-магазине в этом блоке");
 
-// Канон textSize (top-level hidden приоритетнее text.size сабпанели). Та же
-// роль внутреннего h2: лестница §9 large/отсутствие = литерал 24/md:28,
-// medium 20/24, small 17/20; цвет — text-токен с чёрным фоллбеком (§7).
-const textSize = p.textSize ?? p.text?.size;
-// Тело текста — body-стиль (Manrope, leading 1.6), НЕ заголовочный Comfortaa
-// uppercase. «Размер» меняет только кегль (паритет rose).
-const textCls =
-	textSize === "small"
-		? "font-manrope text-[14px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))] md:text-[15px]"
-		: textSize === "medium"
-			? "font-manrope text-[15px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]"
-			: "font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))] md:text-[18px]";
+// Канон headingSize (top-level hidden приоритетнее heading.size сабпанели). База
+// flux = 19/md:23 (эталон Popular/Collections/Puk). 'medium' (canon-default) и
+// отсутствие = база; small ступень ниже, large выше. Заголовок — roboto-flex
+// uppercase, цвет = heading-токен с чёрным фоллбеком (§7) → colorScheme
+// перекрашивает.
+const headingSize = p.heading?.size ?? p.headingSize;
+const headingSizeCls =
+	headingSize === "small"
+		? "text-[16px] md:text-[19px]"
+		: headingSize === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 
-// Канон position — позиция контент-колонки; alignment — выравнивание внутри.
-// canon-default обоих = 'center'.
+// Канон textSize (top-level hidden приоритетнее text.size сабпанели). База flux =
+// 16/md:19 (паритет Popular textSize medium). 'medium' (canon-default) и
+// отсутствие = база; small ниже, large выше. Тело — roboto-flex 300 (font-light),
+// читаемый leading, max-w-[780px] под комфортную длину строки; цвет = text-токен
+// с чёрным фоллбеком (§7).
+const textSize = p.textSize ?? p.text?.size;
+const textSizeCls =
+	textSize === "small"
+		? "text-[14px] md:text-[16px]"
+		: textSize === "large"
+			? "text-[19px] md:text-[23px]"
+			: "text-[16px] md:text-[19px]"; // medium (canon-default) + absent
+const textCls = `max-w-[780px] font-roboto-flex font-light leading-relaxed text-[rgb(var(--color-text,0_0_0))] ${textSizeCls}`;
+
+// Канон «Позиция» (Figma 1230-42143, паритет rose) — управляет И размещением
+// контент-колонки (posCls: mr/mx/ml-auto), И выравниванием контента внутри
+// (alignCls: items + text-align). canon-default = 'center'. Отдельного
+// «Выравнивание» в дизайне нет (поле alignment остаётся hidden, не читается — как
+// у rose).
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
 const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
-// Выравнивание контента следует позиции колонки (паритет rose) — было из мёртвого
-// hidden p.alignment (всегда center → текст не выравнивался при position=left/right).
-const itemsCls =
-	position === "left" ? "items-start" : position === "right" ? "items-end" : "items-center";
-const textAlignCls =
-	position === "left" ? "text-left" : position === "right" ? "text-right" : "text-center";
+const alignCls =
+	position === "left"
+		? "items-start text-left"
+		: position === "right"
+			? "items-end text-right"
+			: "items-center text-center";
 
-// Канон textStyle (hidden): italic → курсив заголовка и текста.
+// Канон textStyle (hidden, 084): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Figma 1:19335 — пустое состояние: дословный плейсхолдер «Кнопка» (НЕ
-// «Подробнее»). Мерчант задал текст пропа — рендерим его; пустой текст
-// ЗАДАННОГО пропа СКРЫВАЕТ кнопку (canon-defaults кнопку не пишут → плейсхолдер).
+// Figma 1:19335 — пустое состояние: дословный плейсхолдер «Кнопка». Мерчант задал
+// текст пропа — рендерим его; пустой текст ЗАДАННОГО пропа СКРЫВАЕТ кнопку
+// (canon-defaults кнопку не пишут → показываем плейсхолдер «Кнопка»). Ссылка-
+// фоллбек /catalog.
 const btnProvided = p.button !== undefined || p.cta !== undefined;
 const btnTextProp =
 	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
@@ -80,66 +95,82 @@ const btnHref =
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
 	"/catalog";
 
-// Канон buttonStyle: 'solid'/отсутствие = чёрная CTA манеры §3 дословно
-// (contacts.astro:76: h-12 rounded-6 px-6 Manrope 16, hover:opacity-95;
-// в схемах flux чёрная кнопка = кнопка-2, МАННЕРА §7). outlined = бордер/текст
-// цвета заливки на прозрачном (ховер 0.90 — паттерн PDP-кнопки с бордером,
-// PDP:168). active:scale в манере flux НЕ используется (§3).
+// Канон buttonStyle: solid/отсутствие = чёрная CTA манеры flux (эталон Hero/Puk:
+// h-14 rounded-6 px-4 roboto-flex 16 uppercase leading-none, hover:opacity-90; в
+// схемах flux чёрная кнопка = кнопка-2, MANNER §7). outlined = бордер/текст цвета
+// заливки на прозрачном. active:scale в манере flux НЕ используется (§3).
+const btnBase =
+	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none transition-opacity hover:opacity-90";
 const btnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-2-bg,0_0_0))] transition-opacity hover:opacity-90"
-		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95";
+		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
+		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))]`;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
+// Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
+// (паттерн Popular): тогда py-классы контейнера снимаются, чтобы не было двойного
+// отступа. Иначе эталонная вертикаль py-10 md:py-16.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-// colorScheme навешивает обёрткой composeV2Page; фон секции — bg-токен с БЕЛЫМ
-// фоллбеком (у flux нет цветных полотен — фон секций всегда белый, МАННЕРА §7).
-const textId = id ? `${id}-text` : "main-text";
+// Контейнер = flux-container эталона (носитель темы как Header/Footer/Popular:
+// mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80). Вертикаль py-10 md:py-16
+// (канон); при заданном padding (настройка) py-классы убираются — inline-стиль
+// ставит padding-top/bottom (паттерн Popular).
+const containerCls = paddingStyle
+	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80"
+	: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80";
+
+const titleId = id ? `${id}-title` : undefined;
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-16 md:px-20 md:py-24 2xl:px-80"
-	aria-labelledby={textId}
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	aria-labelledby={titleId}
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class={`${posCls} flex w-full max-w-[1320px] flex-col ${itemsCls} gap-10 ${textAlignCls}`}>
-		{
-			heading && (
-				<h2
-					class={headingCls + italicCls}
+	<div class={containerCls} style={paddingStyle}>
+		{/* Контент-колонка max-w-[780px] (читаемая длина строки) + «Позиция»: posCls
+		    двигает колонку (лево/центр/право), alignCls выравнивает контент внутри.
+		    Ритм неравномерный — внутренняя группа [заголовок+текст] gap-2 md:gap-4,
+		    группа↔кнопка gap-6 md:gap-8 (манера flux, эталон Puk). */}
+		<div class={`flex w-full max-w-[780px] flex-col gap-6 md:gap-8 ${posCls} ${alignCls}`}>
+			<div class="flex w-full flex-col gap-2 md:gap-4">
+				{
+					heading && (
+						<h2
+							id={titleId}
+							class={headingCls + italicCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{heading}
+						</h2>
+					)
+				}
+				<div
+					class={textCls + italicCls}
 					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
-			)
-		}
-		<p
-			id={textId}
-			class={textCls + italicCls}
-			data-puck-subsection-parent={id}
-			data-puck-subsection-index="101"
-			data-puck-subsection-field="text"
-			set:html={text}
-		/>
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+					set:html={text}
+				/>
+			</div>
 
-		{
-			btnText && (
-				<a
-					href={btnHref}
-					class={btnCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="102"
-					data-puck-subsection-field="button"
-				>
-					{btnText}
-				</a>
-			)
-		}
+			{
+				btnText && (
+					<a
+						href={btnHref}
+						class={btnCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="button"
+					>
+						{btnText}
+					</a>
+				)
+			}
+		</div>
 	</div>
 </section>

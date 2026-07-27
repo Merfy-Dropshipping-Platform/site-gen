@@ -713,41 +713,32 @@ export class PreviewService {
   }
 
   /**
-   * Wrap CheckoutForm + CheckoutSummary в 2-column grid div per Figma 1:19998.
-   * Form 434px / Summary 589px / gap 56px / left-pad 200px on desktop.
-   * Mobile: stacked grid-cols-1, no left padding.
+   * Wrap CheckoutForm + CheckoutSummary в split-checkout layout per Figma 1:19998.
+   * Форма на белом (--color-bg), сводка на тонированной панели (--color-surface),
+   * панель уходит до правого края, контент сходится к центру.
+   *
+   * ВАЖНО: разметка `.mfy-checkout-*` + CSS — ЗЕРКАЛО live `themes/rose/src/pages/
+   * checkout.astro`. Любая правка здесь дублируется там (live ↔ превью паритет).
    */
   private wrapCheckoutGrid(formHtml: string, summaryHtml: string): string {
-    // Inline styles — Tailwind preview-pipeline не сканирует src/services/*.ts
-    // → arbitrary classes (grid-cols-[434px_589px]) не попадают в bundle.
-    // Inline CSS работает независимо. Mobile: <1024px stacked + side pad 16.
-    const gridStyle = [
-      'max-width:1280px',
-      'margin:0 auto',
-      'padding:48px 16px',
-      'display:grid',
-      'grid-template-columns:1fr',
-      'gap:32px',
-    ].join(';');
-    const mediaQuery = `
+    // Inline <style> — Tailwind preview-pipeline не сканирует src/services/*.ts,
+    // поэтому собственный CSS-блок (а не Tailwind-классы). Префикс mfy-checkout-*
+    // исключает коллизии в глобальном namespace.
+    const css = `
+      .mfy-checkout-split { display: flex; flex-direction: column; width: 100%; background: rgb(var(--color-bg)); }
+      .mfy-checkout-pane { width: 100%; box-sizing: border-box; }
+      .mfy-checkout-pane__inner { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+      .mfy-checkout-pane--summary { background: rgb(var(--color-surface)); }
       @media (min-width: 1024px) {
-        [data-checkout-grid] {
-          padding: 48px 24px !important;
-          grid-template-columns: minmax(0,1fr) minmax(0,1fr) !important;
-          column-gap: 32px !important;
-          row-gap: 32px !important;
-        }
-      }
-      @media (min-width: 1280px) {
-        [data-checkout-grid] {
-          padding: 48px 0 48px 200px !important;
-          grid-template-columns: 434px 589px !important;
-          column-gap: 56px !important;
-          row-gap: 32px !important;
-        }
+        .mfy-checkout-split { flex-direction: row; align-items: stretch; }
+        .mfy-checkout-pane { width: 50%; display: flex; }
+        .mfy-checkout-pane--form { justify-content: flex-end; }
+        .mfy-checkout-pane--summary { justify-content: flex-start; }
+        .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
+        .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
       }
     `;
-    return `<style>${mediaQuery}</style><div data-checkout-grid style="${gridStyle}"><div data-checkout-column="form" style="min-width:0">${formHtml}</div><div data-checkout-column="summary" style="min-width:0">${summaryHtml}</div></div>`;
+    return `<style>${css}</style><div class="mfy-checkout-split"><div class="mfy-checkout-pane mfy-checkout-pane--form"><div class="mfy-checkout-pane__inner" data-checkout-column="form" style="min-width:0">${formHtml}</div></div><div class="mfy-checkout-pane mfy-checkout-pane--summary"><div class="mfy-checkout-pane__inner" data-checkout-column="summary" style="min-width:0">${summaryHtml}</div></div></div>`;
   }
 
   /**

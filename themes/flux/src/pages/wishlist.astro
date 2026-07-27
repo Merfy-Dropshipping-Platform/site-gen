@@ -7,7 +7,7 @@
  * сохранённым в localStorage productId.
  *
  * Вся клиентская логика — ОДИН `is:inline`-скрипт (как PDP/Catalog flux): на live
- * theme build module-<script> темы не компилится (404 на проде). Либа `wishlist.ts`
+ * theme build module-script темы не компилится (404 на проде). Либа `wishlist.ts`
  * НЕ импортится в client-блок — читаем глобал `window.__fluxWishlist` (его ставит
  * `initWishlistUI` в Layout) и слушаем `flux:wishlist:updated`. Карточки рисуются
  * тем же рецептом, что `renderCardHtml` каталога flux (parity вида), включая

@@ -1,27 +1,59 @@
 ---
-import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-
-// ОЖИВЛЕНИЕ: канон-схема ContactForm (flux). Секция рендерит форму обратной связи.
-// Схема описывает поля ФОРМЫ. Когда мерчант настроил поля (fields-проп) —
-// рендерим ИХ канон-семантикой; пустое состояние = ДОСЛОВНЫЙ Figma-плейсхолдер
-// (см. ниже), а не форма-демо верстальщика. Эталон — rose Contacts.astro.
+// ОЖИВЛЕНИЕ: канон-схема ContactForm (flux). Секция рендерит форму обратной связи
+// в чистой манере flux (Roboto Flex везде, поля rounded-8 с surface-бордером,
+// чёрная CTA, фокус #FA5109 — стиль как Footer newsletter / Header search / Hero CTA).
+// НАСТРОЙКИ — как rose Contacts.astro: heading / headingSize / subtitle(+textSize) /
+// fields / submitText / padding / colorScheme (colorScheme красит обёртка композитора,
+// внутри не читаем — паритет rose). Пустое состояние = ДОСЛОВНЫЙ Figma-плейсхолдер
+// (заголовок «Контактная форма» + поля Имя/Email/Номер телефона/Комментарий + «Отправить»),
+// а не форма-демо верстальщика. Раньше шапку/поля рисовали DS-компоненты
+// NtSectionHeading/NtTextField (Comfortaa/Manrope) — это и был дрейф манеры; теперь
+// разметка инлайн в Roboto Flex. Анимаций нет — манера flux статична (MANNER.md §6).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния ContactForm: заголовок
-// «Контактная форма» + поля «Имя» / «Email» / «Номер телефона» / «Комментарий» +
-// кнопка «Отправить». Заголовок берём из пропса (heading), если мерчант задал свой,
-// иначе — дословный Figma-литерал.
+// Figma 1:19335 — заголовок берём из пропса (heading.text / heading-строка), иначе
+// дословный Figma-литерал «Контактная форма».
 const placeholderHeading =
 	(typeof p.heading?.text === "string" && p.heading.text) ||
 	(typeof p.heading === "string" && p.heading) ||
 	"Контактная форма";
 
+// «Размер заголовка» (как rose/flux Collections): канон-дефолт medium → эталон 19/23,
+// small меньше, large крупнее. Источник — heading.size либо плоский headingSize.
+const headingSizeRaw = p.heading?.size ?? p.headingSize;
+const headingSizeCls =
+	headingSizeRaw === "small"
+		? "text-[16px] md:text-[19px]"
+		: headingSizeRaw === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent → эталон 19/23
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+
+// Подзаголовок (subtitle / text / hidden description) — flux font-light, токен
+// color-muted. Рендерим ТОЛЬКО при непустом значении (как rose: нет текста → нет
+// подзаголовка). textSize управляет кеглем (канон-дефолт small = 14/16).
+const subtitleRaw =
+	(typeof p.subtitle?.content === "string" ? p.subtitle.content : undefined) ??
+	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
+	(typeof p.text?.content === "string" ? p.text.content : undefined) ??
+	(typeof p.text === "string" ? p.text : undefined) ??
+	(typeof p.description === "string" ? p.description : undefined) ??
+	"";
+const subtitleText = typeof subtitleRaw === "string" ? subtitleRaw.trim() : "";
+const subtitleSizeRaw = p.subtitle?.size ?? p.text?.size ?? p.textSize ?? p.subtitleSize;
+const subtitleSizeCls =
+	subtitleSizeRaw === "medium"
+		? "text-[16px] md:text-[19px]"
+		: subtitleSizeRaw === "large"
+			? "text-[19px] md:text-[23px]"
+			: "text-[14px] md:text-[16px]"; // small (canon-default) + absent
+const subtitleCls = `font-roboto-flex font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${subtitleSizeCls}`;
+
 // Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
-// проп-ветка рендерит поля канон-семантикой (фоллбеки частичного объекта =
-// канон-дефолты puckConfig: phone disabled, name/email required). Отсутствие
-// fields = ДОСЛОВНЫЙ Figma-плейсхолдер: Имя / Email / Номер телефона / Комментарий.
+// фоллбеки частичного объекта = канон-дефолты puckConfig (phone disabled,
+// name/email required). Отсутствие fields = ДОСЛОВНЫЙ Figma-плейсхолдер:
+// Имя / Email / Номер телефона / Комментарий (все включены, не обязательны).
 const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
 const CANON_FIELDS = {
@@ -41,167 +73,171 @@ const resolveField = (key: "name" | "email" | "phone" | "message") => {
 		label: typeof f?.label === "string" ? f.label : def.label,
 	};
 };
-const formFields = fieldsProp
+const fieldsToRender = fieldsProp
 	? {
 			name: resolveField("name"),
 			email: resolveField("email"),
 			phone: resolveField("phone"),
 			message: resolveField("message"),
 		}
-	: undefined;
+	: {
+			name: { enabled: true, required: false, label: "Имя" },
+			email: { enabled: true, required: false, label: "Email" },
+			phone: { enabled: true, required: false, label: "Номер телефона" },
+			message: { enabled: true, required: false, label: "Комментарий" },
+		};
 
-const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.length > 0 ? p.buttonText : "Отправить";
+// Текст кнопки: submitText → buttonText → литерал «Отправить».
+const submitText =
+	(typeof p.submitText === "string" && p.submitText.trim() && p.submitText) ||
+	(typeof p.buttonText === "string" && p.buttonText.trim() && p.buttonText) ||
+	"Отправить";
 
-const paddingStyle = p.padding
-	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (padding-
+// override); иначе литерал py-10 md:py-16 верстальщика. Контейнер flux эталона:
+// mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80 (носитель темы).
+const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
+const padStyle = pad
+	? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
 	: undefined;
+const containerCls = padStyle
+	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:gap-10 md:px-20 2xl:px-80"
+	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-20 md:py-16 2xl:px-80";
+
+// Классы полей — стиль flux (Footer newsletter / Header search): Roboto Flex 16 light,
+// h-12, rounded-8, border surface-токен, bg-white, placeholder #999999, фокус #FA5109.
+// Цвета — токены (0 хардкод-hex, кроме #FA5109 акцент-фокус и #999999 плейсхолдер).
+const labelCls =
+	"font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]";
+const reqCls = "ml-1 text-[rgb(var(--color-error,255_148_148))]";
+const inputCls =
+	"box-border h-12 w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
+const textareaCls =
+	"box-border min-h-[160px] w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 py-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
+// Кнопка отправки — чёрная CTA языка flux (как Hero/Puk): токен button-2, белый текст,
+// h-14, rounded-6, uppercase, Roboto Flex, на всю ширину формы.
+const submitCls =
+	"inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90";
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 md:px-20 md:pb-[80px] md:pt-20 2xl:px-[300px]"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
-		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
-		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
-		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
-			<NtSectionHeading titleId="contacts-title" title={placeholderHeading} />
+	<div class={containerCls} style={padStyle}>
+		{/* Figma 1:19335: дословный заголовок секции «Контактная форма». Мерчант задал
+		    свой heading → рендерим ЕГО (placeholderHeading); подзаголовок — при наличии. */}
+		<div
+			class="flex w-full flex-col items-center gap-2 text-center"
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="heading"
+		>
+			<h2 id="contacts-title" class={headingCls}>{placeholderHeading}</h2>
+			{subtitleText && <p class={subtitleCls}>{subtitleText}</p>}
 		</div>
+
 		<form
-			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"
+			class="mx-auto flex w-full max-w-[652px] flex-col gap-5"
 			data-contacts-form
 			novalidate
 		>
-			{formFields ? (
-				<div class="flex flex-col gap-4">
-					{formFields.name.enabled && (
-						<div
-							class="flex w-full max-w-[430px] flex-col gap-2"
-							data-nt="text-field"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={0}
-							data-puck-subsection-field="fields"
-						>
-							<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-								{formFields.name.label}{formFields.name.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-							</label>
-							<div class="relative w-full">
-								<input
-									id="nt-field-name"
-									name="name"
-									type="text"
-									autocomplete="name"
-									required={formFields.name.required}
-									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-field,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
-								/>
-							</div>
-						</div>
-					)}
-					{formFields.email.enabled && (
-						<div
-							class="flex w-full max-w-[430px] flex-col gap-2"
-							data-nt="text-field"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={1}
-							data-puck-subsection-field="fields"
-						>
-							<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-								{formFields.email.label}{formFields.email.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-							</label>
-							<div class="relative w-full">
-								<input
-									id="nt-field-email"
-									name="email"
-									type="email"
-									autocomplete="email"
-									required={formFields.email.required}
-									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-field,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
-								/>
-							</div>
-						</div>
-					)}
-					{formFields.phone.enabled && (
-						<div
-							class="flex w-full max-w-[430px] flex-col gap-2"
-							data-nt="text-field"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={2}
-							data-puck-subsection-field="fields"
-						>
-							<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-								{formFields.phone.label}{formFields.phone.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-							</label>
-							<div class="relative w-full">
-								<input
-									id="nt-field-phone"
-									name="phone"
-									type="tel"
-									autocomplete="tel"
-									required={formFields.phone.required}
-									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-field,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
-								/>
-							</div>
-						</div>
-					)}
-				</div>
-			) : (
-				<div class="flex flex-col gap-4">
-					<NtTextField label="Имя" name="name" autocomplete="name" />
-					<NtTextField label="Email" name="email" type="email" autocomplete="email" />
-					<NtTextField label="Номер телефона" name="phone" type="tel" autocomplete="tel" />
+			{fieldsToRender.name.enabled && (
+				<div
+					class="flex w-full flex-col gap-2"
+					data-nt="text-field"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={0}
+					data-puck-subsection-field="fields"
+				>
+					<label for="nt-field-name" class={labelCls}>
+						{fieldsToRender.name.label}
+						{fieldsToRender.name.required && <span class={reqCls}>*</span>}
+					</label>
+					<input
+						id="nt-field-name"
+						name="name"
+						type="text"
+						autocomplete="name"
+						required={fieldsToRender.name.required}
+						class={inputCls}
+					/>
 				</div>
 			)}
 
-			{formFields ? (
-				formFields.message.enabled && (
-					<div
-						class="flex flex-col gap-2"
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index={3}
-						data-puck-subsection-field="fields"
-					>
-						<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-							{formFields.message.label}{formFields.message.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
-						</label>
-						<textarea
-							id="contacts-question"
-							name="question"
-							rows={8}
-							required={formFields.message.required}
-							class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[rgb(var(--color-text,0_0_0))] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
-						></textarea>
-					</div>
-				)
-			) : (
-				<div class="flex flex-col gap-2">
-					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
-						Комментарий
+			{fieldsToRender.email.enabled && (
+				<div
+					class="flex w-full flex-col gap-2"
+					data-nt="text-field"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={1}
+					data-puck-subsection-field="fields"
+				>
+					<label for="nt-field-email" class={labelCls}>
+						{fieldsToRender.email.label}
+						{fieldsToRender.email.required && <span class={reqCls}>*</span>}
+					</label>
+					<input
+						id="nt-field-email"
+						name="email"
+						type="email"
+						autocomplete="email"
+						required={fieldsToRender.email.required}
+						class={inputCls}
+					/>
+				</div>
+			)}
+
+			{fieldsToRender.phone.enabled && (
+				<div
+					class="flex w-full flex-col gap-2"
+					data-nt="text-field"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={2}
+					data-puck-subsection-field="fields"
+				>
+					<label for="nt-field-phone" class={labelCls}>
+						{fieldsToRender.phone.label}
+						{fieldsToRender.phone.required && <span class={reqCls}>*</span>}
+					</label>
+					<input
+						id="nt-field-phone"
+						name="phone"
+						type="tel"
+						autocomplete="tel"
+						required={fieldsToRender.phone.required}
+						class={inputCls}
+					/>
+				</div>
+			)}
+
+			{fieldsToRender.message.enabled && (
+				<div
+					class="flex w-full flex-col gap-2"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index={3}
+					data-puck-subsection-field="fields"
+				>
+					<label for="contacts-question" class={labelCls}>
+						{fieldsToRender.message.label}
+						{fieldsToRender.message.required && <span class={reqCls}>*</span>}
 					</label>
 					<textarea
 						id="contacts-question"
 						name="question"
 						rows={8}
-						class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[rgb(var(--color-text,0_0_0))] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
-					></textarea>
+						required={fieldsToRender.message.required}
+						class={textareaCls}></textarea>
 				</div>
 			)}
 
-			<div class="lg:col-start-2 lg:flex lg:justify-end">
-				<button
-					type="submit"
-					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95"
-				>
-					{buttonText}
-				</button>
-			</div>
+			<button type="submit" class={submitCls}>{submitText}</button>
 
 			<p
 				data-contacts-status
 				role="status"
-				class="hidden lg:col-span-2 font-manrope text-[16px] font-normal leading-normal text-[#4AD300]"
+				class="hidden font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-success,74_211_0))]"
 			></p>
 		</form>
 	</div>
@@ -223,19 +259,3 @@ const paddingStyle = p.padding
 		form.reset();
 	});
 </script>
-
-<style>
-	/* Figma 375: section title Comfortaa 14 на мобиле (как Collections/Popular).
-	   NtSectionHeading не пробрасывает class на h2 — задаём через ID-правило. */
-	@media (max-width: 639.98px) {
-		:global(#contacts-title) {
-			font-size: 14px !important;
-			line-height: 1 !important;
-		}
-
-		:global([data-nt="section-heading"]) {
-			max-width: 100% !important;
-			width: 100% !important;
-		}
-	}
-</style>

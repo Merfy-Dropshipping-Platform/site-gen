@@ -1,10 +1,8 @@
 ---
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
-
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular / rose T13): полная конструкторная
 // схема theme-base PopularProducts.puckConfig поверх разметки верстальщика.
 // Канон-дефолты конструктора (headingSize/textSize small = литерал DS, columns
-// 4 = литерал lg:grid-cols-4, imageView 'square' → литерал aspect-[318/444],
+// 4 = литерал lg:grid-cols-4, imageView 'square' → aspect-square (эталон rich-карточки),
 // quickAddMode none) → пиксель верстальщика; дефолтные ветки тернарников =
 // прежние строки байт-в-байт (цвета → токены с пиксель-фоллбеком родных
 // литералов, MANNER.md §7). Скролл-анимаций нет — манера flux статична
@@ -52,36 +50,40 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 	image: `/placeholders/sweater-${PLACEHOLDER_COLORS[i % PLACEHOLDER_COLORS.length]}.svg`,
 }));
 
-// Шапка — DS-компонент NtSectionHeading: класс внутрь не пробрасывается,
-// размеры — через перекрытия на обёртке (лестница §9). Дефолт и 'small' =
-// литерал DS (20/24/32 + 14/18/24); medium → 38px, large → 46px.
+// Шапка секции = ВЁРСТКА ВЕРСТАЛЬЩИКОВ (эталон Popular.astro): простой <h2>
+// font-roboto-flex uppercase, дефолт text-[19px] md:text-[23px]. НЕ DS-компонент
+// NtSectionHeading (он рендерил Comfortaa h2 / Manrope подзаголовок — мимо манеры
+// flux). headingSize/textSize — ступени small/medium/large на базе эталонных
+// размеров (канон 19/23): small/дефолт = эталон, medium/large крупнее. Цвет —
+// токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
+// перекрашивает, без схемы пиксель эталона (MANNER.md §7).
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "medium"
-		? " [&_h2]:!text-[38px]"
+		? "text-[23px] md:text-[29px]"
 		: headingSize === "large"
-			? " [&_h2]:!text-[46px]"
-			: "";
-// Канон textSize: дефолт/small = подзаголовок DS дословно (14/18/24);
-// medium → 29px, large → 35px (ряд §9 от xl-базы 24).
+			? "text-[29px] md:text-[35px]"
+			: "text-[19px] md:text-[23px]";
 const textSize = p.textSize ?? p.text?.size;
 const textSizeCls =
-	textSize === "medium" ? " [&_p]:!text-[29px]" : textSize === "large" ? " [&_p]:!text-[35px]" : "";
-// Схемы flux включают ТЁМНЫЕ (scheme-1 bg 0 0 0) — хардкоды DS-шапки
-// (#000000/#999999) всегда перекрываются токенами; фоллбеки = литералы DS →
-// без схемы пиксель не меняется (MANNER.md §7).
-const headColorCls =
-	" [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-muted,153_153_153))]";
-const headWrapCls = [headingSizeCls, textSizeCls, headColorCls].join("").trim();
+	textSize === "medium"
+		? "text-[16px] md:text-[19px]"
+		: textSize === "large"
+			? "text-[19px] md:text-[23px]"
+			: "text-[14px] md:text-[16px]";
+// Классы <h2>/<p> = эталон верстальщиков + ступень размера + токен цвета схемы.
+const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
 
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
-// canon-default 'square' и отсутствие = литерал aspect-[318/444] карточки
-// верстальщика; portrait → 430/500, wide → 16/9 (перекрытие медиа-ссылки).
+// canon-default 'square' и отсутствие = aspect-square медиа эталонной
+// rich-карточки; portrait → 430/500, wide → 16/9 (перекрытие по data-nt=
+// flux-card-media — единый хук для SSR/гидрации/плейсхолдера).
 const tileAspectCls =
 	p.imageView === "portrait"
-		? " [&_li>article>a]:aspect-[430/500]"
+		? " [&_[data-nt=flux-card-media]]:aspect-[430/500]"
 		: p.imageView === "wide" || p.imageView === "adaptive"
-			? " [&_li>article>a]:aspect-[16/9]"
+			? " [&_[data-nt=flux-card-media]]:aspect-[16/9]"
 			: "";
 // Колонки 1-6 (дефолт 4). Применяются с md (768px) и выше через CSS-переменную
 // --cols + media-query в <style> ниже (моб 2 → sm:3 — лестница верстальщика).
@@ -89,8 +91,10 @@ const tileAspectCls =
 // а превью конструктора уже lg-ширины → слайдер «не применялся». Переменная +
 // media-query идентичны на live и в превью (Container API).
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 4;
-// Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6" + tileAspectCls;
+// Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
+// с md (768px) и выше grid-template-columns задаёт <style> по --cols (слайдер
+// «Колонки» перебивает md:grid-cols-4).
+const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls;
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
@@ -109,7 +113,7 @@ const quickAddText =
 // карточке): токены кнопки-2 — в схемах flux чёрная кнопка = кнопка-2
 // (MANNER.md §7); active:scale в манере не используется.
 const quickAddCls =
-	"mt-3 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]";
+	"mt-3 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-roboto-flex text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]";
 
 // Канон buttonStyle link/primary/secondary — стиль добавленной CTA карточки.
 // primary/отсутствие = чёрная CTA (quickAddCls без правок); носитель —
@@ -182,9 +186,9 @@ const viewAllHref =
 // Стиль кнопки «Смотреть все» = единый «Стиль кнопки» секции (buttonStyle, Figma
 // 1195-42536): link = текстовая ссылка с подчёркиванием, secondary = контурная
 // (бордер в тонах кнопки-2), primary/отсутствие = чёрная CTA манеры (заливка
-// кнопки-2). Манера flux: font-manrope, rounded-button (6px), токены кнопки-2.
+// кнопки-2). Манера flux: font-roboto-flex, rounded-button (6px), токены кнопки-2.
 const viewAllBase =
-	"inline-flex h-12 items-center justify-center font-manrope text-[14px] font-normal leading-normal transition-opacity md:text-[16px]";
+	"inline-flex h-12 items-center justify-center font-roboto-flex text-[14px] font-normal leading-normal transition-opacity md:text-[16px]";
 const viewAllCls =
 	p.buttonStyle === "link"
 		? `${viewAllBase} px-0 text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 hover:opacity-70`
@@ -205,6 +209,10 @@ const collectionRef =
 // build). Нет коллекции / siteId / ошибка → realProducts пуст → секция рендерит
 // плейсхолдер-куртки Figma.
 const siteId = typeof p.siteId === "string" ? p.siteId : "";
+// storefront-data отдаёт цены уже в РУБЛЯХ (basePrice как есть; см.
+// storefront-data.controller — эмитит basePrice без конвертации). Показываем как есть,
+// НЕ делим /100. Бейдж скидки salePercent ниже — отношение basePrice/compareAtPrice,
+// от единиц не зависит.
 const fmtPrice = (v: unknown): string => {
 	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
 	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
@@ -234,6 +242,27 @@ if (collectionRef && siteId) {
 					price: fmtPrice(pr?.basePrice ?? pr?.price),
 					oldPrice: fmtPrice(pr?.compareAtPrice ?? pr?.oldPrice),
 					discount: !!(pr?.compareAtPrice || pr?.oldPrice),
+					// Бейдж скидки эталона: -NN% при compareAtPrice > basePrice.
+					salePercent: (() => {
+						const b = Number(pr?.basePrice ?? pr?.price);
+						const o = Number(pr?.compareAtPrice ?? pr?.oldPrice);
+						return Number.isFinite(b) && Number.isFinite(o) && o > b && b > 0
+							? `-${Math.round(((o - b) / o) * 100)}%`
+							: "";
+					})(),
+					// Свотчи цвета (Figma 1:26389): готовые hex из variantSwatches
+					// (эмитит fetchProducts/build из группы «Цвет»). Имя-без-hex
+					// пропускаем — на live грид перерисует renderCardHtml (полный
+					// маппинг имён). Уникальные, до 6.
+					swatches: Array.isArray(pr?.variantSwatches)
+						? Array.from(
+								new Set(
+									pr.variantSwatches
+										.map((s: any) => String(s?.color ?? "").trim())
+										.filter((c: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)),
+								),
+							).slice(0, 6)
+						: [],
 				};
 			});
 		}
@@ -242,10 +271,26 @@ if (collectionRef && siteId) {
 	}
 }
 
+// Outline-сердце flux для SSR-карточки realProducts (фича Merfy поверх
+// эталона; делегат initWishlistUI на load перекрасит [data-wishlist-icon]).
+const wishlistOutlineSvg =
+	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
+	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
+	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+	"</svg>";
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// Контейнер = flux-container эталона (носитель темы как Header/Footer flux:
+// mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80) + flex flex-col gap-8 (канон
+// верстальщиков). Вертикаль py-10 md:py-16 (канон эталона); при заданном padding
+// (настройка) py-классы убираются — inline-стиль ставит padding-top/bottom
+// (паттерн Footer flux, чтобы не было двойного отступа).
+const containerCls = paddingStyle
+	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80"
+	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80";
 
 // Канон Nikita (ИСПРАВЛЕНИЕ): у flux Popular контейнер-бокс УБРАН полностью — контент
 // (шапка + грид карточек + «Смотреть все») сразу в max-width-обёртке, без подложки/схемы
@@ -254,20 +299,20 @@ const paddingStyle = p.padding
 
 <section
 	id="popular"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-16 pt-16 md:px-20 md:pb-24 md:pt-24 2xl:px-80"
+	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
 	aria-labelledby="popular-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-12">
+	<div class={containerCls} style={paddingStyle}>
 		<div
-			class={headWrapCls}
+			class="flex flex-col gap-2"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
+			<h2 id="popular-title" class={headingCls}>{sectionTitle}</h2>
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
 		<ul
@@ -289,60 +334,102 @@ const paddingStyle = p.padding
 			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
 			    live освежает данные. */}
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
-				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined}>
+				<li data-product-id={product.id}>
 					<article
-						class="group flex flex-col gap-3 md:gap-4"
+						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
-						<a
-							href={`/product?id=${encodeURIComponent(product.id)}`}
-							class="relative block aspect-[318/444] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"
-							aria-label={product.name}
-						>
-							<img
-								src={product.image}
-								alt={product.name}
-								loading="lazy"
-								class="absolute inset-0 h-full w-full object-contain p-[15%]"
-							/>
-						</a>
-						<div class="flex flex-col gap-1">
-							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								{product.name}
-							</span>
-							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
-								{product.price}
-							</span>
+						<div class="relative w-full">
+							<a
+								href={`/product?id=${encodeURIComponent(product.id)}`}
+								data-nt="flux-card-media"
+								class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
+								aria-label={product.name}
+							>
+								<img
+									src={product.image}
+									alt={product.name}
+									loading="lazy"
+									class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+								/>
+								{product.salePercent && (
+									<div class="absolute left-2 top-2 flex flex-col items-start gap-1">
+										<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+											{product.salePercent}
+										</span>
+									</div>
+								)}
+							</a>
+							<button
+								type="button"
+								data-wishlist-toggle
+								data-product-id={product.id}
+								aria-pressed="false"
+								aria-label="В избранное"
+								class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80"
+							>
+								<span data-wishlist-icon class="block size-[18px]" set:html={wishlistOutlineSvg}></span>
+							</button>
 						</div>
-					</article>{quickAddMode && (
-						<button
-							type="button"
-							data-add-to-cart
-							data-product-id={product.id}
-							data-name={product.name}
-							data-price={product.price}
-							data-old-price={product.oldPrice}
-							data-image={product.image}
-							class={quickAddCls}
-						>
-							{quickAddText}
-						</button>
-					)}
+						<div class="flex flex-1 flex-col gap-4">
+							<div class="flex flex-col gap-4">
+								{product.swatches && product.swatches.length > 0 && (
+									<div class="flex items-center gap-1">
+										{product.swatches.map((c: string) => (
+											<span class="size-5 rounded-[2px]" style={`background:${c}`} aria-hidden="true"></span>
+										))}
+									</div>
+								)}
+								<div class="flex flex-col gap-1">
+									<a
+										href={`/product?id=${encodeURIComponent(product.id)}`}
+										class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]"
+									>
+										{product.name}
+									</a>
+									<div class="flex items-center gap-2">
+										<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+											{product.price}
+										</span>
+										{product.oldPrice && (
+											<span class="font-roboto-flex text-[12px] font-light leading-normal text-[#CCCCCC] line-through md:text-[14px]">
+												{product.oldPrice}
+											</span>
+										)}
+									</div>
+								</div>
+							</div>
+							<button
+								type="button"
+								data-add-to-cart
+								data-product-id={product.id}
+								data-name={product.name}
+								data-price={product.price}
+								data-old-price={product.oldPrice}
+								data-image={product.image}
+								data-quantity="1"
+								class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+							>
+								В корзину
+							</button>
+						</div>
+					</article>
 				</li>
 			)) : placeholderCards.map((product) => (
 				/* Пустое состояние (коллекция не выбрана): плейсхолдер-карточка
 				   Figma 1:19335 — куртка-заглушка (object-contain), «Товар»,
-				   «2 500 ₽». Без data-add-to-cart — это не реальный товар. */
+				   «2 500 ₽». Без data-add-to-cart/сердца — это не реальный товар. */
 				<li data-product-id={product.id}>
 					<article
-						class="group flex flex-col gap-3 md:gap-4"
+						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
 						<a
 							href="/catalog"
-							class="relative block aspect-[318/444] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] rounded-[var(--radius-media,8px)]"
+							data-nt="flux-card-media"
+							class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
 							aria-label={product.name}
 						>
 							<img
@@ -352,11 +439,11 @@ const paddingStyle = p.padding
 								class="absolute inset-0 h-full w-full object-contain p-[15%]"
 							/>
 						</a>
-						<div class="flex flex-col gap-1">
-							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+						<div class="flex flex-1 flex-col gap-1">
+							<span class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
 								{product.name}
 							</span>
-							<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+							<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
 								{product.price}
 							</span>
 						</div>
@@ -386,17 +473,15 @@ const paddingStyle = p.padding
 		resolveCollectionProducts,
 		renderCardHtml,
 		escapeHtml,
-		productHref,
-		productImage,
 	} from "../../lib/storefront-hydrate";
 
 	// Реальные товары (Option B, расширение прежнего hydrateGrid): первые N из
 	// /data/products.json (N = data-cards грида, дефолт 4 — поведение
 	// верстальщика). Канон-поля T13 поверх: data-collection → фильтр по
 	// выбранной коллекции, data-next-photo → data-image-2 (вторая картинка
-	// товара) для hover-скрипта, data-quick-add/-qa-text/-qa-class → кнопка на
-	// перерисованной карточке (renderCardHtml кнопки не несёт; товары с
-	// вариантами → добавляют первую комбинацию, решение владельца). Demo-сборка → no-op.
+	// товара) для hover-скрипта. Кнопку «В корзину» (вариант-aware: первая
+	// доступная комбинация) несёт сам renderCardHtml (эталонная rich-карточка),
+	// поэтому отдельный qaBtn больше не добавляем. Demo-сборка → no-op.
 	const hydratePopular = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-nt="popular-grid"]'));
 		if (grids.length === 0) return;
@@ -407,9 +492,6 @@ const paddingStyle = p.padding
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
-			const quickAdd = grid.getAttribute("data-quick-add");
-			const qaText = grid.getAttribute("data-qa-text") || "В корзину";
-			const qaClass = grid.getAttribute("data-qa-class") || "";
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
 			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
@@ -424,27 +506,10 @@ const paddingStyle = p.padding
 						wantNextPhoto && Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
-					const hasVariants =
-						p.hasVariants === true ||
-						(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
-					// Решение владельца: карточная «В корзину» для товара с вариантами
-					// добавляет ПЕРВУЮ доступную комбинацию (combo.id + combo.price),
-					// а не ведёт на PDP. Без комбинаций (битый товар) — ссылка на PDP.
-					const firstCombo = hasVariants
-						? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
-							(p.variantCombinations || [])[0]
-						: null;
-					const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
-					const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
-					const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
-					const qaBtn = quickAdd
-						? hasVariants
-							? firstCombo
-								? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
-								: `<a href="${escapeHtml(productHref(p))}" data-qa-link class="${qaClass}">${escapeHtml(qaText)}</a>`
-							: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"${p.oldPrice || p.compareAtPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice || p.compareAtPrice))}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
-						: "";
-					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}${qaBtn}</li>`;
+					// Кнопка «В корзину» (вариант-aware) теперь внутри renderCardHtml —
+					// отдельный qaBtn не добавляем (был бы дубль). data-btn-style на гриде
+					// продолжает стилизовать её через <style is:global> ниже.
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}</li>`;
 				})
 				.join("");
 		}

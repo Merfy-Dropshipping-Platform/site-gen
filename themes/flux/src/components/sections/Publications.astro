@@ -39,7 +39,7 @@ const headingAlignCls =
 		: headingAlignment === "right"
 			? " text-right"
 			: "";
-const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-roboto-flex ${headingSizeCls} font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3 =
 // лестница грида коллекций верстальщика (Collections.astro:19: 1 → sm:2 → lg:3,
@@ -215,7 +215,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 										{item.date}
 									</span>
 								)}
-								<span class="font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
+								<span class="font-roboto-flex text-[14px] font-light leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 									{item.title}
 								</span>
 								{item.isPlaceholder && (

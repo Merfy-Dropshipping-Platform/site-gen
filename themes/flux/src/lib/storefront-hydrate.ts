@@ -573,8 +573,16 @@ const CARD_BTN_CLS =
  * комбинацию (combo.id + цвет/размер в data-*, контракт nt-cart-flux initCartUI);
  * битый вариативный без комбинаций → ссылка на PDP; простой товар → продуктовые
  * data-* (решение владельца, прежняя логика Popular гидрации).
+ *
+ * `ctaLabel` — канон-настройка «Быстрое добавление» (Popular.astro `quickAddText`,
+ * прокидывается через `data-qa-text` на гриде → `hydratePopular` → сюда). Паритет
+ * с SSR-веткой реальных товаров (`FluxProductCard` `ctaLabel={quickAddText}`) —
+ * без этого клиентская гидрация (реально отображаемая на опубликованном сайте
+ * разметка, см. renderCardHtml doc-comment) молча игнорировала настройку текста
+ * кнопки, всегда показывая литерал «В корзину» (Task 6, Step 2/3).
  */
-function cardButtonHtml(p: RealProduct): string {
+function cardButtonHtml(p: RealProduct, ctaLabel?: string): string {
+	const label = escapeHtml(ctaLabel || "В корзину");
 	const hasVariants =
 		p.hasVariants === true ||
 		(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
@@ -582,7 +590,7 @@ function cardButtonHtml(p: RealProduct): string {
 		const combos = p.variantCombinations ?? [];
 		const firstCombo = combos.find((c) => c && c.available !== false) ?? combos[0];
 		if (!firstCombo) {
-			return `<a href="${escapeHtml(productHref(p))}" data-qa-link class="${CARD_BTN_CLS}">В корзину</a>`;
+			return `<a href="${escapeHtml(productHref(p))}" data-qa-link class="${CARD_BTN_CLS}">${label}</a>`;
 		}
 		const opt = (firstCombo.options ?? {}) as Record<string, string>;
 		const color = opt["Цвет"] || opt["Color"] || "";
@@ -593,7 +601,7 @@ function cardButtonHtml(p: RealProduct): string {
 			` data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"` +
 			(color ? ` data-variant-color="${escapeHtml(color)}"` : "") +
 			(size ? ` data-variant-size="${escapeHtml(size)}"` : "") +
-			` data-image="${escapeHtml(productImage(p))}" data-quantity="1" class="${CARD_BTN_CLS}">В корзину</button>`
+			` data-image="${escapeHtml(productImage(p))}" data-quantity="1" class="${CARD_BTN_CLS}">${label}</button>`
 		);
 	}
 	const old = formatPrice(p.oldPrice || p.compareAtPrice || null);
@@ -601,7 +609,7 @@ function cardButtonHtml(p: RealProduct): string {
 		`<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}"` +
 		` data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"` +
 		(old ? ` data-old-price="${escapeHtml(old)}"` : "") +
-		` data-image="${escapeHtml(productImage(p))}" data-quantity="1" class="${CARD_BTN_CLS}">В корзину</button>`
+		` data-image="${escapeHtml(productImage(p))}" data-quantity="1" class="${CARD_BTN_CLS}">${label}</button>`
 	);
 }
 
@@ -611,8 +619,14 @@ function cardButtonHtml(p: RealProduct): string {
  * + memory-чипы + чёрная CTA). Плоский `<img>` вместо `<FluxPicture>` (визуально
  * идентично; webp-конвейер для MinIO-картинок не применяется). Сердце избранного
  * и fallback-svg пустого фото — фичи Merfy, сохранены поверх эталона.
+ *
+ * `ctaLabel` — см. cardButtonHtml doc-comment (канон quickAddText). Эта функция —
+ * то, что РЕАЛЬНО рендерится на опубликованном сайте (Popular.astro
+ * hydratePopular перезаписывает grid.innerHTML этим выводом на каждый
+ * page-load, поверх SSR-вывода FluxProductCard) — поэтому паритет ctaLabel
+ * с FluxProductCard здесь обязателен, не косметика.
  */
-export function renderCardHtml(p: RealProduct): string {
+export function renderCardHtml(p: RealProduct, ctaLabel?: string): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
 	const image = escapeHtml(productImage(p));
@@ -668,7 +682,7 @@ export function renderCardHtml(p: RealProduct): string {
 			</div>
 		</div>
 		${memoryHtml}
-		${cardButtonHtml(p)}
+		${cardButtonHtml(p, ctaLabel)}
 	</div>
 </article>`;
 }

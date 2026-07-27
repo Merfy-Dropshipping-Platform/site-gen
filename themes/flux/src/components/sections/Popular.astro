@@ -1,4 +1,6 @@
 ---
+import FluxProductCard from "../products/FluxProductCard.astro";
+
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular / rose T13): полная конструкторная
 // схема theme-base PopularProducts.puckConfig поверх разметки верстальщика.
 // Канон-дефолты конструктора (headingSize/textSize small = литерал DS, columns
@@ -271,13 +273,6 @@ if (collectionRef && siteId) {
 	}
 }
 
-// Outline-сердце flux для SSR-карточки realProducts (фича Merfy поверх
-// эталона; делегат initWishlistUI на load перекрасит [data-wishlist-icon]).
-const wishlistOutlineSvg =
-	'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">' +
-	'<path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" ' +
-	'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
-	"</svg>";
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -325,7 +320,13 @@ const containerCls = paddingStyle
 			data-collection={collectionRef}
 			data-next-photo={nextPhoto ? "true" : undefined}
 			data-quick-add={quickAddMode}
-			data-qa-text={quickAddMode ? quickAddText : undefined}
+			{/* data-qa-text — ВСЕГДА (не гейтится quickAddMode): рич-CTA видна на
+			    карточке независимо от quickAddMode (см. комментарий у realProducts.map
+			    ниже), quickAddText лишь меняет подпись и всегда имеет значение
+			    (fallback "В корзину"/"В КОРЗИНУ"). Читает hydratePopular ниже →
+			    прокидывает в renderCardHtml(p, ctaLabel) (storefront-hydrate.ts) —
+			    паритет с SSR-веткой FluxProductCard ctaLabel={quickAddText}. */}
+			data-qa-text={quickAddText}
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
 			data-btn-style={btnStyle}
 		>
@@ -334,87 +335,22 @@ const containerCls = paddingStyle
 			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
 			    live освежает данные. */}
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
+				/* ЕДИНЫЙ рендерер для реальных товаров (Task 6, Step 2): та же
+				   FluxProductCard, что catalog.astro/wishlist.astro/collections/
+				   preview.astro (устраняет дубль вёрстки, что раньше жил тут
+				   инлайн). href — ЯВНО /product?id= (реальные товары не имеют
+				   статической /products/{id}, только demo catalogProducts —
+				   storefront-hydrate.ts productHref). ctaLabel — канон quickAddText
+				   (Быстрое добавление): CTA рич-карточки видна всегда (пиксель
+				   эталона FluxProductCard верстальщиков), quickAddMode/Text меняет
+				   только подпись кнопки (прецедент theme-base PopularProductRichCard
+				   ctaLabel={quickAddText}), не видимость (rich-вариант ≠ minimal). */
 				<li data-product-id={product.id}>
-					<article
-						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
-						data-nt="flux-product-card"
-						aria-label={product.name}
-					>
-						<div class="relative w-full">
-							<a
-								href={`/product?id=${encodeURIComponent(product.id)}`}
-								data-nt="flux-card-media"
-								class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
-								aria-label={product.name}
-							>
-								<img
-									src={product.image}
-									alt={product.name}
-									loading="lazy"
-									class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-								/>
-								{product.salePercent && (
-									<div class="absolute left-2 top-2 flex flex-col items-start gap-1">
-										<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
-											{product.salePercent}
-										</span>
-									</div>
-								)}
-							</a>
-							<button
-								type="button"
-								data-wishlist-toggle
-								data-product-id={product.id}
-								aria-pressed="false"
-								aria-label="В избранное"
-								class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80"
-							>
-								<span data-wishlist-icon class="block size-[18px]" set:html={wishlistOutlineSvg}></span>
-							</button>
-						</div>
-						<div class="flex flex-1 flex-col gap-4">
-							<div class="flex flex-col gap-4">
-								{product.swatches && product.swatches.length > 0 && (
-									<div class="flex items-center gap-1">
-										{product.swatches.map((c: string) => (
-											<span class="size-5 rounded-[2px]" style={`background:${c}`} aria-hidden="true"></span>
-										))}
-									</div>
-								)}
-								<div class="flex flex-col gap-1">
-									<a
-										href={`/product?id=${encodeURIComponent(product.id)}`}
-										class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]"
-									>
-										{product.name}
-									</a>
-									<div class="flex items-center gap-2">
-										<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
-											{product.price}
-										</span>
-										{product.oldPrice && (
-											<span class="font-roboto-flex text-[12px] font-light leading-normal text-[#CCCCCC] line-through md:text-[14px]">
-												{product.oldPrice}
-											</span>
-										)}
-									</div>
-								</div>
-							</div>
-							<button
-								type="button"
-								data-add-to-cart
-								data-product-id={product.id}
-								data-name={product.name}
-								data-price={product.price}
-								data-old-price={product.oldPrice}
-								data-image={product.image}
-								data-quantity="1"
-								class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
-							>
-								В корзину
-							</button>
-						</div>
-					</article>
+					<FluxProductCard
+						product={product}
+						href={`/product?id=${encodeURIComponent(product.id)}`}
+						ctaLabel={quickAddText}
+					/>
 				</li>
 			)) : placeholderCards.map((product) => (
 				/* Пустое состояние (коллекция не выбрана): плейсхолдер-карточка
@@ -479,9 +415,11 @@ const containerCls = paddingStyle
 	// /data/products.json (N = data-cards грида, дефолт 4 — поведение
 	// верстальщика). Канон-поля T13 поверх: data-collection → фильтр по
 	// выбранной коллекции, data-next-photo → data-image-2 (вторая картинка
-	// товара) для hover-скрипта. Кнопку «В корзину» (вариант-aware: первая
-	// доступная комбинация) несёт сам renderCardHtml (эталонная rich-карточка),
-	// поэтому отдельный qaBtn больше не добавляем. Demo-сборка → no-op.
+	// товара) для hover-скрипта, data-qa-text → ctaLabel (Task 6: паритет с
+	// SSR-веткой FluxProductCard ctaLabel={quickAddText}, "Быстрое добавление").
+	// Кнопку «В корзину» (вариант-aware: первая доступная комбинация) несёт сам
+	// renderCardHtml (эталонная rich-карточка), поэтому отдельный qaBtn больше
+	// не добавляем. Demo-сборка → no-op.
 	const hydratePopular = async () => {
 		const grids = Array.from(document.querySelectorAll<HTMLElement>('[data-nt="popular-grid"]'));
 		if (grids.length === 0) return;
@@ -494,6 +432,7 @@ const containerCls = paddingStyle
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
+			const ctaLabel = grid.getAttribute("data-qa-text") || undefined;
 			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
 			// SSR-моки (demo), не подтягиваем весь каталог магазина.
 			if (!collectionRef) continue;
@@ -509,7 +448,7 @@ const containerCls = paddingStyle
 					// Кнопка «В корзину» (вариант-aware) теперь внутри renderCardHtml —
 					// отдельный qaBtn не добавляем (был бы дубль). data-btn-style на гриде
 					// продолжает стилизовать её через <style is:global> ниже.
-					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}</li>`;
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, ctaLabel)}</li>`;
 				})
 				.join("");
 		}

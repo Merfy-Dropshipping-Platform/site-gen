@@ -5,10 +5,22 @@ import FluxPicture from "../img/FluxPicture.astro";
 interface Props {
 	product: Product;
 	priority?: boolean;
+	/**
+	 * Явная ссылка карточки. По умолчанию `/products/{id}` — статическая
+	 * demo-страница (`getStaticPaths` по `catalogProducts`, см. catalog.astro/
+	 * wishlist.astro/collections/preview.astro). РЕАЛЬНЫЕ товары магазина
+	 * такой статической страницы не имеют (см. storefront-hydrate.ts
+	 * `productHref` — единая `/product?id=` с клиентским рендером) —
+	 * Popular.astro для реальных товаров передаёт её явно через этот проп,
+	 * чтобы не 404-ить при клике по карточке товара из выбранной коллекции.
+	 */
+	href?: string;
+	/** Текст CTA «В корзину» (Popular.astro прокидывает quickAddText/канон-настройку «Быстрое добавление»). */
+	ctaLabel?: string;
 }
 
-const { product, priority = false } = Astro.props;
-const href = `/products/${product.id}`;
+const { product, priority = false, href: hrefProp, ctaLabel = "В корзину" } = Astro.props;
+const href = hrefProp ?? `/products/${product.id}`;
 // Бейджи эталона: «Новинка» (isNew) + процент скидки (salePercent). Legacy
 // demo-флаг discount сохранён как третий бейдж «Скидка» (его несут
 // catalogProducts), чтобы не потерять пустое состояние demo-сборки.
@@ -153,7 +165,7 @@ const wishlistOutlineSvg =
 			data-quantity="1"
 			class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
 		>
-			В корзину
+			{ctaLabel}
 		</button>
 	</div>
 </article>

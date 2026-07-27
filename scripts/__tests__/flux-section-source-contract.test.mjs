@@ -405,6 +405,9 @@ const BLOCKS = [
       // PopularProductsSchema.quickAddMode — канон-поле, управляющее рендером
       // CTA "В корзину"; quickAdd (булев) — legacy/hidden alias той же фичи.
       { key: 'quickAdd', patterns: [/p\.quickAdd\w*\b/] },
+      // PopularProductsSchema.imageView (Figma 314-34614 «Вид изображения»:
+      // Квадрат/Портрет/Широкий) — aspect-ratio медиа карточки (Task 6, Step 1/3).
+      { key: 'imageView', patterns: [/p\.imageView\b/] },
     ],
     // PopularProducts.puckConfig не объявляет type:'array' полей (cards/columns —
     // числовые слайдеры, не массив карточек — карточки приходят из фида коллекции).
@@ -645,5 +648,107 @@ test('Collections (src/components/sections/Collections.astro): upstream card asp
 
   await t.test('rounded-[12px] — upstream радиус плитки', () => {
     assert.match(content, /rounded-\[12px\]/, 'ожидался rounded-[12px] (upstream card radius)');
+  });
+});
+
+// ───────── Task 6 (Step 1): точечные assertions PopularProducts ─────────
+//
+// Матрица BLOCKS выше проверяет только regex-присутствие пропов (`p.collection`
+// и т.п. где-то в файле) — этого недостаточно для брифа Task 6, который явно
+// требует проверить (1) subsection-маркеры heading/viewAll, (2) что реальные
+// (merchant) и demo-товары рендерятся ОДНИМ card-рендерером (Step 2 — не
+// инлайн-дублем разметки), и (3) что настройка "Быстрое добавление"
+// (quickAddText) реально доезжает и до SSR-ветки (FluxProductCard), и до
+// клиентской гидрации (storefront-hydrate.ts renderCardHtml/cardButtonHtml) —
+// это ФАКТИЧЕСКИ то, что видит покупатель на опубликованном сайте (hydratePopular
+// перезаписывает grid.innerHTML на каждый page-load поверх SSR-вывода). До
+// фикса storefront-hydrate.ts (см. task-6-report.md) cardButtonHtml/
+// renderCardHtml хардкодили литерал "В корзину" — эта проверка красная без него.
+test('PopularProducts (src/components/sections/Popular.astro): subsection markers + единый card renderer + ctaLabel', async (t) => {
+  const absPath = path.resolve(THEME_ROOT, 'src/components/sections/Popular.astro');
+  const content = await readFileOrNull(absPath);
+  assert.ok(content !== null, 'ожидался файл Popular.astro');
+
+  await t.test('subsection marker: heading (direct-edit на канвасе конструктора)', () => {
+    assert.ok(
+      content.includes('data-puck-subsection-field="heading"'),
+      'ожидался маркер data-puck-subsection-field="heading"',
+    );
+  });
+
+  await t.test('subsection marker: viewAll (direct-edit на канвасе конструктора)', () => {
+    assert.ok(
+      content.includes('data-puck-subsection-field="viewAll"'),
+      'ожидался маркер data-puck-subsection-field="viewAll"',
+    );
+  });
+
+  await t.test('единый card renderer: SSR-ветка реальных товаров использует <FluxProductCard>, не инлайн-дубль разметки', () => {
+    assert.match(
+      content,
+      /import\s+FluxProductCard\s+from\s+["']\.\.\/products\/FluxProductCard\.astro["']/,
+      'ожидался импорт FluxProductCard — общий рендерер карточки (Task 6, Step 2), ' +
+        'вместо дублирования article/data-nt="flux-product-card" разметки инлайн в Popular.astro',
+    );
+    assert.match(
+      content,
+      /realProducts\.map\([\s\S]{0,1200}?<FluxProductCard\b/,
+      'ожидалось, что realProducts.map(...) (реальные товары выбранной коллекции) ' +
+        'рендерит <FluxProductCard ...> — та же карточка, что catalog.astro/wishlist.astro',
+    );
+  });
+
+  await t.test('quick add: ctaLabel SSR-карточки прокинут из quickAddText (не хардкод "В корзину")', () => {
+    assert.match(
+      content,
+      /<FluxProductCard[\s\S]{0,200}?ctaLabel=\{quickAddText\}/,
+      'ожидалось ctaLabel={quickAddText} на <FluxProductCard ...> — настройка ' +
+        '"Быстрое добавление" (Figma 314-34614) должна управлять подписью CTA рич-карточки',
+    );
+  });
+
+  await t.test('quick add: клиентская гидрация прокидывает ctaLabel в renderCardHtml (паритет с SSR)', () => {
+    assert.match(
+      content,
+      /renderCardHtml\(p,\s*ctaLabel\)/,
+      'ожидался renderCardHtml(p, ctaLabel) в hydratePopular — иначе на опубликованном ' +
+        'сайте (где hydratePopular перезаписывает grid.innerHTML на каждый page-load) ' +
+        'настройка "Быстрое добавление" молча теряется, несмотря на то, что SSR-превью её показывает',
+    );
+  });
+});
+
+test('storefront-hydrate.ts (themes/flux/src/lib/storefront-hydrate.ts): renderCardHtml/cardButtonHtml принимают ctaLabel', async (t) => {
+  const absPath = path.resolve(THEME_ROOT, 'src/lib/storefront-hydrate.ts');
+  const content = await readFileOrNull(absPath);
+  assert.ok(content !== null, 'ожидался файл storefront-hydrate.ts');
+
+  await t.test('renderCardHtml(p, ctaLabel?) — экспортируемая сигнатура несёт необязательный ctaLabel', () => {
+    assert.match(
+      content,
+      /export\s+function\s+renderCardHtml\(p:\s*RealProduct,\s*ctaLabel\?:\s*string\)/,
+      'ожидалась сигнатура renderCardHtml(p: RealProduct, ctaLabel?: string) — паритет ' +
+        'с FluxProductCard.astro ctaLabel prop (Task 6, Step 2/3)',
+    );
+  });
+
+  await t.test('cardButtonHtml(p, ctaLabel?) — приватный хелпер прокидывает ctaLabel в разметку кнопки', () => {
+    assert.match(
+      content,
+      /function\s+cardButtonHtml\(p:\s*RealProduct,\s*ctaLabel\?:\s*string\)/,
+      'ожидалась сигнатура cardButtonHtml(p: RealProduct, ctaLabel?: string)',
+    );
+  });
+
+  await t.test('cardButtonHtml НЕ хардкодит литерал "В корзину" в разметке кнопки (использует ctaLabel/label)', () => {
+    // Внутри cardButtonHtml допустим только fallback-литерал в выражении
+    // `ctaLabel || "В корзину"` (дефолт при отсутствии настройки) — не как
+    // текст самой кнопки/ссылки (`>В корзину<`).
+    assert.doesNotMatch(
+      content,
+      />В корзину</,
+      'кнопка/ссылка карточки не должна содержать хардкод-текст "В корзину" — ' +
+        'подпись обязана идти через ctaLabel (fallback внутри cardButtonHtml допустим)',
+    );
   });
 });

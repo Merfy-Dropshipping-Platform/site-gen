@@ -283,6 +283,53 @@ export function formatPrice(value: number | string | null | undefined): string {
 	return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
+/** Цена → число: число как есть, строка ("54 990 ₽"/"54990.00") → распарсенное
+ * число, иначе null. Общий парсер для resolveComboPricing ниже (и для любого
+ * caller'а, которому нужно сравнить/проверить положительность цены). */
+export function toPriceNumber(value: unknown): number | null {
+	if (value === null || value === undefined || value === "") return null;
+	if (typeof value === "number") return Number.isFinite(value) ? value : null;
+	const n = parseFloat(String(value).replace(/[^\d.]/g, ""));
+	return Number.isFinite(n) ? n : null;
+}
+
+/** Комбинация варианта — только поля, нужные для резолва цены (subset VariantCombination). */
+export interface ComboPricingCombo {
+	price?: number | string | null;
+	compareAtPrice?: number | string | null;
+}
+
+/** Товар — только поля, нужные для резолва цены (subset RealProduct + basePrice). */
+export interface ComboPricingProduct {
+	price?: number | string | null;
+	basePrice?: number | string | null;
+	oldPrice?: number | string | null;
+	compareAtPrice?: number | string | null;
+}
+
+/**
+ * Единая формула резолва цены по активной комбинации варианта (паритет
+ * theme-base Product.astro / FluxProductDetail.astro applyCombo): активная
+ * комбинация побеждает, ЕСЛИ её цена положительна, иначе — базовая цена
+ * товара (`product.price ?? product.basePrice`); старая цена — тем же
+ * каскадом (`combo.compareAtPrice ?? product.oldPrice ?? product.compareAtPrice`).
+ * Раньше эта формула была продублирована (чуть по-разному) в SSR-фронтматтере
+ * FeaturedProduct.astro И в клиентском `applyCombo()` того же файла — теперь
+ * единственный источник, импортируется в оба места (review Task 5, Finding 3a).
+ */
+export function resolveComboPricing(
+	combo: ComboPricingCombo | null | undefined,
+	product: ComboPricingProduct | null | undefined,
+): { price: number | string | null; oldPrice: number | string | null } {
+	const comboPriceNum = toPriceNumber(combo?.price ?? null);
+	const price =
+		combo && comboPriceNum !== null && comboPriceNum > 0
+			? (combo.price as number | string)
+			: (product?.price ?? product?.basePrice ?? null);
+	const oldPrice = combo?.compareAtPrice ?? product?.oldPrice ?? product?.compareAtPrice ?? null;
+	return { price: price ?? null, oldPrice: oldPrice ?? null };
+}
+
 /** Ссылка на PDP реального товара. Реальные товары не имеют статических
  * `/products/{id}` страниц (только demo), поэтому единая страница
  * `/product?id=` с клиентским рендером. */
@@ -688,6 +735,20 @@ const VARIANT_BTN_UNSEL =
 	"border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90";
 
 /**
+ * Общая обёртка ОДНОЙ группы вариантов: `<div data-pdp-variant-group>` +
+ * лейбл-`<span>` группы — байт-в-байт одинаковы у renderVariantGroupsHtml и
+ * renderVariantSelectsHtml (различается только вложенный control — чипы vs
+ * `<select>`, передаётся вызывающей функцией). Раньше эта обёртка была
+ * продублирована в обеих функциях (~70% разметки, Task 5 review Finding 3b).
+ */
+function renderVariantGroupWrapper(groupName: string, controlHtml: string): string {
+	return `<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="${escapeHtml(groupName)}">
+	<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">${escapeHtml(groupName)}</span>
+	${controlHtml}
+</div>`;
+}
+
+/**
  * HTML-разметка групп вариантов (выбран: чёрный фон/белый текст; невыбран:
  * белый фон/чёрный border) — стиль ровный с demo вариант-строкой Flux.
  * Маркер `data-pdp-variant-group` (НЕ `data-nt="variant-text-row"`), чтобы
@@ -706,10 +767,8 @@ export function renderVariantGroupsHtml(
 					return `<button type="button" class="${cls}" role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`;
 				})
 				.join("");
-			return `<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="${escapeHtml(g.name)}">
-	<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">${escapeHtml(g.name)}</span>
-	<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="${escapeHtml(g.name)}">${buttons}</div>
-</div>`;
+			const control = `<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="${escapeHtml(g.name)}">${buttons}</div>`;
+			return renderVariantGroupWrapper(g.name, control);
 		})
 		.join("");
 }
@@ -735,10 +794,8 @@ export function renderVariantSelectsHtml(
 					return `<option value="${escapeHtml(v)}"${isSel ? " selected" : ""}>${escapeHtml(v)}</option>`;
 				})
 				.join("");
-			return `<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="${escapeHtml(g.name)}">
-	<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">${escapeHtml(g.name)}</span>
-	<select class="h-10 w-full rounded-[6px] border border-solid border-[#000000] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] outline-none" data-variant-select data-variant-key="${escapeHtml(g.name)}" aria-label="${escapeHtml(g.name)}">${options}</select>
-</div>`;
+			const control = `<select class="h-10 w-full rounded-[6px] border border-solid border-[#000000] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] outline-none" data-variant-select data-variant-key="${escapeHtml(g.name)}" aria-label="${escapeHtml(g.name)}">${options}</select>`;
+			return renderVariantGroupWrapper(g.name, control);
 		})
 		.join("");
 }

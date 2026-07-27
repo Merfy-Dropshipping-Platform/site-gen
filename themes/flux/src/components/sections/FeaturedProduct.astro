@@ -63,6 +63,8 @@ import {
 	renderVariantSelectsHtml,
 	formatPrice,
 	productHref,
+	resolveComboPricing,
+	toPriceNumber,
 } from "../../lib/storefront-hydrate";
 
 const p = Astro.props as Record<string, any>;
@@ -89,6 +91,38 @@ const layoutRaw = typeof p.layout === "string" ? p.layout : "";
 const layout = layoutRaw === "stacked" ? "stacked" : "carousel";
 const photoPosition = p.photoPosition === "right" ? "right" : "left";
 const photoOnLeft = photoPosition !== "right";
+
+// — Размер (canon "size", theme-base Product.puckConfig "Размер"). Пин фиксирует
+//   ОДИН масштаб: главное фото 652×652 desktop + миниатюра 120px. «Размер» не
+//   переструктурирует DOM/классы (принцип файла — 1:1 разметка из пина) — он
+//   параметризует ИМЕННО эти два уже существующих utility-класса (lg:w-[…] /
+//   md:size-[…]) через CSS-переменную на корне секции (паттерн theme-base
+//   Product.astro sizeVarsStyle). medium сохраняет пиновые 652/120 БЕЗ
+//   изменений — нулевая регрессия дефолтного рендера.
+const sizeRaw = typeof p.size === "string" ? p.size : "";
+const productSize: "small" | "medium" | "large" =
+	sizeRaw === "small" || sizeRaw === "large" ? sizeRaw : "medium";
+const MAIN_IMAGE_PX = { small: 520, medium: 652, large: 760 } as const;
+const THUMB_PX = { small: 96, medium: 120, large: 144 } as const;
+const sizeVarsStyle = `--product-main-image-size:${MAIN_IMAGE_PX[productSize]}px;--product-thumb-size:${THUMB_PX[productSize]}px;`;
+
+// — Увеличение (canon "zoomMode": click/hover/none). ПРОВЕРЕНО построчно против
+//   пинового источника (fetched e29b70920ffe4469744386b51b9c8ee0fcf68bd0,
+//   src/components/products/ProductConfigurator.astro) И против установленного
+//   flux-паттерна PDP (FluxProductDetail.astro, оба места читались целиком для
+//   review Task 5 Finding 2): НИ ОДНО из двух не содержит НИКАКОГО
+//   zoom-механизма — ни hover-scale CSS/transform, ни click-to-expand lightbox.
+//   Пиновый скрипт galereи даёт только thumb-swap/thumbs-track-scroll/mobile
+//   carousel — zoom отсутствует как класс фичи во всей теме flux, не только в
+//   этой секции. Изобретать lightbox/hover-zoom с нуля здесь означало бы
+//   дописывать поведение, которого нет в пине — прямое нарушение принципа
+//   файла «разметка/поведение 1:1 из пина, меняются только данные». Поэтому
+//   zoomMode — ЛЕГИТИМНЫЙ no-op: значение читается и прокидывается на корень
+//   секции (`data-zoom-mode`) для будущей проводки, но интерактивность не
+//   включает. Задокументировано здесь + в фикс-репорте (не «молча мёртвое»).
+const zoomModeRaw = typeof p.zoomMode === "string" ? p.zoomMode : "";
+const zoomMode: "click" | "hover" | "none" =
+	zoomModeRaw === "click" || zoomModeRaw === "none" ? zoomModeRaw : "hover";
 
 // SSR-резолв: товар ВЫБРАН мерчантом → тянем реальные данные ПРЯМО в статике
 // (паритет Popular.astro/Collections.astro SITES_INTERNAL_BASE fetch).
@@ -158,26 +192,18 @@ function pickOpt(opts: Record<string, string> | undefined, keys: string[]): stri
 const cartColor = pickOpt(selectedOptions, ["Цвет", "Color"]);
 const cartSize = pickOpt(selectedOptions, ["Размер", "Size"]);
 
-function toNum(v: unknown): number | null {
-	if (v === null || v === undefined || v === "") return null;
-	if (typeof v === "number") return Number.isFinite(v) ? v : null;
-	const n = parseFloat(String(v).replace(/[^\d.]/g, ""));
-	return Number.isFinite(n) ? n : null;
-}
-
 // — Цена: активная комбинация (если положительная) перебивает базовую цену
-//   товара (паритет theme-base/FluxProductDetail applyCombo). —
-const comboPriceRaw =
-	activeCombo && toNum(activeCombo.price) && toNum(activeCombo.price)! > 0
-		? activeCombo.price
-		: (realProduct?.price ?? realProduct?.basePrice);
-const comboOldRaw = (activeCombo && activeCombo.compareAtPrice) || realProduct?.oldPrice || realProduct?.compareAtPrice || null;
+//   товара (паритет theme-base/FluxProductDetail applyCombo). Единая формула —
+//   `resolveComboPricing` (storefront-hydrate.ts), импортируется И сюда (SSR),
+//   И в клиентский `<script>` applyCombo() ниже (review Task 5, Finding 3a:
+//   раньше формула была продублирована чуть по-разному в двух местах). —
+const { price: comboPriceRaw, oldPrice: comboOldRaw } = resolveComboPricing(activeCombo, realProduct);
 
 const displayPrice = isPlaceholder ? PLACEHOLDER_PRICE : formatPrice(comboPriceRaw) || PLACEHOLDER_PRICE;
 const displayOldPrice = isPlaceholder ? "" : formatPrice(comboOldRaw);
 
-const priceNumForBadge = toNum(comboPriceRaw);
-const oldNumForBadge = toNum(comboOldRaw);
+const priceNumForBadge = toPriceNumber(comboPriceRaw);
+const oldNumForBadge = toPriceNumber(comboOldRaw);
 const salePercentText =
 	!isPlaceholder && oldNumForBadge && priceNumForBadge && oldNumForBadge > priceNumForBadge
 		? `-${Math.round(((oldNumForBadge - priceNumForBadge) / oldNumForBadge) * 100)}%`
@@ -256,6 +282,8 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 	data-block="featured-product"
 	data-site-id={siteId}
 	data-product-id={cartProductId}
+	data-zoom-mode={zoomMode}
+	style={sizeVarsStyle}
 >
 	<div class:list={["flux-container", paddingStyle ? "" : "py-10 md:py-16"]} style={paddingStyle} data-reveal>
 		<!-- ============================= DESKTOP (≥768px) ============================= -->
@@ -267,7 +295,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			data-nt="product-configurator"
 		>
 			<!-- Изображения -->
-			<div class="flex w-full flex-col gap-4 lg:w-[652px] lg:min-w-0">
+			<div class="flex w-full flex-col gap-4 lg:w-[var(--product-main-image-size,652px)] lg:min-w-0">
 				<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
@@ -282,7 +310,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 								<button
 									type="button"
 									class:list={[
-										"size-[88px] shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] transition-opacity hover:opacity-90 md:size-[120px]",
+										"size-[88px] shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] transition-opacity hover:opacity-90 md:size-[var(--product-thumb-size,120px)]",
 										i === 0 ? "border border-solid border-[#1e2952]/50" : "",
 									]}
 									data-cfg-thumb
@@ -465,6 +493,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			<div
 				class="flex flex-col gap-4"
 				data-cfg-variants
+				data-variants-style={variantsDisplayStyle}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="103"
 				data-puck-subsection-field="variants"
@@ -551,6 +580,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 		findCombination,
 		renderVariantGroupsHtml,
 		renderVariantSelectsHtml,
+		resolveComboPricing,
 	} from "../../lib/storefront-hydrate";
 
 	function pick(opts: Record<string, string> | undefined, keys: string[]): string {
@@ -615,8 +645,10 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 
 			function applyCombo() {
 				const combo = activeCombo();
-				const priceVal = combo && Number(combo.price) > 0 ? combo.price : liveProduct ? (liveProduct.price ?? liveProduct.basePrice) : null;
-				const oldVal = (combo && combo.compareAtPrice) || (liveProduct && (liveProduct.oldPrice ?? liveProduct.compareAtPrice)) || null;
+				// Единая формула резолва цены — resolveComboPricing (storefront-hydrate.ts),
+				// та же, что зовёт SSR-фронтматтер этого файла (review Task 5, Finding 3a:
+				// раньше здесь была слегка другая копия той же формулы).
+				const { price: priceVal, oldPrice: oldVal } = resolveComboPricing(combo, liveProduct);
 				if (liveProduct) {
 					const priceStr = formatPrice(priceVal);
 					const oldStr = formatPrice(oldVal);

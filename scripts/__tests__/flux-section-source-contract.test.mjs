@@ -147,6 +147,153 @@ function hasAny(content, patterns) {
   return patterns.some((re) => re.test(content));
 }
 
+// ───────── корневой data-puck-component-id: якорь к СОБСТВЕННОМУ корню секции ─────────
+//
+// Наивная проверка `/data-puck-component-id=\{/.test(content)` (использовавшаяся
+// раньше) — это whole-file поиск, не привязанный к корневому элементу секции.
+// Она держится сегодня для всех 9 файлов (либо ровно одно вхождение, либо два —
+// оба на взаимоисключающих корневых ветках тернарника вида
+// `isEmpty ? <section ...marker> : <section ...marker>`, см. Hero/PromoBanner),
+// но structurally не защищает от БУДУЩЕГО ложного прохождения: секция может
+// рендерить ДОЧЕРНИЙ Puck-блок с СОБСТВЕННЫМ `data-puck-component-id` на его
+// корне, при этом собственный корень секции маркера не имеет — сегодняшняя
+// naive-проверка такое пропустит.
+//
+// Ниже — минимальный tag-aware сканер: находит только те открывающие/
+// самозакрывающиеся теги, что стоят на "верхнем уровне" (глубина 0) шаблона
+// (после закрытия frontmatter-забора `---`), т.е. сам корень секции и, при
+// тернарнике, каждую взаимоисключающую корневую ветку — и проверяет маркер
+// ТОЛЬКО среди их собственных открывающих тегов (не throughout всего файла).
+// Вложенные дочерние блоки (глубина > 0) сознательно исключены из
+// рассмотрения — их собственный `data-puck-component-id` не защитывается как
+// корневой маркер СЕКЦИИ.
+
+function getTemplateBody(content) {
+  const lines = content.split('\n');
+  let firstFence = -1;
+  let secondFence = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === '---') {
+      if (firstFence === -1) firstFence = i;
+      else {
+        secondFence = i;
+        break;
+      }
+    }
+  }
+  if (firstFence === -1 || secondFence === -1) return content;
+  return lines.slice(secondFence + 1).join('\n');
+}
+
+// Убираем то, что может испортить наивный посимвольный проход по тегам:
+// содержимое <script>/<style> (там `<`/`>` — операторы JS, не теги) и
+// комментарии (HTML `<!-- -->` и JS/JSX `/* ... */` — в них попадаются
+// примеры тегов вроде "Сырой <img>" в человеческом комментарии, Hero.astro).
+function stripNonStructural(body) {
+  return body
+    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+}
+
+// Разбирает шаблон на поток тегов { type: 'open'|'close'|'self', name, tagText }.
+// tagText для open/self — полный текст открывающего тега от `<Name` до его
+// СОБСТВЕННОГО закрывающего `>`/`/>`, с учётом строк ('"`) и вложенных `{}`
+// (`data-x={cond ? "a>" : "b"}`, шаблонные литералы с `${...}`), чтобы `>`
+// внутри JS-выражения атрибута не спутать с концом тега.
+function extractTags(body) {
+  const tags = [];
+  const len = body.length;
+  let i = 0;
+  while (i < len) {
+    if (body[i] !== '<') {
+      i++;
+      continue;
+    }
+    const closingMatch = /^<\/([A-Za-z][\w.]*)\s*>/.exec(body.slice(i));
+    if (closingMatch) {
+      tags.push({ type: 'close', name: closingMatch[1] });
+      i += closingMatch[0].length;
+      continue;
+    }
+    const openStart = /^<([A-Za-z][\w.]*)/.exec(body.slice(i));
+    if (!openStart) {
+      i++;
+      continue;
+    }
+    let j = i + openStart[0].length;
+    let braceDepth = 0;
+    let inString = null;
+    let selfClosing = false;
+    while (j < len) {
+      const ch = body[j];
+      if (inString) {
+        if (ch === inString && body[j - 1] !== '\\') inString = null;
+        j++;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        inString = ch;
+        j++;
+        continue;
+      }
+      if (ch === '{') {
+        braceDepth++;
+        j++;
+        continue;
+      }
+      if (ch === '}') {
+        braceDepth--;
+        j++;
+        continue;
+      }
+      if (braceDepth === 0 && ch === '/' && body[j + 1] === '>') {
+        selfClosing = true;
+        j += 2;
+        break;
+      }
+      if (braceDepth === 0 && ch === '>') {
+        j++;
+        break;
+      }
+      j++;
+    }
+    tags.push({
+      type: selfClosing ? 'self' : 'open',
+      name: openStart[1],
+      tagText: body.slice(i, j),
+    });
+    i = j;
+  }
+  return tags;
+}
+
+// Все теги, встреченные на глубине 0 (т.е. сам корень секции, а при
+// тернарнике — обе взаимоисключающие корневые ветки; вложенные дочерние
+// элементы/блоки — глубина > 0, не попадают в выборку).
+function findRootLevelTags(content) {
+  const body = stripNonStructural(getTemplateBody(content));
+  const tags = extractTags(body);
+  let depth = 0;
+  const candidates = [];
+  for (const tag of tags) {
+    if (tag.type === 'close') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth === 0) candidates.push(tag);
+    if (tag.type === 'open') depth++;
+  }
+  return candidates;
+}
+
+function hasRootPuckMarker(content) {
+  return findRootLevelTags(content).some((tag) =>
+    tag.tagText.includes('data-puck-component-id={'),
+  );
+}
+
 // ───────── матрица секций (Task 2 brief, Step 1) ─────────
 //
 // `subsectionFields` — ТОЛЬКО поля, которые в theme-base *.puckConfig.ts
@@ -220,8 +367,21 @@ const BLOCKS = [
       // булеве showQuantity.
       { key: 'showQuantity', patterns: [/p\.quantity\b/, /p\.showQuantity\b/] },
       // Product.puckConfig: visualConfig.showDescription (theme-driven, скрыто
-      // от мерчанта) ИЛИ description-объект — оба admissible.
-      { key: 'showDescription', patterns: [/showDescription\b/, /p\.description\b/] },
+      // от мерчанта) ИЛИ description-объект — оба admissible. Якорим к
+      // реальному проп-доступу (`.showDescription` после ЛЮБОГО идентификатора —
+      // `p.showDescription`, `visual.showDescription`, `visualConfig.showDescription`,
+      // `Astro.props.showDescription`, …) либо к деструктуризации из props
+      // (`const { showDescription } = Astro.props`) — голый идентификатор
+      // `showDescription\b` без якоря (как было раньше) мог совпасть со
+      // случайной локальной переменной или упоминанием в комментарии.
+      {
+        key: 'showDescription',
+        patterns: [
+          /\.showDescription\b/,
+          /\{[^{}]*\bshowDescription\b[^{}]*\}\s*=/,
+          /p\.description\b/,
+        ],
+      },
     ],
     // Product.puckConfig не объявляет type:'array' полей.
     subsectionFields: [],
@@ -321,10 +481,11 @@ for (const block of BLOCKS) {
     });
 
     await t.test('имеет корневой data-puck-component-id={id}', () => {
-      assert.match(
-        content,
-        /data-puck-component-id=\{/,
-        'ожидался корневой маркер data-puck-component-id={...}',
+      assert.ok(
+        hasRootPuckMarker(content),
+        'ожидался маркер data-puck-component-id={...} на СОБСТВЕННОМ корневом ' +
+          'элементе секции (глубина 0) — не просто где-то в файле (вложенный ' +
+          'дочерний Puck-блок с маркером на корень секции не защитывается)',
       );
     });
 

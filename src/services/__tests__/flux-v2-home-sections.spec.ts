@@ -1,7 +1,7 @@
-import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { composeV2Page } from '../../themes/v2-page-composer';
+import { spawnSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { composeV2Page } from "../../themes/v2-page-composer";
 
 /**
  * Task 10 (spec 111-flux-constructor-live-markup, plan
@@ -68,18 +68,18 @@ import { composeV2Page } from '../../themes/v2-page-composer';
  *        asserted identical once the injected prefix substring is stripped.
  */
 
-const THEME = 'flux';
+const THEME = "flux";
 
 const HOME_ORDER = [
-  'PromoBanner',
-  'Header',
-  'Hero',
-  'Collections',
-  'Product',
-  'PopularProducts',
-  'ImageWithText',
-  'Gallery',
-  'Footer',
+  "PromoBanner",
+  "Header",
+  "Hero",
+  "Collections",
+  "Product",
+  "PopularProducts",
+  "ImageWithText",
+  "Gallery",
+  "Footer",
 ] as const;
 
 // Flux-exclusive literal Tailwind class, defined ONLY in
@@ -92,38 +92,38 @@ const HOME_ORDER = [
 // theme-agnostic design tokens (`font-heading`/`font-body`) and never a
 // theme-specific font literal — confirmed below by reading the actual
 // theme-base sources at runtime, not just asserted once.
-const FLUX_ONLY_MARKER = 'font-roboto-flex';
+const FLUX_ONLY_MARKER = "font-roboto-flex";
 
 const SITES_ROOT = process.cwd();
-const RENDER_PROBE = resolve(SITES_ROOT, 'render-probe.mjs');
+const RENDER_PROBE = resolve(SITES_ROOT, "render-probe.mjs");
 const MANIFEST_PATH = resolve(
   SITES_ROOT,
-  'dist',
-  'theme-sections',
+  "dist",
+  "theme-sections",
   THEME,
-  'manifest.json',
+  "manifest.json",
 );
 const HOME_JSON_PATH = resolve(
   SITES_ROOT,
-  'packages',
-  'theme-flux',
-  'pages',
-  'home.json',
+  "packages",
+  "theme-flux",
+  "pages",
+  "home.json",
 );
 
 // packages/theme-base/blocks/<Dir>/<File>.astro for each canonical type —
 // the file the theme-base cascade tier would compile+render if resolveV2Section
 // ever returned null for that block (the exact fallback risk this spec guards).
 const BASE_BLOCK_SOURCE: Record<(typeof HOME_ORDER)[number], string> = {
-  PromoBanner: 'PromoBanner/PromoBanner.astro',
-  Header: 'Header/Header.astro',
-  Hero: 'Hero/Hero.astro',
-  Collections: 'Collections/Collections.astro',
-  Product: 'Product/Product.astro',
-  PopularProducts: 'PopularProducts/PopularProducts.astro',
-  ImageWithText: 'ImageWithText/ImageWithText.astro',
-  Gallery: 'Gallery/Gallery.astro',
-  Footer: 'Footer/Footer.astro',
+  PromoBanner: "PromoBanner/PromoBanner.astro",
+  Header: "Header/Header.astro",
+  Hero: "Hero/Hero.astro",
+  Collections: "Collections/Collections.astro",
+  Product: "Product/Product.astro",
+  PopularProducts: "PopularProducts/PopularProducts.astro",
+  ImageWithText: "ImageWithText/ImageWithText.astro",
+  Gallery: "Gallery/Gallery.astro",
+  Footer: "Footer/Footer.astro",
 };
 
 interface HomeBlock {
@@ -152,12 +152,12 @@ function renderViaProbe(
   const res = spawnSync(
     process.execPath,
     [RENDER_PROBE, THEME, blockName, JSON.stringify(props)],
-    { encoding: 'utf-8', maxBuffer: 20 * 1024 * 1024 },
+    { encoding: "utf-8", maxBuffer: 20 * 1024 * 1024 },
   );
   return {
     ok: res.status === 0,
-    html: res.stdout ?? '',
-    stderr: res.stderr ?? '',
+    html: res.stdout ?? "",
+    stderr: res.stderr ?? "",
     status: res.status,
   };
 }
@@ -170,7 +170,7 @@ const rendered = new Map<string, ProbeResult>();
 
 beforeAll(async () => {
   try {
-    manifest = JSON.parse(await readFile(MANIFEST_PATH, 'utf-8')) as Record<
+    manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf-8")) as Record<
       string,
       string
     >;
@@ -182,7 +182,7 @@ beforeAll(async () => {
     );
   }
 
-  const home = JSON.parse(await readFile(HOME_JSON_PATH, 'utf-8')) as {
+  const home = JSON.parse(await readFile(HOME_JSON_PATH, "utf-8")) as {
     content: HomeBlock[];
   };
   homeBlocks = home.content;
@@ -192,22 +192,22 @@ beforeAll(async () => {
   }
 }, 30000);
 
-describe('Flux home seed: 9 canonical types, real props for the render checks below', () => {
-  it('packages/theme-flux/pages/home.json content is exactly the 9 canonical types in order', () => {
+describe("Flux home seed: 9 canonical types, real props for the render checks below", () => {
+  it("packages/theme-flux/pages/home.json content is exactly the 9 canonical types in order", () => {
     expect(homeBlocks.map((b) => b.type)).toEqual([...HOME_ORDER]);
   });
 });
 
-describe('dist/theme-sections/flux/manifest.json maps every canonical type (built by `pnpm build:theme-sections flux`)', () => {
-  it.each(HOME_ORDER)('%s has a non-empty manifest mapping', (type) => {
-    expect(typeof manifest[type]).toBe('string');
+describe("dist/theme-sections/flux/manifest.json maps every canonical type (built by `pnpm build:theme-sections flux`)", () => {
+  it.each(HOME_ORDER)("%s has a non-empty manifest mapping", (type) => {
+    expect(typeof manifest[type]).toBe("string");
     expect(manifest[type].length).toBeGreaterThan(0);
   });
 });
 
 describe('PreviewService.renderBlock({ themeId: "flux" }) resolves the V2 Flux section, not a theme-base fallback', () => {
   it.each(HOME_ORDER)(
-    '%s: resolveV2Section mechanism renders successfully (no fall-through to theme-base)',
+    "%s: resolveV2Section mechanism renders successfully (no fall-through to theme-base)",
     (type) => {
       const result = rendered.get(type);
       expect(result).toBeDefined();
@@ -231,52 +231,52 @@ describe('PreviewService.renderBlock({ themeId: "flux" }) resolves the V2 Flux s
   );
 
   it.each(HOME_ORDER)(
-    '%s: rendered HTML carries data-puck-component-id matching the block id (selectable in constructor)',
+    "%s: rendered HTML carries data-puck-component-id matching the block id (selectable in constructor)",
     (type) => {
       const result = rendered.get(type)!;
       const block = homeBlocks.find((b) => b.type === type)!;
       const id = block.props.id as string;
-      expect(typeof id).toBe('string');
+      expect(typeof id).toBe("string");
       expect(id.length).toBeGreaterThan(0);
       expect(result.html).toContain(`data-puck-component-id="${id}"`);
     },
   );
 });
 
-describe('the Flux-only marker assertion above has teeth: theme-base sources genuinely lack it', () => {
+describe("the Flux-only marker assertion above has teeth: theme-base sources genuinely lack it", () => {
   // Proves the marker check would actually CATCH a base-fallback regression,
   // rather than merely checking the Flux marker's presence in isolation:
   // read the exact packages/theme-base/blocks/**/*.astro file the cascade
   // tier would compile+render for each canonical type if resolveV2Section
   // ever returned null, and confirm none of them contain the marker.
   it.each(HOME_ORDER)(
-    '%s: packages/theme-base/blocks/%s does NOT contain the Flux-only marker',
+    "%s: packages/theme-base/blocks/%s does NOT contain the Flux-only marker",
     async (type) => {
       const file = BASE_BLOCK_SOURCE[type];
       const src = await readFile(
-        resolve(SITES_ROOT, 'packages', 'theme-base', 'blocks', file),
-        'utf-8',
+        resolve(SITES_ROOT, "packages", "theme-base", "blocks", file),
+        "utf-8",
       );
       expect(src).not.toContain(FLUX_ONLY_MARKER);
     },
   );
 });
 
-describe('preview and live compose call the SAME PreviewService.renderBlock (no forked renderer)', () => {
-  it('preview.service.ts renderV2ContentPage calls this.renderBlock({ blockName: b.type, ..., themeId: input.themeId }) per block', async () => {
+describe("preview and live compose call the SAME PreviewService.renderBlock (no forked renderer)", () => {
+  it("preview.service.ts renderV2ContentPage calls this.renderBlock({ blockName: b.type, ..., themeId: input.themeId }) per block", async () => {
     const src = await readFile(
-      resolve(SITES_ROOT, 'src', 'services', 'preview.service.ts'),
-      'utf-8',
+      resolve(SITES_ROOT, "src", "services", "preview.service.ts"),
+      "utf-8",
     );
     expect(src).toMatch(
       /this\.renderBlock\(\{\s*blockName:\s*b\.type,[\s\S]{0,200}?themeId:\s*input\.themeId\s*\}\)/,
     );
   });
 
-  it('v2-live-pages.ts composeContentPagesIntoDist calls getRenderer().renderBlock({ blockName: b.type, ..., themeId: theme, isPreview: false }) per block — same PreviewService class/method, not a parallel renderer', async () => {
+  it("v2-live-pages.ts composeContentPagesIntoDist calls getRenderer().renderBlock({ blockName: b.type, ..., themeId: theme, isPreview: false }) per block — same PreviewService class/method, not a parallel renderer", async () => {
     const src = await readFile(
-      resolve(SITES_ROOT, 'src', 'themes', 'v2-live-pages.ts'),
-      'utf-8',
+      resolve(SITES_ROOT, "src", "themes", "v2-live-pages.ts"),
+      "utf-8",
     );
     expect(src).toMatch(
       /getRenderer\(\)\.renderBlock\(\{\s*blockName:\s*b\.type,[\s\S]{0,200}?themeId:\s*theme,[\s\S]{0,60}?isPreview:\s*false,/,
@@ -291,12 +291,14 @@ describe('preview and live compose call the SAME PreviewService.renderBlock (no 
 });
 
 describe('composeV2Page: preview (assetPrefix "/__theme/flux") and live (assetPrefix null) produce identical output for identical block HTML, up to the injected prefix', () => {
-  it('stripping the injected /__theme/flux substring from the preview compose reproduces the live compose byte-for-byte', () => {
+  it("stripping the injected /__theme/flux substring from the preview compose reproduces the live compose byte-for-byte", () => {
     const blockTypes = homeBlocks.map((b) => b.type);
     const blocksHtml = homeBlocks.map((b) => {
       const r = rendered.get(b.type)!;
       if (!r.ok) {
-        throw new Error(`render-probe failed for ${b.type} — see earlier describe block`);
+        throw new Error(
+          `render-probe failed for ${b.type} — see earlier describe block`,
+        );
       }
       return r.html;
     });
@@ -305,7 +307,7 @@ describe('composeV2Page: preview (assetPrefix "/__theme/flux") and live (assetPr
     // (<body> … <header>…</header><main>…</main><footer>…</footer> … </body>) —
     // same stub shape as render-v2-content-page.spec.ts uses.
     const shellHtml =
-      '<html><head><title>T</title></head><body><header>H</header><main>M</main><footer>F</footer><script>tail()</script></body></html>';
+      "<html><head><title>T</title></head><body><header>H</header><main>M</main><footer>F</footer><script>tail()</script></body></html>";
 
     // Preview path — src/services/preview.service.ts:497
     //   assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`
@@ -332,7 +334,7 @@ describe('composeV2Page: preview (assetPrefix "/__theme/flux") and live (assetPr
     // occurrence of the injected substring from the preview output must
     // reproduce the live output exactly, given the same blocksHtml/blockTypes
     // fed to both calls.
-    expect(previewHtml!.split(`/__theme/${THEME}`).join('')).toBe(liveHtml!);
+    expect(previewHtml!.split(`/__theme/${THEME}`).join("")).toBe(liveHtml!);
     // And the prefix really was inserted somewhere (root-relative URLs exist
     // in these blocks) — otherwise the assertion above would be vacuous.
     expect(previewHtml).toContain(`/__theme/${THEME}`);

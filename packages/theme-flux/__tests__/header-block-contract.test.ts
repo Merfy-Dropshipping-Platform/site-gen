@@ -1,6 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { resolveBlocks, type BaseBlockEntry } from '../../theme-contract/resolver/resolveBlocks';
+import fs from "node:fs";
+import path from "node:path";
+import {
+  resolveBlocks,
+  type BaseBlockEntry,
+} from "../../theme-contract/resolver/resolveBlocks";
 
 /**
  * Task 9 (111-flux-layout-parity, Step 2): replaces the stale
@@ -18,40 +21,42 @@ import { resolveBlocks, type BaseBlockEntry } from '../../theme-contract/resolve
  * That mapping is covered by `scripts/__tests__/flux-home-contract.test.mjs`
  * and `theme-manifest.test.ts`'s "V2 renderer" assertion, not here.
  */
-describe('Flux Header (post-cleanup: no package override)', () => {
+describe("Flux Header (post-cleanup: no package override)", () => {
   const manifest = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '..', 'theme.json'), 'utf-8'),
+    fs.readFileSync(path.resolve(__dirname, "..", "theme.json"), "utf-8"),
   );
 
   const BASE_BLOCKS: Record<string, BaseBlockEntry> = {
-    Header: { source: 'base', path: '@merfy/theme-base/blocks/Header' },
+    Header: { source: "base", path: "@merfy/theme-base/blocks/Header" },
   };
 
-  it('Header Puck config resolves from @merfy/theme-base, not a Flux package override', () => {
+  it("Header Puck config resolves from @merfy/theme-base, not a Flux package override", () => {
     const resolved = resolveBlocks(BASE_BLOCKS, {
       blocks: manifest.blocks ?? {},
       features: manifest.features ?? {},
       customBlocks: manifest.customBlocks ?? {},
     });
-    expect(resolved.Header.source).toBe('base');
-    expect(resolved.Header.path).toBe('@merfy/theme-base/blocks/Header');
+    expect(resolved.Header.source).toBe("base");
+    expect(resolved.Header.path).toBe("@merfy/theme-base/blocks/Header");
   });
 
-  it('theme.json declares no blocks.Header.override', () => {
+  it("theme.json declares no blocks.Header.override", () => {
     expect(manifest.blocks.Header?.override).toBeUndefined();
   });
 
-  it('packages/theme-flux/blocks/Header no longer exists on disk', () => {
-    expect(fs.existsSync(path.resolve(__dirname, '..', 'blocks', 'Header'))).toBe(false);
+  it("packages/theme-flux/blocks/Header no longer exists on disk", () => {
+    expect(
+      fs.existsSync(path.resolve(__dirname, "..", "blocks", "Header")),
+    ).toBe(false);
   });
 
-  it('Flux blockDefaults.Header layers Flux-specific defaults on top of theme-base (variant + promoBar)', () => {
+  it("Flux blockDefaults.Header layers Flux-specific defaults on top of theme-base (variant + promoBar)", () => {
     const headerDefaults = manifest.blockDefaults?.Header;
     expect(headerDefaults).toBeDefined();
-    expect(headerDefaults.variant).toBe('two-tier');
+    expect(headerDefaults.variant).toBe("two-tier");
     expect(headerDefaults.promoBar).toBeDefined();
     expect(headerDefaults.promoBar.enabled).toBe(true);
-    expect(typeof headerDefaults.promoBar.text).toBe('string');
+    expect(typeof headerDefaults.promoBar.text).toBe("string");
     expect(headerDefaults.promoBar.text.length).toBeGreaterThan(0);
   });
 });

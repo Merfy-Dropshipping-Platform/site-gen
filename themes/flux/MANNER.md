@@ -193,7 +193,7 @@ Astro ViewTransitions (✓ grep по src — пусто; Layout.astro без Cli
 ## 10. Карта канон-секций (решения аналитика)
 
 `themes/flux/sections.map.json` отсутствует — создать на 17 позиций (паритет bloom).
-Секций верстальщика всего 5 (Header/Footer/Hero/Collections/Popular/Gallery + **Puk**).
+Секций верстальщика всего 7 (Header/Footer/Hero/Collections/Popular/Gallery + **Puk**).
 
 ⚠️ **ИСПРАВЛЕНО (spec 111 Task 7):** строка выше ошибочно называла Puk.astro
 «тестовым мусором» с «валидной ролью, но без контента» и Comfortaa-шапкой — обе
@@ -232,7 +232,7 @@ Puk.astro; поверх дословного текст/CTA добавлена i
 | PopularProducts | `src/components/sections/Popular.astro` | оживить (полная T13-схема по bloom Popular; hydrateGrid уже есть — расширить data-cards/data-collection) |
 | Gallery | `src/components/sections/Gallery.astro` | оживить (items[] ≤3 + гидрация data-gallery-product/-collection; `<style>` #gallery сохранить) |
 | MainText | `src/components/sections/MainText.astro` | с нуля: контейнер 1320, манифест Comfortaa 24/28 uppercase (роль внутреннего h2), чёрная CTA |
-| ImageWithText | `src/components/sections/Puk.astro` | **spec 111 Task 7**: канон-источник переключён на Puk.astro (Figma 905:19320, «Основной текст»/CTA верстальщика) — дословный текст/заголовок/CTA/шрифт Puk сохранены, поверх добавлена image-колонка по механике rose ImageWithText (2-кол сетка lg:grid-cols-2, imagePosition/size 429×309\|429×444\|430×500 из §2/§4 flux/width/containerColorScheme/ctaPosition/padding). Прежняя with-нуля реализация `src/components/sections/ImageWithText.astro` (медиа-паттерн Gallery: rounded-8, surface, hover-zoom) остаётся в репозитории, но НЕ сопоставлена в sections.map.json |
+| ImageWithText | `src/components/sections/Puk.astro` | **spec 111 Task 7**: канон-источник переключён на Puk.astro (Figma 905:19320, «Основной текст»/CTA верстальщика) — дословный текст/заголовок/CTA/шрифт Puk сохранены, поверх добавлена image-колонка по механике rose ImageWithText (2-кол сетка lg:grid-cols-2, imagePosition/size 429×314(small)\|square(medium)\|430×500(large) — small/medium из ТЕКУЩИХ аспектов Gallery.astro §2, не устаревших 429×309\|429×444/width/containerColorScheme/ctaPosition/padding). Прежняя with-нуля реализация `src/components/sections/ImageWithText.astro` (медиа-паттерн Gallery: rounded-8, surface, hover-zoom) остаётся в репозитории, но НЕ сопоставлена в sections.map.json |
 | MultiColumns | `src/components/sections/MultiColumns.astro` | с нуля: голые колонки (медиа rounded-8 + Comfortaa-подзаголовок + Roboto Flex-текст), без подложек |
 | MultiRows | `src/components/sections/MultiRows.astro` | с нуля (паттерн ImageWithText, чередование; эталон — bloom MultiRows) |
 | CollapsibleSection | `src/components/sections/CollapsibleSection.astro` | с нуля (details/summary; разделители #F5F5F5; chevron = NtIcon dropdown-chevron как в catalog.astro:43) |

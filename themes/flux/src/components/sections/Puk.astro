@@ -19,12 +19,18 @@
 // пустом image, паттерн rose T15), НЕ прячется, чтобы сохранить пиксель-парити
 // с live (это осознанно ПРИНЯТОЕ отклонение default-состояния секции от
 // текущего flux.merfy.ru — там картинки в этой секции нет вовсе — см.
-// task-7-report.md, не баг). Аспекты size — ЛИТЕРАЛЫ flux-манеры, НЕ
-// скопированы у rose (совпадение части значений с rose — оба независимо
-// используют ту же Figma-сетку): small = широкая плитка Gallery.astro §2
-// (429/309), medium (canon-default) = высокая плитка Gallery.astro §2
-// (429/444), large = карточка коллекции FluxCollectionCard.astro §4 (430/500);
-// радиус медиа — --radius-media токен манеры (§4, 8px фоллбек). width —
+// task-7-report.md, не баг). Аспекты size — ЛИТЕРАЛЫ flux-манеры: small и
+// medium взяты НАПРЯМУЮ из ТЕКУЩИХ плиточных аспектов Gallery.astro (§2,
+// SIDE_ASPECTS + heroTile, строки ~137/187/236) — small = aspect-[429/314]
+// (широкая плитка-коллекция Gallery.astro), medium (canon-default) =
+// aspect-square (квадратная плитка-товар/heroTile Gallery.astro); large —
+// карточка коллекции FluxCollectionCard.astro §4 (430/500). ⚠️ Ранее здесь
+// (и в MANNER.md §2) ошибочно цитировались УСТАРЕВШИЕ значения 429/309 и
+// 429/444 — Gallery.astro сменила эти аспекты на aspect-square /
+// aspect-[429/314] коммитом b3bfdbfe (предок этой задачи), а справочник не
+// был обновлён; исправлено по review Task 7 (см. task-7-report.md). Значения
+// ниже теперь честно проверяемы чтением Gallery.astro. радиус медиа —
+// --radius-media токен манеры (§4, 8px фоллбек). width —
 // ступени контентного контейнера манеры §2 (1320 = канон-дефолт, «Контентный
 // контейнер»); паритет с шагами sibling `ImageWithText.astro` (780/1080/1320/
 // full) — тот файл уже зафиксировал эти же ступени для того же канона в манере
@@ -116,14 +122,15 @@ const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.imag
 // На мобиле картинка всегда идёт первой в потоке (порядок в DOM).
 const imageRight = p.imagePosition === "right";
 
-// Канон size (small/medium/large) — аспект медиа. Литералы flux-манеры §2/§4
-// (см. заголовочный комментарий — НЕ скопированы у rose).
+// Канон size (small/medium/large) — аспект медиа. small/medium = ТЕКУЩИЕ
+// плиточные аспекты Gallery.astro §2 (см. заголовочный комментарий: SIDE_ASPECTS
+// aspect-[429/314] + heroTile aspect-square, НЕ устаревшие 429/309|429/444).
 const aspectCls =
 	p.size === "small"
-		? "aspect-[429/309]"
+		? "aspect-[429/314]"
 		: p.size === "large"
 			? "aspect-[430/500]"
-			: "aspect-[429/444]"; // medium (canon-default) + absent
+			: "aspect-square"; // medium (canon-default) + absent
 
 // Канон width (small/medium/large/full) — ширина контентной сетки (картинка+
 // текст). Ступени — контентный контейнер флукс-манеры §2 (см. заголовочный

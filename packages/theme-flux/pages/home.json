@@ -3,12 +3,7 @@
     {
       "type": "PromoBanner",
       "props": {
-        "id": "PromoBanner-home",
-        "text": "Бесплатная доставка на весь ассортимент до 30.06.2026.",
-        "link": {
-          "text": "Смотреть больше",
-          "href": "/catalog"
-        }
+        "id": "PromoBanner-home"
       }
     },
     {

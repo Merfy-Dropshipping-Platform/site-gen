@@ -1,6 +1,17 @@
 {
   "content": [
     {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-home",
+        "text": "Бесплатная доставка на весь ассортимент до 30.06.2026.",
+        "link": {
+          "text": "Смотреть больше",
+          "href": "/catalog"
+        }
+      }
+    },
+    {
       "type": "Header",
       "props": {
         "id": "Header-home",
@@ -56,9 +67,21 @@
       }
     },
     {
+      "type": "Product",
+      "props": {
+        "id": "Product-home"
+      }
+    },
+    {
       "type": "PopularProducts",
       "props": {
         "id": "PopularProducts-home"
+      }
+    },
+    {
+      "type": "ImageWithText",
+      "props": {
+        "id": "ImageWithText-home"
       }
     },
     {

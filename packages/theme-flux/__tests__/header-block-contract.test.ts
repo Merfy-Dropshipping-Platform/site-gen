@@ -1,57 +1,57 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { validateBlock } from '@merfy/theme-contract/validators/validateBlock';
-import { HeaderPuckConfig, HeaderSchema, HeaderTokens, HeaderClasses } from '../blocks/Header';
+import { resolveBlocks, type BaseBlockEntry } from '../../theme-contract/resolver/resolveBlocks';
 
-describe('Flux Header override', () => {
-  it('conforms to validateBlock (5 files, no hex/rgb/hsl, no .tsx)', async () => {
-    const dir = path.resolve(__dirname, '../blocks/Header');
-    const result = await validateBlock(dir);
-    expect(result.errors).toEqual([]);
-    expect(result.ok).toBe(true);
-  });
+/**
+ * Task 9 (111-flux-layout-parity, Step 2): replaces the stale
+ * `header-block-contract.test.ts`, which tested a package-level Header
+ * override (`packages/theme-flux/blocks/Header/`) that was never complete
+ * (no `Header.astro`) and conflicted with the V2 architecture — the
+ * constructor's config loader could pick that incomplete schema instead of
+ * @merfy/theme-base's real one. That directory has been deleted and
+ * `theme.json`'s `blocks.Header.override` declaration removed.
+ *
+ * Flux's actual visual Header renderer lives at
+ * `themes/flux/src/components/Header.astro` and is wired independently via
+ * `themes/flux/sections.map.json` (the V2 render pipeline) — it does not
+ * need, and must not require, a theme.json blocks/override entry to work.
+ * That mapping is covered by `scripts/__tests__/flux-home-contract.test.mjs`
+ * and `theme-manifest.test.ts`'s "V2 renderer" assertion, not here.
+ */
+describe('Flux Header (post-cleanup: no package override)', () => {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '..', 'theme.json'), 'utf-8'),
+  );
 
-  it('is singleton (maxInstances: 1)', () => {
-    expect(HeaderPuckConfig.maxInstances).toBe(1);
-  });
+  const BASE_BLOCKS: Record<string, BaseBlockEntry> = {
+    Header: { source: 'base', path: '@merfy/theme-base/blocks/Header' },
+  };
 
-  it('category is navigation', () => {
-    expect(HeaderPuckConfig.category).toBe('navigation');
-  });
-
-  it('schema parses valid props identical to base Header shape', () => {
-    const ok = HeaderSchema.safeParse({
-      siteTitle: 'Flux Store',
-      logo: '',
-      logoPosition: 'top-left',
-      stickiness: 'scroll-up',
-      menuType: 'dropdown',
-      navigationLinks: [
-        { label: 'Главная', href: '/' },
-        { label: 'Каталог', href: '/catalog', submenu: [{ label: 'Новинки', href: '/catalog/new' }] },
-      ],
-      actionButtons: { showSearch: true, showCart: true, showProfile: true },
-      colorScheme: 2,
-      menuColorScheme: 2,
-      padding: { top: 20, bottom: 20 },
+  it('Header Puck config resolves from @merfy/theme-base, not a Flux package override', () => {
+    const resolved = resolveBlocks(BASE_BLOCKS, {
+      blocks: manifest.blocks ?? {},
+      features: manifest.features ?? {},
+      customBlocks: manifest.customBlocks ?? {},
     });
-    expect(ok.success).toBe(true);
+    expect(resolved.Header.source).toBe('base');
+    expect(resolved.Header.path).toBe('@merfy/theme-base/blocks/Header');
   });
 
-  it('tokens include logo + nav-link + container + radius-button', () => {
-    expect(HeaderTokens).toContain('--size-logo-width');
-    expect(HeaderTokens).toContain('--size-nav-link');
-    expect(HeaderTokens).toContain('--container-max-width');
-    expect(HeaderTokens).toContain('--radius-button');
+  it('theme.json declares no blocks.Header.override', () => {
+    expect(manifest.blocks.Header?.override).toBeUndefined();
   });
 
-  it('classes expose flux signature: 1320px container + orange cart-badge + bold heading', () => {
-    expect(HeaderClasses.sticky['scroll-up']).toBeDefined();
-    expect(HeaderClasses.mobileMenu.submenuToggle).toBeDefined();
-    expect(HeaderClasses.nav).toContain('max-w-[1320px]');
-    // Flux signature: orange accent cart badge + small 2px radius
-    expect(HeaderClasses.cartBadge).toContain('--color-accent');
-    expect(HeaderClasses.cartBadge).toContain('rounded-[2px]');
-    expect(HeaderClasses.logoText).toContain('font-bold');
-    expect(HeaderClasses.logoText).toContain('--font-heading');
+  it('packages/theme-flux/blocks/Header no longer exists on disk', () => {
+    expect(fs.existsSync(path.resolve(__dirname, '..', 'blocks', 'Header'))).toBe(false);
+  });
+
+  it('Flux blockDefaults.Header layers Flux-specific defaults on top of theme-base (variant + promoBar)', () => {
+    const headerDefaults = manifest.blockDefaults?.Header;
+    expect(headerDefaults).toBeDefined();
+    expect(headerDefaults.variant).toBe('two-tier');
+    expect(headerDefaults.promoBar).toBeDefined();
+    expect(headerDefaults.promoBar.enabled).toBe(true);
+    expect(typeof headerDefaults.promoBar.text).toBe('string');
+    expect(headerDefaults.promoBar.text.length).toBeGreaterThan(0);
   });
 });

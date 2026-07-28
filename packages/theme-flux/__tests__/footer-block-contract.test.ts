@@ -1,59 +1,55 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { validateBlock } from '@merfy/theme-contract/validators/validateBlock';
-import { FooterPuckConfig, FooterSchema, FooterTokens, FooterClasses } from '../blocks/Footer';
+import { resolveBlocks, type BaseBlockEntry } from '../../theme-contract/resolver/resolveBlocks';
 
-describe('Flux Footer override', () => {
-  it('conforms to validateBlock (5 files, no hex/rgb/hsl, no .tsx)', async () => {
-    const dir = path.resolve(__dirname, '../blocks/Footer');
-    const result = await validateBlock(dir);
-    expect(result.errors).toEqual([]);
-    expect(result.ok).toBe(true);
-  });
+/**
+ * Task 9 (111-flux-layout-parity, Step 2): replaces the stale
+ * `footer-block-contract.test.ts`, which imported from
+ * `../blocks/Footer` — a directory that does not exist anywhere in this
+ * package (confirmed: `packages/theme-flux/blocks/` only ever contained
+ * `Catalog/` and `Header/`, never `Footer/`). The old test could never have
+ * passed; it was dead from a prior, abandoned Footer-override plan.
+ *
+ * Flux's Footer already resolves its Puck config from @merfy/theme-base
+ * (no override declared, mirroring Header after this task's cleanup — see
+ * `header-block-contract.test.ts`). Flux's actual visual Footer renderer
+ * lives at `themes/flux/src/components/Footer.astro`, wired independently
+ * via `themes/flux/sections.map.json` — covered by
+ * `scripts/__tests__/flux-home-contract.test.mjs`, not here.
+ */
+describe('Flux Footer (no package override)', () => {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '..', 'theme.json'), 'utf-8'),
+  );
 
-  it('is singleton (maxInstances: 1)', () => {
-    expect(FooterPuckConfig.maxInstances).toBe(1);
-  });
+  const BASE_BLOCKS: Record<string, BaseBlockEntry> = {
+    Footer: { source: 'base', path: '@merfy/theme-base/blocks/Footer' },
+  };
 
-  it('category is navigation', () => {
-    expect(FooterPuckConfig.category).toBe('navigation');
-  });
-
-  it('schema parses valid props identical to base Footer shape', () => {
-    const ok = FooterSchema.safeParse({
-      newsletter: {
-        enabled: true,
-        heading: 'Подпишитесь',
-        description: 'Получайте новости.',
-        placeholder: 'email@example.ru',
-      },
-      heading: { text: '', size: 'small', alignment: 'center' },
-      text: { content: '', size: 'small' },
-      navigationColumn: { title: 'Nav', links: [{ label: 'A', href: '/' }] },
-      informationColumn: { title: 'Info', links: [{ label: 'B', href: '/b' }] },
-      socialColumn: {
-        title: 'Social',
-        email: 'info@flux.ru',
-        socialLinks: [{ platform: 'telegram', href: '#' }],
-      },
-      colorScheme: 1,
-      copyrightColorScheme: 1,
-      padding: { top: 64, bottom: 64 },
+  it('Footer Puck config resolves from @merfy/theme-base, not a Flux package override', () => {
+    const resolved = resolveBlocks(BASE_BLOCKS, {
+      blocks: manifest.blocks ?? {},
+      features: manifest.features ?? {},
+      customBlocks: manifest.customBlocks ?? {},
     });
-    expect(ok.success).toBe(true);
+    expect(resolved.Footer.source).toBe('base');
+    expect(resolved.Footer.path).toBe('@merfy/theme-base/blocks/Footer');
   });
 
-  it('tokens include footer-layout + container-max-width + radius-button', () => {
-    expect(FooterTokens).toContain('--footer-layout');
-    expect(FooterTokens).toContain('--container-max-width');
-    expect(FooterTokens).toContain('--font-heading');
-    expect(FooterTokens).toContain('--radius-button');
+  it('theme.json declares no blocks.Footer.override', () => {
+    expect(manifest.blocks.Footer?.override).toBeUndefined();
   });
 
-  it('classes expose flux signature: 1320px container + 6px submit radius + powered-by bar', () => {
-    expect(FooterClasses.container).toContain('max-w-[1320px]');
-    expect(FooterClasses.newsletter.submit).toContain('--radius-button');
-    expect(FooterClasses.newsletter.submit).toContain('--color-button-bg');
-    expect(FooterClasses.poweredBy.bar).toBeDefined();
-    expect(FooterClasses.poweredBy.text).toBeDefined();
+  it('packages/theme-flux/blocks/Footer does not exist on disk', () => {
+    expect(fs.existsSync(path.resolve(__dirname, '..', 'blocks', 'Footer'))).toBe(false);
+  });
+
+  it('Flux blockDefaults.Footer layers Flux-specific defaults on top of theme-base (3-col variant + newsletter copy + nav links)', () => {
+    const footerDefaults = manifest.blockDefaults?.Footer;
+    expect(footerDefaults).toBeDefined();
+    expect(footerDefaults.variant).toBe('3-col');
+    expect(footerDefaults.newsletter?.enabled).toBe(true);
+    expect(Array.isArray(footerDefaults.navigationColumn?.links)).toBe(true);
+    expect(footerDefaults.navigationColumn.links.length).toBeGreaterThan(0);
   });
 });

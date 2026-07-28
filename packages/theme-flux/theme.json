@@ -236,12 +236,6 @@
     }
   ],
   "blocks": {
-    "Header": {
-      "override": {
-        "path": "./blocks/Header",
-        "reason": "Flux uses 1320px container, Roboto Flex bold headings, orange-accent cart badge with 2px badge radius, and 6px button radius for tech/electronics aesthetic."
-      }
-    },
     "Hero": {
       "variant": "overlay"
     },

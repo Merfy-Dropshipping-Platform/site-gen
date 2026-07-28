@@ -33,7 +33,30 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const MONOREPO = path.resolve(ROOT, '..', '..', '..');
+// Find the monorepo root by walking up for pnpm-workspace.yaml instead of a
+// hardcoded `../../..`. The hardcoded depth assumed `sites` is always checked
+// out directly at `merfy/backend/services/sites` — it silently resolves to
+// the wrong directory (and produces spurious `no-reference` results instead
+// of a loud error) when `sites` is checked out as a git worktree under
+// `sites/.worktrees/<name>/`, which is two directories deeper.
+async function findMonorepoRoot(start) {
+  let dir = start;
+  for (let i = 0; i < 10; i++) {
+    try {
+      await fs.access(path.join(dir, 'pnpm-workspace.yaml'));
+      return dir;
+    } catch {
+      // keep walking up
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(
+    `[visual-diff] could not find monorepo root (pnpm-workspace.yaml) walking up from ${start}`,
+  );
+}
+const MONOREPO = await findMonorepoRoot(ROOT);
 const REFS = path.resolve(
   MONOREPO,
   'specs',
@@ -99,7 +122,20 @@ for (const theme of THEMES) {
       }
       const threshold = THRESHOLDS.per_key?.[key] ?? THRESHOLDS.default;
 
-      const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h } });
+      // reducedMotion: 'reduce' forces CSS `@media (prefers-reduced-motion:
+      // reduce)` rules to apply. Flux's GSAP scroll-reveal ([data-reveal])
+      // starts sections at opacity:0 and only animates to opacity:1 via
+      // ScrollTrigger when the real page is scrolled — a single CDP
+      // full-page screenshot never scrolls, so below-the-fold sections would
+      // stay invisible and register as a huge, spurious diff. The theme's
+      // own global.css already has a reduced-motion override that forces
+      // opacity:1 unconditionally (also serves accessibility) — asking for
+      // it here captures the settled, fully-revealed state without needing
+      // to script an actual scroll-through.
+      const ctx = await browser.newContext({
+        viewport: { width: vp.w, height: vp.h },
+        reducedMotion: 'reduce',
+      });
       const tab = await ctx.newPage();
       const pageParam = page === 'home' ? 'home' : `page-${page}`;
       const url = `${PREVIEW_BASE}/api/sites/${siteId}/preview?page=${encodeURIComponent(pageParam)}`;

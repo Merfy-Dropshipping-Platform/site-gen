@@ -1,11 +1,50 @@
 ---
 // Секция «Puk» = «Основной текст» / CTA верстальщиков flux (репо flux-theme
-// src/components/sections/Puk.astro, Figma 905:19320). ВЁРСТКА — дословный канон
-// репо: заголовок Roboto Flex uppercase 19/md:23 #000, абзац Roboto Flex light
-// 16 #999, чёрная CTA h-14 rounded-6 px-4 uppercase #fff. Шрифт ВСЕЙ секции —
-// font-roboto-flex (репо целиком roboto-flex; прежние comfortaa/manrope — наследие
-// разошедшегося product-grid порта, удалены). Рендерится в демо темы
-// (pages/index.astro <Puk/>).
+// src/components/sections/Puk.astro, Figma 905:19320). ВЁРСТКА (текст/CTA) —
+// дословный канон репо: заголовок Roboto Flex uppercase 19/md:23 #000, абзац
+// Roboto Flex light 16 #999, чёрная CTA h-14 rounded-6 px-4 uppercase #fff.
+// Шрифт ВСЕЙ секции — font-roboto-flex (репо целиком roboto-flex; прежние
+// comfortaa/manrope — наследие разошедшегося product-grid порта, удалены).
+// Рендерится в демо темы (pages/index.astro <Puk/>).
+//
+// spec 111 Task 7 — канон ImageWithText: у верстальщика в Puk картинки НЕТ
+// (см. MANNER.md §10 «ИСПРАВЛЕНО» — pinned upstream + живой flux.merfy.ru
+// сверены байт-в-байт, оба БЕЗ img). Секции «Изображение с текстом» у
+// верстальщика вообще нет. Решение аналитика (владелец, «как в розе сделано»):
+// sections.map.json мапит канон ImageWithText НА ЭТОТ файл; поверх дословного
+// текст/CTA добавлена image-колонка по МЕХАНИКЕ rose
+// `themes/rose/src/components/sections/ImageWithText.astro` (2-колоночная
+// сетка, imagePosition/size/width/containerColorScheme/ctaPosition/padding) —
+// картинка рендерится ВСЕГДА (плейсхолдер /placeholders/landscape-iwt.png при
+// пустом image, паттерн rose T15), НЕ прячется, чтобы сохранить пиксель-парити
+// с live (это осознанно ПРИНЯТОЕ отклонение default-состояния секции от
+// текущего flux.merfy.ru — там картинки в этой секции нет вовсе — см.
+// task-7-report.md, не баг). Аспекты size — ЛИТЕРАЛЫ flux-манеры, НЕ
+// скопированы у rose (совпадение части значений с rose — оба независимо
+// используют ту же Figma-сетку): small = широкая плитка Gallery.astro §2
+// (429/309), medium (canon-default) = высокая плитка Gallery.astro §2
+// (429/444), large = карточка коллекции FluxCollectionCard.astro §4 (430/500);
+// радиус медиа — --radius-media токен манеры (§4, 8px фоллбек). width —
+// ступени контентного контейнера манеры §2 (1320 = канон-дефолт, «Контентный
+// контейнер»); паритет с шагами sibling `ImageWithText.astro` (780/1080/1320/
+// full) — тот файл уже зафиксировал эти же ступени для того же канона в манере
+// flux, повторное изобретение шкалы не требуется.
+//
+// ⚠️ Попутный фикс: исходный контейнер использовал класс `flux-container`,
+// который в upstream flux-theme РЕАЛЬНО определён (src/styles/global.css:30 —
+// width:100%;max-width:1480px;margin-inline:auto;padding-inline адаптивный
+// 1rem→2.5rem→5rem), но в ПОРТИРОВАННОМ `themes/flux/src/styles/global.css`
+// этого правила нет (✓ grep — не определён нигде в теме) — Puk был единственным
+// файлом, который на него полагался (все остальные оживлённые секции —
+// Header/Footer/Popular/Collections/Gallery/MainText/FeaturedProduct/
+// CollapsibleSection/sibling ImageWithText.astro — уже обходят этот пробел,
+// вручную выписывая эквивалент `mx-auto max-w-[1920px] px-4 md:px-20
+// 2xl:px-80`, MANNER §2 «Внешняя обёртка»). Т.к. секция теперь получает
+// содержательную 2-колоночную раскладку (которой не было), а не просто заново
+// расставляет тот же однострочный текст, контейнер тоже переведён на этот же
+// рабочий паттерн — иначе новая сетка легла бы вплотную к краю экрана без
+// полей. Это не смена дизайна, а достройка того самого контейнера, который
+// класс `flux-container` должен был обеспечивать и не обеспечивал.
 //
 // НАСТРОЙКИ — как канон-CTA темы (эталон flux MainText.astro): читаем поля
 // heading/text/button(+ legacy cta)/headingSize/textSize/buttonStyle/padding —
@@ -47,6 +86,65 @@ const textSizeCls =
 	textSize === "small" ? "text-[14px]" : textSize === "large" ? "text-[19px]" : "text-[16px]";
 const textCls = `max-w-[1320px] font-roboto-flex font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
 
+// Канон textStyle (hidden, паритет rose/sibling ImageWithText.astro): italic →
+// курсив заголовка+текста. Аддитивно — undefined/'normal' не меняет дефолт.
+const italicCls = p.textStyle === "italic" ? " italic" : "";
+
+// Канон alignment (Bug-2 канон-поле, паттерн rose/sibling ImageWithText.astro):
+// секция-уровневое выравнивание заголовка+текста+кнопки. Дефолт/отсутствие =
+// left — ТЕКУЩЕЕ состояние секции (без изменений в default-рендере). Back-compat:
+// legacy headingAlignment / heading.alignment (старые ревизии хранили в заголовке).
+const sectionAlignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
+const alignCls =
+	sectionAlignment === "center"
+		? " !text-center"
+		: sectionAlignment === "right"
+			? " !text-right"
+			: "";
+
+// Канон image {url, alt} (Task 7 — см. заголовочный комментарий). Плейсхолдер
+// /placeholders/landscape-iwt.png (раздаётся на каждой теме из
+// packages/theme-base/public/placeholders, copyPublic) — картинка рендерится
+// ВСЕГДА (паттерн rose T15), НЕ пустая surface-заглушка.
+const PLACEHOLDER_IWT_IMAGE = "/placeholders/landscape-iwt.png";
+const imageUrl =
+	typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : PLACEHOLDER_IWT_IMAGE;
+const imageAlt = typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : heading;
+
+// Канон imagePosition: left (canon-default) — картинка слева, текст справа;
+// right — lg:order-зеркало обеих колонок (паттерн rose/sibling ImageWithText.astro).
+// На мобиле картинка всегда идёт первой в потоке (порядок в DOM).
+const imageRight = p.imagePosition === "right";
+
+// Канон size (small/medium/large) — аспект медиа. Литералы flux-манеры §2/§4
+// (см. заголовочный комментарий — НЕ скопированы у rose).
+const aspectCls =
+	p.size === "small"
+		? "aspect-[429/309]"
+		: p.size === "large"
+			? "aspect-[430/500]"
+			: "aspect-[429/444]"; // medium (canon-default) + absent
+
+// Канон width (small/medium/large/full) — ширина контентной сетки (картинка+
+// текст). Ступени — контентный контейнер флукс-манеры §2 (см. заголовочный
+// комментарий, паритет sibling ImageWithText.astro).
+const widthCls =
+	p.width === "small"
+		? "max-w-[780px]"
+		: p.width === "medium"
+			? "max-w-[1080px]"
+			: p.width === "full"
+				? "max-w-none"
+				: "max-w-[1320px]"; // large (canon-default) + absent
+
+// Канон containerColorScheme (hidden, паттерн rose/sibling ImageWithText.astro):
+// класс схемы на ВНУТРЕННЕМ контейнере сетки. Внешний colorScheme — навешивается
+// обёрткой composeV2Page на корневую <section>, здесь не читается.
+const containerSchemeCls =
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
+		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
+		: "";
+
 // Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
 // Пустой текст ЗАДАННОГО пропа скрывает кнопку; ничего не задано → дефолт
 // верстальщика «Смотреть новинки» → /catalog.
@@ -71,12 +169,27 @@ const btnCls =
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
 		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))]`;
 
+// Канон ctaPosition (hidden, паттерн rose/sibling ImageWithText.astro): inline
+// (default) | bottom-pinned → кнопка прижимается к нижней кромке текстовой
+// колонки (mt-auto на обёртке кнопки, колонка h-full).
+const bottomPinned = p.ctaPosition === "bottom-pinned";
+
 // Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
 // (иначе эталонные py-10 md:py-16 на контейнере). colorScheme — обёрткой
 // composeV2Page; фон секции = bg-токен с пиксель-фоллбеком #FBFBFB репо.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// Контейнер = flux-эталон (носитель темы как Header/Footer/Popular/sibling
+// ImageWithText.astro: mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80) — не
+// literal-класс `flux-container` (не определён в теме, см. заголовочный
+// комментарий). При заданном padding (настройка) py-классы снимаются, чтобы не
+// было двойного отступа — inline-стиль ставит padding-top/bottom (паттерн
+// Popular/MainText/FeaturedProduct).
+const containerCls = paddingStyle
+	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80"
+	: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80";
 
 const titleId = id ? `${id}-title` : "cta-title";
 ---
@@ -86,42 +199,66 @@ const titleId = id ? `${id}-title` : "cta-title";
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 >
-	<div
-		class="flux-container flex flex-col items-start gap-10 py-10 md:py-16"
-		data-reveal
-		style={paddingStyle}
-	>
-		<div class="flex flex-col gap-2">
-			<h2
-				id={titleId}
-				class={headingCls}
+	<div class={containerCls} data-reveal style={paddingStyle}>
+		{/* Контентная сетка: ширина widthCls (настройка «Ширина»), 2 колонки на lg
+		    (картинка + текст), зазор gap-6 md:gap-8 lg:gap-10 — ритм манеры
+		    (паритет Gallery/sibling ImageWithText.astro §2). На мобиле — стек,
+		    картинка первой в DOM. */}
+		<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`}>
+			<div
+				class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
-				data-puck-subsection-field="heading"
+				data-puck-subsection-field="image"
 			>
-				{heading}
-			</h2>
-			<p
-				class={textCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="text"
-				set:html={text}
-			/>
-		</div>
+				{imageUrl && <img src={imageUrl} alt={imageAlt} loading="lazy" class="size-full object-cover" />}
+			</div>
 
-		{
-			btnText && (
-				<a
-					href={btnHref}
-					class={btnCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="102"
-					data-puck-subsection-field="button"
-				>
-					{btnText}
-				</a>
-			)
-		}
+			{/* Текстовая колонка: сохраняет исходный ритм Puk (items-start, gap-10
+			    между [заголовок+текст]-группой и кнопкой). h-full только при
+			    bottom-pinned (иначе ломает lg:items-center грида). */}
+			<div class={`flex w-full flex-col items-start gap-10${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
+				<div class="flex flex-col gap-2">
+					<h2
+						id={titleId}
+						class={headingCls + alignCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="heading"
+					>
+						{heading}
+					</h2>
+					<p
+						class={textCls + alignCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="text"
+						set:html={text}
+					/>
+				</div>
+
+				{
+					btnText && (
+						<div
+							class:list={[
+								"w-full",
+								bottomPinned ? "mt-auto" : "",
+								sectionAlignment === "center" ? "!text-center" : sectionAlignment === "right" ? "!text-right" : "",
+							]}
+						>
+							<a
+								href={btnHref}
+								class={btnCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="button"
+							>
+								{btnText}
+							</a>
+						</div>
+					)
+				}
+			</div>
+		</div>
 	</div>
 </section>

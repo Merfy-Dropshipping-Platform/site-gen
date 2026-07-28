@@ -416,12 +416,24 @@ const BLOCKS = [
   {
     type: 'ImageWithText',
     file: 'src/components/sections/Puk.astro',
+    // Task 7 брифа Step 2 расширяет матрицу: alignment/size/width/schemes/padding
+    // (image/heading/text/button/imagePosition уже были покрыты выше до Task 7 —
+    // это была RED-причина по Task 2 note, image-колонка отсутствовала в Puk.astro
+    // до Task 7). "schemes" из брифа = containerColorScheme (hidden-поле канона
+    // ImageWithText.puckConfig.ts, применяется на ВНУТРЕННЕМ контейнере — внешний
+    // `colorScheme` навешивается обёрткой composeV2Page, не читается в компоненте,
+    // паттерн rose ImageWithText.astro).
     props: [
       { key: 'image', patterns: [/p\.image\b/] },
       { key: 'heading', patterns: [/p\.heading\b/] },
       { key: 'text', patterns: [/p\.text\b/] },
       { key: 'button', patterns: [/p\.button\b/] },
       { key: 'imagePosition', patterns: [/p\.imagePosition\b/] },
+      { key: 'alignment', patterns: [/p\.alignment\b/] },
+      { key: 'size', patterns: [/p\.size\b/] },
+      { key: 'width', patterns: [/p\.width\b/] },
+      { key: 'schemes (containerColorScheme)', patterns: [/p\.containerColorScheme\b/] },
+      { key: 'padding', patterns: [/p\.padding\b/] },
     ],
     subsectionFields: [],
   },

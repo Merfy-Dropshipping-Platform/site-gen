@@ -193,8 +193,32 @@ Astro ViewTransitions (✓ grep по src — пусто; Layout.astro без Cli
 ## 10. Карта канон-секций (решения аналитика)
 
 `themes/flux/sections.map.json` отсутствует — создать на 17 позиций (паритет bloom).
-Секций верстальщика всего 4 (+Puk — тестовый мусор, в канон НЕ включать; его шапка-паттерн
-«Comfortaa 24/28 центр + Roboto Flex 18/20 #999» — валидная роль, контент нет, Puk.astro:8-11).
+Секций верстальщика всего 5 (Header/Footer/Hero/Collections/Popular/Gallery + **Puk**).
+
+⚠️ **ИСПРАВЛЕНО (spec 111 Task 7):** строка выше ошибочно называла Puk.astro
+«тестовым мусором» с «валидной ролью, но без контента» и Comfortaa-шапкой — обе
+претензии не подтвердились. Pinned upstream (`SOURCE.lock.json` commit
+`e29b70920ffe4469744386b51b9c8ee0fcf68bd0`) и живой `https://flux.merfy.ru/`
+(curl, сверены байт-в-байт друг с другом) рендерят Puk.astro как реальную секцию
+главной «Следующее поколение уже с вами!» (Figma 905:19320) — центрированный
+заголовок+абзац+CTA, шрифт целиком Roboto Flex (заголовок uppercase 19/md:23,
+абзац light 16 #999), НЕ Comfortaa. У верстальщика нет отдельной секции
+«Изображение с текстом» — картинки в Puk НЕТ вовсе. Решение аналитика (владелец,
+«как в розе сделано»): `sections.map.json` мапит канон `ImageWithText` на
+Puk.astro; поверх дословного текст/CTA добавлена image-колонка по механике rose
+`themes/rose/src/components/sections/ImageWithText.astro` (2-колоночная сетка,
+`imagePosition`/`size`/`width`/`containerColorScheme`/`ctaPosition`/`padding`;
+картинка рендерится ВСЕГДА — плейсхолдер `/placeholders/landscape-iwt.png` при
+пустом `image`, паттерн rose T15). Из-за этого default-состояние секции на
+главной flux теперь ОТЛИЧАЕТСЯ от живого `flux.merfy.ru` (там картинки в этой
+секции нет) — осознанное, принятое отклонение (см. `task-7-report.md`), не баг.
+Текст/заголовок/CTA-копирайт и шрифт Puk (`font-roboto-flex`) не тронуты —
+дословный канон репо сохранён. Отдельный файл
+`src/components/sections/ImageWithText.astro` (более ранняя with-нуля реализация
+того же канона в манере flux, полный паритет rose) продолжает существовать, но
+НЕ сопоставлен в `sections.map.json` и не участвует в главной — резерв вне
+скоупа Task 7.
+
 Большинство позиций — с нуля в манере. Уникальных страниц-доноров типа Philosophy/Benefits
 у flux нет.
 
@@ -208,7 +232,7 @@ Astro ViewTransitions (✓ grep по src — пусто; Layout.astro без Cli
 | PopularProducts | `src/components/sections/Popular.astro` | оживить (полная T13-схема по bloom Popular; hydrateGrid уже есть — расширить data-cards/data-collection) |
 | Gallery | `src/components/sections/Gallery.astro` | оживить (items[] ≤3 + гидрация data-gallery-product/-collection; `<style>` #gallery сохранить) |
 | MainText | `src/components/sections/MainText.astro` | с нуля: контейнер 1320, манифест Comfortaa 24/28 uppercase (роль внутреннего h2), чёрная CTA |
-| ImageWithText | `src/components/sections/ImageWithText.astro` | с нуля (медиа-паттерн Gallery: rounded-8, surface, hover-zoom; сетка lg:grid-cols-2 gap-6 md:gap-8) |
+| ImageWithText | `src/components/sections/Puk.astro` | **spec 111 Task 7**: канон-источник переключён на Puk.astro (Figma 905:19320, «Основной текст»/CTA верстальщика) — дословный текст/заголовок/CTA/шрифт Puk сохранены, поверх добавлена image-колонка по механике rose ImageWithText (2-кол сетка lg:grid-cols-2, imagePosition/size 429×309\|429×444\|430×500 из §2/§4 flux/width/containerColorScheme/ctaPosition/padding). Прежняя with-нуля реализация `src/components/sections/ImageWithText.astro` (медиа-паттерн Gallery: rounded-8, surface, hover-zoom) остаётся в репозитории, но НЕ сопоставлена в sections.map.json |
 | MultiColumns | `src/components/sections/MultiColumns.astro` | с нуля: голые колонки (медиа rounded-8 + Comfortaa-подзаголовок + Roboto Flex-текст), без подложек |
 | MultiRows | `src/components/sections/MultiRows.astro` | с нуля (паттерн ImageWithText, чередование; эталон — bloom MultiRows) |
 | CollapsibleSection | `src/components/sections/CollapsibleSection.astro` | с нуля (details/summary; разделители #F5F5F5; chevron = NtIcon dropdown-chevron как в catalog.astro:43) |

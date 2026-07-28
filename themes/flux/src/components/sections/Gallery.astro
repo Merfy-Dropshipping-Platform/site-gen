@@ -2,8 +2,19 @@
 // ОЖИВЛЕНИЕ (контракт rose Gallery / flux Popular,Collections): полная
 // конструкторная схема theme-base Gallery.puckConfig поверх ВЁРСТКИ
 // ВЕРСТАЛЬЩИКОВ (репо flux-theme Gallery.astro: крупная плитка слева
-// lg:grid-cols-[1fr_429px] + правая колонка карточек, ВСЁ font-roboto-flex
-// font-light, плитки rounded-[8/12px], aspect-square / aspect-[429/314]).
+// lg:grid-cols-[875fr_429fr] + правая колонка карточек, ВСЁ font-roboto-flex
+// font-light, плитки rounded-[8/12px], aspect-square / aspect-[429/269]).
+// Task 8 (spec 111): исправлены 2 регрессии, введённые коммитом 01f80631
+// ("литерал верстальщика" был заявлен, но не сверен с реальным источником) —
+// grid-cols боковая колонка была ЗАФИКСИРОВАНА пиксельно (а не пропорцией fr,
+// как сейчас) — на ~1024-1150px геройская плитка становилась МЕНЬШЕ боковой,
+// инверсия иерархии; а аспект карточки коллекции был занижен относительно
+// истинного значения. Верифицировано ДВАЖДЫ: (1) `gh api .../flux-theme/
+// contents/....Gallery.astro?ref=e29b70920f...` (SOURCE.lock.json pinned
+// commit), (2) `curl https://flux.merfy.ru/` (живая верстальщицкая
+// демо-витрина, 2026-07-28) — оба источника сходятся на
+// `lg:grid-cols-[875fr_429fr]` / `aspect-[429/269]`. MANNER.md §2 (устаревшие
+// аспекты) и код до Task 8 — ни один не источник истины.
 // НЕ DS-компонент-шапка (он рендерил Comfortaa h2 / Manrope подзаголовок —
 // мимо манеры flux): шапка = простой <h2>/<p> font-roboto-flex (как
 // Popular/Collections). Канон-дефолты конструктора (headingSize/textSize medium →
@@ -49,10 +60,12 @@ const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(-
 const headWrapCls = "flex flex-col items-center gap-2 text-center";
 
 // Канон imagePosition left/right (как rose): 'left' (canon-default) и
-// отсутствие = большая плитка слева (литерал lg:grid-cols-[1fr_429px]);
+// отсутствие = большая плитка слева (литерал lg:grid-cols-[875fr_429fr] —
+// ПРОПОРЦИОНАЛЬНЫЕ fr-треки, не пиксельно-фиксированный — иначе на узких desktop-
+// ширинах боковая колонка обгоняет геройскую по ширине, см. Task 8 note выше);
 // 'right' — зеркало: шаблон колонок переворачивается + lg:order.
 const mirror = p.imagePosition === "right";
-const gridColsCls = mirror ? "lg:grid-cols-[429px_1fr]" : "lg:grid-cols-[1fr_429px]";
+const gridColsCls = mirror ? "lg:grid-cols-[429fr_875fr]" : "lg:grid-cols-[875fr_429fr]";
 const heroOrderCls = mirror ? " lg:order-2" : "";
 const sideOrderCls = mirror ? " lg:order-1" : "";
 
@@ -131,10 +144,12 @@ const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.re
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
 
-// Аспекты и ховеры правой колонки — по позициям литерала верстальщика:
-// плитка 1 (карточка товара) — aspect-square (scale-105 300ms), плитка 2
-// (карточка коллекции) — aspect-[429/314] (scale-[1.03] 500ms ease-out).
-const SIDE_ASPECTS = ["aspect-square", "aspect-[429/314]"];
+// Аспекты и ховеры правой колонки — по позициям литерала верстальщика
+// (верифицировано pinned upstream commit + живой https://flux.merfy.ru/, см.
+// Task 8 note в шапке файла): плитка 1 (карточка товара, FluxProductCard media
+// — aspect-square) — aspect-square (scale-105 300ms), плитка 2 (карточка
+// коллекции) — aspect-[429/269] (scale-[1.03] 500ms ease-out).
+const SIDE_ASPECTS = ["aspect-square", "aspect-[429/269]"];
 const SIDE_HOVERS = [
 	"transition-transform duration-300 group-hover:scale-105",
 	"transition-transform duration-500 ease-out group-hover:scale-[1.03]",
@@ -197,7 +212,7 @@ const containerCls = paddingStyle
 							src={heroTile.url}
 							alt={heroTile.alt}
 							loading="lazy"
-							class="absolute inset-0 size-full object-cover object-left transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+							class="absolute inset-0 size-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.02]"
 						/>
 					)}
 				</a>
@@ -214,7 +229,7 @@ const containerCls = paddingStyle
 						alt=""
 						aria-hidden="true"
 						loading="lazy"
-						class="absolute inset-0 size-full object-cover object-left"
+						class="absolute inset-0 size-full object-cover object-center"
 					/>
 				</div>
 			)}
@@ -280,7 +295,7 @@ const containerCls = paddingStyle
 
 					<div class="flex min-w-0 flex-col gap-4" aria-label="Выбери коллекцию">
 						<div
-							class="relative aspect-[429/314] w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"
+							class="relative aspect-[429/269] w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"
 							aria-hidden="true"
 						/>
 						<h3 class={collectionTitleCls}>Выбери коллекцию</h3>

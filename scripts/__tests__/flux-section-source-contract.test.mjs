@@ -764,3 +764,224 @@ test('storefront-hydrate.ts (themes/flux/src/lib/storefront-hydrate.ts): renderC
     );
   });
 });
+
+// ───────── Task 8 (Step 1): точечные assertions Gallery ─────────
+//
+// Матрица BLOCKS выше уже проверяет generic-присутствие heading/items/
+// imagePosition + маркер data-puck-subsection-field="items" (Gallery была
+// оживлена ДО этой задачи — Task 2 investigation подтвердила проходящий
+// контракт). Ниже — точечные проверки из брифа Task 8 Step 1, которых
+// generic-матрица не покрывает: text (отдельно от heading), ограничение
+// items тремя элементами, product/collection refs (не просто "проп
+// упомянут", а что productId/collectionId реально резолвятся в
+// data-gallery-product/-collection атрибуты плитки), imagePosition
+// реально зеркалит grid/order (не просто читается), padding управляет
+// inline-стилем, и что subsection-маркеры покрывают И heading (клик по
+// шапке секции), И КАЖДУЮ из 3 позиций items (клик по конкретной плитке —
+// per-item index, не один общий маркер на всё items[]).
+//
+// "schemes" (colorScheme) из брифа Step 1 НЕ проверяется как проп-точка
+// внутри Gallery.astro — по факту чтения GallerySchema (packages/theme-base/
+// blocks/Gallery/Gallery.puckConfig.ts) colorScheme ЕСТЬ в канон-схеме, но
+// применяется НЕ самим блоком, а внешней обёрткой composeV2Page/
+// resolveBlockScheme (src/themes/v2-page-composer.ts schemeIdFromProp →
+// `<div class="color-scheme-N">`) — единый механизм для ВСЕХ V2-блоков
+// (Collections.astro/Popular.astro тоже не читают colorScheme внутри себя,
+// тот же паттерн). Тест ниже проверяет негативно: Gallery.astro НЕ должен
+// заводить свой параллельный локальный обработчик colorScheme (это была бы
+// РЕГРЕССИЯ/дублирование механизма, не требование канона).
+test('Gallery (src/components/sections/Gallery.astro): heading/text, 3 items, product/collection refs, imagePosition, padding, subsection markers', async (t) => {
+  const absPath = path.resolve(THEME_ROOT, 'src/components/sections/Gallery.astro');
+  const content = await readFileOrNull(absPath);
+  assert.ok(content !== null, 'ожидался файл Gallery.astro');
+
+  await t.test('heading: принимает и канон-объект (p.heading?.text), и плоскую строку (typeof p.heading === "string")', () => {
+    assert.match(
+      content,
+      /typeof\s+p\.heading\s*===\s*["']string["']/,
+      'ожидалась проверка typeof p.heading === "string" (паритет с Hero/Collections/Popular — плоская строка heading не теряется молча)',
+    );
+  });
+
+  await t.test('text: принимает и канон-объект (p.text?.content), и плоскую строку (typeof p.text === "string")', () => {
+    assert.match(
+      content,
+      /typeof\s+p\.text\s*===\s*["']string["']/,
+      'ожидалась проверка typeof p.text === "string" — text ("Текст"/aiText поле GallerySchema) не покрыт generic BLOCKS-матрицей отдельно от heading',
+    );
+  });
+
+  await t.test('items: ограничены максимум 3 плитками (.slice(0, 3) — паритет с GallerySchema items.max(3))', () => {
+    assert.match(
+      content,
+      /\.slice\(0,\s*3\)/,
+      'ожидался .slice(0, 3) на items[] — GallerySchema.items = z.array(...).min(1).max(3), рендер не должен принимать больше 3 плиток',
+    );
+  });
+
+  await t.test('items: product-ref (item.productId) резолвится в data-gallery-product атрибут плитки (не просто читается)', () => {
+    assert.match(content, /it\.productId\b/, 'ожидалось чтение it.productId при type==="product"');
+    assert.match(
+      content,
+      /data-gallery-product=\{[\s\S]{0,80}?\?\s*\(heroTile\.ref[\s\S]{0,10}?undefined\)\s*:\s*undefined\}/,
+      'ожидался data-gallery-product={...ref...} на hero-плитке — цель клиентской гидрации (resolveProduct→имя/цена/картинка)',
+    );
+  });
+
+  await t.test('items: collection-ref (item.collectionId) резолвится в data-gallery-collection атрибут плитки (не просто читается)', () => {
+    assert.match(content, /it\.collectionId\b/, 'ожидалось чтение it.collectionId при type==="collection"');
+    assert.match(
+      content,
+      /data-gallery-collection=/,
+      'ожидался data-gallery-collection={...} на плитке — цель клиентской гидрации (resolveCollection→имя/картинка/href)',
+    );
+  });
+
+  await t.test('imagePosition: "right" реально зеркалит grid-cols И order плиток (не просто читается регэкспом где-то в файле)', () => {
+    assert.match(content, /p\.imagePosition\s*===\s*["']right["']/, 'ожидалось сравнение p.imagePosition === "right"');
+    assert.match(content, /lg:order-2/, 'ожидался lg:order-2 на hero-плитке при mirror');
+    assert.match(content, /lg:order-1/, 'ожидался lg:order-1 на боковой колонке при mirror');
+  });
+
+  await t.test('padding: заданный проп управляет inline padding-top/bottom (паттерн rose/Popular/Footer — без двойного отступа)', () => {
+    assert.match(
+      content,
+      /p\.padding\s*\?\s*`padding-top:\$\{p\.padding\.top\}px;padding-bottom:\$\{p\.padding\.bottom\}px;`/,
+      'ожидался inline paddingStyle из p.padding.top/bottom',
+    );
+  });
+
+  await t.test('colorScheme: НЕ дублируется локальным обработчиком в Gallery.astro (единый механизм composeV2Page/resolveBlockScheme для всех V2-блоков, паритет с Collections/Popular)', () => {
+    assert.doesNotMatch(
+      content,
+      /p\.colorScheme\b/,
+      'Gallery.astro не должен читать p.colorScheme напрямую — GallerySchema.colorScheme применяется внешней обёрткой composeV2Page ' +
+        '(src/themes/v2-page-composer.ts schemeIdFromProp → <div class="color-scheme-N">), как и у Collections.astro/Popular.astro',
+    );
+  });
+
+  await t.test('subsection marker: heading (direct-edit шапки секции на канвасе конструктора)', () => {
+    assert.ok(
+      content.includes('data-puck-subsection-field="heading"'),
+      'ожидался маркер data-puck-subsection-field="heading" на обёртке шапки',
+    );
+  });
+
+  await t.test('subsection marker: items несут per-item index (0 — hero, i+1 — боковые) для клика по КОНКРЕТНОЙ из 3 плиток, не один общий маркер на весь массив', () => {
+    assert.match(
+      content,
+      /data-puck-subsection-index=\{0\}[\s\S]{0,40}data-puck-subsection-field="items"/,
+      'ожидался data-puck-subsection-index={0} + data-puck-subsection-field="items" на hero-плитке',
+    );
+    assert.match(
+      content,
+      /data-puck-subsection-index=\{i \+ 1\}[\s\S]{0,40}data-puck-subsection-field="items"/,
+      'ожидался data-puck-subsection-index={i + 1} + data-puck-subsection-field="items" на боковых плитках (i=0,1 → индексы 1,2)',
+    );
+  });
+});
+
+// ───────── Task 8 (Step 2): upstream tile geometry (aspect/order/gaps/radii/hover) ─────────
+//
+// Инвестигация Task 8: коммит 01f80631 (позднее скопирован checkpoint'ом
+// b3bfdbfe) заявил в комментарии "литерал верстальщика" для grid-cols
+// (`1fr_429px`) и аспекта карточки коллекции (`429/314`), но НЕ сверил это с
+// реальным источником. Реальный литерал (сверено ДВАЖДЫ: `gh api
+// repos/Merfy-Dropshipping-Platform/flux-theme/contents/
+// src/components/sections/Gallery.astro?ref=e29b70920ffe4469744386b51b9c8ee0fcf68bd0`
+// — SOURCE.lock.json pinned commit; и `curl https://flux.merfy.ru/`, живая
+// верстальщицкая демо-витрина, 2026-07-28 — оба источника идентичны):
+//   - grid-cols = `lg:grid-cols-[875fr_429fr]` (fr-пропорция 875:429, НЕ
+//     `1fr_429px` — с фиксированным 429px боковая колонка на узких desktop-
+//     ширинах, ~1024-1150px, становится ШИРЕ геройской, инверсия иерархии);
+//   - аспект карточки коллекции = `aspect-[429/269]` (НЕ 429/314 — эта цифра
+//     не встречается ни в pinned upstream, ни на живой витрине, ни в более
+//     старом MANNER.md §2, который цитирует ЕЩЁ ДРУГИЕ, тоже устаревшие
+//     429-309/429-444);
+//   - геройское изображение обрезается `object-center` (НЕ `object-left` —
+//     тоже введено тем же коммитом 01f80631, тоже не сверено).
+// Слот "карточка товара" (боковая плитка 1) в upstream — ЦЕЛЫЙ компонент
+// <FluxProductCard> (бейдж/цена/кнопка «В корзину»), а НЕ голая
+// aspect-ratio-плитка. Gallery.astro сознательно НЕ портирует этот компонент
+// сюда: канон Gallery.puckConfig допускает ЛЮБОЙ item.type (image/product/
+// collection) на ЛЮБОЙ из 3 позиций, поэтому все 3 позиции используют ОДИН
+// универсальный шаблон плитки (aspect+img+label/price) — если бы позиция 1
+// рендерила <FluxProductCard> ТОЛЬКО при type==="product", смена типа этой
+// же позиции на "image"/"collection" дала бы "чужеродную карточку"
+// (несовместимая структура между типами одной позиции) — именно это брифом
+// Task 8 Step 2 запрещено ("не создаёт визуально чужую карточку"). Из
+// upstream-геометрии product-слота унаследован ТОЛЬКО аспект медиа
+// (aspect-square, тот же что и FluxProductCard.astro:52) и hover
+// (scale-105 duration-300, тот же что FluxProductCard.astro:63) — не весь
+// компонент целиком.
+test('Gallery (src/components/sections/Gallery.astro): upstream tile geometry (aspect/order/gaps/radii/hover) сохранена', async (t) => {
+  const absPath = path.resolve(THEME_ROOT, 'src/components/sections/Gallery.astro');
+  const content = await readFileOrNull(absPath);
+  assert.ok(content !== null, 'ожидался файл Gallery.astro');
+
+  await t.test('grid: lg:grid-cols-[875fr_429fr] — пропорциональные fr-треки (upstream 875:429), НЕ фиксированный 429px', () => {
+    assert.match(content, /lg:grid-cols-\[875fr_429fr\]/, 'ожидался lg:grid-cols-[875fr_429fr]');
+    assert.match(content, /lg:grid-cols-\[429fr_875fr\]/, 'ожидалось зеркало lg:grid-cols-[429fr_875fr] при imagePosition="right"');
+    assert.doesNotMatch(content, /429px/, 'НЕ ожидался фиксированный 429px трек (upstream литерал — fr-пропорция)');
+  });
+
+  await t.test('grid/side gap: gap-4 (16px) — upstream литерал на всех уровнях сетки', () => {
+    assert.match(content, /flex flex-col gap-4 lg:grid \$\{gridColsCls\} lg:gap-4/, 'ожидался gap-4/lg:gap-4 на корневой сетке');
+    assert.match(
+      content,
+      /grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4/,
+      'ожидался gap-4/lg:gap-4 на боковой колонке (мобайл grid-cols-2 / десктоп flex-col)',
+    );
+  });
+
+  await t.test('hero tile: aspect-square (мобайл) / lg:aspect-auto lg:h-full (десктоп) + rounded radius-media + object-center + hover scale-[1.02] duration-500 ease-out', () => {
+    assert.match(
+      content,
+      /aspect-square w-full min-w-0 overflow-hidden rounded-\[var\(--radius-media,8px\)\][\s\S]{0,80}?lg:aspect-auto lg:h-full/,
+      'ожидалась геометрия hero-плитки (aspect-square/lg:h-full/radius-media)',
+    );
+    assert.match(
+      content,
+      /object-cover object-center transition-transform duration-500 ease-out group-hover:scale-\[1\.02\]/,
+      'ожидался object-center + hover scale-[1.02] duration-500 ease-out на hero-изображении (upstream FluxPicture класс)',
+    );
+    assert.doesNotMatch(content, /object-left/, 'НЕ ожидался object-left — upstream литерал object-center (регрессия 01f80631)');
+  });
+
+  await t.test('side tile 0 (позиция "товар"): aspect-square + hover scale-105 duration-300 (паритет FluxProductCard media)', () => {
+    assert.match(
+      content,
+      /const SIDE_ASPECTS = \["aspect-square", "aspect-\[429\/269\]"\];/,
+      'ожидался SIDE_ASPECTS = ["aspect-square", "aspect-[429/269]"]',
+    );
+    assert.match(
+      content,
+      /"transition-transform duration-300 group-hover:scale-105",/,
+      'ожидался hover scale-105 duration-300 (SIDE_HOVERS[0], паритет FluxProductCard.astro:63)',
+    );
+  });
+
+  await t.test('side tile 1 (позиция "коллекция"): aspect-[429/269] + hover scale-[1.03] duration-500 ease-out (НЕ 429/314)', () => {
+    assert.doesNotMatch(content, /429\/314/, 'НЕ ожидался устаревший аспект 429/314 (регрессия 01f80631, не совпадает ни с одним источником)');
+    assert.match(
+      content,
+      /"transition-transform duration-500 ease-out group-hover:scale-\[1\.03\]",/,
+      'ожидался hover scale-[1.03] duration-500 ease-out (SIDE_HOVERS[1], upstream литерал Gallery.astro коллекции)',
+    );
+  });
+
+  await t.test('радиусы плиток: rounded-[var(--radius-media,8px)] (hero) / rounded-[12px] (боковые) — upstream литералы 8px/12px, токенизировано без смены пикселя по умолчанию', () => {
+    assert.match(content, /rounded-\[var\(--radius-media,8px\)\]/, 'ожидался rounded radius-media (fallback 8px) на hero-плитке');
+    assert.match(content, /rounded-\[12px\]/, 'ожидался rounded-[12px] на боковых плитках');
+  });
+
+  await t.test('порядок плиток: hero (index 0) первая, боковые (product-позиция, затем collection-позиция) — без mirror совпадает с DOM-порядком, при mirror — только CSS order, не DOM', () => {
+    assert.match(
+      content,
+      /heroTile \? \(/,
+      'ожидался heroTile первым в DOM (up-front условный рендер до боковой колонки)',
+    );
+    assert.match(content, /const heroOrderCls = mirror \? " lg:order-2" : "";/, 'ожидался CSS order (не DOM reorder) для зеркалирования');
+    assert.match(content, /const sideOrderCls = mirror \? " lg:order-1" : "";/, 'ожидался CSS order (не DOM reorder) для боковой колонки');
+  });
+});

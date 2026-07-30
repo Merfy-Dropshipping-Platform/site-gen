@@ -432,12 +432,31 @@ export class PreviewService {
     if (!templateId) return null;
     // Cache is keyed per (templateId, route) — each Astro route emits its own
     // <route>/index.html, so different pages must not clobber each other.
+    //
+    // Вне production кэш сверяется с mtime файла: шелл несёт ХЕШИРОВАННУЮ
+    // ссылку на CSS сборки, и вечный кэш после пересборки темы отдавал шелл
+    // со старым хешем — CSS 404, страница без стилей. Пятый член того же
+    // семейства (манифест, секции, blockDefaults, htmlCache): кэш переживал
+    // пересборку. Негативный результат в dev не кэшируем — первая сборка темы
+    // иначе оставалась «невидимой» до рестарта.
+    const isProd = process.env.NODE_ENV === 'production';
     const cacheKey = `${templateId}::${route ?? ''}`;
     const cached = PreviewService._builtThemeHtmlCache.get(cacheKey);
-    if (cached !== undefined) return cached === '' ? null : cached;
-
-    const { readFile } = await import('node:fs/promises');
+    const { readFile, stat } = await import('node:fs/promises');
     const { resolve } = await import('node:path');
+    if (cached !== undefined) {
+      if (isProd) return cached.html === '' ? null : cached.html;
+      if (cached.src) {
+        try {
+          const { mtimeMs } = await stat(cached.src);
+          if (Math.trunc(mtimeMs) === cached.mtimeMs)
+            return cached.html === '' ? null : cached.html;
+        } catch {
+          // файл исчез — перечитываем кандидатов заново
+        }
+      }
+      PreviewService._builtThemeHtmlCache.delete(cacheKey);
+    }
 
     // Route → relative file. Root (empty/undefined route) is index.html;
     // a named route loads <route>/index.html (about/index.html, cart/...).
@@ -460,7 +479,12 @@ export class PreviewService {
       for (const p of fileCandidates) {
         try {
           const html = await readFile(p, 'utf-8');
-          PreviewService._builtThemeHtmlCache.set(cacheKey, html);
+          const { mtimeMs } = await stat(p);
+          PreviewService._builtThemeHtmlCache.set(cacheKey, {
+            html,
+            src: p,
+            mtimeMs: Math.trunc(mtimeMs),
+          });
           return html;
         } catch {
           // try next candidate
@@ -468,14 +492,21 @@ export class PreviewService {
       }
     }
 
-    // Negative cache: no built page for this (theme, route) → legacy path.
-    PreviewService._builtThemeHtmlCache.set(cacheKey, '');
+    // Negative cache (prod-only): no built page for this (theme, route) →
+    // legacy path. В dev негатив не кэшируем — свежесобранная тема должна
+    // подхватиться без рестарта.
+    if (isProd)
+      PreviewService._builtThemeHtmlCache.set(cacheKey, { html: '', src: null, mtimeMs: 0 });
     return null;
   }
 
-  // Per-(templateId, route) cache for tryLoadBuiltThemeHtml. '' encodes a
-  // negative result (file absent) so we don't re-stat on every preview load.
-  private static readonly _builtThemeHtmlCache = new Map<string, string>();
+  // Per-(templateId, route) cache for tryLoadBuiltThemeHtml. html:'' encodes a
+  // negative result (file absent; prod-only). src+mtimeMs позволяют dev-путь
+  // перечитать шелл после пересборки темы.
+  private static readonly _builtThemeHtmlCache = new Map<
+    string,
+    { html: string; src: string | null; mtimeMs: number }
+  >();
 
   /** Кэш per-themeKey: есть ли скомпилированные v2-секции (manifest.json). */
   private static readonly _v2SectionsCache = new Map<string, boolean>();

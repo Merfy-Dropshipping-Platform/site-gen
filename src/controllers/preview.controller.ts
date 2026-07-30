@@ -93,6 +93,28 @@ export class PreviewController {
   private static htmlCache = new Map<string, string>();
   private static readonly MAX_HTML_CACHE = 300;
 
+  /**
+   * Отпечаток пред-собранного диста темы для ключа htmlCache (dev-only).
+   * Меняется при каждой пересборке темы → старый composed-HTML со старым
+   * asset-хешем инвалидируется сам. В production дист неизменен — ''.
+   */
+  private static async themeDistFingerprint(
+    themeId: string | null | undefined,
+  ): Promise<string> {
+    if (process.env.NODE_ENV === 'production' || !themeId) return '';
+    try {
+      const { stat } = await import('node:fs/promises');
+      const { resolve } = await import('node:path');
+      const bare = themeId.replace(/-\d+(?:\.\d+)*$/, '');
+      const { mtimeMs } = await stat(
+        resolve(process.cwd(), 'dist', 'theme-preview', bare, 'index.html'),
+      );
+      return String(Math.trunc(mtimeMs));
+    } catch {
+      return '';
+    }
+  }
+
   private static getCachedHtml(key: string): string | undefined {
     const v = PreviewController.htmlCache.get(key);
     if (v !== undefined) {
@@ -413,7 +435,15 @@ export class PreviewController {
     // Cache lookup BEFORE doing extractPageBlocks/render. Key includes the
     // current revisionId so any constructor save (new revision) yields a
     // different key and the new content is rendered fresh.
-    const cacheKey = `${siteId}:${loaded.revisionId}:${loaded.footerFp}:${page}:${productIdOverride ?? ''}`;
+    //
+    // Вне production в ключ добавляется отпечаток ДИСТА темы: composed-HTML
+    // ссылается на хешированный CSS сборки, и после пересборки темы кэш
+    // продолжал отдавать шелл со СТАРЫМ хешем — CSS 404, страница без стилей.
+    // Ревизия при этом не меняется, так что старый ключ жил вечно (комментарий
+    // «stale HTML is impossible» это не учитывал). Тот же класс ловушки, что
+    // манифест/секции/blockDefaults: кэш переживал пересборку.
+    const themeFp = await PreviewController.themeDistFingerprint(loaded.themeId);
+    const cacheKey = `${siteId}:${loaded.revisionId}:${loaded.footerFp}:${page}:${productIdOverride ?? ''}:${themeFp}`;
     const cachedHtml = PreviewController.getCachedHtml(cacheKey);
     if (cachedHtml !== undefined) {
       res

@@ -17,7 +17,9 @@ RUN=/tmp/merfy-local-logs
 mkdir -p "$RUN"
 
 # имя:порт
-SERVICES=(user:3111 billing:3112 gateway:3110 sites:3114 constructor:3000)
+# Порт конструктора — 3200: 3000 бывает занят другим проектом, а 3200 уже
+# перечислен в FRONTEND_ORIGIN gateway (CORS), менять ничего не надо.
+SERVICES=(user:3111 billing:3112 product:3113 gateway:3110 sites:3114 constructor:3200)
 
 port_of() { local s=$1; for e in "${SERVICES[@]}"; do [ "${e%%:*}" = "$s" ] && echo "${e##*:}" && return; done; }
 pidfile() { echo "$RUN/$1.pid"; }
@@ -52,6 +54,15 @@ start_one() {
   case "$s" in
     user|billing)
       ( cd "$MERFY/$s" && nohup node dist/src/main.js < /dev/null > "$RUN/$s.log" 2>&1 & echo $! > "$(pidfile "$s")"; disown ) ;;
+    product)
+      # NODE_ENV=production: в dev TypeORM synchronize пытается силой подогнать
+      # дрейфанувшую локальную схему (title varchar(500) vs entity 150) и падает
+      # на destructive-переделке. Прод-режим = только миграции, env читается.
+      # RABBITMQ_QUEUE_PREFIX=product-service: локальный .env говорит "product",
+      # а gateway/sites шлют RPC в product-service_queue — очередь оставалась
+      # без консьюмера, и КАЖДЫЙ storefront-data ждал 47с двух таймаутов.
+      ( cd "$MERFY/product" && NODE_ENV=production RABBITMQ_QUEUE_PREFIX=product-service \
+        nohup node dist/main.js < /dev/null > "$RUN/product.log" 2>&1 & echo $! > "$(pidfile product)"; disown ) ;;
     gateway)
       ( cd "$MERFY/api-gateway" && nohup node dist/src/main.js < /dev/null > "$RUN/gateway.log" 2>&1 & echo $! > "$(pidfile gateway)"; disown ) ;;
     sites)
@@ -72,7 +83,7 @@ start_one() {
         NODE_ENV=development \
         nohup node dist/src/main.js < /dev/null > "$RUN/sites.log" 2>&1 & echo $! > "$(pidfile sites)"; disown ) ;;
     constructor)
-      ( cd "$MERFY/constructor" && nohup npx vite --port 3000 < /dev/null > "$RUN/constructor.log" 2>&1 & echo $! > "$(pidfile constructor)"; disown ) ;;
+      ( cd "$MERFY/constructor" && nohup npx vite --port 3200 < /dev/null > "$RUN/constructor.log" 2>&1 & echo $! > "$(pidfile constructor)"; disown ) ;;
     *) echo "  неизвестный сервис: $s"; return 1 ;;
   esac
   # `$!` — это pid подоболочки, а не самого node (её `cd … && nohup node` порождает

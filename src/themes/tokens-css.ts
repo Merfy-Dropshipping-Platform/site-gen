@@ -289,8 +289,33 @@ export function buildTokensCss(
     ...(merchantSchemes.filter(isPlainObject) as Record<string, unknown>[]),
     ...themeSchemes.map((ts) => themeSchemeToMerchantShape(ts)),
   ];
-  const defaultIdx =
-    typeof s.defaultSchemeIndex === 'number' ? s.defaultSchemeIndex : 0;
+  // Тема может назвать схему по умолчанию явно (`theme.json` → `defaultScheme:
+  // "scheme-2"`). Иначе дефолтом становится первая схема массива, и чтобы
+  // сменить её пришлось бы ПЕРЕСТАВЛЯТЬ массив — из-за чего id перестают идти
+  // подряд (scheme-2, scheme-1, ...) и расходятся с остальными темами.
+  // Merchant-выбор (`themeSettings.defaultSchemeIndex`) приоритетнее.
+  const themeDefaultId =
+    typeof (manifest as { defaultScheme?: unknown } | null)?.defaultScheme === 'string'
+      ? String((manifest as { defaultScheme?: string }).defaultScheme)
+      : null;
+  const themeDefaultIdx =
+    themeDefaultId !== null
+      ? schemes.findIndex(
+          (sc) => String((sc as { id?: unknown }).id ?? '') === themeDefaultId,
+        )
+      : -1;
+  // `defaultSchemeIndex` — индекс в MERCHANT-массиве, поэтому он авторитетен
+  // только когда мерчантские схемы вообще есть. Конструктор кладёт в настройки
+  // `defaultSchemeIndex: 0` всегда (это его собственный дефолт, а не выбор
+  // мерчанта); при пустом массиве схем этот ноль указывал на первую схему темы
+  // и молча перебивал заявленный темой `defaultScheme`.
+  const merchantPickedScheme =
+    merchantSchemes.length > 0 && typeof s.defaultSchemeIndex === 'number';
+  const defaultIdx = merchantPickedScheme
+    ? (s.defaultSchemeIndex as number)
+    : themeDefaultIdx >= 0
+      ? themeDefaultIdx
+      : 0;
   const defaultScheme = isPlainObject(schemes[defaultIdx])
     ? (schemes[defaultIdx] as Record<string, unknown>)
     : isPlainObject(schemes[0])

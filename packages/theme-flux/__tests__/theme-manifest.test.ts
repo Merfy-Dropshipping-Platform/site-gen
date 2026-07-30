@@ -69,11 +69,21 @@ describe("@merfy/theme-flux theme.json", () => {
     }
   });
 
-  it("defaults express flux signature: 1320px container + 6px buttons + 12px cards", () => {
+  // Радиус кнопки — 4px, а не 6px: столько в вёрстке верстальщиков
+  // (flux-theme Hero.astro:64 `rounded-[4px]`) и столько же показывает замер
+  // живого flux.merfy.ru. Прежние 6px в манифест попали не из вёрстки.
+  it("defaults express flux signature: 1320px container + 4px buttons + 12px cards", () => {
     expect(manifest.defaults["--container-max-width"]).toBe("1320px");
-    expect(manifest.defaults["--radius-button"]).toBe("6px");
+    expect(manifest.defaults["--radius-button"]).toBe("4px");
     expect(manifest.defaults["--radius-card"]).toBe("12px");
     expect(manifest.defaults["--radius-input"]).toBe("8px");
+  });
+
+  // Текстовые цвета темы = литералы вёрстки: заголовки #000000, вторичный
+  // текст #999999 (замер flux.merfy.ru — единообразно во всех секциях).
+  it("text colors match the reference: black headings, #999999 body", () => {
+    expect(manifest.defaults["--color-heading"]).toBe("0 0 0");
+    expect(manifest.defaults["--color-text"]).toBe("153 153 153");
   });
 
   it("declares Roboto Flex + Barlow fonts", () => {
@@ -82,10 +92,24 @@ describe("@merfy/theme-flux theme.json", () => {
     expect(families).toContain("Barlow");
   });
 
-  it("orange accent #fa5109 is present in first scheme", () => {
-    const first = manifest.colorSchemes[0];
-    expect(first.tokens["--color-accent"]).toBe("250 81 9");
-    expect(first.tokens["--color-button-bg"]).toBe("250 81 9");
+  // Акцент flux — тёмно-синий #1e2952 (rgb 30 41 82), а НЕ оранжевый #fa5109.
+  // Оранжевый пришёл из spec-111 FR-008, но на живом flux.merfy.ru его ноль
+  // вхождений: кнопки, промо-полоса и бейдж корзины — все #1e2952.
+  it("navy accent #1e2952 is used by buttons in every scheme", () => {
+    for (const scheme of manifest.colorSchemes) {
+      expect(scheme.tokens["--color-button-bg"]).toBe("30 41 82");
+      expect(scheme.tokens["--color-button-border"]).toBe("30 41 82");
+    }
+  });
+
+  // Схема по умолчанию называется ЯВНО, а не «первая в массиве»: иначе смена
+  // дефолта требует перестановки массива, id перестают идти подряд
+  // (scheme-2, scheme-1, …) и расходятся с остальными темами.
+  it("default scheme is declared by id and ids stay sequential", () => {
+    expect(manifest.defaultScheme).toBe("scheme-2");
+    const ids = manifest.colorSchemes.map((s: { id: string }) => s.id);
+    expect(ids).toEqual(ids.map((_: string, i: number) => `scheme-${i + 1}`));
+    expect(ids).toContain(manifest.defaultScheme);
   });
 
   // Task 9 (111-flux-layout-parity, Step 1/2): the stale package-level

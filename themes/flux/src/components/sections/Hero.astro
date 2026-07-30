@@ -18,18 +18,35 @@ const nonEmpty = (v: unknown): string | undefined =>
 // Hero проверял ТОЛЬКО p.heading?.text — плоская строка тихо терялась (rawHeadingText
 // ниже её тоже не видел → секция с реальным заголовком мерчанта ошибочно считалась
 // isEmpty и рисовала плейсхолдер «Изображение» вместо заданного текста).
-const title = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? SITE_TITLE;
+// Дефолтное состояние Hero = контент вёрстки дословно (flux-theme Hero.astro:14-18).
+// Фолбэк идёт через nonEmpty, а не через `??`: сид и миграции ревизий кладут в эти
+// поля ПУСТЫЕ СТРОКИ, а `??` пропускает только null/undefined — из-за этого секция
+// рендерилась с пустыми <h1>/<p>/<a> вместо дефолтного текста оригинала.
+const REF_TITLE = "Технологии без паузы";
+const REF_SUBTITLE = "Будущее — в режиме онлайн.\nВаш новый гаджет — уже в наличии.";
+const REF_CTA_TEXT = "Новинки 2026";
+const REF_CTA_LINK = "/catalog";
+// Вёрстка разбивает подзаголовок по \n на строки через <br> (Hero.astro:20,55).
+
+const title =
+	nonEmpty(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
+	nonEmpty(p.title) ??
+	REF_TITLE;
 const subtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	p.subtitle ??
-	"Там, где классика встречается с характером";
-const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
+	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
+	nonEmpty(p.subtitle) ??
+	REF_SUBTITLE;
+const ctaText =
+	nonEmpty(p.primaryButton?.text) ??
+	nonEmpty(p.cta?.text) ??
+	nonEmpty(p.ctaText) ??
+	REF_CTA_TEXT;
 const ctaLink =
-	p.primaryButton?.link?.href ??
-	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
-	p.cta?.href ??
-	p.ctaLink ??
-	"#collections";
+	nonEmpty(p.primaryButton?.link?.href) ??
+	nonEmpty(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
+	nonEmpty(p.cta?.href) ??
+	nonEmpty(p.ctaLink) ??
+	REF_CTA_LINK;
 // Канон backgroundImages (imagePair) / legacy backgroundImage / image.url. Картинка
 // НЕ выбрана → "" (одиночная ветка рендера ниже не рисует фон); ПОЛНОСТЬЮ пустое
 // состояние секции (isEmpty) рендерит отдельную ветку с дизайн-ассетом
@@ -98,30 +115,38 @@ const PH_BUTTON = "Кнопка";
 //     токены §7 (белый фолбэк = эталонный text-white).
 //   заголовок large 20/24 → medium 17/20 → small 14/17 (Roboto Flex uppercase)
 //   текст     large 14/16 → medium 12/14 → small 11/12 (Roboto Flex 300)
+// Фолбэки цвета = ЛИТЕРАЛЫ вёрстки (#000000 заголовок, #999999 подзаголовок).
+// Заданная мерчантом цветосхема по-прежнему перебивает их через токен; но пока
+// схема не выбрана, Hero обязан выглядеть ровно как у верстальщиков. Раньше
+// фолбэк был белым — на светлом фото текст пропадал.
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "font-roboto-flex text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[17px]"
+		? "font-roboto-flex text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[17px]"
 		: headingSize === "medium"
-			? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
-			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]";
+			? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
+			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]";
+// Подзаголовок вёрстки (Hero.astro:52): 12→14px, uppercase, #999999.
+// Были 14→16px без uppercase — на ступень крупнее и другим регистром.
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
-		? "font-roboto-flex text-[11px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[12px]"
+		? "font-roboto-flex text-[10px] font-light uppercase leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[11px]"
 		: textSize === "medium"
-			? "font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[14px]"
-			: "font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]";
-// «Размер» → ФИКСИРОВАННАЯ высота полотна (эталон верстальщика Hero.astro:28
-// `h-[280px] sm:h-[360px] lg:h-[480px]`). large (дефолт flux) = эталон байт-в-байт;
-// medium ≈0.82×, small ≈0.64× (каждый из трёх брейкпоинтов пропорционально ниже).
-// Дефолт (p.size не задан) = large. Это Tailwind-КЛАССЫ высоты (адаптив sm/lg) —
-// вешаются на div-полотно; <section> берёт высоту от потока полотна (+padding).
+			? "font-roboto-flex text-[11px] font-light uppercase leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[12px]"
+			: "font-roboto-flex text-[12px] font-light uppercase leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[14px]";
+// «Размер» → высота полотна. large (дефолт) = вёрстка дословно
+// (flux-theme Hero.astro:26 `h-[380px] w-full sm:h-[480px] lg:aspect-[1920/810] lg:h-auto`):
+// на десктопе высота задаётся ПРОПОРЦИЕЙ кадра, а не фиксированным числом —
+// отсюда замеренные 540px на 1280 и 810px на 1920.
+// Прежние значения 280/360/480 были опечаткой переноса (380 записали как 280).
+// medium ≈0.82×, small ≈0.64× от large; у них десктоп остаётся фиксированным,
+// т.к. пропорция кадра — инвариант дизайна, а не регулируемая величина.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
 const heroHeightCls = {
-	large: "h-[280px] sm:h-[360px] lg:h-[480px]",
-	medium: "h-[230px] sm:h-[300px] lg:h-[400px]",
-	small: "h-[180px] sm:h-[240px] lg:h-[320px]",
+	large: "h-[380px] sm:h-[480px] lg:aspect-[1920/810] lg:h-auto",
+	medium: "h-[310px] sm:h-[395px] lg:h-[445px]",
+	small: "h-[245px] sm:h-[305px] lg:h-[345px]",
 }[heroSize];
 
 // Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не
@@ -197,22 +222,25 @@ const align = p.alignment === "center" || p.alignment === "right" ? p.alignment 
 const alignItemsCls = align === "right" ? "items-end" : align === "center" ? "items-center" : "items-start"; // ВЫРАВНИВАНИЕ
 const textAlignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 const buttonsJustifyCls = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
-const contentCls = `flex max-w-[520px] flex-col gap-6 lg:gap-10 ${alignItemsCls}${boxedCls}`;
+// gap-8 — вёрстка (Hero.astro:46 `gap-8 … lg:gap-10`). Было gap-6: на мобиле и
+// планшете контент стоял плотнее эталона.
+const contentCls = `flex max-w-[520px] flex-col gap-8 lg:gap-10 ${alignItemsCls}${boxedCls}`;
 
-// Канон buttonStyle solid|outlined для основной кнопки. ЭТАЛОН верстальщика
-// (Hero.astro:59) = СПЛОШНАЯ ЧЁРНАЯ кнопка: h-14, bg-black, белый текст,
-// font-roboto-flex, uppercase, px-4, text-[16px], leading-none, hover:opacity-90.
-// solid/отсутствие = этот чёрный эталон (чёрная CTA — дизайн-интент верстальщика,
-// поверх цветосхем); outlined = контур того же чёрного языка (бордер+текст black на
-// прозрачном). Радиус остаётся токеном схемы (дефолт 6px = эталон).
+// Кнопка вёрстки (Hero.astro:64): h-12 (48px), rounded-[4px], bg-[#1e2952],
+// белый текст, font-light, uppercase, px-4, text-[16px], leading-none.
+// Высота и радиус берутся ТОКЕНАМИ темы — `--size-hero-button-h` уже объявлен в
+// theme.json со значением 48px, но раньше не потреблялся (стоял хардкод h-14=56px),
+// т.е. у свойства было два владельца и живым был неверный.
+// Цвет — токен цветосхемы с фолбэком на литерал вёрстки: пока схема не выбрана,
+// кнопка тёмно-синяя как в оригинале.
 const ctaBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-black transition-colors hover:bg-black/5"
-		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
-// Вторая кнопка — outlined в том же чёрном языке эталона (h-14, font-roboto-flex,
-// uppercase); рендерится ТОЛЬКО когда мерчант задал secondaryButton (условие ниже).
+		? "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
+		: "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+// Вторая кнопка — контурная в том же языке; рендерится ТОЛЬКО когда мерчант задал
+// secondaryButton (условие ниже).
 const secondaryBtnCls =
-	"inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-black transition-colors hover:bg-black/5";
+	"inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне
@@ -319,15 +347,27 @@ const rootStyle = paddingStyle;
 				alt={title}
 				loading="eager"
 				fetchpriority="high"
-				class="absolute inset-0 z-0 size-full object-cover object-center"
+				class="absolute left-1/2 top-[-10.8%] z-0 h-auto w-[200%] max-w-none -translate-x-1/2 object-cover sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
 			/>
 		) : null
+	}
+
+	{/* Растворение фото в белый к нижней кромке (вёрстка Hero.astro:39) — это
+	    дизайн-инвариант оригинала, а НЕ затемнение. Именно он отделяет Hero от
+	    следующей секции; чёрного слоя у верстальщиков нет вовсе. */}
+	{
+		backgroundImage && !backgroundImage2 && (
+			<div
+				class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-transparent from-[85%] to-white"
+				aria-hidden="true"
+			/>
+		)
 	}
 
 	{
 		overlayN > 0 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[1] bg-black"
+				class="pointer-events-none absolute inset-0 z-[2] bg-black"
 				style={`opacity:${overlayN / 100}`}
 			/>
 		)
@@ -335,7 +375,7 @@ const rootStyle = paddingStyle;
 
 	<div class={`relative w-full ${heroHeightCls}`}>
 		<div
-			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 py-8 md:px-20 md:py-10 2xl:px-80`}
+			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4`}
 		>
 			<div class={contentCls} data-reveal>
 				<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
@@ -354,7 +394,14 @@ const rootStyle = paddingStyle;
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
 					>
-						{subtitle}
+						{String(subtitle)
+							.split("\n")
+							.map((line, i) => (
+								<>
+									{i > 0 && <br />}
+									{line}
+								</>
+							))}
 					</p>
 				</div>
 

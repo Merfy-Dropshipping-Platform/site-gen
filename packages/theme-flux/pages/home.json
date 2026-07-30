@@ -3,7 +3,14 @@
     {
       "type": "PromoBanner",
       "props": {
-        "id": "PromoBanner-home"
+        "id": "PromoBanner-home",
+        "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+        "link": {
+          "text": "Смотреть больше",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase"
       }
     },
     {
@@ -13,30 +20,33 @@
         "siteTitle": "Flux",
         "logo": "",
         "logoPosition": "top-left",
-        "stickiness": "scroll-up",
+        "stickiness": "always",
         "colorScheme": "scheme-2",
-        "menuColorScheme": "scheme-1",
         "menuType": "dropdown",
         "padding": {
-          "top": 0,
-          "bottom": 0
+          "top": 12,
+          "bottom": 12
         },
         "navigationLinks": [
           {
-            "label": "Каталог",
-            "href": "/catalog"
+            "label": "Главная",
+            "href": "/"
           },
           {
-            "label": "О нас",
-            "href": "/about"
+            "label": "Полноразмерные наушники",
+            "href": "/catalog/naushniki"
           },
           {
-            "label": "Доставка",
-            "href": "/delivery"
+            "label": "TWS-наушники с кейсом",
+            "href": "/catalog/tws"
           },
           {
-            "label": "Контакты",
-            "href": "/contacts"
+            "label": "Портативные колонки",
+            "href": "/catalog/kolonki"
+          },
+          {
+            "label": "Саундбары",
+            "href": "/catalog/saundbary"
           }
         ],
         "actionButtons": {

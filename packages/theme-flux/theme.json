@@ -14,7 +14,7 @@
     "--weight-heading": "600",
     "--weight-body": "400",
     "--container-max-width": "1320px",
-    "--radius-button": "6px",
+    "--radius-button": "4px",
     "--radius-input": "8px",
     "--radius-card": "12px",
     "--radius-media": "8px",
@@ -39,7 +39,9 @@
     "--cart-type": "drawer",
     "--card-style": "card",
     "--card-alignment": "left",
-    "--color-error": "255 148 148"
+    "--color-error": "255 148 148",
+    "--color-heading": "0 0 0",
+    "--color-text": "153 153 153"
   },
   "blockDefaults": {
     "Footer": {
@@ -134,16 +136,34 @@
       }
     },
     "Hero": {},
-    "ImageWithText": { "colorScheme": "scheme-1" },
-    "Gallery": { "colorScheme": "scheme-1" },
+    "ImageWithText": {
+      "colorScheme": "scheme-1"
+    },
+    "Gallery": {
+      "colorScheme": "scheme-1"
+    },
     "Slideshow": {},
-    "MultiRows": { "colorScheme": "scheme-1" },
-    "MultiColumns": { "colorScheme": "scheme-1" },
-    "MainText": { "colorScheme": "scheme-1" },
-    "CollapsibleSection": { "colorScheme": "scheme-1" },
-    "Newsletter": { "colorScheme": "scheme-1" },
-    "PromoBanner": { "colorScheme": "scheme-1" },
-    "Video": { "colorScheme": "scheme-1" }
+    "MultiRows": {
+      "colorScheme": "scheme-1"
+    },
+    "MultiColumns": {
+      "colorScheme": "scheme-1"
+    },
+    "MainText": {
+      "colorScheme": "scheme-1"
+    },
+    "CollapsibleSection": {
+      "colorScheme": "scheme-1"
+    },
+    "Newsletter": {
+      "colorScheme": "scheme-1"
+    },
+    "PromoBanner": {
+      "colorScheme": "scheme-1"
+    },
+    "Video": {
+      "colorScheme": "scheme-1"
+    }
   },
   "colorSchemes": [
     {
@@ -157,9 +177,9 @@
         "--color-muted": "204 204 204",
         "--color-primary": "255 255 255",
         "--color-accent": "250 81 9",
-        "--color-button-bg": "250 81 9",
+        "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
-        "--color-button-border": "250 81 9",
+        "--color-button-border": "30 41 82",
         "--color-button-secondary-bg": "255 255 255",
         "--color-button-secondary-text": "0 0 0",
         "--color-button-secondary-border": "255 255 255",
@@ -175,13 +195,13 @@
         "--color-bg": "255 255 255",
         "--color-surface": "251 251 251",
         "--color-heading": "0 0 0",
-        "--color-text": "0 0 0",
+        "--color-text": "153 153 153",
         "--color-muted": "204 204 204",
         "--color-primary": "0 0 0",
         "--color-accent": "250 81 9",
-        "--color-button-bg": "250 81 9",
+        "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
-        "--color-button-border": "250 81 9",
+        "--color-button-border": "30 41 82",
         "--color-button-secondary-bg": "0 0 0",
         "--color-button-secondary-text": "255 255 255",
         "--color-button-secondary-border": "0 0 0",
@@ -201,9 +221,9 @@
         "--color-muted": "204 204 204",
         "--color-primary": "0 0 0",
         "--color-accent": "250 81 9",
-        "--color-button-bg": "250 81 9",
+        "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
-        "--color-button-border": "250 81 9",
+        "--color-button-border": "30 41 82",
         "--color-button-secondary-bg": "0 0 0",
         "--color-button-secondary-text": "255 255 255",
         "--color-button-secondary-border": "0 0 0",
@@ -223,9 +243,9 @@
         "--color-muted": "204 204 204",
         "--color-primary": "255 255 255",
         "--color-accent": "250 81 9",
-        "--color-button-bg": "250 81 9",
+        "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
-        "--color-button-border": "250 81 9",
+        "--color-button-border": "30 41 82",
         "--color-button-secondary-bg": "255 255 255",
         "--color-button-secondary-text": "11 11 11",
         "--color-button-secondary-border": "255 255 255",
@@ -356,5 +376,6 @@
       "role": "system",
       "contentFile": "pages/checkout-result.json"
     }
-  ]
+  ],
+  "defaultScheme": "scheme-2"
 }

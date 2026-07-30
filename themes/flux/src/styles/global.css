@@ -34,6 +34,28 @@
   font-weight: 300;
 }
 
+/* Сетка полей темы — дословно из вёрстки (flux-theme global.css:30).
+   Класс использовался в Header/Collections/Gallery/CartSection/CollapsibleSection,
+   но в этом порте не был определён и работал как пустышка: поля и максимальная
+   ширина держались на случайных локальных классах каждой секции.
+   Даёт эталонные ширины контента: 375→343, 768→688, 1280→1120, 1920→1320. */
+.flux-container {
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
+  padding-inline: 1rem; /* 16px — мобайл по макету */
+}
+@media (min-width: 768px) {
+  .flux-container {
+    padding-inline: 2.5rem; /* 40px */
+  }
+}
+@media (min-width: 1024px) {
+  .flux-container {
+    padding-inline: 5rem; /* 80px, далее срабатывает max-width */
+  }
+}
+
 #menu-line-1 {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: 20px 17px;

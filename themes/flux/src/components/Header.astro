@@ -19,7 +19,7 @@ const defaultNav: NavLink[] = [
 
 // ОЖИВЛЕНИЕ натянуто на ВЁРСТКУ ВЕРСТАЛЬЩИКОВ (эталон /tmp/flux-header-ref.astro):
 // дефолтный Header (мерчант ничего не настроил) = two-tier верстальщика 1:1
-// (Roboto Flex, py-6/gap-5/gap-8, size-8 desktop иконки, bg-white без border-b,
+// (Roboto Flex, py-6/gap-5/gap-8, size-11 desktop actions, bg-white без border-b,
 // промо-бар сверху); каждая настройка конструктора (logoPosition×4, menuType×3,
 // stickiness, padding, nav, logo, colorScheme, wishlist) работает поверх этой
 // вёрстки. Канон-схема theme-base Header.puckConfig — siteTitle, navigationLinks,
@@ -60,15 +60,19 @@ const isAbsoluteCenter = logoPosition === "center-absolute";
 // равные flex-1 фланги (лого + блок иконок), nav (auto) садится по центру.
 const logoLeft = logoPosition === "center-left";
 
-// Канон stickiness: дефолт puckConfig = 'scroll-up'. 'none' / 'always' / отсутствие →
-// обычный sticky (= эталон верстальщика `sticky top-0 z-50`). 'scroll-up' → прячем при
-// скролле вниз, показываем при скролле вверх: is:inline скрипт через data-атрибут
-// (компилятор секций не умеет define:vars), идемпотентность через data-hydrated.
+// Канон stickiness: 'always' / отсутствие → обычный sticky (= эталон верстальщика
+// `sticky top-0 z-50`); 'scroll-up' → прячем при скролле вниз, показываем при скролле
+// вверх (is:inline скрипт через data-атрибут — компилятор секций не умеет define:vars,
+// идемпотентность через data-hydrated); 'none' → «Никогда», шапка НЕ липнет.
+// Раньше 'none' давал тот же sticky, что и 'always': из трёх значений панели
+// работали два, а подпись «Никогда» вводила мерчанта в заблуждение.
 const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
 const rootCls =
-	stickiness === "scroll-up"
-		? "sticky top-0 z-50 w-full transition-transform duration-300"
-		: "sticky top-0 z-50 w-full";
+	stickiness === "none"
+		? "relative w-full"
+		: stickiness === "scroll-up"
+			? "sticky top-0 z-50 w-full transition-transform duration-300"
+			: "sticky top-0 z-50 w-full";
 const SCROLL_UP_JS = [
 	"(function(){",
 	"var root=document.querySelector('[data-flux-sticky=\"scroll-up\"]');",
@@ -112,9 +116,9 @@ const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 
 // Бейдж счётчика (корзина) — эталон верстальщика: -right-1 -top-1,
-// h-[18px] min-w-[18px], bg-[#FA5109], Roboto Flex 11px белый.
+// h-[18px] min-w-[18px], bg-[#1e2952], Roboto Flex 11px белый.
 const badgeCls =
-	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
+	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#1e2952] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
 
 // Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
 // якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
@@ -131,8 +135,12 @@ const singleRowContainerCls = [deskContainerBase, "hidden items-center justify-b
 // Пункт nav эталона: Roboto Flex 16px light; active чёрный, inactive #cccccc → hover чёрный.
 // active/hover токенизированы (дефолт чёрный = эталон) → menuColorScheme их перекрашивает.
 const navLinkBase = "font-roboto-flex text-[16px] font-light leading-normal transition-colors";
-const navActiveCls = "text-[rgb(var(--color-text,0_0_0))]";
-const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
+// Активный/hover пункт берёт --color-heading, а НЕ --color-text: в вёрстке это
+// чёрный (`text-black`), тогда как --color-text у flux — вторичный серый #999999
+// (им набраны абзацы). На --color-text активный пункт выцветал до серого и
+// переставал отличаться от неактивных. menuColorScheme по-прежнему их перекрашивает.
+const navActiveCls = "text-[rgb(var(--color-heading,0_0_0))]";
+const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]";
 ---
 
 <div
@@ -163,7 +171,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 			type="button"
 			id="flux-burger-btn"
 			data-burger-toggle
-			class="flex size-8 items-center justify-center transition-opacity hover:opacity-70"
+			class="flex size-11 items-center justify-center transition-opacity hover:opacity-70"
 			aria-label="Меню"
 			aria-expanded="false"
 			aria-controls="flux-burger"
@@ -183,7 +191,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				<button
 					type="button"
 					data-cart-open
-					class="relative flex size-8 items-center justify-center"
+					class="relative flex size-11 items-center justify-center"
 					aria-label="Корзина"
 				>
 					<NtIcon name="cart" sizeClass="size-6" />
@@ -205,7 +213,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 								<button
 									type="button"
 									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
 									<NtIcon name="search-lg" sizeClass="size-8" />
@@ -222,7 +230,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 								<button
 									type="button"
 									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
 									<NtIcon name="cart" sizeClass="size-8" />
@@ -232,7 +240,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 							{showProfile && (
 								<a
 									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
 									<NtIcon name="user" sizeClass="size-8" />
@@ -242,7 +250,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 								<button
 									type="button"
 									data-burger-toggle
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Меню"
 									aria-expanded="false"
 									aria-controls="flux-burger"
@@ -290,7 +298,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 								<button
 									type="button"
 									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
 									<NtIcon name="search-lg" sizeClass="size-8" />
@@ -300,7 +308,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 								<button
 									type="button"
 									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
 									<NtIcon name="cart" sizeClass="size-8" />
@@ -310,7 +318,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 							{showProfile && (
 								<a
 									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
 									<NtIcon name="user" sizeClass="size-8" />
@@ -320,7 +328,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 								<button
 									type="button"
 									data-burger-toggle
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Меню"
 									aria-expanded="false"
 									aria-controls="flux-burger"
@@ -391,7 +399,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 					<button
 						type="button"
 						data-action="toggle-search"
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Поиск"
 					>
 						<NtIcon name="search-lg" sizeClass="size-8" />
@@ -401,7 +409,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 					<button
 						type="button"
 						data-cart-open
-						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
 						<NtIcon name="cart" sizeClass="size-8" />
@@ -411,7 +419,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				{showProfile && (
 					<a
 						href="/login" data-auth-link
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Аккаунт"
 					>
 						<NtIcon name="user" sizeClass="size-8" />
@@ -421,7 +429,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 					<button
 						type="button"
 						data-burger-toggle
-						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Меню"
 						aria-expanded="false"
 						aria-controls="flux-burger"
@@ -438,14 +446,14 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 		</div>
 	)}
 
-	<!-- Desktop Search Panel (expandable) — эталон: border-t #F5F5F5, форма h-16 rounded-8 border #FA5109 -->
+	<!-- Desktop Search Panel (expandable) — эталон: border-t #F5F5F5, форма h-16 rounded-8 border #1e2952 -->
 	<div
 		data-search-panel
 		class="hidden w-full border-t border-[#F5F5F5] bg-[rgb(var(--color-bg,255_255_255))] py-4"
 		hidden
 	>
 		<div class={deskContainerBase}>
-			<form role="search" action="/catalog" method="get" class="flex h-16 w-full items-center justify-between gap-2 rounded-[8px] border border-[#FA5109] bg-white pl-4 pr-2">
+			<form role="search" action="/catalog" method="get" class="flex h-16 w-full items-center justify-between gap-2 rounded-[8px] border border-[#1e2952] bg-white pl-4 pr-2">
 				<input
 					type="search"
 					name="q"
@@ -455,7 +463,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				/>
 				<button
 					type="submit"
-					class="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					class="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-[#1e2952] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
 				>
 					Найти
 				</button>

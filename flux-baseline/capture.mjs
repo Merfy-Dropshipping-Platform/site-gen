@@ -154,13 +154,35 @@ const EXTRACT = () => {
 
   const main = document.querySelector('main');
   if (main) {
+    // Наши секции обёрнуты в <div class="color-scheme-N"> (обёртку вешает
+    // компоновщик), у верстальщиков обёрток нет. Без спуска внутрь инструмент
+    // сравнивал ОБЁРТКУ с секцией эталона: обёртка прозрачна, и правильный фон
+    // секции читался как расхождение. Дважды сбивало с толку — спускаемся.
+    const unwrap = (el) => {
+      let cur = el;
+      for (let d = 0; d < 3; d++) {
+        const kids = Array.from(cur.children);
+        const onlyChild = kids.length === 1 ? kids[0] : null;
+        const isWrapper =
+          cur.tagName === 'DIV' &&
+          /(^|\s)color-scheme-\d/.test(cur.getAttribute('class') || '');
+        if (isWrapper && onlyChild) cur = onlyChild;
+        else break;
+      }
+      return cur;
+    };
+
     Array.from(main.children)
       .filter((el) => el.tagName === 'SECTION' || el.tagName === 'DIV')
-      .forEach((el, i) => {
+      .forEach((outer, i) => {
+        const el = unwrap(outer);
         const label =
           el.id ||
           el.getAttribute('aria-label') ||
           el.getAttribute('aria-labelledby') ||
+          outer.id ||
+          outer.getAttribute('aria-label') ||
+          outer.getAttribute('aria-labelledby') ||
           `main-child-${i}`;
         sectionEls.push({ key: label, el });
       });

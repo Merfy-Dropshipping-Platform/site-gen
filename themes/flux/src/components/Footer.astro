@@ -166,7 +166,9 @@ const footerContainerCls = footerPadStyle
 	: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 py-12 md:px-20 md:py-16 2xl:px-80";
 ---
 
-<footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
+{/* Подвал в вёрстке стоит на bg-[#fbfbfb] — поверхность, а не фон страницы.
+    На --color-bg он получал 255 от схемы и сливался с полотном. */}
+<footer class="w-full bg-[rgb(var(--color-surface,251_251_251))]" data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<!-- Newsletter «Подпишитесь на нашу рассылку» -->
 		{newsletterEnabled && (

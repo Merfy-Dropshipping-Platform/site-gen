@@ -34,6 +34,8 @@ export interface ThemeManifest {
   blocks?: Record<string, { override: { path: string; reason: string } }>;
   customBlocks?: Record<string, { path: string; category?: string; requiredFeatures?: string[] }>;
   features?: Record<string, boolean>;
+  /** Дефолтные пропы блоков темы (в т.ч. `colorScheme` секции). */
+  blockDefaults?: Record<string, unknown>;
   /**
    * Схема, активная по умолчанию, — по id, а не по позиции в массиве.
    * Позволяет менять дефолт, не переставляя `colorSchemes` (иначе id

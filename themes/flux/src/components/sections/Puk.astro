@@ -201,8 +201,12 @@ const containerCls = paddingStyle
 const titleId = id ? `${id}-title` : "cta-title";
 ---
 
+{/* Фон секции — ПОВЕРХНОСТЬ, а не фон страницы: в вёрстке это bg-[#FBFBFB]
+    (Puk.astro), то есть секция намеренно чуть темнее полотна. На --color-bg
+    фолбэк 251 никогда не применялся (токен задан схемой = 255) и секция
+    сливалась с белой страницей. У scheme-2 --color-surface как раз 251 251 251. */}
 <section
-	class="w-full bg-[rgb(var(--color-bg,251_251_251))]"
+	class="w-full bg-[rgb(var(--color-surface,251_251_251))]"
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 >

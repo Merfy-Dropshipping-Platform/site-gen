@@ -137,32 +137,32 @@
     },
     "Hero": {},
     "ImageWithText": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "Gallery": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "Slideshow": {},
     "MultiRows": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "MultiColumns": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "MainText": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "CollapsibleSection": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "Newsletter": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     },
     "PromoBanner": {
       "colorScheme": "scheme-1"
     },
     "Video": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-2"
     }
   },
   "colorSchemes": [

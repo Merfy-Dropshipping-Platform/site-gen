@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { buildTokensCss } from '../themes/tokens-css';
+import { getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
@@ -381,7 +382,6 @@ export class PreviewService {
     return schemeIdFromProp(blockDefaults?.colorScheme);
   }
 
-  private themeDefaultsCache = new Map<string, Record<string, unknown>>();
 
   /**
    * Read `blockDefaults` from `packages/theme-<id>/theme.json` (cached). Returns
@@ -391,24 +391,16 @@ export class PreviewService {
     themeId: string | null | undefined,
   ): Promise<Record<string, unknown>> {
     const id = themeId ?? 'base';
-    const cached = this.themeDefaultsCache.get(id);
-    if (cached) return cached;
     try {
-      const fs = await import('node:fs/promises');
-      const path = await import('node:path');
-      const themeJsonPath = path.join(
-        process.cwd(),
-        'packages',
-        `theme-${id}`,
-        'theme.json',
-      );
-      const raw = await fs.readFile(themeJsonPath, 'utf8');
-      const parsed = JSON.parse(raw) as { blockDefaults?: Record<string, unknown> };
-      const defaults = parsed.blockDefaults ?? {};
-      this.themeDefaultsCache.set(id, defaults);
-      return defaults;
+      // Раньше здесь был свой чтец theme.json с кэшем «навсегда»: правка
+      // blockDefaults не подхватывалась до перезапуска сервиса, и цветовая
+      // схема секций оставалась прежней при верном манифесте. Общий загрузчик
+      // вне production перечитывает файл по mtime — дубль больше не нужен.
+      return (getThemeManifest(id)?.blockDefaults ?? {}) as Record<
+        string,
+        unknown
+      >;
     } catch {
-      this.themeDefaultsCache.set(id, {});
       return {};
     }
   }

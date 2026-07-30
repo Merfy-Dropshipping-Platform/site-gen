@@ -63,10 +63,16 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 
 // Заголовок: string | { text, size } (канон-union). Пусто → дефолт верстальщика.
+//
+// Фолбэк идёт через nonEmpty, а не через `??`: адаптер пропов
+// (page-blocks.ts coerceImageWithTextProps) принудительно ставит heading = ''
+// когда мерчант ничего не задал, а `??` пустую строку пропускает — дефолт
+// вёрстки не срабатывал и секция рендерила пустые <h2>/<p>.
+const nonEmpty = (v: unknown): string | undefined =>
+	typeof v === "string" && v.trim() ? v : undefined;
 const heading =
-	typeof p.heading === "string"
-		? p.heading
-		: (p.heading?.text ?? "Следующее поколение уже с вами!");
+	nonEmpty(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
+	"Следующее поколение уже с вами!";
 // Ступени headingSize (эталон 19/md:23; паритет Collections.astro): medium/
 // отсутствие = эталон, small меньше, large крупнее. top-level hidden приоритетнее
 // heading.size сабпанели.
@@ -81,10 +87,8 @@ const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[
 
 // Текст-абзац: string | { content, size }. Пусто → дефолт верстальщика.
 const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ??
-			"Они здесь. Устройства, которые изменят завтра, уже сегодня в нашем потоке новинок. Смотрите, тестируйте, погружайтесь в будущее, которое стало реальностью. Только в Flux.");
+	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
+	"Они здесь. Устройства, которые изменят завтра, уже сегодня в нашем потоке новинок. Смотрите, тестируйте, погружайтесь в будущее, которое стало реальностью. Только в Flux.";
 // Ступени textSize (эталон 16; паритет rose MainText): medium/отсутствие = 16,
 // small 14, large 19. Тело — Roboto Flex light, мут-цвет (#999 фоллбек).
 const textSize = p.textSize ?? p.text?.size;

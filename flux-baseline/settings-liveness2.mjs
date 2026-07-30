@@ -51,6 +51,56 @@ const BASE = {
     copyright: { companyName: 'Flux', showYear: 'true' },
   },
   PromoBanner: { text: 'Акция недели', link: '/catalog' },
+  MainText: {
+    heading: { text: 'Проба заголовка' },
+    text: { content: 'Проба текста' },
+    button: { text: 'Кнопка', link: '/catalog' },
+  },
+  MultiColumns: {
+    heading: 'Колонки',
+    columns: [
+      { id: 'c1', title: 'Раз', text: 'Текст раз', image: IMG },
+      { id: 'c2', title: 'Два', text: 'Текст два', image: IMG },
+      { id: 'c3', title: 'Три', text: 'Текст три', image: IMG },
+    ],
+  },
+  MultiRows: {
+    heading: 'Ряды',
+    rows: [
+      { id: 'r1', title: 'Ряд один', description: 'Текст', image: IMG, button: { text: 'Кнопка', link: '/catalog' } },
+      { id: 'r2', title: 'Ряд два', description: 'Текст', image: IMG, button: { text: 'Кнопка', link: '/catalog' } },
+    ],
+  },
+  Slideshow: {
+    slides: [
+      { id: 's1', imageUrl: IMG, heading: { text: 'Слайд 1' }, text: { content: 'Текст 1' }, buttonText: 'Кнопка' },
+      { id: 's2', imageUrl: IMG, heading: { text: 'Слайд 2' }, text: { content: 'Текст 2' }, buttonText: 'Кнопка' },
+    ],
+  },
+  Newsletter: {
+    heading: { text: 'Рассылка' },
+    text: { content: 'Подпишитесь' },
+    placeholder: 'e-mail',
+    buttonText: 'Ок',
+  },
+  ContactForm: { heading: 'Свяжитесь с нами' },
+  CollapsibleSection: {
+    heading: 'Вопросы',
+    sections: [
+      { id: 'q1', heading: 'Вопрос 1', content: 'Ответ 1' },
+      { id: 'q2', heading: 'Вопрос 2', content: 'Ответ 2' },
+    ],
+  },
+  Publications: { heading: 'Блог' },
+  Video: {
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    heading: 'Видео',
+    subheading: 'Подзаголовок',
+  },
+  Catalog: {
+    categoryTitle: 'Каталог',
+    categorySubtitle: 'Все товары',
+  },
 };
 
 const BLOCKS = Object.keys(BASE);

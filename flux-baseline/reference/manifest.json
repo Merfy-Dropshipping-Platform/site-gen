@@ -1,0 +1,56 @@
+{
+  "label": "reference",
+  "url": "https://flux.merfy.ru/",
+  "capturedAtViewports": [
+    {
+      "viewport": "375",
+      "sections": 8,
+      "documentHeight": 5620,
+      "sha256": "9303931690dd5d615e6876f4b1994d064ce086cd749a4eacd8d46ebe4e95936d",
+      "reproducible": true,
+      "horizontalOverflow": false,
+      "consoleErrors": 0,
+      "failed404": 0
+    },
+    {
+      "viewport": "768",
+      "sections": 8,
+      "documentHeight": 5527,
+      "sha256": "49a9dbd901265b89be39d0b896217cfd1a4ff8d1be124303741bfa79843f5088",
+      "reproducible": true,
+      "horizontalOverflow": true,
+      "consoleErrors": 0,
+      "failed404": 0
+    },
+    {
+      "viewport": "1280",
+      "sections": 8,
+      "documentHeight": 4726,
+      "sha256": "37883c5cc8774c3e81f0ec9cb1670b8becac97e0e2f2120d928145610a336939",
+      "reproducible": true,
+      "horizontalOverflow": false,
+      "consoleErrors": 0,
+      "failed404": 0
+    },
+    {
+      "viewport": "1920",
+      "sections": 8,
+      "documentHeight": 5297,
+      "sha256": "a0d495127d9f4711183eca60fd868441e3cb834cb4cd4f06a3903c6d51063cd3",
+      "reproducible": true,
+      "horizontalOverflow": false,
+      "consoleErrors": 0,
+      "failed404": 0
+    }
+  ],
+  "captureEnv": {
+    "engine": "chromium (playwright bundled)",
+    "deviceScaleFactor": 1,
+    "colorScheme": "light",
+    "reducedMotion": "reduce",
+    "locale": "ru-RU",
+    "timezone": "Europe/Moscow",
+    "animations": "disabled via injected CSS"
+  },
+  "reproducible": true
+}

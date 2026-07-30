@@ -20,7 +20,13 @@ import { PG_CONNECTION, PRODUCT_RMQ_SERVICE, BILLING_RMQ_SERVICE } from "../cons
 import * as schema from "../db/schema";
 import { buildWithAstro } from "./astro.builder";
 import { S3StorageService } from "../storage/s3.service";
-import { runBuildPipeline, trySnapshotDeploy, type BuildDependencies } from "./build.service";
+import {
+  assertPipelineModeForTheme,
+  bareThemeName,
+  runBuildPipeline,
+  trySnapshotDeploy,
+  type BuildDependencies,
+} from "./build.service";
 import { roseRegistry } from "./registries/rose";
 import { vanillaRegistry } from "./registries/vanilla";
 import { satinRegistry } from "./registries/satin";
@@ -264,6 +270,20 @@ export class SiteGeneratorService {
       .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
       .where(eq(schema.site.id, params.siteId));
 
+    // Мигрированные темы обязаны идти 7-стадийным конвейером (themes-v2). Ветка
+    // с themes-v2 живёт ТОЛЬКО в runBuildPipeline, до которого legacy-путь не
+    // доходит, поэтому здесь тема собралась бы совершенно другим движком —
+    // молча и со статусом "успех".
+    assertPipelineModeForTheme(
+      bareThemeName(
+        params.templateOverride ??
+          siteRow?.templateId ??
+          siteRow?.themeId ??
+          "default",
+      ),
+      pipelineEnabled,
+    );
+
     if (siteRow?.currentRevisionId) {
       // Проверяем, что ревизия существует
       const [rev] = await this.db
@@ -386,16 +406,13 @@ export class SiteGeneratorService {
           metadata.artifactUrl = artifactUrl;
           astroBuildSuccess = true;
         } else {
-          this.logger.warn(
-            `Astro build failed, fallback to stub: ${astroResult.error ?? ""}`,
-          );
-          await fs.writeFile(
-            artifactFile,
-            JSON.stringify(
-              { buildId, siteId: params.siteId, mode: params.mode ?? "draft" },
-              null,
-              2,
-            ),
+          // Раньше здесь писалась JSON-заглушка вместо архива, а билд всё равно
+          // получал статус успеха: наружу уходил `success: true` и артефакт на
+          // 131 байт, не являющийся zip'ом. Отличить такую «публикацию» от
+          // настоящей по статусу невозможно. Сборка без витрины — это провал.
+          throw new Error(
+            `[astro] Сборка витрины провалилась: ${astroResult.error ?? "неизвестная ошибка"}. ` +
+              `Заглушка вместо артефакта больше не пишется — билд помечается как проваленный.`,
           );
         }
       } else {
@@ -440,6 +457,20 @@ export class SiteGeneratorService {
           );
         }
       }
+    } catch (err) {
+      // Провал сборки обязан быть виден в site_build, иначе строка навсегда
+      // застревает в "running" и внешне неотличима от идущей сборки.
+      const message = err instanceof Error ? err.message : String(err);
+      try {
+        await this.db
+          .update(schema.siteBuild)
+          .set({ status: "failed", error: message.slice(0, 2000) })
+          .where(eq(schema.siteBuild.id, buildId));
+      } catch {
+        // отметка статуса — best-effort, исходную ошибку она затенять не должна
+      }
+      this.logger.error(`Build ${buildId} failed: ${message}`);
+      throw err;
     } finally {
       // Очистка рабочей директории (best-effort)
       try {

@@ -107,6 +107,58 @@ export async function themeLiveDistExists(theme: string): Promise<boolean> {
 }
 
 /**
+ * Гейт «legacy-конвейер запрещён для мигрированных тем».
+ *
+ * `SiteGeneratorService.build` выбирает движок по `BUILD_PIPELINE_ENABLED`
+ * (по умолчанию — legacy-монолит `buildWithAstro`). Ветка themes-v2 существует
+ * только внутри `runBuildPipeline`, поэтому в legacy-режиме мигрированная тема
+ * собиралась совершенно другим движком — и при этом получала статус успеха.
+ * Локальная проверка «превью против live» на таком билде ничего не значит:
+ * прод и машина разработчика собирают РАЗНЫМИ сборщиками.
+ *
+ * @throws если мигрированная тема собирается в legacy-режиме
+ */
+export function assertPipelineModeForTheme(
+  bareTheme: string,
+  pipelineEnabled: boolean,
+): void {
+  if (!MIGRATED_THEMES.has(bareTheme)) return;
+  if (pipelineEnabled) return;
+  throw new Error(
+    `[build] Тема "${bareTheme}" мигрирована на themes-v2, но сборка запущена в legacy-режиме ` +
+      `(BUILD_PIPELINE_ENABLED не выставлен в "true"). Legacy-монолит не знает про themes-v2 и ` +
+      `собрал бы витрину другим движком. Задайте BUILD_PIPELINE_ENABLED=true.`,
+  );
+}
+
+/**
+ * Какой сборочный конвейер применим к теме.
+ *
+ * Мигрированная тема ОБЯЗАНА собираться через themes-v2. До этого гейта
+ * отсутствие пред-собранного диста молча роняло сборку в legacy scaffold: билд
+ * заканчивался статусом "uploaded", а витрина отдавалась совсем другим движком.
+ * По статусу такой результат неотличим от успеха, поэтому любое сравнение
+ * «превью против live» на нём теряет смысл. Теперь это громкое падение —
+ * `runBuildPipeline` переведёт билд в "failed".
+ *
+ * @throws если мигрированная тема осталась без пред-собранного live-диста
+ */
+export function resolveThemePipeline(
+  bareTheme: string,
+  hasLiveDist: boolean,
+): "themes-v2" | "legacy" {
+  if (!MIGRATED_THEMES.has(bareTheme)) return "legacy";
+  if (!hasLiveDist) {
+    throw new Error(
+      `[themes-v2] Тема "${bareTheme}" мигрирована, но пред-собранный дист отсутствует: ` +
+        `${path.join(themeLiveDistFor(bareTheme), "index.html")}. ` +
+        `Legacy scaffold для мигрированных тем запрещён — выполните "pnpm build:themes".`,
+    );
+  }
+  return "themes-v2";
+}
+
+/**
  * themes-v2 live deploy: copy the pre-built root-url theme dist into ctx.distDir.
  * Mirrors trySnapshotDeploy's fs.cp(templateDistDir, distDir) but sources from
  * dist/theme-live/<theme>. ctx.distDir's parent (workingDir) is already created
@@ -1066,7 +1118,12 @@ export async function runBuildPipeline(
     // === Branch: themes-v2 vs legacy scaffold ===
     const bareTheme = bareThemeName(ctx.templateId);
     const useThemeV2 =
-      MIGRATED_THEMES.has(bareTheme) && (await themeLiveDistExists(bareTheme));
+      resolveThemePipeline(
+        bareTheme,
+        MIGRATED_THEMES.has(bareTheme)
+          ? await themeLiveDistExists(bareTheme)
+          : false,
+      ) === "themes-v2";
 
     if (useThemeV2) {
       // themes-v2: deploy the pre-built designer theme verbatim (root urls).

@@ -52,11 +52,19 @@ RUN pnpm build:preview-tailwind
 # ThemeBuildService). NODE_AUTH_TOKEN (set above) authorises the private
 # design-system dep. Stage 2 copies all of /app/dist, so theme-preview ships.
 RUN pnpm build:themes
-# Sanity: rose is the reference theme — fail the build loudly if its assembled
-# page is missing (otherwise the constructor preview would silently fall back to
-# legacy for every site on a v2 theme).
-RUN test -f /app/dist/theme-preview/rose/index.html \
-    || (echo "FATAL: build:themes did not produce dist/theme-preview/rose/index.html" && exit 1)
+# Sanity: КАЖДАЯ мигрированная тема обязана иметь и preview-, и live-дист.
+# Проверки только по rose/theme-preview было мало: build.service помечает тему
+# как themes-v2 по наличию dist/theme-live/<t>/index.html, и при его отсутствии
+# сборка витрины уходила в legacy scaffold. Теперь это падение (см. guard в
+# build.service.ts), поэтому недостающий дист обязан валить образ здесь — раньше,
+# чем сайты мерчантов начнут падать в рантайме.
+# Список синхронизирован с MIGRATED_THEMES в src/generator/build.service.ts.
+RUN for t in rose bloom flux satin vanilla; do \
+      for kind in theme-preview theme-live; do \
+        test -f "/app/dist/$kind/$t/index.html" \
+          || (echo "FATAL: build:themes did not produce dist/$kind/$t/index.html" && exit 1); \
+      done; \
+    done
 
 # Constructor v2 Phase 2: compile sliced theme sections (canon manifest) for
 # Container rendering of content pages. Only themes with sections.map.json.

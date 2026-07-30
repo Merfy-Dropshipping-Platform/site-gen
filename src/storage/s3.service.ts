@@ -13,6 +13,56 @@ import * as Minio from "minio";
  * - S3_BUCKET — имя bucket (merfy-sites)
  * - S3_ACCESS_KEY / S3_SECRET_KEY — credentials
  */
+/** Хосты, которые считаются локальным хранилищем. */
+const LOCAL_S3_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "::1",
+  "minio",
+  "merfy-minio",
+  "host.docker.internal",
+]);
+
+/**
+ * Гейт «локальная сборка пишет ТОЛЬКО в локальный MinIO».
+ *
+ * `.env.local` держит боевой `S3_ENDPOINT=https://minio.merfy.ru`, и он
+ * приоритетнее `MINIO_ENDPOINT`. Из-за этого запуск сервиса на машине
+ * разработчика молча заливал артефакты сборки в ПРОДОВЫЙ бакет: переопределения
+ * `MINIO_*` при этом не действовали, а в логе стоял боевой URL, неотличимый от
+ * нормального. Вне production удалённый endpoint теперь требует осознанного
+ * `ALLOW_REMOTE_S3=true`.
+ *
+ * @throws если вне production endpoint указывает на неизвестный (удалённый) хост
+ */
+export function assertLocalS3Endpoint(
+  endpoint: string,
+  nodeEnv = process.env.NODE_ENV,
+  allowRemote = process.env.ALLOW_REMOTE_S3,
+): void {
+  if (nodeEnv === "production") return;
+  if ((allowRemote ?? "").toLowerCase() === "true") return;
+
+  let host: string;
+  try {
+    host = new URL(
+      endpoint.includes("://") ? endpoint : `http://${endpoint}`,
+    ).hostname;
+  } catch {
+    host = endpoint;
+  }
+
+  if (LOCAL_S3_HOSTS.has(host)) return;
+
+  throw new Error(
+    `[s3] NODE_ENV=${nodeEnv ?? "undefined"}, но S3_ENDPOINT указывает на удалённый хост "${host}". ` +
+      `Локальная сборка обязана писать только в локальный MinIO — иначе артефакты уезжают в прод. ` +
+      `Задайте S3_ENDPOINT=http://localhost:9010 (локальный merfy-minio) ` +
+      `или, если запись на удалённый хост действительно нужна, ALLOW_REMOTE_S3=true.`,
+  );
+}
+
 @Injectable()
 export class S3StorageService {
   private readonly logger = new Logger(S3StorageService.name);
@@ -47,6 +97,10 @@ export class S3StorageService {
       null;
     this.internalEndpoint = endpoint || null;
     this.region = process.env.S3_REGION || "us-east-1";
+
+    // ВНЕ try: ниже стоит catch, который гасит ошибки инициализации в warn.
+    // Гейт «только локальный MinIO» обязан валить старт, а не деградировать.
+    if (endpoint) assertLocalS3Endpoint(endpoint);
 
     if (endpoint && access && secret && bucket) {
       try {

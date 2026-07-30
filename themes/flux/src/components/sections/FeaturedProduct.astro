@@ -82,13 +82,17 @@ const PLACEHOLDER_PRICE = "2 500 ₽";
 const productIdRef = typeof p.productId === "string" ? p.productId.trim() : "";
 
 // Layout switch (Figma 648:55733 семантика, канон theme-base Product.puckConfig).
-// Upstream ProductConfigurator реализует ОДИН макет (главное фото + ряд миниатюр
-// снизу, ближе всего к 'carousel'). Полноценные 'two-columns'/'split' сетки —
-// вне бюджета этой задачи (не в контракте Step 1); 'stacked' — единственный
-// дешёвый и осмысленный альтернативный рендер (миниатюры сеткой 3×N вместо
-// скролл-ленты), остальные значения используют дефолтный ряд.
+// Все четыре значения панели работают (галерейные ветки ниже):
+//   carousel/дефолт — вёрстка как есть (главное фото + ряд миниатюр снизу);
+//   stacked — миниатюры СЕТКОЙ 3×N; split — миниатюры КОЛОНКОЙ слева;
+//   two-columns — все фото равной сеткой 2×N без главного.
+// Ранее layout нормализовался до stacked|carousel — «Макет» молчал на 2 из 4
+// значений, и настройка выглядела мёртвой.
 const layoutRaw = typeof p.layout === "string" ? p.layout : "";
-const layout = layoutRaw === "stacked" ? "stacked" : "carousel";
+const layout =
+	layoutRaw === "stacked" || layoutRaw === "split" || layoutRaw === "two-columns"
+		? layoutRaw
+		: "carousel";
 const photoPosition = p.photoPosition === "right" ? "right" : "left";
 const photoOnLeft = photoPosition !== "right";
 
@@ -222,8 +226,24 @@ const [mainImage] = galleryImages;
 const thumbs = galleryImages.slice(0, 5);
 const href = isPlaceholder ? "/catalog" : productHref(realProduct);
 
+// «Макет» — семантика theme-base Product (Figma 648:55733), натянутая на
+// вёрстку flux. Раньше работал только stacked (сетка миниатюр); split и
+// two-columns не отличались от дефолта — настройка на 2 из 4 значений молчала.
+//   carousel/дефолт — вёрстка как есть: главное фото + ряд миниатюр снизу;
+//   stacked        — главное фото + СЕТКА миниатюр снизу;
+//   split          — миниатюры КОЛОНКОЙ слева от главного фото;
+//   two-columns    — все фото равной сеткой 2×N, без главного.
+const isSplit = layout === "split";
+const isTwoCols = layout === "two-columns";
 const thumbsTrackCls =
-	layout === "stacked" ? "grid grid-cols-3 gap-3" : "no-scrollbar flex flex-1 items-center gap-3 overflow-x-auto";
+	layout === "stacked"
+		? "grid grid-cols-3 gap-3"
+		: isSplit
+			? "flex flex-col items-start gap-3"
+			: "no-scrollbar flex flex-1 items-center gap-3 overflow-x-auto";
+const galleryColCls = isSplit
+	? "flex w-full flex-row-reverse items-start gap-4 lg:w-[var(--product-main-image-size,652px)] lg:min-w-0"
+	: "flex w-full flex-col gap-4 lg:w-[var(--product-main-image-size,652px)] lg:min-w-0";
 
 // — Количество: canon quantity.enabled (object) + плоский legacy-алиас
 //   showQuantity (dual-support паттерн, единый для секций flux). —
@@ -295,16 +315,33 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			data-nt="product-configurator"
 		>
 			<!-- Изображения -->
-			<div class="flex w-full flex-col gap-4 lg:w-[var(--product-main-image-size,652px)] lg:min-w-0">
-				<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+			<div class={galleryColCls}>
+				{isTwoCols ? (
+					/* two-columns: все фото равной сеткой, главного нет. Первому
+					   оставляем data-cfg-main — live-скрипт свапа null-безопасен,
+					   но так смена товара обновляет и эту раскладку. */
+					<div class="grid w-full grid-cols-2 gap-4">
+						{galleryImages.map((img, i) => (
+							<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+								{i === 0 ? (
+									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="eager" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
+								) : (
+									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="lazy" class="absolute inset-0 h-full w-full object-cover" />
+								)}
+							</a>
+						))}
+					</div>
+				) : (
+				<>
+				<a href={href} class:list={["relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (
 						<FluxPicture src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					)}
 				</a>
-				{thumbs.length > 1 && (
-					<div class="flex items-center gap-3">
+				{thumbs.length > 1 && !isTwoCols && (
+					<div class:list={[isSplit ? "flex flex-col gap-3" : "flex items-center gap-3"]}>
 						<div class={thumbsTrackCls} data-cfg-thumbs-track>
 							{thumbs.map((img, i) => (
 								<button
@@ -321,12 +358,14 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 								</button>
 							))}
 						</div>
-						{thumbs.length >= 5 && layout !== "stacked" && (
+						{thumbs.length >= 5 && layout !== "stacked" && !isSplit && (
 							<button type="button" class="flex size-11 shrink-0 items-center justify-center transition-opacity hover:opacity-70" data-cfg-thumbs-next aria-label="Следующие изображения">
 								<NtIcon name="arrow-slide-right" sizeClass="size-6" />
 							</button>
 						)}
 					</div>
+				)}
+				</>
 				)}
 			</div>
 

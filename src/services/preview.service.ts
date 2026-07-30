@@ -204,7 +204,16 @@ async function resolveV2Section(
     if (!file) return null;
     const mod = (await importCompiled(resolve(dir, file))) as { default?: unknown };
     return mod.default ?? null;
-  } catch {
+  } catch (err) {
+    // Молча падать в theme-base нельзя: битый скомпилированный модуль секции
+    // (синтаксис-ошибка порта) выглядел как «настройки не те» — рендерился
+    // ДРУГОЙ движок без единого следа в логе.
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[preview] v2-секция ${themeId}/${blockName} не импортировалась, откат на theme-base: ${(err as Error)?.message?.slice(0, 160)}`,
+      );
+    }
     return null;
   }
 }

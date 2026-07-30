@@ -126,7 +126,7 @@
           "bottom": 40
         },
         "newsletter": {
-          "enabled": "false"
+          "enabled": "true"
         },
         "navigationColumn": {
           "title": "Навигация",

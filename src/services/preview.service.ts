@@ -131,6 +131,63 @@ export type ContainerFactory = () => Promise<IAstroContainer>;
  * + import-граф) and dynamic-imports the section .mjs. Returns null when the
  * manifest/section is absent → legacy theme-base cascade takes over.
  */
+/**
+ * Сброс кэша модулей скомпилированных блоков (только вне production).
+ *
+ * Модуль загружается один раз и живёт до конца процесса, поэтому в разработке
+ * перекомпиляция секции (`compile-theme-sections`) не имела эффекта: сервис
+ * продолжал отдавать код, загруженный при первом рендере, и увидеть правку
+ * можно было только полным перезапуском.
+ *
+ * ВАЖНО: подменять спецификатор на `file://…?v=<mtime>` здесь НЕЛЬЗЯ. Сервис
+ * компилируется в CommonJS, и TypeScript превращает `import()` в `require()`,
+ * а `require` не понимает URL с query-строкой — резолв молча падает в catch,
+ * и все блоки начинают рендериться как «не настроен». Поэтому чистим
+ * `require.cache` и оставляем обычный путь.
+ *
+ * Чистим всю папку скомпилированных блоков, а не один файл: правка может
+ * лежать в общем компоненте (FluxPicture и т.п.), от которого зависит секция.
+ */
+/**
+ * НАСТОЯЩИЙ динамический `import()`.
+ *
+ * Сервис компилируется в CommonJS, и TypeScript переписывает `import()` в
+ * `require()`. Для `.mjs` (а скомпилированные блоки именно такие) это меняет
+ * поведение: модуль уходит в ESM-реестр, которого нет в `require.cache`, и
+ * `require` не принимает URL с query. Через `new Function` выражение доживает
+ * до рантайма нетронутым — получаем честный ESM-импорт, который принимает
+ * `file://…?v=<mtime>`.
+ */
+const esmImport = new Function('s', 'return import(s)') as (
+  s: string,
+) => Promise<Record<string, unknown>>;
+
+/**
+ * Спецификатор для импорта скомпилированного блока.
+ *
+ * ESM-реестр держит модуль до конца процесса, поэтому в разработке
+ * перекомпиляция секции (`compile-theme-sections`) не имела эффекта: сервис
+ * отдавал код, загруженный при первом рендере, и правку темы можно было
+ * увидеть только полным перезапуском. Вне production подмешиваем в URL метку
+ * времени файла: изменился файл — изменился спецификатор — модуль перечитан.
+ *
+ * В production файлы за время жизни процесса не меняются: отдаём чистый путь,
+ * чтобы не плодить копии модулей в памяти.
+ */
+async function importCompiled(absPath: string): Promise<Record<string, unknown>> {
+  if (process.env.NODE_ENV === 'production') return esmImport(absPath);
+  const { pathToFileURL } = await import('node:url');
+  const { stat } = await import('node:fs/promises');
+  const url = pathToFileURL(absPath);
+  try {
+    const { mtimeMs } = await stat(absPath);
+    url.searchParams.set('v', String(Math.trunc(mtimeMs)));
+  } catch {
+    // файла нет — пусть импорт сам бросит осмысленную ошибку
+  }
+  return esmImport(url.href);
+}
+
 async function resolveV2Section(
   blockName: string,
   themeId: string,
@@ -144,7 +201,7 @@ async function resolveV2Section(
     ) as Record<string, string>;
     const file = manifest[blockName];
     if (!file) return null;
-    const mod = (await import(resolve(dir, file))) as { default?: unknown };
+    const mod = (await importCompiled(resolve(dir, file))) as { default?: unknown };
     return mod.default ?? null;
   } catch {
     return null;
@@ -188,7 +245,7 @@ const defaultComponentResolver: ComponentResolver = async (
     for (const root of roots) {
       const p = resolve(root, moduleName);
       try {
-        const mod = (await import(p)) as { default?: unknown };
+        const mod = (await importCompiled(p)) as { default?: unknown };
         if (mod.default) return mod.default;
         throw new Error(`Compiled module ${moduleName} has no default export`);
       } catch (err) {

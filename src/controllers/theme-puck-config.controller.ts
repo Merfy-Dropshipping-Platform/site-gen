@@ -26,12 +26,18 @@ import vanillaManifestJsonRaw from '../../packages/theme-vanilla/theme.json';
 import bloomManifestJsonRaw from '../../packages/theme-bloom/theme.json';
 import satinManifestJsonRaw from '../../packages/theme-satin/theme.json';
 import fluxManifestJsonRaw from '../../packages/theme-flux/theme.json';
+import { getThemeManifest as sharedThemeManifest } from '../themes/theme-manifest-loader';
 
-const roseManifestJson = roseManifestJsonRaw as unknown as ThemeConfigForResolver;
-const vanillaManifestJson = vanillaManifestJsonRaw as unknown as ThemeConfigForResolver;
-const bloomManifestJson = bloomManifestJsonRaw as unknown as ThemeConfigForResolver;
-const satinManifestJson = satinManifestJsonRaw as unknown as ThemeConfigForResolver;
-const fluxManifestJson = fluxManifestJsonRaw as unknown as ThemeConfigForResolver;
+
+// Единая точка чтения манифеста. Раньше здесь лежала ВТОРАЯ копия импортов
+// theme.json, из-за чего правка манифеста применялась в одних местах и не
+// применялась в других: рендер уже видел новое значение, а этот контроллер
+// продолжал отдавать конструктору старое (`resolveJsonModule` инлайнит JSON
+// на сборке). Читаем через общий загрузчик — он вне production берёт исходник
+// с диска, — а собранная копия остаётся запасным вариантом.
+function liveManifest(themeId: string, compiled: unknown): ThemeConfigForResolver {
+  return (sharedThemeManifest(themeId) ?? compiled) as unknown as ThemeConfigForResolver;
+}
 
 /**
  * JSON-serializable shape of a Puck component config — render function is
@@ -131,55 +137,55 @@ const DEFAULT_THEME_CONFIG: ThemeConfigForResolver = {
 function getThemeManifest(themeId: string): ThemeConfigForResolver {
   if (themeId === 'rose') {
     return {
-      blocks: roseManifestJson.blocks ?? {},
-      features: roseManifestJson.features ?? {},
-      customBlocks: roseManifestJson.customBlocks ?? {},
+      blocks: liveManifest('rose', roseManifestJsonRaw).blocks ?? {},
+      features: liveManifest('rose', roseManifestJsonRaw).features ?? {},
+      customBlocks: liveManifest('rose', roseManifestJsonRaw).customBlocks ?? {},
       // 097: blockDefaults survives manifest pass-through so /api/themes/:id/puck-config
       // can merge theme blockDefaults в Catalog.defaultProps (otherwise constructor
       // получает universal-only defaults и затирает theme-specific values на edit).
-      blockDefaults: (roseManifestJson as any).blockDefaults ?? {},
-      defaults: (roseManifestJson as any).defaults ?? {},
-      colorSchemes: roseManifestJson.colorSchemes ?? [],
+      blockDefaults: (liveManifest('rose', roseManifestJsonRaw) as any).blockDefaults ?? {},
+      defaults: (liveManifest('rose', roseManifestJsonRaw) as any).defaults ?? {},
+      colorSchemes: liveManifest('rose', roseManifestJsonRaw).colorSchemes ?? [],
     };
   }
   if (themeId === 'vanilla') {
     return {
-      blocks: vanillaManifestJson.blocks ?? {},
-      features: vanillaManifestJson.features ?? {},
-      customBlocks: vanillaManifestJson.customBlocks ?? {},
-      blockDefaults: (vanillaManifestJson as any).blockDefaults ?? {},
-      defaults: (vanillaManifestJson as any).defaults ?? {},
-      colorSchemes: vanillaManifestJson.colorSchemes ?? [],
+      blocks: liveManifest('vanilla', vanillaManifestJsonRaw).blocks ?? {},
+      features: liveManifest('vanilla', vanillaManifestJsonRaw).features ?? {},
+      customBlocks: liveManifest('vanilla', vanillaManifestJsonRaw).customBlocks ?? {},
+      blockDefaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).blockDefaults ?? {},
+      defaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).defaults ?? {},
+      colorSchemes: liveManifest('vanilla', vanillaManifestJsonRaw).colorSchemes ?? [],
     };
   }
   if (themeId === 'bloom') {
     return {
-      blocks: bloomManifestJson.blocks ?? {},
-      features: bloomManifestJson.features ?? {},
-      customBlocks: bloomManifestJson.customBlocks ?? {},
-      blockDefaults: (bloomManifestJson as any).blockDefaults ?? {},
-      defaults: (bloomManifestJson as any).defaults ?? {},
-      colorSchemes: bloomManifestJson.colorSchemes ?? [],
+      blocks: liveManifest('bloom', bloomManifestJsonRaw).blocks ?? {},
+      features: liveManifest('bloom', bloomManifestJsonRaw).features ?? {},
+      customBlocks: liveManifest('bloom', bloomManifestJsonRaw).customBlocks ?? {},
+      blockDefaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).blockDefaults ?? {},
+      defaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).defaults ?? {},
+      colorSchemes: liveManifest('bloom', bloomManifestJsonRaw).colorSchemes ?? [],
     };
   }
   if (themeId === 'satin') {
     return {
-      blocks: satinManifestJson.blocks ?? {},
-      features: satinManifestJson.features ?? {},
-      customBlocks: satinManifestJson.customBlocks ?? {},
-      blockDefaults: (satinManifestJson as any).blockDefaults ?? {},
-      defaults: (satinManifestJson as any).defaults ?? {},
-      colorSchemes: satinManifestJson.colorSchemes ?? [],
+      blocks: liveManifest('satin', satinManifestJsonRaw).blocks ?? {},
+      features: liveManifest('satin', satinManifestJsonRaw).features ?? {},
+      customBlocks: liveManifest('satin', satinManifestJsonRaw).customBlocks ?? {},
+      blockDefaults: (liveManifest('satin', satinManifestJsonRaw) as any).blockDefaults ?? {},
+      defaults: (liveManifest('satin', satinManifestJsonRaw) as any).defaults ?? {},
+      colorSchemes: liveManifest('satin', satinManifestJsonRaw).colorSchemes ?? [],
     };
   }
   if (themeId === 'flux') {
     return {
-      blocks: fluxManifestJson.blocks ?? {},
-      features: fluxManifestJson.features ?? {},
-      customBlocks: fluxManifestJson.customBlocks ?? {},
-      blockDefaults: (fluxManifestJson as any).blockDefaults ?? {},
-      defaults: (fluxManifestJson as any).defaults ?? {},
-      colorSchemes: fluxManifestJson.colorSchemes ?? [],
+      blocks: liveManifest('flux', fluxManifestJsonRaw).blocks ?? {},
+      features: liveManifest('flux', fluxManifestJsonRaw).features ?? {},
+      customBlocks: liveManifest('flux', fluxManifestJsonRaw).customBlocks ?? {},
+      blockDefaults: (liveManifest('flux', fluxManifestJsonRaw) as any).blockDefaults ?? {},
+      defaults: (liveManifest('flux', fluxManifestJsonRaw) as any).defaults ?? {},
+      colorSchemes: liveManifest('flux', fluxManifestJsonRaw).colorSchemes ?? [],
     };
   }
   return DEFAULT_THEME_CONFIG;

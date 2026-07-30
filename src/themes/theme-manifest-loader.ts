@@ -34,6 +34,12 @@ export interface ThemeManifest {
   blocks?: Record<string, { override: { path: string; reason: string } }>;
   customBlocks?: Record<string, { path: string; category?: string; requiredFeatures?: string[] }>;
   features?: Record<string, boolean>;
+  /**
+   * Схема, активная по умолчанию, — по id, а не по позиции в массиве.
+   * Позволяет менять дефолт, не переставляя `colorSchemes` (иначе id
+   * перестают идти подряд и расходятся с остальными темами).
+   */
+  defaultScheme?: string;
 }
 
 const MANIFESTS: Record<string, ThemeManifest> = {
@@ -44,8 +50,46 @@ const MANIFESTS: Record<string, ThemeManifest> = {
   flux: fluxManifestRaw as unknown as ThemeManifest,
 };
 
+/**
+ * Манифесты выше приходят через `resolveJsonModule`, то есть на рантайме
+ * читаются из **копии** в `dist/packages/theme-<id>/theme.json`, созданной при
+ * сборке. В разработке это ловушка: правишь исходный `theme.json` — ничего не
+ * меняется, пока не выполнишь `nest build`, причём никакой ошибки не возникает,
+ * просто применяются старые значения.
+ *
+ * Поэтому вне production читаем исходник с диска и перечитываем его при
+ * изменении mtime. В production файл за время жизни процесса не меняется —
+ * там остаётся быстрый путь через собранную копию.
+ */
+const SOURCE_CACHE = new Map<string, { mtimeMs: number; manifest: ThemeManifest }>();
+
+function readSourceManifest(themeId: string): ThemeManifest | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('node:fs') as typeof import('node:fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require('node:path') as typeof import('node:path');
+    const file = path.resolve(
+      process.cwd(),
+      'packages',
+      `theme-${themeId}`,
+      'theme.json',
+    );
+    const { mtimeMs } = fs.statSync(file);
+    const cached = SOURCE_CACHE.get(themeId);
+    if (cached && cached.mtimeMs === mtimeMs) return cached.manifest;
+    const manifest = JSON.parse(fs.readFileSync(file, 'utf-8')) as ThemeManifest;
+    SOURCE_CACHE.set(themeId, { mtimeMs, manifest });
+    return manifest;
+  } catch {
+    return null; // исходника нет (прод-образ, другой cwd) → собранная копия
+  }
+}
+
 export function getThemeManifest(themeId: string): ThemeManifest | null {
-  return MANIFESTS[themeId] ?? null;
+  const compiled = MANIFESTS[themeId] ?? null;
+  if (process.env.NODE_ENV === 'production') return compiled;
+  return readSourceManifest(themeId) ?? compiled;
 }
 
 export function listThemeIds(): string[] {

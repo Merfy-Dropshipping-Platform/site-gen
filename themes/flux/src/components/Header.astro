@@ -2,11 +2,13 @@
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import { SITE_TITLE } from "../consts";
+import FluxNavItem from "./FluxNavItem.astro";
 
 interface NavLink {
 	label: string;
 	href: string;
 	match?: (pathname: string) => boolean;
+	submenu?: NavLink[];
 }
 
 const defaultNav: NavLink[] = [
@@ -28,9 +30,18 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+// submenu сохраняется рекурсивно (до 3 уровней): раньше маппинг его выбрасывал,
+// и «Тип меню» (dropdown/mega) не имел данных для раскрытия.
+const mapNavLink = (l: any, depth = 0): NavLink => ({
+	label: l.label ?? l.text ?? "",
+	href: l.href ?? l.link ?? "/",
+	...(depth < 2 && Array.isArray(l.submenu) && l.submenu.length > 0
+		? { submenu: l.submenu.map((c: any) => mapNavLink(c, depth + 1)) }
+		: {}),
+});
 const nav: NavLink[] =
 	Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
-		? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+		? p.navigationLinks.map((l: any) => mapNavLink(l))
 		: defaultNav;
 
 // Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
@@ -122,7 +133,12 @@ const badgeCls =
 
 // Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
 // якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
-const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
+// «По центру» БЕЗ absolute: absolute-лого выпадало из потока и ложилось ПОВЕРХ
+// длинного меню вёрстки (пункт №4 читался сквозь лого). Вместо этого single-row
+// становится сеткой [1fr_auto_1fr]: меню слева (может переноситься), лого в
+// средней ячейке (центр, пока фланги не шире 1fr), действия справа. Перекрытие
+// невозможно по построению.
+const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:order-2 md:justify-self-center" : ""}`;
 const mobileLogoCls = "flex items-center hover:opacity-80";
 
 // Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
@@ -130,7 +146,7 @@ const deskContainerBase = "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80
 // py-6 = вертикальный отступ верстальщика (дефолт); inline-стиль перебивает при настройке padding.
 const deskPadCls = headerPad ? "" : "py-6";
 const twoRowContainerCls = [deskContainerBase, "hidden flex-col gap-5 md:flex", deskPadCls].filter(Boolean).join(" ");
-const singleRowContainerCls = [deskContainerBase, "hidden items-center justify-between md:flex", deskPadCls, isAbsoluteCenter ? "relative" : ""].filter(Boolean).join(" ");
+const singleRowContainerCls = [deskContainerBase, deskPadCls, isAbsoluteCenter ? "hidden items-center gap-6 md:grid md:grid-cols-[1fr_auto_1fr]" : "hidden items-center justify-between md:flex"].filter(Boolean).join(" ");
 
 // Пункт nav эталона: Roboto Flex 16px light; active чёрный, inactive #cccccc → hover чёрный.
 // active/hover токенизированы (дефолт чёрный = эталон) → menuColorScheme их перекрашивает.
@@ -162,7 +178,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 	}
 
 	<header
-		class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
+		class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
 		data-nt="flux-header"
 	>
 	<!-- Mobile (h-20): бургер слева | лого по центру (absolute) | wishlist+корзина справа -->
@@ -272,18 +288,14 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 						data-puck-subsection-index="997"
 						data-puck-subsection-field="navigationLinks"
 					>
-						{nav.map((link) => {
-							const active = isActive(link);
-							return (
-								<a
-									href={link.href}
-									aria-current={active ? "page" : undefined}
-									class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
-								>
-									{link.label}
-								</a>
-							);
-						})}
+						{nav.map((link) => (
+							<FluxNavItem
+								link={link}
+								menuType={menuType}
+								active={isActive(link)}
+								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
+							/>
+						))}
 					</nav>
 				</>
 			) : (
@@ -350,18 +362,14 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 						data-puck-subsection-index="997"
 						data-puck-subsection-field="navigationLinks"
 					>
-						{nav.map((link) => {
-							const active = isActive(link);
-							return (
-								<a
-									href={link.href}
-									aria-current={active ? "page" : undefined}
-									class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
-								>
-									{link.label}
-								</a>
-							);
-						})}
+						{nav.map((link) => (
+							<FluxNavItem
+								link={link}
+								menuType={menuType}
+								active={isActive(link)}
+								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
+							/>
+						))}
 					</nav>
 				</>
 			)}
@@ -374,27 +382,30 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 			</a>
 
 			<nav
-				class:list={["flex items-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
+				class:list={[
+					"flex items-center gap-8",
+					menuSchemeClass,
+					isSidebar && "md:!hidden",
+					/* «По центру»: nav живёт в левой 1fr-ячейке сетки; длинное меню
+					   вёрстки переносится на вторую строку, а не выползает под лого. */
+					isAbsoluteCenter && "md:order-1 md:min-w-0 md:flex-wrap md:gap-y-2 md:justify-self-start",
+				]}
 				aria-label="Основная навигация" data-nav-inline
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="997"
 				data-puck-subsection-field="navigationLinks"
 			>
-				{nav.map((link) => {
-					const active = isActive(link);
-					return (
-						<a
-							href={link.href}
-							aria-current={active ? "page" : undefined}
-							class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
-						>
-							{link.label}
-						</a>
-					);
-				})}
+				{nav.map((link) => (
+					<FluxNavItem
+						link={link}
+						menuType={menuType}
+						active={isActive(link)}
+						linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
+					/>
+				))}
 			</nav>
 
-			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end"]}>
+			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end", isAbsoluteCenter && "md:order-3 md:justify-self-end"]}>
 				{showSearch && (
 					<button
 						type="button"
@@ -536,17 +547,34 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 		<nav class:list={["flex flex-col gap-3", isSidebar ? "mt-6" : "mt-[52px]"]} aria-label="Основное меню" data-nav-drawer>
 			{nav.filter((l) => l.href !== "/").map((link) => {
 				const active = isActive(link);
+				const kids = Array.isArray(link.submenu) ? link.submenu : [];
 				return (
-					<a
-						href={link.href}
-						class:list={[
-							"flex h-11 items-center justify-between rounded-[4px] px-3 pr-[10px] font-roboto-flex text-[16px] leading-normal",
-							active ? "bg-black font-normal text-white" : "font-light text-black",
-						]}
-					>
-						<span>{link.label}</span>
-						<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
-					</a>
+					<div class="flex flex-col">
+						<a
+							href={link.href}
+							class:list={[
+								"flex h-11 items-center justify-between rounded-[4px] px-3 pr-[10px] font-roboto-flex text-[16px] leading-normal",
+								active ? "bg-black font-normal text-white" : "font-light text-black",
+							]}
+						>
+							<span>{link.label}</span>
+							<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
+						</a>
+						{/* Подменю в шторке — как в розе: вложенные пункты видны сразу,
+						    с отступом. Для «Бокового» типа это единственный путь к ним. */}
+						{kids.length > 0 && (
+							<div class="ml-3 flex flex-col border-l border-black/10 pl-3">
+								{kids.map((k) => (
+									<a
+										href={k.href}
+										class="flex h-9 items-center rounded-[4px] px-2 font-roboto-flex text-[14px] font-light leading-normal text-[#666666] transition-colors hover:text-black"
+									>
+										{k.label}
+									</a>
+								))}
+							</div>
+						)}
+					</div>
 				);
 			})}
 		</nav>

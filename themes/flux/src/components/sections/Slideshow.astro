@@ -341,13 +341,19 @@ const paddingStyle = p.padding
 										/>
 									))}
 								{pagination === "counter" &&
+									// Голый « / » текстом ловится preview root-URL-rewriter'ом
+									// (`ROOT_URL_RE=/(["'(,\s])\/(?![/*])/g` в build/preview
+									// пайплайне превращает « / »→«/__theme/flux/» — тот же класс
+									// бага, что уже чинили у rose/vanilla). "/" в СВОЁМ <span> —
+									// перед слэшем оказывается `>` закрывающего тега, не
+									// пробел/кавычка/запятая из класса регэкспа → не совпадает.
 									slides.map((_, i) => (
 										<span
 											data-slide-dot
 											data-active={i === 0 ? "true" : "false"}
 											class="font-roboto-flex text-[14px] font-normal leading-none text-white data-[active=false]:hidden"
 										>
-											{i + 1} / {slides.length}
+											{i + 1}<span class="mx-1" aria-hidden="true">/</span>{slides.length}
 										</span>
 									))}
 							</div>

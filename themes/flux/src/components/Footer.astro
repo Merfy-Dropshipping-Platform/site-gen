@@ -164,16 +164,41 @@ const footerPadStyle =
 const footerContainerCls = footerPadStyle
 	? "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 md:px-20 2xl:px-80"
 	: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 py-12 md:px-20 md:py-16 2xl:px-80";
+
+// Паритет с Rose (rose Footer.astro, 8 коммитов 80f57884/a39fcb8a/79b14bb9/97d31708/
+// 107c3ea2/c60f6206/b71bd733): поле «Выравнивание» уже показывается в сайдбаре (общий
+// puckConfig), но flux его не читал — dead control. Одна настройка на десктоп И
+// адаптив (не разные для mobile/desktop — так решил владелец в rose).
+// ⚠️ puckConfig-имя поля СЕЙЧАС — `alignment` (Footer.puckConfig.ts:129), НЕ
+// `contentAlign` — в origin/main Rose до сих пор читает `p.contentAlign` (видимо,
+// поле переименовали ПОСЛЕ июльского rose-фикса, и сама Rose сейчас на него тоже не
+// реагирует). Читаем актуальное имя — цель «настройка реально работает», не
+// «повторить чужой баг».
+const contentAlign = ["left", "center", "right"].includes(p.alignment) ? p.alignment : "left";
+const nlAlignCls = contentAlign === "center" ? "items-center text-center" : contentAlign === "right" ? "items-end text-right" : "";
+const linksJustifyCls = contentAlign === "center" ? "md:justify-center md:gap-16" : contentAlign === "right" ? "md:justify-end md:gap-16" : "md:justify-between";
+const navGroupAlignCls = contentAlign === "center" ? "items-center text-center" : contentAlign === "right" ? "items-end text-right" : "";
+// Соц-колонка в вёрстке уже прижата вправо (md:items-end) — при center выравниваем к
+// центру вместе с остальным контентом, при left/right оставляем родное поведение вёрстки.
+const socialAlignCls = contentAlign === "center" ? "md:items-center" : "md:items-end";
+
+// Rose Footer.astro: своя colorScheme на <footer>, иначе hot-render одиночного блока в
+// превью конструктора (без scheme-обёртки композитора) берёт :root = тёмный дефолт →
+// чёрный футер. На live обёртка композитора даёт ту же схему — дубль безвреден.
+const footerSchemeClass =
+	typeof p.colorScheme === "string" && p.colorScheme
+		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
+		: "";
 ---
 
 {/* Подвал в вёрстке стоит на bg-[#fbfbfb] — поверхность, а не фон страницы.
     На --color-bg он получал 255 от схемы и сливался с полотном. */}
-<footer class="w-full bg-[rgb(var(--color-surface,251_251_251))]" data-puck-component-id={id}>
+<footer class:list={["w-full bg-[rgb(var(--color-surface,251_251_251))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<!-- Newsletter «Подпишитесь на нашу рассылку» -->
 		{newsletterEnabled && (
-		<section class="flex w-full flex-col gap-6" aria-labelledby="newsletter-heading">
-			<div class="flex flex-col gap-2">
+		<section class={`flex w-full flex-col gap-6 ${nlAlignCls}`} aria-labelledby="newsletter-heading">
+			<div class={`flex flex-col gap-2 ${nlAlignCls}`}>
 				<h2
 					id="newsletter-heading"
 					class="font-roboto-flex text-[18px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
@@ -221,12 +246,12 @@ const footerContainerCls = footerPadStyle
 
 		<!-- Links: НАВИГАЦИЯ / ИНФОРМАЦИЯ / СОЦИАЛЬНЫЕ СЕТИ -->
 		<section
-			class="flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between"
+			class={`flex w-full flex-col gap-10 md:flex-row md:items-start ${linksJustifyCls}`}
 			aria-label="Навигация по сайту"
 		>
-			<div class="flex flex-col gap-10 sm:flex-row sm:gap-4">
+			<div class={`flex flex-col gap-10 sm:flex-row sm:gap-4 ${navGroupAlignCls}`}>
 				<div
-					class="flex flex-col gap-4 md:w-[318px]"
+					class={`flex flex-col gap-4 md:w-[318px] ${navGroupAlignCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="996"
 					data-puck-subsection-field="navigationColumn"
@@ -245,7 +270,7 @@ const footerContainerCls = footerPadStyle
 
 				{infoLinks.length > 0 && (
 				<div
-					class="flex flex-col gap-4 md:w-[318px]"
+					class={`flex flex-col gap-4 md:w-[318px] ${navGroupAlignCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="995"
 					data-puck-subsection-field="informationColumn"
@@ -266,7 +291,7 @@ const footerContainerCls = footerPadStyle
 
 			{socialColumnHasContent && (
 			<div
-				class="flex flex-col gap-4 md:w-[318px] md:items-end"
+				class={`flex flex-col gap-4 md:w-[318px] ${socialAlignCls}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="994"
 				data-puck-subsection-field="socialColumn"

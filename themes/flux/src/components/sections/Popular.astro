@@ -59,7 +59,10 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // размеров (канон 19/23): small/дефолт = эталон, medium/large крупнее. Цвет —
 // токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
 // перекрашивает, без схемы пиксель эталона (MANNER.md §7).
-const headingSize = p.heading?.size ?? p.headingSize;
+// Паритет с Rose (rose cc64b373): top-level headingSize (живой селект «Размер
+// заголовка») приоритетнее legacy nested heading.size — сид/миграции кладут
+// nested heading.size='medium', которое раньше читалось ПЕРВЫМ и глушило селект.
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "medium"
 		? "text-[23px] md:text-[29px]"

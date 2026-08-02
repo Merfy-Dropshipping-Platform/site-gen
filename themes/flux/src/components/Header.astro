@@ -167,8 +167,12 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 >
 	{
 		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
-		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
-		!id && (
+		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль.
+		   Паритет с Rose (577648f7/eb8c8bd3): системные/account-страницы (login,
+		   register, verify*, wishlist, auth/*, account/*) зовут Header БЕЗ id
+		   (не Puck-композиция) → полоса торчала там всегда. Layout.astro шлёт
+		   promo={false} на этих страницах — здесь просто уважаем флаг. */
+		!id && p.promo !== false && (
 			<NtPromoBanner
 				text="Бесплатная доставка на весь ассортимент до 30.06.2026."
 				link="/catalog"

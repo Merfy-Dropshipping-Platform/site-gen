@@ -690,3 +690,31 @@ blockquote {
     width: 100%;
   }
 }
+
+/* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
+   фон-подложка (--product-card-bg) + Обводка (--product-card-bw) + Скругление
+   (--product-card-radius) + отступ (--product-card-padding). Медиа (фото)
+   скругляется ПО КАРТОЧКЕ (--product-card-media-radius). standard → 0px/
+   transparent (нейтрально). Дефолт flux = card (канон-плашка верстальщика
+   #FBFBFB), поэтому фоллбэки ниже — пиксель верстальщика (FluxProductCard.astro
+   rounded-[12px] bg-[#FBFBFB] p-3), НЕ 0/transparent как у rose (её вёрстка без
+   плашки по умолчанию). Выравнивание (--product-card-align/justify)
+   !important — бьёт Tailwind text-left/items-start. Паритет с rose (уже
+   токенизирована, см. themes/rose/src/styles/global.css [data-nt=rose-product-card]).
+   Покрывает SSR (FluxProductCard) и инлайн-карточку Popular.astro — обе несут
+   data-nt="flux-product-card" на корневом узле. */
+@layer base {
+  [data-nt="flux-product-card"] {
+    background: var(--product-card-bg, #fbfbfb);
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
+    border-radius: var(--product-card-radius, 12px);
+    padding: var(--product-card-padding, 12px);
+  }
+  [data-nt="flux-card-media"] {
+    border-radius: var(--product-card-media-radius, 12px) !important;
+  }
+  [data-nt="flux-product-card"] > div:last-child {
+    align-items: var(--product-card-justify, flex-start) !important;
+    text-align: var(--product-card-align, left) !important;
+  }
+}

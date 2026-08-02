@@ -148,6 +148,21 @@ const heroHeightCls = {
 	medium: "h-[310px] sm:h-[395px] lg:h-[445px]",
 	small: "h-[245px] sm:h-[305px] lg:h-[345px]",
 }[heroSize];
+// B2 (владелец, 2026-08-02): «Размер» менял только высоту полотна — кроп фото
+// «плющился»/съезжал. Причина: одиночная ветка ниже кадрирует ЛИТЕРАЛЬНЫМИ
+// процентами (top-[-10.8%], w-[200%]/w-[160%]) — это ДОСЛОВНЫЙ Figma-крой
+// вёрстки (flux-theme Hero.astro:29,35, node 2060:9675) под ЕДИНСТВЕННУЮ
+// высоту вёрстки, которая = ровно heroHeightCls.large. У верстальщиков контрола
+// «Размер» вообще нет — medium/small изобретены конструктором. top-% у
+// absolute-элемента резолвится от высоты контейнера, а w-% — от ширины
+// (ширина от heroSize не зависит) → при medium/small кадр реально смещается
+// не пропорционально высоте. Для large крой НЕ трогаем (пиксель-в-пиксель
+// эталон); medium/small — паттерн Rose (inset-0 size-full object-cover): сам
+// пересчитывается под любую высоту контейнера, без ручной калибровки под каждую.
+const singleImageCropCls =
+	heroSize === "large"
+		? "absolute left-1/2 top-[-10.8%] z-0 h-auto w-[200%] max-w-none -translate-x-1/2 object-cover sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
+		: "absolute inset-0 z-0 size-full object-cover object-center";
 
 // Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не
 // подставляем дефолт «О нас», когда secondaryButton/aboutText не заданы.
@@ -347,7 +362,7 @@ const rootStyle = paddingStyle;
 				alt={title}
 				loading="eager"
 				fetchpriority="high"
-				class="absolute left-1/2 top-[-10.8%] z-0 h-auto w-[200%] max-w-none -translate-x-1/2 object-cover sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
+				class={singleImageCropCls}
 			/>
 		) : null
 	}

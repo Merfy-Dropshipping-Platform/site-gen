@@ -49,6 +49,14 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			import { initAuthUI } from "../lib/auth";
 			initCartUI();
 			initAnimations();
+			// B3: превью-конструктор подменяет секции через hot-replace (update-block/
+			// reconcile) — свежие [data-reveal]-узлы не попадают в исходный
+			// ScrollTrigger.batch и застревают невидимыми. Astro шлёт astro:after-swap
+			// уже ПОСЛЕ каждой такой подмены (preview.service.ts executeScriptsIn);
+			// повторный вызов initAnimations() подхватывает только новые узлы
+			// (data-reveal-bound фильтр внутри) — паттерн 1:1 с rose
+			// initScrollAnimations/astro:after-swap (Layout.astro:135-136).
+			document.addEventListener("astro:after-swap", () => initAnimations());
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
 			initAuthUI();

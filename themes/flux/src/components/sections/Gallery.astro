@@ -41,7 +41,9 @@ const sectionSubtitle =
 // ЭТАЛОННЫХ размеров верстальщика (текст карточек 16/18/20px), НЕ раздутых
 // DS-значений (46/35px). Цвет — токены (color-heading/color-muted) с фоллбеком
 // чёрный/серый → colorScheme перекрашивает, без схемы пиксель эталона.
-const headingSize = p.heading?.size ?? p.headingSize;
+// Паритет с Popular/Collections (тот же класс бага, cc64b373): top-level
+// headingSize приоритетнее legacy nested heading.size.
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[16px] md:text-[18px]"

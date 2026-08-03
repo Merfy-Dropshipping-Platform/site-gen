@@ -237,6 +237,16 @@ const align = p.alignment === "center" || p.alignment === "right" ? p.alignment 
 const alignItemsCls = align === "right" ? "items-end" : align === "center" ? "items-center" : "items-start"; // ВЫРАВНИВАНИЕ
 const textAlignCls = align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 const buttonsJustifyCls = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
+// Паритет rose (equal-width buttons): при заданной secondaryButton — обе
+// кнопки РАВНОЙ ширины «по большей» через inline-grid из двух bare `1fr`
+// колонок (НЕ Tailwind grid-cols-2 = minmax(0,1fr) — та сожмёт по контенту).
+// Кнопки — grid-items с дефолтным justify-self:stretch + w-auto (см. правку
+// ctaBtnCls/secondaryBtnCls выше, было w-fit — оно перебивало бы stretch) →
+// узкая кнопка подтягивается до ширины широкой. Без второй кнопки — прежняя
+// строка дословно (flex-wrap, только один айтем).
+const buttonsCls = secondaryText
+	? `inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3`
+	: `flex flex-wrap gap-3 ${buttonsJustifyCls}`;
 // gap-8 — вёрстка (Hero.astro:46 `gap-8 … lg:gap-10`). Было gap-6: на мобиле и
 // планшете контент стоял плотнее эталона.
 const contentCls = `flex max-w-[520px] flex-col gap-8 lg:gap-10 ${alignItemsCls}${boxedCls}`;
@@ -250,8 +260,8 @@ const contentCls = `flex max-w-[520px] flex-col gap-8 lg:gap-10 ${alignItemsCls}
 // кнопка тёмно-синяя как в оригинале.
 const ctaBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
+		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 // Вторая кнопка — согласованная ПАРА с «Стилем кнопки» (паритет rose): solid
 // (дефолт) → primary залитая / secondary контурная; outlined → НАОБОРОТ
 // (primary контурная / secondary залитая). Раньше secondaryBtnCls был
@@ -260,8 +270,8 @@ const ctaBtnCls =
 // (условие ниже).
 const secondaryBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
+		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне
@@ -426,7 +436,7 @@ const rootStyle = paddingStyle;
 					</p>
 				</div>
 
-				<div class={`flex flex-wrap gap-3 ${buttonsJustifyCls}`}>
+				<div class={buttonsCls}>
 					<a
 						href={ctaLink}
 						class={ctaBtnCls}

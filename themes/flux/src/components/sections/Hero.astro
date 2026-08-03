@@ -148,6 +148,17 @@ const heroHeightCls = {
 	medium: "h-[310px] sm:h-[395px] lg:h-[445px]",
 	small: "h-[245px] sm:h-[305px] lg:h-[345px]",
 }[heroSize];
+// Мобила = стек (картинка сверху + подложка снизу, паритет rose «Shopify Image
+// banner»), десктоп (md+) = прежний оверлей. heroHeightCls (полная лестница
+// base/sm/lg) остаётся ТОЛЬКО для isEmpty-плейсхолдера (тот не переходит в стек).
+// Для контентной ветки — md-only лестница: высота полотна нужна ТОЛЬКО когда
+// картинка становится absolute-оверлеем; на мобиле высота = поток (aspect-[4/3]
+// картинки + блок-подложка контента). Старые sm:-значения переезжают на md:.
+const heroHeightMdCls = {
+	large: "md:h-[480px] lg:aspect-[1920/810] lg:h-auto",
+	medium: "md:h-[395px] lg:h-[445px]",
+	small: "md:h-[305px] lg:h-[345px]",
+}[heroSize];
 // B2 (владелец, 2026-08-02): «Размер» менял только высоту полотна — кроп фото
 // «плющился»/съезжал. Причина: одиночная ветка ниже кадрирует ЛИТЕРАЛЬНЫМИ
 // процентами (top-[-10.8%], w-[200%]/w-[160%]) — это ДОСЛОВНЫЙ Figma-крой
@@ -159,10 +170,18 @@ const heroHeightCls = {
 // не пропорционально высоте. Для large крой НЕ трогаем (пиксель-в-пиксель
 // эталон); medium/small — паттерн Rose (inset-0 size-full object-cover): сам
 // пересчитывается под любую высоту контейнера, без ручной калибровки под каждую.
+// #7 (июльский аудит паритета, мобстек): на мобиле картинка теперь ЖИВЁТ ВНУТРИ
+// aspect-[4/3]-коробки в потоке (см. imageWrapCls ниже) — калиброванный крой
+// «large» (top-[-10.8%]/w-[200%]/…) считался под ЦЕЛИКОМ ДРУГОЙ, широкую
+// desktop-пропорцию (1920×810) — внутри 4:3 он даёт мимо. На мобиле просто
+// object-cover (сам вписывается в коробку); калиброванный крой включается
+// ТОЛЬКО с md: (там картинка снова становится absolute-оверлеем на всю секцию,
+// прежняя вёрстка не трогается). Старое sm:w-[160%] переехало на md: (это и
+// была первая ступень calibrated-crop, теперь она начинается сразу с md:).
 const singleImageCropCls =
 	heroSize === "large"
-		? "absolute left-1/2 top-[-10.8%] z-0 h-auto w-[200%] max-w-none -translate-x-1/2 object-cover sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
-		: "absolute inset-0 z-0 size-full object-cover object-center";
+		? "size-full object-cover object-center md:absolute md:left-1/2 md:top-[-10.8%] md:h-auto md:w-[160%] md:max-w-none md:-translate-x-1/2 md:object-cover lg:left-0 lg:w-full lg:translate-x-0"
+		: "size-full object-cover object-center md:absolute md:inset-0";
 
 // Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не
 // подставляем дефолт «О нас», когда secondaryButton/aboutText не заданы.
@@ -187,6 +206,13 @@ const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
 	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
 	: "";
+// Мобила-обёртка контента ПОД медиа (стек, паритет rose). «Контейнер» ON →
+// карточка (boxedCls) сама = плашка, обёртка ПРОЗРАЧНАЯ (только гаттер+зазор) —
+// иначе «контейнер в контейнере». «Контейнер» OFF → обёртка = сама подложка
+// (фон схемы + паддинги). Десктоп (md+) — всегда absolute-оверлей, прозрачно.
+const wrapperMobileCls = boxed
+	? "px-4 pt-6 pb-10"
+	: "bg-[rgb(var(--color-bg,245_245_245))] px-4 py-10";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (как rose Hero):
@@ -281,6 +307,13 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 const rootStyle = paddingStyle;
+// Контентная ветка (стек на мобиле): верхний паддинг — ТОЛЬКО десктоп (md:pt) —
+// на мобиле медиа встык под шапкой, поток сам создаёт разрыв секций. Нижний —
+// на всех ширинах. Через CSS-переменные (не inline style) — только так top
+// можно ограничить брейкпоинтом.
+const paddingVars = p.padding
+	? `--hero-pt:${p.padding.top}px;--hero-pb:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 {
@@ -344,52 +377,53 @@ const rootStyle = paddingStyle;
 		</section>
 	) : (
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))]"
-	style={rootStyle}
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${heroHeightMdCls}`}
+	style={paddingVars}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 >
-	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка теперь ПРЯМОЙ ребёнок
-	    <section> с absolute inset-0 → кроет весь padding-box секции целиком (включая
-	    зону «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
-	    (padding в rootStyle на <section>) теперь отодвигают КОНТЕНТ (inner-div в
-	    нормальном потоке ниже), а не создают полосы (паттерн rose Hero фикс). */}
-	{
-		backgroundImage2 ? (
-			<div class="absolute inset-0 z-0 grid grid-cols-2 overflow-hidden">
+	{/* #7 (мобстек, паритет rose «Shopify Image banner»): мобила — картинка блоком
+	    сверху (aspect-[4/3], в потоке), контент-подложка под ней (см. ниже). Десктоп
+	    (md+) — прежний оверлей: коробка сама уходит в absolute на всю секцию, а крой
+	    внутри неё (singleImageCropCls) переключается на калиброванный. */}
+	<div class="relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto">
+		{
+			backgroundImage2 ? (
+				<div class="absolute inset-0 z-0 grid grid-cols-2 overflow-hidden">
+					<FluxPicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+					<FluxPicture
+						src={backgroundImage2}
+						alt=""
+						loading="eager"
+						fetchpriority="high"
+						class="size-full object-cover object-center"
+					/>
+				</div>
+			) : backgroundImage ? (
 				<FluxPicture
 					src={backgroundImage}
 					alt={title}
 					loading="eager"
 					fetchpriority="high"
-					class="size-full object-cover object-center"
+					class={singleImageCropCls}
 				/>
-				<FluxPicture
-					src={backgroundImage2}
-					alt=""
-					loading="eager"
-					fetchpriority="high"
-					class="size-full object-cover object-center"
-				/>
-			</div>
-		) : backgroundImage ? (
-			<FluxPicture
-				src={backgroundImage}
-				alt={title}
-				loading="eager"
-				fetchpriority="high"
-				class={singleImageCropCls}
-			/>
-		) : null
-	}
+			) : null
+		}
+	</div>
 
-	{/* Растворение фото в белый к нижней кромке (вёрстка Hero.astro:39) — это
-	    дизайн-инвариант оригинала, а НЕ затемнение. Именно он отделяет Hero от
-	    следующей секции; чёрного слоя у верстальщиков нет вовсе. */}
+	{/* Растворение фото в белый к нижней кромке (вёрстка Hero.astro:39) — дизайн-
+	    инвариант ТОЛЬКО десктоп-оверлея (мобила: текст не поверх фото — подложка
+	    ниже, дословный обрез коробки, растворять нечего). */}
 	{
 		backgroundImage && !backgroundImage2 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-transparent from-[85%] to-white"
+				class="pointer-events-none absolute inset-0 z-[1] hidden bg-gradient-to-b from-transparent from-[85%] to-white md:block"
 				aria-hidden="true"
 			/>
 		)
@@ -398,68 +432,68 @@ const rootStyle = paddingStyle;
 	{
 		overlayN > 0 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[2] bg-black"
+				class="pointer-events-none absolute inset-0 z-[2] hidden bg-black md:block"
 				style={`opacity:${overlayN / 100}`}
 			/>
 		)
 	}
 
-	<div class={`relative w-full ${heroHeightCls}`}>
-		<div
-			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4`}
-		>
-			<div class={contentCls} data-reveal>
-				<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
-					<h1
-						id="hero-title"
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-					>
-						{title}
-					</h1>
-					<p
-						class={subtitleCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="text"
-					>
-						{String(subtitle)
-							.split("\n")
-							.map((line, i) => (
-								<>
-									{i > 0 && <br />}
-									{line}
-								</>
-							))}
-					</p>
-				</div>
+	{/* Контент: мобила — блок-подложка В ПОТОКЕ под картинкой (свой фон, см.
+	    wrapperMobileCls); десктоп (md+) — прежний absolute-оверлей поверх фото. */}
+	<div
+		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} ${wrapperMobileCls} md:absolute md:inset-0 md:bg-transparent md:px-4`}
+	>
+		<div class={contentCls} data-reveal>
+			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
+				<h1
+					id="hero-title"
+					class={headingCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="heading"
+				>
+					{title}
+				</h1>
+				<p
+					class={subtitleCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+				>
+					{String(subtitle)
+						.split("\n")
+						.map((line, i) => (
+							<>
+								{i > 0 && <br />}
+								{line}
+							</>
+						))}
+				</p>
+			</div>
 
-				<div class={buttonsCls}>
-					<a
-						href={ctaLink}
-						class={ctaBtnCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="102"
-						data-puck-subsection-field="primaryButton"
-					>
-						{ctaText}
-					</a>
-					{
-						secondaryText && (
-							<a
-								href={secondaryLink}
-								class={secondaryBtnCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="103"
-								data-puck-subsection-field="secondaryButton"
-							>
-								{secondaryText}
-							</a>
-						)
-					}
-				</div>
+			<div class={buttonsCls}>
+				<a
+					href={ctaLink}
+					class={ctaBtnCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="primaryButton"
+				>
+					{ctaText}
+				</a>
+				{
+					secondaryText && (
+						<a
+							href={secondaryLink}
+							class={secondaryBtnCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="secondaryButton"
+						>
+							{secondaryText}
+						</a>
+					)
+				}
 			</div>
 		</div>
 	</div>

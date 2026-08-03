@@ -58,9 +58,12 @@ const cardsRaw =
 	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
 const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 
-// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
-// рендерится только при true/'true'.
-const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+// Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — паритет с
+// эталоном (packages/theme-base/blocks/Publications/Publications.astro
+// dateTimeEnabled): дата ПОКАЗАНА по умолчанию, прячется ТОЛЬКО при явном
+// false/'false'. Было наоборот (?? "false" → скрыта, пока не включили явно) —
+// «Дата и время» выглядела мёртвой (дефолт-состояние всегда без даты).
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
 // Канон publicationType (pagePicker) — data-атрибут на гриде для платформенного
 // резолва публикаций.

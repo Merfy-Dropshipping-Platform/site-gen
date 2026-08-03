@@ -252,10 +252,16 @@ const ctaBtnCls =
 	p.buttonStyle === "outlined"
 		? "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
 		: "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
-// Вторая кнопка — контурная в том же языке; рендерится ТОЛЬКО когда мерчант задал
-// secondaryButton (условие ниже).
+// Вторая кнопка — согласованная ПАРА с «Стилем кнопки» (паритет rose): solid
+// (дефолт) → primary залитая / secondary контурная; outlined → НАОБОРОТ
+// (primary контурная / secondary залитая). Раньше secondaryBtnCls был
+// фиксированной строкой (всегда контур) — «Стиль кнопки»=outlined на вторую
+// кнопку не действовал. Рендерится ТОЛЬКО когда мерчант задал secondaryButton
+// (условие ниже).
 const secondaryBtnCls =
-	"inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
+	p.buttonStyle === "outlined"
+		? "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+		: "inline-flex h-[var(--size-hero-button-h,48px)] w-fit items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне

@@ -33,7 +33,11 @@ const sectionSubtitle =
 // subtitleSize: канон-дефолт 'small' = 14/16, medium/large крупнее. Цвет —
 // токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
 // перекрашивает, без схемы пиксель эталона (MANNER.md §7).
-const headingSize = p.heading?.size ?? p.headingSize;
+// Паритет с rose/Popular (тот же класс бага, cc64b373): top-level headingSize
+// (живой селект «Размер заголовка») приоритетнее legacy nested heading.size —
+// сид/миграции кладут nested heading.size, которое читалось ПЕРВЫМ и глушило
+// селект. subtitleSize ниже уже был в правильном порядке (top-level первым).
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[16px] md:text-[19px]"

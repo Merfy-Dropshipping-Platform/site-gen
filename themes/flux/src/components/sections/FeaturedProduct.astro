@@ -627,11 +627,124 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 		return "";
 	}
 
+	// Lightbox: полноэкранный попап с большим фото + лентой миниатюр. Портирован
+	// 1:1 с theme-base Product.astro (то, что реально рендерит Rose) — canon
+	// zoomMode="click". Разметка/поведение дословно (overlay/closeBtn/strip/
+	// стрелки-клавиши/Esc), меняется только источник URL (readCfgImages ниже,
+	// под структуру Flux-конфигуратора).
+	function openProductLightbox(urls: string[]) {
+		if (urls.length === 0) return;
+		let activeIdx = 0;
+
+		const overlay = document.createElement("div");
+		overlay.setAttribute("data-product-lightbox", "");
+		overlay.style.cssText = [
+			"position:fixed", "inset:0", "z-index:100",
+			"background:rgba(0,0,0,0.92)",
+			"display:flex", "flex-direction:column",
+			"align-items:center", "justify-content:center",
+			"padding:32px", "gap:16px",
+		].join(";");
+
+		const closeBtn = document.createElement("button");
+		closeBtn.setAttribute("type", "button");
+		closeBtn.setAttribute("aria-label", "Закрыть");
+		closeBtn.style.cssText = [
+			"position:absolute", "top:16px", "right:16px",
+			"width:40px", "height:40px", "border:none",
+			"background:rgba(255,255,255,0.1)", "color:#fff",
+			"border-radius:50%", "cursor:pointer",
+			"font-size:24px", "line-height:1",
+			"display:flex", "align-items:center", "justify-content:center",
+		].join(";");
+		closeBtn.innerHTML = "×";
+		overlay.appendChild(closeBtn);
+
+		const mainImgEl = document.createElement("img");
+		mainImgEl.style.cssText = [
+			"max-width:100%", "max-height:calc(100vh - 200px)",
+			"object-fit:contain", "display:block",
+			"border-radius:8px",
+		].join(";");
+		mainImgEl.src = urls[0];
+		overlay.appendChild(mainImgEl);
+
+		const strip = document.createElement("div");
+		strip.style.cssText = [
+			"display:flex", "gap:8px",
+			"overflow-x:auto", "max-width:100%",
+			"padding:8px",
+		].join(";");
+
+		const thumbBtns = urls.map((url, idx) => {
+			const btn = document.createElement("button");
+			btn.setAttribute("type", "button");
+			btn.style.cssText = [
+				"width:80px", "height:80px", "flex-shrink:0",
+				"border:2px solid " + (idx === 0 ? "#fff" : "transparent"),
+				"border-radius:6px", "overflow:hidden",
+				"cursor:pointer", "padding:0", "background:transparent",
+				"transition:border-color 0.15s",
+			].join(";");
+			const img = document.createElement("img");
+			img.src = url;
+			img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+			btn.appendChild(img);
+			btn.addEventListener("click", () => {
+				activeIdx = idx;
+				mainImgEl.src = url;
+				thumbBtns.forEach((b, i) => {
+					b.style.borderColor = i === idx ? "#fff" : "transparent";
+				});
+			});
+			strip.appendChild(btn);
+			return btn;
+		});
+		overlay.appendChild(strip);
+
+		function close() {
+			overlay.remove();
+			document.removeEventListener("keydown", onKey);
+		}
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") close();
+			if (e.key === "ArrowRight" && activeIdx < urls.length - 1) {
+				activeIdx++;
+				mainImgEl.src = urls[activeIdx];
+				thumbBtns.forEach((b, i) => {
+					b.style.borderColor = i === activeIdx ? "#fff" : "transparent";
+				});
+			}
+			if (e.key === "ArrowLeft" && activeIdx > 0) {
+				activeIdx--;
+				mainImgEl.src = urls[activeIdx];
+				thumbBtns.forEach((b, i) => {
+					b.style.borderColor = i === activeIdx ? "#fff" : "transparent";
+				});
+			}
+		}
+		closeBtn.addEventListener("click", close);
+		overlay.addEventListener("click", (e) => {
+			if (e.target === overlay) close();
+		});
+		document.addEventListener("keydown", onKey);
+		document.body.appendChild(overlay);
+	}
+
 	async function hydrateFeaturedProduct() {
 		const section = document.querySelector<HTMLElement>('[data-block="featured-product"]');
 		if (!section) return;
 
 		const ref = section.getAttribute("data-product-id") || "";
+		// «Увеличение» (canon zoomMode: hover/click/none) — паритет с Rose
+		// (packages/theme-base/blocks/Product/Product.astro: hover = tracking-zoom
+		// scale(2) с transform-origin за курсором; click = lightbox на весь экран +
+		// лента миниатюр + стрелки/Esc). Раньше был ЗАДОКУМЕНТИРОВАННЫМ no-op —
+		// вывод «зума в теме нет» сверялся со СТАТИЧНОЙ закреплённой вёрсткой
+		// (там правда нет), а не с ЖИВЫМ поведением Rose (которая рендерит эту же
+		// секцию через theme-base и реально его показывает) — вывод был неверным
+		// применительно к принципу «логика конструктора как у Rose».
+		const zoomMode = section.getAttribute("data-zoom-mode") || "hover";
 
 		// UI-интерактивность (счётчик/миниатюры/карусель/аккордеон/поделиться)
 		// работает НЕЗАВИСИМО от живых данных — вешаем всегда, на то, что уже
@@ -843,6 +956,45 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 					}, 1500);
 				}
 			});
+
+			// Увеличение — hover/click, см. константу zoomMode выше.
+			if (mainImg && zoomMode !== "none") {
+				const heroEl = mainImg.closest<HTMLAnchorElement>("a");
+				if (heroEl) {
+					heroEl.style.cursor = "zoom-in";
+					if (zoomMode === "hover") {
+						mainImg.style.transition = "transform 0.2s ease, transform-origin 0.05s linear";
+						heroEl.addEventListener("mouseenter", () => {
+							mainImg.style.transform = "scale(2)";
+						});
+						heroEl.addEventListener("mousemove", (e) => {
+							const rect = heroEl.getBoundingClientRect();
+							const x = ((e.clientX - rect.left) / rect.width) * 100;
+							const y = ((e.clientY - rect.top) / rect.height) * 100;
+							mainImg.style.transformOrigin = `${x}% ${y}%`;
+						});
+						heroEl.addEventListener("mouseleave", () => {
+							mainImg.style.transform = "";
+							mainImg.style.transformOrigin = "";
+						});
+					} else if (zoomMode === "click") {
+						// Главное фото обёрнуто в <a href> (переход на страницу товара) —
+						// в отличие от theme-base [data-product-hero] (не ссылка), здесь
+						// нужен preventDefault, иначе клик одновременно откроет лайтбокс
+						// И уйдёт по ссылке.
+						heroEl.addEventListener("click", (e) => {
+							e.preventDefault();
+							const urls: string[] = [];
+							if (mainImg.currentSrc || mainImg.src) urls.push(mainImg.currentSrc || mainImg.src);
+							cfg.querySelectorAll<HTMLImageElement>("[data-cfg-thumb] img").forEach((im) => {
+								const src = im.currentSrc || im.src;
+								if (src && urls.indexOf(src) === -1) urls.push(src);
+							});
+							openProductLightbox(urls);
+						});
+					}
+				}
+			}
 		}
 	}
 

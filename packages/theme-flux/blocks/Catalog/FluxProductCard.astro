@@ -220,8 +220,10 @@ const saleBadgeLabel =
 // Tri-state: 'off' гасит theme-wide плашку (var(--product-card-bg,#fbfbfb) в
 // global.css) inline-transparent'ом; 'auto' (не задано) оставляет канон темы.
 const cardContainerStyle =
+  // border-radius через --product-card-radius (тема-слайдер «Скругление» достаёт
+  // и до блочной плашки; паритет rose origin/main); фоллбэк 12px = вёрстка плашки.
   cardContainerState === "on"
-    ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);"
+    ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--product-card-radius,12px);"
     : cardContainerState === "off"
       ? "background:transparent;"
       : "";

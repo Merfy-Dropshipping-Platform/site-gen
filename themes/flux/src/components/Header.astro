@@ -150,7 +150,9 @@ const singleRowContainerCls = [deskContainerBase, deskPadCls, isAbsoluteCenter ?
 
 // Пункт nav эталона: Roboto Flex 16px light; active чёрный, inactive #cccccc → hover чёрный.
 // active/hover токенизированы (дефолт чёрный = эталон) → menuColorScheme их перекрашивает.
-const navLinkBase = "font-roboto-flex text-[16px] font-light leading-normal transition-colors";
+// lg:text-[length:var(--size-nav-link,16px)] — «Кегль пунктов меню» темы
+// (паритет rose Header.astro:132); фоллбэк 16px = вёрстка.
+const navLinkBase = "font-roboto-flex text-[16px] font-light leading-normal transition-colors lg:text-[length:var(--size-nav-link,16px)]";
 // Активный/hover пункт берёт --color-heading, а НЕ --color-text: в вёрстке это
 // чёрный (`text-black`), тогда как --color-text у flux — вторичный серый #999999
 // (им набраны абзацы). На --color-text активный пункт выцветал до серого и
@@ -208,7 +210,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 			</span>
 		</button>
 		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
-			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 		</a>
 		<div class="flex items-center gap-3">
 			{showCart && (
@@ -246,7 +248,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 						</div>
 						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 							</a>
 						</div>
 						<div class="flex items-center justify-end gap-4">
@@ -311,7 +313,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 				<>
 					<div class="flex w-full items-center justify-between">
 						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 						</a>
 						<div class="flex items-center gap-4">
 							{showSearch && (
@@ -386,7 +388,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 		/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute / top-right ── */
 		<div class={singleRowContainerCls} style={headerPadStyle}>
 			<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 			</a>
 
 			<nav
@@ -508,7 +510,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 			/* Sidebar drawer: logo + cart at top */
 			<div class="flex items-center justify-between">
 				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
-					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 				</a>
 				<div class="flex items-center gap-3">
 					{showCart && (

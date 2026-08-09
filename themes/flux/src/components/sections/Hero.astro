@@ -120,12 +120,17 @@ const PH_BUTTON = "Кнопка";
 // схема не выбрана, Hero обязан выглядеть ровно как у верстальщиков. Раньше
 // фолбэк был белым — на светлом фото текст пропадал.
 const headingSize = p.heading?.size;
+// lg:text-[length:var(--merchant-hero-heading,…)] — «Кегль заголовка Hero» темы.
+// --merchant-hero-heading эмитится ТОЛЬКО когда мерчант двинул слайдер (гейт в
+// tokens-css.ts) — иначе живёт леддер вёрстки S/M/L (фоллбэк = md-кегль ветки).
+// НЕ --size-hero-heading: та эмитится всегда (theme.json 72px ≠ вёрстка 24px)
+// и флаттенила бы леддер у нетронутой темы.
 const headingCls =
 	headingSize === "small"
-		? "font-roboto-flex text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[17px]"
+		? "font-roboto-flex text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[17px] lg:text-[length:var(--merchant-hero-heading,17px)]"
 		: headingSize === "medium"
-			? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
-			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]";
+			? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px] lg:text-[length:var(--merchant-hero-heading,20px)]"
+			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[24px] lg:text-[length:var(--merchant-hero-heading,24px)]";
 // Подзаголовок вёрстки (Hero.astro:52): 12→14px, uppercase, #999999.
 // Были 14→16px без uppercase — на ступень крупнее и другим регистром.
 const textSize = p.text?.size;

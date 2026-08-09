@@ -719,7 +719,7 @@ const skeletons = Array.from({ length: skeletonCount });
   // в client-строках НЕ компилится) — зеркалит FluxProductCard.astro (parity).
   const CARD_CONTAINER_STYLE =
     cardContainerState === "on"
-      ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);"
+      ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--product-card-radius,12px);"
       : cardContainerState === "off"
         ? "background:transparent;"
         : "";

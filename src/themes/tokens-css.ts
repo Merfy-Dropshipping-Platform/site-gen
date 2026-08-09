@@ -25,7 +25,7 @@ import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-default
 const ROOT_RULES_EXPLICIT = new Set<string>([
   '--radius-button', '--radius-card', '--radius-input', '--radius-media', '--radius-field',
   '--font-heading', '--font-body', '--weight-body', '--weight-heading',
-  '--section-padding', '--spacing-section-y', '--spacing-grid-col-gap', '--spacing-grid-row-gap',
+  '--section-padding', '--spacing-section-y', '--section-gap', '--spacing-grid-col-gap', '--spacing-grid-row-gap',
   '--catalog-sidebar-w', '--catalog-grid-row-gap',
   '--size-catalog-title', '--size-catalog-subtitle', '--weight-catalog-title',
   '--size-hero-heading', '--size-hero-button-h', '--slide-min-height',
@@ -63,6 +63,7 @@ export function buildTokensCss(
   const headingFontSet = typeof s.headingFont === 'string' && !!s.headingFont;
   const bodyFontSet = typeof s.bodyFont === 'string' && !!s.bodyFont;
   const sectionPaddingSet = typeof s.sectionPadding === 'number';
+  const sectionGapSet = typeof s.sectionGap === 'number';
   const bodyWeightSet = typeof s.bodyWeight === 'number';
   const headingWeightSet = typeof s.headingWeight === 'number';
   const logoWidthSet = typeof s.logoWidth === 'number';
@@ -78,6 +79,8 @@ export function buildTokensCss(
   const bodyFont = fontFamily(s.bodyFont, 'system-ui');
   const sectionPadding =
     typeof s.sectionPadding === 'number' ? `${s.sectionPadding}px` : '80px';
+  const sectionGap =
+    typeof s.sectionGap === 'number' ? `${s.sectionGap}px` : '0px';
   const bodyWeight = typeof s.bodyWeight === 'number' ? s.bodyWeight : 400;
   const headingWeight =
     typeof s.headingWeight === 'number' ? s.headingWeight : 400;
@@ -140,6 +143,7 @@ export function buildTokensCss(
   --weight-heading: ${merchantFirst(String(headingWeight), headingWeightSet, themeDefaults['--weight-heading'], '400')};
   --section-padding: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
   --spacing-section-y: ${merchantFirst(sectionPadding, sectionPaddingSet, themeDefaults['--spacing-section-y'], '80px')};
+  --section-gap: ${merchantFirst(sectionGap, sectionGapSet, themeDefaults['--section-gap'], '0px')};
   --spacing-grid-col-gap: ${themeDefaults['--spacing-grid-col-gap'] ?? '24px'};
   --spacing-grid-row-gap: ${themeDefaults['--spacing-grid-row-gap'] ?? '32px'};
   --catalog-sidebar-w: ${themeDefaults['--catalog-sidebar-w'] ?? '220px'};
@@ -156,7 +160,11 @@ export function buildTokensCss(
       ? `\n  --weight-catalog-title: ${themeDefaults['--weight-catalog-title']};`
       : ''
   }
-  --size-hero-heading: ${merchantFirst(heroHeadingSize, heroHeadingSizeSet, themeDefaults['--size-hero-heading'], '48px')};
+  --size-hero-heading: ${merchantFirst(heroHeadingSize, heroHeadingSizeSet, themeDefaults['--size-hero-heading'], '48px')};${
+    heroHeadingSizeSet
+      ? `\n  --merchant-hero-heading: ${heroHeadingSize};`
+      : ''
+  }
   --size-hero-button-h: ${themeDefaults['--size-hero-button-h'] ?? '48px'};
   --slide-min-height: ${themeDefaults['--slide-min-height'] ?? '60vh'};${
     themeDefaults['--color-header-bg']
@@ -385,12 +393,51 @@ export function buildTokensCss(
     'body:has(footer):not(:has(main main)){min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}' +
     'body:has(footer):not(:has(main main))>main{flex:1 0 auto}';
 
+  // Порт origin/main (спека 2026-07-06 + «оживление слайдеров типографики»):
+  // зазор МЕЖДУ секциями = margin-top прямых детей <main> кроме первого
+  // (owl `* + *`); header/footer вне <main>, props.padding блоков не трогается.
+  // Дефолт 0px = нулевая регрессия.
+  const sectionGapRule = 'main > * + *{margin-top:var(--section-gap, 0px)}';
+
+  // «Жирность/Шрифт заголовка-текста» — порты хардкодят font-family/weight по
+  // Figma (в т.ч. `!font-normal` = !important в @layer utilities). Инжектим
+  // override ТОЛЬКО когда мерчант РЕАЛЬНО задал значение (…Set) — иначе правило
+  // пустое и дефолтный вид тем сохранён байт-в-байт (default-preserving).
+  // КРИТИЧНО — обёртка `@layer utilities`: для !important порядок слоёв обратный,
+  // и безслойное правило проигрывает слою. В том же слое решает специфичность:
+  // наш (0,1,2) > (0,1,0) у `.\!font-normal`.
+  const weightHeadingRule = headingWeightSet
+    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-weight:var(--weight-heading) !important}'
+    : '';
+  const weightBodyRule = bodyWeightSet
+    ? 'main p[class],main li[class],main button[class],main label[class]{font-weight:var(--weight-body) !important}'
+    : '';
+  const fontHeadingRule = headingFontSet
+    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-family:var(--font-heading) !important}'
+    : '';
+  const fontBodyRule = bodyFontSet
+    ? 'main p[class],main li[class],main button[class],main label[class]{font-family:var(--font-body) !important}'
+    : '';
+  const typographyOverrides = [
+    weightHeadingRule,
+    weightBodyRule,
+    fontHeadingRule,
+    fontBodyRule,
+  ]
+    .filter(Boolean)
+    .join('');
+  const typographyLayer = typographyOverrides
+    ? `@layer utilities{${typographyOverrides}}`
+    : '';
+
   return [
     rootRules,
     rootColorRules,
     schemeRules,
     wishlistHideRule,
     stickyFooterRule,
+    sectionGapRule,
+    typographyLayer,
   ]
     .filter(Boolean)
     .join('\n');

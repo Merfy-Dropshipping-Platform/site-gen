@@ -31,7 +31,14 @@ const subtitleSizeCls =
 			? " [&_p]:!text-[23px] [--size-section-text-m:23px]"
 			: "";
 // Канон titleAlignment: 'center'/отсутствие = строка верстальщика байт-в-байт.
-const headWrapBase = `flex w-full justify-center md:justify-center${subtitleSizeCls}`;
+// Кегль h2 — УТИЛИТОЙ, читающей те же vars (roseHeadingStyle): бесслойное
+// ID-правило #collections-title из <style> при !important ПРОИГРЫВАЕТ layered
+// DS-утилите !text-[20px] (@layer utilities, CSS Cascade 5 инвертирует слои
+// для important) — «Размер заголовка» не менял кегль (theme-registry 2026-08-09).
+const headingH2Cls =
+	" [&_h2]:!text-[length:var(--collections-heading-size,20px)]" +
+	" max-sm:[&_h2]:!text-[length:var(--collections-heading-size-mobile,14px)]";
+const headWrapBase = `flex w-full justify-center md:justify-center${subtitleSizeCls}${headingH2Cls}`;
 const headWrapCls =
 	p.titleAlignment === "left"
 		? `flex w-full justify-start [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left${subtitleSizeCls}`

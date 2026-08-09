@@ -713,7 +713,7 @@ export class PreviewService {
     // shopId/apiUrl, сохраняя .checkout.
     window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
     if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = ${JSON.stringify(input.siteId ?? '')};
-    if (!window.__MERFY_CONFIG__.apiUrl) window.__MERFY_CONFIG__.apiUrl = 'https://gateway.merfy.ru/api';
+    if (!window.__MERFY_CONFIG__.apiUrl) window.__MERFY_CONFIG__.apiUrl = location.origin + '/api'; // same-origin: превью всегда за gateway (прод/локальный контур)
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
   ${IDIOMORPH_INLINE}
@@ -1381,7 +1381,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
       heading: function (el, oldVal, newVal) {
         var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
         var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
-        if ((oldObj.size || 'small') !== (newObj.size || 'small')) return false;
+        // Size без фолбэка: отсутствующий size рендерится веткой large (дефолт),
+        // а '|| small' считал его равным явному 'small' → патчился только текст
+        // и смена кегля после правки текста молча не применялась (theme-registry
+        // 2026-08-06). Любой переход default<->явное значение обязан идти в fetch.
+        if ((oldObj.size || '') !== (newObj.size || '')) return false;
         var h1 = el.querySelector('h1[data-puck-subsection-field="heading"]');
         if (!h1) return false;
         h1.textContent = newObj.text || '';
@@ -1390,7 +1394,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
       text: function (el, oldVal, newVal) {
         var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
         var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
-        if ((oldObj.size || 'small') !== (newObj.size || 'small')) return false;
+        // Size без фолбэка: отсутствующий size рендерится веткой large (дефолт),
+        // а '|| small' считал его равным явному 'small' → патчился только текст
+        // и смена кегля после правки текста молча не применялась (theme-registry
+        // 2026-08-06). Любой переход default<->явное значение обязан идти в fetch.
+        if ((oldObj.size || '') !== (newObj.size || '')) return false;
         var p = el.querySelector('p[data-puck-subsection-field="text"]');
         if (!p) return false;
         p.textContent = newObj.content || '';

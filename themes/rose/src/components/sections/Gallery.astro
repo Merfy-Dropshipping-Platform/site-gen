@@ -31,7 +31,12 @@ const textSizeCls =
 		: textSize === "large"
 			? " [&_p]:!text-[19px] [--size-section-text-m:19px]"
 			: "";
-const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center${textSizeCls}`;
+// Кегль h2 утилитой по тем же vars — ID-правило #gallery-title бесслойное и
+// проигрывает layered DS-утилите для important (как Collections; theme-registry).
+const galleryH2Cls =
+	" [&_h2]:!text-[length:var(--gallery-heading-size,clamp(14px,3.8vw,20px))]" +
+	" max-sm:[&_h2]:!text-[length:var(--gallery-heading-size-mobile,14px)]";
+const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center${textSizeCls}${galleryH2Cls}`;
 
 // Канон imagePosition left/right: 'left' (canon-default) и отсутствие = большая
 // плитка слева (пиксель верстальщика); 'right' → зеркало раскладки на lg

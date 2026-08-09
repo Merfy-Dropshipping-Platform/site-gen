@@ -820,6 +820,17 @@ export class PreviewController {
         (m) => `${m}<script>window.__DADATA_TOKEN__ = ${JSON.stringify(dadataToken)};</script>`,
       );
     }
+    // Same-origin база API для storefront-скриптов превью: превью всегда отдаётся
+    // через gateway (прод: gateway.merfy.ru, локальные контуры: localhost:3110) →
+    // location.origin верен везде. Без этого дефолт https://gateway.merfy.ru гнал
+    // гидрацию каталога НЕ-прод контуров на прод (пустой ответ → вечное демо).
+    // НЕ пустая строка: потребители делают `base || прод-дефолт`, а '' — falsy.
+    // В head, ДО инлайнов секций (они читают базу при исполнении).
+    html = html.replace(
+      /<head(\s[^>]*)?>/i,
+      (m) =>
+        `${m}<script>window.__MERFY_API_BASE__ = window.__MERFY_API_BASE__ || location.origin;</script>`,
+    );
     html = html.replace(
       /<head(\s[^>]*)?>/i,
       (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,

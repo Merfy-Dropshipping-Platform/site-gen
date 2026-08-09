@@ -42,7 +42,9 @@ const PROMO_BANNER: Record<
   RosePromoBannerSize,
   { minHeightClass: string; textClass: string }
 > = {
-  thin: { minHeightClass: "min-h-8", textClass: "text-[12px]" },
+  // thin реально ТОНЬШЕ small (был дублем min-h-8/12px — «Тонкий» неотличим от
+  // «Маленького»; theme-registry 2026-08-09)
+  thin: { minHeightClass: "min-h-6", textClass: "text-[11px]" },
   small: { minHeightClass: "min-h-8", textClass: "text-[12px]" },
   medium: { minHeightClass: "min-h-10", textClass: "text-[14px]" },
   large: { minHeightClass: "min-h-12", textClass: "text-[16px]" },

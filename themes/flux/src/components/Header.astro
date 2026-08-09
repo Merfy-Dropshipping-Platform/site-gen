@@ -156,6 +156,10 @@ const navLinkBase = "font-roboto-flex text-[16px] font-light leading-normal tran
 // (им набраны абзацы). На --color-text активный пункт выцветал до серого и
 // переставал отличаться от неактивных. menuColorScheme по-прежнему их перекрашивает.
 const navActiveCls = "text-[rgb(var(--color-heading,0_0_0))]";
+// Idle-цвет: канон #cccccc. Перекраску при явной «Цветовой схеме меню» делает
+// CSS-правило в global.css ([data-nav-inline][class*=color-scheme] a) — схему
+// на контейнер вешает и ПАТЧЕР превью без пере-рендера, поэтому чисто классами
+// в разметке это не решается (ловля theme-registry 2026-08-06).
 const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]";
 ---
 

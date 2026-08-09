@@ -698,6 +698,20 @@ export class PreviewController {
       /<head(\s[^>]*)?>/i,
       (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
     );
+    // Same-origin база API для storefront-скриптов превью (каталог/рассылка/
+    // корзина): превью всегда отдаётся через gateway (прод: gateway.merfy.ru,
+    // локальный контур: localhost:3110) → location.origin верен в обеих средах.
+    // Без этого хардкод-дефолт https://gateway.merfy.ru гнал гидрацию каталога
+    // ЛОКАЛЬНОГО стенда на прод (store_id там нет → пустой ответ → вечное демо).
+    // НЕ пустая строка: потребители делают `base || прод-дефолт`, и '' (falsy)
+    // снова уводил на прод. В head, ДО инлайнов секций — те читают базу при
+    // исполнении (ловля theme-registry 2026-08-09).
+    html = html.replace(
+      /<head(\s[^>]*)?>/i,
+      (m) =>
+        `${m}<script>window.__MERFY_API_BASE__ = window.__MERFY_API_BASE__ || location.origin;` +
+        `window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: ${JSON.stringify(siteId)}, apiUrl: location.origin + '/api' };</script>`,
+    );
     // Тема витрины для express «Купить сейчас»: блок Product (общий) пишет
     // sessionStorage["<тема>:buynow"], тот же ключ читает checkout (и превью-чекаут
     // = полный theme-port checkout). Зеркалит build-инжект window.__MERFY_THEME__ на

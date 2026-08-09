@@ -18,6 +18,9 @@ const linkText = p.link?.text ?? p.linkText ?? "Перейти";
 // Дефолт (нет пропа) = large (48/16) — дословно прежняя полоса верстальщика.
 const size = typeof p.size === "string" ? p.size : "large";
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	// 'thin' — additive-значение общей панели (084 vanilla pilot); rose его не
+	// мапила и молча рендерила как large (ловля theme-registry 2026-08-06).
+	thin: { mh: "min-h-6", text: "text-[11px]" },
 	small: { mh: "min-h-8", text: "text-[12px]" },
 	medium: { mh: "min-h-10", text: "text-[14px]" },
 	large: { mh: "min-h-12", text: "text-[16px]" },

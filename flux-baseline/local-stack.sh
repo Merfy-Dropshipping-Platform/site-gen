@@ -16,10 +16,22 @@ WORKTREE="$MERFY/sites/.worktrees/flux-constructor-live-markup"
 RUN=/tmp/merfy-local-logs
 mkdir -p "$RUN"
 
+# Клон эталонной вёрстки (репо Merfy-Dropshipping-Platform/flux-theme,
+# закреплённый коммит e29b70920ffe4469744386b51b9c8ee0fcf68bd0 = HEAD main =
+# то, что раздаёт flux.merfy.ru). Лежит вне проекта — это read-only эталон для
+# сравнения, не наш код.
+#
+# Раньше жил в scratchpad сессии — тот каталог удаляется вместе с сессией, и
+# контур переставал подниматься. Домашний каталог переживает и сессию, и очистку
+# /tmp. Пересоздать при утере:
+#   gh repo clone Merfy-Dropshipping-Platform/flux-theme ~/.merfy-refs/flux-theme
+#   cd ~/.merfy-refs/flux-theme && git checkout e29b7092 && pnpm install
+VERSTKA_DIR="$HOME/.merfy-refs/flux-theme"
+
 # имя:порт
 # Порт конструктора — 3200: 3000 бывает занят другим проектом, а 3200 уже
 # перечислен в FRONTEND_ORIGIN gateway (CORS), менять ничего не надо.
-SERVICES=(user:3111 billing:3112 product:3113 gateway:3110 sites:3114 constructor:3200)
+SERVICES=(user:3111 billing:3112 product:3113 gateway:3110 sites:3114 constructor:3200 verstka:4321)
 
 port_of() { local s=$1; for e in "${SERVICES[@]}"; do [ "${e%%:*}" = "$s" ] && echo "${e##*:}" && return; done; }
 pidfile() { echo "$RUN/$1.pid"; }
@@ -33,7 +45,7 @@ alive() {
 health() {
   local p; p=$(port_of "$1")
   local url="http://localhost:$p/health"
-  [ "$1" = "constructor" ] && url="http://localhost:$p/"
+  { [ "$1" = "constructor" ] || [ "$1" = "verstka" ]; } && url="http://localhost:$p/"
   curl -s -o /dev/null -w "%{http_code}" --max-time 4 "$url" 2>/dev/null
 }
 
@@ -84,6 +96,8 @@ start_one() {
         nohup node dist/src/main.js < /dev/null > "$RUN/sites.log" 2>&1 & echo $! > "$(pidfile sites)"; disown ) ;;
     constructor)
       ( cd "$MERFY/constructor" && nohup npx vite --port 3200 < /dev/null > "$RUN/constructor.log" 2>&1 & echo $! > "$(pidfile constructor)"; disown ) ;;
+    verstka)
+      ( cd "$VERSTKA_DIR" && nohup npx astro dev --port 4321 --host < /dev/null > "$RUN/verstka.log" 2>&1 & echo $! > "$(pidfile verstka)"; disown ) ;;
     *) echo "  неизвестный сервис: $s"; return 1 ;;
   esac
   # `$!` — это pid подоболочки, а не самого node (её `cd … && nohup node` порождает
@@ -134,7 +148,7 @@ stop_one() {
 case "${1:-status}" in
   start)
     shift
-    targets=("$@"); [ ${#targets[@]} -eq 0 ] && targets=(user billing gateway sites constructor)
+    targets=("$@"); [ ${#targets[@]} -eq 0 ] && targets=(user billing gateway sites constructor verstka)
     for s in "${targets[@]}"; do
       start_one "$s"
       # gateway поднимаем после user/billing: он ждёт их по RabbitMQ
@@ -145,7 +159,7 @@ case "${1:-status}" in
     ;;
   stop)
     shift
-    targets=("$@"); [ ${#targets[@]} -eq 0 ] && targets=(constructor sites gateway billing user)
+    targets=("$@"); [ ${#targets[@]} -eq 0 ] && targets=(verstka constructor sites gateway billing user)
     for s in "${targets[@]}"; do stop_one "$s"; done
     ;;
   restart)

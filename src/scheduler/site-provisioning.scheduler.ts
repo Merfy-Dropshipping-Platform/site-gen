@@ -36,6 +36,17 @@ export class SiteProvisioningScheduler implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    const enabled = (
+      process.env.SITE_PROVISIONING_CRON_ENABLED ?? "true"
+    ).toLowerCase();
+    if (enabled === "false") {
+      this.migrationDone = true;
+      this.logger.log(
+        "Orphaned sites migration skipped (SITE_PROVISIONING_CRON_ENABLED=false)",
+      );
+      return;
+    }
+
     // Запускаем миграцию сайтов без subdomain/Coolify при старте (один раз)
     if (!this.migrationDone) {
       this.migrationDone = true;
@@ -71,6 +82,13 @@ export class SiteProvisioningScheduler implements OnModuleInit {
    */
   @Cron("*/10 * * * *")
   async reapOrphanedSites() {
+    if (
+      (process.env.SITE_PROVISIONING_CRON_ENABLED ?? "true").toLowerCase() ===
+      "false"
+    ) {
+      return;
+    }
+
     if (!this.migrationDone || this.isReaperRunning) {
       return;
     }

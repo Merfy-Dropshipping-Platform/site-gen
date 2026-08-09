@@ -2,6 +2,10 @@
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
 import { SITE_TITLE } from "../consts";
+import {
+	roseFooterHeadingStyle,
+	roseFooterTextClass,
+} from "../lib/section-settings";
 
 const today = new Date();
 
@@ -48,6 +52,37 @@ const newsletterEnabled = !(
 	p.newsletter &&
 	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
+
+// Оживление полей панели: заголовок/текст рассылки из пропов (Figma 314-34558 «Заголовок»/
+// «Текст»), fallback на литералы верстальщика → без правок футер байт-в-байт как раньше.
+const newsletterHeadingText =
+	typeof p.heading?.text === "string" && p.heading.text.trim() ? p.heading.text : "Подпишитесь на нашу рассылку";
+const newsletterText =
+	typeof p.text?.content === "string" && p.text.content.trim()
+		? p.text.content
+		: "Получайте информацию от нашего бренда";
+const newsletterHeadingSizeStyle = roseFooterHeadingStyle(p.heading?.size);
+const newsletterTextSizeCls = roseFooterTextClass(p.text?.size);
+// item 1 — выравнивание блока рассылки, ОДНО значение на десктоп И адаптив. Классы
+// ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left (раньше был захардкожен text-left + @media center).
+const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+const nlSectionAlignCls = _AL_ITEMS[_ca];
+const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
+// «Выравнивание» центрирует ГРУППУ колонок (ЦЕНТРИРОВАННЫЙ БЛОК, равные поля по краям —
+// юзер выбрал этот вариант). center → секция justify-center + узкий равный gap (колонки
+// вместе по центру), контент внутри колонок остаётся СЛЕВА (естественно). left (дефолт) =
+// нав слева / контакты справа (justify-between, текущий); right = группа к правому краю.
+// Классы литералами (Tailwind JIT).
+const colsJustifyCls = _ca === "center" ? "lg:justify-center lg:gap-24" : _ca === "right" ? "lg:justify-end" : "lg:justify-between";
+const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-[200px]";
+// center = центрированный блок колонок И контент ВНУТРИ блоков по центру (юзер: «когда по
+// центру, и контент блоков был по центру»). right = к правому краю. left (дефолт) = слева/справа.
+const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
+const contactGroupCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "lg:items-end lg:text-right";
+const contactTextCls = _ca === "center" ? "text-center" : _ca === "right" ? "text-right" : "lg:text-right";
+const contactJustifyCls = _ca === "center" ? "justify-center" : _ca === "right" ? "justify-end" : "lg:justify-end";
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только
@@ -130,25 +165,38 @@ const footerPadStyle = pad
 const footerContainerCls = pad
 	? "mx-auto w-full max-w-[1920px] px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]"
 	: "mx-auto w-full max-w-[1920px] px-4 pb-20 pt-20 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]";
+
+// Применяем СВОЮ colorScheme на <footer> (как base Footer.astro). Иначе hot-render
+// одиночного блока в превью конструктора (без scheme-обёртки композитора) берёт :root
+// = тёмный BASE_DEFAULT → ЧЁРНЫЙ футер. На live обёртка композитора даёт ту же схему —
+// дубль безвреден. Пустой проп → :root (как раньше).
+const footerSchemeClass =
+	typeof p.colorScheme === "string" && p.colorScheme
+		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
+		: "";
 ---
 
-<footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
+<footer class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
 			{newsletterEnabled && (
-			<section class="flex w-full flex-col gap-5" aria-labelledby="newsletter-heading">
-				<div class="flex max-w-[1320px] flex-col gap-2 text-left">
+			<section class={`flex w-full flex-col gap-5 ${nlSectionAlignCls}`} aria-labelledby="newsletter-heading">
+				<div class={`flex max-w-[1320px] flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
-						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap !text-[clamp(14px,2.2vw,20px)]"
+						class="rose-title !font-bold w-full min-w-0 max-lg:whitespace-normal lg:whitespace-nowrap"
+						style={newsletterHeadingSizeStyle}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="newsletter"
 					>
-						Подпишитесь на нашу рассылку
+						{newsletterHeadingText}
 					</h2>
-					<p class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]">
-						Получайте информацию от нашего бренда
+					<p class:list={[
+						"font-manrope font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]",
+						newsletterTextSizeCls,
+					]}>
+						{newsletterText}
 					</p>
 				</div>
 
@@ -184,12 +232,12 @@ const footerContainerCls = pad
 			)}
 
 			<section
-				class="flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-between"
+				class={`flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls}`}
 				aria-label="Навигация по сайту"
 			>
-				<div class="flex flex-col gap-10 sm:flex-row sm:gap-[200px]">
+				<div class={`flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`}>
 					<ul
-						class="flex flex-col gap-3"
+						class={`flex flex-col gap-3 ${colInnerCls}`}
 						role="list"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="996"
@@ -214,7 +262,7 @@ const footerContainerCls = pad
 
 					{(infoColTitle || infoLinks.length > 0) && (
 					<ul
-						class="flex flex-col gap-3"
+						class={`flex flex-col gap-3 ${colInnerCls}`}
 						role="list"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="995"
@@ -240,7 +288,7 @@ const footerContainerCls = pad
 				</div>
 
 				<div
-					class="flex flex-col gap-6 lg:max-w-[min(100%,430px)] lg:items-end lg:text-right"
+					class={`flex flex-col gap-6 lg:max-w-[min(100%,430px)] ${contactGroupCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="994"
 					data-puck-subsection-field="socialColumn"
@@ -250,7 +298,7 @@ const footerContainerCls = pad
 						{phone && (
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] lg:text-right"
+							class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] ${contactTextCls}`}
 						>
 							{phone}
 						</a>
@@ -258,20 +306,20 @@ const footerContainerCls = pad
 						{email && (
 						<a
 							href={`mailto:${email}`}
-							class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] lg:text-right"
+							class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] ${contactTextCls}`}
 						>
 							{email}
 						</a>
 						)}
 						{contactFields.map((f) => (
-						<div class="font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] lg:text-right">
+						<div class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))] ${contactTextCls}`}>
 							<span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}
 						</div>
 						))}
 					</div>
 					)}
 					{socials.length > 0 && (
-					<div class="flex flex-wrap items-center gap-2 lg:justify-end">
+					<div class={`flex flex-wrap items-center gap-2 ${contactJustifyCls}`}>
 						{socials.map((s) => (
 							<a
 								href={s.href}
@@ -286,7 +334,7 @@ const footerContainerCls = pad
 					</div>
 					)}
 					{paymentEnabled && (
-					<div class="flex flex-wrap items-center gap-3 lg:justify-end" aria-label="Способы оплаты">
+					<div class={`flex flex-wrap items-center gap-3 ${contactJustifyCls}`} aria-label="Способы оплаты">
 						<img src={withBase("/icons/MasterCard.svg")} alt="Mastercard" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/Visa.png")} alt="Visa" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/MIR.png")} alt="МИР" class="h-6 w-auto shrink-0" decoding="async" />
@@ -318,40 +366,19 @@ const footerContainerCls = pad
 	   - ссылки навигации/инфо/контактов — Manrope 12–14, text-center.
 	   - колонки навигации/контактов центрируются как блоки. */
 	@media (max-width: 639.98px) {
-		:global([aria-labelledby="newsletter-heading"]) {
-			align-items: center;
-		}
-
-		:global([aria-labelledby="newsletter-heading"] > div:first-child) {
-			text-align: center;
-			align-items: center;
-		}
 
 		:global(#newsletter-heading) {
 			font-weight: 400 !important;
 		}
 
-		:global([aria-labelledby="newsletter-heading"] > div:first-child > p) {
-			font-size: 12px !important;
-			line-height: 1 !important;
-		}
-
 		:global([data-newsletter-form]) {
 			height: 40px !important;
 			min-height: 40px !important;
-			margin-left: auto;
-			margin-right: auto;
 		}
 
-		:global([aria-label="Навигация по сайту"]) {
-			align-items: center;
-			text-align: center;
-		}
-
-		:global([aria-label="Навигация по сайту"] ul) {
-			align-items: center;
-		}
-
+		/* Выравнивание колонок/формы на мобиле контролирует «Выравнивание» (contentAlign),
+		   как на десктопе — принудительное @media-центрирование убрано (юзер: «на мобилу
+		   так же как на десктоп»). Остались только размеры шрифта. */
 		:global([aria-label="Навигация по сайту"] a) {
 			font-size: 14px !important;
 		}

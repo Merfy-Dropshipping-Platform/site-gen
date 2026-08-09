@@ -1,0 +1,12 @@
+{
+  "rose": {
+    "siteId": "e03dd420-febf-4499-9fc4-992412cc1b99",
+    "tenantId": "8bcf6fe3-862d-4757-a085-f60f1c43367d",
+    "note": "Rose Local (реестр) — сид из packages/theme-rose/pages/*.json; тенант e2e-аккаунта (перенесён 2026-08-07), товары общие с flux"
+  },
+  "flux": {
+    "siteId": "132d3a3e-a28f-40b7-98fa-a0200151cfb8",
+    "tenantId": "8bcf6fe3-862d-4757-a085-f60f1c43367d",
+    "note": "локальный e2e-сайт flux, 50 товаров"
+  }
+}

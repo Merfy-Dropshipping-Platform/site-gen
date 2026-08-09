@@ -1,0 +1,26 @@
+{
+  "label": "verstka-local",
+  "url": "http://localhost:4321/",
+  "capturedAtViewports": [
+    {
+      "viewport": "1280",
+      "sections": 8,
+      "documentHeight": 4726,
+      "sha256": "87bf3dadeaf2cbb9472d780c0b65d2164303eb4d605fb60c777e31e97cd267fb",
+      "reproducible": null,
+      "horizontalOverflow": false,
+      "consoleErrors": 0,
+      "failed404": 0
+    }
+  ],
+  "captureEnv": {
+    "engine": "chromium (playwright bundled)",
+    "deviceScaleFactor": 1,
+    "colorScheme": "light",
+    "reducedMotion": "reduce",
+    "locale": "ru-RU",
+    "timezone": "Europe/Moscow",
+    "animations": "disabled via injected CSS"
+  },
+  "reproducible": true
+}

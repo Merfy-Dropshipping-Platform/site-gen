@@ -55,6 +55,9 @@ export const FooterSchema = z.object({
     content: z.string(),
     size: z.enum(['small', 'medium', 'large']),
   }),
+  // Выравнивание блока рассылки (заголовок+текст) — ОДНО значение, применяется на
+  // десктопе И адаптиве (item 1).
+  contentAlign: z.enum(['left', 'center', 'right']).optional(),
   navigationColumn: z.object({
     title: z.string(),
     links: z.array(FooterLinkSchema),
@@ -119,47 +122,97 @@ export const FooterPuckConfig = {
         placeholder: { type: 'hidden', label: '' },
       },
     },
+    // Figma 314-34558: под «Рассылка» — Заголовок(aiText) / Размер заголовка / Текст(aiText)
+    // / Размер текста, ВИДИМЫМИ в панели. `label:''` → под-поля плоскими группами (как Figma),
+    // без дубля-обёртки «Заголовок». heading/text питают заголовок+описание рассылки.
     heading: {
       type: 'object',
-      label: 'Заголовок',
-      hiddenInMainPanel: true,
+      label: '',
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер заголовка', options: sizeOptions },
-        alignment: { type: 'alignment', label: 'Выравнивание' },
+        // Выравнивание вынесено в top-level responsive-контрол (contentAlign/contentAlignMobile).
+        alignment: { type: 'hidden', label: '' },
       },
     } as any,
     text: {
       type: 'object',
-      label: 'Текст',
-      hiddenInMainPanel: true,
+      label: '',
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер текста', options: sizeOptions },
       },
     } as any,
+    // item 1: одно выравнивание блока рассылки (десктоп И адаптив).
+    contentAlign: { type: 'alignment', label: 'Выравнивание' },
     // Hidden — нет в Figma 314-34558.
     siteTitle: { type: 'hidden', label: '' },
     bottomStrip: { type: 'hidden', label: '' },
-    // Columns hidden из main по Figma 314-34558 (footer-specific advanced).
+    // «Весь футер» редактируемый — ручные части колонок/соцсетей/копирайта. АВТО из
+    // настроек магазина (applyFooterData, НЕ в панели): Информация-ссылки = политики
+    // (site_policy), соц. почта/телефон = контакты (site_contacts), платёжки = касса.
     navigationColumn: {
-      type: 'hidden' as const,
-      label: '',
+      type: 'object',
+      label: 'Навигация',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
         links: linkArrayField,
       },
-    },
+    } as any,
     informationColumn: {
-      type: 'hidden' as const,
-      label: '',
+      type: 'object',
+      label: 'Информация',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
-        links: linkArrayField,
+        // Ссылки этой колонки = политики магазина (тянутся автоматически из настроек).
+        links: { type: 'hidden', label: '' },
       },
-    },
-    socialColumn: { type: 'hidden' as const, label: '' },
-    copyright: { type: 'hidden' as const, label: '' },
+    } as any,
+    socialColumn: {
+      type: 'object',
+      label: 'Соцсети',
+      objectFields: {
+        title: { type: 'text', label: 'Заголовок колонки' },
+        socialLinks: {
+          type: 'array',
+          label: 'Ссылки на соцсети',
+          arrayFields: {
+            platform: {
+              type: 'select',
+              label: 'Соцсеть',
+              options: [
+                { label: 'Telegram', value: 'telegram' },
+                { label: 'VK', value: 'vk' },
+                { label: 'YouTube', value: 'youtube' },
+                { label: 'TikTok', value: 'tiktok' },
+                { label: 'Дзен', value: 'dzen' },
+              ],
+            },
+            href: { type: 'text', label: 'Ссылка' },
+          },
+          defaultItemProps: { platform: 'telegram', href: '' },
+          max: 6,
+        },
+        // Почта/доп. контакты — автоматически из «Информация о компании» (настройки).
+        email: { type: 'hidden', label: '' },
+      },
+    } as any,
+    copyright: {
+      type: 'object',
+      label: 'Копирайт',
+      objectFields: {
+        companyName: { type: 'text', label: 'Название компании' },
+        poweredBy: { type: 'text', label: 'Подпись' },
+        showYear: {
+          type: 'toggle',
+          label: 'Показывать год',
+          options: [
+            { label: 'Да', value: true },
+            { label: 'Нет', value: false },
+          ],
+        },
+      },
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },
@@ -179,6 +232,8 @@ export const FooterPuckConfig = {
     },
     heading: { text: '', size: 'small', alignment: 'center' },
     text: { content: '', size: 'small' },
+    // item 1 default: выравнивание слева (одно значение на десктоп+адаптив).
+    contentAlign: 'left',
     navigationColumn: {
       title: 'Навигация',
       links: [

@@ -21,11 +21,17 @@ const sectionSubtitle = p.subtitle ?? "";
 // [&_h2]:!text-[ бьётся ID-правилом #collections-title{...!important} (особенно на
 // мобиле). Мобильный размер — через --size-section-heading-m (паттерн .rose-title /
 // Gallery): small→12px, large→17px, дефолт→14px (fallback).
+// Десктоп — утилитой [&_h2]:!text-[Npx] (как рабочий subtitleSize ниже), НЕ
+// ID-правилом: ID-правило из <style> компонента бесслойное, а DS-утилита
+// !text-[20px] лежит в @layer utilities — для !important слоёный побеждает
+// бесслойный (CSS Cascade 5), т.е. ID-правило молча проигрывало и «Размер
+// заголовка» не действовал (ловля theme-registry 2026-08-06, движок-пруф).
+// Переменные остаются для мобильного медиа-правила в <style> ниже.
 const headingSizeCls =
 	p.headingSize === "small"
-		? " [--size-section-heading:17px] [--size-section-heading-m:12px]"
+		? " [&_h2]:!text-[17px] [--size-section-heading:17px] [--size-section-heading-m:12px]"
 		: p.headingSize === "large"
-			? " [--size-section-heading:24px] [--size-section-heading-m:17px]"
+			? " [&_h2]:!text-[24px] [--size-section-heading:24px] [--size-section-heading-m:17px]"
 			: "";
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
 // Desktop — утилита [&_p]:!text-[ (работает на десктопе); мобиле — через

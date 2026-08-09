@@ -775,6 +775,20 @@ export class PreviewService {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Preview</title>
+  <script>
+    // Same-origin база API — В HEAD, ДО скриптов секций body (каталог читает
+    // __MERFY_API_BASE__ при исполнении своего инлайна; инжект в конце body
+    // опаздывал). Превью всегда отдаётся через gateway (прод: gateway.merfy.ru,
+    // локально: localhost:3110) → location.origin верен в обеих средах.
+    // НЕ пустая строка: потребители делают base || прод-дефолт, '' как falsy
+    // уводил гидрацию локального стенда на прод (вечное демо каталога;
+    // ловля theme-registry 2026-08-09).
+    window.__MERFY_API_BASE__ = window.__MERFY_API_BASE__ || location.origin;
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: ${JSON.stringify(input.siteId ?? '')},
+      apiUrl: location.origin + '/api'
+    };
+  </script>
   ${input.fontHead}
   <style>${previewTailwind}</style>
   <style id="__merfy_theme_css">${themeCss}</style>
@@ -789,10 +803,6 @@ export class PreviewService {
 <body>
   ${bodyHtml}
   <script>
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
-      shopId: ${JSON.stringify(input.siteId ?? '')},
-      apiUrl: 'https://gateway.merfy.ru/api'
-    };
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
   ${IDIOMORPH_INLINE}
@@ -1412,7 +1422,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
       heading: function (el, oldVal, newVal) {
         var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
         var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
-        if ((oldObj.size || 'small') !== (newObj.size || 'small')) return false;
+        // Size сравниваем БЕЗ фолбэка: отсутствующий size рендерится веткой
+        // large (дефолт темы), а фолбэк '|| small' считал его равным явному
+        // 'small' → патчился только текст и смена кегля молча не применялась
+        // (ловля реестра theme-registry, 2026-08-06). Любой переход
+        // default↔явное значение обязан уходить в server fetch.
+        if ((oldObj.size || '') !== (newObj.size || '')) return false;
         var h1 = el.querySelector('h1[data-puck-subsection-field="heading"]');
         if (!h1) return false;
         h1.textContent = newObj.text || '';
@@ -1421,7 +1436,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
       text: function (el, oldVal, newVal) {
         var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
         var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
-        if ((oldObj.size || 'small') !== (newObj.size || 'small')) return false;
+        // См. heading выше — тот же баг фолбэка size.
+        if ((oldObj.size || '') !== (newObj.size || '')) return false;
         var p = el.querySelector('p[data-puck-subsection-field="text"]');
         if (!p) return false;
         p.textContent = newObj.content || '';

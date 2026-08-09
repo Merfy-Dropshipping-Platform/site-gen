@@ -33,15 +33,31 @@ const linkHref =
 
 // Канон size → родная лестница DS NtPromoBanner (textSize): small = min-h-8/text-12,
 // medium = min-h-10/text-14, large = min-h-12/text-16. 'large' И отсутствие пропа =
-// lg-ЛИТЕРАЛ (flux зовёт DS без textSize → lg). 'thin' — узкая полоса py-2 с
-// минимальным текстом 12px. Цвета — токены с пиксель-фоллбеком родных #000/#FFF (§7).
+// lg-ЛИТЕРАЛ (flux зовёт DS без textSize → lg). 'thin' — узкая полоса py-1 с
+// минимальным текстом 12px (py-2 давал 34px — ТОЛЩЕ small min-h-8=32, лестница
+// была немонотонной; ловля theme-registry 2026-08-06).
+// Цвета — токены с пиксель-фоллбеком родных #000/#FFF (§7).
 const size = p.size;
 const heightCls =
-	size === "thin" ? "py-2" : size === "small" ? "min-h-8" : size === "medium" ? "min-h-10" : "min-h-12";
+	size === "thin" ? "py-1" : size === "small" ? "min-h-8" : size === "medium" ? "min-h-10" : "h-12";
 const textSizeCls =
-	size === "thin" || size === "small" ? "text-[12px]" : size === "medium" ? "text-[14px]" : "text-[16px]";
+	size === "thin" || size === "small"
+		? "text-[12px]"
+		: size === "medium"
+			? "text-[14px]"
+			: "text-[12px] md:text-[16px]";
 const ntTextSize = size === "thin" || size === "small" ? "sm" : size === "medium" ? "md" : "lg";
-const rootCls = `bg-[rgb(var(--color-bg,0_0_0))] text-[rgb(var(--color-text,255_255_255))] flex items-center justify-center overflow-hidden px-4 md:px-20 xl:px-[300px] 2xl:px-[680px] ${heightCls}`;
+// У верстальщиков дефолт Flux — фирменный navy #1e2952. Если мерчант явно
+// выбирает colorScheme в конструкторе, схема снова становится владельцем фона.
+const hasExplicitColorScheme =
+	typeof p.colorScheme === "string" && p.colorScheme.trim().length > 0;
+const backgroundCls = hasExplicitColorScheme
+	? "bg-[rgb(var(--color-bg))]"
+	: "bg-[#1e2952]";
+const textColorCls = hasExplicitColorScheme
+	? "text-[rgb(var(--color-text))]"
+	: "text-white";
+const rootCls = `${backgroundCls} ${textColorCls} flex items-center justify-center overflow-hidden px-4 md:px-20 xl:px-[300px] 2xl:px-[680px] ${heightCls}`;
 
 // Канон textTransform: у flux полоса БЕЗ uppercase — дефолт-ветка без капса
 // (инверсия bloom); явный 'uppercase' добавляет. Шрифт DS font-roboto ≈ системный —

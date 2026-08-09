@@ -13,7 +13,9 @@ const id = p.id;
 // subtitle рендерится как есть; пустой subtitle → NtSectionHeading его не выводит.
 const sectionTitle = p.heading?.text ?? p.heading ?? "Галерея";
 const sectionSubtitle =
-	p.text?.content ?? p.subtitle?.content ?? p.subtitle ?? "";
+	(typeof p.text === "string" ? p.text : p.text?.content) ??
+	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
+	"";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default) и отсутствие = clamp верстальщика (14px→20px) дословно;
@@ -21,12 +23,19 @@ const sectionSubtitle =
 // Размер — через ПРИВАТНУЮ --gallery-heading-size (её читает #gallery-title ниже).
 // НЕ глобальная --size-section-heading: она задана в :root=20px → fallback clamp не
 // сработал бы и адаптивный дефолт-clamp поехал бы в фикс. 20px (регресс на мобиле).
-const headingSize = p.heading?.size ?? p.headingSize;
+// top-level (живой селект панели) приоритетнее legacy nested — порт класса
+// cc64b373/422d3aa5 с origin/main (worktree отставал).
+const headingSize = p.headingSize ?? p.heading?.size;
+// Десктоп-кегль ДОПОЛНИТЕЛЬНО утилитой [&_h2]:!text-[…]: ID-правило
+// #gallery-title из <style> бесслойное и для !important ПРОИГРЫВАЕТ
+// layered-утилите DS !text-[20px] (@layer utilities, CSS Cascade 5) — тот же
+// каскадный баг, что Collections (ловля theme-registry 2026-08-06).
+// Переменная остаётся для мобильных медиа-правил в <style> ниже.
 const headingSizeCls =
 	headingSize === "small"
-		? " [--gallery-heading-size:clamp(12px,3.2vw,17px)]"
+		? " [--gallery-heading-size:clamp(12px,3.2vw,17px)] [&_h2]:!text-[length:clamp(12px,3.2vw,17px)]"
 		: headingSize === "large"
-			? " [--gallery-heading-size:clamp(17px,4.6vw,24px)]"
+			? " [--gallery-heading-size:clamp(17px,4.6vw,24px)] [&_h2]:!text-[length:clamp(17px,4.6vw,24px)]"
 			: "";
 // Канон textSize (top-level приоритетнее legacy text.size): 'medium' (canon-default)
 // и отсутствие = 16px верстальщика; small → 14px, large → 19px.

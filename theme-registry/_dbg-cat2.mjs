@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b=await chromium.launch({headless:true});
+const pg=await b.newPage({viewport:{width:1400,height:900}});
+const msgs=[]; pg.on('console',m=>{if(m.type()==='error'||m.type()==='warning')msgs.push(m.type()+': '+m.text().slice(0,120));});
+const reqs=[]; pg.on('response',r=>{if(/storefront-data|products.json|store\/(products|filters)/.test(r.url()))reqs.push(r.status()+' '+r.url().slice(21,120));});
+await pg.goto('http://localhost:3110/api/sites/e03dd420-febf-4499-9fc4-992412cc1b99/preview?page=catalog',{waitUntil:'domcontentloaded',timeout:60000});
+await pg.waitForTimeout(8000);
+const r=await pg.evaluate(()=>({siteId:window.__MERFY_SITE_ID__, lis:[...document.querySelectorAll('li[data-product-id]')].filter(l=>!l.closest('template')).slice(0,4).map(l=>l.getAttribute('data-product-id').slice(0,12))}));
+console.log('siteId:',r.siteId,'· карточки:',JSON.stringify(r.lis));
+console.log('запросы данных:',JSON.stringify(reqs.slice(0,6),null,1));
+console.log('консоль:',JSON.stringify(msgs.slice(0,6),null,1));
+await b.close();

@@ -161,6 +161,25 @@ const displayBrand =
 
 const displayName = isPlaceholder ? PLACEHOLDER_NAME : realProduct.name || realProduct.title || PLACEHOLDER_NAME;
 
+// Сабпанели «Название»/«Текст» → размер кегля (общий puckConfig title.size /
+// text.size; лестница в масштабе flux-вёрстки, дефолт = канон верстальщиков
+// как был: title 20/24, text 14/16). Порт не читал эти поля — настройки были
+// мертвы (ловля theme-registry 2026-08-06, паритет с theme-base Product).
+const titleSizeProp = p.title?.size;
+const titleSizeCls =
+	titleSizeProp === "small"
+		? "text-[16px] md:text-[20px]"
+		: titleSizeProp === "large"
+			? "text-[23px] md:text-[29px]"
+			: "text-[20px] md:text-[24px]";
+const textSizeProp = p.text?.size;
+const textSizeCls =
+	textSizeProp === "small"
+		? "text-[12px] md:text-[14px]"
+		: textSizeProp === "large"
+			? "text-[16px] md:text-[18px]"
+			: "text-[14px] md:text-[16px]";
+
 // — Варианты: peреиспользуем storefront-hydrate.ts (без дублирования логики).
 const combos: any[] = isPlaceholder
 	? []
@@ -375,7 +394,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 				<div class="flex flex-col gap-2">
 					{displayBrand && (
 						<p
-							class="font-roboto-flex text-[14px] font-light uppercase leading-normal text-[#999999] md:text-[16px]"
+							class={`font-roboto-flex ${textSizeCls} font-light uppercase leading-normal text-[#999999]`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="text"
@@ -384,7 +403,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 						</p>
 					)}
 					<h2
-						class="font-roboto-flex text-[20px] font-light uppercase leading-normal text-[#000000] md:text-[24px]"
+						class={`font-roboto-flex ${titleSizeCls} font-light uppercase leading-normal text-[#000000]`}
 						data-cfg-name
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"

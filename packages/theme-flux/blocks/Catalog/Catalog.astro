@@ -176,8 +176,20 @@ const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto 
 //     сторон (фото/кнопка inset = ширина cardW−24, кнопка НЕ во всю ширину),
 //     карточка сохраняет surface-фон. Применяется И в SSG (FluxProductCard
 //     через prop cardContainerOn), И в client renderCardHtml (define:vars) — parity.
-const cardContainerOn =
-  productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+// Tri-state: у фона карточки flux ДВА хозяина — theme-wide правило
+// [data-nt=flux-product-card]{background:var(--product-card-bg,#fbfbfb)} в
+// global.css (Theme Settings «Карточки товара») и эта блочная настройка.
+// Явное 'false' обязано ГАСИТЬ плашку (inline transparent — иначе глобальный
+// фоллбэк fbfbfb делал настройку мёртвой; ловля theme-registry 2026-08-09),
+// явное 'true' — включать, НЕ ЗАДАНО — канон темы (var действует).
+const cardBgProp = productCard?.cardBackground;
+const cardContainerState =
+  cardBgProp === "true" || cardBgProp === true
+    ? "on"
+    : cardBgProp === "false" || cardBgProp === false
+      ? "off"
+      : "auto";
+const cardContainerOn = cardContainerState === "on";
 
 // (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога. unset → класс не задаётся,
 //     контейнер наследует схему секции.
@@ -239,7 +251,7 @@ const skeletons = Array.from({ length: skeletonCount });
           btnBg={btnBg}
           btnFg={btnFg}
           btnBorder={btnBorder}
-          cardContainerOn={cardContainerOn}
+          cardContainerState={cardContainerState}
         />
       </li>
     ))}
@@ -521,7 +533,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn, cardContainerOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn, cardContainerState }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build — generatePuckCatalogPage импортит блок, но его ESM-script не
   // попадает в bundle → на проде остаётся сырой путь Catalog.astro?astro&type=script
@@ -705,9 +717,12 @@ const skeletons = Array.from({ length: skeletonCount });
   // width:100% становится cardW−24, НЕ во всю ширину). false (дефолт) → флеш к
   // краям, фон не задаётся, кнопка край-в-край. inline-style (arbitrary Tailwind
   // в client-строках НЕ компилится) — зеркалит FluxProductCard.astro (parity).
-  const CARD_CONTAINER_STYLE = cardContainerOn
-    ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);"
-    : "";
+  const CARD_CONTAINER_STYLE =
+    cardContainerState === "on"
+      ? "padding:12px;background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);"
+      : cardContainerState === "off"
+        ? "background:transparent;"
+        : "";
 
   // ─── Свотчи цвета / чипы памяти-размера / бейдж скидки (parity с эталоном
   //     FluxProductCard.astro + Popular storefront-hydrate.ts). Логика деривации
@@ -950,7 +965,7 @@ const skeletons = Array.from({ length: skeletonCount });
       `<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(p.id)}" aria-pressed="${wished ? "true" : "false"}" aria-label="В избранное" ` +
       `class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">` +
       `<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
-    return `<article class="group flex w-full flex-col gap-3 md:gap-4" data-nt="flux-product-card" data-card-container="${cardContainerOn ? "true" : "false"}" style="${CARD_CONTAINER_STYLE}" aria-label="${name}">
+    return `<article class="group flex w-full flex-col gap-3 md:gap-4" data-nt="flux-product-card" data-card-container="${cardContainerState}" style="${CARD_CONTAINER_STYLE}" aria-label="${name}">
   <div class="relative w-full">
   <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label="${name}">
     ${media}

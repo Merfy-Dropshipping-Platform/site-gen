@@ -242,10 +242,12 @@ const cartImage = view.gallery.hero?.src ?? '';
       data-photo-position={photoOnLeft ? 'left' : 'right'}
     >
       {/* MEDIA col. split раздвигается за счёт thumbs+main inline (auto-width).
-          Остальные макеты — фикс 652px на desktop (как до 091). */}
+          Остальные макеты — ширина из «Размера» секции (--product-main-image-size,
+          sizeVarsStyle выше: 440/552/640). Хардкод lg:w-[652px] был регрессией
+          a9b76a33 — «Размер» не двигал фото; фикс = порт bf62be92 с origin/main. */}
       <div class:list={[
         'w-full shrink-0',
-        layout === 'split' ? 'lg:w-auto' : 'lg:w-[652px]',
+        layout === 'split' ? 'lg:w-auto' : 'lg:w-[var(--product-main-image-size,552px)]',
       ]} data-product-images>
         <ProductGallery
           gallery={view.gallery}

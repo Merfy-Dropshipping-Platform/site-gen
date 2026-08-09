@@ -718,3 +718,13 @@ blockquote {
     text-align: var(--product-card-align, left) !important;
   }
 }
+@layer base {
+  /* «Цветовая схема меню»: при ЯВНОЙ схеме на инлайн-строке меню (класс вешает
+     рендер ИЛИ патчер превью без пере-рендера) пункты берут цвет текста схемы.
+     Без явной схемы правило неактивно — канон #cccccc нетронут. !important
+     нужен: утилита text-[#cccccc] лежит в @layer utilities и для normal-правил
+     побеждала бы base-слой (ловля theme-registry 2026-08-06). */
+  [data-nav-inline][class*="color-scheme"] a {
+    color: rgb(var(--color-text, 204 204 204)) !important;
+  }
+}

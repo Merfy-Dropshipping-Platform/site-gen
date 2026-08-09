@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const b=await chromium.launch({headless:true});
+const pg=await b.newPage();
+await pg.setContent(`<html><head><style>@layer utilities{.u{font-size:20px!important}}</style><style>#t{font-size:17px!important}</style></head><body><h2 id="t" class="u">X</h2></body></html>`);
+const fs1=await pg.evaluate(()=>getComputedStyle(document.getElementById('t')).fontSize);
+await pg.setContent(`<html><head><style>@layer utilities{.u{font-size:20px!important}.w .x{font-size:17px!important}}</style></head><body><div class="w"><h2 class="u x">X</h2></div></body></html>`);
+const fs2=await pg.evaluate(()=>getComputedStyle(document.querySelector('h2')).fontSize);
+console.log('unlayered #id!important vs layered .u!important →', fs1, '(17 = id выигрывает, 20 = слой)');
+console.log('layered (0,2,0)!important vs layered (0,1,0)!important →', fs2, '(ожидаем 17)');
+await b.close();

@@ -154,10 +154,13 @@ const heroHeightCls = {
 // Для контентной ветки — md-only лестница: высота полотна нужна ТОЛЬКО когда
 // картинка становится absolute-оверлеем; на мобиле высота = поток (aspect-[4/3]
 // картинки + блок-подложка контента). Старые sm:-значения переезжают на md:.
+// Мобильные высоты — КАНОН верстальщиков: полотно 380px с контентом-оверлеем
+// (мобстек «медиа сверху, контент ниже» был перенесён из rose и канону
+// противоречил — юзер-репорт 2026-08-08, скрин эталона localhost:4321@390).
 const heroHeightMdCls = {
-	large: "md:h-[480px] lg:aspect-[1920/810] lg:h-auto",
-	medium: "md:h-[395px] lg:h-[445px]",
-	small: "md:h-[305px] lg:h-[345px]",
+	large: "h-[380px] md:h-[480px] lg:aspect-[1920/810] lg:h-auto",
+	medium: "h-[315px] md:h-[395px] lg:h-[445px]",
+	small: "h-[245px] md:h-[305px] lg:h-[345px]",
 }[heroSize];
 // B2 (владелец, 2026-08-02): «Размер» менял только высоту полотна — кроп фото
 // «плющился»/съезжал. Причина: одиночная ветка ниже кадрирует ЛИТЕРАЛЬНЫМИ
@@ -210,9 +213,8 @@ const boxedCls = boxed
 // карточка (boxedCls) сама = плашка, обёртка ПРОЗРАЧНАЯ (только гаттер+зазор) —
 // иначе «контейнер в контейнере». «Контейнер» OFF → обёртка = сама подложка
 // (фон схемы + паддинги). Десктоп (md+) — всегда absolute-оверлей, прозрачно.
-const wrapperMobileCls = boxed
-	? "px-4 pt-6 pb-10"
-	: "bg-[rgb(var(--color-bg,245_245_245))] px-4 py-10";
+// (мобильная подложка-обёртка удалена вместе с мобстеком — контент снова
+// absolute-оверлей на всех вьюпортах; boxed-плашку несёт contentCls/boxedCls)
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (как rose Hero):
@@ -377,19 +379,19 @@ const paddingVars = p.padding
 		</section>
 	) : (
 <section
-	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${heroHeightMdCls}`}
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] pt-[var(--hero-pt,0px)] pb-[var(--hero-pb,0px)] ${heroHeightMdCls}`}
 	style={paddingVars}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 >
-	{/* #7 (мобстек, паритет rose «Shopify Image banner»): мобила — картинка блоком
-	    сверху (aspect-[4/3], в потоке), контент-подложка под ней (см. ниже). Десктоп
-	    (md+) — прежний оверлей: коробка сама уходит в absolute на всю секцию, а крой
-	    внутри неё (singleImageCropCls) переключается на калиброванный. */}
-	<div class="relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto">
+	{/* Канон верстальщиков: медиа = absolute-оверлей полотна на ВСЕХ вьюпортах
+	    (мобстек rose-манеры отменён — юзер-репорт 2026-08-08). Пара фото —
+	    Merfy-добавление: на десктопе две колонки, на мобиле только первое
+	    (два по 195px в ряд — нечитаемо, у верстальщиков пары нет). */}
+	<div class="absolute inset-0 z-0">
 		{
 			backgroundImage2 ? (
-				<div class="absolute inset-0 z-0 grid grid-cols-2 overflow-hidden">
+				<div class="absolute inset-0 z-0 grid grid-cols-1 overflow-hidden md:grid-cols-2">
 					<FluxPicture
 						src={backgroundImage}
 						alt={title}
@@ -402,7 +404,7 @@ const paddingVars = p.padding
 						alt=""
 						loading="eager"
 						fetchpriority="high"
-						class="size-full object-cover object-center"
+						class="hidden size-full object-cover object-center md:block"
 					/>
 				</div>
 			) : backgroundImage ? (
@@ -417,13 +419,12 @@ const paddingVars = p.padding
 		}
 	</div>
 
-	{/* Растворение фото в белый к нижней кромке (вёрстка Hero.astro:39) — дизайн-
-	    инвариант ТОЛЬКО десктоп-оверлея (мобила: текст не поверх фото — подложка
-	    ниже, дословный обрез коробки, растворять нечего). */}
+	{/* Растворение фото в белый к нижней кромке (вёрстка Hero.astro:39) —
+	    дизайн-инвариант оверлея, действует на всех вьюпортах (канон). */}
 	{
 		backgroundImage && !backgroundImage2 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[1] hidden bg-gradient-to-b from-transparent from-[85%] to-white md:block"
+				class="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-transparent from-[85%] to-white"
 				aria-hidden="true"
 			/>
 		)
@@ -432,16 +433,15 @@ const paddingVars = p.padding
 	{
 		overlayN > 0 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[2] hidden bg-black md:block"
+				class="pointer-events-none absolute inset-0 z-[2] bg-black"
 				style={`opacity:${overlayN / 100}`}
 			/>
 		)
 	}
 
-	{/* Контент: мобила — блок-подложка В ПОТОКЕ под картинкой (свой фон, см.
-	    wrapperMobileCls); десктоп (md+) — прежний absolute-оверлей поверх фото. */}
+	{/* Контент — absolute-оверлей поверх фото на всех вьюпортах (канон). */}
 	<div
-		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} ${wrapperMobileCls} md:absolute md:inset-0 md:bg-transparent md:px-4`}
+		class={`absolute inset-0 z-10 flex w-full flex-col px-4 ${hItemsCls} ${vJustifyCls}`}
 	>
 		<div class={contentCls} data-reveal>
 			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>

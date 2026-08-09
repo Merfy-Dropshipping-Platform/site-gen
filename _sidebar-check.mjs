@@ -1,0 +1,20 @@
+import { chromium } from 'playwright';
+const APP='http://localhost:3200', GW='http://localhost:3110';
+const SITE='132d3a3e-a28f-40b7-98fa-a0200151cfb8';
+const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:1600,height:1000},locale:'ru-RU'});
+await ctx.request.post(`${GW}/api/auth/sign-in/email`,{data:{email:'flux-e2e-test-local@example.com',password:'FluxE2ETest2026!'}});
+const p=await ctx.newPage();
+await p.addInitScript(()=>{ window.__msgs=[]; window.addEventListener('message',(e)=>{ try{ if(e.data&&e.data.type) window.__msgs.push(e.data.type+(e.data.blockId?':'+e.data.blockId:'')); }catch{} }); });
+await p.goto(`${APP}/?siteId=${SITE}`,{waitUntil:'domcontentloaded'});
+await p.waitForTimeout(15000);
+const box=await p.locator('iframe').first().boundingBox();
+const fr=p.frames().find(f=>f.url().includes('preview'));
+const inner=await fr.evaluate(()=>{const e=document.querySelector('[data-puck-component-id="Hero-home"]');const b=e.getBoundingClientRect();return {x:b.x,y:b.y,w:b.width,h:b.height,vw:window.innerWidth};});
+const k=box.width/inner.vw;
+// есть ли агент внутри iframe
+console.log('агент в iframe:', await fr.evaluate(()=>/select-block/.test(document.documentElement.innerHTML)?'да':'НЕТ'));
+await p.mouse.click(box.x+(inner.x+inner.w/2)*k, box.y+(inner.y+inner.h/2)*k);
+await p.waitForTimeout(2500);
+console.log('сообщения, дошедшие до родителя:', JSON.stringify(await p.evaluate(()=>window.__msgs.slice(-8))));
+console.log('панель:', /Затемнение/.test(await p.locator('body').innerText())?'Hero':'не выбрано');
+await b.close();

@@ -348,8 +348,56 @@ export class StorefrontDataController {
       if (productIdParam) {
         const found = products.find((p: any) => p.id === productIdParam || p.handle === productIdParam || p.slug === productIdParam);
         if (found) product = found as unknown as Record<string, unknown>;
+        if (!product) {
+          // Запрошенный товар вне выборки (product.list лимитирует страницу) —
+          // точечная дозагрузка RPC product.findOne (директ-пул тут непригоден:
+          // DATABASE_URL сайтов не содержит таблиц product-сервиса).
+          // НИКОГДА не подменяем ЯВНО выбранный мерчантом товар на products[0]:
+          // молчаливый «первый попавшийся» в превью хуже честного плейсхолдера.
+          try {
+            const oneResp = await firstValueFrom(
+              this.productClient
+                .send<{ success: boolean; data?: Record<string, any> }>(
+                  'product.findOne',
+                  { productId: productIdParam, shopId: siteId },
+                )
+                .pipe(
+                  timeout(5000),
+                  catchError(() => of(null)),
+                ),
+            );
+            const r = oneResp?.success ? oneResp.data : null;
+            if (r && r.id) {
+              const combos: any[] = Array.isArray(r.variantCombinations) ? r.variantCombinations : [];
+              const minComboPrice = combos
+                .map((c) => Number(c?.price))
+                .filter((n) => Number.isFinite(n) && n > 0)
+                .sort((a, b) => a - b)[0];
+              const base = r.basePrice != null && Number(r.basePrice) > 0 ? Number(r.basePrice) : (minComboPrice ?? 0);
+              product = {
+                id: r.id,
+                name: r.title ?? r.name,
+                description: r.description ?? undefined,
+                price: base,
+                basePrice: base,
+                compareAtPrice: r.compareAtPrice != null ? Number(r.compareAtPrice) : undefined,
+                sku: r.sku ?? null,
+                isPhysicalProduct: r.isPhysicalProduct ?? true,
+                metaTitle: r.metaTitle ?? null,
+                metaDescription: r.metaDescription ?? null,
+                images: Array.isArray(r.images) ? r.images : [],
+                slug: r.handle || r.id,
+                collections: [] as Array<{ id: string; name?: string; slug?: string }>,
+              };
+            }
+          } catch (e) {
+            this.logger.warn(
+              `point product fetch failed for ${productIdParam}: ${e instanceof Error ? e.message : e}`,
+            );
+          }
+        }
       }
-      if (!product && products.length > 0) {
+      if (!product && !productIdParam && products.length > 0) {
         product = products[0] as unknown as Record<string, unknown>;
       }
 

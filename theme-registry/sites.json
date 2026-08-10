@@ -2,11 +2,15 @@
   "rose": {
     "siteId": "e03dd420-febf-4499-9fc4-992412cc1b99",
     "tenantId": "8bcf6fe3-862d-4757-a085-f60f1c43367d",
-    "note": "Rose Local (реестр) — сид из packages/theme-rose/pages/*.json; тенант e2e-аккаунта (перенесён 2026-08-07), товары общие с flux"
+    "note": "Rose Local (реестр) — сид из packages/theme-rose/pages/*.json; тенант e2e-аккаунта (перенесён 2026-08-07), товары общие с flux",
+    "variantProductId": "22222222-2222-4333-8444-555555550001",
+    "altProductId": "87fb14ba-5da0-4aaf-bb7c-46e04b1f2d63"
   },
   "flux": {
     "siteId": "132d3a3e-a28f-40b7-98fa-a0200151cfb8",
     "tenantId": "8bcf6fe3-862d-4757-a085-f60f1c43367d",
-    "note": "локальный e2e-сайт flux, 50 товаров"
+    "note": "локальный e2e-сайт flux, 50 товаров",
+    "variantProductId": "11111111-2222-4333-8444-555555550001",
+    "altProductId": "4ad208f2-0c1e-420d-8d64-9812cd83615c"
   }
 }

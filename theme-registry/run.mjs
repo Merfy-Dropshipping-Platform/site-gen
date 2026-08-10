@@ -101,9 +101,14 @@ const setPath = (o, p, v) => {
 // База поля: реальные пропы + сопутствующие значения контракта (field.also) —
 // например, проверка «Позиция» требует существующего заголовка, а сид может
 // его не задавать. also — часть контракта, применяется ВМЕСТЕ с пробным значением.
+// Спец-токены значений (данные конкретного гейт-сайта из sites.json):
+//   '@variantProduct' → variantProductId (товар с вариациями/многофото)
+//   '@altProduct'     → altProductId (другой товар — для чека «выбор товара»)
+const TOKENS = { '@variantProduct': sites[THEME].variantProductId, '@altProduct': sites[THEME].altProductId };
+const resolveVal = (v) => (typeof v === 'string' && v in TOKENS ? TOKENS[v] : v);
 const baseFor = (field) => {
   let b = realProps;
-  for (const [p, v] of Object.entries(field.also ?? {})) b = setPath(b, p, v);
+  for (const [p, v] of Object.entries(field.also ?? {})) b = setPath(b, p, resolveVal(v));
   return b;
 };
 
@@ -113,7 +118,7 @@ const CHECKS = {
   async 'monotonic-height'({ pg, field }) {
     const hs = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found) return { pass: false, facts: 'блок пропал из DOM' };
       hs.push(Math.round(s.rect.h));
@@ -125,9 +130,9 @@ const CHECKS = {
   // яркость секции реально падает (затемнение глазом)
   async 'brightness-drop'({ pg, field }) {
     const [a, b] = field.values;
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, a));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(a)));
     const la = await brightness(pg, blockId);
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, b));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(b)));
     const lb = await brightness(pg, blockId);
     const drop = la > 5 ? (la - lb) / la : 0;
     return { pass: drop >= 0.06, facts: `яркость ${la.toFixed(0)} → ${lb.toFixed(0)} (−${(drop * 100).toFixed(0)}%)` };
@@ -138,7 +143,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found || !s.heading) return { pass: false, facts: 'заголовок не найден/невидим' };
       const r = s.rect;
@@ -158,7 +163,7 @@ const CHECKS = {
   async 'align-x'({ pg, field }) {
     const xs = {};
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found || !s.heading) return { pass: false, facts: 'заголовок не найден/невидим' };
       xs[v] = s.heading.textRect.x + s.heading.textRect.w / 2 - s.rect.x;
@@ -173,7 +178,7 @@ const CHECKS = {
   async 'media-width-monotonic'({ pg, field }) {
     const ws = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, field.mediaSelector ? { mediaSelector: field.mediaSelector } : {});
       const media = s.mediaSel ?? s.largestImg ?? s.mediaBox;
       if (!s.found || !media) return { pass: false, facts: 'главное медиа не найдено' };
@@ -188,7 +193,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, field.mediaSelector ? { mediaSelector: field.mediaSelector } : {});
       const media = s.mediaSel ?? s.largestImg ?? s.mediaBox;
       if (!s.found || !media) return { pass: false, facts: 'главное медиа не найдено' };
@@ -204,7 +209,7 @@ const CHECKS = {
   async 'layout-flow'({ pg, field }) {
     const states = {};
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, field.mediaSelector ? { mediaSelector: field.mediaSelector } : {});
       const media = s.mediaSel ?? s.largestImg ?? s.mediaBox;
       if (!s.found || !media || !s.heading) return { pass: false, facts: 'медиа или заголовок не найдены' };
@@ -225,7 +230,7 @@ const CHECKS = {
   async 'media-aspect-order'({ pg, field }) {
     const ratios = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, field.mediaSelector ? { mediaSelector: field.mediaSelector } : {});
       const media = s.mediaSel ?? s.largestImg ?? s.mediaBox;
       if (!s.found || !media) return { pass: false, facts: 'главное медиа не найдено' };
@@ -240,7 +245,7 @@ const CHECKS = {
   async 'width-monotonic'({ pg, field }) {
     const ws = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found) return { pass: false, facts: 'блок пропал из DOM' };
       const w = s.contentBox?.w ?? s.maxDescendantW;
@@ -257,7 +262,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       let n = -1;
       const t0 = Date.now();
       while (Date.now() - t0 < 10000) {
@@ -280,7 +285,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       await pg.waitForTimeout(600);
       const m = await pg.evaluate((id) => {
         const root = document.querySelector(`[data-puck-component-id="${id}"]`);
@@ -305,7 +310,7 @@ const CHECKS = {
   async 'grid-content-differs'({ pg, field }) {
     const sets = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       let names = [];
       const t0 = Date.now();
       while (Date.now() - t0 < 10000) {
@@ -327,7 +332,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, { mediaSelector: field.mediaSelector });
       if (!s.found || !s.mediaSel) return { pass: false, facts: `элемент ${field.mediaSelector} не найден` };
       const rx = (s.mediaSel.x + s.mediaSel.w / 2 - s.rect.x) / s.rect.w;
@@ -344,7 +349,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found) return { pass: false, facts: 'блок пропал из DOM' };
       const sticky = s.rootPos === 'sticky' || s.parentPos === 'sticky';
@@ -362,7 +367,7 @@ const CHECKS = {
     const selectors = [].concat(field.mediaSelector ?? []);
     const looks = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const parts = [];
       if (!selectors.length) {
         const s = await snapshot(pg, blockId);
@@ -387,7 +392,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, { mediaSelector: field.mediaSelector });
       const visible = !!s.mediaSel;
       const want = !!field.map[v];
@@ -403,7 +408,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, { needle: field.needle });
       const visible = !!s.needleHit;
       const want = !!field.map[v];
@@ -419,7 +424,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       let allOk = true;
       for (const item of v) {
         const s = await snapshot(pg, blockId, { needle: item.label });
@@ -436,7 +441,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found || !s.grid) return { pass: false, facts: 'сетка плиток не найдена' };
       const ok = s.grid.count === v;
@@ -452,7 +457,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found) return { pass: false, facts: 'блок пропал из DOM' };
       const n = (s.images ?? []).length;
@@ -469,7 +474,7 @@ const CHECKS = {
     const [a, b] = field.values; // a < b
     const states = {};
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found || !s.grid) return { pass: false, facts: 'сетка плиток не найдена' };
       states[v] = s.grid;
@@ -487,9 +492,9 @@ const CHECKS = {
   // (фон + паддинги); сам вид плашки — дело темы, меряем механизм
   async 'content-plate'({ pg, field }) {
     const [a, b] = field.values;
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, a));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(a)));
     const sa = await snapshot(pg, blockId);
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, b));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(b)));
     const sb = await snapshot(pg, blockId);
     if (!sa.found || !sb.found) return { pass: false, facts: 'блок пропал из DOM' };
     if (!sa.heading || !sb.heading) return { pass: false, facts: 'заголовок не найден/невидим' };
@@ -505,7 +510,7 @@ const CHECKS = {
   async 'width-toggle'({ pg, field }) {
     const ws = [];
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId);
       if (!s.found) return { pass: false, facts: 'блок пропал из DOM' };
       ws.push(Math.round(s.maxDescendantW));
@@ -517,9 +522,9 @@ const CHECKS = {
   async 'padding-delta'({ pg, field }) {
     const [a, b] = field.values;
     const sum = (b.top ?? 0) + (b.bottom ?? 0) - (a.top ?? 0) - (a.bottom ?? 0);
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, a));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(a)));
     const sa = await snapshot(pg, blockId);
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, b));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(b)));
     const sb = await snapshot(pg, blockId);
     if (!sa.found || !sb.found) return { pass: false, facts: 'блок пропал из DOM' };
     const d = sb.rect.h - sa.rect.h;
@@ -534,7 +539,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, { needle: v });
       const ok = !!s.needleHit;
       if (!ok) pass = false;
@@ -548,7 +553,7 @@ const CHECKS = {
     const label = getPath(baseFor(field), field.buttonTextPath);
     if (!label) return { pass: false, facts: `нет текста кнопки в пропах (${field.buttonTextPath})` };
     const v = field.values[0];
-    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
     const s = await snapshot(pg, blockId, { buttonTexts: [label] });
     const btn = s.buttons?.[label];
     if (!btn) return { pass: false, facts: `кнопка «${label}» не найдена/невидима` };
@@ -564,7 +569,7 @@ const CHECKS = {
     if (!p || !s2) return { pass: false, facts: `в пропах нет текстов пары кнопок (${p ?? '∅'} / ${s2 ?? '∅'})` };
     const states = {};
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       const s = await snapshot(pg, blockId, { buttonTexts: [p, s2] });
       const bp = s.buttons?.[p];
       const bs = s.buttons?.[s2];
@@ -607,7 +612,7 @@ const CHECKS = {
     const facts = [];
     let pass = true;
     for (const v of field.values) {
-      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, v));
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
       let state = 'НЕ НАЙДЕНА';
       const t0 = Date.now();
       while (Date.now() - t0 < 8000) {
@@ -623,6 +628,84 @@ const CHECKS = {
       facts.push(`${(v.startsWith('data:') ? 'data-uri#' + v.length : path.basename(v).slice(0, 28))}: ${state}`);
     }
     return { pass, facts: facts.join(' · ') };
+  },
+
+  // раскладка ГАЛЕРЕИ фото: профиль (кол-во крупных фото + высота медиа-контейнера)
+  // различается между значениями; атрибут data-gallery-layout (если порт несёт) сверяется
+  async 'gallery-layout'({ pg, field }) {
+    const profiles = [];
+    const facts = [];
+    for (const v of field.values) {
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
+      const m = await pg.evaluate(({ bid, mediaSel }) => {
+        const root = document.querySelector(`[data-puck-component-id="${bid}"]`);
+        if (!root) return null;
+        const vis = (e) => e.getBoundingClientRect().width > 1 && e.getBoundingClientRect().height > 1;
+        const bigs = [...root.querySelectorAll('img')].filter((i) => vis(i) && i.getBoundingClientRect().width > 260).length;
+        const media = root.querySelector(mediaSel) ?? root;
+        const g = root.querySelector('[data-gallery-layout]');
+        return { bigs, h: Math.round(media.getBoundingClientRect().height), attr: g?.getAttribute('data-gallery-layout') ?? null };
+      }, { bid: blockId, mediaSel: field.mediaSelector ?? '[data-product-images]' });
+      if (!m) return { pass: false, facts: 'блок пропал из DOM' };
+      profiles.push(m);
+      const attrOkStr = m.attr === null ? '' : m.attr === v ? ', attr✓' : ` , attr=${m.attr} ✗`;
+      facts.push(`${v}: крупных=${m.bigs}, h=${m.h}px${attrOkStr}`);
+    }
+    const differs = (a, b) => a.bigs !== b.bigs || Math.abs(a.h - b.h) > 32;
+    const anyPairDiffers = profiles.some((p1, i) => profiles.some((p2, j) => j > i && differs(p1, p2)));
+    const attrsOk = profiles.every((p1, i) => p1.attr === null || p1.attr === field.values[i]);
+    return { pass: anyPairDiffers && attrsOk, facts: facts.join(' · ') };
+  },
+
+  // форма вариантов: none → текст-чипы с именем опции; circle/square → свотчи,
+  // различающиеся скруглением (круг ≥45% высоты, квадрат <45%)
+  async 'swatch-shape'({ pg, field }) {
+    const facts = [];
+    let pass = true;
+    for (const v of field.values) {
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
+      const m = await pg.evaluate(({ bid, needle }) => {
+        const root = document.querySelector(`[data-puck-component-id="${bid}"]`);
+        if (!root) return null;
+        const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 1 && r.height > 1; };
+        const textChip = [...root.querySelectorAll('button, label, li, span')].find((e) => vis(e) && e.textContent.trim() === needle);
+        const swatch = [...root.querySelectorAll('button, span, div')].find((e) => {
+          if (!vis(e)) return false;
+          const r = e.getBoundingClientRect();
+          if (r.width < 10 || r.width > 56 || r.height < 10 || r.height > 56) return false;
+          const cs = getComputedStyle(e);
+          return /rgb\(0,\s*0,\s*0\)/.test(cs.backgroundColor) && e.textContent.trim() === '';
+        });
+        if (!swatch) return { textChip: !!textChip, swatch: null };
+        const r = swatch.getBoundingClientRect();
+        const br = parseFloat(getComputedStyle(swatch).borderRadius) || 0;
+        return { textChip: !!textChip, swatch: { ratio: br / r.height } };
+      }, { bid: blockId, needle: field.needle ?? 'Чёрный' });
+      if (!m) return { pass: false, facts: 'блок пропал из DOM' };
+      let ok;
+      if (v === 'none') ok = m.textChip;
+      else if (v === 'circle') ok = !!m.swatch && m.swatch.ratio >= 0.45;
+      else ok = !!m.swatch && m.swatch.ratio < 0.45; // square
+      if (!ok) pass = false;
+      facts.push(`${v}: ${m.swatch ? `свотч r=${(m.swatch.ratio * 100).toFixed(0)}%` : m.textChip ? 'текст-чип' : 'ни свотча, ни чипа'}${ok ? '' : ' ✗'}`);
+    }
+    return { pass, facts: facts.join(' · ') };
+  },
+
+  // смена значения меняет ЗАГОЛОВОК блока (выбор товара): A ≠ B, оба непусты
+  async 'heading-differs'({ pg, field }) {
+    const texts = [];
+    for (const v of field.values) {
+      await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(v)));
+      const t = await pg.evaluate((bid) => {
+        const root = document.querySelector(`[data-puck-component-id="${bid}"]`);
+        const h = root && [...root.querySelectorAll('h1, h2, h3')].find((e) => e.getBoundingClientRect().width > 1);
+        return h ? h.textContent.trim().slice(0, 40) : '';
+      }, blockId);
+      texts.push(t);
+    }
+    const pass = texts.every(Boolean) && new Set(texts).size === texts.length;
+    return { pass, facts: texts.map((t) => `«${t}»`).join(' → ') };
   },
 };
 

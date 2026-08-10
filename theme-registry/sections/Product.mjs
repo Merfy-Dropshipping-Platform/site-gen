@@ -49,16 +49,48 @@ export default {
       meaning: 'внутренние отступы секции сверху/снизу',
       check: { type: 'padding-delta' },
     },
+    // ─── волна данных (вариант-товар @variantProduct: 3 фото, 2 группы, 4 комбо) ───
+    productId: {
+      label: 'Выбор товара',
+      values: ['@altProduct', '@variantProduct'],
+      meaning: 'блок рендерит ВЫБРАННЫЙ товар тенанта (имя/цена/галерея меняются)',
+      check: { type: 'heading-differs' },
+    },
+    layout: {
+      label: 'Макет',
+      // полный набор stacked/two-columns/carousel/split; гейт-пара — гарантированно
+      // различимая раскладка (1 кадр+тумбы ↔ плитка крупных). Прочие ветки — см. отчёт.
+      values: ['carousel', 'two-columns'],
+      meaning: 'раскладка ГАЛЕРЕИ фото: carousel = один кадр + тумбы, two-columns = плитка крупных',
+      also: { productId: '@variantProduct' },
+      check: { type: 'gallery-layout' },
+    },
+    'variants.displayStyle': {
+      label: 'Вариации · стиль',
+      values: ['button', 'list'],
+      meaning: 'button = чипы-кнопки опций; list = выпадающие списки (select)',
+      also: { productId: '@variantProduct' },
+      check: { type: 'selector-visibility', mediaSelector: 'select', map: { button: false, list: true } },
+    },
+    'variants.shape': {
+      label: 'Вариации · форма',
+      values: ['none', 'circle', 'square'],
+      meaning: 'none = текст-чипы; circle/square = свотчи цвета соотв. формы (swatchHex опций)',
+      also: { productId: '@variantProduct', 'variants.displayStyle': 'button' },
+      check: { type: 'swatch-shape', needle: 'Чёрный' },
+    },
+    'buttons.addToCart.text': {
+      label: 'Основная кнопка',
+      // НЕ тумблер: текст кнопки; ПУСТО = скрыть (Product.astro:123 addBtnTextRaw)
+      values: ['В корзину проба', ''],
+      meaning: 'текст «Добавить в корзину»; пустая строка скрывает кнопку',
+      also: { productId: '@variantProduct' },
+      check: { type: 'selector-visibility', mediaSelector: '[data-add-to-cart]', map: { 'В корзину проба': true, '': false } },
+    },
   },
   uncovered: {
-    layout:
-      'раскладка ГАЛЕРЕИ фото (split/carousel/two-columns/stacked — Product.astro:64-67): различима только у товара с несколькими фото; у демо один плейсхолдер — волна данных',
-    productId: 'выбор товара = данные тенанта (у rose-гейта товаров нет); подстановка карточки — гидрация, вне волны 1',
     zoomMode: 'клик/ховер-зум = интерактив (нужен реальный клик/ховер), вне волны 1 «только смена настроек»',
     dynamicButton: 'плавающая кнопка проявляется при скролле = интерактив, вне волны 1',
-    'variants.displayStyle': 'нужен товар с вариациями — у rose-гейта товаров нет; интерактив-волна/волна данных',
-    'variants.shape': 'нужен товар с вариациями — у rose-гейта товаров нет; интерактив-волна/волна данных',
-    'buttons.addToCart': 'тумблер кнопки корзины завязан на наличие товара (демо-ветка может не рендерить кнопку); волна данных',
     colorScheme: 'схему вешает компоновщик страницы, а не блок — каналом update-block не меряется; page-tier волна',
   },
 };

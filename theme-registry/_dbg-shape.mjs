@@ -1,0 +1,26 @@
+import { chromium } from 'playwright';
+const siteId = '132d3a3e-a28f-40b7-98fa-a0200151cfb8';
+const b = await chromium.launch({ headless: true });
+const pg = await b.newPage({ viewport: { width: 1400, height: 900 } });
+await pg.goto(`http://localhost:3110/api/sites/${siteId}/preview?page=product`, { waitUntil: 'load', timeout: 60000 }).catch(() => {});
+await pg.waitForTimeout(1800);
+await pg.evaluate(({ siteId }) => window.postMessage({ type: 'init', siteId, themeId: 'flux', pageId: 'product', data: undefined }, '*'), { siteId });
+await pg.waitForTimeout(300);
+const blockId = await pg.evaluate(() => document.querySelector('[data-puck-component-id^="Product"]')?.getAttribute('data-puck-component-id'));
+await pg.evaluate(({ blockId }) => window.postMessage({ type: 'update-block', pageId: 'product', blockId, props: { id: blockId, productId: '11111111-2222-4333-8444-555555550001', variants: { displayStyle: 'button', shape: 'circle' } } }, '*'), { blockId });
+await pg.waitForTimeout(2500);
+const dump = await pg.evaluate((bid) => {
+  const root = document.querySelector(`[data-puck-component-id="${bid}"]`);
+  const wrap = root?.querySelector('[data-pdp-variant-group]');
+  const sw = root?.querySelector('[data-variant-swatch]');
+  const inner = sw?.querySelector('span');
+  const csw = sw && getComputedStyle(sw); const cin = inner && getComputedStyle(inner);
+  return {
+    wrapHtml: wrap ? wrap.outerHTML.slice(0, 400) : null,
+    swRect: sw ? sw.getBoundingClientRect().toJSON() : null,
+    innerBg: cin?.backgroundColor, innerRect: inner ? inner.getBoundingClientRect().toJSON() : null,
+    shapeAttr: root?.querySelector('[data-variants-shape]')?.getAttribute('data-variants-shape'),
+  };
+}, blockId);
+console.log(JSON.stringify(dump, null, 1).slice(0, 1200));
+await b.close();

@@ -462,6 +462,7 @@ const COLOR_NAME_HEX: Record<string, string> = {
   grey: "#9A9A9A",
   серебро: "#C0C0C0",
   серебряный: "#C0C0C0",
+  серебристый: "#C0C0C0",
   silver: "#C0C0C0",
   графит: "#3A3A3A",
   graphite: "#3A3A3A",
@@ -830,14 +831,30 @@ function renderVariantGroupWrapper(
 export function renderVariantGroupsHtml(
   groups: VariantGroup[],
   selected: Record<string, string>,
+  // «Вариации» (variants.shape, canon Product.puckConfig): '' | 'none' → текст-чипы
+  // (канон flux); 'circle'/'square' → значение-ЦВЕТ рендерится свотчем этой формы
+  // (colorToHex: hex в значении или имя из карты), не-цвет — текст-чип той же формы.
+  // Паритет theme-base ProductVariants.astro (isShaped/shapeRadius).
+  shape: string = "",
 ): string {
+  const shaped = shape === "circle" || shape === "square";
+  const shapeCls = shape === "circle" ? "rounded-full" : "rounded-none";
   return groups
     .map((g) => {
       const buttons = g.values
         .map((v) => {
           const isSel = selected[g.name] === v;
+          const hex = shaped ? colorToHex(v) : null;
+          // Размер/форма/заливка свотча — INLINE (client-строки .ts не входят в
+          // Tailwind-скан превью-шелла: классы вроде h-7 дают 0×0 — реестр 2026-08-10).
+          const radius = shape === "circle" ? "border-radius:9999px;" : "border-radius:0;";
+          if (shaped && hex) {
+            const border = isSel ? "border-color:#000000;" : "border-color:rgba(0,0,0,0.2);";
+            return `<button type="button" class="relative inline-flex shrink-0 items-center justify-center border-2 border-solid bg-white p-0 transition-opacity hover:opacity-90" style="width:40px;height:40px;${radius}${border}" role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}" data-variant-swatch aria-label="${escapeHtml(v)}" title="${escapeHtml(v)}"><span style="display:block;width:28px;height:28px;background:${hex};${radius}"></span></button>`;
+          }
           const cls = `${VARIANT_BTN_BASE} ${isSel ? VARIANT_BTN_SEL : VARIANT_BTN_UNSEL}`;
-          return `<button type="button" class="${cls}" role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`;
+          const shapedTextStyle = shaped ? ` style="${radius}min-width:40px;padding-left:8px;padding-right:8px;"` : "";
+          return `<button type="button" class="${cls}"${shapedTextStyle} role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}">${escapeHtml(v)}</button>`;
         })
         .join("");
       const control = `<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="${escapeHtml(g.name)}">${buttons}</div>`;

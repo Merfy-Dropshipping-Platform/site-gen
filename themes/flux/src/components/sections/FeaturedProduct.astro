@@ -138,12 +138,14 @@ if (productIdRef && siteId) {
 		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data${qs}`).catch(() => null);
 		if (res && res.ok) {
 			const data: any = await res.json();
+			// БЕЗ фолбэка products[0]: мерчант выбрал КОНКРЕТНЫЙ товар — молчаливая
+			// подмена «первым попавшимся» хуже честного плейсхолдера (реестр 2026-08-10).
 			realProduct =
 				data?.product ??
 				(Array.isArray(data?.products)
 					? data.products.find(
 							(x: any) => x && (x.id === productIdRef || x.slug === productIdRef || x.handle === productIdRef),
-						) ?? data.products[0] ?? null
+						) ?? null
 					: null);
 		}
 	} catch {
@@ -197,15 +199,18 @@ if (hasVariants) {
 }
 const activeCombo = hasVariants ? findCombination(combos, selectedOptions) : null;
 // Figma 1:21431 — «Стиль» (variants.displayStyle): button = чипы (дефолт),
-// list = выпадающий <select> (canon theme-base Product.puckConfig; "Вариации"
-// shape circle/square/none — форма свотча — здесь не применима: и upstream
-// pin, и переиспользуемый render*Html не рисуют цветные свотчи, только
-// текстовые чипы/список, поэтому shape не влияет на рендер этой секции).
+// list = выпадающий <select>. «Вариации» (variants.shape): circle/square —
+// значение-цвет рендерится свотчем этой формы (renderVariantGroupsHtml, паритет
+// theme-base ProductVariants); none/'' — текст-чипы (канон flux). Реестр
+// 2026-08-10: прежний комментарий «shape не применима» был неверен — rose
+// рисует свотчи, flux обязан тоже (гейт variants.shape).
 const variantsDisplayStyle = p.variants?.displayStyle === "list" ? "list" : "button";
+const variantsShapeRaw = typeof p.variants?.shape === "string" ? p.variants.shape : "";
+const variantsShape = variantsShapeRaw === "circle" || variantsShapeRaw === "square" ? variantsShapeRaw : "";
 const variantsHtml = hasVariants
 	? variantsDisplayStyle === "list"
 		? renderVariantSelectsHtml(variantGroups, selectedOptions)
-		: renderVariantGroupsHtml(variantGroups, selectedOptions)
+		: renderVariantGroupsHtml(variantGroups, selectedOptions, variantsShape)
 	: "";
 
 function pickOpt(opts: Record<string, string> | undefined, keys: string[]): string {
@@ -427,6 +432,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 					class="flex flex-col gap-4"
 					data-cfg-variants
 					data-variants-style={variantsDisplayStyle}
+					data-variants-shape={variantsShape}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="103"
 					data-puck-subsection-field="variants"
@@ -552,6 +558,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 				class="flex flex-col gap-4"
 				data-cfg-variants
 				data-variants-style={variantsDisplayStyle}
+					data-variants-shape={variantsShape}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="103"
 				data-puck-subsection-field="variants"
@@ -855,8 +862,9 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			// перерисовывал ТЕМ ЖЕ режимом (чипы или <select>), а не молча
 			// переключался на дефолт.
 			const isListStyle = variantsWrap?.getAttribute("data-variants-style") === "list";
+			const wrapShape = variantsWrap?.getAttribute("data-variants-shape") ?? "";
 			const renderVariants = (gs: { name: string; values: string[] }[], sel: Record<string, string>) =>
-				isListStyle ? renderVariantSelectsHtml(gs, sel) : renderVariantGroupsHtml(gs, sel);
+				isListStyle ? renderVariantSelectsHtml(gs, sel) : renderVariantGroupsHtml(gs, sel, wrapShape);
 
 			if (variantsWrap && groups.length) {
 				variantsWrap.hidden = false;

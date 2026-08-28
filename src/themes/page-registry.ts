@@ -112,6 +112,18 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
 export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'vanilla', 'bloom', 'flux', 'satin']);
 
 /**
+ * Темы с composable page-cart (CartSection + мерчантские секции), зеркало
+ * PRODUCT_UNIFIED_THEMES. Тема вне множества → verbatim cart.astro.
+ */
+export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
+  'rose',
+  'vanilla',
+  'bloom',
+  'satin',
+  'flux',
+]);
+
+/**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,
  * не «системные страницы»). Вместе с verbatim-записями реестра дают полное
  * множество прежнего V2_COMPLEX_ROUTE_PREFIXES.

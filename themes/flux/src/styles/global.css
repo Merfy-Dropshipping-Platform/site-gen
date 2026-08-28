@@ -19,10 +19,11 @@
    .font-comfortaa используют все заголовки + DS NtSectionHeading (хардкодит этот класс). */
 .font-comfortaa {
   font-family: var(--font-heading, "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif);
+  font-weight: var(--weight-heading, 400);
 }
-/* Формы/UI — Manrope (фиксированная роль Figma) */
+/* Формы/UI — роль body (picker «Текст»); fallback Manrope как на rose. */
 .font-manrope {
-  font-family: "Manrope", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body, "Manrope", system-ui, -apple-system, sans-serif);
 }
 /* Копирайт/мелкий текст — Inter (фиксированная роль Figma) */
 .font-inter {
@@ -31,7 +32,23 @@
 
 .font-roboto-flex {
   font-family: var(--font-body, "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif);
-  font-weight: 300;
+}
+
+/* Theme Settings: рамка / выравнивание / «вид карточки» на товарных карточках. */
+[data-nt="flux-product-card"] {
+  border-width: var(--size-card-border, 0px);
+  border-style: solid;
+  border-color: rgb(var(--color-text, 0 0 0) / 0.1);
+  text-align: var(--card-alignment, left);
+}
+@container style(--card-style: standard) {
+  [data-nt="flux-product-card"] {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+  }
 }
 
 #menu-line-1 {

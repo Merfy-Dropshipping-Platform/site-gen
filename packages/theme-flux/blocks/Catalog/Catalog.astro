@@ -51,6 +51,8 @@ interface Props {
   siteId?: string;
   categoryTitle?: string | { text?: string };
   categorySubtitle?: string | { text?: string };
+  /** Цвет подзаголовка: 'accent' → --color-accent, иначе muted (дефолт flux). */
+  categorySubtitleColor?: string;
   subtitle?: boolean | "true" | "false";
   filterPosition?: "top" | "side";
   showFilter?: boolean | "true" | "false";
@@ -77,6 +79,7 @@ const {
   siteId,
   categoryTitle,
   categorySubtitle,
+  categorySubtitleColor,
   subtitle,
   filterPosition,
   showFilter,
@@ -108,6 +111,10 @@ function pickText(v: unknown, fallback: string): string {
 const title = pickText(categoryTitle, "Каталог");
 const subtitleText = pickText(categorySubtitle, "Следующее поколение уже с вами");
 const subtitleVisible = subtitle !== "false" && subtitle !== false;
+const subtitleColorCls =
+	categorySubtitleColor === "accent"
+		? "text-[rgb(var(--color-accent,250_81_9))]"
+		: "text-[rgb(var(--color-muted,153_153_153))]";
 const filterVisible = showFilter !== "false" && showFilter !== false;
 const sortVisible = showSort !== "false" && showSort !== false;
 
@@ -265,7 +272,7 @@ const skeletons = Array.from({ length: skeletonCount });
           class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-text,0_0_0))] md:text-[32px] lg:text-[36px]"
         >{title}</h1>
         {subtitleVisible && (
-          <p class="max-w-2xl font-manrope text-[16px] font-light leading-[1.366] text-[rgb(var(--color-muted,153_153_153))] md:text-[18px] lg:text-[20px]">{subtitleText}</p>
+          <p class:list={["max-w-2xl font-manrope text-[16px] font-light leading-[1.366] md:text-[18px] lg:text-[20px]", subtitleColorCls]}>{subtitleText}</p>
         )}
       </header>
 
@@ -950,7 +957,7 @@ const skeletons = Array.from({ length: skeletonCount });
       `<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(p.id)}" aria-pressed="${wished ? "true" : "false"}" aria-label="В избранное" ` +
       `class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">` +
       `<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
-    return `<article class="group flex w-full flex-col gap-3 md:gap-4" data-nt="flux-product-card" data-card-container="${cardContainerOn ? "true" : "false"}" style="${CARD_CONTAINER_STYLE}" aria-label="${name}">
+    return `<article class="group flex w-full flex-col gap-3 md:gap-4" data-nt="flux-product-card" data-product-href="${href}" data-card-container="${cardContainerOn ? "true" : "false"}" style="${CARD_CONTAINER_STYLE}" aria-label="${name}">
   <div class="relative w-full">
   <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label="${name}">
     ${media}
@@ -1471,6 +1478,17 @@ const skeletons = Array.from({ length: skeletonCount });
   function bindCardInteractions() {
     if (document.body.getAttribute("data-cf-card") === "1") return;
     document.body.setAttribute("data-cf-card", "1");
+
+    // Клик по карточке (не по кнопкам) → PDP. Паттерн theme-base data-product-link.
+    document.addEventListener("click", (event) => {
+      const card = event.target.closest('[data-nt="flux-product-card"]');
+      if (!card || !card.closest('[data-nt="catalog-grid"], [data-nt="catalog-demo"]')) return;
+      if (event.target.closest("button, a, [data-wishlist-toggle], [data-swatch-img], [data-quick-add-id]")) return;
+      const href = card.getAttribute("data-product-href") || (card.querySelector("a[href]") && card.querySelector("a[href]").getAttribute("href"));
+      if (!href) return;
+      event.preventDefault();
+      window.location.assign(href);
+    });
 
     document.addEventListener("click", (event) => {
       const btn = event.target.closest("button[data-quick-add-id]");

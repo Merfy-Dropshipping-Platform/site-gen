@@ -1,11 +1,13 @@
 ---
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import FluxNtIcon from "./icons/FluxNtIcon.astro";
+import NavItem from "./NavItem.astro";
 import { SITE_TITLE } from "../consts";
 
 interface NavLink {
 	label: string;
 	href: string;
+	submenu?: NavLink[];
 	match?: (pathname: string) => boolean;
 }
 
@@ -19,30 +21,48 @@ const defaultNav: NavLink[] = [
 
 // ОЖИВЛЕНИЕ натянуто на ВЁРСТКУ ВЕРСТАЛЬЩИКОВ (эталон /tmp/flux-header-ref.astro):
 // дефолтный Header (мерчант ничего не настроил) = two-tier верстальщика 1:1
-// (Roboto Flex, py-6/gap-5/gap-8, size-8 desktop иконки, bg-white без border-b,
+// (Roboto Flex, py-6/gap-5/gap-8, size-6 глиф в size-8 хитбоксе как rose, bg-white без border-b,
 // промо-бар сверху); каждая настройка конструктора (logoPosition×4, menuType×3,
 // stickiness, padding, nav, logo, colorScheme, wishlist) работает поверх этой
 // вёрстки. Канон-схема theme-base Header.puckConfig — siteTitle, navigationLinks,
 // logo, logoPosition, stickiness, padding, menuType, menuColorScheme.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// promo=false (Layout системных/account страниц) → скрыть встроенную промо-полосу.
-// Дефолт true: обычные статик-страницы (home/catalog/…) показывают её как раньше.
-const promo = p.promo !== false;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+const mapNavLink = (l: any): NavLink => ({
+	label: l.label ?? l.text ?? "",
+	href: l.href ?? l.link ?? "/",
+	submenu: Array.isArray(l.submenu) ? l.submenu.map(mapNavLink) : undefined,
+});
 const nav: NavLink[] =
 	Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
-		? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+		? p.navigationLinks.map(mapNavLink)
 		: defaultNav;
 
-// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img src={logo}> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux
-// (мерчант НЕ задал logo) = барчарт-SVG `/icons/logo-flux.svg` (эталон верстальщиков,
-// 81×24, рендер h-6/24px). Текст-лого {siteTitle} остаётся ТОЛЬКО крайним фоллбэком —
-// через alt дефолтного img (ассет не загрузился → браузер покажет alt = название).
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
-const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+// Канон promoBar (как theme-base Header): flux включает через blockDefaults.Header.promoBar.
+const promoBar = p.promoBar as
+	| { enabled?: boolean | string; text?: string; linkText?: string; linkHref?: string }
+	| undefined;
+const promoEnabled = promoBar?.enabled === true || promoBar?.enabled === "true";
+const promoText = (promoBar?.text || "").trim();
+const promoLinkText = (promoBar?.linkText || "").trim();
+const promoLinkHref = promoBar?.linkHref || "/";
+const showPromoBar = promoEnabled && promoText.length > 0;
+
+// Канон logo: непустая строка → <img>. Плейсхолдер «/logo.svg» (и rewrite на
+// https://<slug>.merfy.ru/logo.svg) на сторфронте 404 — не рендерим битую
+// картинку с alt поверх нав (как rose). Реальные загрузки: /branding/.../logo-*.
+const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
+let logoPath = "";
+try {
+	logoPath = new URL(rawLogo, "https://_merfy_").pathname;
+} catch {
+	logoPath = rawLogo;
+}
+const logo = rawLogo && logoPath !== "/logo.svg" ? rawLogo : undefined;
+const logoImgCls =
+	"h-[var(--size-logo-width,24px)] w-auto max-w-[160px] shrink-0 object-contain";
 
 // Канон actionButtons {showCart, showSearch, showProfile} (строки "true"/"false";
 // панель «Кнопки действий»): show/hide трёх иконок шапки. Отсутствие/иное → показаны
@@ -53,29 +73,29 @@ const showProfile = String(p.actionButtons?.showProfile ?? "true") !== "false";
 
 // Канон logoPosition: 'top-left' (canon-default = two-tier эталона) / 'top-center' /
 // 'center-left' / 'center-absolute' (+ 'top-right' из enum → single-row). Отсутствие /
-// неизвестное → 'top-left'. isTwoRow: два ряда (top-left, top-center); single-row:
-// center-left / center-absolute / top-right.
+// неизвестное → 'top-left'.
+// isTwoRow: два ряда. 'center-absolute' («По центру») на flux = как rose
+// top-center: ряд1 лого по центру (в сетке, НЕ absolute поверх нав), ряд2 нав.
+// Иначе длинные пункты («TWS-наушники с кейсом») наезжают на лого в iframe.
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
-const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
-// center-absolute: лого absolute по центру single-row
-const isAbsoluteCenter = logoPosition === "center-absolute";
+const isTwoRow =
+	logoPosition === "top-left" ||
+	logoPosition === "top-center" ||
+	logoPosition === "center-absolute";
+const isCenteredLogo = logoPosition === "top-center" || logoPosition === "center-absolute";
 // center-left («Слева»): лого в потоке слева, nav центрируется ПО СТРАНИЦЕ через
 // равные flex-1 фланги (лого + блок иконок), nav (auto) садится по центру.
 const logoLeft = logoPosition === "center-left";
 
-// Канон stickiness (паритет с rose + канон theme-base Header.classes.ts:13-16):
-// 'always' → sticky; 'scroll-up' → sticky + прячем при скролле вниз, показываем при
-// скролле вверх (is:inline скрипт через data-атрибут — компилятор секций не умеет
-// define:vars, идемпотентность через data-hydrated); 'none'/отсутствие → НЕ sticky
-// (обычный поток, `w-full` — как rose). Раньше 'none' давал sticky (= 'always'), т.е.
-// «Никогда» не отличалось от «Всегда» — настройка была мёртвой.
+// Канон stickiness: дефолт puckConfig = 'scroll-up'. 'none' / 'always' / отсутствие →
+// обычный sticky (= эталон верстальщика `sticky top-0 z-50`). 'scroll-up' → прячем при
+// скролле вниз, показываем при скролле вверх: is:inline скрипт через data-атрибут
+// (компилятор секций не умеет define:vars), идемпотентность через data-hydrated.
 const stickiness = typeof p.stickiness === "string" ? p.stickiness : "";
 const rootCls =
-	stickiness === "always"
-		? "sticky top-0 z-50 w-full"
-		: stickiness === "scroll-up"
-			? "sticky top-0 z-50 w-full transition-transform duration-300"
-			: "w-full";
+	stickiness === "scroll-up"
+		? "sticky top-0 z-50 w-full transition-transform duration-300"
+		: "sticky top-0 z-50 w-full";
 const SCROLL_UP_JS = [
 	"(function(){",
 	"var root=document.querySelector('[data-flux-sticky=\"scroll-up\"]');",
@@ -121,11 +141,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 // Бейдж счётчика (корзина) — эталон верстальщика: -right-1 -top-1,
 // h-[18px] min-w-[18px], bg-[#FA5109], Roboto Flex 11px белый.
 const badgeCls =
-	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FA5109] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
+	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgb(var(--color-accent,250_81_9))] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
 
 // Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
-// якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
-const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:absolute md:left-1/2 md:-translate-x-1/2" : ""}`;
+// якорь = img-ветка эталона h-6 (24px). Центрирование — сетка two-row, не absolute.
+const desktopLogoCls = "flex h-6 shrink-0 items-center hover:opacity-90";
 const mobileLogoCls = "flex items-center hover:opacity-80";
 
 // Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
@@ -133,13 +153,15 @@ const deskContainerBase = "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80
 // py-6 = вертикальный отступ верстальщика (дефолт); inline-стиль перебивает при настройке padding.
 const deskPadCls = headerPad ? "" : "py-6";
 const twoRowContainerCls = [deskContainerBase, "hidden flex-col gap-5 md:flex", deskPadCls].filter(Boolean).join(" ");
-const singleRowContainerCls = [deskContainerBase, "hidden items-center justify-between md:flex", deskPadCls, isAbsoluteCenter ? "relative" : ""].filter(Boolean).join(" ");
+const singleRowContainerCls = [deskContainerBase, "hidden items-center justify-between md:flex", deskPadCls].filter(Boolean).join(" ");
 
 // Пункт nav эталона: Roboto Flex 16px light; active чёрный, inactive #cccccc → hover чёрный.
 // active/hover токенизированы (дефолт чёрный = эталон) → menuColorScheme их перекрашивает.
 const navLinkBase = "font-roboto-flex text-[16px] font-light leading-normal transition-colors";
 const navActiveCls = "text-[rgb(var(--color-text,0_0_0))]";
-const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
+const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(var(--color-text,0_0_0))]";
+const navLinkCls = (active: boolean) =>
+	[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ");
 ---
 
 <div
@@ -149,19 +171,17 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 	data-flux-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
 >
 	{
-		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
-		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
-		!id && promo !== false && (
+		showPromoBar && (
 			<NtPromoBanner
-				text="Бесплатная доставка на весь ассортимент до 30.06.2026."
-				link="/catalog"
-				linkText="Смотреть больше"
+				text={promoText}
+				link={promoLinkHref}
+				linkText={promoLinkText || undefined}
 			/>
 		)
 	}
 
 	<header
-		class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
+		class="relative w-full overflow-visible bg-[rgb(var(--color-bg,255_255_255))]"
 		data-nt="flux-header"
 	>
 	<!-- Mobile (h-20): бургер слева | лого по центру (absolute) | wishlist+корзина справа -->
@@ -176,14 +196,14 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 			aria-controls="flux-burger"
 		>
 			<span class="burger-icon" data-icon="open">
-				<NtIcon name="menu-burger" sizeClass="size-6" />
+				<FluxNtIcon name="menu-burger" sizeClass="size-6" />
 			</span>
 			<span class="burger-icon hidden" data-icon="close">
-				<NtIcon name="menu-close" sizeClass="size-6" />
+				<FluxNtIcon name="menu-close" sizeClass="size-6" />
 			</span>
 		</button>
 		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
-			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+			{logo ? <img src={logo} alt="" class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt="" width="81" height="24" class="h-6 w-auto shrink-0 object-contain" />}
 		</a>
 		<div class="flex items-center gap-3">
 			{showCart && (
@@ -193,7 +213,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 					class="relative flex size-8 items-center justify-center"
 					aria-label="Корзина"
 				>
-					<NtIcon name="cart" sizeClass="size-6" />
+					<FluxNtIcon name="cart" sizeClass="size-6" />
 					<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 				</button>
 			)}
@@ -203,8 +223,8 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 	<!-- Desktop -->
 	{isTwoRow ? (
 		<div class={twoRowContainerCls} style={headerPadStyle}>
-			{logoPosition === "top-center" ? (
-				/* top-center: Row1=[search LEFT | logo CENTER | actions RIGHT], Row2=[nav CENTER] */
+			{isCenteredLogo ? (
+				/* top-center / center-absolute: Row1=[search LEFT | logo CENTER | actions RIGHT], Row2=[nav CENTER] */
 				<>
 					<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
 						<div class="flex items-center">
@@ -215,13 +235,13 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-8" />
+									<FluxNtIcon name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
 						</div>
 						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+								{logo ? <img src={logo} alt="" class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt="" width="81" height="24" class="h-6 w-auto shrink-0 object-contain" />}
 							</a>
 						</div>
 						<div class="flex items-center justify-end gap-4">
@@ -232,7 +252,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<FluxNtIcon name="cart" sizeClass="size-6" />
 									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 								</button>
 							)}
@@ -242,7 +262,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<FluxNtIcon name="user" sizeClass="size-6" />
 								</a>
 							)}
 							{isSidebar && (
@@ -255,10 +275,10 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									aria-controls="flux-burger"
 								>
 									<span class="burger-icon" data-icon="open">
-										<NtIcon name="menu-burger" sizeClass="size-6" />
+										<FluxNtIcon name="menu-burger" sizeClass="size-6" />
 									</span>
 									<span class="burger-icon hidden" data-icon="close">
-										<NtIcon name="menu-close" sizeClass="size-6" />
+										<FluxNtIcon name="menu-close" sizeClass="size-6" />
 									</span>
 								</button>
 							)}
@@ -271,18 +291,14 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 						data-puck-subsection-index="997"
 						data-puck-subsection-field="navigationLinks"
 					>
-						{nav.map((link) => {
-							const active = isActive(link);
-							return (
-								<a
-									href={link.href}
-									aria-current={active ? "page" : undefined}
-									class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
-								>
-									{link.label}
-								</a>
-							);
-						})}
+						{nav.map((link) => (
+							<NavItem
+								link={link}
+								menuType={menuType}
+								linkClass={navLinkCls(isActive(link))}
+								active={isActive(link)}
+							/>
+						))}
 					</nav>
 				</>
 			) : (
@@ -290,7 +306,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				<>
 					<div class="flex w-full items-center justify-between">
 						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+							{logo ? <img src={logo} alt="" class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt="" width="81" height="24" class="h-6 w-auto shrink-0 object-contain" />}
 						</a>
 						<div class="flex items-center gap-4">
 							{showSearch && (
@@ -300,7 +316,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-8" />
+									<FluxNtIcon name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
 							{showCart && (
@@ -310,7 +326,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<FluxNtIcon name="cart" sizeClass="size-6" />
 									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 								</button>
 							)}
@@ -320,7 +336,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<FluxNtIcon name="user" sizeClass="size-6" />
 								</a>
 							)}
 							{isSidebar && (
@@ -333,10 +349,10 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 									aria-controls="flux-burger"
 								>
 									<span class="burger-icon" data-icon="open">
-										<NtIcon name="menu-burger" sizeClass="size-6" />
+										<FluxNtIcon name="menu-burger" sizeClass="size-6" />
 									</span>
 									<span class="burger-icon hidden" data-icon="close">
-										<NtIcon name="menu-close" sizeClass="size-6" />
+										<FluxNtIcon name="menu-close" sizeClass="size-6" />
 									</span>
 								</button>
 							)}
@@ -349,27 +365,23 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 						data-puck-subsection-index="997"
 						data-puck-subsection-field="navigationLinks"
 					>
-						{nav.map((link) => {
-							const active = isActive(link);
-							return (
-								<a
-									href={link.href}
-									aria-current={active ? "page" : undefined}
-									class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
-								>
-									{link.label}
-								</a>
-							);
-						})}
+						{nav.map((link) => (
+							<NavItem
+								link={link}
+								menuType={menuType}
+								linkClass={navLinkCls(isActive(link))}
+								active={isActive(link)}
+							/>
+						))}
 					</nav>
 				</>
 			)}
 		</div>
 	) : (
-		/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute / top-right ── */
+		/* ── SINGLE-ROW LAYOUTS: center-left / top-right ── */
 		<div class={singleRowContainerCls} style={headerPadStyle}>
 			<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+				{logo ? <img src={logo} alt="" class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt="" width="81" height="24" class="h-6 w-auto shrink-0 object-contain" />}
 			</a>
 
 			<nav
@@ -379,18 +391,14 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				data-puck-subsection-index="997"
 				data-puck-subsection-field="navigationLinks"
 			>
-				{nav.map((link) => {
-					const active = isActive(link);
-					return (
-						<a
-							href={link.href}
-							aria-current={active ? "page" : undefined}
-							class:list={[navLinkBase, active ? navActiveCls : navIdleCls, megaLinkCls]}
-						>
-							{link.label}
-						</a>
-					);
-				})}
+				{nav.map((link) => (
+					<NavItem
+						link={link}
+						menuType={menuType}
+						linkClass={navLinkCls(isActive(link))}
+						active={isActive(link)}
+					/>
+				))}
 			</nav>
 
 			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end"]}>
@@ -401,7 +409,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Поиск"
 					>
-						<NtIcon name="search-lg" sizeClass="size-8" />
+						<FluxNtIcon name="search-lg" sizeClass="size-6" />
 					</button>
 				)}
 				{showCart && (
@@ -411,7 +419,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 						class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
-						<NtIcon name="cart" sizeClass="size-8" />
+						<FluxNtIcon name="cart" sizeClass="size-6" />
 						<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 					</button>
 				)}
@@ -421,7 +429,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 						class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Аккаунт"
 					>
-						<NtIcon name="user" sizeClass="size-8" />
+						<FluxNtIcon name="user" sizeClass="size-6" />
 					</a>
 				)}
 				{isSidebar && (
@@ -434,10 +442,10 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 						aria-controls="flux-burger"
 					>
 						<span class="burger-icon" data-icon="open">
-							<NtIcon name="menu-burger" sizeClass="size-6" />
+							<FluxNtIcon name="menu-burger" sizeClass="size-6" />
 						</span>
 						<span class="burger-icon hidden" data-icon="close">
-							<NtIcon name="menu-close" sizeClass="size-6" />
+							<FluxNtIcon name="menu-close" sizeClass="size-6" />
 						</span>
 					</button>
 				)}
@@ -452,7 +460,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 		hidden
 	>
 		<div class={deskContainerBase}>
-			<form role="search" action="/catalog" method="get" class="flex h-16 w-full items-center justify-between gap-2 rounded-[8px] border border-[#FA5109] bg-white pl-4 pr-2">
+			<form role="search" action="/catalog" method="get" class="flex h-16 w-full items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-button-border,250_81_9))] bg-white pl-4 pr-2">
 				<input
 					type="search"
 					name="q"
@@ -462,7 +470,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 				/>
 				<button
 					type="submit"
-					class="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					class="flex h-12 shrink-0 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,250_81_9))] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 				>
 					Найти
 				</button>
@@ -488,7 +496,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 			/* Sidebar drawer: logo + cart at top */
 			<div class="flex items-center justify-between">
 				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
-					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class="h-6 w-auto" />}
+					{logo ? <img src={logo} alt="" class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt="" width="81" height="24" class="h-6 w-auto shrink-0 object-contain" />}
 				</a>
 				<div class="flex items-center gap-3">
 					{showCart && (
@@ -498,7 +506,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 							class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 							aria-label="Корзина"
 						>
-							<NtIcon name="cart" sizeClass="size-6" />
+							<FluxNtIcon name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 						</button>
 					)}
@@ -508,7 +516,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 			/* Mobile drawer (эталон): поиск + профиль сверху */
 			<div class="flex items-center gap-2">
 				{showSearch && (
-					<form class="flex h-11 min-h-11 flex-1 items-center justify-between rounded-[4px] border border-[#F5F5F5] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
+					<form class="flex h-11 min-h-11 flex-1 items-center justify-between rounded-[var(--radius-input,8px)] border border-[#F5F5F5] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
 						<input
 							type="search"
 							name="q"
@@ -516,17 +524,17 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
 						/>
 						<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
-							<NtIcon name="search-sm" sizeClass="size-6" />
+							<FluxNtIcon name="search-sm" sizeClass="size-6" />
 						</button>
 					</form>
 				)}
 				{showProfile && (
 					<a
 						href="/login" data-auth-link
-						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-black"
+						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-2-bg,0_0_0))]"
 						aria-label="Профиль"
 					>
-						<NtIcon name="user" sizeClass="size-8" class="invert" />
+						<FluxNtIcon name="user" sizeClass="size-6" class="invert" />
 					</a>
 				)}
 			</div>
@@ -535,17 +543,55 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-text,0_0_0))]";
 		<nav class:list={["flex flex-col gap-3", isSidebar ? "mt-6" : "mt-[52px]"]} aria-label="Основное меню" data-nav-drawer>
 			{nav.filter((l) => l.href !== "/").map((link) => {
 				const active = isActive(link);
+				const subs = Array.isArray(link.submenu)
+					? link.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+					: [];
 				return (
-					<a
-						href={link.href}
-						class:list={[
-							"flex h-11 items-center justify-between rounded-[4px] px-3 pr-[10px] font-roboto-flex text-[16px] leading-normal",
-							active ? "bg-black font-normal text-white" : "font-light text-black",
-						]}
-					>
-						<span>{link.label}</span>
-						<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
-					</a>
+					<div class="flex w-full flex-col gap-2">
+						<a
+							href={link.href}
+							class:list={[
+								"flex h-11 items-center justify-between rounded-[4px] px-3 pr-[10px] font-roboto-flex text-[16px] leading-normal",
+								active ? "bg-black font-normal text-white" : "font-light text-black",
+							]}
+						>
+							<span>{link.label}</span>
+							{subs.length === 0 && (
+								<FluxNtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
+							)}
+						</a>
+						{subs.length > 0 && (
+							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4">
+								{subs.map((c2) => {
+									const kids2 = Array.isArray(c2.submenu)
+										? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+										: [];
+									return (
+										<div class="flex flex-col gap-2">
+											<a
+												href={c2.href}
+												class="inline-flex w-fit font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-black"
+											>
+												{c2.label}
+											</a>
+											{kids2.length > 0 && (
+												<div class="flex flex-col gap-2 pl-4">
+													{kids2.map((k) => (
+														<a
+															href={k.href}
+															class="inline-flex w-fit font-roboto-flex text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-black"
+														>
+															{k.label}
+														</a>
+													))}
+												</div>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						)}
+					</div>
 				);
 			})}
 		</nav>

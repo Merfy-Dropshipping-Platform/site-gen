@@ -19,32 +19,6 @@
  */
 import { getThemeManifest } from './theme-manifest-loader';
 import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-defaults';
-import { resolveFontFamily, generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
-
-/**
- * Превью-обёртка над buildTokensCss: добавляет `@import url(<шрифты мерчанта>)`
- * перед :root, чтобы ВЫБРАННЫЙ мерчантом шрифт реально загрузился в превью
- * (Google-линк темы в превью статический — грузит только дефолтные шрифты, а
- * headingFont/bodyFont мерчанта не подхватывались → --font-* объявлен, но
- * семейство не загружено → системный фолбэк, вес «плыл»). Применяется во всех
- * превью-путях (первичный рендер + hot-swap). Live НЕ использует — там шрифты
- * грузятся в BaseLayout билд-путём. Гейт на «шрифт задан».
- */
-export function previewTokensCssWithFonts(
-  themeSettings: unknown,
-  themeId: string | null,
-): string {
-  const css = buildTokensCss(
-    (themeSettings as Record<string, unknown>) ?? {},
-    themeId,
-  );
-  const s = themeSettings as { headingFont?: unknown; bodyFont?: unknown } | null;
-  const hf = typeof s?.headingFont === 'string' ? s.headingFont : '';
-  const bf = typeof s?.bodyFont === 'string' ? s.bodyFont : '';
-  if (!hf && !bf) return css;
-  const url = generateGoogleFontsUrl(hf, bf);
-  return url ? `@import url("${url}");\n${css}` : css;
-}
 
 // Список tokens которые emit'ятся явно в rootRules (с merchant cascade).
 // Catch-all iterator ниже пропускает их, чтобы не было дубликата.
@@ -92,30 +66,19 @@ export function buildTokensCss(
   const logoWidthSet = typeof s.logoWidth === 'number';
   const heroHeadingSizeSet = typeof s.heroHeadingSize === 'number';
   const navLinkSizeSet = typeof s.navLinkSize === 'number';
+  const cardBorderSet = typeof s.cardBorder === 'number';
+  const cardStyleSet =
+    s.productCardStyle === 'card' || s.productCardStyle === 'standard';
+  const cardAlignSet =
+    s.productCardAlignment === 'left' ||
+    s.productCardAlignment === 'center' ||
+    s.productCardAlignment === 'right';
 
   const buttonRadius = toPx(s.buttonRadius, 0);
   const cardRadius = toPx(s.cardRadius, 8);
   const inputRadius = toPx(s.inputRadius, 8);
   const mediaRadius = toPx(s.mediaRadius, 8);
   const fieldRadius = toPx(s.fieldRadius, 4);
-  // Cascade: merchant override (revision.themeSettings) → theme manifest →
-  // hardcoded fallback. Объявлено здесь (перемещено выше), чтобы card-style
-  // дефолт читался из МАНИФЕСТА темы. Spec 082 Stage 2a N4.5.
-  const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
-  // Card style «Карточка» (productCardStyle=card): бордер+радиус+паддинг+подложка
-  // на карточке товара. Дефолт из манифеста темы (--card-style): flux=card (канон-
-  // плашка верстальщика #FBFBFB=surface), rose/bloom/satin/vanilla=standard → 0px
-  // (нейтрально, ноль регрессии). Мерчант-выбор (s.productCardStyle) перекрывает
-  // манифест. Выравнивание (--card-alignment) — в обоих стилях.
-  const cardBorder = toPx(s.cardBorder, 0);
-  const cardStyled = (s.productCardStyle ?? themeDefaults['--card-style']) === 'card';
-  const _pcAlignRaw = s.productCardAlignment ?? themeDefaults['--card-alignment'];
-  const pcAlign =
-    _pcAlignRaw === 'center'
-      ? 'center'
-      : _pcAlignRaw === 'right'
-        ? 'right'
-        : 'left';
   const headingFont = fontFamily(s.headingFont, 'system-ui');
   const bodyFont = fontFamily(s.bodyFont, 'system-ui');
   const sectionPadding =
@@ -128,11 +91,24 @@ export function buildTokensCss(
   const headingWeight =
     typeof s.headingWeight === 'number' ? s.headingWeight : 400;
   const logoWidth = toPx(s.logoWidth, 40);
+  const cardBorder = toPx(s.cardBorder, 0);
   const heroHeadingSize = toPx(s.heroHeadingSize, 48);
   const navLinkSize = toPx(s.navLinkSize, 14);
   const errorColor = hexToRgbTriple(s.errorColor) ?? '252 165 165';
 
-  // (themeDefaults объявлено выше — перемещено для card-style дефолта из манифеста.)
+  // Cascade: merchant override (revision.themeSettings) → theme manifest →
+  // hardcoded fallback. Merchant ThemeSettingsPanel saves customizations
+  // in revision.data.themeSettings (constructor); preview + build pipelines
+  // both call buildTokensCss to apply them. Spec 082 Stage 2a N4.5 flipped
+  // precedence so merchant edits actually take effect — previously theme
+  // manifest defaults always won, silently discarding merchant input.
+  const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
+  const cardStyleChoice = cardStyleSet
+    ? String(s.productCardStyle)
+    : themeDefaults['--card-style'] ?? 'standard';
+  const cardAlignChoice = cardAlignSet
+    ? String(s.productCardAlignment)
+    : themeDefaults['--card-alignment'] ?? 'left';
 
   // Cart variant ('drawer' | 'page'): merchant ThemeSettingsPanel choice wins,
   // then theme manifest default, then 'drawer'. Read inline at click-time by the
@@ -151,13 +127,6 @@ export function buildTokensCss(
   --radius-input: ${merchantFirst(inputRadius, inputRadiusSet, themeDefaults['--radius-input'], '8px')};
   --radius-media: ${merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
   --radius-field: ${merchantFirst(fieldRadius, fieldRadiusSet, themeDefaults['--radius-field'], '4px')};
-  --product-card-bw: ${cardStyled ? cardBorder : '0px'};
-  --product-card-radius: ${cardStyled ? merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px') : '0px'};
-  --product-card-padding: ${cardStyled ? '12px' : '0px'};
-  --product-card-align: ${pcAlign};
-  --product-card-justify: ${pcAlign === 'center' ? 'center' : pcAlign === 'right' ? 'flex-end' : 'flex-start'};
-  --product-card-bg: ${cardStyled ? 'rgb(var(--color-surface,245 245 245))' : 'transparent'};
-  --product-card-media-radius: ${cardStyled ? merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px') : merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
   --font-heading: ${merchantFirst(headingFont, headingFontSet, themeDefaults['--font-heading'], 'system-ui')};
   --font-body: ${merchantFirst(bodyFont, bodyFontSet, themeDefaults['--font-body'], 'system-ui')};
   --weight-body: ${merchantFirst(String(bodyWeight), bodyWeightSet, themeDefaults['--weight-body'], '400')};
@@ -212,9 +181,7 @@ export function buildTokensCss(
       ? `\n  --font-powered-by: ${themeDefaults['--font-powered-by']};`
       : ''
   }${
-    themeDefaults['--size-card-border']
-      ? `\n  --size-card-border: ${themeDefaults['--size-card-border']};`
-      : ''
+    `\n  --size-card-border: ${merchantFirst(cardBorder, cardBorderSet, themeDefaults['--size-card-border'], '0px')};`
   }${
     themeDefaults['--button-style']
       ? `\n  --button-style: ${themeDefaults['--button-style']};`
@@ -230,13 +197,9 @@ export function buildTokensCss(
   }${
     `\n  --cart-type: ${cartTypeChoice};`
   }${
-    themeDefaults['--card-style']
-      ? `\n  --card-style: ${themeDefaults['--card-style']};`
-      : ''
+    `\n  --card-style: ${cardStyleChoice};`
   }${
-    themeDefaults['--card-alignment']
-      ? `\n  --card-alignment: ${themeDefaults['--card-alignment']};`
-      : ''
+    `\n  --card-alignment: ${cardAlignChoice};`
   }${
     themeDefaults['--color-bottom-strip-bg']
       ? `\n  --color-bottom-strip-bg: ${themeDefaults['--color-bottom-strip-bg']};`
@@ -405,51 +368,15 @@ export function buildTokensCss(
   // константно; дефолт зазора 0px = нулевая регрессия.
   const sectionGapRule = 'main > * + *{margin-top:var(--section-gap, 0px)}';
 
-  // «Жирность заголовка / текста» (Типографика) — оживление слайдеров. Порты тем
-  // хардкодят font-weight по Figma (в т.ч. Tailwind `!font-normal` = !important),
-  // поэтому одной эмиссии --weight-* было мало — слайдер не влиял. Инжектим
-  // override ТОЛЬКО когда мерчант РЕАЛЬНО сдвинул слайдер (headingWeightSet /
-  // bodyWeightSet); иначе правило пустое → дефолтный вид тем байт-в-байт сохранён
-  // (default-preserving, как wishlistHideRule). Скоуп `main` — контент секций, НЕ
-  // header/footer/nav-хром. `[class]`-квалификатор поднимает специфичность до
-  // (0,1,2) > (0,1,0) у `!font-normal`, а !important перебивает !important-класс.
-  // Заголовок — все h1..h6; текст — параграфы <p> (кнопки/бейджи это <a>/<button>,
-  // не трогаем). Unlayered → перебивает @layer base { h*, p } из global.css тем.
-  // «Жирность / Шрифт заголовка-текста» (Типографика) — применение во ВСЕХ секциях.
-  // Часть портов верстает заголовки секций/карточек через body-класс `font-manrope`
-  // и Tailwind `!font-normal` (вес !important). Форсим роль по семантике тега:
-  // h1..h6 → --font-heading/--weight-heading, текст (p/li/button/label) →
-  // --font-body/--weight-body. Гейт на «мерчант задал» → дефолт тем сохранён.
-  // Скоуп main + footer (footer рендерится вне <main>).
-  //
-  // КРИТИЧНО — обёртка `@layer utilities`: для `!important`-объявлений порядок
-  // слоёв ОБРАТНЫЙ обычному, и БЕЗСЛОЙНОЕ правило ПРОИГРЫВАЕТ любому слою. Tailwind
-  // держит `.\!font-normal{font-weight:… !important}` в `@layer utilities`, поэтому
-  // безслойный override (даже спецификой 0,2,2) не бил Hero/Slideshow. В том же
-  // слое utilities решает специфичность: наш (0,1,2) > (0,1,0) у `.\!font-normal`.
-  const weightHeadingRule = headingWeightSet
-    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-weight:var(--weight-heading) !important}'
-    : '';
-  const weightBodyRule = bodyWeightSet
-    ? 'main p[class],main li[class],main button[class],main label[class]{font-weight:var(--weight-body) !important}'
-    : '';
-  const fontHeadingRule = headingFontSet
-    ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-family:var(--font-heading) !important}'
-    : '';
-  const fontBodyRule = bodyFontSet
-    ? 'main p[class],main li[class],main button[class],main label[class]{font-family:var(--font-body) !important}'
-    : '';
-  const typographyOverrides = [
-    weightHeadingRule,
-    weightBodyRule,
-    fontHeadingRule,
-    fontBodyRule,
-  ]
-    .filter(Boolean)
-    .join('');
-  const typographyLayer = typographyOverrides
-    ? `@layer utilities{${typographyOverrides}}`
-    : '';
+  // Theme Settings шрифты: утилиты тем (.font-comfortaa / .font-roboto-flex /
+  // .font-manrope) читают picker-токены, даже если global.css темы ещё не
+  // пересобран. Unlayered → бьёт Tailwind font-family утилиты.
+  const fontRoleRule =
+    '.font-comfortaa{font-family:var(--font-heading,inherit);font-weight:var(--weight-heading,400)}' +
+    '.font-manrope,.font-roboto-flex{font-family:var(--font-body,inherit)}';
+  const productCardTokenRule =
+    '[data-nt="flux-product-card"]{border-width:var(--size-card-border,0px);border-style:solid;border-color:rgb(var(--color-text,0 0 0)/0.1);text-align:var(--card-alignment,left)}' +
+    '@container style(--card-style: standard){[data-nt="flux-product-card"]{background-color:transparent;padding:0;border-radius:0;box-shadow:none;transform:none}}';
 
   return [
     rootRules,
@@ -458,7 +385,8 @@ export function buildTokensCss(
     wishlistHideRule,
     stickyFooterRule,
     sectionGapRule,
-    typographyLayer,
+    fontRoleRule,
+    productCardTokenRule,
   ]
     .filter(Boolean)
     .join('\n');
@@ -478,12 +406,15 @@ function toPx(v: unknown, fallback: number): string {
 
 function fontFamily(v: unknown, fallback: string): string {
   if (typeof v !== 'string' || !v) return fallback;
-  // Resolve ALL 44 constructor font keys → proper CSS family via the shared
-  // map (constructor-theme-bridge). Раньше здесь был локальный список из 5
-  // шрифтов (comfortaa/manrope/inter/playfair/roboto), и любой другой ключ
-  // (e.g. 'exo-2') отдавался как есть → font-family:"exo-2" (несуществующее
-  // семейство) → браузер сваливался в фолбэк → шрифт мерчанта не применялся.
-  return resolveFontFamily(v);
+  // Known constructor keys → font stacks.
+  const known: Record<string, string> = {
+    comfortaa: '"Comfortaa", system-ui, sans-serif',
+    manrope: '"Manrope", system-ui, sans-serif',
+    inter: '"Inter", system-ui, sans-serif',
+    'playfair-display': '"Playfair Display", Georgia, serif',
+    roboto: '"Roboto", system-ui, sans-serif',
+  };
+  return known[v] ?? `"${v}", ${fallback}`;
 }
 
 /**

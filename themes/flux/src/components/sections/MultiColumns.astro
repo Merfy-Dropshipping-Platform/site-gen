@@ -47,7 +47,7 @@ const headingSizeCls =
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image,
 // imageSize, headingSize/textSize per-item, link {text,href} | flat linkText+link).
@@ -160,7 +160,7 @@ const textAlignCls = p.textPosition === "center" ? "items-center text-center" : 
 const containerEnabled =
 	String(p.containerEnabled ?? p.background?.enabled ?? "false") === "true";
 const cardSurfaceCls = containerEnabled
-	? " rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))] p-6 md:p-10"
+	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,251_251_251))] p-6 md:p-10"
 	: "";
 // Класс схемы контейнера — на обёртке СПИСКА (<ul>), красит плашки колонок. ВКЛ
 // только при включённом контейнере (при ВЫКЛ — основная секционная схема).
@@ -257,7 +257,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						>
 							{c.image ? (
 								<div
-									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
+									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
 								>
 									<img
 										src={c.image}
@@ -270,14 +270,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							) : c.isPlaceholder ? (
 								/* Пустое состояние Figma 1:19335: пустой surface-rect (без картинки). */
 								<div
-									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
+									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
 									aria-hidden="true"
 								/>
 							) : null}
 							<div class="flex w-full flex-col gap-2 md:gap-3">
 								{c.heading && (
 									<h3
-										class={`font-roboto-flex ${itemHeadingCls(c.headingSize)} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
+										class={`font-comfortaa ${itemHeadingCls(c.headingSize)} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
 									>
 										{c.heading}
 									</h3>

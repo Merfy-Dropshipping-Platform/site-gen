@@ -255,12 +255,27 @@ export function constructorThemeToMerchantSettings(
   tokens["font-heading"] = resolveFontFamily(theme.headingFont);
   tokens["font-body"] = resolveFontFamily(theme.bodyFont);
 
+  tokens["weight-heading"] = String(theme.headingWeight ?? 400);
+  tokens["weight-body"] = String(theme.bodyWeight ?? 400);
+
   // Radii
   tokens["radius-button"] = `${theme.buttonRadius}px`;
   tokens["radius-input"] = `${theme.inputRadius}px`;
   tokens["radius-card"] = `${theme.cardRadius}px`;
   tokens["radius-media"] = `${theme.mediaRadius}px`;
   tokens["radius-field"] = `${theme.fieldRadius ?? 4}px`;
+  if (theme.cardBorder !== undefined) {
+    tokens["size-card-border"] = `${theme.cardBorder}px`;
+  }
+  if (theme.logoWidth !== undefined) {
+    tokens["size-logo-width"] = `${theme.logoWidth}px`;
+  }
+  if (theme.productCardStyle) {
+    tokens["card-style"] = theme.productCardStyle;
+  }
+  if (theme.productCardAlignment) {
+    tokens["card-alignment"] = theme.productCardAlignment;
+  }
 
   // Spacing
   if (theme.sectionPadding !== undefined) {

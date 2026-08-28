@@ -63,29 +63,17 @@ function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Blo
 }
 
 /**
- * Cart page (Spec 110, Figma 1:20818). Для тем из CART_SPLIT_THEMES корзина = ДВА
- * Puck-блока-сиблинга:
- *   • CartBody     («Корзина»)            — товары + пустое состояние
- *   • CartSummary  («Промежуточный итог») — примечание + «Итого» + «Оформить»
- * У каждого свои colorScheme + padding (на live применяются независимо). Для прочих
- * тем (порт ещё не сделан) корзина остаётся МОНОЛИТОМ CartSection (как было) — гейт
- * по теме защищает их live-корзину до Phase 2. Мерчант добавляет вокруг другие секции.
+ * Cart page = Puck-managed ОДНОЙ секцией CartSection (вся ванильная логика корзины:
+ * пусто/наполнено/итог/«Оформить»/cart-store). Мерчант может добавлять вокруг другие
+ * секции, как на главной. Заменяет прежний 081-layout (CartBody/CartSummary/CartTotals/
+ * CartCheckoutButton — был на React-островах, от React отказались).
  *
- *   - Seeds [Header, …cart, Footer] когда page-cart отсутствует (cart = split|monolith).
- *   - Мигрирует существующие сайты к целевой структуре темы в позиции cart-блока;
- *     colorScheme/padding монолита переносятся на CartBody (без потери настроек).
- *     Демо-кросс-селл PopularProducts с корзины дропается (моки, убраны ранее;
- *     мерчант сам добавит секцию рекомендаций, если нужно).
- *   - Идемпотентна: page-cart уже в целевой структуре темы — no-op (только chrome);
- *     секции, добавленные мерчантом, сохраняются.
+ *   - Seeds [Header, CartSection, Footer] когда page-cart отсутствует.
+ *   - Мигрирует существующие сайты: старые cart-блоки → ОДНА CartSection в их позиции;
+ *     прочие секции (PopularProducts cross-sell и т.п.) сохраняются.
+ *   - Идемпотентна: page-cart с CartSection и без старых блоков — no-op (только chrome).
  */
-// Spec 110 — темы с РАЗБИТОЙ корзиной (CartBody + CartSummary). Прочие темы остаются
-// на монолите CartSection до появления их портов (Phase 2 расширяет множество).
-// Зеркало паттерна PRODUCT_UNIFIED_THEMES.
-const CART_SPLIT_THEMES = new Set(['rose']);
-// Любой cart-блок (монолит/split/legacy-острова) — для поиска/замены при миграции.
-const ALL_CART_BLOCK_TYPES = new Set([
-  'CartSection',
+const OLD_CART_BLOCK_TYPES = new Set([
   'CartBody',
   'CartSummary',
   'CartTotals',
@@ -94,36 +82,21 @@ const ALL_CART_BLOCK_TYPES = new Set([
 
 function migrateCartPage(
   pagesData: Record<string, unknown>,
-  themeId?: string | null,
 ): Record<string, unknown> {
-  const split = CART_SPLIT_THEMES.has(themeId ?? '');
   const existing = pagesData['page-cart'] as PageData | undefined;
   const ts = Date.now();
-  const carry = (src: Record<string, unknown>): Record<string, unknown> => ({
-    ...(src?.colorScheme != null ? { colorScheme: src.colorScheme } : {}),
-    ...(src?.padding != null ? { padding: src.padding } : {}),
-  });
-  const makeCartBody = (props: Record<string, unknown> = {}): Block => ({
-    type: 'CartBody',
-    props: { id: `CartBody-${ts}`, colorScheme: 'scheme-2', padding: { top: 80, bottom: 40 }, ...props },
-  });
-  const makeCartSummary = (props: Record<string, unknown> = {}): Block => ({
-    type: 'CartSummary',
-    props: { id: `CartSummary-${ts + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 80 }, ...props },
-  });
-  const makeCartSection = (props: Record<string, unknown> = {}): Block => ({
+  const makeCartSection = (): Block => ({
     type: 'CartSection',
-    props: { id: `CartSection-${ts}`, padding: { top: 80, bottom: 80 }, ...props },
+    props: { id: `CartSection-${ts}`, padding: { top: 80, bottom: 80 } },
   });
 
-  // Нет page-cart → полный seed [Header, …cart, Footer] под структуру темы.
+  // Нет page-cart → полный seed [Header, CartSection, Footer].
   if (!existing || !Array.isArray(existing.content)) {
     const chrome = getHomeChrome(pagesData);
-    const cartBlocks = split ? [makeCartBody(), makeCartSummary()] : [makeCartSection()];
     return {
       ...pagesData,
       'page-cart': {
-        content: [chrome.headerBlock, ...cartBlocks, chrome.footerBlock],
+        content: [chrome.headerBlock, makeCartSection(), chrome.footerBlock],
         root: { props: { title: 'Корзина' } },
         zones: {},
       } as PageData,
@@ -133,15 +106,13 @@ function migrateCartPage(
   const content = existing.content.filter(
     (b): b is Block => !!b && typeof b?.type === 'string',
   );
-  const has = (t: string): boolean => content.some((b) => b.type === t);
-  // Целевая структура темы уже достигнута → no-op (только chrome).
-  const isTargetReached = split
-    ? has('CartBody') && has('CartSummary') &&
-      !has('CartSection') && !has('CartTotals') && !has('CartCheckoutButton')
-    : has('CartSection') &&
-      !has('CartBody') && !has('CartSummary') && !has('CartTotals') && !has('CartCheckoutButton');
+  const isCartLike = (b: Block): boolean =>
+    OLD_CART_BLOCK_TYPES.has(b.type ?? '') || b.type === 'CartSection';
+  const hasCartSection = content.some((b) => b.type === 'CartSection');
+  const hasOldCart = content.some((b) => OLD_CART_BLOCK_TYPES.has(b.type ?? ''));
 
-  if (isTargetReached) {
+  // Уже мигрирована (CartSection есть, старых блоков нет) → только chrome.
+  if (hasCartSection && !hasOldCart) {
     const patched = ensureChrome(content, pagesData);
     if (
       patched.length === content.length &&
@@ -152,30 +123,22 @@ function migrateCartPage(
     return { ...pagesData, 'page-cart': { ...existing, content: patched } };
   }
 
-  // Пересборка: все cart-блоки (любой layout) + демо-PopularProducts заменяем целевой
-  // структурой темы в позиции первого cart-блока. Настройки монолита (или прежних
-  // CartBody/CartSummary) переносим, чтобы не потерять заданные мерчантом схему/отступы.
-  const isCartCore = (b: Block): boolean => ALL_CART_BLOCK_TYPES.has(b.type ?? '');
-  const isDroppable = (b: Block): boolean => isCartCore(b) || b.type === 'PopularProducts';
-  const monolith = content.find((b) => b.type === 'CartSection');
-  const prevBody = content.find((b) => b.type === 'CartBody');
-  const prevSummary = content.find((b) => b.type === 'CartSummary');
-  const bodySrc = (monolith?.props ?? prevBody?.props ?? {}) as Record<string, unknown>;
-  const summarySrc = (prevSummary?.props ?? monolith?.props ?? {}) as Record<string, unknown>;
-  const cartBlocks = split
-    ? [makeCartBody(carry(bodySrc)), makeCartSummary(carry(summarySrc))]
-    : [makeCartSection(carry(bodySrc))];
-
-  const firstIdx = content.findIndex(isCartCore);
-  const kept = content.filter((b) => !isDroppable(b));
+  // Миграция: старые cart-блоки → ОДНА CartSection в позиции первого старого блока.
+  // Прочие блоки (chrome, PopularProducts cross-sell) сохраняются; дубль CartSection убираем.
+  const firstOldIdx = content.findIndex((b) => OLD_CART_BLOCK_TYPES.has(b.type ?? ''));
+  const kept = content.filter((b) => !isCartLike(b));
   const keptBefore =
-    firstIdx >= 0
-      ? content.slice(0, firstIdx).filter((b) => !isDroppable(b)).length
+    firstOldIdx >= 0
+      ? content.slice(0, firstOldIdx).filter((b) => !isCartLike(b)).length
       : (() => {
           const fi = kept.findIndex((b) => b.type === 'Footer');
           return fi >= 0 ? fi : kept.length;
         })();
-  const next = [...kept.slice(0, keptBefore), ...cartBlocks, ...kept.slice(keptBefore)];
+  const next = [
+    ...kept.slice(0, keptBefore),
+    makeCartSection(),
+    ...kept.slice(keptBefore),
+  ];
   const withChrome = ensureChrome(next, pagesData);
   return { ...pagesData, 'page-cart': { ...existing, content: withChrome } };
 }
@@ -614,8 +577,8 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
  * theme.json ПОСЛЕ того как существующие сайты достигли ревизии 2.0, поэтому
  * version-миграции её не бэкфилят. Аддитивно добавляем в pages[] + pagesData
  * (идемпотентно). Оперирует полной ревизией (нужен pages[]), а не только
- * pagesData. Вызывается для тем с зарегистрированным блоком OrderConfirmation
- * (rose, flux, bloom) — см. гейт в orchestrate-миграции.
+ * pagesData. Вызывается ТОЛЬКО для rose — единственной темы с зарегистрированным
+ * блоком OrderConfirmation.
  */
 function seedCheckoutResultPage(
   out: Record<string, unknown>,
@@ -1435,33 +1398,17 @@ function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<str
 }
 
 /**
- * Bloom «оживление» Collections: секция переехала с навигационной сетки плиток-
- * коллекций (grid из `collections[]`, ссылки `/catalog?collection=<id>`) на СЕТКУ
- * КАРТОЧЕК ТОВАРА одной коллекции (новый Collections.astro читает СИНГУЛЯРНЫЙ
- * строковый проп `collection` = id/slug источника товаров). Старые ревизии
- * bloom-сайтов держат МАССИВ `collections[]` + `cardLinkBase` (nav-tile shape) и
- * НЕ имеют `collection` — на новой разметке их выбор коллекций был бы потерян
- * (секция упала бы на SSG-демо).
- *
- * Миграция (только bloom): для Collections-блоков со старым shape (есть непустой
- * `collections[]` И нет непустого `collection`) берёт ПЕРВЫЙ/приоритетный
- * `collectionId` из старого массива и кладёт его в новый сингулярный `collection`,
- * затем удаляет устаревшие `collections[]` и `cardLinkBase`. Прочие пропы
- * (heading/subtitle/columns/imageView/padding/colorScheme) сохраняются.
- *
- * Идемпотентна:
- *   • блок уже в новом shape (нет `collections[]`) — не трогаем;
- *   • блок с `collection` (строкой) уже задан — только чистим stale nav-tile
- *     пропы, `collection` не перезаписываем.
- * Старый массив без единого валидного `collectionId` (все null — «пустое
- * состояние») → `collection` не выставляем (остаётся SSG-демо), но stale
- * `collections[]`/`cardLinkBase` всё равно вычищаем (даёт новый чистый shape).
+ * Video «Размер» split (rose/flux/vanilla/bloom/satin parity): исторически у
+ * блока Video было единственное top-level поле `size`, ошибочно подписанное
+ * «Размер заголовка» и управлявшее КЕГЛЕМ <h2>. Канон (как у Hero) — два
+ * независимых регулятора: `size` = ВЫСОТА медиа-блока, `headingSize` = кегль
+ * заголовка. Этот backfill сохраняет уже выбранный мерчантом кегль, перенося
+ * legacy top-level `size` в `headingSize`, и очищает `size`, чтобы высота
+ * видео осталась дефолтной (medium/16:9) — иначе старая ревизия с «Большим
+ * заголовком» молча получила бы более высокое видео.
+ * Идемпотентно: срабатывает только когда `size` — строка И `headingSize` пуст.
  */
-function migrateBloomCollectionsProps(
-  pagesData: Record<string, unknown>,
-  themeId?: string | null,
-): Record<string, unknown> {
-  if (themeId !== 'bloom') return pagesData;
+function backfillVideoSizeSplit(pagesData: Record<string, unknown>): Record<string, unknown> {
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const [pageId, page] of Object.entries(pagesData)) {
@@ -1470,35 +1417,17 @@ function migrateBloomCollectionsProps(
     if (!content) continue;
     let pageChanged = false;
     const newContent = content.map((block) => {
-      if (block?.type !== 'Collections') return block;
+      if (block?.type !== 'Video') return block;
       const props = (block.props ?? {}) as Record<string, unknown>;
-      const oldItems = Array.isArray(props.collections)
-        ? (props.collections as Array<Record<string, unknown>>)
-        : null;
-      // Уже новый shape (нет nav-tile массива и cardLinkBase) — no-op.
-      const hasStaleTileProps = !!oldItems || props.cardLinkBase !== undefined;
-      if (!hasStaleTileProps) return block;
-
-      const nextProps: Record<string, unknown> = { ...props };
-      // Сингулярный источник товаров: не перезаписываем, если мерчант уже задал.
-      const currentCollection =
-        typeof props.collection === 'string' && props.collection.trim()
-          ? props.collection.trim()
-          : '';
-      if (!currentCollection && oldItems) {
-        const primary = oldItems.find(
-          (c) =>
-            c &&
-            typeof c.collectionId === 'string' &&
-            (c.collectionId as string).trim() !== '',
-        );
-        if (primary) nextProps.collection = (primary.collectionId as string).trim();
+      const hasHeadingSize =
+        typeof props.headingSize === 'string' && props.headingSize !== '';
+      const legacySize = props.size;
+      if (hasHeadingSize || typeof legacySize !== 'string' || legacySize === '') {
+        return block;
       }
-      // Чистим устаревшие nav-tile пропы (новый Collections.astro их игнорирует).
-      delete nextProps.collections;
-      delete nextProps.cardLinkBase;
-
       pageChanged = true;
+      const nextProps: Record<string, unknown> = { ...props, headingSize: legacySize };
+      delete nextProps.size;
       return { ...block, props: nextProps };
     });
     if (pageChanged) {
@@ -1529,7 +1458,7 @@ export function migrateRevisionData(
     out.pagesData = migrateProductPage(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
-    out.pagesData = migrateCartPage(out.pagesData as Record<string, unknown>, themeId);
+    out.pagesData = migrateCartPage(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateCheckoutPage(out.pagesData as Record<string, unknown>);
@@ -1549,14 +1478,12 @@ export function migrateRevisionData(
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillHeroLegacyProps(out.pagesData as Record<string, unknown>);
   }
-  // Bloom «оживление» Collections: nav-tile `collections[]` → сингулярный
-  // `collection` (product-grid). Theme-gated (bloom). После prop-бэкфиллов.
   if (out.pagesData && typeof out.pagesData === 'object') {
-    out.pagesData = migrateBloomCollectionsProps(out.pagesData as Record<string, unknown>, themeId);
+    out.pagesData = backfillVideoSizeSplit(out.pagesData as Record<string, unknown>);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.
-  if (themeId === 'rose' || themeId === 'flux' || themeId === 'bloom') {
+  if (themeId === 'rose' || themeId === 'flux') {
     return seedCheckoutResultPage(out);
   }
   return out;

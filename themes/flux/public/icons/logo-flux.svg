@@ -1,4 +1,4 @@
-<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 81 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="81" height="24" viewBox="0 0 81 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="flux">
 <path d="M43.9249 0V2.15061H36.4706V10.8358H41.661V11.0564C41.661 11.6446 41.4862 12.1133 41.1365 12.4625C40.7868 12.8118 40.3174 12.9864 39.7284 12.9864H36.4706V24H34.2896V0H43.9249Z" fill="var(--fill-0, black)"/>
 <path d="M48.3768 0V21.644H53.3463C53.8432 21.644 54.239 21.8002 54.5335 22.1127C54.8463 22.4068 55.0028 22.802 55.0028 23.2983V24H46.1957V0H48.3768Z" fill="var(--fill-0, black)"/>

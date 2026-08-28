@@ -42,7 +42,7 @@ const headingSizeCls =
 		: headingSize === "large"
 			? "text-[23px] md:text-[29px]"
 			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 
 // Канон textSize (text.size сабпанели приоритетнее legacy textSize). База flux =
 // 16/md:19 (паритет MainText/Popular textSize medium). 'medium' (canon-default) и
@@ -174,7 +174,7 @@ const titleId = id ? `${id}-title` : undefined;
 		    Ритм неравномерный — зазор колонок gap-6 md:gap-8 lg:gap-10 (манера flux). */}
 		<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`}>
 			<div
-				class={`group relative w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
+				class={`group relative w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="image"

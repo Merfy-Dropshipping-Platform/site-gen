@@ -39,7 +39,7 @@ const headingSizeCls =
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // button {text, href|link}, size/headingSize/textSize per-item). Figma 1:19335 —
@@ -219,7 +219,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							data-puck-subsection-field="rows"
 						>
 							<div
-								class={`group relative w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+								class={`group relative w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
 								aria-hidden={r.image ? undefined : "true"}
 							>
 								{r.image && (
@@ -234,7 +234,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
 								{r.heading && (
 									<h3
-										class={`font-roboto-flex ${r.headingCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
+										class={`font-comfortaa ${r.headingCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
 										set:html={r.heading}
 									/>
 								)}

@@ -133,10 +133,10 @@
         "showDescription": true
       }
     },
-    "Hero": {},
+    "Hero": { "colorScheme": "scheme-1" },
     "ImageWithText": { "colorScheme": "scheme-1" },
     "Gallery": { "colorScheme": "scheme-1" },
-    "Slideshow": {},
+    "Slideshow": { "colorScheme": "scheme-1" },
     "MultiRows": { "colorScheme": "scheme-1" },
     "MultiColumns": { "colorScheme": "scheme-1" },
     "MainText": { "colorScheme": "scheme-1" },

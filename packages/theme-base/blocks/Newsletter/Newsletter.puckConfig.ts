@@ -24,11 +24,13 @@ export const NewsletterSchema = z.object({
    * 'false' (контрол выключен) сохраняет прежний вид (default-preserving).
    */
   agreement: z.enum(['true', 'false']).optional(),
-  // Текст чекбокса согласия + опциональная ссылка (страница/URL, даже
-  // несуществующая). agreementLinkText — часть-ссылка; если пусто, а link задан,
-  // ссылкой становится весь текст.
-  agreementText: z.string().optional(),
-  agreementLink: z.string().optional(),
+  /**
+   * Тогл «Скрыть заголовок и текст» (legacy 'true'/'false' strings, как
+   * agreement). При 'true' порты не рендерят блок heading+description (форма и
+   * чекбокс согласия остаются); default 'false' сохраняет прежний вид
+   * (default-preserving).
+   */
+  hideTitle: z.enum(['true', 'false']).optional(),
   /**
    * 084 vanilla pilot — additive variant. Form layout style:
    *   - `inline-submit` (default behaviour, identical pre-commit)
@@ -75,11 +77,12 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
         },
       },
     },
+    // Тогл «Скрыть заголовок и текст» — при 'true' порты не рендерят блок
+    // heading+description (форма/согласие остаются); default 'false' (виден).
+    hideTitle: { type: 'toggle', label: 'Скрыть заголовок и текст' } as any,
     // Figma «Соглашение на рассылку» — toggle. При 'true' порты рендерят чекбокс
     // согласия под формой; default 'false' (по умолчанию чекбокса нет).
     agreement: { type: 'toggle', label: 'Соглашение на рассылку' } as any,
-    agreementText: { type: 'hidden', label: '' },
-    agreementLink: { type: 'hidden', label: '' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Sub-panel «Форма рассылки» (314:35058):
@@ -120,7 +123,7 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
     buttonText: 'Подписаться',
     formLayout: 'stacked',
     agreement: 'false',
-    agreementText: 'Согласен на обработку персональных данных',
+    hideTitle: 'false',
     padding: { top: 80, bottom: 80 },
   },
   schema: NewsletterSchema,

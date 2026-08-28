@@ -71,8 +71,15 @@ const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 /** Кэш на страницу: undefined — не загружали, null — demo/пусто/ошибка. */
 let cached: RealProduct[] | null | undefined;
 
-const kopToRub = (v: number | string | null | undefined): number | string | null | undefined =>
-	v;
+/**
+ * Цены из products.json (build.service themes-v2 verbatim) и storefront-data
+ * (storefront-data.controller) приходят уже в РУБЛЯХ (basePrice как есть, без
+ * конвертации; заказ = basePrice×100 → копейки на стороне orders). Карточка/корзина
+ * flux работают в РУБЛЯХ: formatPrice НЕ делит, cart-store (nt-cart-flux parsePrice)
+ * читает `data-price` как рубли. Поэтому оставляем значение как есть (identity) —
+ * прежний /100 ломал цены (54990₽ → 549₽).
+ */
+const kopToRub = (v: number | string | null | undefined): number | string | null | undefined => v;
 
 /**
  * Нормализует цены товаров к рублям РАЗОМ на загрузке — зеркало
@@ -504,7 +511,7 @@ function saleBadgeHtml(p: RealProduct): string {
 	const label = pct > 0 ? `-${pct}%` : "Скидка";
 	return (
 		`<div class="absolute left-2 top-2 flex flex-col items-start gap-1">` +
-		`<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">${escapeHtml(label)}</span>` +
+		`<span class="inline-flex items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">${escapeHtml(label)}</span>` +
 		`</div>`
 	);
 }
@@ -512,7 +519,7 @@ function saleBadgeHtml(p: RealProduct): string {
 // Чёрная CTA эталона (literal — карточка верстальщиков светлая независимо от
 // схемы; data-btn-style на гриде Popular перекрывает её через <style is:global>).
 const CARD_BTN_CLS =
-	"mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
+	"mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90";
 
 /**
  * Кнопка «В корзину» карточки. Вариативный товар → добавляет ПЕРВУЮ доступную
@@ -565,7 +572,7 @@ export function renderCardHtml(p: RealProduct): string {
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
-		? `<span class="font-roboto-flex text-[12px] font-light leading-normal text-[#CCCCCC] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
+		? `<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,204_204_204))] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
 		: "";
 	const imageHtml = image
 		? `<img src="${image}" alt="${name}" width="600" height="600" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />`
@@ -594,9 +601,9 @@ export function renderCardHtml(p: RealProduct): string {
 					.join("")}</div>`
 			: "";
 
-	return `<article class="group flex h-full w-full flex-col gap-4 transition-transform duration-300 hover:-translate-y-1" data-nt="flux-product-card" aria-label="${name}">
+	return `<article class="group flex h-full w-full flex-col gap-4 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,251_251_251))] p-3 transition-transform duration-300 hover:-translate-y-1" data-nt="flux-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" data-nt="flux-card-media" class="relative block aspect-square w-full overflow-hidden bg-[#FBFBFB]" aria-label="${name}">
+		<a href="${href}" data-nt="flux-card-media" class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]" aria-label="${name}">
 			${imageHtml}
 			${saleBadgeHtml(p)}
 		</a>
@@ -606,9 +613,9 @@ export function renderCardHtml(p: RealProduct): string {
 		<div class="flex flex-col gap-4">
 			${swatchesHtml}
 			<div class="flex flex-col gap-1">
-				<a href="${href}" class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]">${name}</a>
+				<a href="${href}" class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]">${name}</a>
 				<div class="flex items-center gap-2">
-					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">${price}</span>
+					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${price}</span>
 					${oldPrice}
 				</div>
 			</div>
@@ -675,10 +682,11 @@ export function findCombination(
 }
 
 const VARIANT_BTN_BASE =
-	"inline-flex h-10 shrink-0 items-center justify-center rounded-[6px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[#000000] focus-visible:ring-offset-2";
-const VARIANT_BTN_SEL = "border-0 !bg-[#000000] !text-white hover:opacity-95";
+	"inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--radius-button,6px)] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[rgb(var(--color-button-2-bg,0_0_0))] focus-visible:ring-offset-2";
+const VARIANT_BTN_SEL =
+	"border-0 !bg-[rgb(var(--color-button-2-bg,0_0_0))] !text-[rgb(var(--color-button-2-text,255_255_255))] hover:opacity-95";
 const VARIANT_BTN_UNSEL =
-	"border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90";
+	"border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-white !text-[rgb(var(--color-text,0_0_0))] hover:opacity-90";
 
 /**
  * HTML-разметка групп вариантов (выбран: чёрный фон/белый текст; невыбран:

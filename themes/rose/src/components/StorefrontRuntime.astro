@@ -20,65 +20,6 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 	// auth/guest-only элементы; фоновая подгрузка профиля при наличии токена.
 	initAuthUI();
 
-	// Корзина-дровер тянет настройки корзины: цветовую схему (CartBody.colorScheme,
-	// доставлено build-глобалом __MERFY_CART_DRAWER__) и дисклеймер CartSummary.
-	// Дровер — chrome вне color-scheme-обёртки → его scheme-токены (--color-bg/
-	// heading/button-*, см. global.css) резолвятся в :root-дефолт. Вешаем
-	// .color-scheme-N на #cart-drawer-root → цвета совпадают со страницей корзины.
-	// Идемпотентно; повторяем на VT-навигации (дровер ре-рендерится макетом).
-	const applyCartDrawerSettings = () => {
-		const w = window as unknown as {
-			__MERFY_CART_DRAWER_SCHEME__?: string;
-			__MERFY_CART_DRAWER_DISCLAIMER__?: string;
-			__MERFY_CART_DRAWER_TITLE__?: string;
-			__MERFY_CART_DRAWER_CHECKOUT__?: string;
-			__MERFY_CART_DRAWER_EMPTY__?: string;
-		};
-		const cfg = {
-			scheme: w.__MERFY_CART_DRAWER_SCHEME__,
-			disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
-			title: w.__MERFY_CART_DRAWER_TITLE__,
-			checkout: w.__MERFY_CART_DRAWER_CHECKOUT__,
-			empty: w.__MERFY_CART_DRAWER_EMPTY__,
-		};
-		if (!cfg.scheme && !cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
-		const root = document.getElementById("cart-drawer-root");
-		if (!root) return;
-		if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
-			Array.from(root.classList).forEach((c) => {
-				if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
-			});
-			root.classList.add("color-scheme-" + cfg.scheme.replace("scheme-", ""));
-		}
-		if (cfg.disclaimer) {
-			const summary = root.querySelector("[data-cart-summary]");
-			if (summary && !summary.querySelector(".cart-drawer-disclaimer")) {
-				const p = document.createElement("p");
-				p.className = "cart-drawer-disclaimer";
-				p.style.cssText =
-					"font-family:var(--font-body);font-size:14px;line-height:20px;color:rgb(var(--color-muted));margin:0 0 4px;";
-				p.textContent = cfg.disclaimer;
-				summary.insertBefore(p, summary.firstChild);
-			}
-		}
-		// Редактируемые тексты дровера (панель «Корзина» конструктора): заголовок
-		// панели, текст кнопки оформления, текст пустой корзины. Хуки DS-разметки.
-		if (cfg.title) {
-			const h2 = root.querySelector("[data-cart-panel] h2");
-			if (h2) h2.textContent = cfg.title;
-		}
-		if (cfg.checkout) {
-			const btn = root.querySelector("[data-cart-summary] > a");
-			if (btn) btn.textContent = cfg.checkout;
-		}
-		if (cfg.empty) {
-			const emptyP = root.querySelector("[data-cart-empty] > p");
-			if (emptyP) emptyP.textContent = cfg.empty;
-		}
-	};
-	applyCartDrawerSettings();
-	document.addEventListener("astro:page-load", applyCartDrawerSettings);
-
 	// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
 	// сбрасывает express «Купить сейчас» (sessionStorage rose:buynow) — чтобы
 	// чекаут показал корзину покупателя, а не залипший buy-now товар.
@@ -94,13 +35,8 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 	);
 
 	// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
-	// корзины ([data-cart-open]) в capture-фазе. page → /cart. drawer →
-	// открываем панель САМИ через rose:cart:open, а не полагаемся на bubble-
-	// обработчик DS NtCartDrawer: он отбрасывает клики с target=<svg>
-	// (`if (!(target instanceof HTMLElement)) return`), а иконка корзины — это
-	// <svg> (SVGElement, не HTMLElement) → по прямому клику в иконку дровер НЕ
-	// открывался («наполовину работает»/«при повторном не открывается»).
-	// closest() на svg работает, поэтому здесь открытие надёжно при любой точке.
+	// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик
+	// панели (DS NtCartDrawer). page → /cart; drawer (дефолт) → панель сама.
 	document.addEventListener(
 		"click",
 		(e) => {
@@ -110,11 +46,7 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 				.getPropertyValue("--cart-type")
 				.trim()
 				.replace(/['"]/g, "");
-			if (cartType !== "page") {
-				// drawer: открыть панель напрямую (см. коммент про svg выше).
-				window.dispatchEvent(new CustomEvent("rose:cart:open"));
-				return;
-			}
+			if (cartType !== "page") return;
 			e.preventDefault();
 			e.stopImmediatePropagation();
 			if (window.self === window.top) {

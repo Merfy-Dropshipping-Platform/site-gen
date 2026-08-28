@@ -26,72 +26,16 @@ import {
 import { applyFooterData } from '../utils/footer-data';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
-import { previewTokensCssWithFonts } from '../themes/tokens-css';
+import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
-import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_SECTION_THEMES } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES } from '../themes/page-registry';
 import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
-// Shared cart-drawer globals resolver (extracted; live BuildService uses the
-// same export → preview ≡ live byte-for-byte).
-import { resolveCartDrawerGlobals } from '../themes/cart-drawer-contract';
-// Preview-only demo cart seed script (extracted generator).
-import { buildPreviewCartDemoScript } from '../themes/preview-cart-contract';
-
-// Версия для cache-bust превью-скриптов. ОБЯЗАНА меняться на каждый деплой.
-// gateway отдаёт /__theme/*.js с max-age=3600 БЕЗ content-хэша → превью-iframe
-// конструктора держит СТАРЫЙ бандл (cart-store.js) до часа (hard-refresh НЕ чистит
-// iframe-субресурсы) → юзер видит старое поведение checkout после деплоя (доказано:
-// deployed-бандл содержит reconcile, но у юзера мелькает старая сводка). ?v=<версия>
-// = уникальный URL → браузер обходит кэш. SOURCE_COMMIT (Coolify, если задан) меняется
-// per-commit; иначе Date.now() на загрузке модуля = момент старта процесса, а контейнер
-// РЕСТАРТУЕТ на каждый деплой → значение свежее. НЕ использовать COOLIFY_RESOURCE_UUID —
-// он КОНСТАНТА на приложение (не менялся бы между деплоями → кэш никогда не сбросить).
-const PREVIEW_ASSET_VERSION = (process.env.SOURCE_COMMIT || String(Date.now())).slice(0, 12);
-
-/** Настройки чекаута магазина (site.settings) — читаемое подмножество. */
-interface CheckoutSiteSettings {
-  requireCustomerAuth?: boolean;
-  addressRequired?: boolean;
-  contactMethod?: 'email-phone' | 'email';
-  customerNameMode?: 'name-surname' | 'surname' | 'name';
-}
-
-/** Рантайм-контракт канала настроек чекаута (одинаков во всех слоях). */
-interface CheckoutRuntimeConfig {
-  contactMethod: 'email-phone' | 'email';
-  customerNameMode: 'name-surname' | 'surname' | 'name';
-  addressRequired: boolean;
-  requireCustomerAuth: boolean;
-}
-
-/**
- * Нормализует site.settings → рантайм-контракт чекаута с дефолтами
- * (contactMethod="email-phone", customerNameMode="name-surname",
- * addressRequired=true). Единый источник дефолтов для превью-инжекта —
- * зеркалит клиентский apply() в checkout.astro на live, чтобы превью-чекаут
- * вёл себя идентично живому.
- */
-function checkoutConfigFromSettings(
-  settings: CheckoutSiteSettings | null | undefined,
-): CheckoutRuntimeConfig {
-  return {
-    contactMethod: settings?.contactMethod === 'email' ? 'email' : 'email-phone',
-    customerNameMode:
-      settings?.customerNameMode === 'surname' ||
-      settings?.customerNameMode === 'name'
-        ? settings.customerNameMode
-        : 'name-surname',
-    addressRequired: settings?.addressRequired === false ? false : true,
-    // Блок 1 «Обязательная регистрация» — fail-open (только явный true включает),
-    // зеркалит live checkout.astro apply().
-    requireCustomerAuth: settings?.requireCustomerAuth === true,
-  };
-}
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
@@ -274,12 +218,6 @@ export class PreviewController {
     const bareThemeKey = PreviewService.bareThemeKey(loaded.themeId ?? '');
     const isProductPage = route === 'product' || match?.id === 'page-product';
     const unifiedProduct = isProductPage && PRODUCT_UNIFIED_THEMES.has(bareThemeKey);
-    // Composable-корзина (CART_SECTION_THEMES, зеркало unifiedProduct): для тем
-    // с CartSection-портом страница /cart идёт по v2-секционному пути (корзина =
-    // секция + добавленные секции), снимая complex-гейт ниже. Темы без порта —
-    // verbatim (блоб-путь cart.astro), иначе CartSection упал бы на скаффолд.
-    const isCartPage = route === 'cart' || match?.id === 'page-cart';
-    const composableCart = isCartPage && CART_SECTION_THEMES.has(bareThemeKey);
 
     // The product page's slug is `/product`, but the theme builds per-product
     // pages at <template>/products/<id>/index.html. Resolve to the first built
@@ -296,8 +234,7 @@ export class PreviewController {
     // на v2-пути для unified-тем (unifiedProduct снимает complex-гейт).
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
-    const isComplexRoute =
-      isV2ComplexRoute(route) && !unifiedProduct && !composableCart;
+    const isComplexRoute = isV2ComplexRoute(route) && !unifiedProduct;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
@@ -358,11 +295,6 @@ export class PreviewController {
               this.productBlockIdFromRevision(loaded.data),
               PreviewService.bareThemeKey(loaded.themeId!),
               this.productSectionFromRevision(loaded.data),
-              // Рантайм-канал настроек чекаута — только на checkout-маршруте.
-              route.split('/')[0] === 'checkout'
-                ? checkoutConfigFromSettings(loaded.settings)
-                : null,
-              this.cartDrawerGlobalsFromRevision(loaded.data),
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -407,15 +339,6 @@ export class PreviewController {
       // getChromeKind('checkout')==='checkout' → пропуск. Изолировано: пустой/
       // упавший рендер → {null,null} → injectChromeIntoHtml = no-op (блоб как был).
       let chromedHtml = builtThemeHtml;
-      // Checkout (verbatim blob): мегаблоки CheckoutForm/CheckoutSummary рендерятся
-      // из dist (checkout.astro зовёт их БЕЗ id) → их секции без data-puck-component-id,
-      // а у внутренних блоков id есть (Spec 102 hydration «checkout-*») → превью-агент
-      // цеплял внутренние блоки. Впрыскиваем id мегаблоков из ревизии на их секции →
-      // resolveSection в агенте выделяет «Оформление заказа»/«Сводка заказа» целиком,
-      // и клик из левого дерева находит секцию по data-puck-component-id.
-      if (route.split('/')[0] === 'checkout') {
-        chromedHtml = this.injectCheckoutBlockIds(chromedHtml, loaded.data);
-      }
       if (getChromeKind(route) === 'full') {
         try {
           const chrome = await assembleChrome({
@@ -506,10 +429,6 @@ export class PreviewController {
         this.productBlockIdFromRevision(loaded.data),
         PreviewService.bareThemeKey(loaded.themeId!),
         this.productSectionFromRevision(loaded.data),
-        // Рантайм-канал настроек чекаута — только на checkout-маршруте.
-        route.split('/')[0] === 'checkout'
-          ? checkoutConfigFromSettings(loaded.settings)
-          : null,
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -631,7 +550,7 @@ export class PreviewController {
       };
       // Footer hot-render: обогатить props данными из БД (политики → informationColumn,
       // контакты → phone/email/contactFields, платёжки → paymentEnabled) тем же
-      // applyFooterData, что composed-превью (GET /preview) и build-пайплайн. Иначе
+      // applyFooterData, что composed-превью (GET /preview:617) и build-пайплайн. Иначе
       // одиночный hot-render шлёт СЫРЫЕ props (informationColumn.links=[], без phone/payment)
       // → футер «ломается» при клике по любой настройке (контент исчезает). Оборачиваем
       // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
@@ -699,7 +618,7 @@ export class PreviewController {
       throw new BadRequestException('themeSettings required');
     }
     try {
-      const css = this.previewTokensCss(body.themeSettings ?? {}, body.themeId ?? null);
+      const css = buildTokensCss(body.themeSettings ?? {}, body.themeId ?? null);
       res.type('text/css').send(css);
     } catch (err: unknown) {
       const e = err as Error;
@@ -721,7 +640,6 @@ export class PreviewController {
     tenantId: string | null;
     revisionId: string;
     footerFp: string;
-    settings: CheckoutSiteSettings | null;
   } | null> {
     const [site] = await this.db
       .select({
@@ -729,7 +647,6 @@ export class PreviewController {
         publicUrl: schema.site.publicUrl,
         themeId: schema.site.themeId,
         tenantId: schema.site.tenantId,
-        settings: schema.site.settings,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -761,28 +678,14 @@ export class PreviewController {
       tenantId: site.tenantId ?? null,
       revisionId: site.currentRevisionId,
       footerFp,
-      settings: (site.settings as CheckoutSiteSettings | null) ?? null,
     };
-  }
-
-  /**
-   * tokens.css для превью + `@import` шрифтов мерчанта. В превью Google-линк
-   * статический (BaseLayout грузит дефолтные шрифты темы), поэтому ВЫБРАННЫЙ
-   * мерчантом шрифт (headingFont/bodyFont) сам не подгружался → --font-*
-   * объявлен, но семейство не загружено → системный фолбэк (и вес «плыл»).
-   * `@import` в содержимом __merfy_tokens_css грузит нужные шрифты и при
-   * первом рендере, и при hot-swap (смена шрифта постом /preview/tokens-css).
-   * Live не затрагивается — там свой билд-путь (assemble-from-packages).
-   */
-  private previewTokensCss(themeSettings: unknown, themeId: string | null): string {
-    return previewTokensCssWithFonts(themeSettings, themeId);
   }
 
   private tokensCssFromSettings(
     data: Record<string, unknown>,
     themeId: string | null,
   ): string {
-    return this.previewTokensCss(data.themeSettings, themeId);
+    return buildTokensCss(data.themeSettings, themeId);
   }
 
   /** Инжекты в HTML превью: shopId, DaData-токен, siteId для гидрации товаров. */
@@ -794,16 +697,8 @@ export class PreviewController {
     productBlockId?: string | null,
     themeName?: string | null,
     productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
-    checkoutConfig?: CheckoutRuntimeConfig | null,
-    cartDrawerGlobals?: Record<string, string> | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
-    // Cache-bust плоских превью-скриптов (cart-store.js, cart-api.js): gateway кэширует
-    // /__theme/*.js на час без хэша → iframe держит старый бандл. ?v=<деплой> = свежий.
-    html = html.replace(
-      /(\/__theme\/[a-z0-9_-]+\/scripts\/[a-z0-9._-]+\.js)"/gi,
-      `$1?v=${PREVIEW_ASSET_VERSION}"`,
-    );
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
     // блочного скрипта, чтобы любая секция (в т.ч. 2+ одинаковых) находила свой
     // корень, а не «первую». Зеркалит live-инжект build.service.injectBlockRootHelper.
@@ -820,17 +715,6 @@ export class PreviewController {
         (m) => `${m}<script>window.__DADATA_TOKEN__ = ${JSON.stringify(dadataToken)};</script>`,
       );
     }
-    // Same-origin база API для storefront-скриптов превью: превью всегда отдаётся
-    // через gateway (прод: gateway.merfy.ru, локальные контуры: localhost:3110) →
-    // location.origin верен везде. Без этого дефолт https://gateway.merfy.ru гнал
-    // гидрацию каталога НЕ-прод контуров на прод (пустой ответ → вечное демо).
-    // НЕ пустая строка: потребители делают `base || прод-дефолт`, а '' — falsy.
-    // В head, ДО инлайнов секций (они читают базу при исполнении).
-    html = html.replace(
-      /<head(\s[^>]*)?>/i,
-      (m) =>
-        `${m}<script>window.__MERFY_API_BASE__ = window.__MERFY_API_BASE__ || location.origin;</script>`,
-    );
     html = html.replace(
       /<head(\s[^>]*)?>/i,
       (m) => `${m}<script>window.__MERFY_SITE_ID__ = ${JSON.stringify(siteId)};</script>`,
@@ -882,52 +766,6 @@ export class PreviewController {
         (m) => `${m}<script>window.__MERFY_CATALOG_LAYOUT__ = ${JSON.stringify(catalogLayout)};</script>`,
       );
     }
-    // Рантайм-канал настроек чекаута (Фаза 4a): превью серверный и имеет доступ
-    // к site.settings → инжектим window.__MERFY_CONFIG__.checkout НАПРЯМУЮ (без
-    // fetch, без зависимости от CORS/доступности gateway из iframe) и диспатчим
-    // `checkout:config-ready`, чтобы превью-чекаут вёл себя идентично живому.
-    // Head-инжект → checkout.astro-скрипт (blob) видит cfg.checkout и пропускает
-    // fetch; v2-путь checkout-скрипта не имеет → диспатч отсюда обязателен.
-    // Диспатч отложен до DOMContentLoaded — консюмеры формы регистрируют
-    // слушатель при парсинге body (ниже в DOM) и гарантированно ловят событие.
-    if (checkoutConfig) {
-      const checkoutJson = JSON.stringify(checkoutConfig);
-      html = html.replace(
-        /<head(\s[^>]*)?>/i,
-        (m) =>
-          `${m}<script>window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};` +
-          `window.__MERFY_CONFIG__.checkout = ${checkoutJson};` +
-          `(function(){function f(){try{document.dispatchEvent(new CustomEvent('checkout:config-ready'));}catch(e){}}` +
-          `if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',f);}else{f();}})();</script>`,
-      );
-    }
-    // Глобалы корзины-дровера — ЗЕРКАЛО live build.service.injectGlobalsIntoDist
-    // (__MERFY_CART_DRAWER_SCHEME__ / _DISCLAIMER_ / _TITLE_ / _CHECKOUT_ / _EMPTY_).
-    // Без них превью-дровер брал :root-схему темы, а не выбранную на page-cart
-    // (баг «корзина не принимает цв схему со страницы корзины»). StorefrontRuntime
-    // читает эти window-глобалы в <head> и вешает .color-scheme-N на #cart-drawer-root.
-    if (cartDrawerGlobals) {
-      for (const [k, v] of Object.entries(cartDrawerGlobals)) {
-        html = html.replace(
-          /<head(\s[^>]*)?>/i,
-          (m) => `${m}<script>window.${k} = ${JSON.stringify(v)};</script>`,
-        );
-      }
-    }
-    // Демо-товар в превью-корзине (#4): в редакторе корзину не наполнить, поэтому
-    // дровер показывал пустое состояние без кнопки «Оформить». Сеем 1 реальный
-    // товар (только если корзина превью пуста) → мерчант видит полный дизайн.
-    // Требует известной темы (префикс ключа/события nt-cart). Инжектим в <head>
-    // (как остальные глобалы) — НЕ перед </body>: nav-агент (idiomorph) уже в HTML
-    // и содержит строку "</body>" в своём JS (parseFromString "<body>…</body>"),
-    // так что /<\/body>/ попал бы В СЕРЕДИНУ его кода. Скрипт async (fetch) —
-    // сработает после init nt-cart, событие `:updated` перерисует дровер.
-    if (themeName) {
-      html = html.replace(
-        /<head(\s[^>]*)?>/i,
-        (m) => `${m}${this.previewCartDemoScript(siteId, themeName)}`,
-      );
-    }
     // Агент конструктора (hover/select → postMessage). На секционном пути его
     // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
     // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет
@@ -943,34 +781,6 @@ export class PreviewController {
    * — конкретная коллекция). Возвращает последний сегмент как slug
    * (`preview` для пресета) либо null, если маршрут не коллекционный.
    */
-  /**
-   * Глобалы корзины-дровера из ревизии — ЗЕРКАЛО live build.service.injectGlobalsIntoDist:
-   * cartScheme из page-cart CartBody/CartSummary.colorScheme + тексты дровера из
-   * themeSettings. Пусто — превью-дровер как раньше (дефолт темы). Так превью-дровер
-   * берёт ту же схему/тексты, что живой (баг «корзина не принимает цв схему»).
-   */
-  private cartDrawerGlobalsFromRevision(data: unknown): Record<string, string> {
-    // Delegates to the shared resolver so preview ≡ live (F-054). Live
-    // BuildService.injectGlobalsIntoDist consumes the SAME export.
-    return resolveCartDrawerGlobals(data);
-  }
-
-  /**
-   * Демо-товар в корзине ТОЛЬКО для превью конструктора: в редакторе реальный
-   * товар в корзину не добавить, поэтому дровер/страница корзины показывали пустое
-   * состояние и мерчант не видел дизайн (итог + кнопка «Оформить»). Инжектим
-   * инлайн-скрипт: если корзина превью пуста (`<тема>:cart:v1`), берём ПЕРВЫЙ
-   * реальный товар из storefront-data (тот же каталог, что reconcile — значит
-   * строка не выкидывается) и сеем 1 позицию + диспатчим `<тема>:cart:updated`
-   * → nt-cart рендерит товар, итог и кнопку. Живого сайта НЕ касается (это
-   * localStorage превью-iframe на gateway, отдельный origin). Не трогаем непустую
-   * корзину (мерчант мог тестово что-то добавить).
-   */
-  private previewCartDemoScript(siteId: string, themeName: string): string {
-    // Delegates to the extracted preview-only generator (byte-identical).
-    return buildPreviewCartDemoScript(siteId, themeName);
-  }
-
   private collectionSlugFromRoute(route: string): string | null {
     const trimmed = route.replace(/^\/+|\/+$/g, '');
     const segments = trimmed.split('/');
@@ -1071,36 +881,6 @@ export class PreviewController {
   }
 
   /**
-   * Checkout (verbatim blob) — впрыснуть data-puck-component-id мегаблоков
-   * CheckoutForm («Оформление заказа») / CheckoutSummary («Сводка заказа») из id
-   * ревизии на их секции (data-block=checkout-form/summary). checkout.astro зовёт
-   * блоки БЕЗ id → в dist у секций нет data-puck-component-id, и превью-агент
-   * цеплял внутренние блоки (их id хардкод «checkout-*» для __merfyRoot). С id на
-   * контейнере resolveSection выделяет 2 секции целиком + клик из дерева их
-   * находит. Идемпотентно (lookahead на уже присутствующий id).
-   */
-  private injectCheckoutBlockIds(html: string, data: unknown): string {
-    const pages = (data as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: { id?: unknown } }> }> } | null)?.pagesData ?? {};
-    const content = (pages['page-checkout'] ?? pages['checkout'])?.content;
-    if (!Array.isArray(content)) return html;
-    const idOf = (type: string): string | null => {
-      const found = content.find((b) => b?.type === type)?.props?.id;
-      return typeof found === 'string' && found.trim() ? found.trim() : null;
-    };
-    const patch = (h: string, block: string, id: string | null): string => {
-      if (!id) return h;
-      const re = new RegExp(
-        `<section\\b(?![^>]*\\bdata-puck-component-id)([^>]*\\bdata-block="${block}")`,
-      );
-      return h.replace(re, `<section data-puck-component-id="${id}"$1`);
-    };
-    let out = html;
-    out = patch(out, 'checkout-form', idOf('CheckoutForm'));
-    out = patch(out, 'checkout-summary', idOf('CheckoutSummary'));
-    return out;
-  }
-
-  /**
    * Настройки кнопок секции «Товар» (page-product ревизии) для унификации с
    * живым PDP (Figma 1236-42145). Зеркало extract-логики build.service:
    * dynamicButton → showBuyNow; пустой buttons.addToCart.text → !showAddToCart
@@ -1126,7 +906,7 @@ export class PreviewController {
   /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +
    * мини-слушатель update-tokens (selection-агента у блоба нет и не нужно). */
   private injectTokensIntoBlobPage(htmlIn: string, siteId: string, themeId: string, themeSettings: unknown): string {
-    const css = this.previewTokensCss(themeSettings ?? {}, themeId);
+    const css = buildTokensCss(themeSettings ?? {}, themeId);
     const listener = `window.addEventListener('message',function(ev){if(!ev.data||ev.data.type!=='update-tokens')return;fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})}).then(function(r){return r.text()}).then(function(t){var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;}).catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
     htmlIn = injectTokensCssIntoHtml(htmlIn, css);
     return htmlIn.replace(/<\/head>/i, `<script>${listener}</script></head>`);

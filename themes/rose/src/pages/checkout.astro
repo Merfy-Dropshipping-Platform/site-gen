@@ -32,127 +32,52 @@ const dadataToken = "";
 <Layout title="Оформление заказа" description="Оформление заказа" header="checkout">
   {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
-    <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* Figma 183-27866: половина-на-половину на ВСЮ ширину. Левая половина —
-          белая (scheme страницы), форма ~434px прижата к центру (justify-end,
-          pl-10/pr-2). Правая половина — фиксированный светло-серый фон #F5F5F5
-          (как в Figma, НЕ scheme → нет прогалов при смене схемы) на всю высоту
-          и до правого края; секция сводки прозрачна ([&>section]:!bg-transparent),
-          её контент ~360px прижат влево-вверх с воздухом справа (как в Figma). */}
-      <div class="grid grid-cols-1 lg:grid-cols-2 items-stretch">
-        <div data-checkout-column="form" class="min-w-0 flex justify-center lg:justify-end">
-          <div class="w-full max-w-[480px] px-4 sm:px-6 lg:pl-10 lg:pr-2 py-12">
-            <CheckoutForm />
-          </div>
+    {/* Figma 1:19998 — split-checkout: форма на белом (--color-bg), сводка на
+        тонированной панели (--color-surface), панель уходит до правого края.
+        Контент сходится к центру. ВАЖНО: разметка + CSS .mfy-checkout-* ДОЛЖНЫ
+        совпадать с preview.service.ts:wrapCheckoutGrid (конструктор-превью). */}
+    <main class="flex-1 w-full mfy-checkout-split" style="color: rgb(var(--color-text));">
+      <div class="mfy-checkout-pane mfy-checkout-pane--form">
+        <div class="mfy-checkout-pane__inner" data-checkout-column="form">
+          <CheckoutForm />
         </div>
-        <div
-          data-checkout-column="summary"
-          class="min-w-0 px-6 py-10 lg:pl-14 lg:pr-10 lg:py-14 [&>section]:!bg-transparent [&>section]:max-w-[360px]"
-          style="background-color:#f5f5f5"
-        >
+      </div>
+      <div class="mfy-checkout-pane mfy-checkout-pane--summary">
+        <div class="mfy-checkout-pane__inner" data-checkout-column="summary">
           <CheckoutSummary />
         </div>
       </div>
     </main>
   </div>
 
+  {/* Split-checkout CSS — ЗЕРКАЛО preview.service.ts:wrapCheckoutGrid. Любая
+      правка здесь дублируется там (live ↔ конструктор-превью паритет). */}
+  <style is:global>
+    .mfy-checkout-split { display: flex; flex-direction: column; width: 100%; background: rgb(var(--color-bg)); }
+    .mfy-checkout-pane { width: 100%; box-sizing: border-box; }
+    .mfy-checkout-pane__inner { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+    .mfy-checkout-pane--summary { background: rgb(var(--color-surface)); }
+    @media (min-width: 1024px) {
+      .mfy-checkout-split { flex-direction: row; align-items: stretch; }
+      .mfy-checkout-pane { width: 50%; display: flex; }
+      .mfy-checkout-pane--form { justify-content: flex-end; }
+      .mfy-checkout-pane--summary { justify-content: flex-start; }
+      .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
+      .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
+    }
+  </style>
+
   {/* --- Live checkout plumbing (checkout page only) --- */}
   {/* Config injection (templates pattern). build.service.ts patches shopId +
       DADATA_API_KEY at deploy; for the local pilot the script just has to exist. */}
   <script is:inline define:vars={{ shopId, apiUrl, dadataToken }}>
-    // НЕ клоббер: превью (preview.controller.injectPreviewGlobals) может выставить
-    // window.__MERFY_CONFIG__.checkout ДО этого скрипта. Создаём объект при
-    // отсутствии и лишь дозаполняем shopId/apiUrl, сохраняя .checkout.
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
-    if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId || "";
-    if (!window.__MERFY_CONFIG__.apiUrl)
-      window.__MERFY_CONFIG__.apiUrl = apiUrl || "https://gateway.merfy.ru/api";
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
     if (dadataToken) {
       window.__DADATA_TOKEN__ = dadataToken;
     }
-  </script>
-  {/* Рантайм-канал настроек чекаута (Фаза 4a): без ребилда тянем per-store
-      настройки формы из gateway и публикуем на window.__MERFY_CONFIG__.checkout
-      + событие `checkout:config-ready`. Отказоустойчиво: любой сбой / пустой
-      shopId → дефолты (полная форма), событие ВСЁ РАВНО диспатчится (консюмеры
-      формы разблокируются). Превью проставляет .checkout сервер-сайд → fetch
-      пропускается. is:inline обязателен (как у соседних checkout-скриптов).
-      No-flash: настройки тянутся в рантайме, поэтому не-дефолтные магазины на миг
-      видят дефолт-форму до `checkout:config-ready`. Принято намеренно; в будущем
-      можно повесить лоадер / придержать конфиг-зависимые поля скрытыми до
-      события, чтобы убрать мигание (Фаза 4a, no-flash вариант B). */}
-  <script is:inline>
-    (function () {
-      var cfg = (window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {});
-      function fire() {
-        try {
-          document.dispatchEvent(new CustomEvent("checkout:config-ready"));
-        } catch (e) {}
-      }
-      function apply(s) {
-        s = s || {};
-        cfg.checkout = {
-          contactMethod: s.contactMethod === "email" ? "email" : "email-phone",
-          customerNameMode:
-            s.customerNameMode === "surname" || s.customerNameMode === "name"
-              ? s.customerNameMode
-              : "name-surname",
-          addressRequired: s.addressRequired === false ? false : true,
-          // Блок 1 «Обязательная регистрация»: гость не может оформить заказ, пока
-          // не вошёл. Fail-open — фиксируем true ТОЛЬКО при явном флаге; любой сбой
-          // fetch / пустой shopId → apply(null) → false → без гейта (гость у
-          // магазинов без флага не ломается). Настоящий барьер — серверный гейт
-          // в orders (403); клиентский разворот ниже — только UX.
-          requireCustomerAuth: s.requireCustomerAuth === true,
-        };
-        // Gate A (клиентский, ТОЛЬКО live-вкладка): токен-less покупатель на
-        // магазине с requireCustomerAuth разворачивается на /login ДО события
-        // checkout:config-ready. Значит блоки чекаута не разблокируются и submit
-        // не активируется — «держим submit заблокированным до config-ready».
-        // Токен читаем из localStorage напрямую: window.__roseAuth на /checkout
-        // НЕ инициализирован (persistentAtom кодирует null как '' → пусто = гость).
-        // window.self===window.top исключает превью конструктора: iframe не
-        // навигируем (там cfg.checkout уже проставлен сервером → ранний выход выше).
-        if (window.self === window.top && cfg.checkout.requireCustomerAuth) {
-          var token = null;
-          try {
-            token = localStorage.getItem("merfy_customer_token");
-          } catch (e) {}
-          if (!token) {
-            location.href = "/login?redirect=" + encodeURIComponent("/checkout");
-            return;
-          }
-        }
-        fire();
-      }
-      // Превью уже проставило cfg.checkout сервер-сайд — чтим его, без fetch.
-      if (cfg.checkout) {
-        fire();
-        return;
-      }
-      var shopId = cfg.shopId;
-      var apiUrl = cfg.apiUrl || "https://gateway.merfy.ru/api";
-      if (!shopId) {
-        apply(null);
-        return;
-      }
-      try {
-        fetch(apiUrl + "/public/sites/" + encodeURIComponent(shopId) + "/settings", {
-          headers: { Accept: "application/json" },
-        })
-          .then(function (r) {
-            return r && r.ok ? r.json() : null;
-          })
-          .then(function (j) {
-            apply(j && j.settings);
-          })
-          .catch(function () {
-            apply(null);
-          });
-      } catch (e) {
-        apply(null);
-      }
-    })();
   </script>
   {/* `is:inline` is REQUIRED — without it Astro bundles these through Vite, can't
       resolve `/scripts/...` (public dir) and SILENTLY drops the tag, leaving

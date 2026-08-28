@@ -40,6 +40,14 @@ export class SiteProvisioningScheduler implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    const startupMigrationEnabled = (
+      process.env.SITE_ORPHAN_MIGRATION_ON_STARTUP_ENABLED ?? "true"
+    ).toLowerCase();
+    if (startupMigrationEnabled === "false") {
+      this.logger.log("Orphaned sites migration disabled on startup");
+      return;
+    }
+
     // Запускаем миграцию сайтов без subdomain/Coolify при старте (один раз)
     if (!this.migrationDone) {
       this.migrationDone = true;

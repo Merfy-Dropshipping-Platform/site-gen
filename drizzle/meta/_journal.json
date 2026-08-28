@@ -99,6 +99,20 @@
       "when": 1777305600000,
       "tag": "0013_theme_presets",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1777415340000,
+      "tag": "0014_site_media",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784723985000,
+      "tag": "0015_publications_and_branding",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 ---
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import FluxNtIcon from "./icons/FluxNtIcon.astro";
 import { withBase } from "../lib/with-base";
 import { SITE_TITLE } from "../consts";
 
@@ -52,23 +52,14 @@ const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.s
 const newsletterEnabled = !(
 	p.newsletter && (p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
-// Заголовок/текст рассылки: панель конструктора (Figma 314-34558) пишет их в top-level
-// `heading.text` / `text.content` (см. Footer.puckConfig — эти поля ВИДИМЫ, а
-// newsletter.heading/description СКРЫТЫ). rose Footer читает именно `heading.text`/
-// `text.content` → паритет. Приоритет: панель (heading.text) → theme.json blockDefault
-// (newsletter.heading) → литерал верстальщика.
 const nlHeading =
-	typeof p.heading?.text === "string" && p.heading.text.trim()
-		? p.heading.text
-		: typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
-			? p.newsletter.heading
-			: "Подпишитесь на нашу рассылку";
+	typeof p.newsletter?.heading === "string" && p.newsletter.heading.trim()
+		? p.newsletter.heading
+		: "Подпишитесь на нашу рассылку";
 const nlDescription =
-	typeof p.text?.content === "string" && p.text.content.trim()
-		? p.text.content
-		: typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
-			? p.newsletter.description
-			: "Введите электронную почту и получайте информацию нашего бренда";
+	typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
+		? p.newsletter.description
+		: "Введите электронную почту и получайте информацию нашего бренда";
 const nlPlaceholder =
 	typeof p.newsletter?.placeholder === "string" && p.newsletter.placeholder.trim()
 		? p.newsletter.placeholder
@@ -99,30 +90,23 @@ const CANON_NAV: Array<[string, string]> = [
 const navLinksRaw = coerceColumnLinks(p.navigationColumn, navColumnDefault);
 const navLinks = isCanonColumn(navLinksRaw, CANON_NAV) ? navColumnDefault : navLinksRaw;
 const infoLinks = coerceColumnLinks(p.informationColumn, []);
-// Ссылки инфо-колонки приходят из настроек магазина (site_policy) — в панели скрыты
-// (Footer.puckConfig informationColumn.links: hidden). Заголовок колонки («Заголовок
-// колонки») редактируем. rose показывает колонку при title ИЛИ links → паритет: колонку
-// рендерим, если задан title, даже без ссылок (иначе редактируемый title мёртв).
 
 // Заголовки колонок: дефолт = литерал верстальщика (репо ВСЕГДА показывает «Навигация» /
 // «Информация» / «Социальные сети»). Непустой title пропа перебивает.
 const columnTitleOf = (col: any): string | undefined =>
 	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
 const navColTitle = columnTitleOf(p.navigationColumn) ?? "Навигация";
-// Сырой (user-provided) заголовок инфо-колонки — для гейта показа колонки (как rose:
-// колонка при title ИЛИ links). Дефолт «Информация» — только для рендера заголовка.
-const infoColTitleRaw = columnTitleOf(p.informationColumn);
-const infoColTitle = infoColTitleRaw ?? "Информация";
+const infoColTitle = columnTitleOf(p.informationColumn) ?? "Информация";
 const socialColTitle = columnTitleOf(p.socialColumn) ?? "Социальные сети";
 
 const columnTitleCls =
-	"font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]";
+	"font-comfortaa text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]";
 // Ссылка футера (нав/инфо/email/телефон): Roboto Flex 16 light, muted → hover чёрный
 // (репо #cccccc→black; токенизировано в --color-muted/--color-text для colorScheme как rose).
 const linkCls =
 	"font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[rgb(var(--color-text,0_0_0))]";
 
-// socialColumn.socialLinks (enum платформ) → подписи + NtIcon-глифы верстальщика; пустой
+// socialColumn.socialLinks (enum платформ) → подписи + FluxNtIcon-глифы верстальщика; пустой
 // массив → пусто (без фейк-демо, как rose). Порядок верстальщика: Telegram VK YouTube Дзен TikTok.
 const SOCIAL_PLATFORMS: Record<string, { platform: string; icon: string }> = {
 	telegram: { platform: "Telegram", icon: "social-telegram" },
@@ -181,46 +165,8 @@ const footerContainerCls = footerPadStyle
 	? "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 md:px-20 2xl:px-80"
 	: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 py-12 md:px-20 md:py-16 2xl:px-80";
 
-// «Выравнивание» (contentAlign, canon default 'left') — ОЖИВЛЕНИЕ по rose Footer. Управляет
-// раскладкой групп колонок И контентом ВНУТРИ колонок И блоком рассылки ОДНИМ значением на
-// десктоп И адаптив (rose-фиксы c60f6206/80f57884: без md:-split для выравнивания — на мобиле
-// как на десктопе). Классы ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left = прежний рендер
-// (nav/info слева, соцколонка справа = md:justify-between + md:items-end).
-const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
-const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
-const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
-// Блок рассылки: секция (items-*) + текстовая группа (items-* + text-*), одно значение везде.
-const nlSectionAlignCls = _AL_ITEMS[_ca];
-const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
-// Раскладка ГРУППЫ колонок (section nav/info + соцколонка). center = центрированный блок
-// (justify-center + узкий gap), right = к правому краю, left (дефолт) = space-between (текущий).
-const colsJustifyCls =
-	_ca === "center" ? "md:justify-center md:gap-24" : _ca === "right" ? "md:justify-end" : "md:justify-between";
-// Внутренняя группа nav+info: center сжимает межколоночный зазор (иначе block не «центрирован»).
-const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-4";
-// Контент ВНУТРИ колонок nav/info (заголовок+ссылки): center по центру, right к правому краю,
-// left (дефолт) без переопределения = как у верстальщика (по левому краю).
-const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
-// Соцколонка: у верстальщика была md:items-end (справа при 3-колоночной раскладке). По rose
-// default 'left' держит контактный блок СПРАВА (contactGroupCls=lg:items-end): left = нав слева /
-// контакты справа. center → по центру, right → к правому краю. Для center/right — ЕДИНОЕ значение
-// (без md:-split, выравнивание на мобиле = как на десктопе); для left — оставляем md:items-end
-// (мобила = левый край в потоке, десктоп = справа, как у верстальщика).
-const socialColCls =
-	_ca === "center" ? "items-center" : _ca === "right" ? "items-end" : "md:items-end";
-const socialInnerCls =
-	_ca === "center" ? "items-center" : _ca === "right" ? "items-end" : "items-start md:items-end";
-// Контактный текст (тел/почта/поля): center по центру, right вправо, left = md:text-right (как верстальщик).
-const contactTextCls = _ca === "center" ? "text-center" : _ca === "right" ? "text-right" : "md:text-right";
-const contactColCls =
-	_ca === "center" ? "items-center" : _ca === "right" ? "items-end" : "md:items-end";
-const paymentJustifyCls =
-	_ca === "center" ? "justify-center" : _ca === "right" ? "justify-end" : "md:justify-end";
-
-// Применяем СВОЮ colorScheme на <footer> (как base/rose Footer.astro). Иначе hot-render
-// одиночного блока в превью конструктора (без scheme-обёртки композитора) берёт :root
-// = тёмный BASE_DEFAULT → ЧЁРНЫЙ футер. На live обёртка композитора даёт ту же схему —
-// дубль безвреден. Пустой проп → :root (как раньше).
+// Как rose Footer: своя colorScheme на <footer>. Hot-render блока в конструкторе
+// без обёртки композитора иначе берёт :root. На live дубль с composeV2Page безвреден.
 const footerSchemeClass =
 	typeof p.colorScheme === "string" && p.colorScheme
 		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
@@ -231,11 +177,11 @@ const footerSchemeClass =
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<!-- Newsletter «Подпишитесь на нашу рассылку» -->
 		{newsletterEnabled && (
-		<section class={`flex w-full flex-col gap-6 ${nlSectionAlignCls}`} aria-labelledby="newsletter-heading">
-			<div class={`flex flex-col gap-2 ${nlCopyAlignCls}`}>
+		<section class="flex w-full flex-col gap-6" aria-labelledby="newsletter-heading">
+			<div class="flex flex-col gap-2">
 				<h2
 					id="newsletter-heading"
-					class="font-roboto-flex text-[18px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
+					class="font-comfortaa text-[18px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="newsletter"
@@ -267,7 +213,7 @@ const footerSchemeClass =
 					aria-label="Подписаться"
 					class="flex size-8 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 				>
-					<NtIcon name="arrow-right" sizeClass="size-8" />
+					<FluxNtIcon name="arrow-right" sizeClass="size-8" />
 				</button>
 			</form>
 			<p
@@ -280,12 +226,12 @@ const footerSchemeClass =
 
 		<!-- Links: НАВИГАЦИЯ / ИНФОРМАЦИЯ / СОЦИАЛЬНЫЕ СЕТИ -->
 		<section
-			class={`flex w-full flex-col gap-10 md:flex-row md:items-start ${colsJustifyCls}`}
+			class="flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between"
 			aria-label="Навигация по сайту"
 		>
-			<div class={`flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`}>
+			<div class="flex flex-col gap-10 sm:flex-row sm:gap-4">
 				<div
-					class={`flex flex-col gap-4 md:w-[318px] ${colInnerCls}`}
+					class="flex flex-col gap-4 md:w-[318px]"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="996"
 					data-puck-subsection-field="navigationColumn"
@@ -302,9 +248,9 @@ const footerSchemeClass =
 					</ul>
 				</div>
 
-				{(infoColTitleRaw || infoLinks.length > 0) && (
+				{infoLinks.length > 0 && (
 				<div
-					class={`flex flex-col gap-4 md:w-[318px] ${colInnerCls}`}
+					class="flex flex-col gap-4 md:w-[318px]"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="995"
 					data-puck-subsection-field="informationColumn"
@@ -325,27 +271,27 @@ const footerSchemeClass =
 
 			{socialColumnHasContent && (
 			<div
-				class={`flex flex-col gap-4 md:w-[318px] ${socialColCls}`}
+				class="flex flex-col gap-4 md:w-[318px] md:items-end"
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="994"
 				data-puck-subsection-field="socialColumn"
 			>
 				{socialColTitle && <h3 class={columnTitleCls}>{socialColTitle}</h3>}
-				<div class={`flex flex-1 flex-col gap-6 ${socialInnerCls}`}>
+				<div class="flex flex-1 flex-col items-start gap-6 md:items-end">
 					{(phone || email || contactFields.length > 0) && (
-					<div class={`flex flex-col gap-3 ${contactColCls}`}>
+					<div class="flex flex-col gap-3 md:items-end">
 						{phone && (
-						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={`${linkCls} ${contactTextCls}`}>
+						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class={`${linkCls} md:text-right`}>
 							{phone}
 						</a>
 						)}
 						{email && (
-						<a href={`mailto:${email}`} class={`${linkCls} ${contactTextCls}`}>
+						<a href={`mailto:${email}`} class={`${linkCls} md:text-right`}>
 							{email}
 						</a>
 						)}
 						{contactFields.map((f) => (
-						<div class={`font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${contactTextCls}`}>
+						<div class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-right">
 							<span class="text-[rgb(var(--color-heading,0_0_0))]">{f.label}:</span> {f.value}
 						</div>
 						))}
@@ -361,13 +307,13 @@ const footerSchemeClass =
 								aria-label={s.platform}
 								class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
 							>
-								<NtIcon name={s.icon as any} sizeClass="size-6" />
+								<FluxNtIcon name={s.icon as any} sizeClass="size-6" />
 							</a>
 						))}
 					</div>
 					)}
 					{paymentEnabled && (
-					<div class={`flex flex-wrap items-center gap-3 ${paymentJustifyCls}`} aria-label="Способы оплаты">
+					<div class="flex flex-wrap items-center gap-3 md:justify-end" aria-label="Способы оплаты">
 						<img src={withBase("/icons/MasterCard.svg")} alt="Mastercard" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/Visa.png")} alt="Visa" class="h-6 w-auto shrink-0" decoding="async" />
 						<img src={withBase("/icons/MIR.png")} alt="МИР" class="h-6 w-auto shrink-0" decoding="async" />

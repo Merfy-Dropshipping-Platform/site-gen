@@ -49,75 +49,13 @@ const dadataToken = "";
   {/* Config injection (templates pattern). build.service.ts patches shopId +
       DADATA_API_KEY at deploy; for the local pilot the script just has to exist. */}
   <script is:inline define:vars={{ shopId, apiUrl, dadataToken }}>
-    // НЕ клоббер: превью (preview.controller.injectPreviewGlobals) может выставить
-    // window.__MERFY_CONFIG__.checkout ДО этого скрипта. Создаём объект при
-    // отсутствии и лишь дозаполняем shopId/apiUrl, сохраняя .checkout.
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
-    if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId || "";
-    if (!window.__MERFY_CONFIG__.apiUrl)
-      window.__MERFY_CONFIG__.apiUrl = apiUrl || "https://gateway.merfy.ru/api";
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+      shopId: shopId || "",
+      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+    };
     if (dadataToken) {
       window.__DADATA_TOKEN__ = dadataToken;
     }
-  </script>
-  {/* Рантайм-канал настроек чекаута (Фаза 4a): без ребилда тянем per-store
-      настройки формы из gateway и публикуем на window.__MERFY_CONFIG__.checkout
-      + событие `checkout:config-ready`. Отказоустойчиво: любой сбой / пустой
-      shopId → дефолты (полная форма), событие ВСЁ РАВНО диспатчится (консюмеры
-      формы разблокируются). Превью проставляет .checkout сервер-сайд → fetch
-      пропускается. is:inline обязателен (как у соседних checkout-скриптов).
-      No-flash: настройки тянутся в рантайме, поэтому не-дефолтные магазины на миг
-      видят дефолт-форму до `checkout:config-ready`. Принято намеренно; в будущем
-      можно повесить лоадер / придержать конфиг-зависимые поля скрытыми до
-      события, чтобы убрать мигание (Фаза 4a, no-flash вариант B). */}
-  <script is:inline>
-    (function () {
-      var cfg = (window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {});
-      function fire() {
-        try {
-          document.dispatchEvent(new CustomEvent("checkout:config-ready"));
-        } catch (e) {}
-      }
-      function apply(s) {
-        s = s || {};
-        cfg.checkout = {
-          contactMethod: s.contactMethod === "email" ? "email" : "email-phone",
-          customerNameMode:
-            s.customerNameMode === "surname" || s.customerNameMode === "name"
-              ? s.customerNameMode
-              : "name-surname",
-          addressRequired: s.addressRequired === false ? false : true,
-        };
-        fire();
-      }
-      // Превью уже проставило cfg.checkout сервер-сайд — чтим его, без fetch.
-      if (cfg.checkout) {
-        fire();
-        return;
-      }
-      var shopId = cfg.shopId;
-      var apiUrl = cfg.apiUrl || "https://gateway.merfy.ru/api";
-      if (!shopId) {
-        apply(null);
-        return;
-      }
-      try {
-        fetch(apiUrl + "/public/sites/" + encodeURIComponent(shopId) + "/settings", {
-          headers: { Accept: "application/json" },
-        })
-          .then(function (r) {
-            return r && r.ok ? r.json() : null;
-          })
-          .then(function (j) {
-            apply(j && j.settings);
-          })
-          .catch(function () {
-            apply(null);
-          });
-      } catch (e) {
-        apply(null);
-      }
-    })();
   </script>
   {/* `is:inline` is REQUIRED — without it Astro bundles these through Vite, can't
       resolve `/scripts/...` (public dir) and SILENTLY drops the tag, leaving
@@ -126,45 +64,55 @@ const dadataToken = "";
   <script is:inline type="module" src="/scripts/cart-api.js"></script>
   <script is:inline type="module" src="/scripts/cart-store.js"></script>
   <script is:inline>
-    // Чекаут наполняет серверную корзину (cartStore) из nt-cart (flux:cart:v1) —
-    // источника истины того, что в корзине у пользователя. Товар виден при ЛЮБОМ
-    // входе: «Купить сейчас»→/checkout, корзина→/checkout, прямой /checkout. Всё в
-    // try/catch: при сбое деградирует к cartStore.init() (прежнее поведение).
+    // Чекаут: мгновенная сводка из nt-cart (flux:cart:v1) — без N+1 на загрузке.
+    // Серверный cartStore.syncToServer — фоном (BOGO-подарок до сабмита).
     document.addEventListener("DOMContentLoaded", function () {
       var cs = window.cartStore;
       if (!cs) return;
-      function fallbackInit() { try { if (cs.init) cs.init(); } catch (e) {} }
       var lines = [];
-      // Express «Купить сейчас»: товар лежит в sessionStorage (НЕ в URL, НЕ в корзине
-      // покупателя). Есть — оформляем ТОЛЬКО его; иначе — корзину (flux:cart:v1).
       var bn = null;
       try { bn = JSON.parse(sessionStorage.getItem("flux:buynow") || "null"); } catch (e) { bn = null; }
       if (bn && bn.productId) {
-        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null, color: bn.variantColor || undefined, size: bn.variantSize || undefined }, quantity: bn.quantity || 1 }];
+        lines = [{
+          id: bn.productId,
+          productId: bn.productId,
+          quantity: bn.quantity || 1,
+          variant: { variantCombinationId: bn.variantCombinationId || null },
+        }];
       } else {
         try { lines = JSON.parse(localStorage.getItem("flux:cart:v1") || "[]"); } catch (e) { lines = []; }
       }
-      if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
-      // Опции варианта (Цвет/Размер) строки корзины → сервер пере-матчит вариант по
-      // ним, если variantCombinationId устарел (ресед пересоздал комбинации).
-      function optsFromVariant(v) {
-        var o = {};
-        if (!v) return o;
-        if (v.color) o["Цвет"] = v.color;
-        if (v.size) o["Размер"] = v.size;
-        return o;
+      if (!Array.isArray(lines)) lines = [];
+      var display = lines.map(function (l) {
+        var v = l.variant || {};
+        var opts = {};
+        if (v.color) opts["Цвет"] = v.color;
+        if (v.size) opts["Размер"] = v.size;
+        var priceStr = l.price != null ? String(l.price) : "0";
+        var oldStr = l.oldPrice != null ? String(l.oldPrice) : "";
+        return {
+          id: l.id,
+          productId: l.productId,
+          name: l.name,
+          priceCents: Math.round((parseFloat(priceStr.replace(/[^\d.]/g, "")) || 0) * 100),
+          compareAtPriceCents: oldStr ? Math.round((parseFloat(oldStr.replace(/[^\d.]/g, "")) || 0) * 100) : undefined,
+          image: l.image,
+          imageUrl: l.image,
+          quantity: l.quantity || 1,
+          options: opts,
+          variantCombinationId: (v.variantCombinationId) || null,
+        };
+      });
+      if (cs.setLocalItemsReconciled) cs.setLocalItemsReconciled(display, "/data/products.json");
+      else if (cs.setLocalItems) cs.setLocalItems(display);
+      else if (cs.init) cs.init();
+
+      if (display.length && cs.syncToServer) {
+        setTimeout(function () {
+          try { cs.syncToServer({ notify: true }).catch(function () {}); }
+          catch (e) { /* остаёмся на локальном рендере */ }
+        }, 250);
       }
-      (async function () {
-        try {
-          await cs.clear();
-          for (var i = 0; i < lines.length; i++) {
-            var l = lines[i];
-            var opts = optsFromVariant(l.variant);
-            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity, Object.keys(opts).length ? opts : null); } catch (e) {}
-          }
-        } catch (e) { fallbackInit(); return; }
-        try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}
-      })();
     });
   </script>
 </Layout>

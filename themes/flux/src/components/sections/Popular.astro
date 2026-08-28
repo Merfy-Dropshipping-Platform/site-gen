@@ -16,6 +16,8 @@
 // цена «2 500 ₽». Когда коллекция ВЫБРАНА (data-collection) — гидрация ниже
 // подменяет грид реальными товарами магазина (поведение НЕ тронуто); до её
 // отработки/при отсутствии данных тот же плейсхолдер служит graceful-дефолтом.
+import { deriveMemory } from "../../lib/storefront-hydrate";
+
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
@@ -57,9 +59,7 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // размеров (канон 19/23): small/дефолт = эталон, medium/large крупнее. Цвет —
 // токены (color-heading/color-muted) с фоллбеком чёрный/серый → colorScheme
 // перекрашивает, без схемы пиксель эталона (MANNER.md §7).
-// Приоритет top-level headingSize (live-селект «Размер заголовка»). Дефолт-сиды/
-// миграции кладут ЛЕГАСИ heading.size — nested-first глушил бы live-селект (паритет rose cc64b373).
-const headingSize = p.headingSize ?? p.heading?.size;
+const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "medium"
 		? "text-[23px] md:text-[29px]"
@@ -74,7 +74,7 @@ const textSizeCls =
 			? "text-[19px] md:text-[23px]"
 			: "text-[14px] md:text-[16px]";
 // Классы <h2>/<p> = эталон верстальщиков + ступень размера + токен цвета схемы.
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
 
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
@@ -123,6 +123,21 @@ const quickAddCls =
 // и для перерисованной гидрацией разметки).
 const btnStyle =
 	p.buttonStyle === "secondary" || p.buttonStyle === "link" ? p.buttonStyle : undefined;
+
+// Theme Settings «Вид карточки» / «Выравнивание»: panel пишет cardVariant
+// (rich|minimal) и cardAlignment на PopularProducts. rich = flux Figma (surface
+// + radius-card); minimal = голая карточка как «standard».
+const cardVariant = p.cardVariant === "minimal" ? "minimal" : "rich";
+const cardAlignCls =
+	p.cardAlignment === "center"
+		? "text-center"
+		: p.cardAlignment === "right"
+			? "text-right"
+			: "text-left";
+const articleCls =
+	cardVariant === "minimal"
+		? `group flex h-full w-full flex-col gap-4 ${cardAlignCls}`
+		: `group flex h-full w-full flex-col gap-4 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,251_251_251))] p-3 transition-transform duration-300 hover:-translate-y-1 ${cardAlignCls}`;
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
 // товара при наведении. Носитель данных: data-image-2 на <li> (demo —
@@ -211,9 +226,12 @@ const collectionRef =
 // build). Нет коллекции / siteId / ошибка → realProducts пуст → секция рендерит
 // плейсхолдер-куртки Figma.
 const siteId = typeof p.siteId === "string" ? p.siteId : "";
+// storefront-data отдаёт цены уже в РУБЛЯХ (basePrice как есть; см.
+// storefront-data.controller — эмитит basePrice без конвертации). Показываем как есть,
+// НЕ делим /100. Бейдж скидки salePercent ниже — отношение basePrice/compareAtPrice,
+// от единиц не зависит.
 const fmtPrice = (v: unknown): string => {
 	const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
-	// Цены storefront-data (basePrice/compareAtPrice) — в КОПЕЙКАХ → рубли.
 	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
 };
 let realProducts: any[] = [];
@@ -262,6 +280,7 @@ if (collectionRef && siteId) {
 								),
 							).slice(0, 6)
 						: [],
+					memory: deriveMemory(pr),
 				};
 			});
 		}
@@ -335,7 +354,7 @@ const containerCls = paddingStyle
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
 				<li data-product-id={product.id}>
 					<article
-						class="group flex h-full w-full flex-col gap-4 transition-transform duration-300 hover:-translate-y-1"
+						class={articleCls}
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
@@ -343,7 +362,7 @@ const containerCls = paddingStyle
 							<a
 								href={`/product?id=${encodeURIComponent(product.id)}`}
 								data-nt="flux-card-media"
-								class="relative block aspect-square w-full overflow-hidden bg-[#FBFBFB]"
+								class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]"
 								aria-label={product.name}
 							>
 								<img
@@ -354,7 +373,7 @@ const containerCls = paddingStyle
 								/>
 								{product.salePercent && (
 									<div class="absolute left-2 top-2 flex flex-col items-start gap-1">
-										<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+										<span class="inline-flex items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
 											{product.salePercent}
 										</span>
 									</div>
@@ -383,21 +402,30 @@ const containerCls = paddingStyle
 								<div class="flex flex-col gap-1">
 									<a
 										href={`/product?id=${encodeURIComponent(product.id)}`}
-										class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]"
+										class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]"
 									>
 										{product.name}
 									</a>
 									<div class="flex items-center gap-2">
-										<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+										<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 											{product.price}
 										</span>
 										{product.oldPrice && (
-											<span class="font-roboto-flex text-[12px] font-light leading-normal text-[#CCCCCC] line-through md:text-[14px]">
+											<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,204_204_204))] line-through md:text-[14px]">
 												{product.oldPrice}
 											</span>
 										)}
 									</div>
 								</div>
+								{product.memory && product.memory.length > 0 && (
+									<div class="flex flex-wrap items-start gap-1">
+										{product.memory.map((m: string) => (
+											<span class="inline-flex items-center rounded-[2px] border border-solid border-[#F5F5F5] p-1 font-roboto-flex text-[12px] font-light leading-none text-[#000000]">
+												{m}
+											</span>
+										))}
+									</div>
+								)}
 							</div>
 							<button
 								type="button"
@@ -408,7 +436,7 @@ const containerCls = paddingStyle
 								data-old-price={product.oldPrice}
 								data-image={product.image}
 								data-quantity="1"
-								class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+								class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90"
 							>
 								В корзину
 							</button>
@@ -421,14 +449,14 @@ const containerCls = paddingStyle
 				   «2 500 ₽». Без data-add-to-cart/сердца — это не реальный товар. */
 				<li data-product-id={product.id}>
 					<article
-						class="group flex h-full w-full flex-col gap-4 transition-transform duration-300 hover:-translate-y-1"
+						class={articleCls}
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
 						<a
 							href="/catalog"
 							data-nt="flux-card-media"
-							class="relative block aspect-square w-full overflow-hidden bg-[#FBFBFB]"
+							class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#FBFBFB]"
 							aria-label={product.name}
 						>
 							<img
@@ -439,10 +467,10 @@ const containerCls = paddingStyle
 							/>
 						</a>
 						<div class="flex flex-1 flex-col gap-1">
-							<span class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+							<span class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 								{product.name}
 							</span>
-							<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+							<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 								{product.price}
 							</span>
 						</div>

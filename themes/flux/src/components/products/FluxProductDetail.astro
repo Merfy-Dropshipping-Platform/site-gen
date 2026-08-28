@@ -26,23 +26,9 @@ interface Props {
 	 * `products/[id].astro` не передаётся → Astro опускает атрибут → API-путь
 	 * пропускается, остаётся demo-скелетон. */
 	siteId?: string;
-	/** «Размер» медиа-колонки PDP (Figma 648:55733): small/medium/large → главное
-	 * фото 440/552/640px. Задаётся Puck-пропом блока «Товар». Зеркалит маппинг
-	 * theme-base Product.astro (MAIN_IMAGE_PX). Не задан → medium (552). */
-	size?: "small" | "medium" | "large";
 }
 
-const { product, id, siteId, size } = Astro.props;
-
-// «Размер» → ширина главного фото (Figma 648:55733, зеркало theme-base
-// Product.astro MAIN_IMAGE_PX). Значение едет в CSS-переменную
-// --product-main-image-size на секции; grid-колонка галереи (скелетон + live)
-// потребляет её через lg:grid-cols-[var(--product-main-image-size,552px)_…].
-// Раньше колонка была захардкожена 600px в двух местах → «Размер» не двигал фото
-// на live-PDP flux (паритет фикса rose/theme-base bf62be92).
-const _pdpSize = size === "small" || size === "large" ? size : "medium";
-const MAIN_IMAGE_PX = { small: 440, medium: 552, large: 640 } as const;
-const mainImageSizeVar = `--product-main-image-size:${MAIN_IMAGE_PX[_pdpSize]}px;`;
+const { product, id, siteId } = Astro.props;
 
 // ── Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Товар». ──
 // Когда товар НЕ выбран мерчантом (demo `[id].astro` с мок-`catalogProducts` или
@@ -128,7 +114,6 @@ const pdpHeartSvg =
 	data-cart-color={cartVariantColor}
 	data-site-id={siteId}
 	data-puck-component-id={id}
-	style={mainImageSizeVar}
 >
 	{/*
 	  СКЕЛЕТОН-ЛОАДЕР PDP (flux). Виден по умолчанию, пока live-inline-script грузит
@@ -143,15 +128,15 @@ const pdpHeartSvg =
 	<div
 		data-pdp-skeleton
 		aria-hidden="true"
-		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[var(--product-main-image-size,552px)_minmax(0,1fr)] lg:gap-10"
+		class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10"
 	>
 		{/* Галерея: главное фото (квадрат) + ряд из 3 миниатюр (grid-cols-3) */}
 		<div class="flex flex-col gap-4">
-			<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			<div class="aspect-square w-full animate-pulse rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
 			<div class="grid grid-cols-3 gap-4">
-				<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
-				<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
-				<div class="aspect-square w-full animate-pulse rounded-[8px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="aspect-square w-full animate-pulse rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="aspect-square w-full animate-pulse rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="aspect-square w-full animate-pulse rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
 			</div>
 		</div>
 
@@ -182,8 +167,8 @@ const pdpHeartSvg =
 
 			{/* Кнопки CTA (gap-3): «В корзину» + «Купить сейчас» */}
 			<div class="flex flex-col gap-3">
-				<div class="h-12 w-full animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
-				<div class="h-12 w-full animate-pulse rounded-[6px] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="h-12 w-full animate-pulse rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="h-12 w-full animate-pulse rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-surface,245_245_245))]"></div>
 			</div>
 
 			{/* Описание: заголовок + полосы текста + ссылка «Поделиться» */}
@@ -199,9 +184,9 @@ const pdpHeartSvg =
 		</div>
 	</div>
 
-	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[var(--product-main-image-size,552px)_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
+	<div class="mx-auto grid w-full max-w-[1320px] grid-cols-1 gap-8 lg:grid-cols-[600px_minmax(0,1fr)] lg:gap-10" data-pdp-layout hidden style="opacity:0;transition:opacity .15s ease">
 		<div class="flex flex-col gap-4">
-			<div class="relative aspect-square w-full overflow-hidden bg-[#F5F5F5]">
+			<div class="relative aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]">
 				{/* Главное фото: пустое состояние (Figma 1:19335) = плейсхолдер
 				    /placeholders/sweater-blue-large.svg сырым <img> (у него нет
 				    соимённого .webp — FluxPicture отдал бы битый <source> и
@@ -228,7 +213,7 @@ const pdpHeartSvg =
 					/>
 				)}
 				{displayDiscount && (
-					<span class="absolute left-3 top-3 inline-flex h-6 items-center rounded-[4px] bg-[#000000] px-1.5 font-roboto-flex text-[12px] font-normal leading-none text-white" data-pdp-badge>
+					<span class="absolute left-3 top-3 inline-flex h-6 items-center rounded-[4px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 font-roboto-flex text-[12px] font-normal leading-none text-white" data-pdp-badge>
 						Скидка
 					</span>
 				)}
@@ -238,7 +223,7 @@ const pdpHeartSvg =
 					{[mainImage, ...thumbs].slice(0, 6).map((img) => (
 						<button
 							type="button"
-							class="aspect-square w-full overflow-hidden bg-[#F5F5F5] transition-opacity hover:opacity-90"
+							class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5] transition-opacity hover:opacity-90"
 							data-pdp-thumb
 							data-image={img}
 							aria-label="Показать изображение"
@@ -273,7 +258,7 @@ const pdpHeartSvg =
 				<div class="flex items-start justify-between gap-3">
 					<h1
 						id="product-title"
-						class="font-roboto-flex text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
+						class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]"
 						data-pdp-name
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
@@ -395,7 +380,7 @@ const pdpHeartSvg =
 					data-image={mainImage}
 					data-variant-color={isPlaceholder ? "" : cartVariantColor}
 					data-quantity="1"
-					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[#000000] bg-white px-4 font-roboto-flex text-[16px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90"
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-2-border,0_0_0))] bg-white px-4 font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90"
 				>
 					Добавить в корзину
 				</button>
@@ -406,7 +391,7 @@ const pdpHeartSvg =
 					data-name={displayName}
 					data-price={displayPrice}
 					data-image={mainImage}
-					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[#000000] px-4 font-roboto-flex text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95"
 				>
 					Купить сейчас
 				</button>
@@ -423,7 +408,7 @@ const pdpHeartSvg =
 					data-puck-subsection-field="description"
 					hidden={isPlaceholder}
 				>
-					<h2 class="font-roboto-flex text-[18px] font-normal uppercase leading-normal text-[#000000]">
+					<h2 class="font-comfortaa text-[18px] font-normal uppercase leading-normal text-[#000000]">
 						Описание
 					</h2>
 					<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
@@ -462,7 +447,7 @@ const pdpHeartSvg =
 		<p class="font-roboto-flex text-[24px] uppercase text-[#000000]">Товар не найден</p>
 		<a
 			href="/catalog"
-			class="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[#000000] px-6 font-roboto-flex text-[16px] text-white transition-opacity hover:opacity-90"
+			class="mt-6 inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-6 font-roboto-flex text-[16px] text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90"
 		>В каталог</a>
 	</div>
 </section>
@@ -501,7 +486,7 @@ const pdpHeartSvg =
 	 * data-pdp-* хуки разметки. Без живых данных (demo-сборка) — чистый no-op:
 	 * остаётся SSR-скелетон, вёрстка/цвета/токены flux не трогаются.
 	 *
-	 * ТОЛЬКО is:inline (НЕ module-<script> с import): live PDP = единая страница
+	 * ТОЛЬКО is:inline (НЕ module-script с import): live PDP = единая страница
 	 * /product (build.service инжектит __MERFY_SITE_ID__ в product/index.html и
 	 * копирует её в product/<slug>/index.html). Прежний module-import гидрировал
 	 * только из /data/products.json — теперь источник №1 ЖИВОЙ API (спек 098).
@@ -557,8 +542,8 @@ const pdpHeartSvg =
 			return {
 				id: p.id,
 				name: p.title || p.name || "",
-				// Цены копейки→рубли (зеркало Catalog.astro mapApiProduct): formatPrice
-				// НЕ делит, корзина (nt-cart-flux parsePrice) читает data-price как рубли.
+				// Цены уже в РУБЛЯХ (basePrice как есть; зеркало Catalog.astro mapApiProduct):
+				// formatPrice НЕ делит, корзина (nt-cart-flux parsePrice) читает data-price как рубли.
 				price: cents != null ? Math.round(cents) : 0,
 				oldPrice: oldCents && oldCents > 0 ? Math.round(oldCents) : null,
 				slug: p.handle || p.slug,
@@ -628,8 +613,8 @@ const pdpHeartSvg =
 			}
 
 			// 2. Статический per-site файл — опубликованный сайт. Богатый shape
-			// (variantCombinations) пишет build.service. ⚠️ Цены в products.json — в
-			// КОПЕЙКАХ (как API basePrice: 269000 = 2690₽) → делим на 100.
+			// (variantCombinations) пишет build.service. Цены в products.json — уже в
+			// РУБЛЯХ (basePrice как есть) → НЕ делим (identity).
 			try {
 				var r2 = await fetch("/data/products.json");
 				if (r2.ok) {
@@ -659,9 +644,9 @@ const pdpHeartSvg =
 						var payload = await r3.json();
 						var products = payload && payload.products;
 						if (Array.isArray(products) && products.length > 0) {
-							// ⚠️ storefront-data тоже отдаёт цены в КОПЕЙКАХ (basePrice
-							// 5499000 = 54990₽; см. storefront-data.controller) → делим на
-							// 100, как источник №2 (products.json) и mapApiProduct выше.
+							// storefront-data отдаёт цены уже в РУБЛЯХ (basePrice как есть;
+							// см. storefront-data.controller — без конвертации) → НЕ делим
+							// (identity), как источник №2 (products.json) и mapApiProduct выше.
 							var k100p = function (v) { return v; };
 							__cachedProducts = products.map(function (p) {
 								return Object.assign({}, p, {
@@ -738,9 +723,9 @@ const pdpHeartSvg =
 		// не arbitrary-only — чтобы попасть в CSS превью конструктора.
 		var VARIANT_BTN_BASE =
 			"inline-flex h-10 shrink-0 items-center justify-center rounded-[4px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity";
-		var VARIANT_BTN_SEL = "border-0 !bg-[#000000] !text-white hover:opacity-95";
+		var VARIANT_BTN_SEL = "border-0 !bg-[rgb(var(--color-button-2-bg,0_0_0))] !text-[rgb(var(--color-button-2-text,255_255_255))] hover:opacity-95";
 		var VARIANT_BTN_UNSEL =
-			"border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90";
+			"border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-white !text-[rgb(var(--color-text,0_0_0))] hover:opacity-90";
 		function renderVariantGroupsHtml(groups, selected) {
 			return groups
 				.map(function (g) {
@@ -1131,14 +1116,10 @@ const pdpHeartSvg =
 					if (!pid) return;
 					var vci = add.getAttribute("data-variant-combination-id") || "";
 					var qty = parseInt(add.getAttribute("data-quantity") || "1", 10) || 1;
-					// Цвет/Размер варианта → в express-payload: чекаут-мост передаёт их
-					// как options, сервер пере-матчит вариант, если vci устарел.
-					var vColor = add.getAttribute("data-variant-color") || "";
-					var vSize = add.getAttribute("data-variant-size") || "";
 					try {
 						sessionStorage.setItem(
 							"flux:buynow",
-							JSON.stringify({ productId: pid, variantCombinationId: vci || null, variantColor: vColor || undefined, variantSize: vSize || undefined, quantity: qty }),
+							JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: qty }),
 						);
 					} catch (e) {}
 					window.location.href = "/checkout";

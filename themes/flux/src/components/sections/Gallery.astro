@@ -44,7 +44,7 @@ const textSizeCls =
 		: textSize === "large"
 			? "text-[19px]"
 			: "text-[16px]"; // medium (canon-default) + absent → 16px (как rose)
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
 const headWrapCls = "flex flex-col items-center gap-2 text-center";
 
@@ -233,7 +233,7 @@ const containerCls = paddingStyle
 							data-puck-subsection-field="items"
 						>
 							<div
-								class={`relative ${SIDE_ASPECTS[i] ?? SIDE_ASPECTS[0]} w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`}
+								class={`relative ${SIDE_ASPECTS[i] ?? SIDE_ASPECTS[0]} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]`}
 							>
 								{tile.url && (
 									<img
@@ -264,7 +264,7 @@ const containerCls = paddingStyle
 				   мок-товаров верстальщика («M Phone 17» / «Смартфоны»). */
 				<div class={`grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4${sideOrderCls}`}>
 					<div class="flex min-w-0 flex-col gap-4" aria-label="Товар">
-						<div class="relative aspect-square w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]">
+						<div class="relative aspect-square w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]">
 							<img
 								src="/placeholders/sweater-blue.svg"
 								alt="Товар"
@@ -280,7 +280,7 @@ const containerCls = paddingStyle
 
 					<div class="flex min-w-0 flex-col gap-4" aria-label="Выбери коллекцию">
 						<div
-							class="relative aspect-[429/314] w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"
+							class="relative aspect-[429/314] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"
 							aria-hidden="true"
 						/>
 						<h3 class={collectionTitleCls}>Выбери коллекцию</h3>

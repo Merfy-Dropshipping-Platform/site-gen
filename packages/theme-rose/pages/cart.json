@@ -9,12 +9,8 @@
       "props": { "id": "Header-1" }
     },
     {
-      "type": "CartBody",
-      "props": { "id": "CartBody-1", "colorScheme": "scheme-2", "padding": { "top": 80, "bottom": 40 } }
-    },
-    {
-      "type": "CartSummary",
-      "props": { "id": "CartSummary-1", "colorScheme": "scheme-2", "padding": { "top": 0, "bottom": 80 } }
+      "type": "CartSection",
+      "props": { "id": "CartSection-1", "padding": { "top": 80, "bottom": 80 } }
     },
     {
       "type": "Footer",

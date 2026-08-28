@@ -52,7 +52,7 @@ const headingAlignCls =
 		: headingAlignment === "right"
 			? " text-right"
 			: "";
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
 // Когда мерчант ЗАДАЛ пункты — рендерим ИХ (интерактивный <details>, content =
@@ -155,7 +155,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								   реального ответа нет, помощь видна сразу (паттерн пустого
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] md:text-[19px]">
+									<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] md:text-[19px]">
 										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<svg
 											class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))]"
@@ -173,10 +173,10 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 md:text-[19px]">
+										<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 md:text-[19px]">
 											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
 											<svg
-												class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))] transition-[transform,color] duration-300 group-open:rotate-0 group-open:text-[#FA5109]"
+												class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))] transition-[transform,color] duration-300 group-open:rotate-0 group-open:text-[rgb(var(--color-accent,250_81_9))]"
 												viewBox="0 0 16 16"
 												fill="currentColor"
 												aria-hidden="true"

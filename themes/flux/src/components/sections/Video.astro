@@ -13,6 +13,7 @@
 // landscape-video.png + Play-иконка.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const siteId = typeof p.siteId === "string" ? p.siteId : undefined;
 
 // Канон videoUrl + pupa video{url, coverImage}. blob:-URL — временные ObjectURL
 // вкладки конструктора, на live дадут 404 — отбрасываем (паттерн theme-base Video).
@@ -89,7 +90,7 @@ const headingAlignCls =
 		: headingAlignment === "right"
 			? " items-end text-right"
 			: "";
-const headingCls = `font-roboto-flex ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+const headingCls = `font-comfortaa ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
 
 // Канон subheading «Подзаголовок» (как rose) — string | {text} +
 // content.subheading.{text,enabled}. Рендер ТОЛЬКО при непустом тексте И
@@ -142,7 +143,7 @@ const containerCls = fullBleed
 const headingWrapPx = fullBleed ? " px-4 md:px-20 2xl:px-80" : "";
 const mediaCls = fullBleed
 	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
-	: "relative aspect-video w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]";
+	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]";
 
 // Канон overlay 0-100 — слой поверх медиа; клики проходят сквозь (controls видео
 // остаются доступны).
@@ -181,7 +182,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 			)
 		}
 
-		<div class={mediaCls} style={mediaHeightStyle}>
+		<div class={mediaCls} style={mediaHeightStyle} data-media-target>
 			{
 				video.kind === "youtube" || video.kind === "vimeo" ? (
 					<iframe
@@ -198,6 +199,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						controls
 						playsinline
 						preload="metadata"
+						data-media-video
 						class="absolute inset-0 size-full object-cover"
 					/>
 				) : poster ? (
@@ -246,3 +248,64 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 		</div>
 	</div>
 </section>
+<script is:inline define:vars={{ blockId: id, siteId: siteId ?? "" }}>
+	(function () {
+		if (!blockId) return;
+		var section = window.__merfyRoot(blockId);
+		if (!section) return;
+		var target = section.querySelector("[data-media-target]");
+		if (!target) return;
+
+		var effectiveSiteId =
+			siteId ||
+			(typeof window !== "undefined" && window.__MERFY__ && window.__MERFY__.siteId) ||
+			(typeof window !== "undefined" &&
+				window.__MERFY_CONFIG__ &&
+				(window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.siteId)) ||
+			"";
+		if (!effectiveSiteId && typeof window !== "undefined" && window.location) {
+			var host = window.location.hostname || "";
+			var m = host.match(/^([0-9a-f]{12})\.merfy\.ru$/i);
+			if (m) effectiveSiteId = m[1];
+		}
+		if (!effectiveSiteId) return;
+
+		fetch(
+			"https://gateway.merfy.ru/api/sites/" +
+				effectiveSiteId +
+				"/blocks/" +
+				encodeURIComponent(blockId) +
+				"/media",
+			{ credentials: "omit" },
+		)
+			.catch(function () {
+				return null;
+			})
+			.then(function (res) {
+				return res && res.ok ? res.json() : null;
+			})
+			.then(function (data) {
+				if (!data || typeof data.url !== "string" || !data.url) return;
+				var existingVideo = target.querySelector("video[data-media-video]");
+				if (existingVideo) {
+					if (existingVideo.getAttribute("src") !== data.url) {
+						existingVideo.setAttribute("src", data.url);
+						existingVideo.load();
+					}
+					if (data.coverImage) existingVideo.poster = data.coverImage;
+					return;
+				}
+				target.innerHTML = "";
+				var v = document.createElement("video");
+				v.className = "absolute inset-0 size-full object-cover";
+				v.setAttribute("data-media-video", "");
+				v.setAttribute("controls", "");
+				v.setAttribute("playsinline", "");
+				v.setAttribute("preload", "metadata");
+				v.src = data.url;
+				if (data.coverImage) v.poster = data.coverImage;
+				target.appendChild(v);
+			})
+			.catch(function () {});
+	})();
+</script>

@@ -37,8 +37,9 @@ export function formatRub(amount: number): string {
 }
 
 function toPriceView(raw: number | string | null | undefined): PriceView {
-  // Цены storefront-data / products.json (basePrice/compareAtPrice) — в КОПЕЙКАХ.
-  // Делим /100 в единой headless-точке → рубли для SSR-отображения и cart (amount).
+  // Цены storefront-data / products.json (basePrice/compareAtPrice) — уже в РУБЛЯХ
+  // (storefront-data.controller эмитит basePrice как есть; заказ = basePrice×100→копейки).
+  // Показываем как есть; НЕ делим /100 (это ломало PDP реальных магазинов: 100₽→1₽).
   const amount = Math.round(parsePrice(raw));
   return { amount, formatted: formatRub(amount) };
 }
@@ -66,10 +67,7 @@ function normaliseGallery(p: RawProduct, productName: string): GalleryView {
 
 // — Variants —
 
-function buildVariantGroups(
-  variants: RawVariant[],
-  swatchByValue: Map<string, string> = new Map(),
-): VariantGroupView[] {
+function buildVariantGroups(variants: RawVariant[]): VariantGroupView[] {
   // Each option-key collects unique values; "available" is true when at
   // least one variant carrying that value is in stock.
   const groupMap = new Map<string, Map<string, boolean>>();
@@ -85,11 +83,7 @@ function buildVariantGroups(
   }
   return Array.from(groupMap.entries()).map(([key, valMap]) => ({
     key,
-    options: Array.from(valMap.entries()).map(([value, available]) => ({
-      value,
-      available,
-      swatch: swatchByValue.get(value) ?? null,
-    })),
+    options: Array.from(valMap.entries()).map(([value, available]) => ({ value, available })),
   }));
 }
 
@@ -153,18 +147,7 @@ export function normaliseProduct(
     productVariants.length > 0 &&
     (raw.hasVariants !== false ||
       productVariants.some((v) => v.options && Object.keys(v.options).length > 0));
-  // «Цвет из платформы»: реальный swatchHex опции из дерева `variantGroups`
-  // (присутствует и в products.json, и в storefront-data). Имя→hex резолв в
-  // рендере — лишь фолбэк, когда swatchHex не задан мерчантом.
-  const swatchByValue = new Map<string, string>();
-  for (const g of raw.variantGroups ?? []) {
-    for (const o of g.options ?? []) {
-      if (o.swatchHex) swatchByValue.set(o.value, o.swatchHex);
-    }
-  }
-  const variantGroups = hasVariants
-    ? buildVariantGroups(productVariants, swatchByValue)
-    : [];
+  const variantGroups = hasVariants ? buildVariantGroups(productVariants) : [];
 
   const view: ProductView = {
     id: raw.id ?? raw.slug ?? raw.handle ?? '',

@@ -25,7 +25,7 @@ const { type = 'submit', id, disabled, loadingLabel = 'Загрузка...', for
   disabled={disabled}
   class="auth-button-primary"
   data-testid={id ?? 'auth-button'}
-  style="background:#000000;color:#FFFFFF;border-radius:8px;"
+  style="background:rgb(var(--color-button-2-bg,0 0 0));color:rgb(var(--color-button-2-text,255 255 255));border-radius:var(--radius-button,8px);"
 >
   <span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
     <span

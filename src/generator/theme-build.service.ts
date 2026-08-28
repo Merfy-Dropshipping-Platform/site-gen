@@ -308,8 +308,10 @@ export async function rewriteAbsoluteUrls(
 // `/__theme/<тема>/*`, оставляя стрэй-токен `/__theme/<тема>` перед соседним
 // CSS-правилом/@media — браузер при error-recovery проглатывал весь блок
 // (каталожные top/side display:none-тогглы исчезали → две раскладки в превью).
-// `/` валидного ассета всегда ведёт к букве/`_`/цифре, никогда к `*`.
-export const ROOT_URL_RE = /(["'(,\s])\/(?![/*])/g;
+// `/` валидного ассета всегда ведёт к букве/`_`/цифре, никогда к `*` или `>`
+// (`"/>` / ` />` — self-closing SVG/HTML; иначе `<path .../>` превращался в
+// `<path .../__theme/<тема>/>` и ломал инлайн-иконки в превью).
+export const ROOT_URL_RE = /(["'(,\s])\/(?![/*>])/g;
 
 /** Переписать корневые URL HTML-фрагмента под префикс, тела <script> verbatim. */
 export function rewriteRootUrlsToPrefix(html: string, prefix: string): string {

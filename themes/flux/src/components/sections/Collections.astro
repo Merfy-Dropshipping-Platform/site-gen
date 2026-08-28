@@ -47,7 +47,7 @@ const subtitleSizeCls =
 		: subtitleSize === "large"
 			? "text-[19px] md:text-[23px]"
 			: "text-[14px] md:text-[16px]"; // small (canon-default) + absent
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 const subtitleCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] ${subtitleSizeCls}`;
 // Канон titleAlignment (как rose): дефолт/left = эталон (h2 слева); center/right
 // двигают заголовок и подзаголовок перекрытиями на обёртке шапки (flex-col).
@@ -249,7 +249,7 @@ const containerCls = paddingStyle
 						data-puck-subsection-field="collections"
 					>
 						<div
-							class={`${tileAspect} w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`}
+							class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]`}
 							aria-hidden={c.image ? undefined : "true"}
 						>
 							{c.image ? (
@@ -274,7 +274,7 @@ const containerCls = paddingStyle
 						aria-label={c.name}
 					>
 						<div
-							class={`${tileAspect} w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))]`}
+							class={`${tileAspect} w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]`}
 							aria-hidden="true"
 						>
 							<Fragment set:html={PH_MEDIA_ICON} />
@@ -352,7 +352,7 @@ const containerCls = paddingStyle
 					? `<img src="${escapeHtml(cover)}" alt="${name}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />`
 					: PH_MEDIA_ICON;
 				return `<li><a href="${href}" class="group flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1" aria-label="${name}" data-nt="flux-collection-card">
-			<div class="aspect-square w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
+			<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
 			<h3 class="flux-collection-name font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[19px]">${name}</h3>
 		</a></li>`;
 			})

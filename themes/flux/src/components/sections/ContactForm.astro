@@ -28,7 +28,7 @@ const headingSizeCls =
 		: headingSizeRaw === "large"
 			? "text-[23px] md:text-[29px]"
 			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent → эталон 19/23
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const headingCls = `font-comfortaa font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 
 // Подзаголовок (subtitle / text / hidden description) — flux font-light, токен
 // color-muted. Рендерим ТОЛЬКО при непустом значении (как rose: нет текста → нет
@@ -111,9 +111,9 @@ const labelCls =
 	"font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]";
 const reqCls = "ml-1 text-[rgb(var(--color-error,255_148_148))]";
 const inputCls =
-	"box-border h-12 w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
+	"box-border h-12 w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[rgb(var(--color-accent,250_81_9))]";
 const textareaCls =
-	"box-border min-h-[160px] w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 py-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
+	"box-border min-h-[160px] w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 py-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[rgb(var(--color-accent,250_81_9))]";
 // Кнопка отправки — чёрная CTA языка flux (как Hero/Puk): токен button-2, белый текст,
 // h-14, rounded-6, uppercase, Roboto Flex, на всю ширину формы.
 const submitCls =

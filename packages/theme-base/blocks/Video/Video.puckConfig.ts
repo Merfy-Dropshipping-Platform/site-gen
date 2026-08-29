@@ -58,6 +58,114 @@ export const VideoSchema = z.object({
 
 export type VideoProps = z.infer<typeof VideoSchema>;
 
+export interface VideoStoredInput {
+  heading?: unknown;
+  headingSize?: unknown;
+  subheading?: unknown;
+  videoUrl?: unknown;
+  poster?: unknown;
+  video?: unknown;
+  position?: unknown;
+  padded?: unknown;
+  align?: unknown;
+  size?: unknown;
+  overlay?: unknown;
+  content?: unknown;
+  colorScheme?: unknown;
+  padding?: unknown;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+export function resolveVideoUrl(raw: {
+  videoUrl?: unknown;
+  video?: { url?: unknown };
+}): string {
+  const value =
+    typeof raw.videoUrl === 'string' && raw.videoUrl.length > 0
+      ? raw.videoUrl
+      : typeof raw.video?.url === 'string'
+        ? raw.video.url
+        : '';
+  return value.startsWith('blob:') ? '' : value;
+}
+
+export function resolveVideoPosition(
+  value: unknown,
+): 'contained' | 'fullscreen' {
+  if (value === 'fullscreen') return 'fullscreen';
+  // Legacy stored value from older manifests / migrations.
+  if (value === 'window') return 'contained';
+  return 'contained';
+}
+
+export function resolveVideoHeadingSize(raw: {
+  headingSize?: unknown;
+  content?: { heading?: { size?: unknown } };
+}): 'small' | 'medium' | 'large' {
+  const value = raw.headingSize ?? raw.content?.heading?.size;
+  return value === 'small' || value === 'medium' || value === 'large'
+    ? value
+    : 'medium';
+}
+
+export function normalizeVideoStoredProps(input: unknown): VideoProps | unknown {
+  if (!isRecord(input)) return input;
+  const raw = input as VideoStoredInput;
+  const video = isRecord(raw.video) ? raw.video : undefined;
+  const content = isRecord(raw.content) ? raw.content : undefined;
+  const legacyHeading = isRecord(content?.heading) ? content.heading : undefined;
+  const legacySubheading = isRecord(content?.subheading)
+    ? content.subheading
+    : undefined;
+  const heading =
+    typeof raw.heading === 'string' && raw.heading.trim()
+      ? raw.heading
+      : typeof legacyHeading?.text === 'string'
+        ? legacyHeading.text
+        : '';
+  const headingSize = resolveVideoHeadingSize({
+    headingSize: raw.headingSize,
+    content: legacyHeading ? { heading: legacyHeading } : undefined,
+  });
+  const videoUrl = resolveVideoUrl({ videoUrl: raw.videoUrl, video });
+  const poster =
+    typeof raw.poster === 'string'
+      ? raw.poster
+      : typeof video?.coverImage === 'string'
+        ? video.coverImage
+        : '';
+  return {
+    heading,
+    headingSize,
+    subheading:
+      legacySubheading?.enabled === 'false'
+        ? ''
+        : typeof raw.subheading === 'string'
+          ? raw.subheading
+          : typeof legacySubheading?.text === 'string'
+            ? legacySubheading.text
+            : '',
+    videoUrl,
+    poster,
+    position: resolveVideoPosition(raw.position),
+    ...(typeof raw.padded === 'boolean' ? { padded: raw.padded } : {}),
+    ...(raw.align === 'container' || raw.align === 'fullbleed'
+      ? { align: raw.align }
+      : {}),
+    ...(raw.size === 'small' || raw.size === 'medium' || raw.size === 'large'
+      ? { size: raw.size }
+      : {}),
+    ...(typeof raw.overlay === 'number' ? { overlay: raw.overlay } : {}),
+    ...(typeof raw.colorScheme === 'string' ? { colorScheme: raw.colorScheme } : {}),
+    padding: isRecord(raw.padding) ? raw.padding : { top: 80, bottom: 80 },
+  };
+}
+
+export const VideoStoredSchema: z.ZodType<VideoProps, z.ZodTypeDef, unknown> =
+  z.preprocess(normalizeVideoStoredProps, VideoSchema);
+
 export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
   label: 'Видео',
   category: 'media',

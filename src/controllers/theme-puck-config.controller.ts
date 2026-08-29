@@ -151,6 +151,20 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
 }
 
 /**
+ * Dedupe concurrent dynamic imports of the same astro-block artifact.
+ * Nest compiles this controller to CJS; parallel HTTP requests that hit
+ * `import(absPath)` for the same .mjs (notably Video) can trip Node's
+ * "Cannot require() ES Module … not yet fully loaded" race.
+ */
+const blockModuleLoadCache = new Map<
+  string,
+  Promise<Record<string, unknown>>
+>();
+
+/** In-process puck-config cache — config is static per deploy. */
+const puckConfigResponseCache = new Map<string, Promise<PuckConfigJson>>();
+
+/**
  * Build a block loader that resolves overridden blocks from the theme package
  * and everything else from @merfy/theme-base. The loader receives the `path`
  * field from ResolvedBlockEntry — for base blocks this is just the block name
@@ -173,8 +187,18 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
   return async (pathOrName: string) => {
     const { artifact } = resolveBlockArtifact(themeId, pathOrName);
     const absPath = resolve(blocksDir, artifact);
-    const mod = (await import(absPath)) as Record<string, unknown>;
-    return mod;
+
+    let pending = blockModuleLoadCache.get(absPath);
+    if (!pending) {
+      pending = import(absPath)
+        .then((mod) => mod as Record<string, unknown>)
+        .catch((err: unknown) => {
+          blockModuleLoadCache.delete(absPath);
+          throw err;
+        });
+      blockModuleLoadCache.set(absPath, pending);
+    }
+    return pending;
   };
 }
 
@@ -195,6 +219,19 @@ export class ThemePuckConfigController {
   async getPuckConfig(
     @Param('themeId') themeId: string,
   ): Promise<PuckConfigJson> {
+    const cacheKey = themeId;
+    let pending = puckConfigResponseCache.get(cacheKey);
+    if (!pending) {
+      pending = this.buildPuckConfigJson(themeId).catch((err: unknown) => {
+        puckConfigResponseCache.delete(cacheKey);
+        throw err;
+      });
+      puckConfigResponseCache.set(cacheKey, pending);
+    }
+    return pending;
+  }
+
+  private async buildPuckConfigJson(themeId: string): Promise<PuckConfigJson> {
     const themeManifest = getThemeManifest(themeId);
     const resolvedBlocks = resolveBlocks(BASE_BLOCKS, themeManifest);
     const loader = createBlockLoader(themeId);

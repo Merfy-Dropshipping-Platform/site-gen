@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import * as Minio from "minio";
+import { buildSitePublicUrl } from "../common/site-domain";
 
 /**
  * S3StorageService — сервис для работы с S3/MinIO хранилищем статики сайтов.
@@ -232,12 +233,14 @@ export class S3StorageService {
 
   /**
    * Получить публичный URL для сайта по поддомену.
-   * URL вида: https://{subdomain}.merfy.ru (раздаётся через reverse proxy → MinIO)
+   * URL вида: https://{subdomain}.{SITES_WILDCARD_DOMAIN} (раздаётся через
+   * reverse proxy → MinIO). Домен строится общим хелпером — см.
+   * `src/common/site-domain.ts`.
    */
   getSitePublicUrlBySubdomain(subdomain: string): string {
     const slug = this.extractSubdomainSlug(subdomain);
     // Публичный URL - это сам поддомен (reverse proxy раздаёт из MinIO)
-    return `https://${slug}.merfy.ru`;
+    return buildSitePublicUrl(slug);
   }
 
   /**

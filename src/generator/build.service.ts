@@ -323,7 +323,17 @@ export interface BuildContext {
   siteName?: string;
 }
 
-const ANALYTICS_COLLECTOR_URL = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
+/**
+ * Адрес analytics-collector, который вшивается в статику КАЖДОЙ витрины.
+ * Переопределяется через ANALYTICS_COLLECTOR_URL; дефолт равен ранее
+ * захардкоженному значению, поэтому без переменной поведение не меняется.
+ */
+const ANALYTICS_COLLECTOR_URL_DEFAULT =
+  "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
+
+function analyticsCollectorUrl(): string {
+  return process.env.ANALYTICS_COLLECTOR_URL ?? ANALYTICS_COLLECTOR_URL_DEFAULT;
+}
 
 /** Inject tracker.js + loader.js into all HTML files before </head> */
 async function injectAnalyticsTracker(distDir: string, siteId: string): Promise<void> {
@@ -338,7 +348,8 @@ async function injectAnalyticsTracker(distDir: string, siteId: string): Promise<
   }
   await findHtml(distDir);
 
-  const trackerSnippet = `<script src="${ANALYTICS_COLLECTOR_URL}/tracker.js?shop=${siteId}" defer></script>\n<script src="${ANALYTICS_COLLECTOR_URL}/loader.js?shop=${siteId}" defer></script>`;
+  const collectorUrl = analyticsCollectorUrl();
+  const trackerSnippet = `<script src="${collectorUrl}/tracker.js?shop=${siteId}" defer></script>\n<script src="${collectorUrl}/loader.js?shop=${siteId}" defer></script>`;
 
   for (const file of htmlFiles) {
     let html = await fs.readFile(file, "utf8");

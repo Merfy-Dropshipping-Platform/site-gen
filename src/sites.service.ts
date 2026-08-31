@@ -28,6 +28,7 @@ import {
   CENTRAL_PROXY_APP_SENTINEL,
 } from "./constants";
 import { migrateRevisionData } from "./utils/revision-migrations";
+import { buildSiteHost, buildSitePublicUrl } from "./common/site-domain";
 import { resolveAssetUrls } from "./themes/asset-resolver";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
@@ -1157,7 +1158,7 @@ export class SitesDomainService {
     // 1. Определить публичный URL (если не установлен — генерируем subdomain)
     if (!finalUrl) {
       const slug = params.tenantId.replace(/-/g, "").slice(0, 12);
-      finalUrl = `https://${slug}.merfy.ru`;
+      finalUrl = buildSitePublicUrl(slug);
 
       await this.db
         .update(schema.site)
@@ -1174,7 +1175,7 @@ export class SitesDomainService {
         );
 
       this.logger.log(
-        `Generated local subdomain on publish: ${slug}.merfy.ru, publicUrl: ${finalUrl}`,
+        `Generated local subdomain on publish: ${buildSiteHost(slug)}, publicUrl: ${finalUrl}`,
       );
     }
 
@@ -1201,7 +1202,7 @@ export class SitesDomainService {
               ),
             );
           this.logger.log(
-            `Central proxy: ensured Traefik router for ${effectiveStorageSlug}.merfy.ru (no per-site app)`,
+            `Central proxy: ensured Traefik router for ${buildSiteHost(effectiveStorageSlug)} (no per-site app)`,
           );
         } catch (e) {
           this.logger.warn(
@@ -1226,7 +1227,7 @@ export class SitesDomainService {
           const sitePath = `sites/${effectiveStorageSlug}`;
 
           this.logger.log(
-            `Creating Coolify static site app for ${effectiveStorageSlug}.merfy.ru`,
+            `Creating Coolify static site app for ${buildSiteHost(effectiveStorageSlug)}`,
           );
           const coolifyResult = await this.callCoolify<{
             success: boolean;
@@ -1236,7 +1237,7 @@ export class SitesDomainService {
           }>("coolify.create_static_site_app", {
             projectUuid,
             name: `site-${effectiveStorageSlug}`,
-            subdomain: `${effectiveStorageSlug}.merfy.ru`,
+            subdomain: buildSiteHost(effectiveStorageSlug),
             sitePath,
           });
 
@@ -2315,7 +2316,7 @@ export class SitesDomainService {
             await this.deployments.ensureCentralRouter(slug);
             updates.coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
             this.logger.log(
-              `Site ${site.id}: central proxy router ensured for ${slug}.merfy.ru (no per-site app)`,
+              `Site ${site.id}: central proxy router ensured for ${buildSiteHost(slug)} (no per-site app)`,
             );
           } catch (e) {
             this.logger.warn(
@@ -2327,7 +2328,7 @@ export class SitesDomainService {
             const sitePath = `sites/${slug}`;
 
             this.logger.log(
-              `Site ${site.id}: creating Coolify app for ${slug}.merfy.ru`,
+              `Site ${site.id}: creating Coolify app for ${buildSiteHost(slug)}`,
             );
 
             const coolifyResult = await this.callCoolify<{
@@ -2338,7 +2339,7 @@ export class SitesDomainService {
             }>("coolify.create_static_site_app", {
               projectUuid,
               name: `site-${slug}`,
-              subdomain: `${slug}.merfy.ru`,
+              subdomain: buildSiteHost(slug),
               sitePath,
             });
 

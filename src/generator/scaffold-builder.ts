@@ -625,7 +625,11 @@ export async function buildScaffold(
   if (config.siteId) {
     const metaPath = path.join(outputDir, "public", "site-meta.js");
     const siteIdJson = JSON.stringify(config.siteId);
-    const apiUrlJson = JSON.stringify("https://gateway.merfy.ru/api");
+    // Тот же источник, что и в astro.builder.ts: API_GATEWAY_URL с дефолтом
+    // на текущий прод-адрес (обратная совместимость).
+    const apiUrlJson = JSON.stringify(
+      process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru/api",
+    );
     const content =
       `window.__MERFY__ = window.__MERFY__ || {}; window.__MERFY__.siteId = ${siteIdJson};\n` +
       `window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: ${siteIdJson}, apiUrl: ${apiUrlJson}, requireCustomerAuth: false };\n`;

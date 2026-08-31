@@ -627,8 +627,13 @@ export async function buildScaffold(
     const siteIdJson = JSON.stringify(config.siteId);
     // Тот же источник, что и в astro.builder.ts: API_GATEWAY_URL с дефолтом
     // на текущий прод-адрес (обратная совместимость).
+    // ВАЖНО: переменная задаётся и с суффиксом /api, и без него (на живом
+    // контуре у sites-service она без него), поэтому нормализуем так же, как
+    // build.service.ts — иначе витрина получит адрес без /api и запросы уйдут
+    // мимо гейтвея.
+    const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";
     const apiUrlJson = JSON.stringify(
-      process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru/api",
+      rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`,
     );
     const content =
       `window.__MERFY__ = window.__MERFY__ || {}; window.__MERFY__.siteId = ${siteIdJson};\n` +

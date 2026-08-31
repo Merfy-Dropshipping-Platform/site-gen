@@ -3,6 +3,19 @@ import * as path from "path";
 import { spawn } from "child_process";
 import archiver from "archiver";
 
+
+/**
+ * Адрес гейтвея вместе с суффиксом /api.
+ *
+ * API_GATEWAY_URL задаётся и с суффиксом, и без него (на живом контуре у
+ * sites-service — без), поэтому нормализация обязательна: build.service.ts
+ * делает ровно то же самое перед тем, как передать apiUrl параметром.
+ */
+function resolveGatewayApiUrl(): string {
+  const raw = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";
+  return raw.endsWith("/api") ? raw : `${raw}/api`;
+}
+
 export interface ProductData {
   id: string;
   name: string;
@@ -828,10 +841,9 @@ export async function buildWithAstro(
       meta: {
         ...(data?.meta ?? {}),
         shopId: params.tenantId ?? "", // tenantId here receives siteId from generator.service
-        apiUrl:
-          params.apiUrl ??
-          process.env.API_GATEWAY_URL ??
-          "https://gateway.merfy.ru/api",
+        // API_GATEWAY_URL на живом контуре задан БЕЗ суффикса /api, а темы
+        // ожидают адрес вместе с ним — нормализуем так же, как build.service.ts.
+        apiUrl: params.apiUrl ?? resolveGatewayApiUrl(),
       },
     };
     await writeFile(

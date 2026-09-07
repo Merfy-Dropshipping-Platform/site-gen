@@ -1,39 +1,26 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import NtAuthPanel from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtAuthPanel.astro";
-import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+/**
+ * Страница верстальщика (sign-up) была отдельной формой с паролем и
+ * заглушкой `alert("Демо-вход: авторизация ещё не подключена")`. Платформа перешла
+ * на вход по ссылке из письма (passwordless), живые страницы — /login и /register,
+ * поэтому здесь остаётся только перенаправление: две разные формы входа сбивали
+ * покупателя, а нерабочая — тем более.
+ */
+const target = "/register";
 ---
 
-<Layout title="Регистрация" description="Создайте аккаунт Satin">
-	<section class="flex w-full flex-1 items-center justify-center bg-white px-4 py-16 md:py-24">
-		<form class="w-full max-w-[430px]" data-auth-form>
-			<NtAuthPanel title="Регистрация" subtitle="Создайте аккаунт, чтобы сохранять заказы">
-				<div slot="fields" class="flex flex-col gap-4">
-					<NtTextField label="Имя" name="name" autocomplete="name" />
-					<NtTextField label="E-mail" name="email" type="email" autocomplete="email" />
-					<NtTextField label="Пароль" name="password" type="password" autocomplete="new-password" />
-				</div>
-				<button
-					slot="primary"
-					type="submit"
-					class="flex h-12 w-full items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
-				>
-					Зарегистрироваться
-				</button>
-				<div slot="links" class="flex w-full flex-col items-center gap-3 text-center">
-					<p class="font-manrope text-[16px] font-normal text-[#999999]">
-						Уже есть аккаунт?
-						<a href="/auth/sign-in" class="text-[#000000] hover:opacity-80">Войти</a>
-					</p>
-				</div>
-			</NtAuthPanel>
-		</form>
-	</section>
-</Layout>
-
-<script>
-	document.querySelector<HTMLFormElement>("[data-auth-form]")?.addEventListener("submit", (event) => {
-		event.preventDefault();
-		alert("Демо-регистрация: заявка принята, мы пришлём подтверждение на e-mail.");
-	});
-</script>
+<html lang="ru">
+	<head>
+		<meta charset="utf-8" />
+		<title>Регистрация — Satin</title>
+		<meta http-equiv="refresh" content={`0; url=${target}`} />
+		<link rel="canonical" href={target} />
+		<meta name="robots" content="noindex" />
+	</head>
+	<body>
+		<p>Переходим на страницу регистрации… <a href={target}>Открыть вручную</a></p>
+		<script is:inline define:vars={{ target }}>
+			window.location.replace(target);
+		</script>
+	</body>
+</html>

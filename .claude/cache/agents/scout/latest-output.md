@@ -1,270 +1,349 @@
-# Codebase Report: Constructor-Theme-Bridge → Tokens-Generator Pipeline (T078)
-Generated: 2026-04-16
+# Codebase Report: Rose vs Satin live ports — addable constructor sections
+Generated: 2026-08-31T21:41:17Z
+Worktree: `/Users/alexey/projects/merfy/backend/services/sites/.worktrees/flux-constructor-live-markup`
+Do not edit — research only.
 
 ## Summary
 
-The pipeline has two distinct code paths that serve different purposes:
-1. **constructor-theme-bridge.ts** — converts the constructor's live `ThemeSettings` object (from `revision.data.themeSettings`) into `MerchantSettings`. This is the **primary path for all new sites using the visual constructor**.
-2. **theme-bridge.ts** — converts a legacy `settingsSchema + overrides` format into `MerchantSettings`. Used only when no constructor ThemeSettings exist.
+Constructor **sidebar fields are shared** (`packages/theme-base/blocks/*/X.puckConfig.ts`). Rose Catalog and Satin Catalog **re-export** that same puckConfig. Slideshow / Gallery / Video / Newsletter / ContactForm / Product have **no theme puckConfig override**.
 
-The `tokens-generator.ts` is the final CSS emitter: it takes `MerchantSettings` + `ThemeDefaults`, merges them, and outputs `:root { }` + `.color-scheme-N { }` CSS blocks written to `override.css` (then appended to `tokens.css`).
+Live apply is **not** shared:
 
-**Critical finding**: `vanilla.json` and `rose.json` have NO `themeSettings` key at all. The pipeline would fall through to Path 3 (schema) or produce no merchant overrides for those themes. This means vanilla and rose do NOT drive their tokens.css via the constructor bridge.
+| Block | Rose live renderer | Satin live renderer |
+|-------|--------------------|---------------------|
+| Slideshow | v2 port `themes/rose/.../Slideshow.astro` | v2 port `themes/satin/.../Slideshow.astro` |
+| Gallery | v2 port `themes/rose/.../Gallery.astro` | v2 port `themes/satin/.../Gallery.astro` |
+| Newsletter | v2 port `themes/rose/.../Newsletter.astro` | v2 port `themes/satin/.../Newsletter.astro` |
+| ContactForm | v2 port `themes/rose/.../Contacts.astro` | v2 port `themes/satin/.../ContactForm.astro` |
+| Video | **no v2 port** → cascade `theme-base/blocks/Video/Video.astro` | v2 port `themes/satin/.../Video.astro` |
+| Catalog | package override `theme-rose/blocks/Catalog/Catalog.astro` | package override `theme-satin/blocks/Catalog/Catalog.astro` |
+| Product | **no v2 port / no package override** → `theme-base/blocks/Product/Product.astro` (PDP compose, `PRODUCT_UNIFIED_THEMES` includes satin) | same theme-base Product.astro |
+
+Resolver (`preview.service.ts:199-243`): `dist/theme-sections/<theme>/manifest.json` (from `sections.map.json`) → else `theme-<id>` astro-blocks → else `theme-base`.
+
+**Satin gaps vs Rose apply (P1):** Slideshow 9-grid `position`; Video `size` (heading), `subheading`, YouTube/Vimeo; Catalog `cardStyle`, `buttonStyle`, `nextPhoto`, `quickAdd` standard-vs-cart.
 
 ---
 
-## Pipeline Flow (verified from build.service.ts:1429–1465)
+## Project Structure
 
 ```
-revision.data.themeSettings? (ConstructorThemeSettings)
-  → Path 2: constructorThemeToMerchantSettings()   ← used by bloom, satin, flux
-  
-revision.meta.merchantSettings?
-  → Path 1: direct (legacy)
-  
-params.themeSettingsSchema?.length > 0
-  → Path 3: themeSettingsToMerchantSettings()       ← schema-based fallback
-  
-none of the above
-  → no merchant overrides (tokens.css is static)    ← rose, vanilla behave this way
-                                                       unless schema is provided
+packages/theme-base/blocks/{Slideshow,Gallery,Video,Newsletter,ContactForm,Catalog,Product}/
+  *.puckConfig.ts          # shared constructor sidebar (visible fields)
+  *.astro                  # fallback renderer (Rose Video + both Product)
+
+packages/theme-rose/blocks/Catalog/   # puckConfig re-export + native Catalog.astro
+packages/theme-satin/blocks/Catalog/  # puckConfig re-export + native Catalog.astro
+
+themes/rose/sections.map.json   # no Video, Catalog, Product
+themes/satin/sections.map.json  # Video yes; no Catalog, Product
+
+themes/rose/src/components/sections/{Slideshow,Gallery,Newsletter,Contacts}.astro
+themes/satin/src/components/sections/{Slideshow,Gallery,Newsletter,ContactForm,Video}.astro
 ```
 
-scaffold-builder.ts:317 — calls `generateTokensCss(config.merchantSettings, config.themeDefaults)` and appends result to `tokens.css`.
+---
+
+## PuckConfig ownership (✓ VERIFIED)
+
+| Block | Rose puckConfig | Satin puckConfig | Sidebar source |
+|-------|-----------------|------------------|----------------|
+| Slideshow | none | none | theme-base `Slideshow.puckConfig.ts` |
+| Gallery | none | none | theme-base `Gallery.puckConfig.ts` |
+| Video | none | none | theme-base `Video.puckConfig.ts` |
+| Newsletter | none | none | theme-base `Newsletter.puckConfig.ts` |
+| ContactForm | none | none | theme-base `ContactForm.puckConfig.ts` |
+| Catalog | **re-export** `theme-rose/blocks/Catalog/Catalog.puckConfig.ts:10-14` | **re-export** `theme-satin/blocks/Catalog/Catalog.puckConfig.ts:5-9` | theme-base `Catalog.puckConfig.ts` |
+| Product | none | none | theme-base `Product.puckConfig.ts` |
+
+Satin Catalog comment explicitly: schema shared so sidebar is identical; only Astro renderer is overridden.
+
+Hidden / `hiddenInMainPanel` fields are listed separately. Gap list = **visible** fields Rose applies and Satin does not (or applies as the wrong knob).
 
 ---
 
-## Per-Theme: defaults JSON → tokens.css Alignment
+## Questions Answered
 
-### BLOOM (defaultSchemeIndex: 2 = scheme-3 "White")
+### Q1: Where are addable live ports?
 
-The bridge uses scheme at index 2 for `:root` globals.
+**Rose `sections.map.json`:** Slideshow, Gallery, Newsletter, ContactForm→`Contacts.astro`. Video / Catalog / Product **MISSING**.
 
-**Scheme-3 "White" from bloom.json:**
-- background: `#ffffff`
-- text: `#000000`
-- primaryButton.background: `#cf7a8b`
-- primaryButton.text: `#ffffff`
-- primaryButton.border: `#cf7a8b`
-- secondaryButton.background: `#ffffff`
+**Satin `sections.map.json`:** Slideshow, Gallery, Newsletter, ContactForm, **Video**. Catalog / Product **MISSING**.
 
-**What bridge generates for :root:**
-- `--color-primary`: `#cf7a8b` → RGB `207 122 139`
-- `--color-background`: `#ffffff` → `255 255 255`
-- `--color-foreground`: `#000000` → `0 0 0`
-- `--color-button`: `#cf7a8b` → `207 122 139`
-- `--color-button-text`: `#ffffff` → `255 255 255`
-- `--color-secondary`: `#ffffff` → `255 255 255`
-- `--color-muted`: blend(`#000000`, `#ffffff`, 0.4) = `#666666` → `102 102 102`
-- `--color-border`: `#cf7a8b` (from primaryButton.border) → `207 122 139`
+**Catalog** live = package override (both themes). **Product** live = theme-base (both); satin is in `PRODUCT_UNIFIED_THEMES` (`src/themes/page-registry.ts:108`). Rose `pages/product.astro` is a shell; compose injects `Product.astro`. Satin `pages/product.astro` still embeds `SatinProductDetail`, but live/preview compose **replaces the body** with theme-base Product — native PDP is not the constructor apply path.
 
-**tokens.css :root actual:**
-- `--color-primary: 0, 0, 0` ← MISMATCH (tokens.css uses black; bridge sets #cf7a8b)
-- `--color-background: 255, 255, 255` ← MATCH
-- `--color-foreground: 0, 0, 0` ← MATCH
-- `--color-button: 207, 122, 139` ← MATCH
-- `--color-button-text: 255, 255, 255` ← MATCH
-- `--color-secondary: 207, 122, 139` ← MISMATCH (tokens.css has #CF7A8B; bridge sets #ffffff = secondary button bg)
-- `--color-muted: 153, 153, 153` ← MISMATCH (tokens.css has #999; bridge generates #666)
-- `--color-border: 217, 217, 217` ← MISMATCH (tokens.css has #D9D9D9; bridge sets #cf7a8b)
+### Q2: Do settings apply like Rose?
 
-**Color scheme classes — bridge vs tokens.css:**
-
-| Scheme | Token | Bridge (from JSON) | tokens.css | Match? |
-|--------|-------|--------------------|-----------|--------|
-| scheme-1 (.color-scheme-1) | background | #cf7a8b → `207 122 139` | `207 122 139` | ✓ |
-| scheme-1 | foreground | #FFFFFF → `255 255 255` | `255 255 255` | ✓ |
-| scheme-1 | button | #ffffff → `255 255 255` | `255 255 255` | ✓ |
-| scheme-1 | button-text | #cf7a8b → `207 122 139` | `207 122 139` | ✓ |
-| scheme-1 | border | #ffffff (primaryButton.border) → `255 255 255` | `227 142 159` | ✗ MISMATCH |
-| scheme-1 | muted | blend(#fff,#cf7a8b,0.4) = `#e6c5cb` → `230 197 203` | `245 245 245` | ✗ MISMATCH |
-| scheme-2 (.color-scheme-2) | background | #e38e9f → `227 142 159` | `227 142 159` | ✓ |
-| scheme-2 | button | #ffffff → `255 255 255` | `255 255 255` | ✓ |
-| scheme-2 | button-text | #e38e9f → `227 142 159` | `227 142 159` | ✓ |
-| scheme-2 | border | #ffffff (primaryButton.border) | `247 162 179` | ✗ MISMATCH |
-| scheme-2 | muted | blend(#fff,#e38e9f,0.4) ≈ `230 210 214` | `245 245 245` | ✗ MISMATCH |
-| scheme-3 (.color-scheme-3) | background | #ffffff | `255 255 255` | ✓ |
-| scheme-3 | button | #cf7a8b | `207 122 139` | ✓ |
-| scheme-3 | border | #cf7a8b (primaryButton.border) | `217 217 217` | ✗ MISMATCH |
-| scheme-3 | muted | blend(#000,#fff,0.4) = `#666666` | `153 153 153` | ✗ MISMATCH |
-| scheme-4 (.color-scheme-4) | background | #f7f7f9 → `247 247 249` | `247 247 249` | ✓ |
-| scheme-4 | button | #cf7a8b | `207 122 139` | ✓ |
-| scheme-4 | border | #cf7a8b (primaryButton.border) | `217 217 217` | ✗ MISMATCH |
-| scheme-4 | muted | blend(#000,#f7f7f9,0.4) ≈ `#929296` | `153 153 153` | ✗ MISMATCH |
-
-**Summary for Bloom:**
-- Background and button/button-text colors: mostly MATCH
-- `--color-primary` in :root: MISMATCH (bridge outputs accent color, tokens.css has black)
-- `--color-border` in ALL schemes: MISMATCH (bridge uses primaryButton.border #cf7a8b; tokens.css has theme-specific grays)
-- `--color-muted` in ALL schemes: MISMATCH (bridge uses 40% blend formula; tokens.css has hardcoded #999/#F5F5F5)
-- `--color-secondary` in :root: MISMATCH (bridge uses secondaryButton.background; tokens.css has accent)
+Field-by-field below. Markers: **APPLY** / **DEAD** / **WRONG** / **PARTIAL**.
 
 ---
 
-### SATIN (defaultSchemeIndex: 1 = scheme-2 "White")
+## 1. Slideshow
 
-Bridge uses scheme at index 1 (scheme-2 "White") for :root.
+**puckConfig (visible):** `slides[]` (image, heading{text,size}, text{content,size}, button{text,link}, container, position 9-grid, alignment, colorScheme) · `imagePosition` fullscreen/contained · `size` s/m/l · `interval` · `pagination` numbers/dots/counter · `colorScheme` · `padding`
 
-**Scheme-2 "White" from satin.json:**
-- background: `#ffffff`, text: `#000000`
-- primaryButton.background: `#000000`, text: `#ffffff`, border: `#000000`
+**Hidden:** overlay, autoplay, contentAlign, buttonStyle, imageFullBleed
 
-**Bridge :root output:**
-- `--color-primary`: `#000000` → `0 0 0`
-- `--color-background`: `#ffffff` → `255 255 255`
-- `--color-foreground`: `#000000` → `0 0 0`
-- `--color-button`: `#000000` → `0 0 0`
-- `--color-button-text`: `#ffffff` → `255 255 255`
-- `--color-secondary`: `#ffffff` (secondaryButton.bg) → `255 255 255`
-- `--color-muted`: blend(#000,#fff,0.4) = `#666666` → `102 102 102`
-- `--color-border`: `#000000` (primaryButton.border)
+| Visible field | Rose apply | Satin apply | Gap? |
+|---------------|------------|-------------|------|
+| slides[].image / imageUrl | APPLY `Slideshow.astro:100-103` | APPLY `Slideshow.astro:71-74` | no |
+| slides[].heading text | APPLY `:104` | APPLY `:75` | no |
+| slides[].heading.size | APPLY `slideHeadingCls` `:39-44,105` (unset→medium) | APPLY `slideHeadingCls` `:44-49,76` (unset→**large**) | default mapping only |
+| slides[].text.content / subtitle | APPLY `:107-109` | APPLY `:77-79` | no |
+| slides[].text.size | APPLY `slideTextCls` `:48-53,106` | APPLY `:52-57,80` | no |
+| slides[].button text/link | APPLY `:96-98,110-115` | APPLY `:67-69,81-86` | no |
+| slides[].container boxed | APPLY `:116` | APPLY `:87` | no |
+| slides[].**position** (9-grid) | APPLY full 3×3 `slideLayoutCls` `:67-94` (top/middle/bottom × left/center/right; legacy left/right → center-*) | **DEAD / WRONG** `:95-100`: only exact `'left'`/`'right'`. Visible values `top-left`…`bottom-right` never match → always `justify-center`. Vertical ignored. Flex is `items-center` row, not rose `flex-col` + vJustify. | **YES P1** |
+| slides[].alignment | APPLY independent items+text `:88-92` | APPLY `:103-108` | no |
+| slides[].colorScheme | APPLY `schemeCls` `:117-120` | APPLY `:88-91` | no |
+| imagePosition fullscreen/contained | APPLY `:147-151` | APPLY `:129-142` (+ hidden imageFullBleed can force full-bleed) | apply OK |
+| size (полотно) | APPLY `:135-140` 50/75/100svh | APPLY `:122-123` 560/680/760px | both apply; different mapping (manner) |
+| interval | APPLY `:127-129` | APPLY `:115-117` | no |
+| pagination numbers/dots/counter (+lines/none) | APPLY `:157-164` default **numbers** | APPLY `:151-158` default **numbers** (comment `:148` says dots — stale) | no |
+| padding | APPLY `:173-176` | APPLY `:173-176` | no |
+| colorScheme (section) | compositor wrap (theme-agnostic) | same | no |
 
-**tokens.css :root:**
-- `--color-primary: 0, 0, 0` ← MATCH
-- `--color-background: 255, 255, 255` ← MATCH
-- `--color-foreground: 0, 0, 0` ← MATCH
-- `--color-button: 0, 0, 0` ← MATCH
-- `--color-button-text: 255, 255, 255` ← MATCH
-- `--color-secondary: 245, 245, 245` ← MISMATCH (bridge: #fff; CSS: #f5f5f5)
-- `--color-muted: 153, 153, 153` ← MISMATCH (bridge: #666; CSS: #999)
-- `--color-border: 238, 238, 238` ← MISMATCH (bridge: #000; CSS: #eeeeee)
-
-**Scheme class mismatches (key ones):**
-- All schemes: `--color-muted` always mismatches (bridge formula vs hardcoded CSS values)
-- All schemes: `--color-border` mismatches (bridge uses primaryButton.border; CSS uses theme grays)
-- scheme-1 border: bridge=`#ffffff`, CSS=`68 68 68` — MISMATCH
-- scheme-3 bg: bridge=`#f5f5f5`, CSS=`245 245 245` — MATCH (numerical match)
-- scheme-4 bg: bridge=`#444444` → `68 68 68`, CSS=`68 68 68` — MATCH
+Hidden that both still apply: `autoplay` (rose `:130`, satin `:118`); `overlay` (rose section-level `:154`; satin per-slide `:65,214`); `buttonStyle` (rose default solid `:169`; satin default outlined `:160-168` — satin manner).
 
 ---
 
-### FLUX (defaultSchemeIndex: 1 = scheme-2 "White")
+## 2. Gallery
 
-Bridge uses scheme at index 1 (scheme-2 "White") for :root.
+**puckConfig (visible):** heading · headingSize · text · textSize · imagePosition left/right · colorScheme · padding · items[] sub-panel (type, url, productId, collectionId)
 
-**Scheme-2 "White" from flux.json:**
-- background: `#ffffff`, text: `#000000`
-- primaryButton.background: `#fa5109`, text: `#ffffff`, border: `#fa5109`
+| Visible field | Rose apply | Satin apply | Gap? |
+|---------------|------------|-------------|------|
+| heading | APPLY `Gallery.astro:14` | APPLY `Gallery.astro:16-17` | no |
+| headingSize | APPLY top-level first `:28-38` `p.headingSize ?? p.heading?.size` | APPLY nested first `:28` `p.heading?.size ?? p.headingSize` | latent only (aiText heading is string → headingSize still wins) |
+| text / textSize | APPLY `:15-18,42-48` | APPLY `:19-23,37-43` | no |
+| imagePosition | APPLY mirror grid `:54-59` | APPLY `lg:order` `:47-49` | no |
+| items type/url/productId/collectionId | APPLY `:76-113,136` + hydrate | APPLY `:69-106,124` + hydrate | no |
+| padding | APPLY `:141-143` | APPLY `:139-141` | no |
+| colorScheme | compositor | compositor | no |
 
-**Bridge :root output:**
-- `--color-primary`: `#fa5109` → `250 81 9`
-- `--color-background`: `#ffffff` → `255 255 255`
-- `--color-button`: `#fa5109` → `250 81 9`
-- `--color-button-text`: `#ffffff` → `255 255 255`
-- `--color-secondary`: `#ffffff` (secondaryButton.bg) → `255 255 255`
-- `--color-muted`: blend(#000,#fff,0.4) = `#666666` → `102 102 102`
-- `--color-border`: `#fa5109` (primaryButton.border) → `250 81 9`
-
-**tokens.css :root:**
-- `--color-primary: 0, 0, 0` ← MISMATCH (bridge: orange; CSS: black)
-- `--color-button: 250, 81, 9` ← MATCH
-- `--color-button-text: 255, 255, 255` ← MATCH
-- `--color-secondary: 250, 250, 250` ← MISMATCH (bridge: #fff; CSS: #fafafa)
-- `--color-muted: 204, 204, 204` ← MISMATCH (bridge: #666; CSS: #cccccc)
-- `--color-border: 245, 245, 245` ← MISMATCH (bridge: orange #fa5109; CSS: #f5f5f5)
-
-**Scheme class alignment (Flux all 4 schemes use #fa5109 button):**
-- background and button colors: MATCH across all 4 schemes
-- border: always mismatches (bridge outputs orange; CSS has dark grays for dark schemes)
-- muted: always mismatches (bridge formula vs CSS hardcoded values)
+Hidden `layout` / `headingAlignment` unused as layout knobs on both (rose heading wrap is always `justify-center` `:49`).
 
 ---
 
-### VANILLA (defaultSchemeIndex: 2 = scheme-3 "Light Gray")
+## 3. Video
 
-**CRITICAL: vanilla.json has NO `themeSettings` key.** The build pipeline Path 2 never triggers. The tokens.css is the static ground truth — no override.css is generated unless a schema path is configured.
+**Rose live port does not exist.** Apply = theme-base `Video.astro` (cascade).
 
-The tokens.css aligns with scheme-3 "Light Gray" as :root default (background `#eeeeee`, foreground `#26311c`), which is consistent with `defaultSchemeIndex: 2` in principle, but the pipeline does NOT use vanilla.json themeSettings at all.
+**puckConfig (visible):** videoUrl · position fullscreen/contained · heading · subheading · **size = «Размер заголовка»** · colorScheme · padding
 
-If vanilla gains a `themeSettings` key in the future, bridge would compute:
-- `--color-primary`: scheme-3's primaryButton.bg = `#3a4530` (medium olive)
-- tokens.css has `--color-primary: 38, 49, 28` (#26311c) ← would MISMATCH
+| Visible field | Rose (theme-base) | Satin live port | Gap? |
+|---------------|-------------------|-----------------|------|
+| videoUrl file | APPLY parse + `<video>` `:62-67,186-195` | APPLY `<video src>` `:12-14,134-141` | file OK |
+| videoUrl **YouTube/Vimeo** | APPLY iframe embed `parseVideo` `:121-142,168-185` | **DEAD** — no youtube/vimeo/iframe in file (ends `:183`) | **YES P1** |
+| position contained/fullscreen | APPLY `:78,113-116` | APPLY `:70-85` | no |
+| heading | APPLY `:27-35,161` | APPLY `:36-47,117-128` (empty → «Видео») | no |
+| **subheading** | APPLY `:41-52,162` `<p>` | **DEAD** — `subheading` never referenced | **YES P1** |
+| **size «Размер заголовка»** | APPLY as heading size `:90-103` (`raw.size` → `--video-heading-size` 12/14/17) | **WRONG** `:48-55` heading reads `headingSize` (not in puck fields). Visible `p.size` is media aspect `:101-104` (small 21:9, large 4:3). Merchant «Размер заголовка» changes tile ratio, not type. | **YES P1** |
+| padding | APPLY `:70-72` | APPLY `:106-109` | no |
+| colorScheme | compositor + optional class `:73-74` | compositor | no |
 
----
-
-### ROSE (defaultSchemeIndex: not present)
-
-**CRITICAL: rose.json has NO `themeSettings` key.** Same as vanilla — pipeline Path 2 does not trigger. tokens.css is purely static.
-
-Additionally, rose.json's `themeSettings` absence means the color schemes in tokens.css (5 schemes including a blue accent scheme-3) are completely independent of any JSON definition. Rose has 5 color scheme classes, while the constructor supports 4 per its ConstructorColorScheme interface.
-
----
-
-## Consolidated Mismatch Summary
-
-| Theme | Path | :root color-primary | :root color-secondary | :root color-muted | :root color-border | Scheme bg/button |
-|-------|------|---------------------|----------------------|-------------------|-------------------|-----------------|
-| Bloom | Bridge | MISMATCH (pink vs black) | MISMATCH | MISMATCH (formula vs #999) | MISMATCH (accent vs gray) | bg/button MATCH |
-| Satin | Bridge | MATCH | MISMATCH (#fff vs #f5f5f5) | MISMATCH (#666 vs #999) | MISMATCH (#000 vs #eee) | bg/button MATCH |
-| Flux  | Bridge | MISMATCH (orange vs black) | MISMATCH | MISMATCH (#666 vs #ccc) | MISMATCH (orange vs #f5f5f5) | bg/button MATCH |
-| Vanilla | None | N/A (no themeSettings) | N/A | N/A | N/A | N/A (static CSS) |
-| Rose  | None | N/A (no themeSettings) | N/A | N/A | N/A | N/A (static CSS) |
+Satin `blockDefaults.Video` `{padded:true, align:container}` — hidden variants, both apply.
 
 ---
 
-## Root Cause Analysis
+## 4. Newsletter
 
-### Issue 1: `--color-primary` is ambiguous
+**puckConfig (visible):** text{content,size} · agreement toggle · colorScheme · padding · sub-panel heading{text,size} · placeholder · buttonText
 
-In `tokens-generator.ts`, `--color-primary` is treated as a color token (contains "primary") and converted to RGB triplet. In `constructor-theme-bridge.ts`, it is set to `primaryButton.background` (the accent color). But tokens.css for Bloom and Flux defines `--color-primary` as black (`0, 0, 0`) — interpreted as the text/heading primary color, not the button accent.
+**Hidden:** formLayout, description, position, alignment
 
-The semantic mismatch: themes use `--color-primary` for text/heading foreground; the bridge maps it to the primary button background color.
+| Visible field | Rose apply | Satin apply | Gap? |
+|---------------|------------|-------------|------|
+| heading text | APPLY `Newsletter.astro:19-20` | APPLY `:19-20` | no |
+| heading.size | APPLY `:22-28` | APPLY `:22-24` | no |
+| text.content | APPLY `:36-39` | APPLY `:33-36` | no |
+| text.size | APPLY `:40-42` | APPLY `:37-39` | no |
+| placeholder | APPLY `:48-49` | APPLY `:44-47` | no |
+| buttonText | APPLY `:50-51` | APPLY `:54-55` | no |
+| agreement | APPLY `:59` | APPLY `:73` | no |
+| padding | APPLY `:78-80` | APPLY `:100-102` | no |
+| colorScheme | compositor | compositor | no |
 
-### Issue 2: `--color-border` computed incorrectly
+Hidden `formLayout`: Rose stacked unless `inline-submit` (`:55`). Satin **inline unless stacked** (`:68`) + `theme.json` `blockDefaults.Newsletter.formLayout: "inline-submit"`. Manner default, not a visible-field gap.
 
-The bridge sets `--color-border` to `primaryButton.border ?? blend(text, bg, 0.2)`. But tokens.css for all themes uses subtle neutral grays for borders that are independent of button accent colors. When primaryButton.border is the accent color (#cf7a8b for bloom, #fa5109 for flux), the bridge overrides borders with bright accent colors.
-
-### Issue 3: `--color-muted` formula mismatch
-
-Bridge computes muted as `blend(text, background, 0.4)` — e.g., 40% black on white = #666666 = `102 102 102`. But tokens.css files use:
-- Bloom: `153 153 153` (#999) for dark-bg schemes, `245 245 245` for light-bg schemes
-- Satin: `153 153 153` and `200 200 200`
-- Flux: `153 153 153` and `204 204 204`
-- Vanilla: `68 68 68` and `200 200 200`
-
-The formula gives different values from the hand-crafted Figma values.
-
-### Issue 4: `--color-secondary` semantic mismatch
-
-Bridge sets `:root --color-secondary` to `secondaryButton.background`. But tokens.css defines `--color-secondary` as an accent variant or surface color:
-- Bloom tokens.css: `207 122 139` (the brand pink) — but bridge sets it to `#ffffff` (white button bg from scheme-3)
-- Satin tokens.css: `245 245 245` (light gray surface) — bridge sets `#ffffff`
-- Flux tokens.css: `250 250 250` (#fafafa) — bridge sets `#ffffff`
-
-### Issue 5: Vanilla and Rose have no themeSettings in defaults JSON
-
-These two themes have no `themeSettings` object in their `.json` defaults, so the constructor bridge never fires for them. Their tokens.css values are authoritative and not overridable via the constructor's color scheme picker unless the JSON is updated.
+Hidden `position`: both apply as section alignment (rose `:67-74`, satin `:85-95`). Field is `type: hidden` in puckConfig.
 
 ---
 
-## Whether the Pipeline Produces Correct CSS for Constructor Preview
+## 5. ContactForm
 
-**For bloom, satin, flux:** The pipeline fires correctly — bridge converts `revision.data.themeSettings`, and `generateTokensCss` appends an `override.css` to `tokens.css`. The background and button colors per-scheme are largely correct. However the `:root` level `--color-primary`, `--color-border`, `--color-muted`, and `--color-secondary` are all wrong relative to what the static tokens.css defines. Since override.css is appended AFTER the static tokens.css, the bridge values WIN, which means:
+**puckConfig (visible):** heading · headingSize · colorScheme · padding  
+**Hidden:** headingAlignment, description, fields, buttonText
 
-- Constructor preview will show orange borders on Flux and pink borders on Bloom (instead of neutral grays)
-- Muted text will be darker (#666) than Figma (#999)
-- color-primary will show as accent color not black on Bloom/Flux
+| Visible field | Rose `Contacts.astro` | Satin `ContactForm.astro` | Gap? |
+|---------------|----------------------|---------------------------|------|
+| heading | APPLY `:16-19,75` | APPLY `:17-18,128-137` | no |
+| headingSize | **DEAD** — NtSectionHeading only, no `headingSize` in file | APPLY `:20-22` 17/20/24 | Satin **ahead** of Rose (not a satin-to-match-rose gap) |
+| padding | APPLY `:60-62` | APPLY `:110-112` | no |
+| colorScheme | compositor | compositor | no |
 
-**For vanilla and rose:** The bridge does not fire. The static tokens.css is used as-is. Constructor color picker changes have no effect on the generated CSS unless the defaults JSON is updated to include `themeSettings`.
+Hidden `fields` / `buttonText`: both apply if present (rose `:35-57,56-57`; satin `:65-90`).
+
+---
+
+## 6. Catalog
+
+**puckConfig:** both re-export theme-base. Visible: collectionSlug · subtitle toggle · cards · columns · categoryTitle · categorySubtitle · productCard{buttonStyle, cardStyle, cardBackground, nextPhoto, nextPhotoMode, quickAdd} · showFilter · filterPosition · showSort · colorScheme · containerColorScheme · padding
+
+| Visible field | Rose `theme-rose/.../Catalog.astro` | Satin `theme-satin/.../Catalog.astro` | Gap? |
+|---------------|-------------------------------------|---------------------------------------|------|
+| collectionSlug | APPLY `:218` `data-collection-slug` | APPLY `:176` | no |
+| subtitle toggle | APPLY `:110` | APPLY `:104` | no |
+| cards | APPLY pageSize `:97` | APPLY `:91` | no |
+| columns | APPLY `--rose-cols` `:131-135,442` | APPLY `--satin-cols` `:121-125,380` | no |
+| categoryTitle / categorySubtitle | APPLY `:108-109` | APPLY `:102-103` | no |
+| productCard.**cardStyle** | APPLY aspect square/wide/318:444 `:141-145` → RoseProductCard + hydrate | **DEAD** — only in interface `:41`. Card/skeleton/hydrate **hardcode** `aspect-[430/564]` (`SatinProductCard.astro:42`, Catalog `:300,677`) | **YES P1** |
+| productCard.**buttonStyle** | APPLY primary/secondary/link tokens `:149-161` | **DEAD** — interface `:40` only. Hydrate button always `bg-[#000000]` `:668-674` | **YES P1** |
+| productCard.cardBackground | APPLY `:179-180,243` | APPLY `:138-139,191,621` | no |
+| productCard.**nextPhoto** | APPLY `:170,220` + hover in script | **DEAD** — interface `:43` only; no `data-next-photo`, no hover swap | **YES P1** |
+| productCard.nextPhotoMode | **DEAD** on Rose too (no `nextPhotoMode` in rose Catalog) | **DEAD** | neither (theme-base Catalog does apply) |
+| productCard.**quickAdd** | APPLY none / standard «БЫСТРЫЙ ПРОСМОТР» / cart «В КОРЗИНУ» `:165-167` | **PARTIAL** `:130-131,669`: none hides; standard **and** cart both «В корзину». Default `'cart'` vs Rose `'none'` | **YES** (standard vs cart) |
+| showFilter / filterPosition / showSort | APPLY `:111-117,175` | APPLY `:105-111,175` | no |
+| colorScheme / containerColorScheme | APPLY `:120-122,184-186` | APPLY `:114-116,142-144` | no |
+| padding | APPLY `:132-135` | APPLY `:122-125` | no |
+
+Satin Catalog comment `:127-129` admits native always showed «В корзину»; quickAdd only hides.
+
+---
+
+## 7. Product
+
+**No theme live port.** Both constructor/live PDP use `packages/theme-base/blocks/Product/Product.astro` (`PRODUCT_UNIFIED_THEMES` includes `satin`).
+
+Visible fields all APPLY in that one file:
+
+| Field | Apply (theme-base Product.astro) |
+|-------|----------------------------------|
+| productId | `:42,174,225` |
+| layout stacked/two-columns/carousel/split | `:67-71,248-256` |
+| size (layout image/thumb) | `:88,92-97` |
+| photoPosition | `:56,118,239` |
+| zoomMode | `:57,228,698+` |
+| dynamicButton | `:52,131-135` |
+| colorScheme | `:111-114` |
+| padding | `:108-110` |
+| sub-panels text/title/variants{displayStyle,shape}/buttons/share | `:87-90,139-158,121-136` |
+
+`visualConfig` is **hidden**; Rose `theme.json` blockDefaults.Product.visualConfig matches `DEFAULT_VISUAL_CONFIG` (`Product.types.ts:125-130`). Satin has **no** Product blockDefaults — same defaults anyway.
+
+Satin `satinProductDetail.astro` is **not** the constructor apply path (compose overwrites `/product`). Not a visible-field gap.
+
+---
+
+## Gap list (Satin must match Rose apply)
+
+Priority = visible constructor knob Rose applies, Satin dead or wired to the wrong behaviour.
+
+### P1 — dead / wrong (merchant sees the control, live ignores or mis-applies)
+
+1. **Slideshow `slides[].position` (9-grid «Позиция»)**  
+   Rose: `themes/rose/src/components/sections/Slideshow.astro:67-94` — top/center/bottom × left/center/right.  
+   Satin: `themes/satin/src/components/sections/Slideshow.astro:95-100` — exact `'left'`/`'right'` only. Visible options never match → always centered; no vertical.
+
+2. **Video `size` «Размер заголовка»**  
+   Rose/base: `packages/theme-base/blocks/Video/Video.astro:90-103` heading size.  
+   Satin: `themes/satin/src/components/sections/Video.astro:48-55,101-104` — `size` = media aspect; heading ignores `p.size`.
+
+3. **Video `subheading`**  
+   Rose/base: `Video.astro:41-52,162`.  
+   Satin Video.astro: no `subheading` (file 183 lines).
+
+4. **Video `videoUrl` YouTube/Vimeo**  
+   Rose/base: `parseVideo` + iframe `:121-185`.  
+   Satin: `<video src>` only `:134-141`.
+
+5. **Catalog `productCard.cardStyle` «Вид изображения»**  
+   Rose: `Catalog.astro:141-145`.  
+   Satin: unused; hardcoded `aspect-[430/564]` (`SatinProductCard.astro:42`, Catalog hydrate `:677`).
+
+6. **Catalog `productCard.buttonStyle` «Стиль кнопки»**  
+   Rose: `Catalog.astro:149-161`.  
+   Satin: unused; hydrate always black fill `:668-674`.
+
+7. **Catalog `productCard.nextPhoto` «Следующее фото при наведении»**  
+   Rose: `Catalog.astro:170,220` + script hover.  
+   Satin: unused.
+
+8. **Catalog `productCard.quickAdd` standard vs cart**  
+   Rose: none / «БЫСТРЫЙ ПРОСМОТР» / «В КОРЗИНУ» `:165-167`.  
+   Satin: none vs always «В корзину» `:130-131,669`.
+
+### P2 — defaults / manner (apply exists, not Rose-identical)
+
+- Slideshow heading.size unset: Rose medium, Satin large (`slideHeadingCls` else-branch).
+- Slideshow `size`: svh vs fixed px (both apply).
+- Newsletter hidden `formLayout` default: Rose stacked, Satin inline-submit (`theme.json` + `!== "stacked"`).
+- Catalog `quickAdd` default: Rose `'none'`, Satin `'cart'`.
+- ContactForm `headingSize`: Rose dead, Satin applies (Satin ahead).
+- Catalog `nextPhotoMode` (zones): dead on **both** theme overrides (only theme-base Catalog applies).
+
+### Not gaps
+
+- colorScheme on all seven: compositor `v2-page-composer` / `resolveBlockScheme` (see `THEMES_SETTINGS_PARITY.md`).
+- Product visible fields: shared theme-base renderer.
+- Gallery / Newsletter visible fields: Satin already applies.
+- puckConfig sidebar: identical (Catalog re-export; others inherit theme-base).
+
+---
+
+## Architecture Map
+
+```
+Constructor sidebar
+  resolveBlocks(theme.json)
+    Catalog  → theme-rose/satin re-export → theme-base puckConfig
+    others   → theme-base puckConfig
+        │
+        ▼
+Preview / live renderBlock(themeId)
+  1. dist/theme-sections/<theme>/manifest.json   ← sections.map.json v2 ports
+  2. dist/astro-blocks/theme-<id>__X__X.mjs      ← package override (Catalog)
+  3. dist/astro-blocks/theme-base__X__X.mjs      ← Rose Video, both Product
+```
+
+```
+Add Slideshow/Gallery/Newsletter/ContactForm
+  rose v2 port  ←→  satin v2 port     (compare these)
+Add Video
+  rose theme-base Video.astro  ←→  satin v2 Video.astro
+Add Catalog
+  rose Catalog.astro override  ←→  satin Catalog.astro override
+Add Product
+  theme-base Product.astro × 2 (no port gap)
+```
 
 ---
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/constructor-theme-bridge.ts` | Main bridge: ConstructorThemeSettings → MerchantSettings |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/tokens-generator.ts` | CSS emitter: MerchantSettings + ThemeDefaults → override.css |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/theme-bridge.ts` | Legacy bridge: settingsSchema + overrides → MerchantSettings |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/build.service.ts` | Orchestrates the 3 paths, line ~1429–1465 |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/scaffold-builder.ts` | Calls generateTokensCss and appends to tokens.css, line ~317 |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/bloom.json` | Bloom defaults with themeSettings + colorSchemes |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/satin.json` | Satin defaults with themeSettings |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/flux.json` | Flux defaults with themeSettings |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/vanilla.json` | Vanilla defaults — NO themeSettings key |
-| `/Users/alexey/projects/merfy/backend/services/sites/src/generator/templates/defaults/rose.json` | Rose defaults — NO themeSettings key |
-| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/bloom/src/styles/tokens.css` | Bloom static tokens (ground truth for Figma design) |
-| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/satin/src/styles/tokens.css` | Satin static tokens |
-| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/flux/src/styles/tokens.css` | Flux static tokens |
-| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/vanilla/src/styles/tokens.css` | Vanilla static tokens |
-| `/Users/alexey/projects/merfy/backend/services/sites/templates/astro/rose/src/styles/tokens.css` | Rose static tokens |
+| File | Role |
+|------|------|
+| `packages/theme-base/blocks/Slideshow/Slideshow.puckConfig.ts` | visible slideshow fields |
+| `themes/rose/src/components/sections/Slideshow.astro` | Rose apply (9-grid) |
+| `themes/satin/src/components/sections/Slideshow.astro` | Satin apply (position dead) |
+| `packages/theme-base/blocks/Video/Video.puckConfig.ts` | size = heading size |
+| `packages/theme-base/blocks/Video/Video.astro` | Rose Video apply |
+| `themes/satin/src/components/sections/Video.astro` | Satin Video (wrong size, no subheading, no YT/Vimeo) |
+| `packages/theme-base/blocks/Catalog/Catalog.puckConfig.ts` | shared catalog sidebar |
+| `packages/theme-rose/blocks/Catalog/Catalog.puckConfig.ts` | re-export |
+| `packages/theme-satin/blocks/Catalog/Catalog.puckConfig.ts` | re-export |
+| `packages/theme-rose/blocks/Catalog/Catalog.astro` | Rose cardStyle/buttonStyle/nextPhoto/quickAdd |
+| `packages/theme-satin/blocks/Catalog/Catalog.astro` | Satin catalog; those four dead/partial |
+| `packages/theme-base/blocks/Product/Product.astro` | both themes PDP |
+| `themes/rose/sections.map.json` | no Video/Catalog/Product |
+| `themes/satin/sections.map.json` | Video; no Catalog/Product |
+| `src/services/preview.service.ts:199-243` | v2 then cascade |
+| `src/themes/page-registry.ts:108` | PRODUCT_UNIFIED_THEMES includes satin |
+
+---
+
+## Open Questions
+
+- Should Satin Video be rewritten against theme-base `size`/`subheading`/`parseVideo`, or should Rose gain a v2 Video port and both be manner-specific? Today Rose **is** theme-base.
+- Catalog `nextPhotoMode` is dead on both theme overrides — out of scope unless also porting theme-base zones to Rose.
+- Satin `/product` still ships `SatinProductDetail` in the Astro page; compose overwrites on live. Local `astro dev` of the theme would not see constructor Product settings.

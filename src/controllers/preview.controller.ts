@@ -569,20 +569,6 @@ export class PreviewController {
         ...(body.props ?? {}),
         siteId,
       };
-      // Footer hot-render: обогатить props данными из БД (политики → informationColumn,
-      // контакты → phone/email/contactFields, платёжки → paymentEnabled) тем же
-      // applyFooterData, что composed-превью (GET /preview:617) и build-пайплайн. Иначе
-      // одиночный hot-render шлёт СЫРЫЕ props (informationColumn.links=[], без phone/payment)
-      // → футер «ломается» при клике по любой настройке (контент исчезает). Оборачиваем
-      // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
-      if (body.blockType === 'Footer') {
-        await applyFooterData(
-          { db: this.db, schema, billingClient: this.billingClient },
-          siteId,
-          { content: [{ type: 'Footer', props: propsWithContext }] },
-          this.logger,
-        );
-      }
       const loaded = await this.loadRevisionData(siteId);
       if (body.themeId && loaded?.themeId && body.themeId !== loaded.themeId) {
         this.logger.warn(
@@ -595,6 +581,23 @@ export class PreviewController {
           .type('text/html')
           .send('<!-- render error: site has no themeId -->');
         return;
+      }
+      // Footer hot-render: обогатить props данными из БД (политики → informationColumn,
+      // контакты → phone/email/contactFields, платёжки → paymentEnabled) тем же
+      // applyFooterData, что composed-превью и build-пайплайн. Иначе одиночный
+      // hot-render шлёт СЫРЫЕ props (informationColumn.links=[], без phone/payment)
+      // → футер «ломается» при клике по любой настройке (контент исчезает). Оборачиваем
+      // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
+      // Стоит ПОСЛЕ загрузки ревизии: тема нужна, чтобы правовые ссылки указывали
+      // на реально существующий маршрут (/legal/<slug> у мигрированных тем).
+      if (body.blockType === 'Footer') {
+        await applyFooterData(
+          { db: this.db, schema, billingClient: this.billingClient },
+          siteId,
+          { content: [{ type: 'Footer', props: propsWithContext }] },
+          this.logger,
+          loaded.themeId,
+        );
       }
       const ctx = await createRenderContext({
         siteId,
@@ -728,6 +731,7 @@ export class PreviewController {
       siteId,
       migrated,
       this.logger,
+      site.themeId ?? null,
     );
     return {
       data: migrated,

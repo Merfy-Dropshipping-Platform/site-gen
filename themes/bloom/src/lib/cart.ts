@@ -163,7 +163,7 @@ export const initCartUI = () => {
 				const href = productHref(line.productId);
 				return `
 					<li class="flex items-start gap-4" data-line-id="${escapeHtml(line.id)}">
-						<a href="${href}" class="group block size-20 shrink-0 overflow-hidden rounded-[12px] bg-[#F5F5F5]">
+						<a href="${href}" class="group block size-20 shrink-0 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
 							${cartLineThumbPictureHtml(line.image, line.name)}
 						</a>
 						<div class="flex flex-1 flex-col gap-2">

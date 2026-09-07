@@ -764,7 +764,7 @@ const skeletons = Array.from({ length: skeletonCount });
       `<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
     return `<article class="group flex w-full flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}" style="${CARD_CONTAINER_STYLE}">
   <div class="relative w-full">
-  <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
+  <a href="${href}" class="relative block ${CARD_ASPECT_CLASS} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-label="${name}">
     ${media}
   </a>
   ${heartBtn}
@@ -815,14 +815,23 @@ const skeletons = Array.from({ length: skeletonCount });
 
   // Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug на секции),
   // ИНАЧЕ ?collection= из URL (ссылки тайлов + клики по фильтру коллекций).
+  // Служебные значения slug'а, означающие «коллекция ещё НЕ выбрана»: `preview` —
+  // системный пресет страницы коллекции в конструкторе, `_placeholder` — заглушка
+  // маршрута. Отправлять их в API нельзя: `collection_id=preview` приводит к
+  // ошибке запроса, и каталог выглядел сломанным.
+  const COLLECTION_PLACEHOLDERS = ["preview", "_placeholder"];
+  function isPlaceholderCollection(value) {
+    return !value || COLLECTION_PLACEHOLDERS.indexOf(String(value).trim()) !== -1;
+  }
+
   function currentCollectionRef() {
     const root = document.querySelector('[data-catalog-layout]');
     const fromSetting = root && root.getAttribute("data-collection-slug");
-    if (fromSetting && fromSetting.trim()) return fromSetting.trim();
+    if (fromSetting && fromSetting.trim() && !isPlaceholderCollection(fromSetting)) return fromSetting.trim();
     const fromQuery = new URLSearchParams(window.location.search).get("collection");
-    if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+    if (fromQuery && fromQuery.trim() && !isPlaceholderCollection(fromQuery)) return fromQuery.trim();
     const fromPath = window.location.pathname.match(/\/collections\/([^/?#]+)/);
-    if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return decodeURIComponent(fromPath[1]);
+    if (fromPath && fromPath[1] && !isPlaceholderCollection(fromPath[1])) return decodeURIComponent(fromPath[1]);
     return null;
   }
 
@@ -890,12 +899,15 @@ const skeletons = Array.from({ length: skeletonCount });
   function isCollectionCatalogWithoutPick() {
     const root = document.querySelector('[data-catalog-layout]');
     const fromSetting = root && root.getAttribute("data-collection-slug");
-    if (fromSetting && fromSetting.trim()) return false;
+    if (fromSetting && !isPlaceholderCollection(fromSetting)) return false;
     const fromQuery = new URLSearchParams(window.location.search).get("collection");
-    if (fromQuery && fromQuery.trim()) return false;
+    if (fromQuery && !isPlaceholderCollection(fromQuery)) return false;
+    // Пресет страницы коллекции (`data-collection-slug="preview"`) — это ещё не
+    // выбранная коллекция, даже если маршрут не выглядит как /collections/...
+    if (fromSetting && isPlaceholderCollection(fromSetting)) return true;
     const fromPath = window.location.pathname.match(/\/collections\/([^/?#]*)/);
     if (!fromPath) return false;
-    return !fromPath[1] || fromPath[1] === "_placeholder";
+    return isPlaceholderCollection(fromPath[1]);
   }
 
   // Есть ли в магазине хотя бы один товар — БЕЗ фильтров и без коллекции.

@@ -52,7 +52,19 @@ export async function extractPageBlocks(
       for (const key of candidates) {
         try {
           const resolved = await resolver.resolvePage(normalized, key);
-          pageData = { content: resolved.content };
+          // `resolved.content` — это ЦЕЛИКОМ файл `pages/<id>.json`
+          // (`{ content, root, zones }`), а не массив блоков. Разворачиваем,
+          // иначе ниже `Array.isArray` не проходит и страница из темы молча
+          // считается несуществующей.
+          const raw = resolved.content as unknown;
+          const blocks =
+            Array.isArray(raw)
+              ? raw
+              : raw && typeof raw === 'object' && Array.isArray((raw as { content?: unknown }).content)
+                ? (raw as { content: unknown[] }).content
+                : null;
+          if (!blocks) continue;
+          pageData = { content: blocks };
           break;
         } catch {
           // Try next candidate (page- prefix variant)

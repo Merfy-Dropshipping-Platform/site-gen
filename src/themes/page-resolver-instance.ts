@@ -16,12 +16,20 @@ import { PageResolver, LazySeed } from '../../packages/theme-contract/page-resol
 import type { ThemeManifest } from '../../packages/theme-contract/page-resolver';
 import { getThemeManifest } from './theme-manifest-loader';
 
+// Пакеты тем лежат рядом с рабочим каталогом сервиса (`<service>/packages`,
+// в образе — `/app/packages`), а НЕ внутри dist: `__dirname/../..` указывал на
+// `dist/packages`, которого не существует ни локально, ни в контейнере, поэтому
+// ленивый сид страниц молча падал с ENOENT. Проявлялось как «страница есть в
+// теме, но не открывается на старом сайте»: у сайта её нет в ревизии, а взять
+// из темы не получалось. Остальные модули (main.ts, sites.service,
+// assemble-from-packages) используют тот же process.cwd()-путь.
+const packagesRoot = path.resolve(process.cwd(), 'packages');
 const themePackageRoots: Record<string, string> = {
-  rose: path.join(__dirname, '..', '..', 'packages', 'theme-rose'),
-  vanilla: path.join(__dirname, '..', '..', 'packages', 'theme-vanilla'),
-  bloom: path.join(__dirname, '..', '..', 'packages', 'theme-bloom'),
-  satin: path.join(__dirname, '..', '..', 'packages', 'theme-satin'),
-  flux: path.join(__dirname, '..', '..', 'packages', 'theme-flux'),
+  rose: path.join(packagesRoot, 'theme-rose'),
+  vanilla: path.join(packagesRoot, 'theme-vanilla'),
+  bloom: path.join(packagesRoot, 'theme-bloom'),
+  satin: path.join(packagesRoot, 'theme-satin'),
+  flux: path.join(packagesRoot, 'theme-flux'),
 };
 
 const lazySeed = new LazySeed({ themePackageRoots });

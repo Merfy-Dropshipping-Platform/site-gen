@@ -340,7 +340,7 @@ export function renderCardHtml(
 	const cta = quickAdd === "none" ? "" : qaStepper + cartBtn;
 	return `<article class="group flex flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
+		<a href="${href}" class="relative block w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
 			<img src="${image}" alt="${name}" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
 		</a>
 		${wishlistHeartHtml(p.id)}

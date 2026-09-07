@@ -56,7 +56,7 @@ const swatchColors: Record<string, string> = {
 	<div class="relative w-full">
 		<a
 			href={href}
-			class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]"
+			class="relative block w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]"
 			style={`aspect-ratio:${aspectRatio}`}
 			aria-label={product.name}
 		>

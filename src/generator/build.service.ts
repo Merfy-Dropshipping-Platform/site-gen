@@ -1907,6 +1907,7 @@ async function injectFooterData(
     ctx.siteId,
     ctx.revisionData,
     logger,
+    bareThemeName(ctx.templateId),
   );
 }
 

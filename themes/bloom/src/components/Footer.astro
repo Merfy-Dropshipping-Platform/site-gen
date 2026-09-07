@@ -27,6 +27,21 @@ const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
 const contactFields: Array<{ label: string; value: string }> = Array.isArray(p.socialColumn?.contactFields)
 	? p.socialColumn.contactFields.filter((f: any) => f && typeof f.value === "string" && f.value.trim())
 	: [];
+
+// Блок «Адрес» — отдельный элемент вёрстки bloom. Значение берём из «Информации
+// о компании» (поле с подписью «Адрес»), а не из литерала верстальщика: показывать
+// мерчанту выдуманный адрес нельзя. Нет такого поля — блок не рендерится вовсе.
+// Одну строку адреса разбиваем по запятым, чтобы сохранить многострочный вид.
+const addressField = contactFields.find((f) => /адрес|address/i.test(f.label ?? ""));
+const addressLines = addressField
+	? addressField.value
+			.split(",")
+			.map((part) => part.trim())
+			.filter(Boolean)
+	: [];
+// Остальные поля компании (ИНН, часы работы и т.п.) идут в колонку контактов —
+// адрес там не дублируем.
+const otherContactFields = contactFields.filter((f) => f !== addressField);
 const emailPlaceholder = `example@${siteTitle.toLowerCase()}.merfy`;
 
 // Канон newsletter.enabled — скрыть блок подписки ТОЛЬКО при явном false/'false'
@@ -239,20 +254,18 @@ const footerContainerCls = footerPadStyle
 						/>
 					</a>
 
-					<address class="mt-8 flex flex-col gap-[3px] not-italic">
-						<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
-							Адрес:
-						</span>
-						<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
-							г. Москва,
-						</span>
-						<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
-							ул. Пушкина,
-						</span>
-						<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
-							д. 0
-						</span>
-					</address>
+					{addressLines.length > 0 && (
+						<address class="mt-8 flex flex-col gap-[3px] not-italic">
+							<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
+								{addressField?.label ?? "Адрес"}:
+							</span>
+							{addressLines.map((line) => (
+								<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
+									{line}
+								</span>
+							))}
+						</address>
+					)}
 
 					<div
 						class="mt-5 flex flex-col gap-[3px]"
@@ -279,7 +292,7 @@ const footerContainerCls = footerPadStyle
 								{email}
 							</a>
 						)}
-						{contactFields.map((f) => (
+						{otherContactFields.map((f) => (
 							<div class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
 								<span class="text-[rgb(var(--color-text,0_0_0))]">{f.label}:</span> {f.value}
 							</div>

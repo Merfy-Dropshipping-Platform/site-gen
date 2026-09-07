@@ -17,6 +17,23 @@ interface MinimalLogger {
   warn: (msg: string) => void;
 }
 
+/**
+ * Базовый путь страниц политик. Мигрированные (themes-v2) темы собирают их
+ * страницей темы `src/pages/legal/[slug].astro` → `/legal/<slug>`
+ * (`composeLegalPagesIntoDist`), а legacy-скаффолд кладёт `<slug>.astro` в
+ * корень → `/<slug>`. Ссылка футера обязана вести туда, где страница реально
+ * лежит, иначе мерчант жмёт «Политика конфиденциальности» и попадает на
+ * nginx-фолбэк.
+ */
+const MIGRATED_THEME_IDS = new Set(["rose", "vanilla", "flux", "satin", "bloom"]);
+function legalBaseFor(themeId: string | null | undefined): string {
+  const bare = String(themeId ?? "")
+    .replace(/-theme$/, "")
+    .trim()
+    .toLowerCase();
+  return MIGRATED_THEME_IDS.has(bare) ? "/legal" : "";
+}
+
 const POLICY_SLUG_MAP: Record<string, string> = {
   refund: "refund",
   privacy: "privacy",
@@ -49,6 +66,7 @@ export async function applyFooterData(
   siteId: string,
   revisionData: Record<string, unknown> | null | undefined,
   logger?: MinimalLogger,
+  themeId?: string | null,
 ): Promise<string> {
   if (!revisionData || typeof revisionData !== "object") return "";
   try {
@@ -57,11 +75,12 @@ export async function applyFooterData(
       .select()
       .from(deps.schema.sitePolicy)
       .where(eq(deps.schema.sitePolicy.siteId, siteId));
+    const legalBase = legalBaseFor(themeId);
     const policyLinks = policies
       .filter((p) => p.content && p.content.trim() !== "")
       .map((p) => ({
         label: POLICY_TITLE_MAP[p.type] ?? p.type,
-        href: `/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
+        href: `${legalBase}/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
       }));
 
     // Контакты компании.

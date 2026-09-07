@@ -73,6 +73,49 @@ const schemeClass =
     // «Корзина» один синглтон, но __merfyRoot переживает hot-replace конструктора.
     var root = window.__merfyRoot(blockId) || document; // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!root) return;
+    function readNtCartLines() {
+      var prefixes = ['rose', 'flux', 'vanilla', 'bloom', 'satin'];
+      for (var i = 0; i < prefixes.length; i++) {
+        try {
+          var raw = localStorage.getItem(prefixes[i] + ':cart:v1');
+          var arr = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(arr) && arr.length) return arr;
+        } catch (e) {}
+      }
+      return [];
+    }
+    function ntLinesToStoreItems(lines) {
+      return lines.map(function (l) {
+        var v = l.variant || {};
+        var opts = {};
+        if (v.color) opts['Цвет'] = v.color;
+        if (v.size) opts['Размер'] = v.size;
+        return {
+          id: l.id,
+          productId: l.productId,
+          name: l.name,
+          priceCents: Math.round((parseFloat(l.price) || 0) * 100),
+          compareAtPriceCents: l.oldPrice ? Math.round((parseFloat(l.oldPrice) || 0) * 100) : undefined,
+          image: l.image,
+          imageUrl: l.image,
+          quantity: l.quantity || 1,
+          options: opts,
+          variantCombinationId: v.variantCombinationId || null,
+        };
+      });
+    }
+    function hydrateFromNtCart() {
+      var cs = window.cartStore;
+      if (!cs || !cs.setLocalItems) return;
+      var lines = readNtCartLines();
+      if (!lines.length) return;
+      cs.setLocalItems(ntLinesToStoreItems(lines));
+      if (cs.syncToServer) {
+        setTimeout(function () {
+          try { cs.syncToServer({ notify: true }).catch(function () {}); } catch (e) {}
+        }, 250);
+      }
+    }
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';
       return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
@@ -184,8 +227,12 @@ const schemeClass =
     });
 
     document.addEventListener('cart:updated', renderCart);
-    document.addEventListener('DOMContentLoaded', function () { setTimeout(renderCart, 150); });
+    document.addEventListener('DOMContentLoaded', function () {
+      hydrateFromNtCart();
+      setTimeout(renderCart, 150);
+    });
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      hydrateFromNtCart();
       setTimeout(renderCart, 150);
     }
   })();

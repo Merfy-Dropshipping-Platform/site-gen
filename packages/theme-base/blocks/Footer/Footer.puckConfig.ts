@@ -100,7 +100,7 @@ const linkArrayField = {
 // Pre-existing issue: `Record<keyof Props, …>` constraint flags missing
 // legacy/internal fields. Cast keeps runtime config shape unchanged.
 export const FooterPuckConfig = {
-  label: 'Footer',
+  label: 'Подвал',
   category: 'navigation',
   // Figma 314-34558: Рассылка (toggle) / Заголовок (sub-panel) / Размер заголовка /
   // Текст (sub-panel) / Размер текста / Цветовая схема / Отступы.

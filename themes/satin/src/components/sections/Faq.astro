@@ -28,17 +28,36 @@ interface Props {
 // ставятся ТОЛЬКО на реальные пункты. SSR-фетч товаров/коллекций (эталон rose
 // Popular.astro) тут НЕприменим — секция текстовая, без collectionId/productId.
 const { items: itemsProp, heading: headingProp, id } = Astro.props;
+const merfy = (Astro.props as { __merfy?: { fields?: Record<string, { set?: boolean }> } }).__merfy;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон heading: string | { text }. Figma 1:19335 — дословный заголовок-
 // плейсхолдер «Сворачиваемый раздел» (у legacy-компонента heading-пропа не было
 // вовсе — добавлен; дефолт-копирайт верстальщика отсутствовал). Мерчант задал
 // свой heading → его и рендерим (?? срабатывает только при пустых данных).
-const heading =
-	typeof headingProp === "string"
-		? headingProp
-		: (headingProp?.text ?? "Сворачиваемый раздел");
+const headingRaw =
+	typeof headingProp === "string" ? headingProp : (headingProp?.text ?? "");
+const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "Сворачиваемый раздел";
 
-const hasRealItems = Array.isArray(itemsProp) && itemsProp.length > 0;
+const hasRealItems =
+	Array.isArray(itemsProp) &&
+	itemsProp.some((it) => slotSet(it?.q) || slotSet(it?.a));
 
 // Figma 1:19335 — дословные ряды-плейсхолдеры пустого состояния: лейбл «Раздел»
 // (роль вопроса) + хелпер «Ответь на самые популярные вопросы клиентов».

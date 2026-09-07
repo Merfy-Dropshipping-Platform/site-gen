@@ -14,6 +14,7 @@ import {
   fetchProducts,
   fetchCollections,
 } from '../generator/data-fetcher';
+import { normalizeCatalog } from '../render/catalog';
 
 /**
  * GET /api/storefront-data/:id — public endpoint that returns the site's
@@ -144,6 +145,49 @@ export class StorefrontDataController {
         .status(200)
         .json({ products: [], collections: [], publications: [], product: null });
     }
+  }
+
+  /** Overlay Catalog shape onto existing payload without dropping hydrate keys. */
+  private withCatalogShape(payload: StorefrontPayload): StorefrontPayload {
+    const catalog = normalizeCatalog({
+      products: payload.products,
+      collections: payload.collections,
+      publications: payload.publications,
+    });
+    const productsById = new Map(
+      (payload.products ?? []).map((p: { id?: string }) => [p?.id, p]),
+    );
+    const collectionsById = new Map(
+      (payload.collections ?? []).map((c: { id?: string }) => [c?.id, c]),
+    );
+    const products = catalog.products.map((np) => {
+      const raw = (productsById.get(np.id) ?? {}) as Record<string, unknown>;
+      return {
+        ...raw,
+        ...np,
+        title: raw.title ?? np.name,
+        handle: raw.handle ?? np.slug,
+        basePrice: raw.basePrice ?? np.price,
+        productCollections: raw.productCollections ?? raw.collections,
+      };
+    });
+    const collections = catalog.collections.map((nc) => {
+      const raw = (collectionsById.get(nc.id) ?? {}) as Record<string, unknown>;
+      return {
+        ...raw,
+        ...nc,
+        title: raw.title ?? nc.name,
+        handle: raw.handle ?? nc.slug,
+      };
+    });
+    return {
+      ...payload,
+      products,
+      collections,
+      publications: catalog.publications.length
+        ? catalog.publications
+        : payload.publications,
+    };
   }
 
   private async computeStorefrontPayload(
@@ -496,7 +540,7 @@ export class StorefrontDataController {
       // Surface debug info in response so it's visible from the browser
       // when troubleshooting empty results. Strip in production once stable.
       if (includeDebug) {
-        return {
+        return this.withCatalogShape({
           products,
           collections,
           publications,
@@ -509,9 +553,9 @@ export class StorefrontDataController {
             hasProductDbUrl: !!process.env.PRODUCT_DATABASE_URL,
             hasDatabaseUrl: !!process.env.DATABASE_URL,
           },
-        };
+        });
       }
 
-      return { products, collections, publications, product };
+      return this.withCatalogShape({ products, collections, publications, product });
   }
 }

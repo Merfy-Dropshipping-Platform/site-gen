@@ -21,19 +21,11 @@
 // резолвит). Корневой <section> несёт data-puck-component-id из props.id для
 // выделяемости в конструкторе.
 import SatinProductCard from "./SatinProductCard.astro";
+import { inlineFormat } from "./rich-text";
 import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
 import NtIcon from "./SatinNtIcon.astro";
 
-// Минимальный тип карточки (зеркалит витринный shape Product).
-interface DemoProduct {
-  id: string;
-  name: string;
-  price: string;
-  oldPrice?: string;
-  image: string;
-  discount?: boolean;
-}
 
 // Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
 interface ProductCardCfg {
@@ -138,6 +130,32 @@ const showCartBtn = quickAddMode !== "none";
 const cardContainerOn =
   productCard?.cardBackground === "true" || productCard?.cardBackground === true;
 
+// §9 Контракта секции: настройки карточки работают во ВСЕХ путях рендера —
+// SSR-карточка (SatinProductCard), SSR-плейсхолдер и клиентская гидрация
+// (renderCardHtml). Раньше поля были только в типах, и панель их не двигала.
+//
+// «Вид изображения» → aspect-ratio медиа. Канон satin — портрет 430/564
+// (SatinProductCard.astro); square = 1/1, wide = 4/3 (эталон rose/theme-base).
+const cardStyleVal = productCard?.cardStyle ?? "portrait";
+const cardAspectClass =
+  cardStyleVal === "square" ? "aspect-square"
+  : cardStyleVal === "wide" ? "aspect-[4/3]"
+  : "aspect-[430/564]";
+
+// «Стиль кнопки» карточки: primary — чёрная заливка (КАНОН вёрстки satin, он же
+// дефолт панели, §6); secondary — белая с бордером; link — текст-ссылка.
+// Цвета через токены схем, чтобы кнопка следовала цветовой схеме секции.
+const btnStyle = productCard?.buttonStyle ?? "primary";
+const cardBtnStyleAttr =
+  btnStyle === "secondary"
+    ? "background:rgb(var(--color-button-secondary-bg,255 255 255));color:rgb(var(--color-button-secondary-text,0 0 0));border:1px solid rgb(var(--color-button-secondary-border,0 0 0));"
+    : btnStyle === "link"
+      ? "background:transparent;color:rgb(var(--color-text,0 0 0));border:none;text-decoration:underline;"
+      : "background:rgb(var(--color-button-bg,0 0 0));color:rgb(var(--color-button-text,255 255 255));border:1px solid rgb(var(--color-button-bg,0 0 0));";
+
+// «Следующее фото при наведении» — hover-swap на images[1] (эталон rose).
+const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
+
 // (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base).
 const containerSchemeClass =
   typeof containerColorScheme === "string" && containerColorScheme
@@ -147,16 +165,19 @@ const containerSchemeClass =
 // SSR demo-грид (родные товары satin). Гарантирует, что грид рендерится в initial
 // HTML и в превью (Container API), и на live до гидрации. На published-сайте
 // client-<script> (renderCardHtml) перерисует реальными товарами.
-const demoProducts: DemoProduct[] = [
-  { id: "bag-1", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_1.png" },
-  { id: "bag-2", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_2.png" },
-  { id: "bag-3", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_3.png" },
-  { id: "bag-4", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_4.png" },
-  { id: "bag-5", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_5.png" },
-  { id: "bag-6", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_6.png" },
-  { id: "bag-7", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_7.png" },
-  { id: "bag-8", name: "Сумка", price: "5 990 ₽", oldPrice: "7 990 ₽", discount: true, image: "/images/Товар_8.png" },
+// Заглушки ПЛАТФОРМЫ для пустого магазина (свитеры из packages/theme-base/public/
+// placeholders — те же, что показывает эталонный theme-base/blocks/Catalog).
+// Демо-товаров верстальщика в каталоге больше нет ни в каком состоянии: витрина
+// показывает либо реальные товары, либо эти заглушки, либо текстовое сообщение.
+const PLACEHOLDER_IMAGES = [
+  "/placeholders/sweater-blue.svg",
+  "/placeholders/sweater-yellow.svg",
+  "/placeholders/sweater-red.svg",
+  "/placeholders/sweater-green.svg",
 ];
+const placeholderCards = Array.from({ length: pageSize }, (_, i) => ({
+  image: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
+}));
 // Лоадер: число скелетон-карточек, показываемых пока идёт fetch живого API
 // (одна «страница» пагинации). Demo-моки уходят в <template> и показываются
 // только если магазин реально пуст.
@@ -182,13 +203,24 @@ const skeletons = Array.from({ length: skeletonCount });
       чтобы переключение не мигало; без глобала остаётся раскладка из props. */}
   <script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
 
-  {/* Demo-моки для ПУСТОГО магазина (0 товаров): не в начальном гриде (там
-      скелетон-лоадер), хранятся скрытыми и подставляются клиентом ТОЛЬКО если у
-      магазина реально нет товаров — красивая заглушка нового сайта. */}
-  <template data-nt="catalog-demo">
-    {demoProducts.map((product) => (
-      <li data-product-id={product.id}>
-        <SatinProductCard product={product} cardContainerOn={cardContainerOn} />
+  {/* Заглушки темы для ПУСТОГО магазина (0 товаров) и для каталога коллекции,
+      где коллекция ещё не выбрана. Не в начальном гриде (там скелетон-лоадер),
+      хранятся скрытыми и подставляются клиентом ТОЛЬКО в этих двух случаях.
+      Это платформенные карточки (свитер + «Товар» + «2 500 ₽»), а НЕ демо-товары
+      верстальщика: как только у магазина появляется хотя бы один товар, в
+      каталоге не должно быть ни одной заглушки ни при каких фильтрах. */}
+  <template data-nt="catalog-placeholder">
+    {placeholderCards.map((card) => (
+      <li data-nt="catalog-placeholder-card" aria-hidden="true">
+        <div class="flex h-full w-full flex-col gap-3">
+          <div class:list={[cardAspectClass, "relative w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"]}>
+            <img src={card.image} alt="" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
+          </div>
+          <div class="flex w-full flex-col gap-1.5 text-left">
+            <span class="block w-full text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">Товар</span>
+            <span class="text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">2 500 ₽</span>
+          </div>
+        </div>
       </li>
     ))}
   </template>
@@ -204,14 +236,19 @@ const skeletons = Array.from({ length: skeletonCount });
       style={containerSchemeClass ? "background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-text,0 0 0));" : undefined}
     >
       <header class="flex flex-col gap-2">
+        {/* §7 Контракта секции: «Ж»/«К» панели оборачивают текст в <strong>/<em>,
+            Astro экранирует {value} → нужен set:html через XSS-safe inlineFormat
+            (паритет bloom Catalog). */}
         <h1
           id="catalog-title"
           class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-        >{title}</h1>
+          set:html={inlineFormat(title)}
+        ></h1>
         {subtitleVisible && (
-          <p class="font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
-            {subtitleText}
-          </p>
+          <p
+            class="font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+            set:html={inlineFormat(subtitleText)}
+          />
         )}
       </header>
 
@@ -464,7 +501,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, showCartBtn, cardContainerOn }}>
+<script is:inline define:vars={{ siteId, pageSize, showCartBtn, cardContainerOn, cardAspectClass, cardBtnStyleAttr, nextPhotoOn }}>
   // ⚠️ is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → 404 на проде, вся логика мертва. Поэтому весь клиент инлайн:
   // функции storefront-hydrate.ts перенесены телами 1:1 (без import/типов),
@@ -629,6 +666,12 @@ const skeletons = Array.from({ length: skeletonCount });
     const href = escapeHtml(productHref(p));
     const name = escapeHtml(p.name);
     const image = escapeHtml(productImageRaw(p));
+    // «Следующее фото при наведении»: второе фото товара (images[1]); hover-обработчик
+    // ниже свапит src между data-img-primary и data-img-secondary.
+    const image2 =
+      (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+    const imgDataAttrs =
+      ` data-img-primary="${image}"` + (image2 ? ` data-img-secondary="${escapeHtml(image2)}"` : "");
     const price = escapeHtml(formatPrice(p.price));
     const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
     const oldPrice = oldRaw
@@ -665,18 +708,20 @@ const skeletons = Array.from({ length: skeletonCount });
     const _comboOpt = (_firstCombo && _firstCombo.options) || {};
     const _comboColor = _comboOpt["Цвет"] || _comboOpt["Color"] || "";
     const _comboSize = _comboOpt["Размер"] || _comboOpt["Size"] || "";
-    const _cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80";
+    // Цвета кнопки — из настройки «Стиль кнопки» (inline-style, паритет с SSR-карточкой).
+    const _cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center px-3 font-manrope text-[14px] font-normal uppercase leading-none transition-opacity hover:opacity-80";
+    const _cartBtnStyle = ` style="${cardBtnStyleAttr}"`;
     const cartBtn = showCartBtn
       ? _hasVariants
         ? _firstCombo
-          ? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(_firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(_firstCombo.id))}"${_comboColor ? ` data-variant-color="${escapeHtml(_comboColor)}"` : ""}${_comboSize ? ` data-variant-size="${escapeHtml(_comboSize)}"` : ""} data-image="${image}" class="${_cartBtnCls}">В корзину</button>`
-          : `<a href="${href}" class="${_cartBtnCls}">В корзину</a>`
-        : `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${_cartBtnCls}">В корзину</button>`
+          ? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(_firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(_firstCombo.id))}"${_comboColor ? ` data-variant-color="${escapeHtml(_comboColor)}"` : ""}${_comboSize ? ` data-variant-size="${escapeHtml(_comboSize)}"` : ""} data-image="${image}" class="${_cartBtnCls}"${_cartBtnStyle}>В корзину</button>`
+          : `<a href="${href}" class="${_cartBtnCls}"${_cartBtnStyle}>В корзину</a>`
+        : `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${_cartBtnCls}"${_cartBtnStyle}>В корзину</button>`
       : "";
     return `<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="${name}"${cardContainerStyle}>
-  <div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
+  <div class="relative ${cardAspectClass} w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
     <a href="${href}" class="block size-full" aria-label="${name}">
-      ${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
+      ${image ? `<img src="${image}"${imgDataAttrs} alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
     </a>
     ${badge}
     ${heartBtn}
@@ -738,6 +783,75 @@ const skeletons = Array.from({ length: skeletonCount });
     const fromPath = window.location.pathname.match(/\/collections\/([^/?#]+)/);
     if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return decodeURIComponent(fromPath[1]);
     return null;
+  }
+
+  // Каталог коллекции, у которого коллекция ещё НЕ выбрана: страница
+  // /collections/<slug> с плейсхолдерным slug и без настройки в секции. До
+  // выбора коллекции показывать весь магазин неверно — показываем заглушки.
+  // Общий каталог (/catalog) сюда не попадает.
+  function isCollectionCatalogWithoutPick() {
+    const root = document.querySelector('[data-catalog-layout]');
+    const fromSetting = root && root.getAttribute("data-collection-slug");
+    if (fromSetting && fromSetting.trim()) return false;
+    const fromQuery = new URLSearchParams(window.location.search).get("collection");
+    if (fromQuery && fromQuery.trim()) return false;
+    const fromPath = window.location.pathname.match(/\/collections\/([^/?#]*)/);
+    if (!fromPath) return false;
+    return !fromPath[1] || fromPath[1] === "_placeholder";
+  }
+
+  // Есть ли в магазине хотя бы один товар — БЕЗ фильтров и без коллекции.
+  // Отличает «магазин пустой» (заглушки темы) от «фильтр ничего не нашёл»
+  // (текстовое сообщение). true/false кэшируется, при сетевой ошибке — null
+  // («не знаем» → заглушки не показываем).
+  let storeHasProducts;
+  async function storeHasAnyProduct() {
+    if (storeHasProducts !== undefined) return storeHasProducts;
+    if (!storeId) return false;
+    try {
+      const qp = new URLSearchParams();
+      qp.set("store_id", String(storeId));
+      qp.set("page", "1");
+      qp.set("limit", "1");
+      const r = await fetch(`${apiBase}/api/store/products?${qp.toString()}`);
+      if (!r.ok) return null;
+      const j = await r.json();
+      const n =
+        typeof j.total === "number" ? j.total : Array.isArray(j.products) ? j.products.length : 0;
+      storeHasProducts = n > 0;
+      return storeHasProducts;
+    } catch {
+      return null;
+    }
+  }
+
+  // Заглушки темы в грид (платформенные карточки из <template>). Счётчик = 0
+  // товаров, кнопка «Смотреть ещё» спрятана.
+  function showPlaceholderCards(grids, loadMoreBtns) {
+    const tpl = document.querySelector('[data-nt="catalog-placeholder"]');
+    const html = tpl ? tpl.innerHTML : "";
+    for (const grid of grids) grid.innerHTML = html;
+    updateCount('[data-nt="catalog-count"]', 0);
+    for (const btn of loadMoreBtns) {
+      btn.style.display = "none";
+      btn.disabled = false;
+    }
+  }
+
+  // Текстовое пустое состояние («ничего не найдено» / ошибка загрузки).
+  // Заглушки-карточки здесь запрещены: товары в магазине есть, просто под
+  // текущий фильтр не попал ни один.
+  function showEmptyMessage(grids, loadMoreBtns, text) {
+    const html =
+      '<li style="grid-column:1/-1;padding:40px 0;text-align:center;font-family:var(--font-body,sans-serif);font-size:16px;color:rgb(var(--color-muted,153 153 153));">' +
+      escapeHtml(text) +
+      "</li>";
+    for (const grid of grids) grid.innerHTML = html;
+    updateCount('[data-nt="catalog-count"]', 0);
+    for (const btn of loadMoreBtns) {
+      btn.style.display = "none";
+      btn.disabled = false;
+    }
   }
 
   // Снимок скелетон-лоадера из SSG-грида — захватывается при первой гидрации,
@@ -823,6 +937,13 @@ const skeletons = Array.from({ length: skeletonCount });
     const grids = Array.from(document.querySelectorAll('[data-nt="catalog-grid"]'));
     const loadMoreBtns = Array.from(document.querySelectorAll("[data-action='load-more']"));
 
+    // Каталог коллекции без выбранной коллекции — заглушки темы, запрос не шлём
+    // (иначе показали бы весь магазин под заголовком конкретной коллекции).
+    if (!append && isCollectionCatalogWithoutPick()) {
+      showPlaceholderCards(grids, loadMoreBtns);
+      return;
+    }
+
     if (!append) showSkeleton();
     if (append) for (const btn of loadMoreBtns) btn.disabled = true;
 
@@ -835,17 +956,20 @@ const skeletons = Array.from({ length: skeletonCount });
       return;
     }
 
-    // Demo-заглушка: API недоступен ИЛИ магазин реально пуст (page=1, total=0).
-    if (res === null || (filters.page === 1 && res.total === 0)) {
-      const demoTpl = document.querySelector('[data-nt="catalog-demo"]');
-      const demoHtml = demoTpl ? demoTpl.innerHTML : "";
-      const demoN = demoTpl ? demoTpl.content.querySelectorAll("li").length : 0;
-      for (const grid of grids) grid.innerHTML = demoHtml;
-      updateCount('[data-nt="catalog-count"]', demoN);
-      for (const btn of loadMoreBtns) {
-        btn.style.display = "none";
-        btn.disabled = false;
-      }
+    // Пустой грид — три РАЗНЫХ случая, и путать их нельзя:
+    //   • нет магазина (превью-макет без siteId)     → заглушки темы;
+    //   • API не ответил                             → сообщение об ошибке;
+    //   • total=0, но товары в магазине есть         → «ничего не найдено»;
+    //   • total=0 и товаров в магазине нет вообще    → заглушки темы.
+    if (res === null) {
+      if (!storeId) showPlaceholderCards(grids, loadMoreBtns);
+      else showEmptyMessage(grids, loadMoreBtns, "Не удалось загрузить товары. Обновите страницу.");
+      return;
+    }
+    if (filters.page === 1 && res.total === 0) {
+      const hasAny = await storeHasAnyProduct();
+      if (hasAny === false) showPlaceholderCards(grids, loadMoreBtns);
+      else showEmptyMessage(grids, loadMoreBtns, "Ничего не найдено. Попробуйте изменить фильтры.");
       return;
     }
 
@@ -1299,6 +1423,24 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 
   hydrateCatalog();
+  // «Следующее фото при наведении»: hover карточки → images[1], уход → images[0].
+  // Делегирование на document (карточки перерисовываются гидрацией). Без настройки
+  // у <img> нет data-img-secondary, и swap — no-op.
+  if (nextPhotoOn) {
+    document.addEventListener("mouseover", (event) => {
+      const img = event.target && event.target.closest && event.target.closest("img[data-img-secondary]");
+      if (!img) return;
+      const sec = img.getAttribute("data-img-secondary");
+      if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
+    });
+    document.addEventListener("mouseout", (event) => {
+      const img = event.target && event.target.closest && event.target.closest("img[data-img-primary]");
+      if (!img) return;
+      const prim = img.getAttribute("data-img-primary");
+      if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
+    });
+  }
+
   document.addEventListener("astro:page-load", hydrateCatalog);
   })();
 </script>

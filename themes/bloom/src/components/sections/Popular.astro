@@ -1,5 +1,8 @@
 ---
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+// Локальная шапка = разметка DS 1:1, но с inlineFormat: внешний NtSectionHeading
+// экранирует {title} → «Жирный»/«Курсив» конструктора показывались сырыми тегами.
+// Паритет rose (ui/RoseSectionHeading.astro импортируется тем же приёмом).
+import NtSectionHeading from "../ui/BloomSectionHeading.astro";
 import BloomProductCard from "../products/BloomProductCard.astro";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Popular T13): полная конструкторная схема
@@ -13,13 +16,30 @@ import BloomProductCard from "../products/BloomProductCard.astro";
 // PopularProducts.columns на 4.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
 // заменён на Figma-текст. Когда мерчант задал свой heading/text/subtitle —
 // рендерим ЕГО (?? fallback срабатывает только при пустых данных).
+// Пустая строка = «мерчант не задал» (так же трактует платформа,
+// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
 const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Коллекция товаров";
+	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
+	"Коллекция товаров";
 const sectionSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
 	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
@@ -93,6 +113,22 @@ if (collectionRef && siteId) {
 					price: fmtPrice(pr?.basePrice ?? pr?.price),
 					oldPrice: fmtPrice(pr?.compareAtPrice ?? pr?.oldPrice),
 					discount: !!(pr?.compareAtPrice || pr?.oldPrice),
+					salePercent: (() => {
+						const b = Number(pr?.basePrice ?? pr?.price);
+						const o = Number(pr?.compareAtPrice ?? pr?.oldPrice);
+						return Number.isFinite(b) && Number.isFinite(o) && o > b && b > 0
+							? `-${Math.round(((o - b) / o) * 100)}%`
+							: "";
+					})(),
+					swatches: Array.isArray(pr?.variantSwatches)
+						? Array.from(
+								new Set(
+									pr.variantSwatches
+										.map((s: any) => String(s?.color ?? "").trim())
+										.filter((c: string) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)),
+								),
+							).slice(0, 6)
+						: [],
 					// BloomProductCard читает эти поля напрямую (colors.length,
 					// inStock) — без них SSR падает. storefront-data их не несёт →
 					// дефолты: без свотчей, в наличии (как реальный сайт).
@@ -108,27 +144,43 @@ if (collectionRef && siteId) {
 }
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'small'
-// (canon-default) и отсутствие = шапка DS NtSectionHeading верстальщика дословно
-// (20/24/32); medium → 38px, large → 46px (§9, перекрытие утилитой на обёртке —
-// внутрь DS-компонента класс не пробрасывается).
-const headingSize = p.heading?.size ?? p.headingSize;
+// (canon-default панели) и отсутствие = шапка DS NtSectionHeading верстальщика
+// дословно (20/24/32) БЕЗ перекрытия; medium → 38px, large → 46px
+// (MANNER.md §9, база lg-32 × 1.19/1.44; мобильные — та же пропорция от 20).
+// Ветка small ранее перекрывала базу на 18px: дефолт панели = 'small', поэтому
+// ЛЮБАЯ правка секции уводила заголовок из канона и делала его МЕНЬШЕ
+// подзаголовка (24px) — «поменял заголовок → сбились стили». Прецедент rose
+// Popular: small = литерал верстальщика, ступени идут ВВЕРХ.
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "medium"
-		? " [&_h2]:!text-[38px]"
+		? " [&_h2]:!text-[38px] max-md:[&_h2]:!text-[24px]"
 		: headingSize === "large"
-			? " [&_h2]:!text-[46px]"
+			? " [&_h2]:!text-[46px] max-md:[&_h2]:!text-[29px]"
 			: "";
 // Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок DS
-// дословно (14/18/24); medium → 29px, large → 35px (множители ряда §9 от xl-базы 24).
+// дословно (14/18/24) БЕЗ перекрытия; medium → 29px, large → 35px (та же
+// пропорция 1.19/1.44 от базы lg-24; мобильные — от 14). Раньше ступени были
+// сняты с базы rose (16) → medium 19 и large 23 оказывались МЕНЬШЕ дефолтных
+// 24px, то есть «Средний»/«Большой» уменьшали текст.
 const textSize = p.textSize ?? p.text?.size;
 const textSizeCls =
 	textSize === "medium"
-		? " [&_p]:!text-[29px]"
+		? " [&_p]:!text-[29px] max-md:[&_p]:!text-[17px]"
 		: textSize === "large"
-			? " [&_p]:!text-[35px]"
+			? " [&_p]:!text-[35px] max-md:[&_p]:!text-[20px]"
 			: "";
-// Дефолт = прежний `<div data-animate>` без class байт-в-байт.
-const headWrapCls = `${headingSizeCls}${textSizeCls}`.trim() || undefined;
+// blockDefaults bloom headingAlignment/cardCaptionStyle из theme.json.
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headAlignCls =
+	headingAlignment === "center"
+		? " [&_[data-nt=section-heading]]:items-center [&_h2]:!text-center [&_p]:!text-center"
+		: headingAlignment === "right"
+			? " [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right"
+			: headingAlignment === "left"
+				? " [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left"
+				: "";
+const headWrapCls = `${headingSizeCls}${textSizeCls}${headAlignCls}`.trim() || undefined;
 
 // Колонки 1-6 (дефолт 3). Применяются с md (768px) и выше через CSS-переменную
 // --cols + media-query в <style> ниже (моб 2 → sm:3 — лестница верстальщика).
@@ -139,14 +191,19 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
 // (canon-default) и отсутствие = aspect-square карточки верстальщика;
 // portrait → 430/500, wide → 16/9 (перекрытие медиа-ссылки карточки).
-const tileAspectCls =
+// Прокидывается КАЖДОЙ карточке inline-стилем (BloomProductCard aspectRatio /
+// плейсхолдер / гидрация renderCardHtml). Прежний override `[&_li>article>a]` был
+// МЁРТВ: реальная разметка карточки — `li>article>div>a` (<a> обёрнут в <div> под
+// overlay-сердце wishlist), прямого потомка article>a не существует → «Вид
+// изображения» не применялся. Тот же баг и тот же фикс, что в rose Popular.
+const cardAspectRatio =
 	p.imageView === "portrait"
-		? " [&_li>article>a]:aspect-[430/500]"
+		? "430/500"
 		: p.imageView === "wide" || p.imageView === "adaptive"
-			? " [&_li>article>a]:aspect-[16/9]"
-			: "";
+			? "16/9"
+			: "1/1";
 // Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3" + tileAspectCls;
+const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3";
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС bloom:
@@ -155,7 +212,13 @@ const gridStyle = `--cols:${colsN}`;
 // сохраняют кнопку и переименовывают её в quickAddText (носители — data-quick-add
 // и data-qa-text на гриде, текст ставит скрипт ниже и на demo, и на гидрации).
 const qaModeRaw = p.quickAddMode === "count" ? "cart" : p.quickAddMode;
-const quickAddMode = qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRaw : undefined;
+const quickAddMode =
+	qaModeRaw === "none" || qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRaw : undefined;
+// Паритет rose: 'none' — CTA карточки нет, 'standard' — кнопка кладёт 1 шт,
+// 'cart' — степпер «− N +» перед кнопкой. Раньше bloom трактовал все режимы как
+// «кнопка всегда есть, меняется только подпись» — режим «Количество» был пустым.
+// Отсутствие пропа = вёрстка верстальщика (кнопка), чтобы дефолтный вид не поехал.
+const cardQuickAdd = quickAddMode ?? "standard";
 const quickAddText =
 	(typeof p.quickAddText === "string" && p.quickAddText) ||
 	(quickAddMode === "cart" ? "В КОРЗИНУ" : "В корзину");
@@ -167,12 +230,47 @@ const quickAddText =
 const btnStyle =
 	p.buttonStyle === "secondary" || p.buttonStyle === "link" ? p.buttonStyle : undefined;
 
+// Theme Settings «Вид карточки» / «Выравнивание» (паритет flux Popular).
+const cardVariant = p.cardVariant === "minimal" ? "minimal" : "rich";
+const cardAlignCls =
+	p.cardAlignment === "center"
+		? "text-center"
+		: p.cardAlignment === "right"
+			? "text-right"
+			: "text-left";
+
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
 // товара при наведении. Носитель данных: data-image-2 на <li> (demo —
 // gallery[1] верстальщика; реальные товары — images[1], ставит гидрация).
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
+// «Быстрое добавление → Количество»: −/+ правят data-quantity на кнопке карточки,
+// делегат nt-cart кладёт выбранное число. Механика rose Popular, is:inline+set:html
+// (define:vars компилятор секций не умеет), идемпотентность через data-qa-step-bound.
+const QA_STEPPER_JS = [
+	"(function(){",
+	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-quick-add=\"cart\"],[data-nt=\"collections-grid\"][data-quick-add=\"cart\"]');",
+	"for(var i=0;i<grids.length;i++){(function(g){",
+	"if(g.getAttribute('data-qa-step-bound')==='true')return;",
+	"g.setAttribute('data-qa-step-bound','true');",
+	"g.addEventListener('click',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var inc=t.closest('[data-qa-inc]');var dec=t.closest('[data-qa-dec]');",
+	"if(!inc&&!dec)return;",
+	"var li=t.closest('li');if(!li)return;",
+	"var q=li.querySelector('[data-qa-qty]');var btn=li.querySelector('[data-add-to-cart]');",
+	"if(!q)return;",
+	"var n=parseInt(q.textContent,10)||1;",
+	"n=inc?Math.min(99,n+1):Math.max(1,n-1);",
+	"q.textContent=String(n);",
+	"if(btn)btn.setAttribute('data-quantity',String(n));",
+	"e.preventDefault();",
+	"});",
+	"})(grids[i]);}",
+	"})();",
+].join("");
+
 const NEXT_PHOTO_JS = [
 	"(function(){",
 	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-next-photo]');",
@@ -241,8 +339,8 @@ const viewAllCls =
 			? `${viewAllBase} rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-6 text-[rgb(var(--color-button-bg,227_142_159))] hover:opacity-90 active:scale-95`
 			: `${viewAllBase} rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 text-[rgb(var(--color-button-text,255_255_255))] hover:opacity-90 active:scale-95`;
 
-// blockDefaults bloom headingAlignment/cardCaptionStyle — ключи вне канон-полей
-// Popular, игнорируются (решение аналитика).
+const cardCaptionStyle = p.cardCaptionStyle === "uppercase" ? "uppercase" : "default";
+const captionNameCls = cardCaptionStyle === "uppercase" ? " uppercase" : "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -252,7 +350,7 @@ const paddingStyle = p.padding
 
 <section
 	id="popular"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[80px] pt-[80px] md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]${selfSchemeClass}`}
 	aria-labelledby="popular-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -279,9 +377,13 @@ const paddingStyle = p.padding
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
 			data-next-photo={nextPhoto ? "true" : undefined}
-			data-quick-add={quickAddMode}
+			data-quick-add={cardQuickAdd}
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-btn-style={btnStyle}
+			data-card-aspect={cardAspectRatio}
+			data-card-variant={cardVariant}
+			data-card-align={cardAlignCls}
+			data-caption-style={cardCaptionStyle}
 		>
 			{/* SSR-цель (Figma 1:19335): коллекция ВЫБРАНА → реальные товары (фетч в
 			    frontmatter, работает и в превью-Container); НЕ выбрана/пусто →
@@ -290,13 +392,31 @@ const paddingStyle = p.padding
 			{realProducts.length > 0
 				? realProducts.map((product: any) => (
 						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
-							<BloomProductCard product={product} />
+							<BloomProductCard
+								product={product}
+								aspectRatio={cardAspectRatio}
+								quickAdd={cardQuickAdd}
+								quickAddText={quickAddText}
+								variant={cardVariant}
+								salePercent={product.salePercent}
+								swatchHexes={product.swatches}
+								captionUppercase={cardCaptionStyle === "uppercase"}
+							/>
 						</li>
 					))
 				: placeholderCards.map((ph) => (
 						<li>
-							<article class="flex flex-col gap-4" data-nt="bloom-product-card-placeholder" aria-label={ph.title}>
-								<div class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]">
+							<article
+								class:list={[
+									"flex flex-col gap-4",
+									cardVariant === "rich" &&
+										"rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-3",
+									cardAlignCls,
+								]}
+								data-nt="bloom-product-card-placeholder"
+								aria-label={ph.title}
+							>
+								<div class="relative block w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]" style={`aspect-ratio:${cardAspectRatio}`}>
 									<img
 										src={ph.image}
 										alt={ph.title}
@@ -305,7 +425,7 @@ const paddingStyle = p.padding
 									/>
 								</div>
 								<div class="flex flex-col gap-2">
-									<span class="bloom-product-name font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">
+									<span class:list={["bloom-product-name font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]", captionNameCls && "uppercase"]}>
 										{ph.title}
 									</span>
 									<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">
@@ -329,7 +449,7 @@ const paddingStyle = p.padding
 			</div>
 		)}
 	</div>
-</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
+</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {
@@ -377,13 +497,19 @@ const paddingStyle = p.padding
 			const pool = resolveCollectionProducts(products, collections, collectionRef);
 			if (pool.length === 0) continue;
 			const items = pool.slice(0, limit);
+			const cardVariant = grid.getAttribute("data-card-variant") === "minimal" ? "minimal" : "rich";
+			const captionUppercase = grid.getAttribute("data-caption-style") === "uppercase";
+			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
+			const qaAttr = grid.getAttribute("data-quick-add");
+			const qaMode = qaAttr === "none" || qaAttr === "cart" ? qaAttr : "standard";
+			const qaText = grid.getAttribute("data-qa-text") || "В корзину";
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =
 						wantNextPhoto && Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
-					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}</li>`;
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, cardAspect, qaMode, qaText)}</li>`;
 				})
 				.join("");
 			applyQaText(grid);
@@ -398,13 +524,13 @@ const paddingStyle = p.padding
 	/* Канон buttonStyle: перекрытие встроенной pill-кнопки карточки верстальщика
 	   (и demo-SSR, и гидрированной разметки renderCardHtml). Дефолт (без
 	   data-btn-style) — без правил, карточка байт-в-байт. */
-	[data-nt="popular-grid"][data-btn-style="secondary"] [data-add-to-cart] {
+	[data-nt="popular-grid"][data-btn-style="secondary"] [data-card-cta] {
 		background: transparent;
 		border: 1px solid rgb(var(--color-button-bg, 227 142 159));
 		color: rgb(var(--color-button-bg, 227 142 159));
 	}
 
-	[data-nt="popular-grid"][data-btn-style="link"] [data-add-to-cart] {
+	[data-nt="popular-grid"][data-btn-style="link"] [data-card-cta] {
 		background: transparent;
 		color: rgb(var(--color-text, 0 0 0));
 		text-decoration: underline;

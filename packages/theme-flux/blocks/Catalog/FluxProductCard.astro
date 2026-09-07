@@ -249,7 +249,7 @@ const defaultHeartSvg =
 ---
 
 <article
-  class="group flex w-full flex-col gap-3 md:gap-4"
+  class="group flex h-full w-full flex-col gap-3 md:gap-4"
   data-nt="flux-product-card"
   data-card-container={cardContainerState}
   style={cardContainerStyle}
@@ -326,42 +326,36 @@ const defaultHeartSvg =
       <span data-wishlist-icon class="block size-[18px]" set:html={defaultHeartSvg}></span>
     </button>
   </div>
-  {/* Свотчи цвета (эталон): цветные квадраты + опц. перечёркнутый «недоступный».
-      Demo-товары без вариантов → массив пуст → блок не рендерится. */}
-  {swatches.length > 0 && (
-    <div class="flex items-center gap-1">
-      {swatches.map((s) =>
-        s.image ? (
-          /* Свотч С картинкой цвета → кликабельная кнопка: клик меняет фото
-             карточки на фото цвета (делегат в Catalog.astro inline-скрипте).
-             Классы = span-эталон + cursor/p-0; border снят inline. */
-          <button
-            type="button"
-            data-swatch-img={s.image}
-            aria-pressed="false"
-            aria-label="Показать фото цвета"
-            class="size-5 rounded-[2px] cursor-pointer p-0"
-            style={`background:${s.color};border:0`}
-          ></button>
-        ) : (
-          <span class="size-5 rounded-[2px]" style={`background:${s.color}`} aria-hidden="true"></span>
-        ),
-      )}
-      {swatchDisabled && (
-        <span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true">
-          <span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span>
-        </span>
-      )}
-    </div>
-  )}
-  <div class="flex w-full flex-col gap-1 text-left">
+  {/* Слот свотчей всегда одной высоты — иначе карточки с цветом выше соседей. */}
+  <div class="flex min-h-5 items-center gap-1" data-nt="card-swatches" aria-hidden={swatches.length === 0}>
+    {swatches.map((s) =>
+      s.image ? (
+        <button
+          type="button"
+          data-swatch-img={s.image}
+          aria-pressed="false"
+          aria-label="Показать фото цвета"
+          class="size-5 rounded-[2px] cursor-pointer p-0"
+          style={`background:${s.color};border:0`}
+        ></button>
+      ) : (
+        <span class="size-5 rounded-[2px]" style={`background:${s.color}`} aria-hidden="true"></span>
+      ),
+    )}
+    {swatchDisabled && (
+      <span class="relative size-5 rounded-[2px] bg-[#F5F5F5]" aria-hidden="true">
+        <span class="absolute inset-0 m-auto h-[1px] w-[26px] origin-center -rotate-45 bg-[#999999]"></span>
+      </span>
+    )}
+  </div>
+  <div class="flex min-h-0 w-full flex-1 flex-col gap-1 text-left">
     <a
       href={href}
-      class="flux-product-name block w-full font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80 md:text-[16px]"
+      class="flux-product-name block min-h-[2.75em] w-full font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80 md:text-[16px]"
     >
       {product.name}
     </a>
-    <div class="flex w-full flex-wrap items-baseline gap-2">
+    <div class="flex min-h-[1.4em] w-full flex-wrap items-baseline gap-2">
       <span class="flux-product-price font-manrope text-[14px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
         {product.price}
       </span>
@@ -372,21 +366,19 @@ const defaultHeartSvg =
       )}
     </div>
   </div>
-  {/* Чипы памяти/размера (эталон): приглушённый чип = недоступное значение. */}
-  {chips.length > 0 && (
-    <div class="flex flex-wrap items-start gap-1">
-      {chips.map((m) => (
-        <span
-          class:list={[
-            "inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none",
-            m.disabled ? "border-[#F5F5F5] bg-[#F5F5F5] text-[#CCCCCC]" : "border-[#F5F5F5] text-[#000000]",
-          ]}
-        >
-          {m.value}
-        </span>
-      ))}
-    </div>
-  )}
+  {/* Слот чипов всегда одной высоты — карточки без памяти/размера не проседают. */}
+  <div class="flex min-h-6 flex-wrap items-start gap-1" data-nt="card-chips" aria-hidden={chips.length === 0}>
+    {chips.map((m) => (
+      <span
+        class:list={[
+          "inline-flex items-center rounded-[2px] border border-solid p-1 font-roboto-flex text-[12px] font-light leading-none",
+          m.disabled ? "border-[#F5F5F5] bg-[#F5F5F5] text-[#CCCCCC]" : "border-[#F5F5F5] text-[#000000]",
+        ]}
+      >
+        {m.value}
+      </span>
+    ))}
+  </div>
   {/* Быстрое действие (настройка «Быстрое добавление»). Кнопка СНАРУЖИ <a>
       (button-in-anchor — невалидный HTML). Зеркалит client renderCardHtml.
       data-* (имя/цена/фото/старая цена) — контракт nt-cart для quick-add-handler
@@ -396,6 +388,7 @@ const defaultHeartSvg =
   {showQuickAdd && (
     <button
       type="button"
+      class="mt-auto"
       data-quick-add-id={product.id}
       data-name={product.name}
       data-price={product.price}

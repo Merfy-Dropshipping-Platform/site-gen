@@ -4,6 +4,10 @@ import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { buildTokensCss } from '../themes/tokens-css';
 import { getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
+import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
+import { resolveBlockProps } from '../render/resolve-props';
+import { getBlockPuckDefaults } from '../render/block-defaults';
+import type { RenderContext } from '../render/create-render-context';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -38,6 +42,13 @@ export function deepMergeBlockProps(
     const defaultValue = defaults[key];
     if (isPlainObject(defaultValue) && isPlainObject(value)) {
       out[key] = deepMergeBlockProps(defaultValue, value);
+    } else if (
+      value === '' &&
+      typeof defaultValue === 'string' &&
+      defaultValue.length > 0
+    ) {
+      // Seed/revision `logo: ""` means "use theme default" (blockDefaults),
+      // same as designer headers that fall back to `/icons/*.svg`.
     } else {
       out[key] = value;
     }
@@ -63,6 +74,7 @@ export interface RenderBlockInput {
    * - false (live build): show invisible empty fragment
    */
   isPreview?: boolean;
+  merfy?: RenderContext;
 }
 
 /**
@@ -83,6 +95,7 @@ export interface RenderPreviewPageInput {
    * customize.merfy.ru их не имеет. Inject'им CSS-var overrides в head.
    */
   publicUrl?: string | null;
+  merfy?: RenderContext;
 }
 
 /**
@@ -200,7 +213,15 @@ async function resolveV2Section(
     const manifest = JSON.parse(
       await readFile(resolve(dir, 'manifest.json'), 'utf-8'),
     ) as Record<string, string>;
-    const file = manifest[blockName];
+    // iframe historically derived type as blockId.split('-')[0] → "header"
+    // from "header-satin". Manifest keys are PascalCase ("Header").
+    const file =
+      manifest[blockName] ??
+      manifest[
+        Object.keys(manifest).find(
+          (k) => k.toLowerCase() === String(blockName).toLowerCase(),
+        ) ?? ''
+      ];
     if (!file) return null;
     const mod = (await importCompiled(resolve(dir, file))) as { default?: unknown };
     return mod.default ?? null;
@@ -355,9 +376,40 @@ export class PreviewService {
       // description, placeholder) survive when revision has partial sub-object
       // like `newsletter: { enabled: true }`. Arrays are replaced wholesale.
       const mergedProps = deepMergeBlockProps(blockDefaults, (input.props ?? {}) as Record<string, unknown>);
+      const merfy = input.merfy;
+      let renderProps =
+        input.blockName === 'Slideshow'
+          ? normalizeSlideshowProps(mergedProps)
+          : mergedProps;
+      if (merfy) {
+        // Дефолты блока (puckConfig + blockDefaults темы) — по ним рендер
+        // отличает «мерчант не трогал поле» от «мерчант ввёл текст». Без них
+        // приходилось опираться на словарь служебных слов, который съедал
+        // нормальный ввод («Видео», «Коллекция»).
+        const puckDefaults = await getBlockPuckDefaults(input.themeId, input.blockName);
+        const resolveDefaults = deepMergeBlockProps(puckDefaults, blockDefaults);
+        const resolved = resolveBlockProps(
+          input.blockName,
+          renderProps,
+          merfy.catalog,
+          resolveDefaults,
+        );
+        renderProps = {
+          ...resolved.props,
+          siteId: merfy.siteId,
+          __merfy: {
+            siteId: merfy.siteId,
+            themeId: merfy.themeId,
+            catalog: merfy.catalog,
+            themeSettings: merfy.themeSettings,
+            fields: resolved.merfy.fields,
+            resolved: resolved.merfy.resolved,
+          },
+        };
+      }
       const container = await this.getContainer();
       const html = await container.renderToString(Component, {
-        props: mergedProps,
+        props: renderProps,
       });
       return html;
     } catch (err) {
@@ -566,6 +618,7 @@ export class PreviewService {
     siteId?: string;
     /** revision.data.themeSettings — для tokens.css (паритет с live). */
     themeSettings?: unknown;
+    merfy?: RenderContext;
   }): Promise<string | null> {
     const shellHtml =
       (await this.tryLoadBuiltThemeHtml(input.themeId, input.route)) ??
@@ -573,7 +626,7 @@ export class PreviewService {
     if (!shellHtml) return null;
     const blocksHtml = await Promise.all(
       input.blocks.map((b) =>
-        this.renderBlock({ blockName: b.type, props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId }, themeId: input.themeId }),
+        this.renderBlock({ blockName: b.type, props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId }, merfy: input.merfy, themeId: input.themeId }),
       ),
     );
     const composed = composeV2Page({
@@ -712,6 +765,7 @@ export class PreviewService {
             blockName: b.type,
             props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId },
             themeId: input.themeId ?? null,
+            merfy: input.merfy,
           });
           const schemeId = schemeIdFromProp(b.props?.colorScheme);
           // Header sticky: display:contents убирает бокс обёртки схемы, чтобы
@@ -767,7 +821,10 @@ export class PreviewService {
     // (placeholder PNGs из `.astro`, runtime JS innerHTML). Основной путь
     // — resolveAssetUrls(props) выше — превращает merchant-data ссылки в
     // абсолютные ДО рендера. Это закрывает оставшийся build-time hardcode.
-    bodyHtml = rewriteHtmlAssets(bodyHtml, input.publicUrl);
+    const themeAssetBase = input.themeId
+      ? `/__theme/${input.themeId}`
+      : input.publicUrl;
+    bodyHtml = rewriteHtmlAssets(bodyHtml, themeAssetBase);
 
     return `<!DOCTYPE html>
 <html lang="ru">
@@ -793,11 +850,11 @@ export class PreviewService {
   <style>${previewTailwind}</style>
   <style id="__merfy_theme_css">${themeCss}</style>
   <style id="__merfy_tokens_css">${input.tokensCss}</style>
-  ${input.publicUrl ? `<style id="__merfy_asset_overrides">:root{
-    --header-icon-cart:url('${input.publicUrl.replace(/\/$/, '')}/icons/cart.svg');
-    --header-icon-user:url('${input.publicUrl.replace(/\/$/, '')}/icons/user.svg');
-    --header-icon-search:url('${input.publicUrl.replace(/\/$/, '')}/icons/search-lg.svg');
-    --header-icon-burger:url('${input.publicUrl.replace(/\/$/, '')}/icons/menu-burger.svg');
+  ${themeAssetBase ? `<style id="__merfy_asset_overrides">:root{
+    --header-icon-cart:url('${themeAssetBase.replace(/\/$/, '')}/icons/cart.svg');
+    --header-icon-user:url('${themeAssetBase.replace(/\/$/, '')}/icons/user.svg');
+    --header-icon-search:url('${themeAssetBase.replace(/\/$/, '')}/icons/search-lg.svg');
+    --header-icon-burger:url('${themeAssetBase.replace(/\/$/, '')}/icons/menu-burger.svg');
   }</style>` : ''}
 </head>
 <body>
@@ -877,7 +934,7 @@ export class PreviewService {
     const megaSummaryBlock = input.blocks.find((b) => b.type === 'CheckoutSummary');
 
     const renderOne = async (b: { type: string; props: Record<string, unknown> }) =>
-      this.renderBlock({ blockName: b.type, props: b.props, themeId });
+      this.renderBlock({ blockName: b.type, props: b.props, themeId, merfy: input.merfy });
 
     const headerHtml = headerBlock ? await renderOne(headerBlock) : '';
     const toggleHtml = summaryToggleBlock
@@ -904,6 +961,7 @@ export class PreviewService {
         blockName: 'CheckoutLayout',
         props: layoutBlock.props,
         themeId,
+        merfy: input.merfy,
       });
       const formInner = formInnerParts.join('');
       const summaryInner = summaryInnerParts.join('');
@@ -1032,6 +1090,39 @@ const PREVIEW_NAV_AGENT_INLINE = `
   var TARGET = '*';
   function post(msg) { try { parent.postMessage(msg, TARGET); } catch (e) {} }
 
+  // Theme-agnostic: Puck id (Hero-home) may differ from preview id (hero-satin / hero-flux).
+  function typeMatchesSlug(type, slug) {
+    var t = String(type || '').toLowerCase();
+    slug = String(slug || '').toLowerCase();
+    if (!t || !slug) return false;
+    if (t === slug || t.indexOf(slug) === 0 || slug.indexOf(t) === 0) return true;
+    var compacted = t.replace(/with/g, '');
+    return compacted === slug || compacted.indexOf(slug) === 0 || slug.indexOf(compacted) === 0;
+  }
+  function resolveComponentEl(id, type) {
+    if (id) {
+      var exact = document.querySelector('[data-puck-component-id="' + id + '"]');
+      if (exact) return exact;
+      var all = document.querySelectorAll('[data-puck-component-id]');
+      var ci = [];
+      var lower = String(id).toLowerCase();
+      for (var i = 0; i < all.length; i++) {
+        if ((all[i].getAttribute('data-puck-component-id') || '').toLowerCase() === lower) ci.push(all[i]);
+      }
+      if (ci.length === 1) return ci[0];
+    }
+    if (type) {
+      var hits = [];
+      var nodes = document.querySelectorAll('[data-puck-component-id]');
+      for (var j = 0; j < nodes.length; j++) {
+        var dslug = (nodes[j].getAttribute('data-puck-component-id') || '').toLowerCase().split(/[-_]/)[0];
+        if (typeMatchesSlug(type, dslug)) hits.push(nodes[j]);
+      }
+      if (hits.length === 1) return hits[0];
+    }
+    return null;
+  }
+
   // Pupa parity: hover/selected outlines + floating action pill (label + copy +
   // delete) for sections и подсекций. CSS инжектируется в head iframe, JS
   // toggle data-puck-*-hover/selected на mouseover/mouseleave/click. Parent
@@ -1051,6 +1142,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // с .sticky выигрывал → «Статичность Всегда»/scroll-up не липли в превью (баг
       // тестера). Исключаем sticky-классом и inline-стилем (vanilla — inline).
       '[data-puck-component-id]:not(.sticky):not([style*="sticky"]){position:relative}',
+      '[data-puck-component-id]{scroll-margin-top:96px}',
       // Sticky-классы Header портов (themes/<тема>/Header.astro): preview-tailwind
       // scan НЕ подхватывает их в Docker (хотя @source добавлен) → .sticky/.top-0/
       // .z-50 отсутствовали в превью-CSS, и «Статичность» (класс есть, правила нет)
@@ -1114,6 +1206,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // Spec 090 — local-patch state. Хранит последний known props per blockId
   // чтобы compute diff при следующем update-block.
   var LAST_PROPS = {};
+  // Puck type per id (Header, PopularProducts, …). blockId.split('-')[0] is
+  // "header" for header-satin → theme-base Header, not the theme port.
+  var LAST_TYPES = {};
 
   // 098-fix «блок исчез при правке слайдера»: монотонный порядок применения
   // hot-replace. Слайдер генерит серию update-block одного блока; ответы
@@ -1596,17 +1691,36 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // Pupa parity: pill только на section (subsection — только outline, без pill).
   var sectionPill = makePill('section');
 
+  function lookupComponentLabel(key) {
+    if (!key) return '';
+    if (componentLabels[key]) return componentLabels[key];
+    var lower = String(key).toLowerCase();
+    if (componentLabels[lower]) return componentLabels[lower];
+    var keys = Object.keys(componentLabels);
+    var best = '';
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var kl = k.toLowerCase();
+      if (kl === lower) return componentLabels[k];
+      if ((kl.indexOf(lower) === 0 || lower.indexOf(kl) === 0) && k.length > best.length) best = k;
+    }
+    return best ? componentLabels[best] : '';
+  }
   function inferLabel(layer, target) {
     if (layer === 'section') {
       var blockId = target.getAttribute('data-puck-component-id') || '';
+      var type = LAST_TYPES[blockId] || '';
       var dashIdx = blockId.indexOf('-');
-      var type = dashIdx >= 0 ? blockId.slice(0, dashIdx) : blockId;
-      return componentLabels[type] || componentLabels[blockId] || type || 'Секция';
+      var prefix = dashIdx >= 0 ? blockId.slice(0, dashIdx) : blockId;
+      return lookupComponentLabel(type) || lookupComponentLabel(blockId) || lookupComponentLabel(prefix) || type || prefix || 'Секция';
     }
     var parentId = target.getAttribute('data-puck-subsection-parent') || '';
-    var dashIdx2 = parentId.indexOf('-');
-    var parentType = dashIdx2 >= 0 ? parentId.slice(0, dashIdx2) : parentId;
-    return subsectionItemLabels[parentType] || 'Элемент';
+    var parentType = LAST_TYPES[parentId] || '';
+    if (!parentType) {
+      var dashIdx2 = parentId.indexOf('-');
+      parentType = dashIdx2 >= 0 ? parentId.slice(0, dashIdx2) : parentId;
+    }
+    return subsectionItemLabels[parentType] || subsectionItemLabels[String(parentType).toLowerCase()] || lookupComponentLabel(parentType) || 'Элемент';
   }
 
   function positionPill(pill, target) {
@@ -1768,6 +1882,35 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // «В корзину» полностью обрабатывает nt-cart темы (делегат initCartUI): кладёт в
     // «<тема>:cart:v1», обновляет бейдж, открывает дровер — ОДНА логика, как на live.
     // Превью больше НЕ дублирует товар в отдельную серверную корзину.
+    // Клик уже обработан секцией (зум «Нажатие» preventDefault на герое) —
+    // не переключаем конструктор на страницу товара.
+    if (e.defaultPrevented) return;
+    // Клик по ССЫЛКЕ внутри секции раньше уходил только в навигацию, и
+    // конструктор не узнавал, какую секцию тронул мерчант: слева ничего не
+    // подсвечивалось, панель не открывалась. Теперь перед навигацией всегда
+    // сообщаем выбор — сначала под-секцию (фото галереи, ряд, колонка), иначе
+    // саму секцию.
+    function postSelectionFor(target) {
+      var subEl = target && target.closest ? target.closest('[data-puck-subsection-parent]') : null;
+      if (subEl) {
+        var sParent = subEl.getAttribute('data-puck-subsection-parent');
+        var sIdx = parseInt(subEl.getAttribute('data-puck-subsection-index') || '', 10);
+        if (sParent && !isNaN(sIdx)) {
+          post({
+            type: 'select-subsection',
+            parentId: sParent,
+            index: sIdx,
+            field: subEl.getAttribute('data-puck-subsection-field') || null,
+          });
+          return;
+        }
+      }
+      var blockEl = target && target.closest ? target.closest('[data-puck-component-id]') : null;
+      if (blockEl) {
+        post({ type: 'select-block', blockId: blockEl.getAttribute('data-puck-component-id') });
+      }
+    }
+
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (a) {
       var href = a.getAttribute('href') || '';
@@ -1783,10 +1926,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
         // не вызывается → preview всегда рендерит дефолтный товар, не выбранный.
         var pidEl = e.target && e.target.closest ? e.target.closest('[data-product-id]') : null;
         var pid = pidEl ? pidEl.getAttribute('data-product-id') : null;
+        postSelectionFor(e.target);
         post(pid ? { type: 'navigate', path: href, productId: pid } : { type: 'navigate', path: href });
         return;
       }
       e.preventDefault();
+      postSelectionFor(e.target);
       return;
     }
     // Native interactive elements (button/input/select/textarea/label) сами
@@ -1843,7 +1988,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       selectedSectionEl = null;
       selectedSubsectionEl = null;
       if (sectionId) {
-        var sectionEl = document.querySelector('[data-puck-component-id="' + sectionId + '"]');
+        var sectionEl = resolveComponentEl(sectionId, ev.data.sectionType);
         if (sectionEl) {
           sectionEl.setAttribute('data-puck-section-selected', 'true');
           selectedSectionEl = sectionEl;
@@ -1853,7 +1998,13 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
       }
       if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {
-        var subEl = document.querySelector('[data-puck-subsection-parent="' + subParent + '"][data-puck-subsection-index="' + subIndex + '"]');
+        var resolvedParent = selectedSectionEl
+          ? selectedSectionEl.getAttribute('data-puck-component-id')
+          : subParent;
+        var subEl = document.querySelector('[data-puck-subsection-parent="' + resolvedParent + '"][data-puck-subsection-index="' + subIndex + '"]');
+        if (!subEl && resolvedParent !== subParent) {
+          subEl = document.querySelector('[data-puck-subsection-parent="' + subParent + '"][data-puck-subsection-index="' + subIndex + '"]');
+        }
         if (subEl) {
           subEl.setAttribute('data-puck-subsection-selected', 'true');
           subEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1884,6 +2035,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
           var block = initContent[ci];
           if (block && block.props && block.props.id) {
             LAST_PROPS[block.props.id] = block.props;
+            if (typeof block.type === 'string' && block.type) LAST_TYPES[block.props.id] = block.type;
           }
         }
       }
@@ -1894,7 +2046,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
       if (!currentThemeId) return;
       var blockId = ev.data.blockId;
       if (!blockId || !currentSiteId) return;
-      var blockType = blockId.split('-')[0];
+      var blockType = (typeof ev.data.blockType === 'string' && ev.data.blockType)
+        || LAST_TYPES[blockId]
+        || '';
       if (!blockType) return;
 
       // Spec 090 — local-patch attempt перед server fetch fallback.
@@ -1926,6 +2080,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
 
       if (canPatch) {
         LAST_PROPS[blockId] = newProps;
+        LAST_TYPES[blockId] = blockType;
         return; // local patch applied — fetch skipped
       }
 
@@ -2007,6 +2162,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
             if (newEl) executeScriptsIn(newEl.parentElement || newEl);
           }
           LAST_PROPS[blockId] = newProps;
+          LAST_TYPES[blockId] = blockType;
         })
         .catch(function (err) {
           console.error('[preview] update-block fetch failed', err);

@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 
@@ -9,12 +10,34 @@ import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 // Поддержаны nested (Pupa) и legacy flat-пропсы.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const title = p.heading?.text ?? p.title ?? "Искусство заботы о себе";
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+// Пустая строка после coerce/adapt ≠ «не задано» для ?? — trim → фолбэк верстальщика.
+const pickText = (...vals: unknown[]) => {
+	for (const v of vals) {
+		if (typeof v === "string" && v.trim()) return v;
+	}
+	return undefined;
+};
+const title =
+	pickText(p.heading?.text, p.title) ?? "Искусство заботы о себе";
 const subtitle =
-	p.text?.content ??
-	p.subtitle ??
+	pickText(p.text?.content, p.subtitle) ??
 	"Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам";
-const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "Начать ритуал";
+const ctaText =
+	pickText(p.primaryButton?.text, p.cta?.text, p.ctaText) ?? "Начать ритуал";
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	p.primaryButton?.link ??
@@ -86,20 +109,23 @@ const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 //     родных #E38E9F по §7).
 //   заголовок large 18/20 → medium 15/17 → small 13/14
 //   текст     large 14/16 → medium 12/14 → small 10/11
+// Канон rose: текст ПОВЕРХ фото = белый. Светлая scheme-3 (--color-heading чёрный)
+// + затемнение → текст «пропадает». Не читаем scheme-токен на фото: !text-white.
+// Контейнер (boxed) сам переключает на тёмный через [&_h1]/[&_p].
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[14px]"
+		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none !text-white md:text-[14px]"
 		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
+			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none !text-white md:text-[17px]"
+			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none !text-white md:text-[20px]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
-		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[11px]"
+		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] !text-white md:text-[11px]"
 		: textSize === "medium"
-			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
-			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
+			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] !text-white md:text-[14px]"
+			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] !text-white md:text-[16px]";
 // «Размер» → высота секции (вьюпорт). Раньше высоту Hero диктовал aspect-[...] на
 // height-div'е, перебивая min-h от size → регулятор «Размер» не влиял (паритет бага
 // rose). Фикс: aspect убран с обоих height-div'ов (empty + filled), высоту ведёт
@@ -204,7 +230,7 @@ const paddingStyle = p.padding
 		   subsection-атрибуты сохранены — блок остаётся выделяемым/редактируемым в
 		   конструкторе (heading=100, text=101, primaryButton=102). */
 		<section
-			class="relative w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+			class={`relative w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]${selfSchemeClass}`}
 			aria-labelledby="hero-title"
 			data-puck-component-id={id}
 			style={paddingStyle}
@@ -257,7 +283,7 @@ const paddingStyle = p.padding
 		</section>
 	) : (
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -300,7 +326,19 @@ const paddingStyle = p.padding
 		overlayN > 0 && (
 			<div
 				class="pointer-events-none absolute inset-0 z-[1] bg-black"
-				style={`opacity:${overlayN / 100}`}
+				style={`background-color:#000;opacity:${overlayN / 100}`}
+			/>
+		)
+	}
+
+	{/* Подложка-градиент как у плейсхолдера / rose empty: читаемость белого
+	    текста и кнопки на реальном фото. Без неё при смене плейсхолдер→фото
+	    «пропадала подложка» (оставался только slider Затемнение). */}
+	{
+		Boolean(String(backgroundImage).trim() || backgroundImage2) && (
+			<div
+				class="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 to-black/10"
+				aria-hidden="true"
 			/>
 		)
 	}
@@ -317,17 +355,15 @@ const paddingStyle = p.padding
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
-					>
-						{title}
-					</h1>
+						set:html={inlineFormat(title)}
+					></h1>
 					<p
 						class={subtitleCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
-					>
-						{subtitle}
-					</p>
+						set:html={inlineFormat(subtitle)}
+					></p>
 				</div>
 				{
 					secondaryText ? (

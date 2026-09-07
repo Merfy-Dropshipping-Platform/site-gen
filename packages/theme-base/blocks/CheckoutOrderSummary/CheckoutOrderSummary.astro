@@ -186,9 +186,46 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
       + '</div>';
     }
 
+    function readNtCartItems() {
+      var prefixes = ['flux', 'rose', 'vanilla', 'bloom', 'satin'];
+      for (var i = 0; i < prefixes.length; i++) {
+        try {
+          var raw = localStorage.getItem(prefixes[i] + ':cart:v1');
+          var arr = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(arr) || !arr.length) continue;
+          return arr.map(function (l) {
+            var v = l.variant || {};
+            var opts = {};
+            if (v.color) opts['Цвет'] = v.color;
+            if (v.size) opts['Размер'] = v.size;
+            var rub = parseFloat(l.price) || 0;
+            return {
+              id: l.id,
+              productId: l.productId,
+              name: l.name,
+              priceCents: Math.round(rub * 100),
+              unitPriceCents: Math.round(rub * 100),
+              compareAtPriceCents: l.oldPrice ? Math.round((parseFloat(l.oldPrice) || 0) * 100) : undefined,
+              image: l.image,
+              imageUrl: l.image,
+              quantity: l.quantity || 1,
+              options: opts,
+              variantCombinationId: (v.variantCombinationId) || null,
+            };
+          });
+        } catch (e) {}
+      }
+      return [];
+    }
+    function checkoutItems() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      if (items && items.length) return items;
+      return readNtCartItems();
+    }
+
     function render() {
       if (loadingEl) loadingEl.hidden = true;
-      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      var items = checkoutItems();
 
       if (items.length === 0) {
         if (emptyEl) emptyEl.hidden = false;
@@ -345,7 +382,7 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 96;
     // при пересчёте (не действие юзера). Иначе фоновый синк, проявивший подарок,
     // менял бы сигнатуру и ЛОЖНО сбрасывал только что применённый промокод.
     function cartSignature() {
-      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      var items = checkoutItems();
       return items.filter(function (it) { return !it.isBonus; }).map(function (it) {
         return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
       }).join('|');

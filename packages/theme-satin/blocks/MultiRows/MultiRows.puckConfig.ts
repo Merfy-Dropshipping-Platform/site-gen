@@ -129,7 +129,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         { label: 'Скрыть', value: 'false' },
       ],
     } as any,
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-34963.
     headingAlignment: { type: 'hidden', label: '' },
@@ -205,26 +205,28 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
   // top-level heading. Live-порт читает heading/text/imageUrl/imagePosition/
   // button.href как канон-пропсы → вид satin байт-в-байт.
   defaults: {
-    // Figma 1:19335 — плейсхолдер пустого состояния (ряды без картинки → landscape-плейсхолдер).
+    // Дефолт = CollectionRows.astro верстальщика. Мерчант overlay'ит заголовок/фото/ссылку в сайдбаре.
     rows: [
       {
         id: 'row-1',
-        heading: 'Изображение с текстом',
-        text: 'Покажи и расскажи о своем товаре в одном блоке',
-        imageUrl: '',
+        heading: 'Женская коллекция',
+        text:
+          'Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.\n\nВ ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.',
+        imageUrl: '/placeholders/landscape-multirows-image.png',
         imagePosition: 'left',
-        button: { text: 'Кнопка', href: '/about' },
+        button: { text: 'Для женщин', href: '/catalog?collection=Женское' },
       },
       {
         id: 'row-2',
-        heading: 'Изображение с текстом',
-        text: 'Покажи и расскажи о своем товаре в одном блоке',
-        imageUrl: '',
+        heading: 'Мужская коллекция',
+        text:
+          'Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.\n\nОдежда, которая не требует усилий, чтобы выглядеть хорошо.',
+        imageUrl: '/placeholders/landscape-multirows-image.png',
         imagePosition: 'right',
-        button: { text: 'Кнопка', href: '/about' },
+        button: { text: 'Для мужчин', href: '/catalog?collection=Мужское' },
       },
     ],
-    padding: { top: 80, bottom: 80 },
+    padding: { top: 48, bottom: 64 },
   },
   schema: MultiRowsSchema,
   maxInstances: null,

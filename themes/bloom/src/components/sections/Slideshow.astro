@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B: новая канон-секция Slideshow в манере bloom (см. themes/bloom/MANNER.md;
 // процесс-эталон — rose T17 Slideshow). Схема полей = packages/theme-base/blocks/
 // Slideshow/Slideshow.puckConfig.ts. Композиция = полотно Hero bloom: лестница
@@ -9,6 +10,20 @@
 // astro:page-load (его шлёт превью-агент после hot-replace).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Канон slides[] 1-5 (item: imageUrl|image, heading(string|{text,size}), subtitle,
 // text{content,size}, ctaText/ctaUrl | button{text,link}, container, position,
@@ -194,7 +209,7 @@ const paddingStyle = p.padding
 ---
 
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
 	data-puck-component-id={id}
 	data-bloom-slideshow
 	data-interval={intervalMs}
@@ -238,8 +253,8 @@ const paddingStyle = p.padding
 								class={`flex max-w-[330px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6" : ""}`}
 							>
 								<div class={`flex flex-col gap-2 ${s.alignCls}`}>
-									{s.heading && <h2 class={`hero-animate-1 ${s.headingCls}`}>{s.heading}</h2>}
-									{s.subtitle && <p class={`hero-animate-2 ${s.textCls}`}>{s.subtitle}</p>}
+									{s.heading && <h2 class={`hero-animate-1 ${s.headingCls}`} set:html={inlineFormat(s.heading)} />}
+									{s.subtitle && <p class={`hero-animate-2 ${s.textCls}`} set:html={inlineFormat(s.subtitle)} />}
 								</div>
 								{s.ctaText && (
 									<a href={s.ctaHref} class={`hero-animate-3 ${ctaCls}`}>

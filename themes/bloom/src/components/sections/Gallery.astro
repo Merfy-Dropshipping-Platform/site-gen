@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Gallery T13): конструкторная схема
 // theme-base Gallery.puckConfig поверх разметки верстальщика. Тело + канон-
 // дефолты (headingSize/textSize medium, imagePosition left) → пиксель
@@ -9,8 +10,25 @@
 // (useItems) → реальный рендер + гидрация по коллекции БЕЗ изменений.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+// Пустая строка = «мерчант не задал» (так же трактует платформа,
+// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
 const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Галерея";
+	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
+	"Галерея";
 // Подзаголовка у верстальщика НЕТ — рендер ТОЛЬКО при непустом пропе.
 const rawSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
@@ -32,7 +50,10 @@ const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default) и отсутствие = роль «заголовок секции» верстальщика дословно
 // (18/md:20). Лестница §9: small 15/17, large 22/24.
-const headingSize = p.heading?.size ?? p.headingSize;
+// Панель пишет размер в top-level `headingSize` (select), поле `heading` = aiText-строка.
+// Читаем top-level ПЕРВЫМ: в старых ревизиях мог остаться legacy-объект heading.size,
+// и nested-first молча глушил живой селект панели. Паритет rose (precedence "top-level").
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
@@ -136,7 +157,7 @@ const paddingStyle = p.padding
 
 <section
 	id="gallery"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]${selfSchemeClass}`}
 	aria-labelledby="gallery-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -150,10 +171,8 @@ const paddingStyle = p.padding
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="heading"
 			>
-				<h2 id="gallery-title" class={headingCls}>
-					{sectionTitle}
-				</h2>
-				<p class={subtitleCls}>{sectionSubtitle}</p>
+				<h2 id="gallery-title" class={headingCls} set:html={inlineFormat(sectionTitle)}></h2>
+				<p class={subtitleCls} set:html={inlineFormat(sectionSubtitle)} />
 			</div>
 		) : (
 			<h2
@@ -163,9 +182,8 @@ const paddingStyle = p.padding
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="heading"
-			>
-				{sectionTitle}
-			</h2>
+				set:html={inlineFormat(sectionTitle)}
+			></h2>
 		)}
 
 		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-animate data-animate-delay="0.1s">

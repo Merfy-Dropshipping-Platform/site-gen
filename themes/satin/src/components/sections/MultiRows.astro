@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (satin, группа content): канон-секция MultiRows — адаптация
 // src/components/sections/CollectionRows.astro (тело КОПИЕЙ; оригинал не
 // тронут — index.astro:26 и about.astro:62 его используют, включая
@@ -12,6 +13,30 @@ import SatinPicture from "../img/SatinPicture.astro";
 
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function slotImage(url: unknown): string {
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон top-heading: string | { text, alignment, size } (+ legacy
 // _headingLegacy). Роль = заголовок секции §1 (font-logo 20 uppercase
@@ -19,10 +44,23 @@ const id = p.id;
 // small 17, large 24. В ПУСТОМ состоянии — дословный Figma-лейбл «Мультиряды»
 // (контракт 1:19335, эталон rose MultiRows.astro), а не отсутствие шапки. С
 // данными мерчанта (hasRealRows ниже) — его заголовок (пусто → без шапки).
-const hasRealRows = Array.isArray(p.rows) && p.rows.length > 0;
+const hasRealRows =
+	Array.isArray(p.rows) &&
+	p.rows.some((r: any) => {
+		const heading = (typeof r?.heading === "string" && r.heading) || (typeof r?.title === "string" && r.title) || "";
+		const image = (typeof r?.imageUrl === "string" && r.imageUrl) || (typeof r?.image === "string" && r.image) || "";
+		const btn = typeof r?.button?.text === "string" ? r.button.text : typeof r?.ctaLabel === "string" ? r.ctaLabel : "";
+		return !!slotImage(image) || slotSet(heading) || slotSet(btn);
+	});
 const headingRaw =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
-const heading = hasRealRows ? headingRaw : headingRaw || "Мультиряды";
+const heading = hasRealRows
+	? contentSet("heading", headingRaw)
+		? headingRaw
+		: ""
+	: contentSet("heading", headingRaw) && headingRaw.trim()
+		? headingRaw
+		: headingRaw || "Мультиряды";
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
@@ -119,11 +157,14 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	// канон text|description — одним <p> через set:html.
 	const paragraphs: string[] = Array.isArray(r.paragraphs)
 		? r.paragraphs.filter((x: any) => typeof x === "string" && x.trim())
-		: [
+		: String(
 				(typeof r.text === "string" && r.text) ||
 					(typeof r.description === "string" && r.description) ||
 					"",
-			].filter(Boolean);
+			)
+				.split(/\n\n+/)
+				.map((x) => x.trim())
+				.filter(Boolean);
 	const headingText =
 		(typeof r.heading === "string" && r.heading) || (typeof r.title === "string" && r.title) || "";
 	const btnText =
@@ -132,10 +173,13 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	return {
 		heading: headingText,
 		paragraphs,
-		image:
-			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
-			(typeof r.image === "string" && r.image.trim()) ||
-			PLACEHOLDER_MULTIROWS_IMAGE,
+		image: (() => {
+			const raw =
+				(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||
+				(typeof r.image === "string" && r.image.trim()) ||
+				"";
+			return raw && !raw.includes("/images/4x/") ? raw : PLACEHOLDER_MULTIROWS_IMAGE;
+		})(),
 		alt: (typeof r.alt === "string" && r.alt.trim()) || headingText || "Ряд",
 		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(r.size ?? p.size),
@@ -184,7 +228,7 @@ const btnBase =
 const btnCls =
 	p.buttonStyle === "black" || p.buttonStyle === "solid"
 		? `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`
-		: p.buttonStyle === "white"
+		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
 			? `${btnBase} border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 			: `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`;
 
@@ -208,11 +252,26 @@ const paddingStyle = p.padding
 	: undefined;
 
 const titleId = id && heading ? `${id}-title` : undefined;
+
+// §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
+// конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
+// :root (базовую палитру) — мерчант видит это как «поменял одну секцию, а
+// соседние перекрасились». На live обёртка даёт ту же схему, дубль безвреден.
+// Схема приходит строкой ИЛИ числом (нормализатор Slideshow) — разбираем оба.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+
 ---
 
 {/* Секция: вертикаль-просторно §2 (py-12 md:py-16 — литерал CollectionRows.astro:49), поля .satin-pad. */}
 <section
-	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-12 md:py-16"
+	class={`satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-12 md:py-16${selfSchemeClass}`}
 	aria-labelledby={titleId}
 	aria-label={heading ? undefined : "Коллекции"}
 	data-puck-component-id={id}
@@ -227,9 +286,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				/>
 			)
 		}
 		{/* Ряды: внешний gap-12 md:gap-20, ряд grid items-stretch gap-8 md:grid-cols-2 md:gap-10 (литерал CollectionRows.astro:50-52). */}
@@ -276,7 +334,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								))}
 						</div>
 						<div class:list={[`flex flex-col gap-5${alignCls}`, row.right && "md:order-1"]}>
-							{row.heading && <h3 class={row.headingCls}>{row.heading}</h3>}
+							{row.heading && <h3 class={row.headingCls} set:html={inlineFormat(row.heading)} />}
 							{row.paragraphs.length > 0 && (
 								<div class="flex flex-col gap-3">
 									{row.paragraphs.map((para) => (

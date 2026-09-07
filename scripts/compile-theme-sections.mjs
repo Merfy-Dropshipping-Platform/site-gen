@@ -13,9 +13,10 @@
  */
 import { transform } from '@astrojs/compiler';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, statSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 
 const require = createRequire(import.meta.url);
 const ts = require('typescript');
@@ -179,3 +180,19 @@ for (const [canonName, relPath] of Object.entries(sectionMap)) {
 await writeFile(resolve(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
 console.log(`✓ ${theme}: ${Object.keys(manifest).length} sections, ${compiled.size} files compiled → dist/theme-sections/${theme}/`);
 console.log('sections:', Object.keys(manifest).join(', '));
+
+// Preview iframe читает dist/theme-css/<theme>.css (preview.service loadThemeCss).
+// Без этого бандла в конструкторе нет .satin-* / md:h-[680px] / size-8.
+const cssInput = resolve(THEME_ROOT, 'src/styles/global.css');
+if (existsSync(cssInput)) {
+  const cssOutDir = resolve(SITES, 'dist/theme-css');
+  mkdirSync(cssOutDir, { recursive: true });
+  const cssOut = resolve(cssOutDir, `${theme}.css`);
+  const cliPkgPath = require.resolve('@tailwindcss/cli/package.json');
+  const cli = resolve(dirname(cliPkgPath), 'dist/index.mjs');
+  execFileSync(process.execPath, [cli, '-i', cssInput, '-o', cssOut], {
+    stdio: 'inherit',
+    cwd: dirname(cssInput),
+  });
+  console.log(`✓ ${theme}: theme CSS → dist/theme-css/${theme}.css`);
+}

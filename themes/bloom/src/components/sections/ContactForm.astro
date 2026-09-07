@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
 
 // Канон ContactForm (bloom). Секция рендерит форму обратной связи.
@@ -11,6 +12,20 @@ import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/compo
 // «Ваш вопрос»).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
@@ -25,7 +40,10 @@ const placeholderHeading =
 
 // Лестница §9 заголовка bloom (Urbanist uppercase, color-heading): base medium = 20,
 // small ≈ 0.9× = 18, large ≈ 1.2× = 24. Совпадает с манерой Collections/Popular.
-const headingSize = p.heading?.size ?? p.headingSize;
+// Панель пишет размер в top-level `headingSize` (select), поле `heading` = aiText-строка.
+// Читаем top-level ПЕРВЫМ: в старых ревизиях мог остаться legacy-объект heading.size,
+// и nested-first молча глушил живой селект панели. Паритет rose (precedence "top-level").
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
@@ -72,7 +90,7 @@ const paddingStyle = p.padding
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 md:px-20 md:pb-[80px] md:pt-20 2xl:px-[300px]"
+	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 md:px-20 md:pb-[80px] md:pt-20 2xl:px-[300px]${selfSchemeClass}`}
 	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -86,9 +104,7 @@ const paddingStyle = p.padding
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="contacts-title" class={headingCls}>
-				{placeholderHeading}
-			</h2>
+			<h2 id="contacts-title" class={headingCls} set:html={inlineFormat(placeholderHeading)}></h2>
 		</div>
 		<form
 			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"

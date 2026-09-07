@@ -7,6 +7,20 @@
 // канон-композиции Header свою полосу не рендерит (там она только в статик-режиме).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 // Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
 // задал текст объявления, секция показывает ДОСЛОВНЫЙ плейсхолдер на surface-полосе
 // («Добавь текст в объявление» + ссылка «Перейти»), а НЕ дефолт-контент верстальщика
@@ -36,6 +50,9 @@ const linkHref =
 // масштабируется (text-[12px]/[14px]/[16px]) и применяется к тексту полосы.
 const size = typeof p.size === "string" ? p.size : "large";
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	// «Тонкий» отсутствовал → падал в large и был неотличим от «Большого».
+	// Канон (прецедент rose/flux): на ступень ниже small — 24px/11px.
+	thin: { mh: "min-h-6", text: "text-[11px]" },
 	small: { mh: "min-h-8", text: "text-[12px]" },
 	medium: { mh: "min-h-10", text: "text-[14px]" },
 	large: { mh: "min-h-12", text: "text-[16px]" },
@@ -61,7 +78,7 @@ const textCls =
 		/* Текст объявления задан мерчантом → цветная полоса верстальщика дословно
 		   (классы/токены rootCls + textCls байт-в-байт, поведение не меняется). */
 		<div
-			class={rootCls}
+			class={rootCls + selfSchemeClass}
 			role="region"
 			aria-live="polite"
 			data-bloom-announcement

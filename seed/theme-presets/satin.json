@@ -52,7 +52,7 @@
       {
         "type": "Header",
         "props": {
-          "id": "header-satin",
+          "id": "Header-1",
           "siteTitle": "SATIN",
           "logo": "",
           "logoPosition": "top-center",

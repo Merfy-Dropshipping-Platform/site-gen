@@ -168,6 +168,7 @@ small ≈0.7× (или large ≈1.2× при базе medium), округлен�
 | Body-текст 16 (canon-default `medium`) | 14 | **16 = литерал** | 19 | PC:65 |
 | Манифест 24 (MainText из Philosophy) | 17 | 20 | **24 = литерал** | Philosophy.astro:19 |
 | Шапка Popular (DS, lg-база 32) — canon-default `small` | **литерал DS 20/24/32** | 38 (перекрытие `[&_h2]:!text-[38px]`) | 46 | DS/NtSectionHeading.astro:14; прецедент rose Popular |
+| Подзаголовок Popular (DS, lg-база 24) — canon-default `small` | **литерал DS 14/18/24** | 29 (моб 17) | 35 (моб 20) | та же пропорция 1.19/1.44; ступени обязаны идти вверх от базы |
 
 ## 10. Карта канон-секций (решения аналитика)
 

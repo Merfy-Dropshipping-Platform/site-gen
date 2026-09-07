@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (bloom, группа misc): новая канон-секция Video в манере bloom (см.
 // themes/bloom/MANNER.md §2/§4; rose-эталона НЕТ). Схема полей =
 // packages/theme-base/blocks/Video/Video.puckConfig.ts. Медиа в контейнере 1320
@@ -84,8 +85,26 @@ const subheadingCls = `font-inter text-[14px] font-light leading-[17px] text-[rg
 // padded=false убирает горизонтальные поля, сохраняя кламп и скругление.
 const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
 const positionProp = typeof p.position === "string" ? p.position : "contained";
-const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
+// Видимое поле панели «Положение видео» (position) приоритетнее legacy `align`:
+// blockDefaults темы задают align=container, из-за чего position был мёртв.
+const fullBleed =
+	typeof p.position === "string" && p.position
+		? p.position === "fullscreen"
+		: alignProp === "fullbleed";
 const padded = !(p.padded === false || p.padded === "false");
+// Своя colorScheme на секции (как theme-base Video): при hot-render одиночного
+// блока обёртки композитора нет → секция брала :root и «перекрашивалась».
+const videoSchemeClass = (() => {
+	// схема приходит строкой ("scheme-4") ИЛИ числом — разбираем оба вида
+	const raw = p.colorScheme;
+	const id =
+		typeof raw === "number"
+			? String(raw)
+			: typeof raw === "string" && raw
+				? String(raw).replace("scheme-", "")
+				: "";
+	return id ? ` color-scheme-${id}` : "";
+})();
 const sectionCls = fullBleed
 	? "w-full bg-[rgb(var(--color-bg,255_255_255))] pb-20 pt-20 md:pb-[120px] md:pt-[120px]"
 	: padded
@@ -113,7 +132,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 ---
 
 <section
-	class={sectionCls}
+	class={sectionCls + videoSchemeClass}
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -129,12 +148,11 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
-						>
-							{headingText}
-						</h2>
+							set:html={inlineFormat(headingText)}
+						></h2>
 					)}
 					{subheading && (
-						<p class={`${showHeading ? "mt-3 " : ""}${subheadingCls}`}>{subheading}</p>
+						<p class={`${showHeading ? "mt-3 " : ""}${subheadingCls}`} set:html={inlineFormat(subheading)} />
 					)}
 				</div>
 			)

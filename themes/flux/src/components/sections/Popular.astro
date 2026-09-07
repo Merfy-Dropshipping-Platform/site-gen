@@ -207,12 +207,10 @@ const viewAllCls =
 const collectionRef =
 	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
 
-// SSR-фетч реальных товаров выбранной коллекции (Figma-цель, эталон rose
-// Popular.astro): коллекция ВЫБРАНА → реальные товары ПРЯМО в статике, чтобы их
-// видело и ПРЕВЬЮ конструктора (Astro Container не исполняет клиентскую
-// module-гидрацию ниже). siteId инжектит рендер-пайплайн (preview.service /
-// build). Нет коллекции / siteId / ошибка → realProducts пуст → секция рендерит
-// плейсхолдер-куртки Figma.
+// SSR-фетч реальных товаров выбранной коллекции. Превью конструктора = Astro
+// Container (клиентская module-гидрация не исполняется). siteId инжектит
+// рендер-пайплайн. Нет коллекции / siteId / ошибка → плейсхолдер-куртки.
+// Пустой пикер не автозаполняем всем каталогом: секция на главной — макет.
 const siteId = typeof p.siteId === "string" ? p.siteId : "";
 // storefront-data отдаёт цены уже в РУБЛЯХ (basePrice как есть; см.
 // storefront-data.controller — эмитит basePrice без конвертации). Показываем как есть,
@@ -333,10 +331,8 @@ const containerCls = paddingStyle
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
 			data-btn-style={btnStyle}
 		>
-			{/* SSR-цель (Figma 1:19335): коллекция ВЫБРАНА → реальные товары (фетч в
-			    frontmatter, работает и в превью-Container); НЕ выбрана/пусто →
-			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
-			    live освежает данные. */}
+			{/* SSR: коллекция ВЫБРАНА → реальные товары. Иначе плейсхолдер-куртки.
+			    data-collection остаётся → клиентская гидрация на live освежает. */}
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
 				/* ЕДИНЫЙ рендерер для реальных товаров (Task 6, Step 2): та же
 				   FluxProductCard, что catalog.astro/wishlist.astro/collections/
@@ -436,8 +432,6 @@ const containerCls = paddingStyle
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
 			const ctaLabel = grid.getAttribute("data-qa-text") || undefined;
-			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
-			// SSR-моки (demo), не подтягиваем весь каталог магазина.
 			if (!collectionRef) continue;
 			const pool = resolveCollectionProducts(products, collections, collectionRef);
 			if (pool.length === 0) continue;

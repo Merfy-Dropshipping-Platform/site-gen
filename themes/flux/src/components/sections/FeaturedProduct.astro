@@ -128,8 +128,8 @@ const zoomModeRaw = typeof p.zoomMode === "string" ? p.zoomMode : "";
 const zoomMode: "click" | "hover" | "none" =
 	zoomModeRaw === "click" || zoomModeRaw === "none" ? zoomModeRaw : "hover";
 
-// SSR-резолв: товар ВЫБРАН мерчантом → тянем реальные данные ПРЯМО в статике
-// (паритет Popular.astro/Collections.astro SITES_INTERNAL_BASE fetch).
+// SSR-резолв: товар ВЫБРАН мерчантом → именно он. Пикер пуст → макет секции,
+// без автоподстановки первого товара магазина.
 let realProduct: any = null;
 if (productIdRef && siteId) {
 	try {
@@ -138,8 +138,6 @@ if (productIdRef && siteId) {
 		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data${qs}`).catch(() => null);
 		if (res && res.ok) {
 			const data: any = await res.json();
-			// БЕЗ фолбэка products[0]: мерчант выбрал КОНКРЕТНЫЙ товар — молчаливая
-			// подмена «первым попавшимся» хуже честного плейсхолдера (реестр 2026-08-10).
 			realProduct =
 				data?.product ??
 				(Array.isArray(data?.products)
@@ -327,8 +325,26 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 	data-site-id={siteId}
 	data-product-id={cartProductId}
 	data-zoom-mode={zoomMode}
+	data-product-slug={typeof (realProduct as { slug?: string } | null)?.slug === "string" ? (realProduct as { slug: string }).slug : productIdRef}
 	style={sizeVarsStyle}
 >
+	{!isPlaceholder && (
+		<script
+			type="application/ld+json"
+			set:html={JSON.stringify({
+				"@context": "https://schema.org",
+				"@type": "Product",
+				name: displayName,
+				image: mainImage || undefined,
+				offers: {
+					"@type": "Offer",
+					priceCurrency: "RUB",
+					price: String(priceNumForBadge || ""),
+					availability: "https://schema.org/InStock",
+				},
+			})}
+		/>
+	)}
 	<div class:list={["flux-container", paddingStyle ? "" : "py-10 md:py-16"]} style={paddingStyle} data-reveal>
 		<!-- ============================= DESKTOP (≥768px) ============================= -->
 		<div
@@ -346,24 +362,24 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 					   но так смена товара обновляет и эту раскладку. */
 					<div class="grid w-full grid-cols-2 gap-4">
 						{galleryImages.map((img, i) => (
-							<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+							<div data-cfg-hero={i === 0 ? "" : undefined} data-cfg-thumb={i === 0 ? undefined : ""} data-image={i === 0 ? undefined : img} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
 								{i === 0 ? (
 									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="eager" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 								) : (
 									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="lazy" class="absolute inset-0 h-full w-full object-cover" />
 								)}
-							</a>
+							</div>
 						))}
 					</div>
 				) : (
 				<>
-				<a href={href} class:list={["relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
+				<div data-cfg-hero class:list={["relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (
 						<FluxPicture src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					)}
-				</a>
+				</div>
 				{thumbs.length > 1 && !isTwoCols && (
 					<div class:list={[isSplit ? "flex flex-col gap-3" : "flex items-center gap-3"]}>
 						<div class={thumbsTrackCls} data-cfg-thumbs-track>
@@ -407,7 +423,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 							{displayBrand}
 						</p>
 					)}
-					<h2
+					<h1
 						class={`font-roboto-flex ${titleSizeCls} font-light uppercase leading-normal text-[#000000]`}
 						data-cfg-name
 						data-puck-subsection-parent={id}
@@ -415,7 +431,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 						data-puck-subsection-field="title"
 					>
 						{displayName}
-					</h2>
+					</h1>
 					<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000] md:text-[20px]" data-cfg-price>
 							{displayPrice}
@@ -511,13 +527,13 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 		<div class="flex w-full flex-col gap-6 md:hidden" data-nt="product-configurator">
 			<!-- Фото: карусель + бейджи -->
 			<div class="relative w-full" data-cfg-carousel data-cfg-images={galleryImages.join("|")}>
-				<a href={href} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+				<div data-cfg-hero class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="343" height="343" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (
 						<FluxPicture src={mainImage} alt={displayName} width="343" height="343" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					)}
-				</a>
+				</div>
 
 				{showBadges && (
 					<div class="absolute left-[18px] top-1 flex flex-col items-start gap-1">
@@ -544,9 +560,9 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 						{displayBrand}
 					</p>
 				)}
-				<h2 class="font-roboto-flex text-[19px] font-light uppercase leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
+				<h1 class="font-roboto-flex text-[19px] font-light uppercase leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
 					{displayName}
-				</h2>
+				</h1>
 				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000]" data-cfg-price>{displayPrice}</span>
 					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[#999999] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
@@ -652,15 +668,31 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 		for (const k of keys) if (opts && opts[k] != null) return opts[k];
 		return "";
 	}
+	function resolveHeroImg(el: Element | null): HTMLImageElement | null {
+		if (!el) return null;
+		if (el.tagName === "IMG") return el as HTMLImageElement;
+		return el.querySelector("img");
+	}
+	function collectGalleryUrls(cfg: HTMLElement, hero: HTMLImageElement | null): string[] {
+		const urls: string[] = [];
+		const add = (s: string) => {
+			if (s && urls.indexOf(s) === -1) urls.push(s);
+		};
+		if (hero) add(hero.currentSrc || hero.src || hero.getAttribute("src") || "");
+		cfg.querySelectorAll<HTMLImageElement>("[data-cfg-thumb] img").forEach((im) => {
+			add(im.currentSrc || im.src || im.getAttribute("src") || "");
+		});
+		return urls;
+	}
 
 	// Lightbox: полноэкранный попап с большим фото + лентой миниатюр. Портирован
 	// 1:1 с theme-base Product.astro (то, что реально рендерит Rose) — canon
 	// zoomMode="click". Разметка/поведение дословно (overlay/closeBtn/strip/
 	// стрелки-клавиши/Esc), меняется только источник URL (readCfgImages ниже,
 	// под структуру Flux-конфигуратора).
-	function openProductLightbox(urls: string[]) {
+	function openProductLightbox(urls: string[], startIdx = 0) {
 		if (urls.length === 0) return;
-		let activeIdx = 0;
+		let activeIdx = Math.max(0, Math.min(startIdx, urls.length - 1));
 
 		const overlay = document.createElement("div");
 		overlay.setAttribute("data-product-lightbox", "");
@@ -692,7 +724,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			"object-fit:contain", "display:block",
 			"border-radius:8px",
 		].join(";");
-		mainImgEl.src = urls[0];
+		mainImgEl.src = urls[activeIdx];
 		overlay.appendChild(mainImgEl);
 
 		const strip = document.createElement("div");
@@ -707,7 +739,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			btn.setAttribute("type", "button");
 			btn.style.cssText = [
 				"width:80px", "height:80px", "flex-shrink:0",
-				"border:2px solid " + (idx === 0 ? "#fff" : "transparent"),
+				"border:2px solid " + (idx === activeIdx ? "#fff" : "transparent"),
 				"border-radius:6px", "overflow:hidden",
 				"cursor:pointer", "padding:0", "background:transparent",
 				"transition:border-color 0.15s",
@@ -761,7 +793,20 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 		const section = document.querySelector<HTMLElement>('[data-block="featured-product"]');
 		if (!section) return;
 
-		const ref = section.getAttribute("data-product-id") || "";
+		const pdpRefFromUrl = () => {
+			try {
+				const m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+				if (m) return decodeURIComponent(m[1]);
+				return new URLSearchParams(location.search).get("id") || "";
+			} catch {
+				return "";
+			}
+		};
+		const ref =
+			section.getAttribute("data-product-id") ||
+			section.getAttribute("data-product-slug") ||
+			pdpRefFromUrl() ||
+			"";
 		// «Увеличение» (canon zoomMode: hover/click/none) — паритет с Rose
 		// (packages/theme-base/blocks/Product/Product.astro: hover = tracking-zoom
 		// scale(2) с transform-origin за курсором; click = lightbox на весь экран +
@@ -821,12 +866,39 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 				return combos.length ? findCombination(combos, selected) : null;
 			}
 
+			function variantImageFor(sel: Record<string, string>): string | null {
+				const vgs = liveProduct && Array.isArray(liveProduct.variantGroups) ? liveProduct.variantGroups : [];
+				for (const g of vgs) {
+					const val = sel[g.name];
+					if (!val || !Array.isArray(g.options)) continue;
+					const opt = g.options.find((o: { value?: string; name?: string }) => o && (o.value === val || o.name === val));
+					if (opt && Array.isArray(opt.images) && opt.images.length) {
+						const im = opt.images[0];
+						return typeof im === "string" ? im : (im && im.url) || null;
+					}
+				}
+				const combo = activeCombo();
+				if (combo) {
+					if (typeof combo.image === "string" && combo.image) return combo.image;
+					if (Array.isArray(combo.images) && combo.images[0]) {
+						const im = combo.images[0];
+						return typeof im === "string" ? im : (im && im.url) || null;
+					}
+				}
+				return null;
+			}
+
 			function applyCombo() {
 				const combo = activeCombo();
 				// Единая формула резолва цены — resolveComboPricing (storefront-hydrate.ts),
 				// та же, что зовёт SSR-фронтматтер этого файла (review Task 5, Finding 3a:
 				// раньше здесь была слегка другая копия той же формулы).
 				const { price: priceVal, oldPrice: oldVal } = resolveComboPricing(combo, liveProduct);
+				const vimg = variantImageFor(selected);
+				if (mainImg && vimg) {
+					mainImg.setAttribute("src", vimg);
+					if (addBtn) addBtn.setAttribute("data-image", vimg);
+				}
 				if (liveProduct) {
 					const priceStr = formatPrice(priceVal);
 					const oldStr = formatPrice(oldVal);
@@ -893,11 +965,19 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			}
 			if (combos.length || liveProduct) applyCombo();
 
-			// ── Миниатюры → главное фото (обмен, как в SSR-шаблоне). ──
-			cfg.querySelectorAll<HTMLButtonElement>("[data-cfg-thumb]").forEach((thumb) => {
-				thumb.addEventListener("click", () => {
-					const src = thumb.dataset.image;
-					if (mainImg && src) mainImg.setAttribute("src", src);
+			// Миниатюра → обмен с героем (как Rose Product.astro), не copy и не переход.
+			cfg.querySelectorAll<HTMLElement>("[data-cfg-thumb]").forEach((thumb) => {
+				thumb.addEventListener("click", (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					const hero = resolveHeroImg(mainImg);
+					const thumbImg = thumb.querySelector("img") || (thumb.tagName === "IMG" ? (thumb as HTMLImageElement) : null);
+					const thumbSrc = thumb.getAttribute("data-image") || thumbImg?.getAttribute("src") || "";
+					if (!hero || !thumbSrc) return;
+					const heroSrc = hero.getAttribute("src") || "";
+					hero.setAttribute("src", thumbSrc);
+					if (thumbImg) thumbImg.setAttribute("src", heroSrc);
+					thumb.setAttribute("data-image", heroSrc);
 					cfg.querySelectorAll("[data-cfg-thumb]").forEach((t) => t.classList.remove("border", "border-solid", "border-[#1e2952]/50"));
 					thumb.classList.add("border", "border-solid", "border-[#1e2952]/50");
 				});
@@ -942,7 +1022,13 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			// FluxProductDetail — это ДРУГАЯ секция/страница со своим контрактом).
 			cfg.querySelector<HTMLButtonElement>("[data-cfg-buy]")?.addEventListener("click", () => {
 				if (addBtn && !addBtn.disabled) addBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-				window.location.href = "/cart";
+				try { sessionStorage.removeItem("flux:buynow"); } catch {}
+				const inIframe = window.parent && window.parent !== window;
+				if (inIframe) {
+					try { window.parent.postMessage({ type: "navigate", path: "/checkout" }, "*"); } catch {}
+				} else {
+					window.location.href = "/checkout";
+				}
 			});
 
 			// Аккордеон описания — простой class-toggle (без gsap: ни одна другая
@@ -985,41 +1071,30 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			});
 
 			// Увеличение — hover/click, см. константу zoomMode выше.
-			if (mainImg && zoomMode !== "none") {
-				const heroEl = mainImg.closest<HTMLAnchorElement>("a");
-				if (heroEl) {
-					heroEl.style.cursor = "zoom-in";
-					if (zoomMode === "hover") {
-						mainImg.style.transition = "transform 0.2s ease, transform-origin 0.05s linear";
-						heroEl.addEventListener("mouseenter", () => {
-							mainImg.style.transform = "scale(2)";
-						});
-						heroEl.addEventListener("mousemove", (e) => {
-							const rect = heroEl.getBoundingClientRect();
-							const x = ((e.clientX - rect.left) / rect.width) * 100;
-							const y = ((e.clientY - rect.top) / rect.height) * 100;
-							mainImg.style.transformOrigin = `${x}% ${y}%`;
-						});
-						heroEl.addEventListener("mouseleave", () => {
-							mainImg.style.transform = "";
-							mainImg.style.transformOrigin = "";
-						});
-					} else if (zoomMode === "click") {
-						// Главное фото обёрнуто в <a href> (переход на страницу товара) —
-						// в отличие от theme-base [data-product-hero] (не ссылка), здесь
-						// нужен preventDefault, иначе клик одновременно откроет лайтбокс
-						// И уйдёт по ссылке.
-						heroEl.addEventListener("click", (e) => {
-							e.preventDefault();
-							const urls: string[] = [];
-							if (mainImg.currentSrc || mainImg.src) urls.push(mainImg.currentSrc || mainImg.src);
-							cfg.querySelectorAll<HTMLImageElement>("[data-cfg-thumb] img").forEach((im) => {
-								const src = im.currentSrc || im.src;
-								if (src && urls.indexOf(src) === -1) urls.push(src);
-							});
-							openProductLightbox(urls);
-						});
-					}
+			const heroImgEl = resolveHeroImg(mainImg);
+			const heroEl =
+				(heroImgEl && heroImgEl.closest<HTMLElement>("[data-cfg-hero]")) ||
+				cfg.querySelector<HTMLElement>("[data-cfg-hero]");
+			if (heroEl && heroImgEl && heroEl.getAttribute("data-zoom-wired") !== zoomMode) {
+				heroEl.setAttribute("data-zoom-wired", zoomMode);
+				// Как Rose в сетке 2 колонки: клик по кадру меняет главное фото
+				// (миниатюры ниже). Наведение = зум внутри рамки. Нажатие ≠ оверлей.
+				heroEl.style.cursor = zoomMode === "hover" ? "zoom-in" : "";
+				if (zoomMode === "hover") {
+					heroImgEl.style.transition = "transform 0.2s ease, transform-origin 0.05s linear";
+					heroEl.addEventListener("mouseenter", () => {
+						heroImgEl.style.transform = "scale(2)";
+					});
+					heroEl.addEventListener("mousemove", (e) => {
+						const rect = heroEl.getBoundingClientRect();
+						const x = ((e.clientX - rect.left) / rect.width) * 100;
+						const y = ((e.clientY - rect.top) / rect.height) * 100;
+						heroImgEl.style.transformOrigin = `${x}% ${y}%`;
+					});
+					heroEl.addEventListener("mouseleave", () => {
+						heroImgEl.style.transform = "";
+						heroImgEl.style.transformOrigin = "";
+					});
 				}
 			}
 		}

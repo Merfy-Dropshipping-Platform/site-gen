@@ -118,6 +118,9 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
         { label: 'Справа', value: 'right' },
       ],
     },
+    // hover = tracking-zoom scale(2) внутри героя (overflow hidden).
+    // click = без оверлея: клик по миниатюре ставит её главным фото (обмен).
+    // Герой — div, не <a href="/product…"> (иначе конструктор уводит на PDP).
     zoomMode: {
       type: 'radio',
       label: 'Увеличение',

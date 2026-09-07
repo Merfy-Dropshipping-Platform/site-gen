@@ -1,6 +1,7 @@
 import type { Logger } from '@nestjs/common';
 import { getThemeManifest } from './theme-manifest-loader';
 import { getPageResolver } from './page-resolver-instance';
+import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.
@@ -245,6 +246,9 @@ export function adaptLegacyProps(
     case 'ContactForm':
       coerceContactFormProps(out);
       break;
+    case 'Gallery':
+      coerceGalleryProps(out);
+      break;
     case 'Collections':
       coerceCollectionsProps(out, publicUrl);
       break;
@@ -257,10 +261,16 @@ export function adaptLegacyProps(
     case 'MainText':
       coerceMainTextProps(out);
       break;
+    case 'Publications':
+      coerceGenericLegacyProps(out);
+      coercePublicationsProps(out);
+      break;
+    case 'Slideshow':
+      return normalizeSlideshowProps(out);
     default:
-      // Generic fallback for the 19 blocks without a hand-written coercer
-      // (MainText, Newsletter, ImageWithText, Slideshow, MultiColumns,
-      // MultiRows, CollapsibleSection, Gallery, Video, Publications,
+      // Generic fallback for the 15 blocks without a hand-written coercer
+      // (Newsletter, MultiColumns, MultiRows,
+      // CollapsibleSection, Video,
       // Product, PromoBanner, CartSection, CheckoutSection, AuthModal,
       // CartDrawer, CheckoutLayout, CheckoutHeader, AccountLayout).
       // Any legacy `{text|content, size|enabled, ...}` envelope that
@@ -296,6 +306,23 @@ function coerceGenericLegacyProps(out: Record<string, unknown>): void {
   if (typeof out.copyrightColorScheme === 'string') {
     out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
   }
+}
+
+function coercePublicationsProps(out: Record<string, unknown>): void {
+  const cards = coercePublicationCount(out.cardsCount ?? out.cards);
+  const columns = coercePublicationCount(out.columnsCount ?? out.columns);
+  out.cards = cards;
+  out.cardsCount = cards;
+  out.columns = columns;
+  out.columnsCount = columns;
+}
+
+function coercePublicationCount(value: unknown, fallback = 3): number {
+  const numeric =
+    typeof value === 'number' && Number.isFinite(value)
+      ? Math.trunc(value)
+      : fallback;
+  return Math.min(4, Math.max(1, numeric));
 }
 
 function coerceLegacyValue(v: unknown): unknown {
@@ -429,11 +456,10 @@ function coerceHeroProps(
     // else: leave undefined for theme manifest or Astro frontmatter default
   }
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  // padding: normalise only when present; absent → undefined lets blockDefaults win.
-  // size: same — absent → theme manifest / Astro default applies.
-  // overlay: convert legacy overlayOpacity float only when the source field is present.
-  if (typeof out.title !== 'string') out.title = '';
-  if (typeof out.subtitle !== 'string') out.subtitle = '';
+  // Не затираем отсутствующий title/subtitle пустой строкой — Astro Hero ждёт
+  // undefined, чтобы сработал фолбэк верстальщика («Искусство заботы…»).
+  if (typeof out.title === 'string' && !out.title.trim()) delete out.title;
+  if (typeof out.subtitle === 'string' && !out.subtitle.trim()) delete out.subtitle;
   if (!out.image) out.image = { url: '', alt: '' };
   if (!out.cta) out.cta = { text: '', href: '#' };
   // overlay: numeric 0-100. legacy overlayOpacity may be 0..1 float.
@@ -464,6 +490,18 @@ function coerceHeaderProps(out: Record<string, unknown>): void {
 }
 
 function coercePopularProductsProps(out: Record<string, unknown>): void {
+  const headingEnvelope = isPlainObject(out.heading)
+    ? (out.heading as Record<string, unknown>)
+    : null;
+  if (!isHeadingSize(out.headingSize) && isHeadingSize(headingEnvelope?.size)) {
+    out.headingSize = headingEnvelope.size;
+  }
+  const textEnvelope = isPlainObject(out.text)
+    ? (out.text as Record<string, unknown>)
+    : null;
+  if (!isHeadingSize(out.textSize) && isHeadingSize(textEnvelope?.size)) {
+    out.textSize = textEnvelope.size;
+  }
   // T13: heading в схеме PopularProducts — union (строка | {text, size,
   // alignment}); Popular.astro читает `p.headingSize ?? p.heading?.size`.
   // Раньше envelope всегда плющился в строку и size терялся. Плющим только
@@ -501,6 +539,12 @@ function coercePopularProductsProps(out: Record<string, unknown>): void {
 }
 
 function coerceContactFormProps(out: Record<string, unknown>): void {
+  const headingEnvelope = isPlainObject(out.heading)
+    ? out.heading
+    : null;
+  if (isHeadingSize(headingEnvelope?.size)) {
+    out.headingSize = headingEnvelope.size;
+  }
   const heading = unwrapTextSize(out.heading);
   out.heading = heading.present ? heading.value : 'Связаться с нами';
   if (typeof out.description !== 'string') out.description = '';
@@ -515,6 +559,19 @@ function coerceContactFormProps(out: Record<string, unknown>): void {
   }
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // padding: absent → undefined lets blockDefaults win.
+}
+
+function coerceGalleryProps(out: Record<string, unknown>): void {
+  const headingEnvelope = isPlainObject(out.heading)
+    ? out.heading
+    : null;
+  const nestedHeadingSize = headingEnvelope?.size;
+
+  coerceGenericLegacyProps(out);
+
+  if (!isHeadingSize(out.headingSize) && isHeadingSize(nestedHeadingSize)) {
+    out.headingSize = nestedHeadingSize;
+  }
 }
 
 function coerceImageWithTextProps(
@@ -682,6 +739,10 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
+function isHeadingSize(v: unknown): v is 'small' | 'medium' | 'large' {
+  return v === 'small' || v === 'medium' || v === 'large';
+}
+
 // buildTokensCss + scheme helpers moved to `src/themes/tokens-css.ts` so the
 // live build pipeline (`src/generator/assemble-from-packages.ts`) can call the
 // same generator. Guarantees preview iframe ↔ live site parity.
@@ -723,6 +784,8 @@ function rewriteAssetUrl(url: string, publicUrl: string | null): string {
   if (!publicUrl) return url;
   if (!url.startsWith('/')) return url;
   if (url.startsWith('//')) return url;
+  if (url.startsWith('/placeholders/')) return url;
+  if (url.startsWith('/__theme/')) return url;
   if (!ASSET_EXT_RE.test(url)) return url;
   const origin = publicUrl.replace(/\/$/, '');
   return origin + url;

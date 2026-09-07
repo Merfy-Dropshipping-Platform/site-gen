@@ -6,6 +6,8 @@
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
 @source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
+/* Порты верстальщика: без скана group-hover/d1 у NavItem дропдаун меню остаётся invisible. Как у rose/satin. */
+@source "../components/**/*.{astro,ts,tsx}";
 
 /* Токены Flux Theme */
 @theme {
@@ -19,10 +21,11 @@
    .font-comfortaa используют все заголовки + DS NtSectionHeading (хардкодит этот класс). */
 .font-comfortaa {
   font-family: var(--font-heading, "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif);
+  font-weight: var(--weight-heading, 400);
 }
-/* Формы/UI — Manrope (фиксированная роль Figma) */
+/* Формы/UI — роль body (picker «Текст»); fallback Manrope как на rose. */
 .font-manrope {
-  font-family: "Manrope", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body, "Manrope", system-ui, -apple-system, sans-serif);
 }
 /* Копирайт/мелкий текст — Inter (фиксированная роль Figma) */
 .font-inter {
@@ -31,29 +34,6 @@
 
 .font-roboto-flex {
   font-family: var(--font-body, "Roboto Flex", "Roboto", system-ui, -apple-system, sans-serif);
-  font-weight: 300;
-}
-
-/* Сетка полей темы — дословно из вёрстки (flux-theme global.css:30).
-   Класс использовался в Header/Collections/Gallery/CartSection/CollapsibleSection,
-   но в этом порте не был определён и работал как пустышка: поля и максимальная
-   ширина держались на случайных локальных классах каждой секции.
-   Даёт эталонные ширины контента: 375→343, 768→688, 1280→1120, 1920→1320. */
-.flux-container {
-  width: 100%;
-  max-width: 1480px;
-  margin-inline: auto;
-  padding-inline: 1rem; /* 16px — мобайл по макету */
-}
-@media (min-width: 768px) {
-  .flux-container {
-    padding-inline: 2.5rem; /* 40px */
-  }
-}
-@media (min-width: 1024px) {
-  .flux-container {
-    padding-inline: 5rem; /* 80px, далее срабатывает max-width */
-  }
 }
 
 #menu-line-1 {
@@ -126,6 +106,68 @@ input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   display: none;
 }
+}
+
+/* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
+   фон-подложка (--product-card-bg=surface) + Обводка (--product-card-bw, цвет --color-border)
+   + Скругление (--product-card-radius) + отступ (--product-card-padding). Медиа (фото)
+   скругляется ПО КАРТОЧКЕ (--product-card-media-radius). standard → 0px/transparent
+   (нейтрально; эмиттер tokens-css выдаёт эти значения). Выравнивание
+   (--product-card-align/justify) !important — бьёт Tailwind text-left и двигает ВЕСЬ
+   текст под товаром (имя+цену). Правило по data-nt покрывает SSR-карточку
+   (FluxProductCard), инлайн-копию в Popular.astro И client-рендеры
+   (storefront-hydrate renderCardHtml). Зеркало rose [data-nt=rose-product-card].
+   @layer base ОБЯЗАТЕЛЕН для element/attr-селекторов (CSS-гард check-css-layers.mjs). */
+@layer base {
+  /* Theme Settings: рамка / выравнивание / «вид карточки» на товарных карточках. */
+  [data-nt="flux-product-card"] {
+    border-width: var(--size-card-border, 0px);
+    border-style: solid;
+    border-color: rgb(var(--color-text, 0 0 0) / 0.1);
+    text-align: var(--card-alignment, left);
+  }
+  @container style(--card-style: standard) {
+    [data-nt="flux-product-card"] {
+      background-color: transparent;
+      padding: 0;
+      border-radius: 0;
+      box-shadow: none;
+      transform: none;
+    }
+  }
+
+  [data-nt="flux-product-card"] {
+    background: var(--product-card-bg, transparent);
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
+    border-radius: var(--product-card-radius, 0px);
+    padding: var(--product-card-padding, 0px);
+  }
+  /* Медиа (фото) → радиус карточки в card-режиме; !important бьёт утилиту rounded-[…]. */
+  [data-nt="flux-product-card"] [data-nt="flux-card-media"] {
+    border-radius: var(--product-card-media-radius, var(--radius-media, 8px)) !important;
+  }
+  /* Выравнивание всего текст-блока под товаром (имя+цена): текст-блок карточки —
+     последний прямой потомок article (flux: <div class="flex flex-1 flex-col …">).
+     !important бьёт flex-дефолт stretch. */
+  [data-nt="flux-product-card"] > div:last-child {
+    align-items: var(--product-card-justify, flex-start) !important;
+    text-align: var(--product-card-align, left) !important;
+  }
+  /* Цена — flex-строка (имя + перечёркнутая цена, .gap-2) внутри текст-блока:
+     центр/право через justify-content (не трогаем строку свотчей .gap-1). */
+  [data-nt="flux-product-card"] > div:last-child .flex.items-center.gap-2 {
+    justify-content: var(--product-card-justify, flex-start) !important;
+  }
+
+  /* Корзина-drawer (DS NtCartDrawer) → scheme-токены (как rose). Fallback = литерал DS. */
+  [data-nt="cart-drawer"] [data-cart-panel] { background-color: rgb(var(--color-bg, 255 255 255)); }
+  [data-nt="cart-drawer"] [data-cart-panel] h2 { color: rgb(var(--color-heading, 0 0 0)); }
+  [data-nt="cart-drawer"] [data-cart-panel] > div > button[data-cart-close] { color: rgb(var(--color-muted, 153 153 153)); }
+  [data-nt="cart-drawer"] [data-cart-empty] p { color: rgb(var(--color-muted, 153 153 153)); }
+  [data-nt="cart-drawer"] [data-cart-empty] p a { color: rgb(var(--color-text, 0 0 0)); }
+  [data-nt="cart-drawer"] [data-cart-summary] > div { color: rgb(var(--color-text, 0 0 0)); }
+  [data-nt="cart-drawer"] [data-cart-empty] > a,
+  [data-nt="cart-drawer"] [data-cart-summary] > a { background-color: rgb(var(--color-button-bg, 0 0 0)); color: rgb(var(--color-button-text, 255 255 255)); border-radius: var(--radius-button, 6px); }
 }
 
 
@@ -212,7 +254,7 @@ blockquote {
   width: 100%;
   height: 3.5rem;
   padding: 0 1rem;
-  border-radius: 0;
+  border-radius: var(--radius-input, 8px);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;
@@ -688,43 +730,5 @@ blockquote {
   }
   .account-form {
     width: 100%;
-  }
-}
-
-/* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
-   фон-подложка (--product-card-bg) + Обводка (--product-card-bw) + Скругление
-   (--product-card-radius) + отступ (--product-card-padding). Медиа (фото)
-   скругляется ПО КАРТОЧКЕ (--product-card-media-radius). standard → 0px/
-   transparent (нейтрально). Дефолт flux = card (канон-плашка верстальщика
-   #FBFBFB), поэтому фоллбэки ниже — пиксель верстальщика (FluxProductCard.astro
-   rounded-[12px] bg-[#FBFBFB] p-3), НЕ 0/transparent как у rose (её вёрстка без
-   плашки по умолчанию). Выравнивание (--product-card-align/justify)
-   !important — бьёт Tailwind text-left/items-start. Паритет с rose (уже
-   токенизирована, см. themes/rose/src/styles/global.css [data-nt=rose-product-card]).
-   Покрывает SSR (FluxProductCard) и инлайн-карточку Popular.astro — обе несут
-   data-nt="flux-product-card" на корневом узле. */
-@layer base {
-  [data-nt="flux-product-card"] {
-    background: var(--product-card-bg, #fbfbfb);
-    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
-    border-radius: var(--product-card-radius, 12px);
-    padding: var(--product-card-padding, 12px);
-  }
-  [data-nt="flux-card-media"] {
-    border-radius: var(--product-card-media-radius, 12px) !important;
-  }
-  [data-nt="flux-product-card"] > div:last-child {
-    align-items: var(--product-card-justify, flex-start) !important;
-    text-align: var(--product-card-align, left) !important;
-  }
-}
-@layer base {
-  /* «Цветовая схема меню»: при ЯВНОЙ схеме на инлайн-строке меню (класс вешает
-     рендер ИЛИ патчер превью без пере-рендера) пункты берут цвет текста схемы.
-     Без явной схемы правило неактивно — канон #cccccc нетронут. !important
-     нужен: утилита text-[#cccccc] лежит в @layer utilities и для normal-правил
-     побеждала бы base-слой (ловля theme-registry 2026-08-06). */
-  [data-nav-inline][class*="color-scheme"] a {
-    color: rgb(var(--color-text, 204 204 204)) !important;
   }
 }

@@ -44,7 +44,7 @@
           "title": "Информация",
           "links": [
             { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/returns" },
+            { "label": "Политика возврата", "href": "/legal/return" },
             { "label": "Условия обслуживания", "href": "/legal/terms" },
             { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
           ]

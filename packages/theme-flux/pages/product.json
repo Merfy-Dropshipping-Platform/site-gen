@@ -20,7 +20,20 @@
         "actionButtons": { "showSearch": "true", "showCart": "true", "showProfile": "true" }
       }
     },
-    { "type": "Product", "props": { "id": "Product-1", "colorScheme": "scheme-2" } },
+    {
+      "type": "Product",
+      "props": {
+        "id": "Product-1",
+        "colorScheme": "scheme-2",
+        "visualConfig": {
+          "gallery": { "variant": "inline-small", "showDiscountBadge": false },
+          "variantsType": "dropdown",
+          "counter": { "variant": "pill" },
+          "showDescription": true
+        },
+        "padding": { "top": 40, "bottom": 80 }
+      }
+    },
     {
       "type": "PopularProducts",
       "props": {
@@ -49,7 +62,7 @@
           "title": "Информация",
           "links": [
             { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/returns" },
+            { "label": "Политика возврата", "href": "/legal/return" },
             { "label": "Условия обслуживания", "href": "/legal/terms" },
             { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
           ]

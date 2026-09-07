@@ -104,12 +104,12 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
-    // Hidden — collections редактируется через outline/array sub-panel,
-    // не в main sidebar (Figma 314-34726 показывает только настройки секции).
+    // Выбор коллекции в главной панели (мерчант выбирает коллекцию на плитку).
+    // Outline sub-panel с тем же collectionPicker остаётся.
     collections: {
       type: 'array',
       label: 'Коллекции',
-      hiddenInMainPanel: true,
+      hiddenInMainPanel: false,
       // user #10 / Figma 1:17042 — Коллекция sub-panel показывает ТОЛЬКО
       // "Выбор коллекции" (collectionPicker). heading/description/image —
       // data сохраняется, но не редактируется в sidebar. Сами поля для

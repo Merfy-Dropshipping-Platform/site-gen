@@ -181,8 +181,9 @@ describe('composeContentPagesIntoDist', () => {
       revisionData: data,
     } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
 
-    const n = await composeContentPagesIntoDist(ctx, 'rose');
-    // home + page-delivery; cart и evil-checkout — НЕ тронуты.
+    const n = await composeContentPagesIntoDist(ctx, 'luna');
+    // home + page-delivery; cart и evil-checkout — НЕ тронуты
+    // (luna не в CART_UNIFIED_THEMES).
     expect(n).toBe(2);
 
     const cartHtml = await fs.readFile(path.join(dist, 'cart', 'index.html'), 'utf8');
@@ -198,6 +199,39 @@ describe('composeContentPagesIntoDist', () => {
     expect(deliveryHtml).toContain('data-puck-component-id="MainText-1"');
     expect(deliveryHtml).toContain('tail()'); // home-шелл как источник
     expect(deliveryHtml).toContain('<title>Доставка</title>'); // titleOverride
+  });
+
+  it('унификация корзины: page-cart пересаживается в dist/cart/index.html для CART_UNIFIED_THEMES (rose/flux)', async () => {
+    const dist = await fs.mkdtemp(path.join(os.tmpdir(), 'v2live-'));
+    await fs.writeFile(path.join(dist, 'index.html'), SHELL);
+    const CART_SHELL = SHELL.replace(/OLD/g, 'CART-DIST');
+    await fs.mkdir(path.join(dist, 'cart'), { recursive: true });
+    await fs.writeFile(path.join(dist, 'cart', 'index.html'), CART_SHELL);
+
+    const data = revisionData() as Record<string, unknown>;
+    (data as { pagesData: Record<string, unknown> }).pagesData['page-cart'] = {
+      content: [
+        { type: 'Header', props: { id: 'Header-cart' } },
+        { type: 'CartBody', props: { id: 'CartBody-1' } },
+        { type: 'CartSummary', props: { id: 'CartSummary-1' } },
+        { type: 'Footer', props: { id: 'Footer-cart' } },
+      ],
+    };
+
+    const ctx = {
+      distDir: dist,
+      siteId: 'site-1',
+      publicUrl: 'https://shop.example',
+      revisionData: data,
+    } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
+
+    const n = await composeContentPagesIntoDist(ctx, 'flux');
+    expect(n).toBeGreaterThanOrEqual(2); // home + cart
+
+    const cartHtml = await fs.readFile(path.join(dist, 'cart', 'index.html'), 'utf8');
+    expect(cartHtml).toContain('data-puck-component-id="CartBody-1"');
+    expect(cartHtml).toContain('data-puck-component-id="CartSummary-1"');
+    expect(cartHtml).not.toBe(CART_SHELL);
   });
 
   it('098 live-паритет: page-catalog пересаживается в dist/catalog/index.html (Catalog с data-puck-component-id), поверх собственного шелла каталога', async () => {

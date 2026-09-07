@@ -98,14 +98,15 @@
       }
     },
     "Collections": {
-      "variant": "tile"
+      "variant": "tile",
+      "titleAlignment": "center"
     },
     "PopularProducts": {
       "cardVariant": "rich"
     },
     "Catalog": {
-      "categoryTitle": "СМАРТФОНЫ",
-      "categorySubtitle": "M Phone",
+      "categoryTitle": "Каталог",
+      "categorySubtitle": "",
       "categorySubtitleColor": "accent",
       "productCard": {
         "buttonStyle": "primary",

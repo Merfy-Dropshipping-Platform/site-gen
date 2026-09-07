@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SatinPicture from "../img/SatinPicture.astro";
 
@@ -17,11 +18,36 @@ import SatinPicture from "../img/SatinPicture.astro";
 // остаётся data-атрибутом на гриде.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as {
+	fields?: Record<string, { set?: boolean }>;
+	catalog?: {
+		publications?: Array<{
+			id?: string;
+			title?: string;
+			slug?: string;
+			excerpt?: string;
+			coverImageUrl?: string | null;
+			publishedAt?: string | null;
+		}>;
+	};
+} | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон heading (string | { text, alignment, size }); canon-default
 // «Публикации» — у верстальщика шапки НЕТ → рендер при непустом. Роль =
 // заголовок секции §1 (font-logo 20 uppercase leading-[1.15]), токен heading.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Публикации");
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "Публикации";
 // Лестница §9 «Заголовок секции» (база-литерал 20 = medium): small 17, large 24.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
@@ -59,10 +85,13 @@ const cardsRaw =
 	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
 const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 
-// Канон showDateTime (toggle; legacy dateTime.enabled) — дефолт true =
+// Канон showDateTime (toggle; legacy dateTime.enabled) — дефолт ПОКАЗАНА =
 // дата-строка «01.05, 12:41» (Arsenal 14 light uppercase tracking-[0.04em]
-// muted — литерал Journal.astro:49); false скрывает.
-const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") === "true";
+// muted — литерал Journal.astro:49); только явный 'false' скрывает.
+// Идиома `!== "false"` (эталон theme-base/flux Publications: dateTimeEnabled =
+// enabled !== 'false') — показывает дату при любом значении кроме явного 'false'
+// (строже `=== "true"` прятало бы дату при legacy-truthy значениях ревизии).
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
 // Канон publicationType (pagePicker) — носитель платформенного резолва
 // публикаций: data-атрибут на гриде (паттерн bloom).
@@ -85,28 +114,36 @@ type RawPublication = {
 const legacyPosts = Array.isArray(p.posts) && p.posts.length ? p.posts : undefined;
 const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
 let realPublications: RawPublication[] = [];
-if (!legacyPosts && siteIdFromRoot) {
-	try {
-		const internalBase =
-			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
-			"http://localhost:3114";
-		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
-		if (res && res.ok) {
-			const data = (await res.json()) as { publications?: RawPublication[] };
-			realPublications = data.publications ?? [];
+if (!legacyPosts) {
+	// 1) резолв платформы (если наполнен), 2) SSR fetch отдельного эндпоинта
+	// публикаций, 3) build-time publications.json. Ветка (2) — паритет bloom:
+	// публикации ВЫНЕСЕНЫ из storefront-data в /api/sites/:id/publications
+	// (storefront-data.controller), поэтому merfy.catalog.publications в превью
+	// приходит пустым, и без запроса секция никогда не видела реальных записей.
+	realPublications = Array.isArray(merfy?.catalog?.publications) ? merfy.catalog.publications : [];
+	if (realPublications.length === 0 && siteIdFromRoot) {
+		try {
+			const internalBase =
+				(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+				"http://localhost:3114";
+			const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+			if (res && res.ok) {
+				const data = (await res.json()) as { publications?: RawPublication[] };
+				realPublications = data.publications ?? [];
+			}
+		} catch {
+			/* swallow */
 		}
-	} catch {
-		/* swallow */
 	}
-}
-try {
-	if (!legacyPosts && realPublications.length === 0) {
-		const pubData = await import("../data/publications.json");
-		realPublications = ((pubData as { default?: RawPublication[] }).default ??
-			(pubData as unknown as RawPublication[])) as RawPublication[];
+	if (realPublications.length === 0) {
+		try {
+			const pubData = await import("../data/publications.json");
+			realPublications = ((pubData as { default?: RawPublication[] }).default ??
+				(pubData as unknown as RawPublication[])) as RawPublication[];
+		} catch {
+			/* swallow — publications.json отсутствует */
+		}
 	}
-} catch {
-	/* swallow — publications.json отсутствует */
 }
 
 function formatPubDate(iso: string | null | undefined): string {
@@ -180,11 +217,26 @@ const paddingStyle = p.padding
 	: undefined;
 
 const titleId = id && heading ? `${id}-title` : undefined;
+
+// §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
+// конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
+// :root (базовую палитру) — мерчант видит это как «поменял одну секцию, а
+// соседние перекрасились». На live обёртка даёт ту же схему, дубль безвреден.
+// Схема приходит строкой ИЛИ числом (нормализатор Slideshow) — разбираем оба.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+
 ---
 
 {/* Секция: вертикаль-стандарт §2 (py-10 md:py-14 — литерал Journal.astro:41), поля .satin-pad. */}
 <section
-	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	class={`satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14${selfSchemeClass}`}
 	aria-labelledby={titleId}
 	aria-label={heading ? undefined : "Журнал"}
 	data-puck-component-id={id}
@@ -199,9 +251,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				/>
 			)
 		}
 		<ul
@@ -232,9 +283,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 									<img
 										src={post.image}
 										alt=""
-										loading="lazy"
+										loading="eager"
 										class="absolute inset-0 size-full object-cover"
-										aria-hidden="true"
 									/>
 								) : (
 									<SatinPicture

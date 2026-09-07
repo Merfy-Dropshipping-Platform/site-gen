@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 
 // Фаза B (satin, группа misc): новая канон-секция Newsletter в манере satin
@@ -9,6 +10,18 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон heading: string | { text, alignment, size }. Пустое состояние секции
 // (мерчант не задал заголовок) = ДОСЛОВНЫЙ Figma-плейсхолдер 1:19335
@@ -16,8 +29,9 @@ const id = p.id;
 // курсе наших новостей» (F:71). Когда мерчант вводит свой заголовок — он
 // выигрывает (фоллбек ниже срабатывает лишь при пустых данных).
 // Манера satin сохранена: font-logo 14 400 uppercase leading-normal, токен 0_0_0.
-const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+// §3 Контракта секции: заглушка = текст панели темы («Подпишись на новости»).
+const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "Подпишись на новости";
 // Лестница §9 «Заголовок рассылки» (база-литерал 14 = medium): small 12, large 17.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
@@ -30,10 +44,12 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-no
 // description не рендерился; Figma требует его как плейсхолдер). Свой текст
 // мерчанта выигрывает (?? fallback срабатывает лишь при пустых данных).
 // Манера satin: body-роль §1 Arsenal 16 light muted; лестница body §9: small 14, large 19.
-const description =
+const descriptionRaw =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
-	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined);
+const description = contentSet(["description", "text"], descriptionRaw) && descriptionRaw
+	? descriptionRaw
+	: "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small" ? "text-[14px]" : descSize === "large" ? "text-[19px]" : "text-[16px]";
@@ -52,7 +68,9 @@ const placeholder =
 // Непустой текст → текстовая кнопка-прямоугольник h-8 px-4 Arsenal 12 uppercase
 // (манера кнопки «Найти», Header.astro:165) на токенах кнопки-1.
 const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
+	contentSet("buttonText", p.buttonText) && typeof p.buttonText === "string" && p.buttonText.trim()
+		? p.buttonText
+		: "Кнопка";
 const inlineTextBtnCls =
 	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95";
 // Тёмная md-кнопка (роль satin-button-md DARK, g:106-126,155-159) пересобрана
@@ -70,7 +88,16 @@ const inlineSubmit = p.formLayout !== "stacked";
 // Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
 // согласия под формой (манера satin: Manrope light мелкий muted, акцент чёрный);
 // иначе ничего.
-const showAgreement = p.agreement === "true";
+// §5 Контракта секции: панель шлёт boolean, легаси-ревизии — строку.
+const showAgreement = p.agreement === true || p.agreement === "true";
+// Текст согласия + опциональная ссылка (страница/URL, даже несуществующая).
+const agreeText = typeof p.agreementText === "string" && p.agreementText.trim() ? p.agreementText : "Согласен на обработку персональных данных";
+const agreeLink = typeof p.agreementLink === "string" ? p.agreementLink.trim() : "";
+
+// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
+// 'true' блок heading+description не рендерится (форма/согласие остаются).
+// §5 Контракта секции: панель шлёт boolean, легаси-ревизии — строку.
+const hideTitle = p.hideTitle === true || p.hideTitle === "true";
 
 // Канон position/alignment: canon-default left = литерал подвала (колонка
 // заголовок-над-формой max-w-[320px] слева, F:70); center/right двигают
@@ -94,13 +121,28 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && heading ? `${id}-title` : undefined;
+const titleId = id && heading && !hideTitle ? `${id}-title` : undefined;
+
+// §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
+// конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
+// :root (базовую палитру) — мерчант видит это как «поменял одну секцию, а
+// соседние перекрасились». На live обёртка даёт ту же схему, дубль безвреден.
+// Схема приходит строкой ИЛИ числом (нормализатор Slideshow) — разбираем оба.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+
 ---
 
 {/* Секционная обёртка (новая): вертикаль-стандарт §2, поля .satin-pad, контейнер 1320.
     Секция живёт на странице (bg-токен 255_255_255), не на сером подвале. */}
 <section
-	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	class={`satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14${selfSchemeClass}`}
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -108,28 +150,26 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	<div class="satin-container">
 		<div class={colCls}>
 			{
-				heading && (
+				!hideTitle && heading && (
 					<p
 						id={titleId}
 						class={headingCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
-					>
-						{heading}
-					</p>
+						set:html={inlineFormat(heading)}
+					/>
 				)
 			}
 			{
-				description && (
+				!hideTitle && description && (
 					<p
 						class={`font-manrope ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
-					>
-						{description}
-					</p>
+						set:html={inlineFormat(description)}
+					/>
 				)
 			}
 			{
@@ -187,13 +227,29 @@ const titleId = id && heading ? `${id}-title` : undefined;
 			}
 			{
 				showAgreement && (
-					<label class="flex w-full cursor-pointer items-start gap-2 font-manrope text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
-						<input
-							type="checkbox"
-							required
-							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
-						/>
-						<span>Согласен на обработку персональных данных</span>
+					<label class="flex w-full cursor-pointer items-center gap-2.5 font-manrope text-[14px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
+						<span class="relative flex size-5 shrink-0">
+							<input
+								type="checkbox"
+								required
+								class="peer size-5 cursor-pointer appearance-none rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white transition-colors checked:border-[rgb(var(--color-button-bg,0_0_0))] checked:bg-[rgb(var(--color-button-bg,0_0_0))]"
+							/>
+							<svg
+								class="pointer-events-none absolute inset-0 m-auto size-3 text-[rgb(var(--color-button-text,255_255_255))] opacity-0 transition-opacity peer-checked:opacity-100"
+								viewBox="0 0 12 12"
+								fill="none"
+								aria-hidden="true"
+							>
+								<path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</span>
+						{
+						agreeLink ? (
+							<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
+						) : (
+							<span>{agreeText}</span>
+						)
+					}
 					</label>
 				)
 			}

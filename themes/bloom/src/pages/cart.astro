@@ -1,10 +1,21 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import BloomProductCard from "../components/products/BloomProductCard.astro";
 import { DEFAULT_CATEGORY_HREF } from "../data/categories";
-import { catalogProducts } from "../data/products";
 
-const recommended = catalogProducts.slice(0, 4);
+// Блок «Возможно вам понравится» рендерится ЗАГЛУШКАМИ ПЛАТФОРМЫ, а гидрация
+// ниже подставляет реальные товары магазина. Демо-товары верстальщика здесь
+// показывать нельзя: мерчант принимает их за свой ассортимент.
+const SWEATER_PLACEHOLDERS = [
+	"/placeholders/sweater-blue.svg",
+	"/placeholders/sweater-yellow.svg",
+	"/placeholders/sweater-red.svg",
+	"/placeholders/sweater-green.svg",
+];
+const recommendedPlaceholders = SWEATER_PLACEHOLDERS.map((image) => ({
+	image,
+	title: "Товар",
+	price: "2 500 ₽",
+}));
 
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
@@ -76,10 +87,18 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				<h2 class="font-comfortaa text-[24px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[28px]">
 					Возможно вам понравится
 				</h2>
-				<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" role="list">
-					{recommended.map((product) => (
-						<li>
-							<BloomProductCard product={product} />
+				<ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" role="list" data-nt="cart-recommended">
+					{recommendedPlaceholders.map((ph) => (
+						<li data-nt="cart-recommended-placeholder" aria-hidden="true">
+							<article class="flex flex-col gap-4" data-nt="bloom-product-card-placeholder" aria-label={ph.title}>
+								<div class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]">
+									<img src={ph.image} alt={ph.title} loading="lazy" class="absolute inset-0 h-full w-full object-contain p-[15%]" />
+								</div>
+								<div class="flex flex-col gap-2">
+									<span class="bloom-product-name font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">{ph.title}</span>
+									<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">{ph.price}</span>
+								</div>
+							</article>
 						</li>
 					))}
 				</ul>
@@ -91,6 +110,23 @@ const apiUrl = "https://gateway.merfy.ru/api";
 <script>
 	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart } from "../lib/cart";
 	import { cartLineThumbPictureHtml } from "../lib/cart-thumb-html";
+	import { loadRealProducts, renderCardHtml, escapeHtml } from "../lib/storefront-hydrate";
+
+	// «Возможно вам понравится»: первые 4 реальных товара магазина. Нет товаров /
+	// нет данных → в гриде остаются заглушки платформы из SSR.
+	const hydrateRecommended = async () => {
+		const grid = document.querySelector<HTMLElement>('[data-nt="cart-recommended"]');
+		if (!grid) return;
+		const products = await loadRealProducts();
+		if (!products || products.length === 0) return;
+		grid.innerHTML = products
+			.slice(0, 4)
+			.map((p) => `<li data-product-id="${escapeHtml(p.id)}">${renderCardHtml(p)}</li>`)
+			.join("");
+	};
+
+	hydrateRecommended();
+	document.addEventListener("astro:page-load", hydrateRecommended);
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
 	const filledBlock = document.querySelector<HTMLElement>("[data-cart-page-filled]");

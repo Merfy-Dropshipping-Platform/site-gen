@@ -23,6 +23,7 @@ const state = {
   items: [],
   cartId: null,
   loading: false,
+  syncPromise: null,
 };
 
 function saveCartId() {
@@ -257,6 +258,57 @@ export const cartStore = {
   // truth backend; персиста items здесь не требуется.)
   syncFromCartData(cartData) {
     applyCartData(cartData);
+  },
+
+  // Мгновенный рендер /cart и /checkout из nt-cart (как у Rose): items в память,
+  // без серверного roundtrip. Дальше syncToServer создаёт серверную корзину.
+  setLocalItems(items) {
+    state.items = Array.isArray(items) ? items : [];
+    notify('cart:updated', { items: state.items });
+  },
+
+  async syncToServer(opts) {
+    const notify_ = !!(opts && opts.notify);
+    if (state.syncPromise) {
+      const existing = await state.syncPromise;
+      if (notify_ && existing) notify('cart:updated', { items: state.items });
+      return existing;
+    }
+    const lines = state.items || [];
+    if (!lines.length) return null;
+
+    const run = (async () => {
+      state.cartId = null;
+      try { localStorage.removeItem(CART_ID_KEY); } catch (e) {}
+      const cartId = await ensureCart();
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        try {
+          await CartAPI.addItem(
+            cartId,
+            l.productId,
+            l.quantity || 1,
+            l.variantCombinationId || null,
+          );
+        } catch (e) {}
+      }
+      try {
+        const res = await CartAPI.getCart(cartId);
+        if (res && res.success && res.data && Array.isArray(res.data.items)) {
+          state.items = res.data.items;
+        }
+      } catch (e) {}
+      return cartId;
+    })();
+
+    state.syncPromise = run;
+    try {
+      const cartId = await run;
+      if (notify_) notify('cart:updated', { items: state.items });
+      return cartId;
+    } finally {
+      state.syncPromise = null;
+    }
   },
 };
 

@@ -23,6 +23,96 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+function hasOwn(obj: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function normalizePageLink(value: unknown): Record<string, string> | undefined {
+  if (typeof value === "string") return { href: value };
+  if (!isPlainObject(value) || typeof value.href !== "string") return undefined;
+  return {
+    href: value.href,
+    ...(typeof value.text === "string" ? { text: value.text } : {}),
+  };
+}
+
+/**
+ * Slideshow is intentionally excluded from the generic envelope flattener:
+ * heading/text sizes and PagePicker link metadata are semantic renderer input,
+ * not legacy wrappers. The adapter is idempotent and current fields win even
+ * when their value is an empty string (clearing a field must not revive a
+ * hidden legacy alias).
+ */
+export function normalizeSlideshowProps(
+  props: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!props) return {};
+  const out: Record<string, unknown> = { ...props };
+  if (Array.isArray(props.slides)) {
+    out.slides = props.slides.map((value) => {
+      if (!isPlainObject(value)) return value;
+      const slide = { ...value };
+
+      const rawHeading = value.heading;
+      if (typeof rawHeading === "string") {
+        slide.heading = { text: rawHeading };
+      } else if (isPlainObject(rawHeading)) {
+        slide.heading = { ...rawHeading };
+      }
+
+      const rawText = value.text;
+      if (typeof rawText === "string") {
+        slide.text = { content: rawText };
+      } else if (isPlainObject(rawText)) {
+        slide.text = { ...rawText };
+      } else if (typeof value.subtitle === "string") {
+        slide.text = { content: value.subtitle };
+      }
+
+      const rawButton = isPlainObject(value.button) ? value.button : {};
+      const hasCurrentButton = isPlainObject(value.button);
+      const buttonText =
+        hasOwn(rawButton, "text") && typeof rawButton.text === "string"
+          ? rawButton.text
+          : typeof value.ctaText === "string"
+            ? value.ctaText
+            : undefined;
+      const rawCurrentLink = hasOwn(rawButton, "link")
+        ? rawButton.link
+        : hasOwn(rawButton, "href")
+          ? rawButton.href
+          : undefined;
+      const buttonLink =
+        rawCurrentLink !== undefined
+          ? normalizePageLink(rawCurrentLink)
+          : normalizePageLink(value.ctaUrl);
+      if (
+        hasCurrentButton ||
+        buttonText !== undefined ||
+        buttonLink !== undefined
+      ) {
+        slide.button = {
+          ...rawButton,
+          ...(buttonText !== undefined ? { text: buttonText } : {}),
+          ...(buttonLink !== undefined ? { link: buttonLink } : {}),
+        };
+        delete (slide.button as Record<string, unknown>).href;
+      }
+
+      if (hasOwn(value, "image") && typeof value.image === "string") {
+        slide.image = value.image;
+      } else if (typeof value.imageUrl === "string") {
+        slide.image = value.imageUrl;
+      }
+      return slide;
+    });
+  }
+  if (typeof out.colorScheme === "string") {
+    out.colorScheme = coerceSchemeNumber(out.colorScheme);
+  }
+  return out;
+}
+
 /**
  * Convert constructor's "scheme-N" string to numeric N. Leaves numbers
  * as-is. Out-of-range strings fall back to the provided default.

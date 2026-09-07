@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // НОВАЯ канон-секция Slideshow (Фаза B, рецепт bloom Slideshow): полотно слайда =
 // about-герой верстальщика (about.astro:37-57) — фото full-bleed на подложке
 // #111111 + штатный градиент bg-gradient-to-b from-black/30 to-black/45 +
@@ -9,6 +10,18 @@
 // astro:page-load (его шлёт превью-агент после hot-replace).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+function slotImage(url: unknown): string {
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
 // мок-демо верстальщика). Эталон: theme-base Slideshow.astro + satin
@@ -17,7 +30,13 @@ const id = p.id;
 // реальных слайдов у мерчанта (p.slides[] непустой). Нет ни одного слайда →
 // пустое состояние = ПЛЕЙСХОЛДЕР (НЕ 3 мок-слайда «Там, где классика…» с фото-
 // кампаниями верстальщика /images/4x/*.png).
-const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
+const hasSlides =
+	Array.isArray(p.slides) &&
+	p.slides.some((s: any) => {
+		const image = (typeof s?.imageUrl === "string" && s.imageUrl) || (typeof s?.image === "string" && s.image) || "";
+		const heading = typeof s?.heading === "string" ? s.heading : s?.heading?.text;
+		return !!slotImage(image) || slotSet(typeof heading === "string" ? heading : "");
+	});
 
 // Лейблы пустого состояния (контракт Figma 1:19335 «Слайд-шоу»: заголовок секции
 // + поясняющий текст + Кнопка). Один слайд-болванка. Контракт картиночных секций
@@ -59,6 +78,10 @@ const slideTextCls = (s: string | undefined) =>
 // Пустое состояние = ПЛЕЙСХОЛДЕР по контракту: слайд без своего фото рендерит
 // пустой image-rect surface (НЕ кампанию верстальщика /images/4x/*.png). Реальный
 // слайд мерчанта со своим imageUrl/image рендерится без изменений (см. JSX).
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE (паритет rose): дополнительный
+// чёрный слой ПОВЕРХ штатного градиента about-полотна. Читаем s.overlay с fallback
+// на section-level p.overlay (backward-compat). Хелпер ВЫШЕ маппинга slides.
+const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
@@ -81,19 +104,37 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
 			"/catalog",
 		boxed: String(s.container ?? "false") === "true",
-		schemeCls:
-			typeof s.colorScheme === "string" && s.colorScheme
-				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
-				: "",
+		// Схема слайда приходит строкой ИЛИ числом (§4 Контракта секции).
+		schemeCls: (() => {
+			const _slideScheme = typeof s.colorScheme === "number" ? String(s.colorScheme) : s.colorScheme;
+			return typeof _slideScheme === "string" && _slideScheme
+				? ` color-scheme-${String(_slideScheme).replace("scheme-", "")}`
+				: "";
+		})(),
 		// position per-slide (приоритет) | top-level contentAlign: 'center'
 		// (canon-default puckConfig) И отсутствие = центр about-полотна (литерал
 		// `justify-center px-4`, about.astro:47); left/right — в полях satin-pad.
-		posCls:
-			s.position === "left" || (!s.position && p.contentAlign === "left")
-				? "satin-pad justify-start"
-				: s.position === "right"
-					? "satin-pad justify-end"
-					: "justify-center px-4",
+		posCls: (() => {
+			const posRaw = typeof s.position === "string" && s.position ? s.position : "";
+			const norm = posRaw === "left" ? "center-left" : posRaw === "right" ? "center-right" : posRaw;
+			const vPos = norm.startsWith("top")
+				? "top"
+				: norm.startsWith("bottom")
+					? "bottom"
+					: norm === "center" || norm.startsWith("center")
+						? "middle"
+						: "";
+			const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
+			const vItems =
+				vPos === "top" ? "items-start" : vPos === "middle" ? "items-center" : "items-end";
+			const hJustify =
+				hPos === "left" || (!norm && p.contentAlign === "left")
+					? "justify-start"
+					: hPos === "right"
+						? "justify-end"
+						: "justify-center";
+			return `${vItems} ${hJustify}`;
+		})(),
 		// alignment per-slide: 'center' (canon-default) И отсутствие =
 		// items-center text-center литерала about.astro:48-49.
 		alignCls:
@@ -102,6 +143,7 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 				: s.alignment === "right"
 					? "items-end text-right"
 					: "items-center text-center",
+		overlayN: slideOverlayN(s),
 		active: i === 0,
 	};
 });
@@ -136,9 +178,9 @@ const canvasCls = contained
 	? `satin-container relative w-full overflow-hidden rounded-[var(--radius-media,0px)] ${canvasBg} aspect-[375/362] md:aspect-auto ${heightCls}`
 	: `relative mx-auto w-full max-w-[1920px] overflow-hidden ${canvasBg} aspect-[375/362] md:aspect-auto ${heightCls}`;
 
-// Канон overlay 0-100 — дополнительный чёрный слой ПОВЕРХ штатного градиента
-// about-полотна (у верстальщика 0 — слоя нет).
-const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
+// Канон overlay 0-100 — «Затемнение» PER-SLIDE: дополнительный чёрный слой ПОВЕРХ
+// штатного градиента about-полотна (у верстальщика 0 — слоя нет). Хелпер
+// slideOverlayN объявлен ВЫШЕ (перед маппингом slides); overlayN теперь поле слайда.
 
 // Канон pagination: 'dots' (canon-default blockDefaults satin) и отсутствие =
 // КВАДРАТЫ size-2 манеры нулевых радиусов (активная белая, неактивная white/50);
@@ -169,10 +211,25 @@ const ctaCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
+// конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
+// :root (базовую палитру) — мерчант видит это как «поменял одну секцию, а
+// соседние перекрасились». На live обёртка даёт ту же схему, дубль безвреден.
+// Схема приходит строкой ИЛИ числом (нормализатор Slideshow) — разбираем оба.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+
 ---
 
 <section
-	class="relative w-full bg-[rgb(var(--color-bg,255_255_255))]"
+	class={`relative w-full bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
 	aria-label="Слайд-шоу"
 	data-puck-component-id={id}
 	data-satin-slideshow
@@ -206,16 +263,16 @@ const paddingStyle = p.padding
 								<div class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true" />
 							</>
 						)}
-						{overlayN > 0 && (
+						{s.overlayN > 0 && (
 							<div
 								class="pointer-events-none absolute inset-0 bg-black"
-								style={`opacity:${overlayN / 100}`}
+								style={`opacity:${s.overlayN / 100}`}
 								aria-hidden="true"
 							/>
 						)}
 						{/* Контент about-полотна: вертикальный центр, кикер → заголовок → CTA
 						    (gap-8 / gap-2.5 — литерал about.astro:48-49). */}
-						<div class={`absolute inset-0 z-10 flex items-center ${s.posCls}`}>
+						<div class={`absolute inset-0 z-10 flex ${s.posCls}`}>
 							<div class={`flex flex-col gap-8 text-white ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
 								<div class={`flex flex-col gap-2.5 ${s.alignCls}`}>
 									{s.subtitle && (
@@ -224,9 +281,8 @@ const paddingStyle = p.padding
 											data-puck-subsection-parent={id}
 											data-puck-subsection-index="101"
 											data-puck-subsection-field="text"
-										>
-											{s.subtitle}
-										</p>
+											set:html={inlineFormat(s.subtitle)}
+										/>
 									)}
 									{s.heading && (
 										<h2
@@ -234,9 +290,8 @@ const paddingStyle = p.padding
 											data-puck-subsection-parent={id}
 											data-puck-subsection-index="100"
 											data-puck-subsection-field="heading"
-										>
-											{s.heading}
-										</h2>
+											set:html={inlineFormat(s.heading)}
+										/>
 									)}
 								</div>
 								{s.ctaText && (

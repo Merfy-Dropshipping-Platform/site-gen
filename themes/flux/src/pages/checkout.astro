@@ -64,35 +64,59 @@ const dadataToken = "";
   <script is:inline type="module" src="/scripts/cart-api.js"></script>
   <script is:inline type="module" src="/scripts/cart-store.js"></script>
   <script is:inline>
-    // Чекаут наполняет серверную корзину (cartStore) из nt-cart (flux:cart:v1) —
-    // источника истины того, что в корзине у пользователя. Товар виден при ЛЮБОМ
-    // входе: «Купить сейчас»→/checkout, корзина→/checkout, прямой /checkout. Всё в
-    // try/catch: при сбое деградирует к cartStore.init() (прежнее поведение).
-    document.addEventListener("DOMContentLoaded", function () {
-      var cs = window.cartStore;
-      if (!cs) return;
-      function fallbackInit() { try { if (cs.init) cs.init(); } catch (e) {} }
-      var lines = [];
-      // Express «Купить сейчас»: товар лежит в sessionStorage (НЕ в URL, НЕ в корзине
-      // покупателя). Есть — оформляем ТОЛЬКО его; иначе — корзину (flux:cart:v1).
-      var bn = null;
-      try { bn = JSON.parse(sessionStorage.getItem("flux:buynow") || "null"); } catch (e) { bn = null; }
-      if (bn && bn.productId) {
-        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null }, quantity: bn.quantity || 1 }];
-      } else {
-        try { lines = JSON.parse(localStorage.getItem("flux:cart:v1") || "[]"); } catch (e) { lines = []; }
-      }
-      if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
-      (async function () {
+    // Сводка должна появиться СРАЗУ из flux:cart:v1. Не зовём cartStore.init()/clear():
+    // в превью shopId пустой → addItem падает → «Ничего не выбрано».
+    (function hydrateCheckoutFromNtCart() {
+      try { sessionStorage.removeItem("flux:buynow"); } catch (e) {}
+      function lines() {
         try {
-          await cs.clear();
-          for (var i = 0; i < lines.length; i++) {
-            var l = lines[i];
-            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity); } catch (e) {}
+          var raw = JSON.parse(localStorage.getItem("flux:cart:v1") || "[]");
+          return Array.isArray(raw) ? raw : [];
+        } catch (e) { return []; }
+      }
+      function toDisplay(arr) {
+        return arr.map(function (l) {
+          var v = l.variant || {};
+          var opts = {};
+          if (v.color) opts["Цвет"] = v.color;
+          if (v.size) opts["Размер"] = v.size;
+          return {
+            id: l.id,
+            productId: l.productId,
+            name: l.name,
+            priceCents: Math.round((parseFloat(l.price) || 0) * 100),
+            unitPriceCents: Math.round((parseFloat(l.price) || 0) * 100),
+            compareAtPriceCents: l.oldPrice ? Math.round((parseFloat(l.oldPrice) || 0) * 100) : undefined,
+            image: l.image,
+            imageUrl: l.image,
+            quantity: l.quantity || 1,
+            options: opts,
+            variantCombinationId: (v.variantCombinationId) || null,
+          };
+        });
+      }
+      function apply() {
+        var display = toDisplay(lines());
+        var cs = window.cartStore;
+        if (cs && typeof cs.setLocalItems === "function") {
+          cs.setLocalItems(display);
+          if (display.length && typeof cs.syncToServer === "function") {
+            setTimeout(function () {
+              try { cs.syncToServer({ notify: true }).catch(function () {}); } catch (e) {}
+            }, 250);
           }
-        } catch (e) { fallbackInit(); return; }
-        try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}
-      })();
-    });
+          return true;
+        }
+        document.dispatchEvent(new CustomEvent("cart:updated"));
+        return !!cs;
+      }
+      apply();
+      document.addEventListener("DOMContentLoaded", apply);
+      var n = 0;
+      var t = setInterval(function () {
+        n += 1;
+        if (apply() || n > 40) clearInterval(t);
+      }, 50);
+    })();
   </script>
 </Layout>

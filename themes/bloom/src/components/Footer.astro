@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../lib/rich-text";
 import SocialIcon from "./footer/SocialIcon.astro";
 import { SITE_TITLE } from "../consts";
 import { categoryPages } from "../data/categories";
@@ -34,6 +35,47 @@ const newsletterEnabled = !(
 	p.newsletter &&
 	(p.newsletter.enabled === false || p.newsletter.enabled === "false")
 );
+// Оживление полей панели «Рассылка» (Figma 314-34558 «Заголовок»/«Текст» =
+// heading.text / text.content). Раньше обе строки были захардкожены → правка в
+// панели ничего не меняла. Fallback = литералы верстальщика, поэтому без правок
+// мерчанта футер остаётся байт-в-байт. Паритет rose Footer.
+const newsletterHeadingText =
+	typeof p.heading?.text === "string" && p.heading.text.trim()
+		? p.heading.text
+		: "ПОДПИШИТЕСЬ НА РАССЫЛКУ";
+// Своя colorScheme на <footer> (как rose Footer): при hot-render одиночного блока
+// в превью обёртки композитора нет, и футер брал :root — тёмный BASE_DEFAULT.
+// На live обёртка даёт ту же схему, дубль безвреден.
+const footerSchemeClass = (() => {
+	// схема приходит строкой ("scheme-4") ИЛИ числом — разбираем оба вида
+	const raw = p.colorScheme;
+	const id =
+		typeof raw === "number"
+			? String(raw)
+			: typeof raw === "string" && raw
+				? String(raw).replace("scheme-", "")
+				: "";
+	return id ? `color-scheme-${id}` : "";
+})();
+// «Выравнивание» (contentAlign) — блок рассылки и группа колонок. Классы
+// литералами, иначе Tailwind JIT их не соберёт. Дефолт left = вёрстка как была.
+const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const _AL_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlign : "left";
+const nlSectionAlignCls = _ca === "left" ? "lg:items-start lg:justify-between" : _AL_ITEMS[_ca];
+const nlCopyAlignCls = _ca === "left" ? "" : `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
+// Лестницы §9 MANNER: заголовок рассылки Urbanist 20 (canon medium) → small 14,
+// large 24; текст Inter 16 (canon medium) → small 14, large 19.
+const nlHeadingSize = p.heading?.size ?? p.headingSize;
+const nlHeadingSizeCls =
+	nlHeadingSize === "small" ? "text-[14px]" : nlHeadingSize === "large" ? "text-[24px]" : "text-[20px]";
+const nlTextSize = p.text?.size ?? p.textSize;
+const nlTextSizeCls =
+	nlTextSize === "small" ? "text-[14px]" : nlTextSize === "large" ? "text-[19px]" : "text-[16px]";
+const newsletterText =
+	typeof p.text?.content === "string" && p.text.content.trim()
+		? p.text.content
+		: "Подпишитесь на наши акции и новости";
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика (навигация = категории + О нас; информация = правовые
@@ -124,28 +166,28 @@ const footerContainerCls = footerPadStyle
 	: "mx-auto w-full max-w-[1920px] px-4 pt-16 pb-24 md:px-20 md:pb-28 2xl:px-[300px]";
 ---
 
-<footer class="w-full bg-[rgb(var(--color-bg,255_255_255))]" data-puck-component-id={id}>
+<footer class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle} data-animate>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12">
 			<!-- Block 1: Newsletter -->
 			{newsletterEnabled && (
 			<section
-				class="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
+				class={`flex w-full flex-col gap-6 lg:flex-row ${nlSectionAlignCls}`}
 				aria-labelledby="newsletter-heading"
 			>
-				<div class="flex flex-col gap-2">
+				<div class={`flex flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
-						class="font-urbanist text-[20px] font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
+						class={`font-urbanist ${nlHeadingSizeCls} font-light uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="newsletter"
-					>
-						ПОДПИШИТЕСЬ НА РАССЫЛКУ
-					</h2>
-					<p class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
-						Подпишитесь на наши акции и новости
-					</p>
+						set:html={inlineFormat(newsletterHeadingText)}
+					></h2>
+					<p
+						class={`font-inter ${nlTextSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
+						set:html={inlineFormat(newsletterText)}
+					></p>
 				</div>
 
 				<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">

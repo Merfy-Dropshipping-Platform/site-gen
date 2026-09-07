@@ -144,6 +144,9 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // can merge theme blockDefaults в Catalog.defaultProps (otherwise constructor
       // получает universal-only defaults и затирает theme-specific values на edit).
       blockDefaults: (liveManifest('rose', roseManifestJsonRaw) as any).blockDefaults ?? {},
+      // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
+      // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
+      blockPlaceholders: (liveManifest('rose', roseManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('rose', roseManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('rose', roseManifestJsonRaw).colorSchemes ?? [],
     };
@@ -154,6 +157,9 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: liveManifest('vanilla', vanillaManifestJsonRaw).features ?? {},
       customBlocks: liveManifest('vanilla', vanillaManifestJsonRaw).customBlocks ?? {},
       blockDefaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).blockDefaults ?? {},
+      // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
+      // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
+      blockPlaceholders: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('vanilla', vanillaManifestJsonRaw).colorSchemes ?? [],
     };
@@ -164,6 +170,9 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: liveManifest('bloom', bloomManifestJsonRaw).features ?? {},
       customBlocks: liveManifest('bloom', bloomManifestJsonRaw).customBlocks ?? {},
       blockDefaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).blockDefaults ?? {},
+      // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
+      // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
+      blockPlaceholders: (liveManifest('bloom', bloomManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('bloom', bloomManifestJsonRaw).colorSchemes ?? [],
     };
@@ -174,6 +183,9 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: liveManifest('satin', satinManifestJsonRaw).features ?? {},
       customBlocks: liveManifest('satin', satinManifestJsonRaw).customBlocks ?? {},
       blockDefaults: (liveManifest('satin', satinManifestJsonRaw) as any).blockDefaults ?? {},
+      // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
+      // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
+      blockPlaceholders: (liveManifest('satin', satinManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('satin', satinManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('satin', satinManifestJsonRaw).colorSchemes ?? [],
     };
@@ -184,6 +196,9 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       features: liveManifest('flux', fluxManifestJsonRaw).features ?? {},
       customBlocks: liveManifest('flux', fluxManifestJsonRaw).customBlocks ?? {},
       blockDefaults: (liveManifest('flux', fluxManifestJsonRaw) as any).blockDefaults ?? {},
+      // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
+      // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
+      blockPlaceholders: (liveManifest('flux', fluxManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('flux', fluxManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('flux', fluxManifestJsonRaw).colorSchemes ?? [],
     };
@@ -282,6 +297,38 @@ export class ThemePuckConfigController {
     const themeBlockDefaults =
       (themeManifest as { blockDefaults?: Record<string, unknown> } | undefined)?.blockDefaults ?? {};
 
+    // Плейсхолдеры полей из theme.json (`blockPlaceholders`). Порты рендерят
+    // заглушку («Галерея», «Мультиряды»…) когда мерчант текст не задал, а
+    // платформа считает такие строки НЕзаполненным полем (render/empty-state.ts)
+    // и вычищает их из props. Из-за этого в панели инпут пустой, а на превью
+    // текст есть — «несинхрон» глазами мерчанта. Отдаём тот же текст как
+    // placeholder инпута: серым видно ровно то, что показывает превью.
+    // Ключ — имя поля либо путь `heading.text` для objectFields.
+    const themeBlockPlaceholders =
+      (themeManifest as { blockPlaceholders?: Record<string, Record<string, string>> } | undefined)
+        ?.blockPlaceholders ?? {};
+
+    const applyPlaceholders = (
+      fields: Record<string, unknown>,
+      map: Record<string, string> | undefined,
+    ): void => {
+      if (!map) return;
+      for (const [path, text] of Object.entries(map)) {
+        const [head, sub] = path.split('.');
+        const field = fields[head];
+        if (!field || typeof field !== 'object') continue;
+        if (sub) {
+          const objectFields = (field as { objectFields?: Record<string, unknown> }).objectFields;
+          const nested = objectFields?.[sub];
+          if (nested && typeof nested === 'object') {
+            (nested as Record<string, unknown>).placeholder = text;
+          }
+          continue;
+        }
+        (field as Record<string, unknown>).placeholder = text;
+      }
+    };
+
     // Strip render function — it's a placeholder (() => null) on the server
     // and cannot be JSON-serialized. Constructor re-attaches AstroBlockBridge.
     const components: Record<string, PuckComponentJson> = {};
@@ -295,6 +342,11 @@ export class ThemePuckConfigController {
         (cfg.defaultProps ?? {}) as Record<string, unknown>,
         themeDefaults,
       );
+      // Плейсхолдер — подсказка для ПУСТОГО поля; значение из blockDefaults темы
+      // при этом остаётся, чтобы мерчант видел в инпуте тот же текст, что на
+      // превью, и мог его править (раньше дефолт здесь обнулялся, и поле
+      // выглядело пустым при заполненном заголовке на экране).
+      applyPlaceholders(hydratedFields as Record<string, unknown>, themeBlockPlaceholders[name]);
       components[name] = {
         label: cfg.label,
         category: componentToCategory[name] ?? 'other',

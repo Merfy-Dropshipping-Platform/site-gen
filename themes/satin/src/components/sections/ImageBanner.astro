@@ -37,8 +37,31 @@ const rawTitle =
 const rawEyebrow =
 	typeof raw.eyebrow === "string" && raw.eyebrow.trim() ? raw.eyebrow.trim() : undefined;
 
+const merfy = (raw as { __merfy?: { fields?: Record<string, { set?: boolean }> } }).__merfy;
+function contentSet(keys: string | string[], val: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof val !== "string") return false;
+	const t = val.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function merchantImage(keys: string | string[], url: unknown): string {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		if (merfy?.fields?.[key]?.set === false) return "";
+	}
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
 // Нет ни своего изображения, ни заголовка, ни кикера → пустое состояние.
-const isPlaceholder = !rawImage && !rawTitle && !rawEyebrow;
+const isPlaceholder =
+	!merchantImage(["image"], rawImage) && !contentSet("title", rawTitle) && !contentSet("eyebrow", rawEyebrow);
 
 const {
 	imageSide = "left",
@@ -64,7 +87,7 @@ const ctaText =
 	typeof raw.ctaText === "string" && raw.ctaText.trim() ? raw.ctaText : "Перейти";
 const ctaLink =
 	typeof raw.ctaLink === "string" && raw.ctaLink ? raw.ctaLink : "/catalog?collection=Мужское";
-const image = rawImage ?? "/images/4x/Мужская_кампания.png";
+const image = rawImage ?? "/placeholders/landscape-iwt.png";
 const alt =
 	typeof raw.alt === "string" && raw.alt.trim() ? raw.alt : "Новая мужская коллекция";
 ---

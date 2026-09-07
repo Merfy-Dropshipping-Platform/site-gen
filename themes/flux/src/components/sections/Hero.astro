@@ -314,13 +314,15 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 const rootStyle = paddingStyle;
-// Контентная ветка (стек на мобиле): верхний паддинг — ТОЛЬКО десктоп (md:pt) —
-// на мобиле медиа встык под шапкой, поток сам создаёт разрыв секций. Нижний —
-// на всех ширинах. Через CSS-переменные (не inline style) — только так top
-// можно ограничить брейкпоинтом.
-const paddingVars = p.padding
-	? `--hero-pt:${p.padding.top}px;--hero-pb:${p.padding.bottom}px;`
+// Отступы секции («Изображение») и дефолтный gutter Позиции живут на
+// КОНТЕНТ-оверлее, не на <section>. Оверлей — `absolute inset-0`, поэтому
+// padding на секции не отодвигает кнопку от кромки (containing block =
+// padding-box, inset-0 кроет и зону padding). Паритет rose Hero:290
+// (pb-10…xl:pb-20). Явный p.padding (дефолт 80/80) — как задал мерчант.
+const overlayPadStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+const overlayPadCls = p.padding ? "" : "py-10 md:py-14 lg:py-16 xl:py-20";
 ---
 
 {
@@ -384,8 +386,7 @@ const paddingVars = p.padding
 		</section>
 	) : (
 <section
-	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] pt-[var(--hero-pt,0px)] pb-[var(--hero-pb,0px)] ${heroHeightMdCls}`}
-	style={paddingVars}
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] ${heroHeightMdCls}`}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 >
@@ -446,7 +447,8 @@ const paddingVars = p.padding
 
 	{/* Контент — absolute-оверлей поверх фото на всех вьюпортах (канон). */}
 	<div
-		class={`absolute inset-0 z-10 flex w-full flex-col px-4 ${hItemsCls} ${vJustifyCls}`}
+		class={`absolute inset-0 z-10 flex w-full flex-col px-4 ${overlayPadCls} ${hItemsCls} ${vJustifyCls}`}
+		style={overlayPadStyle}
 	>
 		<div class={contentCls} data-reveal>
 			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>

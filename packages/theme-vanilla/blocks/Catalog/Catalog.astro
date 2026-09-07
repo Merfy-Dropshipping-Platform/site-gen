@@ -30,15 +30,6 @@ import {
 	CATALOG_RADIO_TEXT,
 } from "./filter-classes";
 
-// Минимальный тип карточки демо-грида.
-interface DemoProduct {
-	id: string;
-	name: string;
-	price: string;
-	oldPrice?: string;
-	image: string;
-}
-
 // Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
 // Лишние поля puckConfig (cards/productCard/colorScheme и т.п.) принимаем, но
 // родная вёрстка использует только заголовок/подзаголовок/раскладку фильтра.
@@ -127,17 +118,19 @@ const schemeClass =
 // <template data-nt="catalog-demo"> и подставляется is:inline-клиентом ТОЛЬКО если
 // магазин реально пуст / API недоступен (rose-канон). На published-сайте клиент
 // (renderCatalog → ЖИВОЙ /api/store/products) заменяет скелетон реальными товарами.
-const demoProducts: DemoProduct[] = [
-	{ id: "bag-1", name: "Подушки декоративные", price: "1 940 ₽", oldPrice: "2 290 ₽", image: "/images/vanilla-product-1.webp" },
-	{ id: "bag-2", name: "Ваза Vanilla", price: "1 490 ₽", image: "/images/vanilla-product-2.webp" },
-	{ id: "bag-3", name: "Покрывало шерстяное", price: "2 940 ₽", image: "/images/vanilla-textile-2.webp" },
-	{ id: "bag-4", name: "Мягкий плед", price: "2 940 ₽", image: "/images/vanilla-textile-3.webp" },
-	{ id: "bag-5", name: "Корзина для хранения", price: "1 290 ₽", image: "/images/vanilla-product-4.webp" },
-	{ id: "bag-6", name: "Свеча ароматическая", price: "890 ₽", image: "/images/vanilla-product-5.webp" },
-	{ id: "bag-7", name: "Полотенца набор", price: "1 590 ₽", image: "/images/vanilla-textile-1.webp" },
-	{ id: "bag-8", name: "Плед хлопковый", price: "2 190 ₽", image: "/images/vanilla-product-6.webp" },
+// Заглушки ПЛАТФОРМЫ для пустого магазина (свитеры из packages/theme-base/public/
+// placeholders — те же, что показывает эталонный theme-base/blocks/Catalog).
+// Демо-товаров верстальщика в каталоге больше нет ни в каком состоянии: витрина
+// показывает либо реальные товары, либо эти заглушки, либо текстовое сообщение.
+const PLACEHOLDER_IMAGES = [
+	"/placeholders/sweater-blue.svg",
+	"/placeholders/sweater-yellow.svg",
+	"/placeholders/sweater-red.svg",
+	"/placeholders/sweater-green.svg",
 ];
-const totalCount = demoProducts.length;
+const placeholderCards = Array.from({ length: pageSize }, (_, i) => ({
+	image: PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length],
+}));
 // Лоадер: число скелетон-карточек, показываемых пока идёт fetch живого API (одна
 // «страница» пагинации). Demo-моки больше НЕ в видимом гриде — они уходят в
 // <template data-nt="catalog-demo"> и подставляются клиентом ТОЛЬКО если магазин
@@ -154,7 +147,9 @@ function pluralizeProducts(count: number): string {
 	if (mod10 >= 2 && mod10 <= 4) return `${count} товара`;
 	return `${count} товаров`;
 }
-const productCountLabel = pluralizeProducts(totalCount);
+// Счётчик до гидрации: пока идёт первый запрос показывать выдуманное число
+// нельзя — начинаем с нуля, клиент подставит настоящий total.
+const productCountLabel = pluralizeProducts(0);
 
 // Summary/панель дропдаунов top-вида (манера vanilla: плоские панели, фон страницы).
 const rowSummaryClass =
@@ -202,46 +197,24 @@ const rowStockOptions: RadioOption[] = [
 	    переключение не мигало; без глобала остаётся раскладка из props. */}
 	<script is:inline>var l=window.__MERFY_CATALOG_LAYOUT__; if(l==='top'||l==='side'){document.currentScript.parentElement.setAttribute('data-catalog-layout',l);}</script>
 
-	{/* Demo-моки для ПУСТОГО магазина (0 товаров): НЕ в видимом гриде (там скелетон-
-	    лоадер), хранятся скрытыми в <template> и подставляются клиентом ТОЛЬКО если у
-	    магазина реально нет товаров (rose-канон) — красивая заглушка нового сайта. */}
-	<template data-nt="catalog-demo">
-		{demoProducts.map((product) => (
-			<li data-product-id={product.id}>
-				<article class={cardWrapClass} data-nt="vanilla-product-card" aria-label={product.name}>
-					{/* Обёртка медиа: relative-родитель для overlay-сердца избранного.
-					    Сердце — sibling <a> (НЕ внутри: button-in-anchor невалиден + клик
-					    по сердцу не должен открывать товар). Манера vanilla: квадратная
-					    плашка (острые углы темы), а не круглая. Геометрия сердца = path
-					    из public/icons/favourite.svg (тот же контур, что rose/PDP). На SSG
-					    нет window → рисуем outline; делегат initWishlistUI поставит filled
-					    на page-load если товар в избранном. SVG-строка автономна
-					    (block-папка override-темы не резолвит импорты наружу). */}
-					<div class="relative w-full">
-						<a href={`/product?id=${product.id}`} class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label={product.name}>
-							<img src={product.image} alt={product.name} width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-						</a>
-						<button
-							type="button"
-							data-wishlist-toggle
-							data-product-id={product.id}
-							aria-pressed="false"
-							aria-label="В избранное"
-							class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center bg-white text-[var(--vanilla-dark)] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80"
-						>
-							<span data-wishlist-icon class="block size-[18px]" set:html={'<svg viewBox="0 0 17.4 15.4" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block"><path d="M7.428 14.2615C5.172 12.5239 0.7 8.55212 0.7 4.97729C0.7 2.61547 2.384 0.7 4.7 0.7C5.9 0.7 7.1 1.11175 8.7 2.75876C10.3 1.11175 11.5 0.7 12.7 0.7C15.016 0.7 16.7 2.61547 16.7 4.97729C16.7 8.5513 12.228 12.5239 9.972 14.2615C9.212 14.8462 8.188 14.8462 7.428 14.2615Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'}></span>
-						</button>
+	{/* Заглушки темы для ПУСТОГО магазина (0 товаров) и для каталога коллекции,
+	    где коллекция ещё не выбрана. НЕ в видимом гриде (там скелетон-лоадер),
+	    хранятся скрытыми и подставляются клиентом ТОЛЬКО в этих двух случаях.
+	    Это платформенные карточки (свитер + «Товар» + «2 500 ₽»), а НЕ демо-товары
+	    верстальщика: как только у магазина появляется хотя бы один товар, в каталоге
+	    не должно быть ни одной заглушки ни при каких фильтрах. */}
+	<template data-nt="catalog-placeholder">
+		{placeholderCards.map((card) => (
+			<li data-nt="catalog-placeholder-card" aria-hidden="true">
+				<div class="flex flex-col gap-3">
+					<div class="relative aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]">
+						<img src={card.image} alt="" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
 					</div>
 					<div class="flex flex-col gap-1">
-						<a href={`/product?id=${product.id}`} class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">{product.name}</a>
-						<div class="flex flex-wrap items-baseline gap-2">
-							<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">{product.price}</span>
-							{product.oldPrice && (
-								<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[#444444] line-through">{product.oldPrice}</span>
-							)}
-						</div>
+						<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black">Товар</span>
+						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">2 500 ₽</span>
 					</div>
-				</article>
+				</div>
 			</li>
 		))}
 	</template>

@@ -70,8 +70,44 @@ const paddingStyle = padding
     // исключаем — подарок добавляет сервер, не юзер; его появление не должно
     // обнулять discountCents применённого промокода. Держать ИДЕНТИЧНО
     // CheckoutOrderSummary.cartSignature.
-    function cartSignature() {
+    function readNtCartItems() {
+      var prefixes = ['flux', 'rose', 'vanilla', 'bloom', 'satin'];
+      for (var i = 0; i < prefixes.length; i++) {
+        try {
+          var raw = localStorage.getItem(prefixes[i] + ':cart:v1');
+          var arr = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(arr) || !arr.length) continue;
+          return arr.map(function (l) {
+            var rub = parseFloat(l.price) || 0;
+            return {
+              productId: l.productId,
+              id: l.id,
+              quantity: l.quantity || 1,
+              variantCombinationId: (l.variant && l.variant.variantCombinationId) || null,
+              unitPriceCents: Math.round(rub * 100),
+              priceCents: Math.round(rub * 100),
+              isBonus: false,
+            };
+          });
+        } catch (e) {}
+      }
+      return [];
+    }
+    function checkoutItems() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      if (items && items.length) return items;
+      return readNtCartItems();
+    }
+    function checkoutTotal() {
+      if (window.cartStore && typeof window.cartStore.getTotal === 'function' && window.cartStore.getItems && window.cartStore.getItems().length) {
+        return window.cartStore.getTotal();
+      }
+      return checkoutItems().reduce(function (sum, it) {
+        return sum + (it.unitPriceCents || it.priceCents || 0) * (it.quantity || 1);
+      }, 0);
+    }
+    function cartSignature() {
+      var items = checkoutItems();
       return items.filter(function (it) { return !it.isBonus; }).map(function (it) {
         return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
       }).join('|');
@@ -79,14 +115,14 @@ const paddingStyle = padding
     var lastCartSig = cartSignature();
 
     function refresh() {
-      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      var items = checkoutItems();
       if (items.length === 0) {
         section.hidden = true;
         return;
       }
       section.hidden = false;
 
-      var subtotal = (window.cartStore && typeof window.cartStore.getTotal === 'function') ? window.cartStore.getTotal() : 0;
+      var subtotal = checkoutTotal();
       if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
 
       if (discountEl && discountRow) {

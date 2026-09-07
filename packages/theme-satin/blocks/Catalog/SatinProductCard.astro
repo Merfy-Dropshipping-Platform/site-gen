@@ -25,9 +25,20 @@ interface Props {
 	    всех сторон (фото/кнопка inset, кнопка НЕ во всю ширину) + фон surface;
 	    false (дефолт) → флеш к краям (фото full-bleed, кнопка full-width). */
 	cardContainerOn?: boolean;
+	/** «Вид изображения» карточки (productCard.cardStyle) — aspect медиа.
+	    Канон satin = портрет 430/564; square = 1/1, wide = 4/3. */
+	cardAspectClass?: string;
+	/** «Стиль кнопки» (productCard.buttonStyle) — inline-стиль кнопки «В корзину». */
+	cardBtnStyle?: string;
 }
 
-const { product, priority = false, cardContainerOn = false } = Astro.props;
+const {
+	product,
+	priority = false,
+	cardContainerOn = false,
+	cardAspectClass = "aspect-[430/564]",
+	cardBtnStyle,
+} = Astro.props;
 const href = `/products/${product.id}`;
 ---
 
@@ -39,7 +50,7 @@ const href = `/products/${product.id}`;
 	data-nt="satin-product-card"
 	aria-label={product.name}
 >
-	<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
+	<div class={`relative ${cardAspectClass} w-full shrink-0 overflow-hidden bg-[#F5F5F5]`}>
 		<a href={href} class="block size-full" aria-label={product.name}>
 			{product.image ? (
 				<SatinPicture
@@ -114,7 +125,8 @@ const href = `/products/${product.id}`;
 		data-price={product.price}
 		data-old-price={product.oldPrice ?? ""}
 		data-image={product.image}
-		class="flex h-11 w-full shrink-0 items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80"
+		class="flex h-11 w-full shrink-0 items-center justify-center px-3 font-manrope text-[14px] font-normal uppercase leading-none transition-opacity hover:opacity-80"
+		style={cardBtnStyle ?? "background:rgb(var(--color-button-bg,0 0 0));color:rgb(var(--color-button-text,255 255 255));border:1px solid rgb(var(--color-button-bg,0 0 0));"}
 	>
 		В корзину
 	</button>

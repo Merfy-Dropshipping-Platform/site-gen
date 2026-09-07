@@ -3,6 +3,7 @@ import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/com
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import { SITE_TITLE } from "../consts";
 import FluxNavItem from "./FluxNavItem.astro";
+import FluxWishlistLink from "./FluxWishlistLink.astro";
 
 interface NavLink {
 	label: string;
@@ -213,6 +214,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 		</a>
 		<div class="flex items-center gap-3">
+			<FluxWishlistLink badgeCls={badgeCls} boxCls="size-11" iconSize="size-6" />
 			{showCart && (
 				<button
 					type="button"
@@ -252,6 +254,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 							</a>
 						</div>
 						<div class="flex items-center justify-end gap-4">
+							<FluxWishlistLink badgeCls={badgeCls} />
 							{showCart && (
 								<button
 									type="button"
@@ -326,6 +329,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 									<NtIcon name="search-lg" sizeClass="size-8" />
 								</button>
 							)}
+							<FluxWishlistLink badgeCls={badgeCls} />
 							{showCart && (
 								<button
 									type="button"
@@ -426,6 +430,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 						<NtIcon name="search-lg" sizeClass="size-8" />
 					</button>
 				)}
+				<FluxWishlistLink badgeCls={badgeCls} />
 				{showCart && (
 					<button
 						type="button"
@@ -513,6 +518,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 				</a>
 				<div class="flex items-center gap-3">
+					<FluxWishlistLink badgeCls={badgeCls} boxCls="size-10 shrink-0" iconSize="size-6" />
 					{showCart && (
 						<button
 							type="button"

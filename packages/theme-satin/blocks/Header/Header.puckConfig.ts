@@ -82,7 +82,7 @@ export const HeaderSchema = z.object({
 export type HeaderProps = z.infer<typeof HeaderSchema>;
 
 export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
-  label: 'Header',
+  label: 'Шапка',
   category: 'navigation',
   // Sidebar собран строго по Figma 314:34540 (Platform - Constructor - Landing).
   // Порядок полей и опций — как в макете. Поля, которых в макете нет

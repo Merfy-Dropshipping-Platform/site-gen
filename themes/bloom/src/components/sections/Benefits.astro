@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Benefits = bloom-секция «3 белые карточки-фичи на розовом полотне» (МАННЕРА
 // §10). Раньше тело было ЖЁСТКИМ мок-демо верстальщика (3 карточки про
 // косметику + /icons/benefit-*.png, без обработки пропсов). Теперь:
@@ -120,9 +121,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				></h2>
 			)
 		}
 		<ul
@@ -158,14 +158,10 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							)
 						)}
 						{c.heading && (
-							<h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]">
-								{c.heading}
-							</h3>
+							<h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]" set:html={inlineFormat(c.heading)} />
 						)}
 						{c.text && (
-							<p class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))]">
-								{c.text}
-							</p>
+							<p class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))]" set:html={inlineFormat(c.text)} />
 						)}
 						{c.isPlaceholder && (
 							<a

@@ -10,6 +10,8 @@
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
 @source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
+/* Порты верстальщика: без скана group-hover/d1 у NavItem дропдаун меню остаётся invisible. Как у rose/satin. */
+@source "../components/**/*.{astro,ts,tsx}";
 
 /* Bloom Theme — розовый акцент (#e38e9f) и минималистичный дизайн */
 @theme {
@@ -201,6 +203,18 @@ input[type="search"]::-webkit-search-results-decoration {
   --box-shadow: 0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%);
 }
 @layer base {
+/* Форматирование конструктора («Жирный»/«Курсив» в aiText-полях). Дефолтный
+   `bolder` считается ОТНОСИТЕЛЬНО родителя, а типографика bloom лёгкая (300) →
+   <strong> давал всего 400 и выглядел как обычный текст. Явные 700/italic, как
+   в rose global.css. */
+strong,
+b {
+  font-weight: 700;
+}
+em,
+i {
+  font-style: italic;
+}
 code {
   padding: 2px 5px;
   background-color: rgb(var(--gray-light));
@@ -752,4 +766,16 @@ blockquote {
   .account-form {
     width: 100%;
   }
+}
+
+@layer base {
+  /* Корзина-drawer (DS NtCartDrawer) → scheme-токены (как rose). Fallback = литерал DS. */
+  [data-nt="cart-drawer"] [data-cart-panel] { background-color: rgb(var(--color-bg, 255 255 255)); }
+  [data-nt="cart-drawer"] [data-cart-panel] h2 { color: rgb(var(--color-heading, 0 0 0)); }
+  [data-nt="cart-drawer"] [data-cart-panel] > div > button[data-cart-close] { color: rgb(var(--color-muted, 153 153 153)); }
+  [data-nt="cart-drawer"] [data-cart-empty] p { color: rgb(var(--color-muted, 153 153 153)); }
+  [data-nt="cart-drawer"] [data-cart-empty] p a { color: rgb(var(--color-text, 0 0 0)); }
+  [data-nt="cart-drawer"] [data-cart-summary] > div { color: rgb(var(--color-text, 0 0 0)); }
+  [data-nt="cart-drawer"] [data-cart-empty] > a,
+  [data-nt="cart-drawer"] [data-cart-summary] > a { background-color: rgb(var(--color-button-bg, 0 0 0)); color: rgb(var(--color-button-text, 255 255 255)); border-radius: var(--radius-button, 6px); }
 }

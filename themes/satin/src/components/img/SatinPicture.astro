@@ -32,7 +32,13 @@ const {
 } = Astro.props as Props;
 
 const webp = src.replace(/\.(png|jpe?g)$/i, ".webp");
-const hasWebp = webp !== src;
+// WebP-source только для локальных ассетов темы (/images/…). Загрузки мерчанта
+// (MinIO http(s)://, /placeholders без парного .webp) не имеют sibling webp —
+// <source srcset="….webp"> даёт 404, <picture> не откатывается на <img> → чёрный кадр.
+const hasWebp =
+	webp !== src &&
+	src.startsWith("/images/") &&
+	!src.startsWith("/placeholders/");
 ---
 
 <picture class="contents">

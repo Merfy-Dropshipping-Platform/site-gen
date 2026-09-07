@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (bloom, группа misc): канон-секция Newsletter в манере bloom
 // (см. themes/bloom/MANNER.md; процесс-эталон — rose T17 Newsletter). Схема
 // полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -10,13 +11,30 @@
 // мок-демо литералы подвала верстальщика. Значения, заданные мерчантом, выигрывают.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Канон heading: string | { text, alignment, size }. Пустое состояние секции
 // (мерчант не задал заголовок) = Figma-плейсхолдер 1:19335 «Подпишитесь на нашу
 // рассылку» — НЕ мок-демо подвала верстальщика «ПОДПИШИТЕСЬ НА РАССЫЛКУ» (F:46).
 // Когда мерчант вводит свой заголовок — он выигрывает (фоллбек ниже не используется).
+// Пустая строка = «мерчант не задал» (так же трактует платформа,
+// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
 const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
+	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() ||
+	"Подпишитесь на нашу рассылку";
 // Лестница §9 от базы-литерала 20 (medium): small ≈0.7× = 14, large ≈1.2× = 24.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
@@ -32,9 +50,11 @@ const headingCls =
 // наши акции и новости» (F:48-50) и НЕ прежний дефолт-копирайт «Будь в курсе…».
 // Манера bloom: Inter 16 light muted. Лестница body §9: small 14, large 19.
 // Свой текст мерчанта выигрывает (?? fallback срабатывает лишь при пустых данных).
+// Видимое поле панели — «Текст» (text.content); `description` скрытое legacy и
+// имеет собственный дефолт, из-за чего оно глушило ввод мерчанта (контракт §11).
 const description =
-	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =
@@ -57,7 +77,9 @@ const inlineSubmit = p.formLayout !== "stacked";
 // Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
 // согласия под формой (манера bloom: Inter light мелкий muted, акцент розовый);
 // иначе ничего.
-const showAgreement = p.agreement === "true";
+// Тумблер шлёт boolean true; сравнение строго со строкой «true» делало
+// «Соглашение на рассылку» мёртвым.
+const showAgreement = p.agreement === true || p.agreement === "true";
 
 // Канон position/alignment: canon-default 'left' (blockDefaults) = литерал
 // подвала — заголовок слева, форма max-w-[318px] справа, двухколонная
@@ -94,7 +116,7 @@ const titleId = id ? `${id}-title` : undefined;
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-20 pt-20 md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]"
+	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-20 pt-20 md:px-20 md:pb-[120px] md:pt-[120px] 2xl:px-[300px]${selfSchemeClass}`}
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -108,17 +130,15 @@ const titleId = id ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				></h2>
 				<p
 					class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="101"
 					data-puck-subsection-field="text"
-				>
-					{description}
-				</p>
+					set:html={inlineFormat(description)}
+				></p>
 			</div>
 
 			<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">

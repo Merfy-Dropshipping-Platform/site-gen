@@ -23,7 +23,14 @@ interface Props {
 // ссылка «Кнопка» в КАЖДОЙ колонке, не общая). Когда страница/мерчант реально
 // передаёт items[] — рендер его данных без изменений (иконка 56×56 + title + body).
 const { items } = Astro.props as Props;
-const hasItems = Array.isArray(items) && items.length > 0;
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+const hasItems =
+	Array.isArray(items) && items.some((it) => slotSet(it?.title) || slotSet(it?.body));
 
 // Пустое состояние (Figma 1:19335, тип «MultiColumns»): пустой rect
 // (rgb(var(--color-surface))) + «Колонна» + хелпер + per-column ссылка «Кнопка».

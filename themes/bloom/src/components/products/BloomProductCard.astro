@@ -5,9 +5,27 @@ import BloomPicture from "../img/BloomPicture.astro";
 interface Props {
 	product: CatalogProduct;
 	priority?: boolean;
+	/** «Вид изображения» секции: 1/1 (канон), 430/500 (портрет), 16/9 (широкий). */
+	aspectRatio?: string;
+	/**
+	 * «Быстрое добавление» секции (паритет rose Popular): 'none' — CTA карточки нет,
+	 * 'standard' — кнопка кладёт 1 шт, 'cart' — степпер «− N +» перед кнопкой
+	 * (делегат nt-cart читает data-quantity). Отсутствие пропа = вёрстка
+	 * верстальщика (кнопка), чтобы карточка вне секции не менялась.
+	 */
+	quickAdd?: "none" | "standard" | "cart";
+	quickAddText?: string;
 }
 
-const { product, priority = false } = Astro.props;
+const { product, priority = false, aspectRatio = "1/1", quickAdd, quickAddText } = Astro.props;
+const qaMode = quickAdd ?? "standard";
+const qaLabel =
+	typeof quickAddText === "string" && quickAddText.trim() ? quickAddText : "В корзину";
+// Степпер в манере bloom: пилюля той же высоты, что кнопка, розовый бордер инпутов.
+const qaStepperCls =
+	"mb-2 flex h-12 w-full items-center justify-between rounded-full border border-solid border-[rgb(var(--color-input-border,255_212_229))] px-1";
+const qaStepBtnCls =
+	"flex h-full w-10 shrink-0 items-center justify-center font-inter text-[18px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]";
 const href = `/products/${product.id}`;
 
 // Outline-сердце избранного — тот же heart-path, что wishlist.ts heartSvg()/
@@ -38,7 +56,8 @@ const swatchColors: Record<string, string> = {
 	<div class="relative w-full">
 		<a
 			href={href}
-			class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]"
+			class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]"
+			style={`aspect-ratio:${aspectRatio}`}
 			aria-label={product.name}
 		>
 			<BloomPicture
@@ -97,29 +116,41 @@ const swatchColors: Record<string, string> = {
 				</span>
 			)}
 		</div>
-		{product.inStock ? (
-			<button
-				type="button"
-				data-add-to-cart
-				data-product-id={product.id}
-				data-name={product.name}
-				data-price={product.price}
-				data-old-price={product.oldPrice ?? ""}
-				data-image={product.image}
-				data-volume={product.volume ?? ""}
-				class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95"
-			>
-				В корзину
-			</button>
-		) : (
-			<button
-				type="button"
-				disabled
-				class="flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-[#fdf4f6] px-4 font-inter text-[16px] font-light leading-none text-[#e38e9f]/60"
-			>
-				Нет в наличии
-			</button>
-		)}
+		{qaMode !== "none" &&
+			(product.inStock ? (
+				<Fragment>
+					{qaMode === "cart" && (
+						<div class={qaStepperCls} data-qa-stepper>
+							<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
+							<span data-qa-qty class="min-w-[28px] flex-1 text-center font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>
+							<button type="button" data-qa-inc class={qaStepBtnCls} aria-label="Увеличить">+</button>
+						</div>
+					)}
+					<button
+						type="button"
+						data-add-to-cart
+						data-card-cta
+						data-product-id={product.id}
+						data-name={product.name}
+						data-price={product.price}
+						data-old-price={product.oldPrice ?? ""}
+						data-image={product.image}
+						data-volume={product.volume ?? ""}
+						data-quantity="1"
+						class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95"
+					>
+						{qaLabel}
+					</button>
+				</Fragment>
+			) : (
+				<button
+					type="button"
+					disabled
+					class="flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-[#fdf4f6] px-4 font-inter text-[16px] font-light leading-none text-[#e38e9f]/60"
+				>
+					Нет в наличии
+				</button>
+			))}
 	</div>
 </article>
 

@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (satin, группа misc): новая канон-секция Video в манере satin
 // (themes/satin/MANNER.md §2/§4; у верстальщика секции нет — процесс-прецедент
 // bloom Video). Схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts.
@@ -6,6 +7,18 @@
 // с нулевым фоллбеком); только utility-классы с токенами.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон videoUrl + pupa video{url, coverImage}. blob:-URL — временные ObjectURL
 // вкладки конструктора, на live дадут 404 — отбрасываем (паттерн theme-base/bloom).
@@ -42,14 +55,21 @@ const headingTextRaw =
 // ?? fallback срабатывает только при пустых данных). Свой заголовок мерчанта
 // рендерим как есть. Явно отключённый заголовок (enabled === 'false') скрывает
 // его даже в пустом состоянии.
-const headingText = headingTextRaw.trim() ? headingTextRaw : "Видео";
+const headingText = contentSet("heading", headingTextRaw) && headingTextRaw.trim() ? headingTextRaw : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = Boolean(headingText.trim()) && headingEnabled;
-// Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
-// content.heading.size. Лестница §9 «Заголовок секции»: small 17,
+const subheadingRaw =
+	(typeof p.subheading === "string" && p.subheading.trim() ? p.subheading : undefined) ??
+	(typeof p.content?.subheading?.text === "string" &&
+	p.content.subheading.text.trim() &&
+	String(p.content.subheading.enabled ?? "true") !== "false"
+		? p.content.subheading.text
+		: undefined);
+// Канон headingSize («Размер заголовка», кегль <h2>) + дубли heading.size /
+// content.heading.size. Секционный `size` теперь = ВЫСОТА блока (не кегль) —
+// исключён из цепочки. Лестница §9 «Заголовок секции»: small 17,
 // medium 20 (литерал роли), large 24.
 const headingSize =
-	p.size ??
 	p.headingSize ??
 	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
 	p.content?.heading?.size;
@@ -73,7 +93,11 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1
 // theme-base); padded=false убирает горизонтальные поля, сохраняя контейнер.
 const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
 const positionProp = typeof p.position === "string" ? p.position : "contained";
-const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
+// §11 Контракта секции: видимое поле панели («Положение видео» = position)
+// приоритетнее скрытого legacy `align` из blockDefaults темы. Раньше align
+// («container») перекрывал выбор мерчанта, и настройка была мёртвой.
+const positionSet = typeof p.position === "string" && p.position ? p.position : undefined;
+const fullBleed = positionSet ? positionSet === "fullscreen" : alignProp === "fullbleed";
 const padded = !(p.padded === false || p.padded === "false");
 // Вертикаль-стандарт §2 (py-10 md:py-14), фон — токен bg.
 const sectionCls = fullBleed
@@ -98,15 +122,35 @@ const mediaCls = fullBleed
 // сквозь (controls видео остаются доступны).
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
+// «Размер» (секционный size) — ВЫСОТА медиа-плитки (канон Hero). small короче
+// (21:9), large выше (4:3); medium/absent = базовый aspect-video (без override).
+const mediaHeightStyle =
+	p.size === "small" ? "aspect-ratio:21/9" : p.size === "large" ? "aspect-ratio:4/3" : undefined;
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
 const titleId = id && showHeading ? `${id}-title` : undefined;
+
+// §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
+// конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
+// :root (базовую палитру) — мерчант видит это как «поменял одну секцию, а
+// соседние перекрасились». На live обёртка даёт ту же схему, дубль безвреден.
+// Схема приходит строкой ИЛИ числом (нормализатор Slideshow) — разбираем оба.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+
 ---
 
-<section class={sectionCls} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
+<section class={`${sectionCls}${selfSchemeClass}`} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
 	<div class={containerCls}>
 		{
 			showHeading && (
@@ -117,14 +161,18 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
-					>
-						{headingText}
-					</h2>
+						set:html={inlineFormat(headingText)}
+					/>
+					{subheadingRaw && (
+						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`}>
+							{subheadingRaw}
+						</p>
+					)}
 				</div>
 			)
 		}
 
-		<div class={mediaCls} aria-hidden={isPlaceholder ? "true" : undefined}>
+		<div class={mediaCls} style={mediaHeightStyle} aria-hidden={isPlaceholder ? "true" : undefined}>
 			{
 				videoUrl ? (
 					<video

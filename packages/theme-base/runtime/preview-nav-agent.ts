@@ -8,6 +8,7 @@ export function installPreviewNavAgent(options: PreviewNavAgentOptions): void {
   document.addEventListener('click', (e) => {
     const target = e.target as Element | null;
     if (!target || !target.closest) return;
+    if (e.defaultPrevented) return;
 
     const anchor = target.closest('a[href]') as HTMLAnchorElement | null;
     if (anchor) {

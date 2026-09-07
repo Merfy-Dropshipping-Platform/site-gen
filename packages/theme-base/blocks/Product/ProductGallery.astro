@@ -14,6 +14,10 @@
  *   --product-thumb-size       (72/88/96)
  *
  * Theme variants (`wrap-large` / `inline-small`) → радиус и discount-badge стиль.
+ *
+ * Герой (`data-product-hero`) — всегда div, не <a href="/product…">.
+ * Иначе zoomMode=click в конструкторе перехватывает preview-nav-agent
+ * и уводит на page-product. См. Product.puckConfig zoomMode.
  */
 import type { GalleryView } from '../Product.types';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';

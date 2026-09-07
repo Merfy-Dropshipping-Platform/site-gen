@@ -19,8 +19,8 @@ const currency = props.currency ?? "₽";
 const className = props.class ?? "";
 const isPanel = variant === "panel";
 const is1280 = variant === "sidebar1280";
-const fromValue = props.fromValue ?? (isPanel ? "50" : "0");
-const toValue = props.toValue ?? "5 990";
+const fromValue = props.fromValue ?? "";
+const toValue = props.toValue ?? "";
 
 const h = isPanel ? "h-8" : is1280 ? "h-9" : "h-10";
 const text = isPanel ? "text-[14px]" : is1280 ? "text-[14px]" : "text-[16px]";

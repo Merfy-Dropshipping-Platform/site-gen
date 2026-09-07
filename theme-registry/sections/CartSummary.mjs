@@ -7,8 +7,8 @@ export default {
     padding: {
       label: 'Отступы',
       values: [{ top: 0, bottom: 0 }, { top: 80, bottom: 80 }],
-      meaning: 'внутренние отступы блока сводки корзины',
-      check: { type: 'padding-delta' },
+      meaning: 'внутренние отступы блока сводки (блок display:none при пустой корзине — мерим computed padding)',
+      check: { type: 'padding-computed' },
     },
     colorScheme: {
       label: 'Цветовая схема',

@@ -534,6 +534,23 @@ const CHECKS = {
     };
   },
 
+  // Отступы через computed-стиль (для блоков, скрытых при пустой корзине:
+  // bbox всегда 0, но padding на корне пишется).
+  async 'padding-computed'({ pg, field }) {
+    const [a, b] = field.values;
+    const sumA = (a.top ?? 0) + (a.bottom ?? 0);
+    const sumB = (b.top ?? 0) + (b.bottom ?? 0);
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(a)));
+    const sa = await snapshot(pg, blockId);
+    await applyProps(pg, PAGE, blockId, setPath(baseFor(field), field.path, resolveVal(b)));
+    const sb = await snapshot(pg, blockId);
+    if (!sa.found || !sb.found) return { pass: false, facts: 'блок пропал из DOM' };
+    const pa = Math.round((sa.paddingTop ?? 0) + (sa.paddingBottom ?? 0));
+    const pb = Math.round((sb.paddingTop ?? 0) + (sb.paddingBottom ?? 0));
+    const pass = Math.abs(pa - sumA) <= 2 && Math.abs(pb - sumB) <= 2 && pb !== pa;
+    return { pass, facts: `padding ${pa} → ${pb}px (ожидали ${sumA} → ${sumB})` };
+  },
+
   // введённый текст ВИДИМ в секции (не «есть в DOM», а видим глазом)
   async 'text-lands'({ pg, field }) {
     const facts = [];

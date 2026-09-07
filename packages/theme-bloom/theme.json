@@ -44,16 +44,44 @@
       "colorScheme": "scheme-1"
     },
     "Header": {
+      "siteTitle": "Bloom",
+      "logo": "/icons/Bloom.svg",
       "logoPosition": "top-center",
       "padding": {
         "top": 16,
         "bottom": 16
-      }
+      },
+      "navigationLinks": [
+        {
+          "label": "Каталог",
+          "href": "/catalog"
+        },
+        {
+          "label": "О нас",
+          "href": "/about"
+        },
+        {
+          "label": "Доставка",
+          "href": "/delivery"
+        },
+        {
+          "label": "Контакты",
+          "href": "/contacts"
+        }
+      ]
     },
     "Hero": {
       "variant": "split-bloom",
       "alignment": "left",
-      "size": "large"
+      "size": "large",
+      "colorScheme": "scheme-1",
+      "overlay": 40,
+      "heading": {
+        "text": "Изображение"
+      },
+      "text": {
+        "content": "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам"
+      }
     },
     "Slideshow": {
       "alignment": "left",
@@ -63,27 +91,42 @@
     "Collections": {
       "cardCaptionStyle": "uppercase",
       "gridAspect": "1:1",
-      "titleAlignment": "left"
+      "titleAlignment": "left",
+      "heading": "Сейчас в тренде"
     },
     "MainText": {
       "buttonStyle": "solid",
-      "textStyle": "regular"
+      "textStyle": "regular",
+      "heading": {
+        "text": "Расскажи о своем бренде"
+      }
     },
     "Video": {
       "padded": true,
-      "align": "container"
+      "align": "container",
+      "heading": "Видео"
     },
     "ImageWithText": {
       "imagePosition": "right",
-      "ctaPosition": "bottom-pinned"
+      "ctaPosition": "bottom-pinned",
+      "heading": {
+        "text": "Изображение с текстом"
+      }
     },
     "PopularProducts": {
       "cardCaptionStyle": "uppercase",
-      "headingAlignment": "left"
+      "headingAlignment": "left",
+      "heading": "Коллекция товаров"
     },
     "Newsletter": {
       "formLayout": "inline-submit",
-      "alignment": "left"
+      "alignment": "left",
+      "heading": {
+        "text": "Подпишитесь на нашу рассылку"
+      },
+      "text": {
+        "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях."
+      }
     },
     "Catalog": {
       "filterPosition": "side",
@@ -109,9 +152,24 @@
         "text": "© 2026 Bloom Theme. Powered by Merfy"
       }
     },
-    "Gallery": {},
-    "MultiRows": {},
-    "MultiColumns": {}
+    "CollapsibleSection": {
+      "heading": "Сворачиваемый раздел"
+    },
+    "ContactForm": {
+      "heading": "Контактная форма"
+    },
+    "Gallery": {
+      "heading": "Галерея"
+    },
+    "MultiColumns": {
+      "heading": "Мультиколонны"
+    },
+    "MultiRows": {
+      "heading": "Мультиряды"
+    },
+    "Publications": {
+      "heading": "Публикации"
+    }
   },
   "colorSchemes": [
     {
@@ -317,5 +375,46 @@
       "role": "system",
       "contentFile": "pages/checkout.json"
     }
-  ]
+  ],
+  "blockPlaceholders": {
+    "Hero": {
+      "heading.text": "Изображение"
+    },
+    "Gallery": {
+      "heading": "Галерея"
+    },
+    "Collections": {
+      "heading": "Сейчас в тренде"
+    },
+    "CollapsibleSection": {
+      "heading": "Сворачиваемый раздел"
+    },
+    "ContactForm": {
+      "heading": "Контактная форма"
+    },
+    "MultiColumns": {
+      "heading": "Мультиколонны"
+    },
+    "MultiRows": {
+      "heading": "Мультиряды"
+    },
+    "Newsletter": {
+      "heading.text": "Подпишитесь на нашу рассылку"
+    },
+    "Video": {
+      "heading": "Видео"
+    },
+    "PopularProducts": {
+      "heading": "Коллекция товаров"
+    },
+    "Publications": {
+      "heading": "Публикации"
+    },
+    "MainText": {
+      "heading.text": "Расскажи о своем бренде"
+    },
+    "ImageWithText": {
+      "heading.text": "Изображение с текстом"
+    }
+  }
 }

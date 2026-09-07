@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // НОВАЯ канон-секция Gallery (Фаза B, рецепт bloom Gallery): у верстальщика
 // satin секции «Галерея» НЕТ; components/gallery/* — legacy клона rose со
 // скруглениями rounded-[8px]/gray-100, его НЕ переиспользуем (MANNER.md, шапка).
@@ -10,17 +11,64 @@
 // пиксель-фоллбеком родных литералов §7.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as {
+	fields?: Record<string, { set?: boolean }>;
+	catalog?: {
+		products?: Array<{
+			id?: string;
+			name?: string;
+			slug?: string;
+			image?: string;
+			images?: string[];
+			price?: number | null;
+		}>;
+		collections?: Array<{
+			id?: string;
+			name?: string;
+			slug?: string;
+			image?: string | null;
+			images?: string[];
+		}>;
+	};
+} | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function slotImage(url: unknown): string {
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
+function formatCatalogPrice(value: number | null | undefined): string {
+	if (value == null) return "2 500 ₽";
+	return `${value.toLocaleString("ru-RU")} ₽`;
+}
 
 // Канон heading {text,size}: дефолт «Галерея» (пустой текст конструктора →
 // тоже «Галерея» — «добавил секцию → сразу красиво»).
 const rawTitle = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title;
-const sectionTitle = typeof rawTitle === "string" && rawTitle.trim() ? rawTitle : "Галерея";
+const sectionTitle =
+	contentSet(["heading", "title"], rawTitle) && typeof rawTitle === "string" && rawTitle.trim()
+		? rawTitle
+		: "Галерея";
 // Текст секции — рендер ТОЛЬКО при непустом (body-роль Arsenal 16 light muted §1).
 const rawText =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
 	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
 	(typeof p.subheading === "string" ? p.subheading : undefined);
-const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : undefined;
+const sectionText =
+	contentSet(["text", "subtitle"], rawText) && typeof rawText === "string" && rawText.trim()
+		? rawText
+		: undefined;
 
 // Канон headingSize (top-level приоритетнее heading.size): 'medium'
 // (canon-default puckConfig) и отсутствие = роль «заголовок секции» дословно
@@ -66,37 +114,76 @@ type GalleryTile = {
 	href: string;
 	ref: string | null;
 };
+const catalogProducts = merfy?.catalog?.products ?? [];
+const catalogCollections = merfy?.catalog?.collections ?? [];
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
 	.slice(0, 3)
 	.map((it: any): GalleryTile => {
 		if (it.type === "product") {
-			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;
+			const pid = typeof it.productId === "string" && it.productId.trim() ? it.productId.trim() : null;
+			const product = pid
+				? catalogProducts.find((x) => x.id === pid || x.slug === pid) ?? null
+				: null;
+			if (product) {
+				const cover =
+					slotImage(product.image) ||
+					(Array.isArray(product.images) ? slotImage(product.images[0]) : "");
+				return {
+					kind: "product",
+					url: cover,
+					alt: product.name || "Товар",
+					label: product.name || "Товар",
+					price: formatCatalogPrice(product.price),
+					href: product.id ? `/product?id=${encodeURIComponent(product.id)}` : "/catalog",
+					ref: pid,
+				};
+			}
 			return {
 				kind: "product",
 				url: "",
 				alt: "Товар",
 				label: "Товар",
 				price: "2 500 ₽",
-				href: pid ? `/product?id=${encodeURIComponent(pid)}` : "/catalog",
-				ref: pid,
+				href: pid && !merfy ? `/product?id=${encodeURIComponent(pid)}` : "/catalog",
+				ref: merfy ? null : pid,
 			};
 		}
 		if (it.type === "collection") {
-			const cid = typeof it.collectionId === "string" && it.collectionId ? it.collectionId : null;
+			const cid = typeof it.collectionId === "string" && it.collectionId.trim() ? it.collectionId.trim() : null;
+			const col = cid
+				? catalogCollections.find((x) => x.id === cid || x.slug === cid || x.name === cid) ?? null
+				: null;
+			if (col) {
+				const cover =
+					slotImage(col.image) || (Array.isArray(col.images) ? slotImage(col.images[0]) : "");
+				return {
+					kind: "collection",
+					url: cover,
+					alt: col.name || "Коллекция",
+					label: col.name || "Выбери коллекцию",
+					price: "",
+					href: col.slug
+						? `/catalog?collection=${encodeURIComponent(col.slug)}`
+						: cid
+							? `/catalog?collection=${encodeURIComponent(cid)}`
+							: "/catalog",
+					ref: cid,
+				};
+			}
 			return {
 				kind: "collection",
 				url: "",
 				alt: "Коллекция",
 				label: "Выбери коллекцию",
 				price: "",
-				href: cid ? `/catalog?collection=${encodeURIComponent(cid)}` : "/catalog",
-				ref: cid,
+				href: cid && !merfy ? `/catalog?collection=${encodeURIComponent(cid)}` : "/catalog",
+				ref: merfy ? null : cid,
 			};
 		}
 		return {
 			kind: "image",
-			url: typeof it.url === "string" ? it.url : "",
+			url: slotImage(it.url),
 			alt: typeof it.alt === "string" ? it.alt : "",
 			label: "",
 			price: "",
@@ -121,7 +208,9 @@ const PLACEHOLDER_GALLERY = "/placeholders/landscape-gallery.png";
 // Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
 // (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
 // (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже.
-const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
+const useItems = galleryTiles.some((t) =>
+	t.kind === "image" ? !!slotImage(t.url) : !!t.ref,
+);
 const heroTile = useItems ? galleryTiles[0] : undefined;
 const sideTiles = useItems ? galleryTiles.slice(1) : [];
 
@@ -139,10 +228,25 @@ const captionOldPriceCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
+// конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
+// :root (базовую палитру) — мерчант видит это как «поменял одну секцию, а
+// соседние перекрасились». На live обёртка даёт ту же схему, дубль безвреден.
+// Схема приходит строкой ИЛИ числом (нормализатор Slideshow) — разбираем оба.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
+
 ---
 
 <section
-	class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14"
+	class={`satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14${selfSchemeClass}`}
 	aria-label="Галерея Satin"
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -154,8 +258,8 @@ const paddingStyle = p.padding
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 class={headingCls}>{sectionTitle}</h2>
-			{sectionText && <p class={textCls}>{sectionText}</p>}
+			<h2 class={headingCls} set:html={inlineFormat(sectionTitle)} />
+			{sectionText && <p class={textCls} set:html={inlineFormat(sectionText)} />}
 		</div>
 
 		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">

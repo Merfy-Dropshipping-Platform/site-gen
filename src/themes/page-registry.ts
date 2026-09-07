@@ -108,6 +108,16 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
 export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'vanilla', 'bloom', 'flux', 'satin']);
 
 /**
+ * Темы, чья страница корзины (/cart) рендерится Puck-блоками
+ * CartBody / CartSummary / CartTotals / CartCheckoutButton (spec 110),
+ * а не verbatim-портом `themes/<t>/src/pages/cart.astro`.
+ * Иначе настройки секций корзины в конструкторе мёртвые: превью отдаёт
+ * статичный blob, блоков с data-puck-component-id нет.
+ * Rose-first + flux (текущий слой паритета). Откат темы = убрать её отсюда.
+ */
+export const CART_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'flux']);
+
+/**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,
  * не «системные страницы»). Вместе с verbatim-записями реестра дают полное
  * множество прежнего V2_COMPLEX_ROUTE_PREFIXES.

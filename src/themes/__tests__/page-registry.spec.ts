@@ -6,6 +6,7 @@ import {
   getSystemPageRoute,
   getRouteMap,
   getChromeKind,
+  CART_UNIFIED_THEMES,
 } from '../page-registry';
 
 /**
@@ -180,6 +181,14 @@ describe('page-registry parity-snapshot', () => {
       for (const p of VERBATIM_PREFIXES) {
         expect(entrySegments.has(p)).toBe(false);
       }
+    });
+  });
+
+  describe('CART_UNIFIED_THEMES', () => {
+    it('rose и flux унифицированы; cart в реестре остаётся verbatim (гейт overlay)', () => {
+      expect(CART_UNIFIED_THEMES.has('rose')).toBe(true);
+      expect(CART_UNIFIED_THEMES.has('flux')).toBe(true);
+      expect(isVerbatimRoute('cart')).toBe(true);
     });
   });
 

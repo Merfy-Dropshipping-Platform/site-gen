@@ -21,6 +21,17 @@ export interface ThemeConfigForResolver {
    */
   blockDefaults?: Record<string, unknown>;
   /**
+   * Плейсхолдеры полей панели (theme.json `blockPlaceholders`):
+   * `{ <Block>: { "heading": "Галерея", "heading.text": "…" } }`.
+   * Порт рендерит такую заглушку, когда мерчант текст не задал, а платформа
+   * считает эти строки НЕзаполненным полем (`render/empty-state.ts`) и
+   * вычищает их из props — поэтому в панели инпут пустой, а на превью текст
+   * есть. Отдаём тот же текст как `placeholder` инпута, чтобы панель и
+   * превью показывали одно и то же. Ключ — имя поля либо путь `a.b` для
+   * objectFields.
+   */
+  blockPlaceholders?: Record<string, Record<string, string>>;
+  /**
    * 100: CSS-token defaults (theme.json `defaults` block). Передаются в
    * /api/themes/:id/puck-config response → конструктор TokenThemeProvider
    * инициализирует slider'ы Theme Settings с темо-эталонными значениями.

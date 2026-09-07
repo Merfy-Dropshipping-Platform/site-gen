@@ -5,10 +5,11 @@ import { PreviewService } from '../services/preview.service';
 import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
-import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES } from './page-registry';
+import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES } from './page-registry';
 import { assembleChrome, injectChromeIntoHtml } from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
+import { catalogFromStoreData, type RenderContext } from '../render/create-render-context';
 
 const logger = new Logger('V2LivePages');
 
@@ -18,13 +19,22 @@ const logger = new Logger('V2LivePages');
 let renderer: PreviewService | null = null;
 const getRenderer = (): PreviewService => (renderer ??= new PreviewService());
 
+function merfyFromBuild(ctx: BuildContext, theme: string): RenderContext {
+  return {
+    siteId: ctx.siteId,
+    themeId: theme,
+    catalog: catalogFromStoreData(ctx.storeData ?? { products: [], collections: [] }),
+    themeSettings: (ctx.revisionData as { themeSettings?: unknown })?.themeSettings ?? {},
+  };
+}
+
 /**
  * Фаза 2: после copyThemeV2Dist перезаписывает контентные страницы live-диста
  * Container-рендером блоков ревизии (тот же движок, что превью конструктора —
  * live = превью). Контентные страницы включают catalog (098-паритет: каталог
  * нарезается на секции и пересаживается так же, как в превью) и шаблон
  * коллекции collections/preview. Остальные сложные страницы диста
- * (cart/checkout/product/…) не трогаются. Гейт: тема нарезана (есть
+ * (checkout и не-unified cart/product) не трогаются. Гейт: тема нарезана (есть
  * dist/theme-sections/<тема>/manifest.json), иначе no-op — иначе резолвер
  * v2-секций упадёт в theme-base-каскад и даст ненарезанной теме ЧУЖОЙ вид.
  * Страница без своего шелла в дисте (нет dist/<route>/index.html и нет
@@ -36,6 +46,7 @@ export async function composeContentPagesIntoDist(
   theme: string,
 ): Promise<number> {
   if (!(await getRenderer().hasV2Sections(theme))) return 0;
+  const merfy = merfyFromBuild(ctx, theme);
 
   const revPages = Array.isArray((ctx.revisionData as { pages?: unknown })?.pages)
     ? ((ctx.revisionData as { pages: Array<Record<string, unknown>> }).pages)
@@ -76,6 +87,13 @@ export async function composeContentPagesIntoDist(
   // не затронуты (страница остаётся verbatim).
   if (PRODUCT_UNIFIED_THEMES.has(theme)) {
     pages.push({ key: 'page-product', route: 'product', requireOwnShell: true, title: pageName('page-product') });
+  }
+
+  // Унификация корзины (spec 110): для CART_UNIFIED_THEMES /cart рендерится
+  // теми же Cart* блоками, что превью конструктора. requireOwnShell — только
+  // поверх SSG-шелла cart/index.html, без фоллбэка на home.
+  if (CART_UNIFIED_THEMES.has(theme)) {
+    pages.push({ key: 'page-cart', route: 'cart', requireOwnShell: true, title: pageName('page-cart') });
   }
 
   // Кастомные страницы мерчанта — ТОЛЬКО позитивный opt-in. В прод-ревизиях
@@ -172,6 +190,7 @@ export async function composeContentPagesIntoDist(
           props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
           themeId: theme,
           isPreview: false,
+          merfy,
         }),
       ),
     );
@@ -241,6 +260,7 @@ export async function renderProductSectionForId(
       props: { ...prod.props, siteId: (prod.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
       themeId: theme,
       isPreview: false,
+      merfy: merfyFromBuild(ctx, theme),
     });
     if (!html || !html.trim()) return null;
     const scheme = schemeIdFromProp((prod.props as Record<string, unknown>)?.colorScheme);
@@ -297,6 +317,7 @@ export async function composeLegalPagesIntoDist(
   policies: Array<{ type: string; content: string | null }>,
 ): Promise<number> {
   if (!(await getRenderer().hasV2Sections(theme))) return 0;
+  const merfy = merfyFromBuild(ctx, theme);
   if (!Array.isArray(policies) || policies.length === 0) return 0;
 
   // Шапка/подвал из home-ревизии (рамка для каждой legal-страницы).
@@ -351,6 +372,7 @@ export async function composeLegalPagesIntoDist(
           props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
           themeId: theme,
           isPreview: false,
+          merfy,
         }),
       ),
     );
@@ -481,7 +503,7 @@ export async function applyChromeToDist(
     chrome: 'full',
     // Bound: модуль chrome-assembler не создаёт свой Container — переиспользует
     // общий getRenderer() (как контентные страницы live-цикла).
-    renderBlock: (input) => getRenderer().renderBlock(input),
+    renderBlock: (input) => getRenderer().renderBlock({ ...input, merfy: merfyFromBuild(ctx, theme) }),
     isPreview: false,
   });
   if (!chrome.headerHtml) {
@@ -555,6 +577,7 @@ export async function unifyChromeInDist(
       props: checkoutProps,
       themeId: theme,
       isPreview: false,
+      merfy: merfyFromBuild(ctx, theme),
     });
     checkoutHeader = html && html.trim() ? html.trim() : null;
   } catch (err) {

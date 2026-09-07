@@ -30,17 +30,18 @@ import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
-import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES } from '../themes/page-registry';
 import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
+import { createRenderContext, type RenderContext } from '../render/create-render-context';
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
  * used by the iframe's `update-block` postMessage handler in the constructor
  * (spec 082 Stage 1, T2/T5). `blockType` is required; `props` may be empty;
- * `themeId` falls back to base resolver when omitted/null.
+ * `themeId` in the body is ignored — identity is the site record.
  */
 interface RenderBlockBody {
   blockType: string;
@@ -54,7 +55,7 @@ interface RenderBlockBody {
  * (spec 082 Stage 2a, N4). Symmetric to RenderBlockBody but renders the
  * full tokens.css string instead of a single block. `themeSettings` is
  * required (constructor sends the full themeSettings object); `themeId`
- * falls back to the manifest defaults when omitted/null.
+ * in the body is ignored — tokens.css uses the site record's themeId.
  */
 interface RenderTokensCssBody {
   themeSettings: Record<string, unknown>;
@@ -173,6 +174,18 @@ export class PreviewController {
       return;
     }
 
+    let merfy: RenderContext | undefined;
+    if (loaded.themeId) {
+      const ctx = await createRenderContext({
+        siteId,
+        themeId: loaded.themeId,
+        tenantId: loaded.tenantId,
+        themeSettings: (loaded.data as { themeSettings?: unknown })?.themeSettings,
+        productClient: this.productClient,
+      });
+      if (!('error' in ctx)) merfy = ctx;
+    }
+
     // Constructor v2 (Phase 1) short-circuit. The site's theme_id resolves to
     // a template_id (loaded.themeId). If ThemeBuildService has produced a fully
     // assembled page for the requested route at
@@ -239,6 +252,8 @@ export class PreviewController {
     const bareThemeKey = PreviewService.bareThemeKey(loaded.themeId ?? '');
     const isProductPage = route === 'product' || match?.id === 'page-product';
     const unifiedProduct = isProductPage && PRODUCT_UNIFIED_THEMES.has(bareThemeKey);
+    const isCartPage = route === 'cart' || match?.id === 'page-cart';
+    const unifiedCart = isCartPage && CART_UNIFIED_THEMES.has(bareThemeKey);
 
     // The product page's slug is `/product`, but the theme builds per-product
     // pages at <template>/products/<id>/index.html. Resolve to the first built
@@ -251,11 +266,11 @@ export class PreviewController {
 
     // Фаза 2 (слайсинг): контентные страницы v2-темы идут по-секционно,
     // чтобы конструктор мог выделять/править/таскать секции. Сложные
-    // страницы (catalog/cart/checkout/…) остаются на блоб-пути; page-product —
-    // на v2-пути для unified-тем (unifiedProduct снимает complex-гейт).
+    // страницы (checkout/…) остаются на блоб-пути; page-product и page-cart —
+    // на v2-пути для unified-тем (снимают complex-гейт).
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
-    const isComplexRoute = isV2ComplexRoute(route) && !unifiedProduct;
+    const isComplexRoute = isV2ComplexRoute(route) && !unifiedProduct && !unifiedCart;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
@@ -279,7 +294,7 @@ export class PreviewController {
         const v2Blocks = await extractPageBlocks(
           loaded.data,
           pageKeyForBlocks,
-          loaded.publicUrl,
+          loaded.themeId ? `/__theme/${loaded.themeId}` : loaded.publicUrl,
           loaded.themeId,
           siteId,
           productIdOverride,
@@ -289,15 +304,27 @@ export class PreviewController {
         if (v2Blocks && v2Blocks.length > 0) {
           const pageTitle =
             typeof match?.name === 'string' ? match.name : undefined;
-          const v2Html = await this.preview.renderV2ContentPage({
+          let v2Html = await this.preview.renderV2ContentPage({
             themeId: loaded.themeId!,
             siteId,
             route,
             blocks: v2Blocks,
             titleOverride: pageTitle,
             themeSettings: (loaded.data as Record<string, unknown> | null)?.themeSettings,
+            merfy,
           });
           if (v2Html !== null) {
+            // Скоуп каталога на товары коллекции — зеркало live-сборки
+            // (build.service: та же подстановка в `data-collection-slug`).
+            // Без неё превью страницы коллекции показывало ВЕСЬ каталог: имя
+            // коллекции подставлялось, а slug оставался пустым, и клиентский
+            // фильтр каталога ничего не отбирал.
+            if (collectionSlug) {
+              v2Html = v2Html.replace(
+                /(\bdata-collection-slug=["'])[^"']*(["'])/gi,
+                `$1${collectionSlug.replace(/"/g, '&quot;')}$2`,
+              );
+            }
             // Паритет с блоб-путём: секционный Catalog тоже должен получить
             // __MERFY_CATALOG_LAYOUT__ (filterPosition) и __MERFY_DEFAULT_PRODUCT_ID__,
             // иначе превью игнорит выбранную раскладку каталога / товар.
@@ -368,7 +395,7 @@ export class PreviewController {
                 ?.pagesData) ?? {},
             theme: loaded.themeId ?? 'base',
             chrome: 'full',
-            renderBlock: (input) => this.preview.renderBlock(input),
+            renderBlock: (input) => this.preview.renderBlock({ ...input, merfy }),
             isPreview: true,
           });
           // Переписываем корневые URL хрома (/icons/x.svg, /scripts/*, …) под
@@ -459,7 +486,7 @@ export class PreviewController {
     const blocks = await extractPageBlocks(
       loaded.data,
       page,
-      loaded.publicUrl,
+      loaded.themeId ? `/__theme/${loaded.themeId}` : loaded.publicUrl,
       loaded.themeId,
       siteId,
       productIdOverride,
@@ -482,6 +509,7 @@ export class PreviewController {
         page,
         siteId,
         publicUrl: loaded.publicUrl,
+        merfy,
       });
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый
@@ -541,21 +569,63 @@ export class PreviewController {
         ...(body.props ?? {}),
         siteId,
       };
+      // Footer hot-render: обогатить props данными из БД (политики → informationColumn,
+      // контакты → phone/email/contactFields, платёжки → paymentEnabled) тем же
+      // applyFooterData, что composed-превью (GET /preview:617) и build-пайплайн. Иначе
+      // одиночный hot-render шлёт СЫРЫЕ props (informationColumn.links=[], без phone/payment)
+      // → футер «ломается» при клике по любой настройке (контент исчезает). Оборачиваем
+      // props в минимальную content-обёртку — applyFooterData мутирует их in-place.
+      if (body.blockType === 'Footer') {
+        await applyFooterData(
+          { db: this.db, schema, billingClient: this.billingClient },
+          siteId,
+          { content: [{ type: 'Footer', props: propsWithContext }] },
+          this.logger,
+        );
+      }
+      const loaded = await this.loadRevisionData(siteId);
+      if (body.themeId && loaded?.themeId && body.themeId !== loaded.themeId) {
+        this.logger.warn(
+          `[preview-block] ignoring body.themeId=${body.themeId} site.themeId=${loaded.themeId} site=${siteId}`,
+        );
+      }
+      if (!loaded?.themeId) {
+        res
+          .status(500)
+          .type('text/html')
+          .send('<!-- render error: site has no themeId -->');
+        return;
+      }
+      const ctx = await createRenderContext({
+        siteId,
+        themeId: loaded.themeId,
+        tenantId: loaded.tenantId,
+        themeSettings: (loaded.data as { themeSettings?: unknown })?.themeSettings,
+        productClient: this.productClient,
+      });
+      if ('error' in ctx) {
+        res
+          .status(500)
+          .type('text/html')
+          .send('<!-- render error: site has no themeId -->');
+        return;
+      }
       let html = await this.preview.renderBlock({
         blockName: body.blockType,
         props: propsWithContext,
-        themeId: body.themeId ?? null,
+        themeId: ctx.themeId,
         // POST /preview/block ALWAYS called from constructor iframe —
         // граceful stub визибл при missing/broken (spec 092 Q3 C).
         isPreview: true,
+        merfy: ctx,
       });
       // Фаза 2: для v2-тем переписываем корневые URL блока под /__theme/<тема>,
       // чтобы hot-replaced секция тянула ассеты темы (как composeV2Page при
       // первичном рендере). На legacy-темах (нет theme-sections) — no-op.
-      if (body.themeId && (await this.preview.hasV2Sections(body.themeId))) {
+      if (await this.preview.hasV2Sections(ctx.themeId)) {
         html = rewriteRootUrlsToPrefix(
           html,
-          `/__theme/${PreviewService.bareThemeKey(body.themeId)}`,
+          `/__theme/${PreviewService.bareThemeKey(ctx.themeId)}`,
         );
       }
       res.type('text/html').send(html);
@@ -590,6 +660,7 @@ export class PreviewController {
   @Post('tokens-css')
   @HttpCode(200)
   async renderTokensCss(
+    @Param('id') siteId: string,
     @Body() body: RenderTokensCssBody,
     @Res() res: Response,
   ): Promise<void> {
@@ -597,12 +668,20 @@ export class PreviewController {
       throw new BadRequestException('themeSettings required');
     }
     try {
-      const css = buildTokensCss(body.themeSettings ?? {}, body.themeId ?? null);
+      const loaded = await this.loadRevisionData(siteId);
+      if (!loaded?.themeId) {
+        res
+          .status(500)
+          .type('text/css')
+          .send('/* tokens-css render error: site has no themeId */');
+        return;
+      }
+      const css = buildTokensCss(body.themeSettings ?? {}, loaded.themeId);
       res.type('text/css').send(css);
     } catch (err: unknown) {
       const e = err as Error;
       this.logger.error(
-        `[preview-tokens-css] failed for themeId=${body.themeId}: ${e?.message ?? e}`,
+        `[preview-tokens-css] site=${siteId} failed: ${e?.message ?? e}`,
         e?.stack,
       );
       res
@@ -829,6 +908,9 @@ export class PreviewController {
     //    какую коллекцию показывает редактор.
     if (nameOverride && nameOverride.trim()) {
       ctx = { ...ctx, name: nameOverride.trim() };
+    }
+    if ((!ctx.slug || ctx.slug === 'preview') && slug && slug !== 'preview') {
+      ctx = { ...ctx, slug };
     }
     return ctx;
   }

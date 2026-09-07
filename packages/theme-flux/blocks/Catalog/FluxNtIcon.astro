@@ -13,6 +13,11 @@
  * Иконки берутся из /icons/<file>.svg (статика темы, public/icons/* —
  * копируется build pipeline). base="/" на live storefront, поэтому
  * withBase-префикс не нужен.
+ *
+ * Гоча: экспорт Figma часто с preserveAspectRatio="none" и НЕ-квадратным
+ * viewBox. <img class="size-N"> тогда растягивает глиф (сломанная стрелка
+ * рассылки). Не класть такие SVG в квадратный бокс — инлайн + meet /
+ * currentColor, как RoseNtIcon. Footer flux уже инлайн.
  */
 
 // Карта имён иконок DS → файлы в /public/icons. Каталог использует только

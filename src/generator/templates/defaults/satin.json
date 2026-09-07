@@ -20,11 +20,23 @@
             "logoPosition": "center-absolute",
             "stickiness": "scroll-up",
             "colorScheme": "scheme-2",
-            "padding": { "top": 0, "bottom": 0 },
+            "padding": {
+              "top": 0,
+              "bottom": 0
+            },
             "navigationLinks": [
-              { "label": "КОЛЛЕКЦИИ", "href": "/catalog" },
-              { "label": "ИСТОРИЯ", "href": "/about" },
-              { "label": "КОНТАКТЫ", "href": "/contacts" }
+              {
+                "label": "КОЛЛЕКЦИИ",
+                "href": "/catalog"
+              },
+              {
+                "label": "ИСТОРИЯ",
+                "href": "/about"
+              },
+              {
+                "label": "КОНТАКТЫ",
+                "href": "/contacts"
+              }
             ],
             "menuColorScheme": "scheme-2",
             "menuType": "dropdown",
@@ -39,174 +51,230 @@
           "type": "Hero",
           "props": {
             "id": "Hero-1",
-            "title": "STYLE'S WEAR COLLECTION\nSINCE 90'",
-            "subtitle": "ОСТАВАЙТЕСЬ В ЦЕНТРЕ ВНИМАНИЯ",
-            "image": {
-              "url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=80",
-              "alt": "Модель в платке"
-            },
-            "cta": { "text": "НОВЫЕ ПОСТУПЛЕНИЯ", "href": "/catalog" },
             "variant": "split",
             "colorScheme": "scheme-2",
-            "padding": { "top": 0, "bottom": 0 }
+            "padding": {
+              "top": 0,
+              "bottom": 0
+            }
           }
         },
         {
           "type": "Collections",
           "props": {
             "id": "Collections-1",
-            "heading": "",
-            "collections": [
-              {
-                "id": "col-1",
-                "collectionId": null,
-                "heading": "ВЕРХНЯЯ ОДЕЖДА",
-                "description": "",
-                "image": "https://images.unsplash.com/photo-1551232864-3f0890e580d9?auto=format&fit=crop&w=800&q=80"
-              },
-              {
-                "id": "col-2",
-                "collectionId": null,
-                "heading": "ДЖЕМПЕРЫ И КАРДИГАНЫ",
-                "description": "",
-                "image": "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&q=80"
-              },
-              {
-                "id": "col-3",
-                "collectionId": null,
-                "heading": "ФУТБОЛКИ И ТОПЫ",
-                "description": "",
-                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80"
-              }
-            ],
             "columns": 3,
             "colorScheme": "scheme-2",
-            "padding": { "top": 40, "bottom": 40 }
+            "padding": {
+              "top": 40,
+              "bottom": 40
+            }
           }
         },
         {
           "type": "PopularProducts",
           "props": {
             "id": "PopularProducts-1",
-            "heading": "НОВЫЕ ПОСТУПЛЕНИЯ",
+            "heading": "",
             "cards": 3,
             "columns": 3,
             "colorScheme": "scheme-2",
-            "padding": { "top": 40, "bottom": 40 }
-          }
-        },
-        {
-          "type": "ImageWithText",
-          "props": {
-            "id": "ImageWithText-1",
-            "image": {
-              "url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
-              "alt": "Satin — философия бренда"
+            "padding": {
+              "top": 40,
+              "bottom": 40
             },
-            "heading": "НАША ФИЛОСОФИЯ",
-            "text": "Мы создаём одежду на годы. Каждая вещь — это сочетание продуманных деталей, натуральных материалов и уважения к истории стиля.",
-            "button": { "text": "ПОДРОБНЕЕ", "href": "/about" },
-            "imagePosition": "left",
-            "colorScheme": "scheme-2",
-            "padding": { "top": 80, "bottom": 80 }
+            "viewAll": {
+              "show": true,
+              "text": "Смотреть больше",
+              "href": "/catalog"
+            }
           }
         },
         {
           "type": "MultiRows",
           "props": {
             "id": "MultiRows-1",
+            "colorScheme": "scheme-2",
+            "padding": {
+              "top": 48,
+              "bottom": 64
+            },
             "rows": [
               {
                 "id": "row-1",
-                "heading": "ЛУЧШИЕ ТКАНИ",
-                "text": "Шерсть, хлопок, шёлк, лён. Каждая коллекция проходит многоступенчатый контроль качества.",
-                "imageUrl": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80",
+                "heading": "Женская коллекция",
+                "text": "Мы уверены: одежда должна быть красивой не только на фотографиях, но и на ощупь. Satin создан для тех, кто ценит эстетику и качество в каждой детали.\n\nВ ассортименте Satin вы не найдёте случайных вещей — только то, что действительно достойно стать частью вашего гардероба.",
+                "imageUrl": "/placeholders/landscape-multirows-image.png",
                 "imagePosition": "left",
-                "button": { "text": "ДЕТАЛИ", "href": "/about" }
+                "button": { "text": "Для женщин", "href": "/catalog?collection=Женское" }
               },
               {
                 "id": "row-2",
-                "heading": "РУЧНАЯ РАБОТА",
-                "text": "Большую часть операций мы выполняем вручную — от кроя до финальной прошивки.",
-                "imageUrl": "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80",
+                "heading": "Мужская коллекция",
+                "text": "Минимализм, точная посадка и спокойный силуэт — мужская линия Satin собирает базовые вещи без лишних деталей.\n\nОдежда, которая не требует усилий, чтобы выглядеть хорошо.",
+                "imageUrl": "/placeholders/landscape-multirows-image.png",
                 "imagePosition": "right",
-                "button": { "text": "ПОСМОТРЕТЬ", "href": "/about" }
+                "button": { "text": "Для мужчин", "href": "/catalog?collection=Мужское" }
               }
-            ],
-            "colorScheme": "scheme-2",
-            "padding": { "top": 80, "bottom": 80 }
+            ]
           }
         },
         {
           "type": "MainText",
           "props": {
             "id": "MainText-1",
-            "heading": "БОЛЬШЕ, ЧЕМ ОДЕЖДА",
-            "text": "Каждая вещь SATIN — часть вашего характера. Мы создаём гардероб, который говорит тише, но точнее.",
-            "alignment": "center",
-            "cta": { "text": "СМОТРЕТЬ КАТАЛОГ", "href": "/catalog", "variant": "black" },
+            "heading": "Одежда, в которой не нужно стараться выглядеть хорошо",
+            "text": "Мы делаем вещи, которые работают на вас, а не наоборот. Хлопок и лён, которые приятно носить в жару. Крой, который не сковывает и не растягивается после третьей стирки. Палитра, где любой верх подходит к любому низу — без мучений перед зеркалом. Каждая вещь проходит три этапа примерки на реальных людях до того, как попадает в каталог. Без логомании, без кричащих принтов, без вещей-однодневок. Только базовый гардероб, к которому хочется возвращаться.",
+            "alignment": "left",
             "colorScheme": "scheme-2",
-            "padding": { "top": 80, "bottom": 80 }
+            "padding": {
+              "top": 80,
+              "bottom": 80
+            }
+          }
+        },
+        {
+          "type": "ImageWithText",
+          "props": {
+            "id": "ImageWithText-1",
+            "imagePosition": "left",
+            "colorScheme": "scheme-2",
+            "padding": {
+              "top": 80,
+              "bottom": 80
+            }
+          }
+        },
+        {
+          "type": "Collections",
+          "props": {
+            "id": "Collections-2",
+            "colorScheme": "scheme-2",
+            "padding": {
+              "top": 40,
+              "bottom": 40
+            },
+            "collectionSet": "secondary"
+          }
+        },
+        {
+          "type": "PopularProducts",
+          "props": {
+            "id": "PopularProducts-2",
+            "heading": "",
+            "cards": 3,
+            "columns": 3,
+            "colorScheme": "scheme-2",
+            "padding": {
+              "top": 40,
+              "bottom": 40
+            },
+            "viewAll": {
+              "show": true,
+              "text": "Смотреть больше",
+              "href": "/catalog"
+            },
+            "productOffset": 3
           }
         },
         {
           "type": "MultiColumns",
           "props": {
             "id": "MultiColumns-1",
-            "columns": [
-              { "id": "col-1", "heading": "ДОСТАВКА", "text": "По всей России за 2-7 дней.", "imageUrl": "" },
-              { "id": "col-2", "heading": "ВОЗВРАТ", "text": "14 дней на возврат без вопросов.", "imageUrl": "" },
-              { "id": "col-3", "heading": "ПОДДЕРЖКА", "text": "Всегда на связи в любом канале.", "imageUrl": "" }
-            ],
-            "displayColumns": 3,
             "colorScheme": "scheme-2",
-            "padding": { "top": 60, "bottom": 60 }
+            "padding": {
+              "top": 60,
+              "bottom": 60
+            },
+            "containerEnabled": true
+          }
+        },
+        {
+          "type": "Publications",
+          "props": {
+            "id": "Publications-1",
+            "heading": "",
+            "cardsCount": 3,
+            "columnsCount": 3,
+            "showDateTime": "true",
+            "colorScheme": "scheme-2",
+            "padding": {
+              "top": 40,
+              "bottom": 40
+            }
           }
         },
         {
           "type": "CollapsibleSection",
           "props": {
             "id": "CollapsibleSection-1",
-            "heading": "ВОПРОСЫ И ОТВЕТЫ",
-            "sections": [
-              { "id": "faq-1", "heading": "КАК ОФОРМИТЬ ЗАКАЗ?", "content": "Добавьте товары в корзину, укажите данные доставки и способ оплаты." },
-              { "id": "faq-2", "heading": "СРОКИ ДОСТАВКИ", "content": "Москва — 1-2 дня, регионы — 3-7 дней." },
-              { "id": "faq-3", "heading": "УСЛОВИЯ ВОЗВРАТА", "content": "Возврат в течение 14 дней с момента получения." }
-            ],
+            "heading": "",
             "colorScheme": "scheme-2",
-            "padding": { "top": 80, "bottom": 80 }
+            "padding": {
+              "top": 80,
+              "bottom": 80
+            }
           }
         },
         {
           "type": "Footer",
           "props": {
             "id": "Footer-1",
-            "newsletter": { "enabled": "false" },
-            "colorScheme": "scheme-3",
-            "copyrightColorScheme": "scheme-1",
-            "padding": { "top": 80, "bottom": 40 },
+            "newsletter": {
+              "enabled": "false"
+            },
+            "colorScheme": "scheme-2",
+            "copyrightColorScheme": "scheme-4",
+            "padding": {
+              "top": 80,
+              "bottom": 40
+            },
             "navigationColumn": {
               "title": "МАГАЗИН",
               "links": [
-                { "label": "Коллекции", "href": "/catalog" },
-                { "label": "Новые поступления", "href": "/catalog" },
-                { "label": "О бренде", "href": "/about" }
+                {
+                  "label": "Коллекции",
+                  "href": "/catalog"
+                },
+                {
+                  "label": "Новые поступления",
+                  "href": "/catalog"
+                },
+                {
+                  "label": "О бренде",
+                  "href": "/about"
+                }
               ]
             },
             "informationColumn": {
               "title": "ИНФОРМАЦИЯ",
               "links": [
-                { "label": "Доставка", "href": "/delivery" },
-                { "label": "Возврат", "href": "/returns" },
-                { "label": "Оплата", "href": "/payment" }
+                {
+                  "label": "Доставка",
+                  "href": "/delivery"
+                },
+                {
+                  "label": "Возврат",
+                  "href": "/returns"
+                },
+                {
+                  "label": "Оплата",
+                  "href": "/payment"
+                }
               ]
             },
             "socialColumn": {
               "title": "СВЯЗЬ",
               "email": "hello@satin.example",
               "socialLinks": [
-                { "platform": "VK", "href": "#" },
-                { "platform": "Telegram", "href": "#" }
+                {
+                  "platform": "VK",
+                  "href": "#"
+                },
+                {
+                  "platform": "Telegram",
+                  "href": "#"
+                }
               ]
             },
             "copyright": {
@@ -218,7 +286,9 @@
         }
       ],
       "root": {
-        "props": { "title": "Satin" }
+        "props": {
+          "title": "Satin"
+        }
       },
       "zones": {}
     }
@@ -239,30 +309,10 @@
     "colorSchemes": [
       {
         "id": "scheme-1",
-        "name": "Black",
-        "text": "#FFFFFF",
-        "heading": "#FFFFFF",
-        "background": "#080200",
-        "primaryButton": {
-          "text": "#000000",
-          "border": "#ffffff",
-          "textHover": "#000000",
-          "background": "#ffffff",
-          "backgroundHover": "#eeeeee"
-        },
-        "secondaryButton": {
-          "text": "#ffffff",
-          "border": "#ffffff",
-          "textHover": "#ffffff",
-          "background": "#080200",
-          "backgroundHover": "#1a1a1a"
-        }
-      },
-      {
-        "id": "scheme-2",
         "name": "White",
         "text": "#000000",
         "heading": "#000000",
+        "surfaceBg": "#f5f5f5",
         "background": "#ffffff",
         "primaryButton": {
           "text": "#ffffff",
@@ -280,10 +330,33 @@
         }
       },
       {
+        "id": "scheme-2",
+        "name": "White 2",
+        "text": "#121212",
+        "heading": "#121212",
+        "surfaceBg": "#f5f5f5",
+        "background": "#ffffff",
+        "primaryButton": {
+          "text": "#ffffff",
+          "border": "#000000",
+          "textHover": "#ffffff",
+          "background": "#000000",
+          "backgroundHover": "#333333"
+        },
+        "secondaryButton": {
+          "text": "#121212",
+          "border": "#000000",
+          "textHover": "#121212",
+          "background": "#ffffff",
+          "backgroundHover": "#f5f5f5"
+        }
+      },
+      {
         "id": "scheme-3",
         "name": "Light Gray",
         "text": "#000000",
         "heading": "#000000",
+        "surfaceBg": "#f5f5f5",
         "background": "#f5f5f5",
         "primaryButton": {
           "text": "#ffffff",
@@ -302,14 +375,15 @@
       },
       {
         "id": "scheme-4",
-        "name": "Dark Gray",
+        "name": "Black",
         "text": "#FFFFFF",
         "heading": "#FFFFFF",
-        "background": "#444444",
+        "surfaceBg": "#080200",
+        "background": "#080200",
         "primaryButton": {
-          "text": "#444444",
+          "text": "#000000",
           "border": "#ffffff",
-          "textHover": "#444444",
+          "textHover": "#000000",
           "background": "#ffffff",
           "backgroundHover": "#eeeeee"
         },
@@ -317,8 +391,8 @@
           "text": "#ffffff",
           "border": "#ffffff",
           "textHover": "#ffffff",
-          "background": "#444444",
-          "backgroundHover": "#555555"
+          "background": "#080200",
+          "backgroundHover": "#1a1a1a"
         }
       }
     ],
@@ -326,6 +400,6 @@
     "sectionPadding": 40,
     "productCardStyle": "standard",
     "productCardAlignment": "left",
-    "defaultSchemeIndex": 1
+    "defaultSchemeIndex": 0
   }
 }

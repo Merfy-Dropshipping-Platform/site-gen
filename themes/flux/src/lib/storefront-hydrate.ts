@@ -106,14 +106,48 @@ function normalizeProductPrices(products: RealProduct[]): RealProduct[] {
   }));
 }
 
+function merfySiteId(): string | undefined {
+  return typeof window !== "undefined"
+    ? (window as unknown as { __MERFY_SITE_ID__?: string }).__MERFY_SITE_ID__
+    : undefined;
+}
+
+function storefrontDataUrl(siteId: string): string {
+  const base =
+    typeof window !== "undefined"
+      ? (window as unknown as { __MERFY_API_BASE__?: string }).__MERFY_API_BASE__ ||
+        ""
+      : "";
+  return `${base}/api/sites/${encodeURIComponent(siteId)}/storefront-data`;
+}
+
 /**
  * Грузит реальные товары. Возвращает null, когда товаров нет (demo-сборка) —
  * вызывающий код в этом случае оставляет SSG-разметку нетронутой.
+ *
+ * Если есть shopId превью/витрины — сначала storefront-data (живые товары
+ * магазина). Иначе демо `/data/products.json` шелла темы перетирает SSR.
  */
 export async function loadRealProducts(): Promise<RealProduct[] | null> {
   if (cached !== undefined) return cached;
 
-  // 1. Статический per-site файл — опубликованный сайт (build.service инжектит).
+  const siteId = merfySiteId();
+  if (siteId) {
+    try {
+      const res = await fetch(storefrontDataUrl(siteId));
+      if (res.ok) {
+        const payload = (await res.json()) as { products?: unknown };
+        const products = payload?.products;
+        if (Array.isArray(products) && products.length > 0) {
+          cached = normalizeProductPrices(products as RealProduct[]);
+          return cached;
+        }
+      }
+    } catch {
+      /* storefront-data недоступен — пробуем статику ниже */
+    }
+  }
+
   try {
     const res = await fetch(PRODUCTS_URL);
     if (res.ok) {
@@ -124,33 +158,7 @@ export async function loadRealProducts(): Promise<RealProduct[] | null> {
       }
     }
   } catch {
-    /* файла нет — пробуем preview-фолбэк ниже */
-  }
-
-  // 2. Preview-фолбэк: конструктор-превью отдаёт built-theme БЕЗ products.json
-  // (это build-артефакт). preview.controller инжектит window.__MERFY_SITE_ID__ —
-  // берём товары из того же storefront-data, которым блоки конструктора грузят
-  // товары → паритет live ↔ preview.
-  const siteId =
-    typeof window !== "undefined"
-      ? (window as unknown as { __MERFY_SITE_ID__?: string }).__MERFY_SITE_ID__
-      : undefined;
-  if (siteId) {
-    try {
-      const res = await fetch(
-        `/api/sites/${encodeURIComponent(siteId)}/storefront-data`,
-      );
-      if (res.ok) {
-        const payload = (await res.json()) as { products?: unknown };
-        const products = payload?.products;
-        if (Array.isArray(products) && products.length > 0) {
-          cached = normalizeProductPrices(products as RealProduct[]);
-          return cached;
-        }
-      }
-    } catch {
-      /* preview-фолбэк не удался */
-    }
+    /* файла нет */
   }
 
   cached = null;
@@ -178,6 +186,22 @@ let cachedCollections: RealCollection[] | null | undefined;
  */
 export async function loadRealCollections(): Promise<RealCollection[] | null> {
   if (cachedCollections !== undefined) return cachedCollections;
+  const siteId = merfySiteId();
+  if (siteId) {
+    try {
+      const res = await fetch(storefrontDataUrl(siteId));
+      if (res.ok) {
+        const payload = (await res.json()) as { collections?: unknown };
+        const collections = payload?.collections;
+        if (Array.isArray(collections) && collections.length > 0) {
+          cachedCollections = collections as RealCollection[];
+          return cachedCollections;
+        }
+      }
+    } catch {
+      /* storefront-data недоступен — пробуем статику ниже */
+    }
+  }
   try {
     const res = await fetch(COLLECTIONS_URL);
     if (res.ok) {
@@ -188,28 +212,7 @@ export async function loadRealCollections(): Promise<RealCollection[] | null> {
       }
     }
   } catch {
-    /* файла нет — preview-фолбэк ниже */
-  }
-  const siteId =
-    typeof window !== "undefined"
-      ? (window as unknown as { __MERFY_SITE_ID__?: string }).__MERFY_SITE_ID__
-      : undefined;
-  if (siteId) {
-    try {
-      const res = await fetch(
-        `/api/sites/${encodeURIComponent(siteId)}/storefront-data`,
-      );
-      if (res.ok) {
-        const payload = (await res.json()) as { collections?: unknown };
-        const collections = payload?.collections;
-        if (Array.isArray(collections) && collections.length > 0) {
-          cachedCollections = collections as RealCollection[];
-          return cachedCollections;
-        }
-      }
-    } catch {
-      /* preview-фолбэк не удался */
-    }
+    /* файла нет */
   }
   cachedCollections = null;
   return cachedCollections;

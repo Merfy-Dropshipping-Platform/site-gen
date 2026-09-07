@@ -1,0 +1,20 @@
+---
+import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+
+interface Props {
+	badgeCls: string;
+	boxCls?: string;
+	iconSize?: string;
+}
+
+const { badgeCls, boxCls = "size-11", iconSize = "size-8" } = Astro.props;
+---
+
+<a
+	href="/wishlist"
+	class:list={["relative flex items-center justify-center transition-opacity hover:opacity-80", boxCls]}
+	aria-label="Избранное"
+>
+	<NtIcon name="favourite" sizeClass={iconSize} />
+	<span data-wishlist-count data-empty="true" class={badgeCls}>0</span>
+</a>

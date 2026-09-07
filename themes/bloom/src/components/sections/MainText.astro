@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (bloom): канон-секция MainText — адаптация Philosophy.astro (см.
 // themes/bloom/MANNER.md §10: Philosophy = текст-манифест + CTA без картинки,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
@@ -13,6 +14,20 @@
 // реальные данные мерчанта рендерятся без изменений.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Пустое состояние (Figma 1:19335): секция БЕЗ выбранного контента мерчанта.
 // Гейт = ни одно из contentful-полей (heading/text/button|cta) не задано. В
@@ -53,7 +68,9 @@ const text =
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Лестница
 // §9 «Манифест 24»: large/отсутствие = литерал 24px, medium 20, small 17.
 // Дефолт-ветка = прежняя строка верстальщика байт-в-байт (text-white → токен).
-const textSize = p.textSize ?? p.text?.size;
+// Видимое поле панели — `text.size` (сабпанель), top-level `textSize` скрыт:
+// читаем nested ПЕРВЫМ, иначе дефолт скрытого поля глушит живой селект.
+const textSize = p.text?.size ?? p.textSize;
 const textCls =
 	textSize === "small"
 		? "w-full max-w-[1320px] font-urbanist text-[17px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]"
@@ -65,7 +82,14 @@ const textCls =
 // canon-default обоих = 'center' = литерал верстальщика (всё по центру,
 // max-w-[1320px], mx-auto).
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
-const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
+// «Позиция» в панели управляет И размещением колонки, И выравниванием контента —
+// отдельного «Выравнивание» в дизайне нет (оно скрытое legacy). Пока выравнивание
+// бралось только из него, «Слева» и «Справа» давали одинаковый центр.
+// Паритет rose MainText: alignment выводится из position.
+const alignment =
+	p.alignment === "left" || p.alignment === "right" || p.alignment === "center"
+		? p.alignment
+		: position;
 const posCls = position === "left" ? "mr-auto" : position === "right" ? "ml-auto" : "mx-auto";
 const itemsCls =
 	alignment === "left" ? "items-start" : alignment === "right" ? "items-end" : "items-center";
@@ -113,7 +137,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 
 <section
 	id={id ? undefined : "philosophy"}
-	class="w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	class={`w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]${selfSchemeClass}`}
 	aria-labelledby={textId}
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -127,9 +151,8 @@ const textId = id ? `${id}-text` : "philosophy-text";
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				></h2>
 			)
 		}
 		<p
@@ -139,7 +162,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="101"
 			data-puck-subsection-field="text"
-			set:html={text}
+			set:html={inlineFormat(text)}
 		/>
 
 		{

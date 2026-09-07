@@ -10,8 +10,23 @@
 // «Кнопка»), НЕ мок-демо верстальщика. Когда мерчант добавил columns[] — рендер
 // реальных данных без изменений (Shopify-модель, как theme-base PopularProducts/
 // Collections).
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Своя colorScheme на корне секции: при hot-render одиночного блока в превью
+// обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
+// от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
+// (паттерн rose Footer / theme-base Video).
+// colorScheme приходит строкой ("scheme-4") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — разбираем оба вида, иначе класс молча не ставится.
+const _rawScheme = p.colorScheme;
+const _schemeId =
+	typeof _rawScheme === "number"
+		? String(_rawScheme)
+		: typeof _rawScheme === "string" && _rawScheme
+			? String(_rawScheme).replace("scheme-", "")
+			: "";
+const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // hasManualColumns: мерчант явно добавил хотя бы одну колонку (Shopify-модель).
 // Объявлено выше блока heading — fallback заголовка ниже зависит от него.
@@ -27,7 +42,7 @@ const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
 // small 15/17, large 22/24.
 const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
 const heading = headingRaw || (!hasManualColumns ? "Мультиколонны" : "");
-const headingSize = p.heading?.size ?? p.headingSize;
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[15px] md:text-[17px]"
@@ -36,8 +51,14 @@ const headingSizeCls =
 			: "text-[18px] md:text-[20px]";
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
-	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
+	headingAlignment === "center"
+		? " !text-center"
+		: headingAlignment === "right"
+			? " !text-right"
+			: headingAlignment === "left"
+				? " !text-left"
+				: "";
+const headingCls = `w-full font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
 // иконка 44×44, headingSize/textSize, link {text,href} | flat linkText+link).
@@ -179,7 +200,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 
 <section
 	id={id ? undefined : "benefits"}
-	class="w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]"
+	class={`w-full bg-[rgb(var(--color-bg,227_142_159))] px-4 py-20 md:px-20 md:py-[120px] 2xl:px-[300px]${selfSchemeClass}`}
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -194,9 +215,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				/>
 			)
 		}
 		<ul class={`${gridCls}${containerSchemeCls}`} role="list" style={gridStyle}>
@@ -233,14 +253,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						{c.heading && (
 							<h3
 								class={`font-urbanist ${itemHeadingCls(c.headingSize)} font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]`}
-							>
-								{c.heading}
-							</h3>
+								set:html={inlineFormat(c.heading)}
+							/>
 						)}
 						{c.text && (
 							<p
 								class={`font-inter ${itemTextCls(c.textSize)} font-light leading-none text-[rgb(var(--color-muted,153_153_153))]`}
-								set:html={c.text}
+								set:html={inlineFormat(c.text)}
 							/>
 						)}
 						{c.link && (

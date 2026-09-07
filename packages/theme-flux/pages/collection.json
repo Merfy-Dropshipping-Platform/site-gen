@@ -30,7 +30,6 @@
         "subtitle": "false",
         "cards": 8,
         "columns": 3,
-        "collectionSlug": "preview",
         "productCard": {
           "buttonStyle": "primary",
           "cardStyle": "square",
@@ -65,7 +64,7 @@
           "title": "Информация",
           "links": [
             { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/returns" },
+            { "label": "Политика возврата", "href": "/legal/return" },
             { "label": "Условия обслуживания", "href": "/legal/terms" },
             { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
           ]

@@ -24,10 +24,10 @@
       "type": "Catalog",
       "props": {
         "id": "Catalog-1",
-        "categoryTitle": "СМАРТФОНЫ",
-        "categorySubtitle": "M Phone",
+        "categoryTitle": "Каталог",
+        "categorySubtitle": "",
         "categorySubtitleColor": "accent",
-        "subtitle": "true",
+        "subtitle": "false",
         "cards": 8,
         "columns": 3,
         "productCard": {
@@ -64,7 +64,7 @@
           "title": "Информация",
           "links": [
             { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/returns" },
+            { "label": "Политика возврата", "href": "/legal/return" },
             { "label": "Условия обслуживания", "href": "/legal/terms" },
             { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
           ]

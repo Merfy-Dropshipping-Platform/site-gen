@@ -250,9 +250,20 @@ const footerSchemeClass =
 				<button
 					type="submit"
 					aria-label="Подписаться"
-					class="flex size-8 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
+					class="flex size-8 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80"
 				>
-					<NtIcon name="arrow-right" sizeClass="size-8" />
+					{/* arrow-right.svg viewBox 17.4×10.2. NtIcon <img class="size-8"> +
+					    preserveAspectRatio="none" растягивает шеврон в квадрат — «сломанная»
+					    стрелка. Не <img>: инлайн + meet, как RoseNtIcon (currentColor). */}
+					<svg class="h-[19px] w-8" viewBox="0 0 17.4 10.2" fill="none" aria-hidden="true">
+						<path
+							d="M16.8 5.1L12.3 0.6M16.8 5.1L12.3 9.6M16.8 5.1H0.6"
+							stroke="currentColor"
+							stroke-width="1.2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
 				</button>
 			</form>
 			<p

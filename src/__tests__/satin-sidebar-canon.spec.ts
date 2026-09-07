@@ -51,11 +51,16 @@ const satinPath = (b: string) =>
   path.join(PKG, "theme-satin", "blocks", b, `${b}.puckConfig.ts`);
 
 const COVERED = [
+  "Header",
   "Hero",
   "PopularProducts",
   "Collections",
   "MainText",
   "CollapsibleSection",
+  "ImageWithText",
+  "MultiRows",
+  "MultiColumns",
+  "Footer",
 ];
 
 describe("satin section sidebars: field types == theme-base canon", () => {

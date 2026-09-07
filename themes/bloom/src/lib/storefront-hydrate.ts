@@ -294,7 +294,12 @@ function wishlistHeartHtml(id: string): string {
  * опускаем — реальные товары их в products.json не несут. Overlay-сердце
  * избранного (`data-wishlist-toggle`) — поверх картинки (через relative-обёртку).
  */
-export function renderCardHtml(p: RealProduct): string {
+export function renderCardHtml(
+	p: RealProduct,
+	aspectRatio = "1/1",
+	quickAdd: "none" | "standard" | "cart" = "standard",
+	quickAddText = "В корзину",
+): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
 	const image = escapeHtml(productImage(p));
@@ -319,12 +324,23 @@ export function renderCardHtml(p: RealProduct): string {
 	const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
 	const cartBtn = hasVariants
 		? firstCombo
-			? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`
-			: `<a href="${href}" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</a>`
-		: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${priceStr}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`;
+			? `<button type="button" data-add-to-cart data-card-cta data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">${escapeHtml(quickAddText)}</button>`
+			: `<a href="${href}" data-card-cta class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">${escapeHtml(quickAddText)}</a>`
+		: `<button type="button" data-add-to-cart data-card-cta data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${priceStr}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">${escapeHtml(quickAddText)}</button>`;
+	// «Быстрое добавление»: none — CTA нет; cart — степпер «− N +» перед кнопкой
+	// (делегат nt-cart читает data-quantity). Паритет rose Popular.
+	const qaStepper =
+		quickAdd === "cart"
+			? '<div class="mb-2 flex h-12 w-full items-center justify-between rounded-full border border-solid border-[rgb(var(--color-input-border,255_212_229))] px-1" data-qa-stepper>' +
+				'<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-inter text-[18px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>' +
+				'<span data-qa-qty class="min-w-[28px] flex-1 text-center font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>' +
+				'<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-inter text-[18px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>' +
+				"</div>"
+			: "";
+	const cta = quickAdd === "none" ? "" : qaStepper + cartBtn;
 	return `<article class="group flex flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" aria-label="${name}">
+		<a href="${href}" class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
 			<img src="${image}" alt="${name}" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
 		</a>
 		${wishlistHeartHtml(p.id)}
@@ -335,7 +351,7 @@ export function renderCardHtml(p: RealProduct): string {
 			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">${price}</span>
 			${oldPrice}
 		</div>
-		${cartBtn}
+		${cta}
 	</div>
 </article>`;
 }

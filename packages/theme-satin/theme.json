@@ -382,6 +382,13 @@
     },
     "ContactForm": {
       "heading": "Связаться с нами"
+    },
+    "Catalog": {
+      "categoryTitle": "Каталог",
+      "categorySubtitle": "Здесь начинается персональный стиль"
+    },
+    "Footer": {
+      "heading.text": "Будьте в курсе наших новостей"
     }
   }
 }

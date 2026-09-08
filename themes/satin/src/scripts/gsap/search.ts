@@ -27,7 +27,7 @@ function loadIndex(): SearchItem[] {
 function rowHtml(item: SearchItem): string {
 	return `
 		<a href="${item.href}" data-search-item role="option"
-			class="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-[#F5F5F5] aria-selected:bg-[#F5F5F5]">
+			class="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-[rgb(var(--color-surface,245_245_245))] aria-selected:bg-[rgb(var(--color-surface,245_245_245))]">
 			<img src="${item.image}" alt="" loading="lazy" class="h-12 w-9 shrink-0 object-cover" />
 			<span class="flex min-w-0 flex-col">
 				<span class="truncate font-manrope text-[14px] font-normal leading-tight text-[#000000]">${item.name}</span>

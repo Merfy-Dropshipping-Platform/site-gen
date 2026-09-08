@@ -40,7 +40,10 @@ import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 				class="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FDF4F6] text-[#E38E9F] transition-opacity hover:opacity-80"
 				aria-label="Закрыть"
 			>
-				<NtIcon name="menu-close" sizeClass="size-5" />
+				{/* iconBasePath задаём явно: в установленной версии дизайн-системы дефолт
+					    ведёт на "/new-themes/icons", которого в теме нет — крестик грузился
+					    404 и выглядел битым. Иконки темы лежат в public/icons. */}
+					<NtIcon name="menu-close" iconBasePath="/icons" sizeClass="size-5" />
 			</button>
 		</div>
 

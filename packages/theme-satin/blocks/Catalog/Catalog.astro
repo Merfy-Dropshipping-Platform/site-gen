@@ -155,6 +155,10 @@ const cardBtnStyleAttr =
 
 // «Следующее фото при наведении» — hover-swap на images[1] (эталон rose).
 const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
+// «Режим следующего фото» (productCard.nextPhotoMode): simple — при наведении
+// подменяем на второе фото; zones — сегменты по X показывают 2-е/3-е/4-е фото
+// (эталон theme-base). Раньше порт настройку не читал вовсе — контрол был мёртв.
+const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple";
 
 // (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base).
 const containerSchemeClass =
@@ -196,6 +200,8 @@ const skeletons = Array.from({ length: skeletonCount });
   data-catalog-layout={defaultLayout}
   data-collection-slug={collectionSlug ?? ''}
   data-page-size={pageSize}
+  data-next-photo={nextPhotoOn ? 'true' : 'false'}
+  data-next-photo-mode={nextPhotoMode}
   style={paddingStyle}
 >
   {/* Раскладка каталога из настройки конструктора: платформа (превью-контроллер
@@ -501,7 +507,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, showCartBtn, cardContainerOn, cardAspectClass, cardBtnStyleAttr, nextPhotoOn }}>
+<script is:inline define:vars={{ siteId, pageSize, showCartBtn, cardContainerOn, cardAspectClass, cardBtnStyleAttr, nextPhotoOn, nextPhotoMode }}>
   // ⚠️ is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → 404 на проде, вся логика мертва. Поэтому весь клиент инлайн:
   // функции storefront-hydrate.ts перенесены телами 1:1 (без import/типов),
@@ -670,8 +676,13 @@ const skeletons = Array.from({ length: skeletonCount });
     // ниже свапит src между data-img-primary и data-img-secondary.
     const image2 =
       (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+    // Режим «зоны» использует до 4 фото: data-img-2/3/4 (эталон theme-base).
+    const _imgs = Array.isArray(p.images) ? p.images.filter((x) => typeof x === "string" && x) : [];
+    const zoneAttrs = nextPhotoOn
+      ? _imgs.slice(1, 4).map((u, i) => ` data-img-${i + 2}="${escapeHtml(u)}"`).join("")
+      : "";
     const imgDataAttrs =
-      ` data-img-primary="${image}"` + (image2 ? ` data-img-secondary="${escapeHtml(image2)}"` : "");
+      ` data-img-primary="${image}"` + (image2 ? ` data-img-secondary="${escapeHtml(image2)}"` : "") + zoneAttrs;
     const price = escapeHtml(formatPrice(p.price));
     const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
     const oldPrice = oldRaw
@@ -719,7 +730,7 @@ const skeletons = Array.from({ length: skeletonCount });
         : `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${_cartBtnCls}"${_cartBtnStyle}>В корзину</button>`
       : "";
     return `<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="${name}"${cardContainerStyle}>
-  <div class="relative ${cardAspectClass} w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
+  <div class="relative ${cardAspectClass} w-full shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
     <a href="${href}" class="block size-full" aria-label="${name}">
       ${image ? `<img src="${image}"${imgDataAttrs} alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
     </a>
@@ -1438,7 +1449,29 @@ const skeletons = Array.from({ length: skeletonCount });
   // «Следующее фото при наведении»: hover карточки → images[1], уход → images[0].
   // Делегирование на document (карточки перерисовываются гидрацией). Без настройки
   // у <img> нет data-img-secondary, и swap — no-op.
-  if (nextPhotoOn) {
+  if (nextPhotoOn && nextPhotoMode === "zones") {
+    // «Зоны»: курсор по X делит карточку на сегменты — 1-е/2-е/3-е/4-е фото.
+    document.addEventListener("mousemove", (event) => {
+      const img = event.target && event.target.closest && event.target.closest("img[data-img-primary]");
+      if (!img) return;
+      const rect = img.getBoundingClientRect();
+      if (!rect.width) return;
+      const keys = ["data-img-primary", "data-img-2", "data-img-3", "data-img-4"];
+      const available = keys.filter((k) => img.getAttribute(k));
+      const xRel = (event.clientX - rect.left) / rect.width;
+      let idx = Math.floor(xRel * available.length);
+      if (idx < 0) idx = 0;
+      if (idx > available.length - 1) idx = available.length - 1;
+      const next = img.getAttribute(available[idx]);
+      if (next && img.getAttribute("src") !== next) img.setAttribute("src", next);
+    });
+    document.addEventListener("mouseout", (event) => {
+      const img = event.target && event.target.closest && event.target.closest("img[data-img-primary]");
+      if (!img) return;
+      const prim = img.getAttribute("data-img-primary");
+      if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
+    });
+  } else if (nextPhotoOn) {
     document.addEventListener("mouseover", (event) => {
       const img = event.target && event.target.closest && event.target.closest("img[data-img-secondary]");
       if (!img) return;

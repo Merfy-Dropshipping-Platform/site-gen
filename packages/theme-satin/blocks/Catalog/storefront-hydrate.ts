@@ -314,7 +314,7 @@ export function renderCardHtml(p: RealProduct, cardContainerOn = false): string 
 		? ' style="padding:12px;background:rgb(var(--color-surface,245 245 245))"'
 		: "";
 	return `<article class="group flex flex-col gap-3" data-nt="satin-product-card" aria-label="${name}"${cardContainerStyle}>
-	<div class="relative aspect-[430/564] w-full overflow-hidden bg-[#F5F5F5]">
+	<div class="relative aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 		<a href="${href}" class="block size-full" aria-label="${name}">
 			${image ? `<img src="${image}" alt="${name}" width="430" height="564" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"${CARD_IMG_ONERROR_ATTR} />` : CARD_MEDIA_FALLBACK_HTML}
 		</a>

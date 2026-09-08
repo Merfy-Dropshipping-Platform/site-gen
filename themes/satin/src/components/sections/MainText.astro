@@ -52,7 +52,10 @@ const text =
 // «Body крупный» .satin-copy md:text-[20px] (Arsenal 300, lh 1.5, muted —
 // МАННЕРА §1), классы расписаны явно ради лестницы и токена цвета. Лестница §9:
 // medium/отсутствие = литерал 16/20, small 14/17, large 19/24.
-const textSize = p.textSize ?? p.text?.size;
+// §11 Контракта секции: видимое поле под-панели «Текст → Размер» (text.size)
+// приоритетнее СКРЫТОГО top-level textSize. У flux/bloom в defaultProps лежит
+// textSize:'medium', и при обратном порядке он глушил выбор мерчанта наглухо.
+const textSize = p.text?.size ?? p.textSize;
 const textCls =
 	textSize === "small"
 		? "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"

@@ -17,7 +17,7 @@ const href = `/catalog?collection=${encodeURIComponent(collection.name)}`;
 	aria-label={collection.name}
 	data-nt="satin-collection-card"
 >
-	<div class="aspect-[430/564] w-full overflow-hidden bg-[#F5F5F5]">
+	<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 		<SatinPicture
 			src={collection.image}
 			alt={collection.name}

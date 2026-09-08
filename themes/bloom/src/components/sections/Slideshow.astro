@@ -122,9 +122,13 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
 		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
 	return {
+		// §11 Контракта секции: видимое поле панели «Изображение» (image) приоритетнее
+		// скрытого legacy «Изображение (старое)» (imageUrl). Раньше legacy читался
+		// ПЕРВЫМ, а он всегда заполнен дефолтом слайда — из-за этого выбранная
+		// мерчантом картинка слайда не применялась вообще.
 		image:
-			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			(typeof s.image === "string" && s.image.trim()) ||
+			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 			"",
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),

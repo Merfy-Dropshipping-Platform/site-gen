@@ -44,9 +44,12 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-no
 // description не рендерился; Figma требует его как плейсхолдер). Свой текст
 // мерчанта выигрывает (?? fallback срабатывает лишь при пустых данных).
 // Манера satin: body-роль §1 Arsenal 16 light muted; лестница body §9: small 14, large 19.
+// §11 Контракта секции: видимое поле панели «Текст» (text.content) приоритетнее
+// СКРЫТОГО legacy `description` (label ''), у которого есть собственный дефолт —
+// именно он глушил ввод мерчанта. Тот же фикс уже сделан в bloom.
 const descriptionRaw =
-	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
-	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined);
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined);
 const description = contentSet(["description", "text"], descriptionRaw) && descriptionRaw
 	? descriptionRaw
 	: "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";

@@ -97,7 +97,12 @@ const openAddedModal = ({
 	});
 
 	if (imageEl) {
-		imageEl.src = withBase(image || line?.image || "");
+		// Абсолютный URL (MinIO/API) оставляем как есть: withBase приклеивал бы
+		// базовый путь и получалось "/http://…" → картинка в модалке битая.
+		// Та же защита уже стоит в cart-thumb-html.ts.
+		const rawImage = image || line?.image || "";
+		const isAbsolute = /^(https?:)?\/\//i.test(rawImage) || rawImage.startsWith("data:");
+		imageEl.src = isAbsolute ? rawImage : withBase(rawImage);
 		imageEl.alt = name;
 	}
 	if (volumeEl) {

@@ -200,34 +200,88 @@ function setPath(obj, pathStr, value) {
  * Есть ли у сайта товар с вариантами. Без него поля вариаций проверять нельзя:
  * рендеру нечего показывать, и живая настройка выглядит мёртвой.
  */
-async function hasVariantProducts(site) {
+async function variantProductId(site) {
   try {
     const res = await fetch(`${SITES_BASE}/sites/${site}/storefront-data`);
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const data = await res.json();
     // именно НЕПУСТЫЕ данные вариаций: флаг hasVariants бывает выставлен и без них
-    return (data.products ?? []).some(
+    const hit = (data.products ?? []).find(
       (p) => p?.variantGroups?.length || p?.variantSwatches?.length || p?.variantCombinations?.length,
     );
+    return hit?.id ?? null;
   } catch {
-    return false;
+    return null;
   }
 }
+
+// Картинка для прогона: настройки про медиа (аспект, размещение баннера)
+// применяются только когда картинка есть.
+const PROBE_IMAGE = "/placeholders/landscape-image.png";
+
+// Настройки, которые НАМЕРЕННО не применяются в рендере. Прогон обязан их
+// пропускать: иначе они годами висят в отчёте как «мертвы», отчёт перестают
+// читать, и в шуме теряются настоящие поломки. Каждая строка — с причиной.
+const INTENTIONALLY_INERT = {
+  "MultiRows.size":
+    "секционный размер намеренно перекрывается размером КОНКРЕТНОГО ряда (`r.size ?? p.size`): у рядов в дефолтах уже есть свой size, поэтому секционный на них не влияет",
+  "AuthModal.siteTitle":
+    "заголовок «Вход в {siteTitle}» рендерится только в режимах login/register, а поле «Режим» предлагает единственную опцию closed — проверить настройку прогоном нельзя (кандидат: добавить режимы в панель)",
+  "CheckoutLayout.padding.top":
+    "верхний отступ намеренно не применяется: шапка чекаута sticky, сохранённый padding-top из старых ревизий сдвигал контент под неё; учитывается только padding-bottom",
+  "PromoBanner.padding":
+    "высоту полосы задаёт только «Размер» (Figma 648:57318); старые ревизии с padding {12,12} выходили за макет — эталон rose",
+};
 
 /** Живость каждого поля: рендер с двумя значениями должен отличаться. */
 async function fieldLiveness(t, site) {
   const blocks = await puckConfig(t);
-  const variantsAvailable = await hasVariantProducts(site);
+  // Товар С ВАРИАНТАМИ нужен не только как признак «проверять ли поля вариаций»:
+  // его надо ПОДСТАВИТЬ в блок. Иначе рендер берёт дефолтный (первый) товар
+  // сайта, у которого вариантов нет, и живые «Вид»/«Форма» вариаций выглядят
+  // мёртвыми — ложное срабатывание.
+  const variantPid = await variantProductId(site);
+  const variantsAvailable = Boolean(variantPid);
   const result = {};
   for (const [block, cfg] of Object.entries(blocks)) {
     const fields = flattenFields(cfg.fields);
     if (fields.length === 0) continue;
     const base = { ...(cfg.defaultProps ?? {}), id: "CONTRACT-1" };
+    if (variantPid && block === "Product") base.productId = variantPid;
     // §12 прогона: заполняем тексты и включаем тумблеры, иначе «Размер текста»
     // меряется на секции без текста и живое поле выглядит мёртвым.
+    //
+    // Три ловушки, из-за которых живые настройки выглядели мёртвыми:
+    //  • тумблеры вида hide*/«Скрыть» включать НЕЛЬЗЯ — включённый «Скрыть
+    //    заголовок» прячет заголовок и текст, и правка текста ничего не меняет;
+    //  • настройке про медиа нужна картинка (aspect у колонки применяется только
+    //    в ветке медиа-бокса; баннер без src не рисуется вовсе);
+    //  • вложенный `enabled` (баннер подтверждения заказа) должен быть включён —
+    //    иначе весь узел не рендерится и его поля «мертвы».
+    // Только по ИМЕНИ поля (hideTitle и т.п.). По подписи судить нельзя: у подвала
+    // тумблер показа рассылки подписан «Скрыть/показать», и выключение прятало
+    // весь блок — тогда мёртвыми выглядели уже все его поля.
+    const isHideToggle = (path) => /(^|\.)hide[A-Z_]/.test(path);
     for (const [p, f] of fields) {
       if (f.type === "text" || f.type === "aiText" || f.type === "textarea") setPath(base, p, "Проверочный текст");
-      else if (f.type === "toggle") setPath(base, p, true);
+      // `boolean` — тот же тумблер под другим именем типа (так объявлен
+      // banner.enabled): без него баннер не рендерится и все его поля «мертвы».
+      // toggle / boolean / switch — один и тот же контрол под разными именами типа.
+      else if (f.type === "toggle" || f.type === "boolean" || f.type === "switch")
+        setPath(base, p, !isHideToggle(p));
+      // image / mediaSlot — тоже синонимы (logoImage объявлен как mediaSlot).
+      else if (f.type === "image" || f.type === "mediaSlot") setPath(base, p, PROBE_IMAGE);
+    }
+    // Элементы списков (колонки/ряды/слайды) — картинка нужна ВНУТРИ элемента:
+    // «Соотношение изображения» применяется только в ветке медиа-бокса, а без
+    // картинки колонка рисует иконку и настройка выглядит мёртвой.
+    for (const [key, arrField] of Object.entries(cfg.fields ?? {})) {
+      if (arrField?.type !== "array" || !arrField.arrayFields?.image) continue;
+      const items = base[key];
+      if (!Array.isArray(items)) continue;
+      base[key] = items.map((it) =>
+        it && typeof it === "object" && !it.image ? { ...it, image: PROBE_IMAGE } : it,
+      );
     }
     for (const [p, f] of fields) {
       const pair = pairValues(f);
@@ -241,7 +295,31 @@ async function fieldLiveness(t, site) {
       setPath(pb, p, b);
       const [ha, hb] = await Promise.all([renderBlock(site, block, pa), renderBlock(site, block, pb)]);
       if (!ha || ha.includes("render error")) continue;
-      result[`${block}.${p}`] = { alive: normalize(ha) !== normalize(hb), label: f.label };
+      let alive = normalize(ha) !== normalize(hb);
+      // Настройка может жить ВНУТРИ ветки, которую включает соседнее поле: ссылка
+      // «Личный кабинет» рендерится только при rightIcon='account', заголовок
+      // модалки — только при mode='login'. С дефолтными пропсами такая ветка
+      // выключена, и живое поле выглядит мёртвым. Поэтому вторая попытка: по
+      // очереди включаем каждое значение соседних radio/select.
+      if (!alive) {
+        for (const [np, nf] of fields) {
+          if (alive || np === p) continue;
+          if (nf.type !== "radio" && nf.type !== "select") continue;
+          const opts = (nf.options ?? []).map((o) => o.value).filter((v) => v !== undefined);
+          for (const val of opts.slice(0, 4)) {
+            if (alive) break;
+            const qa = structuredClone(base);
+            const qb = structuredClone(base);
+            setPath(qa, np, val);
+            setPath(qb, np, val);
+            setPath(qa, p, a);
+            setPath(qb, p, b);
+            const [xa, xb] = await Promise.all([renderBlock(site, block, qa), renderBlock(site, block, qb)]);
+            if (xa && !xa.includes("render error") && normalize(xa) !== normalize(xb)) alive = true;
+          }
+        }
+      }
+      result[`${block}.${p}`] = { alive, label: f.label };
     }
   }
   return result;
@@ -266,7 +344,15 @@ async function placeholderSync(t, site) {
     if (!html) continue;
     const clean = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "");
     const m = clean.match(/<(\w+)[^>]*data-puck-subsection-field="heading"[^>]*>([\s\S]*?)<\/\1>/);
-    const rendered = m ? m[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
+    let rendered = m ? m[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
+    // Блок может помечать заголовок под-секцией с ДРУГИМ именем: подвал помечает
+    // заголовок рассылки как `newsletter`, и поиск строго по "heading" не находил
+    // ничего — правило рапортовало «в панели текст, на превью пусто», хотя текст
+    // на превью есть. Поэтому запасной путь: ищем текст панели в тексте блока.
+    if (!rendered && panel) {
+      const blockText = clean.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (blockText.toLowerCase().includes(panel.toLowerCase())) rendered = panel;
+    }
     if (panel.toLowerCase() !== rendered.toLowerCase()) rows.push({ block, panel, rendered });
   }
   return rows;
@@ -288,11 +374,18 @@ if (has("runtime")) {
   let baseline = null;
   if (baselineTheme && baselineSite) baseline = await fieldLiveness(baselineTheme, baselineSite);
 
+  const inert = [];
   for (const [key, v] of Object.entries(mine)) {
     if (v.alive) continue;
+    if (INTENTIONALLY_INERT[key]) { inert.push([key, INTENTIONALLY_INERT[key]]); continue; }
     if (baseline && baseline[key] && !baseline[key].alive) continue; // мертво и в эталоне — не отставание темы
     const suffix = baseline ? ` (в теме-эталоне «${baselineTheme}» работает)` : "";
     add("настройка мертва", key, `${v.label ?? ""} — рендер не меняется${suffix}`);
+  }
+
+  if (inert.length) {
+    console.log(`\n── намеренно не применяются (${inert.length}) — не нарушение`);
+    for (const [key, why] of inert) console.log(`   ${key}\n      ${why}`);
   }
 
   for (const row of await placeholderSync(theme, site)) {

@@ -159,10 +159,14 @@ const btnTextProp =
 	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined;
 const btnDefaultText = isPlaceholder ? "Кнопка" : undefined;
 const btnText = btnTextProp ?? (btnProvided ? undefined : btnDefaultText);
+// §11 Контракта секции: ссылку пишет ВИДИМОЕ поле панели «Кнопка → Ссылка»
+// (button.link, pagePicker). Legacy button.href лежит в defaultProps темы
+// («/about») и при обратном порядке глушил выбор мерчанта наглухо: ссылку в
+// под-панели меняешь — на превью остаётся дефолт.
 const btnHref =
-	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
+	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	"/catalog";
 // Канон buttonStyle: solid/отсутствие (canon-default) = тёмная CTA литерала
 // (метрики .satin-button-md + .satin-button-dark, g:106-126,155-159; цвета

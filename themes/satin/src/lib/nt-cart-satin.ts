@@ -179,7 +179,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 					const thumb = cartLineThumbPictureHtml(line.image, line.name);
 					return `
 					<li class="flex items-start gap-4" data-line-id="${line.id}">
-						<a href="${pHref}" class="block size-20 shrink-0 overflow-hidden bg-[#F5F5F5]">
+						<a href="${pHref}" class="block size-20 shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 							${thumb}
 						</a>
 						<div class="flex flex-1 flex-col gap-2">

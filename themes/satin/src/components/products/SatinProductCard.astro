@@ -16,7 +16,7 @@ const href = `/products/${product.id}`;
 	data-nt="satin-product-card"
 	aria-label={product.name}
 >
-	<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">
+	<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 		<a href={href} class="block size-full" aria-label={product.name}>
 			{product.image ? (
 				<SatinPicture

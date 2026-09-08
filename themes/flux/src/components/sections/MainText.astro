@@ -52,7 +52,10 @@ const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[
 // отсутствие = база; small ниже, large выше. Тело — roboto-flex 300 (font-light),
 // читаемый leading, max-w-[780px] под комфортную длину строки; цвет = text-токен
 // с чёрным фоллбеком (§7).
-const textSize = p.textSize ?? p.text?.size;
+// §11 Контракта секции: видимое поле под-панели «Текст → Размер» (text.size)
+// приоритетнее СКРЫТОГО top-level textSize. У flux/bloom в defaultProps лежит
+// textSize:'medium', и при обратном порядке он глушил выбор мерчанта наглухо.
+const textSize = p.text?.size ?? p.textSize;
 const textSizeCls =
 	textSize === "small"
 		? "text-[14px] md:text-[16px]"

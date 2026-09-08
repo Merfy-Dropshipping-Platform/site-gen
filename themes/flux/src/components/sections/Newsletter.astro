@@ -58,9 +58,11 @@ const selfCls = position === "center" ? "self-center" : position === "right" ? "
 // рендерим ЕГО (?? fallback срабатывает только при пустых данных). Роль flux —
 // roboto-flex font-light, цвет токен muted (на scheme-1 = #ccc). Лестница textSize:
 // small 14, medium/отсутствие = 16, large 18/20.
+// §11 Контракта секции: видимое поле панели «Текст» (text.content) приоритетнее
+// СКРЫТОГО legacy `description` — оно глушило ввод мерчанта. Паритет satin/bloom.
 const description =
-	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
+	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =

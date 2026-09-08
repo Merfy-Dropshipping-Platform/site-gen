@@ -515,7 +515,15 @@ const cartImage = view.gallery.hero?.src ?? '';
       const _vu = v ? parseFloat(String(v.price)) : NaN;
       let unit = Number.isFinite(_vu) && _vu > 0 ? _vu
         : (productData ? parseFloat(String(productData.basePrice ?? productData.price ?? 0)) : 0);
-      if (!Number.isFinite(unit) || unit < 0) unit = 0;
+      // productData подгружается запросом и может быть ещё не готов (или запрос
+      // упал). Раньше в этом случае цена на кнопке затиралась нулём, и товар
+      // уезжал в корзину за 0 ₽ — заметно на «Купить сейчас», который дергает
+      // updateCartAttrs сразу по клику. Серверная цена в атрибуте уже верная,
+      // поэтому не перезаписываем её непригодным значением.
+      if (!Number.isFinite(unit) || unit <= 0) {
+        const _prev = parseFloat(String(addBtn.getAttribute('data-price') || ''));
+        unit = Number.isFinite(_prev) && _prev > 0 ? _prev : 0;
+      }
       const old = productData ? parseFloat(String(productData.compareAtPrice ?? productData.oldPrice ?? 0)) : 0;
       const pid = (productData && productData.id) || root.getAttribute('data-product-id') || productId || '';
       const name = (productData && (productData.name || productData.title)) || (titleEl ? titleEl.textContent : '') || '';

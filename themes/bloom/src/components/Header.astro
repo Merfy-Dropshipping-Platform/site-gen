@@ -87,7 +87,16 @@ try {
 } catch {
 	logoPath = rawLogo;
 }
-const logo = rawLogo && logoPath !== "/logo.svg" ? rawLogo : undefined;
+// Без загруженного логотипа показываем НАЗВАНИЕ МАГАЗИНА (siteTitle), а не
+// картинку темы: логотип «Bloom» — это имя шаблона, у магазина мерчанта своё.
+// Так же поступает rose (текстовый логотип, как у верстальщика).
+// Логотипом магазина считаем только загруженный мерчантом файл (лежит в
+// /branding/…). Плейсхолдер «/logo.svg» и картинки самой темы (/icons/…,
+// например /icons/Bloom.svg) — это НЕ бренд магазина: с ними в шапке у
+// любого мерчанта стояло чужое имя «Bloom». Без своего файла показываем
+// siteTitle текстом (так же поступает rose).
+const isThemeAsset = logoPath === "/logo.svg" || logoPath.startsWith("/icons/");
+const logo = rawLogo && !isThemeAsset ? rawLogo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-center' (canon-default) → TWO rows: row1=grid [search|logo|icons],
@@ -214,10 +223,10 @@ const headerHeartSvg =
 				aria-controls="bloom-burger"
 			>
 				<span class="burger-icon" data-icon="open">
-					<NtIcon name="menu-burger" sizeClass="size-5" />
+					<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 				</span>
 				<span class="burger-icon hidden" data-icon="close">
-					<NtIcon name="menu-close" sizeClass="size-5" />
+					<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 				</span>
 			</button>
 			<a href="/" class="flex items-center hover:opacity-80" aria-label={siteTitle}>
@@ -225,13 +234,7 @@ const headerHeartSvg =
 					logo ? (
 						<img src={logo} alt={siteTitle} class={logoImgCls} />
 					) : (
-						<img
-							src="/icons/Bloom.svg"
-							alt={siteTitle}
-							width="65"
-							height="19"
-							class="h-[19px] w-auto"
-						/>
+						<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
 					)
 				}
 			</a>
@@ -244,7 +247,7 @@ const headerHeartSvg =
 					aria-expanded="false"
 					aria-controls="bloom-search-panel"
 				>
-					<NtIcon name="search-sm" sizeClass="size-5" />
+					<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 				</button>
 				<a
 					href="/wishlist"
@@ -264,7 +267,7 @@ const headerHeartSvg =
 					class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 					aria-label="Корзина"
 				>
-					<NtIcon name="cart" sizeClass="size-5" />
+					<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
 					<span
 						data-cart-count
 						data-empty="true"
@@ -272,7 +275,7 @@ const headerHeartSvg =
 					>0</span>
 				</button>
 				<a href="/login" data-auth-link class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80" aria-label="Аккаунт">
-					<NtIcon name="user" sizeClass="size-5" />
+					<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
 				</a>
 			</div>
 		</div>
@@ -291,13 +294,7 @@ const headerHeartSvg =
 										logo ? (
 											<img src={logo} alt={siteTitle} class={logoImgCls} />
 										) : (
-											<img
-												src="/icons/Bloom.svg"
-												alt={siteTitle}
-												width="65"
-												height="19"
-												class="h-[19px] w-[65px]"
-											/>
+											<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
 										)
 									}
 								</a>
@@ -310,7 +307,7 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon name="search-sm" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
 									</button>
 									<a
 										href="/wishlist"
@@ -330,7 +327,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon name="cart" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -342,7 +339,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon name="user" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
 									</a>
 									{isSidebar && (
 										<button
@@ -354,10 +351,10 @@ const headerHeartSvg =
 											aria-controls="bloom-burger"
 										>
 											<span class="burger-icon" data-icon="open">
-												<NtIcon name="menu-burger" sizeClass="size-5" />
+												<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 											</span>
 											<span class="burger-icon hidden" data-icon="close">
-												<NtIcon name="menu-close" sizeClass="size-5" />
+												<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 											</span>
 										</button>
 									)}
@@ -390,7 +387,7 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon name="search-sm" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
 									</button>
 								</div>
 
@@ -399,13 +396,7 @@ const headerHeartSvg =
 										logo ? (
 											<img src={logo} alt={siteTitle} class={logoImgCls} />
 										) : (
-											<img
-												src="/icons/Bloom.svg"
-												alt={siteTitle}
-												width="65"
-												height="19"
-												class="h-[19px] w-[65px]"
-											/>
+											<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
 										)
 									}
 								</a>
@@ -429,7 +420,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon name="cart" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -441,7 +432,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon name="user" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
 									</a>
 									{isSidebar && (
 										<button
@@ -453,10 +444,10 @@ const headerHeartSvg =
 											aria-controls="bloom-burger"
 										>
 											<span class="burger-icon" data-icon="open">
-												<NtIcon name="menu-burger" sizeClass="size-5" />
+												<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 											</span>
 											<span class="burger-icon hidden" data-icon="close">
-												<NtIcon name="menu-close" sizeClass="size-5" />
+												<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 											</span>
 										</button>
 									)}
@@ -504,13 +495,7 @@ const headerHeartSvg =
 									logo ? (
 										<img src={logo} alt={siteTitle} class={logoImgCls} />
 									) : (
-										<img
-											src="/icons/Bloom.svg"
-											alt={siteTitle}
-											width="65"
-											height="19"
-											class="h-[19px] w-[65px]"
-										/>
+										<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
 									)
 								}
 							</a>
@@ -524,7 +509,7 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon name="search-sm" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
 								</button>
 								<a
 									href="/wishlist"
@@ -544,7 +529,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -556,7 +541,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
 								</a>
 								{isSidebar && (
 									<button
@@ -568,10 +553,10 @@ const headerHeartSvg =
 										aria-controls="bloom-burger"
 									>
 										<span class="burger-icon" data-icon="open">
-											<NtIcon name="menu-burger" sizeClass="size-5" />
+											<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 										</span>
 										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon name="menu-close" sizeClass="size-5" />
+											<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 										</span>
 									</button>
 								)}
@@ -585,13 +570,7 @@ const headerHeartSvg =
 									logo ? (
 										<img src={logo} alt={siteTitle} class={logoImgCls} />
 									) : (
-										<img
-											src="/icons/Bloom.svg"
-											alt={siteTitle}
-											width="65"
-											height="19"
-											class="h-[19px] w-[65px]"
-										/>
+										<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
 									)
 								}
 							</a>
@@ -618,7 +597,7 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon name="search-sm" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
 								</button>
 								<a
 									href="/wishlist"
@@ -638,7 +617,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -650,7 +629,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
 								</a>
 								{isSidebar && (
 									<button
@@ -662,10 +641,10 @@ const headerHeartSvg =
 										aria-controls="bloom-burger"
 									>
 										<span class="burger-icon" data-icon="open">
-											<NtIcon name="menu-burger" sizeClass="size-5" />
+											<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 										</span>
 										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon name="menu-close" sizeClass="size-5" />
+											<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 										</span>
 									</button>
 								)}
@@ -723,13 +702,7 @@ const headerHeartSvg =
 						logo ? (
 							<img src={logo} alt={siteTitle} class={logoImgCls} />
 						) : (
-							<img
-								src="/icons/Bloom.svg"
-								alt={siteTitle}
-								width="65"
-								height="19"
-								class="h-[19px] w-auto"
-							/>
+							<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
 						)
 					}
 				</a>
@@ -752,7 +725,7 @@ const headerHeartSvg =
 						class="relative flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
-						<NtIcon name="cart" sizeClass="size-5" />
+						<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
 						<span
 							data-cart-count
 							data-empty="true"
@@ -772,7 +745,7 @@ const headerHeartSvg =
 						class="min-w-0 flex-1 bg-transparent font-inter text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
 					/>
 					<button type="submit" class="flex h-5 w-5 shrink-0 items-center justify-center" aria-label="Найти">
-						<NtIcon name="search-sm" sizeClass="size-5" />
+						<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 					</button>
 				</form>
 				<a
@@ -780,7 +753,7 @@ const headerHeartSvg =
 					class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e38e9f]"
 					aria-label="Профиль"
 				>
-					<NtIcon name="user" sizeClass="size-5" />
+					<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
 				</a>
 			</div>
 		)}

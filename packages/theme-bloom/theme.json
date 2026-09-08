@@ -45,7 +45,7 @@
     },
     "Header": {
       "siteTitle": "Bloom",
-      "logo": "/icons/Bloom.svg",
+      "logo": null,
       "logoPosition": "top-center",
       "padding": {
         "top": 16,
@@ -422,6 +422,14 @@
     },
     "ImageWithText": {
       "heading.text": "Изображение с текстом"
+    },
+    "Catalog": {
+      "categoryTitle": "Каталог",
+      "categorySubtitle": "Здесь начинается персональный стиль"
+    },
+    "Footer": {
+      "heading.text": "ПОДПИШИТЕСЬ НА РАССЫЛКУ",
+      "text.content": "Подпишитесь на наши акции и новости"
     }
   }
 }

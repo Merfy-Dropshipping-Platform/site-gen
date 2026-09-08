@@ -144,7 +144,7 @@ const items: PubItem[] = legacyPosts
 	)}
 	<ul class="satin-container grid grid-cols-1 gap-4 sm:grid-cols-3" role="list">
 		{items.map((post) => (
-			<li class:list={["flex flex-col gap-6", !post.isPlaceholder && "bg-[#F5F5F5] p-4"]}>
+			<li class:list={["flex flex-col gap-6", !post.isPlaceholder && "bg-[rgb(var(--color-surface,245_245_245))] p-4"]}>
 				{/* Медиа: реальная обложка → SatinPicture; пустое состояние (плейсхолдер
 				   Figma 1:19335) → дизайн-ассет publication-card.png плоским <img>
 				   (контракт картиночных секций, правило 2: картинка показывается ВСЕГДА,

@@ -90,7 +90,11 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
       type: 'array',
       label: 'Слайды (макс 5)',
       arrayFields: {
-        imageUrl: { type: 'image', label: 'Изображение (старое)' },
+        // Legacy-поле старых ревизий. В панели показывать нельзя: рядом стоит
+        // рабочее «Изображение» (image), и мерчант видел ДВА одинаковых поля,
+        // из которых нижнее ничего не меняло (порты читают image первым).
+        // Значение из ревизий продолжает работать фолбэком в рендере.
+        imageUrl: { type: 'hidden', label: '' },
         image: { type: 'image', label: 'Изображение' },
         heading: {
           type: 'object',

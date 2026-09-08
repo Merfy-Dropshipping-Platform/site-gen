@@ -162,6 +162,11 @@ const quickAddText = quickAddMode === "cart" ? "В КОРЗИНУ" : "БЫСТР
 
 // (5) Следующее фото при наведении (hover-swap на images[1]).
 const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
+// Режим показа второго фото (настройка «Режим следующего фото»):
+// simple — при наведении подменяем на второе фото; zones — Avito-стиль,
+// сегменты по X показывают 2-е/3-е/4-е фото. Раньше порт эту настройку
+// не читал вовсе (в theme-base читается), и контрол в панели был мёртв.
+const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple";
 
 // (8) «Контейнер» карточки (productCard.cardBackground, Figma 1:34185-34635).
 //     true  → контент карточки в подложке-контейнере: внутр. отступ 12px со всех
@@ -216,6 +221,7 @@ const skeletons = Array.from({ length: skeletonCount });
   data-collection-slug={collectionSlug ?? ''}
   data-page-size={pageSize}
   data-next-photo={nextPhotoOn ? 'true' : 'false'}
+  data-next-photo-mode={nextPhotoMode}
   data-quick-add={quickAddMode}
   style={paddingStyle}
 >
@@ -721,9 +727,17 @@ const skeletons = Array.from({ length: skeletonCount });
     // Второе фото (настройка «Следующее фото при наведении») — images[1].
     const rawImage2 =
       (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+    // Режиму «зоны» нужны ДОПОЛНИТЕЛЬНЫЕ фото: курсор делит картинку по X на
+    // столько частей, сколько снимков есть. Без data-img-2/3/4 доступное фото
+    // всегда одно, и режим включался, но визуально ничего не делал.
+    const zoneImgs =
+      nextPhotoOn && Array.isArray(p.images)
+        ? p.images.slice(1, 4).filter((src) => typeof src === "string" && src)
+        : [];
     const imgDataAttrs =
       ' data-img-primary="' + escapeHtml(rawImage) + '"' +
-      (rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "");
+      (rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "") +
+      zoneImgs.map((src, i) => ' data-img-' + (i + 2) + '="' + escapeHtml(src) + '"').join("");
     const media = rawImage
       ? `<img src="${escapeHtml(rawImage)}"${imgDataAttrs} alt="${name}" width="600" height="600" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
       : CARD_MEDIA_FALLBACK_HTML;
@@ -1323,6 +1337,33 @@ const skeletons = Array.from({ length: skeletonCount });
     });
 
     if (!nextPhotoOn) return;
+    const photoMode =
+      (document.querySelector("[data-next-photo-mode]") || {}).getAttribute?.("data-next-photo-mode") ||
+      "simple";
+    if (photoMode === "zones") {
+      // Зоны: положение курсора по X внутри картинки выбирает фото 1..4.
+      document.addEventListener("mousemove", (event) => {
+        const img = event.target.closest("img[data-img-primary]");
+        if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+        const rect = img.getBoundingClientRect();
+        const keys = ["data-img-primary", "data-img-2", "data-img-3", "data-img-4"];
+        const available = keys.filter((k) => img.getAttribute(k));
+        if (available.length < 2) return;
+        const xRel = (event.clientX - rect.left) / rect.width;
+        let idx = Math.floor(xRel * available.length);
+        if (idx < 0) idx = 0;
+        if (idx > available.length - 1) idx = available.length - 1;
+        const next = img.getAttribute(available[idx]);
+        if (next && img.getAttribute("src") !== next) img.setAttribute("src", next);
+      });
+      document.addEventListener("mouseout", (event) => {
+        const img = event.target.closest("img[data-img-primary]");
+        if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+        const prim = img.getAttribute("data-img-primary");
+        if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
+      });
+      return;
+    }
     document.addEventListener("mouseover", (event) => {
       const img = event.target.closest("img[data-img-secondary]");
       if (!img || !img.closest('[data-nt="catalog-grid"]')) return;

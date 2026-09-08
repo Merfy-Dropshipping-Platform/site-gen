@@ -154,7 +154,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				return `
 					<li class="flex flex-col gap-4 ${borderClass} md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
 						<div class="flex gap-4">
-							<a href="/products/${line.productId}" class="block size-24 shrink-0 overflow-hidden bg-[#F5F5F5]">
+							<a href="/products/${line.productId}" class="block size-24 shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex flex-col gap-2">

@@ -21,6 +21,20 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Bloom».
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+// Логотип подвала: тот же источник, что у шапки (брендинг мерчанта).
+// Плейсхолдер «/logo.svg» не существует на витрине — считаем его отсутствием.
+const _rawFooterLogo = typeof p.logo === "string" ? p.logo.trim() : "";
+let _footerLogoPath = "";
+try {
+	_footerLogoPath = new URL(_rawFooterLogo, "https://_merfy_").pathname;
+} catch {
+	_footerLogoPath = _rawFooterLogo;
+}
+// Как в шапке: файл темы (/icons/…) и плейсхолдер — не логотип магазина.
+const footerLogo =
+	_rawFooterLogo && _footerLogoPath !== "/logo.svg" && !_footerLogoPath.startsWith("/icons/")
+		? _rawFooterLogo
+		: "";
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
@@ -244,14 +258,20 @@ const footerContainerCls = footerPadStyle
 			>
 				<div class="flex flex-col items-start">
 					<a href="/" class="inline-flex transition-opacity hover:opacity-80" aria-label={siteTitle}>
-						<img
-							src="/icons/Bloom.svg"
-							alt={siteTitle}
-							width="65"
-							height="19"
-							class="h-[19px] w-[65px]"
-							decoding="async"
-						/>
+						{/* Логотип магазина, а не картинка темы: файл берём из брендинга
+						    (p.logo), без него — название магазина текстом, как в шапке. */}
+						{footerLogo ? (
+							<img
+								src={footerLogo}
+								alt={siteTitle}
+								class="h-[19px] w-auto max-w-[160px] object-contain"
+								decoding="async"
+							/>
+						) : (
+							<span class="font-comfortaa text-[19px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))]">
+								{siteTitle}
+							</span>
+						)}
 					</a>
 
 					{addressLines.length > 0 && (

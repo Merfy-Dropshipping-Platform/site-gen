@@ -28,16 +28,38 @@ const apiUrl = "https://gateway.merfy.ru/api";
 const dadataToken = "";
 ---
 <Layout title="Оформление заказа" description="Оформление заказа" header="checkout">
-  {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
-  <div class="color-scheme-2">
+  {/* Figma 1:13398 — оформление заказа ВСЕГДА на светлой палитре, независимо от
+      схемы темы. Раньше здесь стояла `color-scheme-2`, но у темы это розовая
+      акцентная схема — чекаут (и панель сводки) заливались розовым. Поэтому
+      светлые токены задаём локально: правки цветов темы страницу не ломают, а
+      кнопки/акценты продолжают брать `--color-button-*` из схемы магазина.
+      Тот же приём применён к формам входа (AuthShell). */}
+  <div
+    class="checkout-scheme"
+    style="
+      --color-bg: 255 255 255;
+      --color-text: 0 0 0;
+      --color-heading: 0 0 0;
+      --color-surface: 246 246 247;
+      --color-muted: 138 138 138;
+    "
+  >
     <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
-      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
-        <div data-checkout-column="form" class="min-w-0">
-          <CheckoutForm />
+      {/* Figma 1:19998 — две панели: форма на фоне страницы, сводка на тонированной
+          панели (--color-surface), которая уходит до правого края экрана. Обе панели
+          в общем потоке, поэтому страница скроллится целиком, без отдельного скролла
+          у сводки. Разметка/CSS — зеркало `wrapCheckoutGrid` в preview.service.ts,
+          правки дублировать там же (live ↔ превью паритет). */}
+      <div class="bloom-checkout-split">
+        <div class="bloom-checkout-pane bloom-checkout-pane--form">
+          <div class="bloom-checkout-pane__inner" data-checkout-column="form">
+            <CheckoutForm />
+          </div>
         </div>
-        <div data-checkout-column="summary" class="min-w-0">
-          <CheckoutSummary />
+        <div class="bloom-checkout-pane bloom-checkout-pane--summary">
+          <div class="bloom-checkout-pane__inner" data-checkout-column="summary">
+            <CheckoutSummary />
+          </div>
         </div>
       </div>
     </main>
@@ -94,3 +116,56 @@ const dadataToken = "";
     });
   </script>
 </Layout>
+
+<style is:global>
+	/* Сплит-раскладка оформления заказа. На узких экранах — стек (форма, затем
+	   сводка), на десктопе — две панели во всю ширину: сводка тонирована и уходит
+	   до правого края, контент обеих колонок сходится к центру. */
+	.bloom-checkout-split {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		background: rgb(var(--color-bg));
+	}
+	.bloom-checkout-pane {
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.bloom-checkout-pane__inner {
+		width: 100%;
+		max-width: 540px;
+		margin: 0 auto;
+		padding: 32px 16px;
+		min-width: 0;
+		box-sizing: border-box;
+	}
+	.bloom-checkout-pane--summary {
+		background: rgb(var(--color-surface));
+	}
+	@media (min-width: 1024px) {
+		.bloom-checkout-split {
+			flex-direction: row;
+			align-items: stretch;
+		}
+		.bloom-checkout-pane {
+			width: 50%;
+			display: flex;
+		}
+		.bloom-checkout-pane--form {
+			justify-content: flex-end;
+		}
+		.bloom-checkout-pane--summary {
+			justify-content: flex-start;
+		}
+		.bloom-checkout-pane--form .bloom-checkout-pane__inner {
+			margin: 0 0 0 auto;
+			max-width: 446px;
+			padding: 64px 28px 64px 24px;
+		}
+		.bloom-checkout-pane--summary .bloom-checkout-pane__inner {
+			margin: 0 auto 0 0;
+			max-width: 556px;
+			padding: 64px 40px 64px 48px;
+		}
+	}
+</style>

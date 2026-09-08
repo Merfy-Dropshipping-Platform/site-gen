@@ -247,7 +247,7 @@ const apiBase = "https://gateway.merfy.ru";
 				'class="satin-fav absolute right-3 top-3 z-20 flex size-8 items-center justify-center bg-white text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">' +
 				'<span data-wishlist-icon class="block size-[18px]">' + heartInner + "</span></button>";
 			return '<article class="group flex h-full flex-col gap-3" data-nt="satin-product-card" aria-label="' + name + '">' +
-				'<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden bg-[#F5F5F5]">' +
+				'<div class="relative aspect-[430/564] w-full shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">' +
 				'<a href="' + href + '" class="block size-full" aria-label="' + name + '">' + media + "</a>" +
 				badge + heartBtn +
 				"</div>" +

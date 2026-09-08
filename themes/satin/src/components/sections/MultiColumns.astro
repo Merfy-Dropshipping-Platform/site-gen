@@ -261,6 +261,15 @@ const itemTextCls = (s: string | undefined) =>
 const itemImageCls = (s: string | undefined) =>
 	s === "small" ? "w-1/2" : s === "large" ? "w-full" : "w-full";
 
+// §10 Контракта секции: «Размер» колонки — настройка панели, и она обязана
+// работать в ОБОИХ состояниях, а не только когда выбрано соотношение
+// изображения. В иконочной ветке (соотношение не выбрано) иконка была зашита
+// 56×56, и настройка выглядела мёртвой. Канон вёрстки satin — 56px (medium и
+// отсутствие пропа), ступени вниз/вверх монотонны. Классы литералами (Tailwind JIT).
+const itemIconCls = (s: string | undefined) =>
+	s === "small" ? "h-10 w-10" : s === "large" ? "h-20 w-20" : "h-14 w-14";
+const itemIconPx = (s: string | undefined) => (s === "small" ? 40 : s === "large" ? 80 : 56);
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -347,10 +356,10 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 								<img
 									src={c.image.startsWith("/") ? withBase(c.image) : c.image}
 									alt=""
-									width="56"
-									height="56"
+									width={itemIconPx(c.imageSize)}
+									height={itemIconPx(c.imageSize)}
 									loading="lazy"
-									class="h-14 w-14 shrink-0 object-contain"
+									class={`${itemIconCls(c.imageSize)} shrink-0 object-contain`}
 									aria-hidden="true"
 								/>
 							))

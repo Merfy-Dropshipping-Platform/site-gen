@@ -13,6 +13,30 @@ import { withBase } from "../../lib/with-base";
 
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function slotImage(url: unknown): string {
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
 // ИКОНКА 56×56; headingSize/textSize per-item; link {text,href} | flat-пара
@@ -21,9 +45,21 @@ const id = p.id;
 // колонки «Колонна». Гейт по наличию реальных данных нужен ещё для шапки
 // (заголовок-плейсхолдер «Мультиколонны»), поэтому объявлен выше. legacy
 // flat-проп items[] {title, body, icon} поддержан алиасами.
-const hasManualColumns =
-	(Array.isArray(p.columns) && p.columns.length > 0) ||
-	(Array.isArray(p.items) && p.items.length > 0);
+const rawColumnSource = Array.isArray(p.columns) && p.columns.length ? p.columns : Array.isArray(p.items) ? p.items : [];
+const hasManualColumns = rawColumnSource.some((c: any) => {
+	const heading = (typeof c?.title === "string" && c.title) || (typeof c?.heading === "string" && c.heading) || "";
+	const text =
+		(typeof c?.description === "string" && c.description) ||
+		(typeof c?.text === "string" && c.text) ||
+		(typeof c?.body === "string" && c.body) ||
+		"";
+	const image =
+		(typeof c?.image === "string" && c.image) ||
+		(typeof c?.imageUrl === "string" && c.imageUrl) ||
+		(typeof c?.icon === "string" && c.icon) ||
+		"";
+	return !!slotImage(image) || slotSet(heading) || slotSet(text);
+});
 
 // Канон heading: string | { text, alignment, size } — у верстальщика шапки НЕТ
 // → рендер ТОЛЬКО при непустом. Роль = заголовок секции §1 (font-logo 20
@@ -32,7 +68,13 @@ const hasManualColumns =
 // «Мультиколонны» (контракт 1:19335, эталон rose MultiColumns.astro), а не
 // отсутствие шапки. С данными мерчанта — его заголовок (пусто → без шапки).
 const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
-const heading = hasManualColumns ? headingRaw : (headingRaw || "Мультиколонны");
+const heading = hasManualColumns
+	? contentSet("heading", headingRaw)
+		? headingRaw
+		: ""
+	: contentSet("heading", headingRaw) && headingRaw.trim()
+		? headingRaw
+		: headingRaw || "Мультиколонны";
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
@@ -90,6 +132,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 			"",
 		headingSize: c.headingSize,
 		textSize: c.textSize,
+		imageSize: c.imageSize,
 		link: linkText ? { text: linkText, href: linkHref } : undefined,
 	};
 });
@@ -105,6 +148,7 @@ const effectiveColumns = isPlaceholder
 			image: "",
 			headingSize: undefined as string | undefined,
 			textSize: undefined as string | undefined,
+			imageSize: undefined as string | undefined,
 			// Per-column ссылка-плейсхолдер «Кнопка» (Figma 1:19335 — кнопка в
 			// КАЖДОЙ колонке, дословно как rose MultiColumns.astro), не общая снизу.
 			link: { ...PLACEHOLDER_COLUMN.link } as { text: string; href: string },
@@ -122,11 +166,8 @@ const displayColumns = isPlaceholder
 	: Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
 		? Math.round(displayColumnsRaw)
 		: 3;
-const gridCls =
-	displayColumns === 3 && !isPlaceholder
-		? "grid grid-cols-1 gap-4 md:grid-cols-2"
-		: "grid grid-cols-1 gap-4 md:grid-cols-[repeat(var(--cols),minmax(0,1fr))]";
-const gridStyle = displayColumns === 3 && !isPlaceholder ? undefined : `--cols:${displayColumns}`;
+const gridCls = "grid grid-cols-1 gap-4 md:grid-cols-[repeat(var(--cols),minmax(0,1fr))]";
+const gridStyle = `--cols:${displayColumns}`;
 
 // Канон width (s/m/l/full): large/отсутствие = .satin-container 1320 (литерал
 // Features.astro:31); medium 1080, small 780, full — на всю ширину (поля
@@ -216,6 +257,8 @@ const itemTextCls = (s: string | undefined) =>
 		: s === "large"
 			? "max-w-[560px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]"
 			: "max-w-[560px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]";
+const itemImageCls = (s: string | undefined) =>
+	s === "small" ? "w-1/2" : s === "large" ? "w-full" : "w-full";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -260,7 +303,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							/* Пустой rect-плейсхолдер (Figma 1:19335): подложка #FBFBFB /
 							   rgb(var(--color-surface)) вместо иконки-картинки колонки. */
 							<div
-								class="aspect-[4/3] w-full bg-[rgb(var(--color-surface,251_251_251))]"
+								class={`${itemImageCls(c.imageSize)} aspect-[4/3] bg-[rgb(var(--color-surface,251_251_251))]`}
 								aria-hidden="true"
 							/>
 						) : (
@@ -270,7 +313,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								   (object-cover, surface-подложка, satin sharp-radius). adapt =
 								   без аспекта → h-auto (нативное соотношение). */
 								<div
-									class={`w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
+									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,251_251_251))]${aspectCls}`}
 									aria-hidden="true"
 								>
 									<img

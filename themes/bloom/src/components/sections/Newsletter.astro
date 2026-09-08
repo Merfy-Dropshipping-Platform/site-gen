@@ -11,6 +11,9 @@
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+
 // Канон heading: string | { text, alignment, size }. Пустое состояние секции
 // (мерчант не задал заголовок) = Figma-плейсхолдер 1:19335 «Подпишитесь на нашу
 // рассылку» — НЕ мок-демо подвала верстальщика «ПОДПИШИТЕСЬ НА РАССЫЛКУ» (F:46).
@@ -136,7 +139,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 				{
 					inlineSubmit ? (
 						<form
-							class="flex h-10 w-full items-center gap-2 rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-white pl-4 pr-1 transition-colors focus-within:border-[#E38E9F]"
+							class="flex h-10 w-full items-center gap-2 rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-white pl-4 pr-1 transition-colors focus-within:border-[rgb(var(--color-accent,227_142_159))]"
 							data-newsletter-form
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="997"
@@ -148,11 +151,11 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 								required
 								placeholder={placeholder}
 								aria-label="Email"
-								class="min-w-0 flex-1 bg-transparent font-inter text-[14px] font-light leading-normal text-black outline-none placeholder:text-[#FFD4E5]"
+								class="min-w-0 flex-1 bg-transparent font-inter text-[14px] font-light leading-normal text-black outline-none placeholder:text-[rgb(var(--color-input-border,255_212_229))]"
 							/>
 							<button
 								type="submit"
-								class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-[#FDF4F6] px-4 font-inter text-[12px] font-light leading-normal text-[#E38E9F] transition-opacity hover:opacity-80 active:scale-95"
+								class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-surface,253_244_246))] px-4 font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-accent,227_142_159))] transition-opacity hover:opacity-80 active:scale-95"
 							>
 								{buttonText}
 							</button>
@@ -171,7 +174,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 								required
 								placeholder={placeholder}
 								aria-label="Email"
-								class="h-10 w-full rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-white px-4 font-inter text-[14px] font-light leading-normal text-black outline-none transition-colors placeholder:text-[#FFD4E5] focus-visible:border-[#E38E9F]"
+								class="h-10 w-full rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-white px-4 font-inter text-[14px] font-light leading-normal text-black outline-none transition-colors placeholder:text-[rgb(var(--color-input-border,255_212_229))] focus-visible:border-[rgb(var(--color-accent,227_142_159))]"
 							/>
 							<button
 								type="submit"
@@ -213,9 +216,88 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 				<p
 					data-newsletter-status
 					role="status"
-					class="hidden font-inter text-[14px] font-light leading-normal text-[#E38E9F]"
+					class="hidden font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-accent,227_142_159))]"
 				></p>
 			</div>
 		</div>
 	</div>
 </section>
+
+<script is:inline define:vars={{ shopId, apiUrl }}>
+	(function () {
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+			shopId: shopId || "",
+			apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+		};
+		var cfg = window.__MERFY_CONFIG__;
+		var base = String(cfg.apiUrl || "https://gateway.merfy.ru/api").replace(/\/+$/, "");
+		var storeId = cfg.shopId || window.__MERFY_SITE_ID__ || "";
+
+		function wire(form) {
+			if (!form || form.__merfyNewsletterWired) return;
+			form.__merfyNewsletterWired = true;
+			var section = form.closest("section") || document;
+			var status = section.querySelector("[data-newsletter-status]");
+			var btn = form.querySelector('button[type="submit"]');
+
+			function show(msg, isError) {
+				if (!status) return;
+				status.textContent = msg;
+				status.style.color = isError ? "#E11D48" : "";
+				status.classList.remove("hidden");
+			}
+
+			form.addEventListener("submit", function (event) {
+				event.preventDefault();
+				var input = form.querySelector('input[type="email"]');
+				var email = input ? String(input.value || "").trim() : "";
+				if (!email) return;
+				if (btn) btn.disabled = true;
+				show("Отправляем…", false);
+
+				fetch(base + "/storefront/newsletter/subscribe", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ store_id: storeId, email: email }),
+				})
+					.then(function (res) {
+						return res
+							.json()
+							.catch(function () { return {}; })
+							.then(function (data) { return { ok: res.ok, code: res.status, data: data }; });
+					})
+					.then(function (r) {
+						if (r.ok) {
+							show(
+								r.data && r.data.alreadySubscribed
+									? "Вы уже подписаны на рассылку."
+									: "Спасибо! Мы отправим вам приветственное письмо.",
+								false,
+							);
+							form.reset();
+						} else if (r.code === 429) {
+							show("Слишком много попыток. Попробуйте позже.", true);
+						} else {
+							show("Не удалось подписаться. Попробуйте позже.", true);
+						}
+					})
+					.catch(function () {
+						show("Не удалось подписаться. Проверьте соединение.", true);
+					})
+					.finally(function () {
+						if (btn) btn.disabled = false;
+					});
+			});
+		}
+
+		function init() {
+			var forms = document.querySelectorAll("[data-newsletter-form]");
+			for (var i = 0; i < forms.length; i++) wire(forms[i]);
+		}
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", init);
+		} else {
+			init();
+		}
+	})();
+</script>

@@ -55,6 +55,16 @@ export function resolveImports(source: string, opts: ResolveOpts): ResolveResult
         return `${prefix}./${flat}${suffix}`;
       },
     );
+
+    // Theme-override re-exports of base puckConfig/classes/tokens (flat dist).
+    rewritten = rewritten.replace(
+      /(from\s+['"])(?:\.\.\/)+theme-base\/blocks\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_.-]+?)(\.ts)?(['"])/g,
+      (_match, prefix, block, modName, _tsExt, suffix) => {
+        const flat = `theme-base__${block}__${modName}.mjs`;
+        deps.push(flat);
+        return `${prefix}./${flat}${suffix}`;
+      },
+    );
   }
 
   return { rewritten, deps };

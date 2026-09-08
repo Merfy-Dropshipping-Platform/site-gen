@@ -437,9 +437,8 @@ export async function loadThemeSourceSnapshot(
   };
   const cartDrawer = {
     globals: resolveCartDrawerGlobals(cartFixture),
-    // Observed on the target ref (F-053): globals reach v2-sections + live
-    // build, but NOT the built-theme blob preview path.
-    reachability: { v2Sections: true, builtTheme: false, liveBuild: true },
+    // Observed reachability: globals reach v2-sections, built-theme blob, live build.
+    reachability: { v2Sections: true, builtTheme: true, liveBuild: true },
   };
 
   // --- deterministic source digests: EXPLICIT provenance partition ------------

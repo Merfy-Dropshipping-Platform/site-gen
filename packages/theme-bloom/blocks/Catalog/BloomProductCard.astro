@@ -34,10 +34,9 @@ interface Props {
       квадрат. Передаётся из Catalog.astro (настройка «Вид изображения»),
       зеркалит client renderCardHtml для parity. */
   cardAspectClass?: string;
-  /** «Контейнер» карточки (настройка cardBackground). true → контент в подложке
-      surface с внутр. отступом 12px (фото/заголовок/кнопка авто-инсетятся, кнопка
-      НЕ край-в-край); false (дефолт) → флеш-вид (full-bleed фото, full-width
-      кнопка). Зеркалит client renderCardHtml для parity. */
+  /** Регистр подписи карточки (hidden puck, blockDefaults bloom). */
+  cardCaptionClass?: string;
+  /** «Контейнер» карточки (настройка cardBackground). */
   cardContainerOn?: boolean;
   /** Быстрое действие: кнопка под карточкой (none → нет; иначе текст). */
   showQuickAdd?: boolean;
@@ -53,6 +52,7 @@ const {
   product,
   priority = false,
   cardAspectClass = "aspect-square",
+  cardCaptionClass = "",
   cardContainerOn = false,
   showQuickAdd = false,
   quickAddText = "В КОРЗИНУ",
@@ -172,7 +172,10 @@ const defaultHeartSvg =
   <div class="flex w-full flex-col gap-2 text-left">
     <a
       href={href}
-      class="bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+      class:list={[
+        "bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+        cardCaptionClass,
+      ]}
     >
       {product.name}
     </a>

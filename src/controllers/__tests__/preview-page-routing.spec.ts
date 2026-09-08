@@ -530,11 +530,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(String(res._body)).toContain('V2-CATALOG');
   });
 
-  // ——— Task 3: observed GAP input for Task 4 (F-053) ———
-  // Drawer globals currently reach the v2-sections call but NOT the built-theme
-  // blob call. This is an OBSERVED FACT recorded so Task 4 can log the missing
-  // built-theme reachability as a GAP — NOT an expectation to preserve after the
-  // GAP is later repaired.
+  // ——— Task 3 / F-053: cart-drawer globals reach preview paths ———
   const DRAWER_REVISION = {
     data: {
       pages: [
@@ -581,7 +577,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(String(res._body)).toContain('scheme-4');
   });
 
-  it('drawer globals do NOT reach the built-theme blob path (observed GAP for Task 4)', async () => {
+  it('drawer globals reach the built-theme blob path (F-053 repaired)', async () => {
     // Force the blob path: no v2-sections, built page present.
     const tryLoad = jest
       .fn()
@@ -603,8 +599,8 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     await ctrl.getPreview('site-1', '/about', undefined, undefined, res);
 
     expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
-    // OBSERVED GAP: the blob path does NOT inject cart-drawer globals today.
-    expect(String(res._body)).not.toContain('__MERFY_CART_DRAWER_SCHEME__');
+    expect(String(res._body)).toContain('__MERFY_CART_DRAWER_SCHEME__');
+    expect(String(res._body)).toContain('scheme-4');
   });
 
   it('v2-sections: collections/preview идёт по-секционно с блоками page-collection', async () => {

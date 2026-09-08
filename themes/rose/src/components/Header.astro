@@ -71,7 +71,7 @@ const rootCls =
 		? "sticky top-0 z-50 w-full"
 		: stickiness === "scroll-up"
 			? "sticky top-0 z-50 w-full transition-transform duration-300"
-			: "w-full";
+			: "relative z-50 w-full";
 // 'scroll-up': прячем хедер при скролле вниз, показываем при скролле вверх.
 // is:inline + set:html (компилятор секций не умеет define:vars), параметры не
 // нужны — root ищется по data-rose-sticky; идемпотентность через data-hydrated.

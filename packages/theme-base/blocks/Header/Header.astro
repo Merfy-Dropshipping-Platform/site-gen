@@ -67,10 +67,10 @@ const navInlineLinkClass = isMegaMenu ? 'uppercase tracking-[0.06em] font-medium
 const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
 // Logo: единый рендер через <img src={logo}>. Дефолт темы задаётся в
-// theme.json blockDefaults.Header.logo (например '/logo.svg' для rose).
+// theme.json blockDefaults.Header.logo (например '/icons/Bloom.svg').
 // Мерчант загружает свой через ThemeSettingsPanel → revision.logo
-// перезаписывается. Никакой ветвления здесь — `logo` всегда содержит
-// URL: либо theme seed, либо merchant upload.
+// перезаписывается. Пустой logo в seed ("") не затирает blockDefaults
+// (см. deepMergeBlockProps в preview.service.ts).
 // SVG темы должен быть color-fixed (fill="#..."), не currentColor —
 // <img> грузит SVG в изолированном context. На dark color schemes
 // мерчант загружает свой светлый вариант.

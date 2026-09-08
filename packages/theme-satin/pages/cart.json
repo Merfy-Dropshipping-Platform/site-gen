@@ -24,10 +24,13 @@
         }
       }
     },
-    { "type": "CartBody", "props": { "id": "CartBody-1" } },
-    { "type": "CartSummary", "props": { "id": "CartSummary-1" } },
-    { "type": "CartTotals", "props": { "id": "CartTotals-1" } },
-    { "type": "CartCheckoutButton", "props": { "id": "CartCheckoutButton-1" } },
+    {
+      "type": "CartSection",
+      "props": {
+        "id": "CartSection-1",
+        "padding": { "top": 80, "bottom": 80 }
+      }
+    },
     {
       "type": "Footer",
       "props": {
@@ -47,9 +50,9 @@
         "informationColumn": {
           "title": "ИНФОРМАЦИЯ",
           "links": [
-            { "label": "Доставка", "href": "/delivery" },
-            { "label": "Возврат", "href": "/returns" },
-            { "label": "Оплата", "href": "/payment" }
+            { "label": "Доставка", "href": "/legal/shipping-policy" },
+            { "label": "Возврат", "href": "/legal/refund" },
+            { "label": "Конфиденциальность", "href": "/legal/privacy" }
           ]
         },
         "socialColumn": {

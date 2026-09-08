@@ -4,7 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 const shopId = "";
 const apiUrl = "https://gateway.merfy.ru/api";
 ---
-<Layout title="Основные данные">
+<Layout title="Основные данные" promo={false}>
   <script is:inline define:vars={{ shopId, apiUrl }}>
     window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
       shopId: shopId || "",

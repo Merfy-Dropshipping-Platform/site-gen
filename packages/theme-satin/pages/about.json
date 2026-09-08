@@ -85,15 +85,15 @@
           "links": [
             {
               "label": "Доставка",
-              "href": "/delivery"
+              "href": "/legal/shipping-policy"
             },
             {
               "label": "Возврат",
-              "href": "/returns"
+              "href": "/legal/refund"
             },
             {
-              "label": "Оплата",
-              "href": "/payment"
+              "label": "Конфиденциальность",
+              "href": "/legal/privacy"
             }
           ]
         },

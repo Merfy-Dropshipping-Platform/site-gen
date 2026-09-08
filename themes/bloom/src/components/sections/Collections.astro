@@ -19,6 +19,18 @@
 import BloomProductCard from "../products/BloomProductCard.astro";
 import { catalogProducts } from "../../data/products";
 
+function resolveCollectionRef(props: Record<string, any>): string | undefined {
+	if (typeof props.collection === "string" && props.collection.trim()) {
+		return props.collection.trim();
+	}
+	const items = Array.isArray(props.collections) ? props.collections : [];
+	for (const item of items) {
+		const ref = item?.collectionId;
+		if (typeof ref === "string" && ref.trim()) return ref.trim();
+	}
+	return undefined;
+}
+
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -40,13 +52,12 @@ const sectionSubtitle =
 const cardsN =
 	typeof p.cards === "number" && p.cards > 0 ? Math.max(2, Math.min(24, Math.round(p.cards))) : 6;
 
-// Канон headingSize: 'medium'/отсутствие = заголовок верстальщика дословно
-// (18/md:20 uppercase #e38e9f, токен с пиксель-фоллбеком). Лестница: small
-// 15/17, large 22/24 — как было в порте (стиль заголовка не меняем).
+// Канон headingSize: top-level приоритетнее legacy heading.size (паритет rose/flux).
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
-	p.headingSize === "small"
+	headingSize === "small"
 		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
-		: p.headingSize === "large"
+		: headingSize === "large"
 			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
 			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
 // Канон subtitleSize: 'small'/отсутствие = body-роль манеры (Inter 300 16px,
@@ -59,7 +70,20 @@ const subtitleCls =
 			: "font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
 // Обёртке заголовка класс нужен только при подзаголовке (flex-col gap-2); дефолт
 // = прежний `<div data-animate>` без class байт-в-байт (заголовок верстальщика).
-const headWrapCls = sectionSubtitle ? "flex flex-col gap-2" : undefined;
+const titleAlignment = p.titleAlignment ?? p.heading?.alignment;
+const titleAlignCls =
+	titleAlignment === "center"
+		? " items-center [&_h2]:!text-center [&_p]:!text-center"
+		: titleAlignment === "right"
+			? " items-end [&_h2]:!text-right [&_p]:!text-right"
+			: titleAlignment === "left"
+				? " items-start [&_h2]:!text-left [&_p]:!text-left"
+				: "";
+const headWrapCls = sectionSubtitle
+	? `flex flex-col gap-2${titleAlignCls}`
+	: titleAlignCls
+		? `flex flex-col${titleAlignCls}`
+		: undefined;
 
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide) — aspect
 // карточного медиа. 'square'/отсутствие = 1/1 (aspect-square карточки
@@ -90,8 +114,7 @@ const gridStyle = cols ? `--cols:${cols}` : undefined;
 // Канон collection (collectionPicker, id или slug) — ИСТОЧНИК товаров секции.
 // Носитель — data-collection на гриде; фильтрацию делает гидрация ниже
 // (resolveCollectionProducts). Пусто → SSG-демо (catalogProducts верстальщика).
-const collectionRef =
-	typeof p.collection === "string" && p.collection.trim() ? p.collection.trim() : undefined;
+const collectionRef = resolveCollectionRef(p);
 
 // SSG-дефолт: 6 реальных demo-товаров верстальщика (catalogProducts). При
 // публикации конкретного сайта клиентская гидрация (ниже) подменяет их

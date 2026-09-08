@@ -49,21 +49,50 @@
       "colorScheme": "scheme-1"
     },
     "Header": {
+      "siteTitle": "Bloom",
+      "logo": "/icons/Bloom.svg",
       "logoPosition": "top-center",
       "padding": {
         "top": 16,
         "bottom": 16
+      },
+      "navigationLinks": [
+        {
+          "label": "Каталог",
+          "href": "/catalog"
+        },
+        {
+          "label": "О нас",
+          "href": "/about"
+        },
+        {
+          "label": "Доставка",
+          "href": "/delivery"
+        },
+        {
+          "label": "Контакты",
+          "href": "/contacts"
+        }
+      ],
+      "promoBar": {
+        "enabled": false,
+        "text": "Скидка 10% на новую коллекцию",
+        "linkText": "Узнать больше",
+        "linkHref": "/delivery"
       }
     },
     "Hero": {
       "variant": "split-bloom",
       "alignment": "left",
-      "size": "large"
+      "size": "large",
+      "colorScheme": "scheme-1",
+      "overlay": 40
     },
     "Slideshow": {
       "alignment": "left",
       "pagination": "numbers",
-      "contentAlign": "left"
+      "contentAlign": "left",
+      "colorScheme": "scheme-1"
     },
     "Collections": {
       "heading": "Сейчас в тренде",
@@ -76,7 +105,8 @@
     },
     "MainText": {
       "buttonStyle": "solid",
-      "textStyle": "regular"
+      "textStyle": "regular",
+      "colorScheme": "scheme-1"
     },
     "Video": {
       "padded": true,
@@ -84,7 +114,8 @@
     },
     "ImageWithText": {
       "imagePosition": "right",
-      "ctaPosition": "bottom-pinned"
+      "ctaPosition": "bottom-pinned",
+      "colorScheme": "scheme-1"
     },
     "PopularProducts": {
       "heading": "Главные хиты",
@@ -92,11 +123,13 @@
       "cards": 4,
       "imageView": "square",
       "cardCaptionStyle": "uppercase",
-      "headingAlignment": "left"
+      "headingAlignment": "left",
+      "cardVariant": "rich"
     },
     "Newsletter": {
       "formLayout": "inline-submit",
-      "alignment": "left"
+      "alignment": "left",
+      "colorScheme": "scheme-1"
     },
     "Catalog": {
       "filterPosition": "side",
@@ -127,8 +160,28 @@
         "content": "Стиль для каждой ситуации - найдите свой в каталоге."
       }
     },
-    "MultiRows": {},
-    "MultiColumns": {}
+    "MultiRows": {
+      "colorScheme": "scheme-1"
+    },
+    "MultiColumns": {
+      "colorScheme": "scheme-1"
+    },
+    "CollapsibleSection": {
+      "colorScheme": "scheme-1"
+    },
+    "Product": {
+      "visualConfig": {
+        "gallery": {
+          "variant": "wrap-large",
+          "showDiscountBadge": true
+        },
+        "variantsType": "chips",
+        "counter": {
+          "variant": "inline"
+        },
+        "showDescription": true
+      }
+    }
   },
   "colorSchemes": [
     {
@@ -225,7 +278,7 @@
     "newsletter": true,
     "cart-drawer": true,
     "otp-auth": true,
-    "wishlist": false,
+    "wishlist": true,
     "color-swatches": true,
     "filter-sidebar": true,
     "puckDrivenPages": true

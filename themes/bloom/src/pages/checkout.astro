@@ -30,18 +30,34 @@ const dadataToken = "";
 <Layout title="Оформление заказа" description="Оформление заказа" header="checkout">
   {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
-    <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
-      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
-        <div data-checkout-column="form" class="min-w-0">
+    <main class="flex-1 w-full mfy-checkout-split" style="color: rgb(var(--color-text));">
+      <div class="mfy-checkout-pane mfy-checkout-pane--form">
+        <div class="mfy-checkout-pane__inner" data-checkout-column="form">
           <CheckoutForm />
         </div>
-        <div data-checkout-column="summary" class="min-w-0">
+      </div>
+      <div class="mfy-checkout-pane mfy-checkout-pane--summary">
+        <div class="mfy-checkout-pane__inner" data-checkout-column="summary">
           <CheckoutSummary />
         </div>
       </div>
     </main>
   </div>
+
+  <style is:global>
+    .mfy-checkout-split { display: flex; flex-direction: column; width: 100%; background: rgb(var(--color-bg)); }
+    .mfy-checkout-pane { width: 100%; box-sizing: border-box; }
+    .mfy-checkout-pane__inner { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+    .mfy-checkout-pane--summary { background: rgb(var(--color-surface)); }
+    @media (min-width: 1024px) {
+      .mfy-checkout-split { flex-direction: row; align-items: stretch; }
+      .mfy-checkout-pane { width: 50%; display: flex; }
+      .mfy-checkout-pane--form { justify-content: flex-end; }
+      .mfy-checkout-pane--summary { justify-content: flex-start; }
+      .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
+      .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
+    }
+  </style>
 
   {/* --- Live checkout plumbing (checkout page only) --- */}
   {/* Config injection (templates pattern). build.service.ts patches shopId +
@@ -124,35 +140,45 @@ const dadataToken = "";
   <script is:inline type="module" src="/scripts/cart-api.js"></script>
   <script is:inline type="module" src="/scripts/cart-store.js"></script>
   <script is:inline>
-    // Чекаут наполняет серверную корзину (cartStore) из nt-cart (bloom:cart:v1) —
-    // источника истины того, что в корзине у пользователя. Товар виден при ЛЮБОМ
-    // входе: «Купить сейчас»→/checkout, корзина→/checkout, прямой /checkout. Всё в
-    // try/catch: при сбое деградирует к cartStore.init() (прежнее поведение).
+    // Чекаут рендерит «Сводку заказа» МГНОВЕННО из nt-cart (bloom:cart:v1) — без
+    // серверных запросов на загрузке. Серверная корзина (cartStore) синкается
+    // позже, при «Оформить» (CheckoutSubmit → cartStore.syncToServer). Так товары
+    // появляются сразу с лоадером, а не по одному (паттерн rose checkout).
     document.addEventListener("DOMContentLoaded", function () {
       var cs = window.cartStore;
       if (!cs) return;
-      function fallbackInit() { try { if (cs.init) cs.init(); } catch (e) {} }
+      try { sessionStorage.removeItem("bloom:buynow"); } catch (e) {}
       var lines = [];
-      // Express «Купить сейчас»: товар лежит в sessionStorage (НЕ в URL, НЕ в корзине
-      // покупателя). Есть — оформляем ТОЛЬКО его; иначе — корзину (bloom:cart:v1).
-      var bn = null;
-      try { bn = JSON.parse(sessionStorage.getItem("bloom:buynow") || "null"); } catch (e) { bn = null; }
-      if (bn && bn.productId) {
-        lines = [{ productId: bn.productId, variant: { variantCombinationId: bn.variantCombinationId || null }, quantity: bn.quantity || 1 }];
-      } else {
-        try { lines = JSON.parse(localStorage.getItem("bloom:cart:v1") || "[]"); } catch (e) { lines = []; }
+      try { lines = JSON.parse(localStorage.getItem("bloom:cart:v1") || "[]"); } catch (e) { lines = []; }
+      if (!Array.isArray(lines)) lines = [];
+      var display = lines.map(function (l) {
+        var v = l.variant || {};
+        var opts = {};
+        if (v.color) opts["Цвет"] = v.color;
+        if (v.size) opts["Размер"] = v.size;
+        return {
+          id: l.id,
+          productId: l.productId,
+          name: l.name,
+          priceCents: Math.round((parseFloat(l.price) || 0) * 100),
+          compareAtPriceCents: l.oldPrice ? Math.round((parseFloat(l.oldPrice) || 0) * 100) : undefined,
+          image: l.image,
+          imageUrl: l.image,
+          quantity: l.quantity || 1,
+          options: opts,
+          variantCombinationId: (v.variantCombinationId) || null,
+        };
+      });
+      if (cs.setLocalItemsReconciled) cs.setLocalItemsReconciled(display, "/data/products.json");
+      else if (cs.setLocalItems) cs.setLocalItems(display);
+      else if (cs.init) cs.init();
+
+      if (display.length && cs.syncToServer) {
+        setTimeout(function () {
+          try { cs.syncToServer({ notify: true }).catch(function () {}); }
+          catch (e) { /* сеть/корзина недоступны — остаёмся на локальном рендере */ }
+        }, 250);
       }
-      if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
-      (async function () {
-        try {
-          await cs.clear();
-          for (var i = 0; i < lines.length; i++) {
-            var l = lines[i];
-            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity); } catch (e) {}
-          }
-        } catch (e) { fallbackInit(); return; }
-        try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}
-      })();
     });
   </script>
 </Layout>

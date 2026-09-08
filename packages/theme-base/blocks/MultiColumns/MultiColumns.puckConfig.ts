@@ -153,6 +153,7 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
+    headingAlignment: { type: 'alignment', label: 'Выравнивание' },
     width: {
       type: 'select',
       label: 'Ширина',
@@ -206,8 +207,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     // «Цветовая схема контейнера» скрыта из main panel.
     containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
-    // Hidden — нет в Figma 314-34917.
-    headingAlignment: { type: 'hidden', label: '' },
     link: { type: 'hidden', label: '' },
     columns: {
       type: 'array',

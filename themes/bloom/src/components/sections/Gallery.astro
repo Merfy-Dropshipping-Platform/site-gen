@@ -33,12 +33,21 @@ const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
 // (canon-default) и отсутствие = роль «заголовок секции» верстальщика дословно
 // (18/md:20). Лестница §9: small 15/17, large 22/24.
 const headingSize = p.heading?.size ?? p.headingSize;
+const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+const headingAlignTextCls =
+	headingAlignment === "center"
+		? " text-center"
+		: headingAlignment === "right"
+			? " text-right"
+			: headingAlignment === "left"
+				? " text-left"
+				: "";
 const headingCls =
 	headingSize === "small"
-		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
+		? `font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]${headingAlignTextCls}`
 		: headingSize === "large"
-			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
-			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
+			? `font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]${headingAlignTextCls}`
+			: `font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]${headingAlignTextCls}`;
 // Канон textSize: 'medium' (canon-default) и отсутствие = body-роль манеры
 // (Inter 300 16px, §9: small 14, large 19).
 const textSize = p.textSize ?? p.text?.size;
@@ -48,6 +57,16 @@ const subtitleCls =
 		: textSize === "large"
 			? "font-inter text-[19px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
 			: "font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
+
+const headAlignCls =
+	headingAlignment === "center"
+		? " items-center text-center"
+		: headingAlignment === "right"
+			? " items-end text-right"
+			: headingAlignment === "left"
+				? " items-start text-left"
+				: "";
+const headWrapCls = sectionSubtitle ? `flex flex-col gap-2${headAlignCls}` : headAlignCls || undefined;
 
 // Канон imagePosition left/right: 'left' (canon-default) и отсутствие = большая
 // квадратная плитка слева (пиксель верстальщика); 'right' → зеркало раскладки
@@ -145,7 +164,7 @@ const paddingStyle = p.padding
 		{sectionSubtitle ? (
 			<div
 				data-animate
-				class="flex flex-col gap-2"
+				class:list={["flex flex-col gap-2", headWrapCls]}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="heading"

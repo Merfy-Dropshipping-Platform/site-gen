@@ -34,22 +34,26 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
 
-// Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3.
-// Дефолт = лестница литералов товарного грида манеры (Collections.astro:24,
-// 1 → sm:2 → lg:3); иное значение — CSS-var на lg-брейкпоинте.
+function clampPublicationCount(value: unknown, fallback = 3): number {
+	const numeric = typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : fallback;
+	return Math.min(4, Math.max(1, numeric));
+}
+
+// Канон columnsCount (slider 1-4) приоритетнее hidden columns; дефолт 3.
+// clamp = theme-base Publications.puckConfig (Math.trunc, max 4).
 const columnsRaw =
 	typeof p.columnsCount === "number" ? p.columnsCount : typeof p.columns === "number" ? p.columns : 3;
-const columns = Math.max(1, Math.min(6, Math.round(columnsRaw) || 3));
+const columns = clampPublicationCount(columnsRaw);
 const gridCls =
 	columns === 3
 		? "grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-[16px] lg:gap-y-10"
 		: "grid w-full grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[repeat(var(--pub-cols),minmax(0,1fr))] lg:gap-x-[16px] lg:gap-y-10";
 const gridStyle = columns === 3 ? undefined : `--pub-cols:${columns};`;
 
-// Канон cardsCount (slider 1-12) приоритетнее hidden cards (1-4); дефолт 3 карточки.
+// Канон cardsCount (slider 1-4) приоритетнее hidden cards; дефолт 3 карточки.
 const cardsRaw =
 	typeof p.cardsCount === "number" ? p.cardsCount : typeof p.cards === "number" ? p.cards : 3;
-const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
+const cards = clampPublicationCount(cardsRaw);
 
 // Канон showDateTime (toggle) / legacy dateTime.enabled (hidden). Паритет
 // theme-base Publications.astro (dateTimeEnabled = enabled !== 'false'): дата

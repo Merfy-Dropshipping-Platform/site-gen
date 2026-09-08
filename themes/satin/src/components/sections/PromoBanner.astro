@@ -9,6 +9,18 @@
 // рендерится ТОЛЬКО при непустом link.text.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Figma 1:19335 — пустое состояние секции «Панель объявлений»: пока мерчант НЕ
 // задал текст объявления, секция показывает ДОСЛОВНЫЙ плейсхолдер на surface-полосе
@@ -18,7 +30,7 @@ const id = p.id;
 // сам проп text. Когда text ЗАДАН (мерчант/ревизия/puck-default) — рендер реального
 // текста на чёрной полосе верстальщика без изменений (эталоны rose/bloom PromoBanner.astro).
 const rawText = typeof p.text === "string" ? p.text.trim() : "";
-const hasText = rawText.length > 0;
+const hasText = contentSet("text", rawText);
 const text = hasText ? p.text : "";
 
 // Канон link {text, href} + legacy linkText/linkUrl. Дефолт href = литерал /catalog
@@ -27,7 +39,7 @@ const text = hasText ? p.text : "";
 const linkText =
 	(typeof p.link?.text === "string" && p.link.text.trim() ? p.link.text : undefined) ??
 	(typeof p.linkText === "string" && p.linkText.trim() ? p.linkText : undefined);
-const placeholderLinkText = linkText ?? "Перейти";
+const placeholderLinkText = linkText && contentSet(["buttonText", "linkText"], linkText) ? linkText : "Перейти";
 const linkHref =
 	p.link?.href ?? p.linkUrl ?? (typeof p.link === "string" ? p.link : undefined) ?? "/catalog";
 
@@ -38,6 +50,7 @@ const linkHref =
 // Цвета чёрной полосы → токены с пиксель-фоллбеком §7: bg 0_0_0, text 255_255_255.
 const size = typeof p.size === "string" ? p.size : "large";
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	thin: { mh: "min-h-6", text: "text-[11px]" },
 	small: { mh: "min-h-8", text: "text-[12px]" },
 	medium: { mh: "min-h-10", text: "text-[14px]" },
 	large: { mh: "min-h-12", text: "text-[16px]" },
@@ -101,7 +114,7 @@ const typoCls =
 		   объявление. Перейти» на surface-полосе темы (НЕ чёрная полоса верстальщика
 		   и НЕ дефолт-акция «Бесплатная доставка…»). Эталоны rose/bloom PromoBanner.astro. */
 		<div
-			class="flex min-h-12 w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 py-2 text-center md:px-20 xl:px-[300px] 2xl:px-[680px]"
+			class={`flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 py-2 text-center md:px-20 xl:px-[300px] 2xl:px-[680px]`}
 			role="region"
 			aria-live="polite"
 			data-satin-announcement

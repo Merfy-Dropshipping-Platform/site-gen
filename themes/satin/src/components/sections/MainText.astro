@@ -7,6 +7,18 @@
 // пропса = литерал верстальщика (дефолт-ветка тернарников = прежние строки).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон heading: string | { text, size }. Роль = заголовок секции (Kelly Slab
 // uppercase, МАННЕРА §1). Лестница §9 «Заголовок секции 20»: medium/отсутствие =
@@ -17,9 +29,11 @@ const id = p.id;
 // → рендер реальных данных без изменений.
 const headingRaw = typeof p.heading === "string" ? p.heading : p.heading?.text;
 const textRaw = typeof p.text === "string" ? p.text : p.text?.content;
-const isEmptyState = !(headingRaw && headingRaw.trim()) && !(textRaw && textRaw.trim());
+const headingSet = contentSet("heading", headingRaw);
+const textSet = contentSet("text", textRaw);
+const isEmptyState = !headingSet && !textSet;
 
-const heading = headingRaw ?? (isEmptyState ? "Расскажи о своем бренде" : "");
+const heading = headingSet && headingRaw ? headingRaw : isEmptyState ? "Расскажи о своем бренде" : "";
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -31,7 +45,7 @@ const headingCls =
 // Канон text: string | { content, size }. Пустое состояние → контрактный
 // поясняющий текст плейсхолдера (НЕ длинная копия верстальщика).
 const text =
-	textRaw ?? (isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "");
+	textSet && textRaw ? textRaw : isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "";
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Роль =
 // «Body крупный» .satin-copy md:text-[20px] (Arsenal 300, lh 1.5, muted —
@@ -53,9 +67,17 @@ const textCls =
 // auto-margin'ом; alignment right выравнивает содержимое вправо.
 const position = p.position === "left" || p.position === "right" ? p.position : "center";
 const posCls =
-	position === "left" ? " max-w-[600px] mr-auto" : position === "right" ? " max-w-[600px] ml-auto" : "";
-const alignment = p.alignment === "left" || p.alignment === "right" ? p.alignment : "center";
-const alignCls = alignment === "right" ? " items-end text-right" : "";
+	position === "left"
+		? " max-w-[600px] mr-auto"
+		: position === "right"
+			? " max-w-[600px] ml-auto"
+			: " mx-auto";
+const alignCls =
+	position === "left"
+		? " items-start text-left"
+		: position === "right"
+			? " items-end text-right"
+			: " items-center text-center";
 
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";

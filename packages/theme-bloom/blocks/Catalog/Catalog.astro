@@ -71,6 +71,10 @@ interface Props {
   /** Отдельная цветовая схема ВНУТРЕННЕГО контейнера каталога.
       При unset наследует colorScheme секции (класс не задаётся). */
   containerColorScheme?: string;
+  /** Сеточный аспект карточки (hidden puck, blockDefaults bloom). */
+  gridAspect?: "auto" | "1:1" | "4:5";
+  /** Регистр подписи карточки (hidden puck, blockDefaults bloom). */
+  cardCaptionStyle?: "default" | "uppercase";
 }
 
 const {
@@ -89,6 +93,8 @@ const {
   cards,
   productCard,
   containerColorScheme,
+  gridAspect,
+  cardCaptionStyle,
 } = Astro.props as Props;
 
 // Кол-во товаров на «страницу» пагинации: из настройки «Карточки» (cards, 2–24).
@@ -140,10 +146,22 @@ const paddingStyle =
 //     SSG (BloomProductCard через prop), И в client renderCardHtml (через
 //     define:vars cardAspectClass) — parity.
 const cardStyleVal = productCard?.cardStyle ?? "square";
+const gridAspectProp =
+  gridAspect === "1:1" || gridAspect === "4:5" || gridAspect === "auto" ? gridAspect : "auto";
+const gridAspectClass =
+  gridAspectProp === "1:1"
+    ? "aspect-square"
+    : gridAspectProp === "4:5"
+      ? "aspect-[4/5]"
+      : "";
 const cardAspectClass =
-  cardStyleVal === "wide" ? "aspect-[4/3]"
-  : cardStyleVal === "portrait" ? "aspect-[318/444]"
-  : "aspect-square";
+  gridAspectClass ||
+  (cardStyleVal === "wide"
+    ? "aspect-[4/3]"
+    : cardStyleVal === "portrait"
+      ? "aspect-[318/444]"
+      : "aspect-square");
+const cardCaptionClass = cardCaptionStyle === "uppercase" ? "uppercase tracking-wide" : "";
 
 // (4) Стиль кнопки quickAdd: primary = заливка accent/button-bg (родной bloom
 //     #e38e9f); secondary = белая с бордером; link = текст-ссылка. Токены bloom.
@@ -240,6 +258,7 @@ const skeletons = Array.from({ length: skeletonCount });
         <BloomProductCard
           product={product}
           cardAspectClass={cardAspectClass}
+          cardCaptionClass={cardCaptionClass}
           cardContainerOn={cardContainerOn}
           showQuickAdd={showQuickAdd}
           quickAddText={quickAddText}
@@ -544,12 +563,12 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardCaptionClass, cardContainerOn, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → на проде остаётся сырой путь Catalog.astro?astro&type=script
   // → HTTP 404 → вся клиентская логика мертва. is:inline компилится всегда.
-  // Поэтому здесь весь клиент инлайн: функции из rose storefront-hydrate.ts
-  // перенесены телами 1:1 (без import/типов), данные frontmatter — define:vars.
+  // Поэтому здесь весь клиент инлайн: функции из
+  // packages/theme-bloom/blocks/Catalog/storefront-hydrate.ts перенесены телами 1:1
   (function () {
   // ─── Инлайн storefront-hydrate (loaders + filters/sort + card render) ───
   const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
@@ -700,6 +719,8 @@ const skeletons = Array.from({ length: skeletonCount });
   // родной bloom квадрат.
   const CARD_ASPECT_CLASS =
     (typeof cardAspectClass === "string" && cardAspectClass) || "aspect-square";
+  const CARD_CAPTION_CLASS =
+    (typeof cardCaptionClass === "string" && cardCaptionClass) || "";
 
   // «Контейнер» карточки (настройка cardBackground) — inline-style из define:vars.
   // Зеркалит BloomProductCard.astro (parity SSG↔client). Используем inline-style,
@@ -777,7 +798,7 @@ const skeletons = Array.from({ length: skeletonCount });
   ${heartBtn}
   </div>
   <div class="flex w-full flex-col gap-2 text-left">
-    <a href="${href}" class="bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70">${name}</a>
+    <a href="${href}" class="bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70${CARD_CAPTION_CLASS ? " " + CARD_CAPTION_CLASS : ""}">${name}</a>
     <div class="flex w-full flex-wrap items-baseline gap-2">
       <span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">${price}</span>
       ${oldPrice}

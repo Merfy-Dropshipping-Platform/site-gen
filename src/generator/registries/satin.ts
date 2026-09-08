@@ -58,7 +58,9 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   ),
   Publications: staticComponent("Publications", "Publications.astro"),
   Page: staticComponent("Page", "Page.astro"),
-  Product: staticComponent("Product", "Product.astro"),
+  // Родная PDP верстальщика (packages/theme-satin/blocks/Product/Product.astro),
+  // порт satinProductDetail. Схема полей = theme-base Product.puckConfig.
+  Product: packageComponent("Product", "Product"),
   CartSection: staticComponent("CartSection", "CartSection.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
   // Catalog block — родной каталог верстальщика satin как package-блок

@@ -110,11 +110,15 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
 		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
 		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
+	const merchantImage =
+		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
+		(typeof s.image === "string" && s.image.trim()) ||
+		"";
+	const isPromptCard = !merchantImage;
+	const promptBoxed = isPromptCard && String(s.container) !== "false";
+	const posCls = promptBoxed ? "items-center justify-center" : slidePosCls(s);
 	return {
-		image:
-			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
-			(typeof s.image === "string" && s.image.trim()) ||
-			"",
+		image: merchantImage || (promptBoxed ? PLACEHOLDER_SLIDE_IMAGE : ""),
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		subtitle:
@@ -127,16 +131,13 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			s.button?.link?.href ??
 			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
 			"/catalog",
-		boxed: String(s.container ?? "false") === "true",
+		boxed: isPromptCard ? promptBoxed : String(s.container ?? "false") === "true",
+		onPhoto: !!merchantImage && !(isPromptCard ? promptBoxed : String(s.container ?? "false") === "true"),
 		schemeCls:
 			typeof s.colorScheme === "string" && s.colorScheme
 				? ` color-scheme-${String(s.colorScheme).replace("scheme-", "")}`
 				: "",
-		// position per-slide — вертикаль + горизонталь (slidePosCls выше). Раньше
-		// вертикаль игнорировалась (контент был захардкожен внизу = items-end).
-		posCls: slidePosCls(s),
-		// alignment per-slide; 'left' (canon-default blockDefaults) и отсутствие =
-		// items-start героя.
+		posCls,
 		alignCls:
 			s.alignment === "center"
 				? "items-center text-center"
@@ -234,17 +235,39 @@ const paddingStyle = p.padding
 								aria-hidden="true"
 							/>
 						)}
-						{/* Контент в нижнем углу полотна — манера героя bloom (блок 330px,
-						    поля px-4 md:px-20 2xl:px-[300px], pb-8/12/20). */}
+						{s.onPhoto && (
+							<div
+								class="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent"
+								aria-hidden="true"
+							/>
+						)}
 						<div
 							class={`relative z-10 flex h-full w-full px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px] ${s.posCls}`}
 						>
 							<div
-								class={`flex w-full max-w-[330px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6" : ""}`}
+								class={`flex w-full max-w-[330px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
 							>
 								<div class={`flex flex-col gap-2 ${s.alignCls}`}>
-									{s.heading && <h2 class={`hero-animate-1 ${s.headingCls}`}>{s.heading}</h2>}
-									{s.subtitle && <p class={`hero-animate-2 ${s.textCls}`}>{s.subtitle}</p>}
+									{s.heading && (
+										<h2
+											class:list={[
+												`hero-animate-1 ${s.headingCls}`,
+												s.onPhoto && "!text-[rgb(var(--color-heading,255_255_255))]",
+											]}
+										>
+											{s.heading}
+										</h2>
+									)}
+									{s.subtitle && (
+										<p
+											class:list={[
+												`hero-animate-2 ${s.textCls}`,
+												s.onPhoto && "!text-[rgb(var(--color-text,255_255_255))]",
+											]}
+										>
+											{s.subtitle}
+										</p>
+									)}
 								</div>
 								{s.ctaText && (
 									<a href={s.ctaHref} class={`hero-animate-3 ${ctaCls}`}>
@@ -260,40 +283,69 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<>
-						<button
-							type="button"
-							data-slide-prev
-							aria-label="Предыдущий слайд"
-							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90 active:scale-95"
-						>
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
-						<button
-							type="button"
-							data-slide-next
-							aria-label="Следующий слайд"
-							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90 active:scale-95"
-						>
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
+						{pagination !== "numbers" && (
+							<>
+								<button
+									type="button"
+									data-slide-prev
+									aria-label="Предыдущий слайд"
+									class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90 active:scale-95"
+								>
+									<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+										<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+								<button
+									type="button"
+									data-slide-next
+									aria-label="Следующий слайд"
+									class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90 active:scale-95"
+								>
+									<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+										<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+							</>
+						)}
 						{pagination !== "none" && (
-							<div class="absolute bottom-5 right-4 z-20 flex items-center gap-2 md:right-20 2xl:right-[300px]">
-								{pagination === "numbers" &&
-									slides.map((_, i) => (
+							<div
+								class={`absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center ${pagination === "numbers" ? "gap-4" : "gap-2"}`}
+							>
+								{pagination === "numbers" && (
+									<>
 										<button
 											type="button"
-											data-slide-dot
-											data-active={i === 0 ? "true" : "false"}
-											aria-label={`Слайд ${i + 1}`}
-											class="font-inter text-[14px] font-light leading-none !text-white/60 transition-colors data-[active=true]:!text-white"
+											data-slide-prev
+											aria-label="Предыдущий слайд"
+											class="flex size-6 items-center justify-center !text-white/70 transition-opacity hover:opacity-100"
 										>
-											{i + 1}
+											<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+												<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+											</svg>
 										</button>
-									))}
+										{slides.map((_, i) => (
+											<button
+												type="button"
+												data-slide-dot
+												data-active={i === 0 ? "true" : "false"}
+												aria-label={`Слайд ${i + 1}`}
+												class="font-inter text-[14px] font-light leading-none !text-white/50 transition-colors data-[active=true]:!text-white"
+											>
+												{i + 1}
+											</button>
+										))}
+										<button
+											type="button"
+											data-slide-next
+											aria-label="Следующий слайд"
+											class="flex size-6 items-center justify-center !text-white/70 transition-opacity hover:opacity-100"
+										>
+											<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+												<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+											</svg>
+										</button>
+									</>
+								)}
 								{pagination === "dots" &&
 									slides.map((_, i) => (
 										<button

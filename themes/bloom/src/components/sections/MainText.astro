@@ -4,7 +4,8 @@
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
 // тронут (его используют страницы). Схема полей = packages/theme-base/blocks/
 // MainText/MainText.puckConfig.ts.
-//
+import { inlineFormat } from "../../lib/rich-text";
+
 // Пустое состояние (Figma 1:19335): когда мерчант НЕ задал контент — секция
 // рендерит ПЛЕЙСХОЛДЕР контракта («Расскажи о своем бренде» / «Расскажи
 // подробнее…» / Кнопка), а НЕ мок-манифест верстальщика Philosophy. Образец —
@@ -137,9 +138,8 @@ const textId = id ? `${id}-text` : "philosophy-text";
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				/>
 			)
 		}
 		<p
@@ -149,7 +149,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="101"
 			data-puck-subsection-field="text"
-			set:html={text}
+			set:html={inlineFormat(text)}
 		/>
 
 		{

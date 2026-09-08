@@ -1,7 +1,7 @@
 /**
  * Избранное (wishlist) Bloom — локальная реализация по образцу корзины
- * ({@link ./nt-cart-bloom}.ts + {@link ./cart}.ts), сведённая в один self-contained
- * файл. Хранит список productId в localStorage, шлёт CustomEvent при изменении и
+ * ({@link ../../../../packages/theme-base/runtime/nt-cart} + {@link ./cart}.ts),
+ * сведённая в один self-contained файл. Хранит список productId в localStorage,
  * экспортирует {@link initWishlistUI} — глобальный document-делегат (зеркало
  * `initCartUI`), который перерисовывает состояние всех кнопок-сердец и бейджей.
  *

@@ -7,6 +7,7 @@
 // Inter 16 400, ответ Inter 16 light muted, разделители = рамка манеры #F5F5F5
 // (низ шапки H:49); chevron — /icons/dropdown-chevron.svg с group-open-поворотом
 // (tailwind-классы, без <style>-блока).
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -102,7 +103,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-					set:html={heading}
+					set:html={inlineFormat(heading)}
 				/>
 			)
 		}
@@ -124,7 +125,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
 									<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
-										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+										<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 										<img
 											src="/icons/dropdown-chevron.svg"
 											alt=""
@@ -140,7 +141,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
 										<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
-											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<img
 												src="/icons/dropdown-chevron.svg"
 												alt=""

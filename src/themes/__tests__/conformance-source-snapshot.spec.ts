@@ -150,10 +150,10 @@ describe('loadThemeSourceSnapshot(bloom) — real source facts', () => {
     // Cart-drawer fixture: valid scheme → coupled SCHEME+DISCLAIMER + title.
     expect(snap.cartDrawer.globals.__MERFY_CART_DRAWER_SCHEME__).toBe('scheme-2');
     expect(snap.cartDrawer.globals.__MERFY_CART_DRAWER_TITLE__).toBe('Корзина');
-    // Observed reachability (input for Task 4): NOT reaching built-theme blob.
+    // Observed reachability: v2-sections + built-theme blob + live build.
     expect(snap.cartDrawer.reachability).toEqual({
       v2Sections: true,
-      builtTheme: false,
+      builtTheme: true,
       liveBuild: true,
     });
   });

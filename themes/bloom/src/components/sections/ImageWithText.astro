@@ -5,6 +5,7 @@
 // медиа-паттерны галереи §4 (rounded 12, плейсхолдер #F5F5F5, hover-zoom 1.03,
 // зазор грида gap-4), типографика §1, розовый pill §3. Схема полей =
 // packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -149,15 +150,14 @@ const titleId = id ? `${id}-title` : undefined;
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="101"
 				data-puck-subsection-field="heading"
-			>
-				{heading}
-			</h2>
+				set:html={inlineFormat(heading)}
+			/>
 			<div
 				class={textCls + italicCls + headingAlignCls}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="102"
 				data-puck-subsection-field="text"
-				set:html={text}
+				set:html={inlineFormat(text)}
 			/>
 			{
 				btnText && (

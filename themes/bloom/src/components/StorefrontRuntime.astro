@@ -1,0 +1,109 @@
+---
+// Единый storefront-рантайм витрины (cart-drawer + корзина/избранное/аккаунт).
+// Вшивается Layout.astro и BlogPost.astro — счётчики и дровер на любой странице.
+import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+import BloomCartAddedModal from "./cart/BloomCartAddedModal.astro";
+---
+
+<NtCartDrawer rootId="bloom-cart-drawer-root" eventPrefix="bloom:cart" />
+<BloomCartAddedModal />
+<script>
+	import { initCartUI } from "../lib/cart";
+	import { initWishlistUI } from "../lib/wishlist";
+	import { initAuthUI } from "../lib/auth";
+	initCartUI();
+	initWishlistUI();
+	initAuthUI();
+
+	const applyCartDrawerSettings = () => {
+		const w = window as unknown as {
+			__MERFY_CART_DRAWER_SCHEME__?: string;
+			__MERFY_CART_DRAWER_DISCLAIMER__?: string;
+			__MERFY_CART_DRAWER_TITLE__?: string;
+			__MERFY_CART_DRAWER_CHECKOUT__?: string;
+			__MERFY_CART_DRAWER_EMPTY__?: string;
+		};
+		const cfg = {
+			scheme: w.__MERFY_CART_DRAWER_SCHEME__,
+			disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
+			title: w.__MERFY_CART_DRAWER_TITLE__,
+			checkout: w.__MERFY_CART_DRAWER_CHECKOUT__,
+			empty: w.__MERFY_CART_DRAWER_EMPTY__,
+		};
+		if (!cfg.scheme && !cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
+		const root = document.getElementById("bloom-cart-drawer-root");
+		if (!root) return;
+		if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
+			Array.from(root.classList).forEach((c) => {
+				if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
+			});
+			root.classList.add("color-scheme-" + cfg.scheme.replace("scheme-", ""));
+		}
+		if (cfg.disclaimer) {
+			const summary = root.querySelector("[data-cart-summary]");
+			if (summary && !summary.querySelector(".cart-drawer-disclaimer")) {
+				const p = document.createElement("p");
+				p.className = "cart-drawer-disclaimer";
+				p.style.cssText =
+					"font-family:var(--font-body);font-size:14px;line-height:20px;color:rgb(var(--color-muted));margin:0 0 4px;";
+				p.textContent = cfg.disclaimer;
+				summary.insertBefore(p, summary.firstChild);
+			}
+		}
+		if (cfg.title) {
+			const h2 = root.querySelector("[data-cart-panel] h2");
+			if (h2) h2.textContent = cfg.title;
+		}
+		if (cfg.checkout) {
+			const btn = root.querySelector("[data-cart-summary] > a");
+			if (btn) btn.textContent = cfg.checkout;
+		}
+		if (cfg.empty) {
+			const emptyP = root.querySelector("[data-cart-empty] > p");
+			if (emptyP) emptyP.textContent = cfg.empty;
+		}
+	};
+	applyCartDrawerSettings();
+	document.addEventListener("astro:page-load", applyCartDrawerSettings);
+
+	document.addEventListener(
+		"click",
+		(e) => {
+			const el = e.target as Element | null;
+			if (el && el.closest("[data-action='checkout']")) {
+				try {
+					sessionStorage.removeItem("bloom:buynow");
+				} catch (err) {}
+			}
+		},
+		true,
+	);
+
+	document.addEventListener(
+		"click",
+		(e) => {
+			const el = e.target as Element | null;
+			if (!el || !el.closest("[data-cart-open]")) return;
+			const cartType = getComputedStyle(document.documentElement)
+				.getPropertyValue("--cart-type")
+				.trim()
+				.replace(/['"]/g, "");
+			if (cartType !== "page") {
+				window.dispatchEvent(new CustomEvent("bloom:cart:open"));
+				return;
+			}
+			e.preventDefault();
+			e.stopImmediatePropagation();
+			if (window.self === window.top) {
+				window.location.assign("/cart");
+			} else {
+				const a = document.createElement("a");
+				a.href = "/cart";
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+			}
+		},
+		true,
+	);
+</script>

@@ -12,21 +12,19 @@ export const getStaticPaths = async () => {
 
 const { slug } = Astro.props as { slug: LegalSlug };
 const page = legalPages[slug];
-const disclaimer =
-	"Сайт создан для ознакомления с функциональными возможностями Сервиса. Покупка товаров невозможна.";
 ---
 
 <Layout title={page.title} description={page.title}>
 	<section
-		class="w-full bg-white px-4 pb-[120px] pt-16 text-center md:px-20 md:pb-[160px] md:pt-24 2xl:px-[300px]"
+		class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] pb-[120px] pt-16 md:pb-[160px] md:pt-24"
 	>
-		<div class="mx-auto flex w-full max-w-[760px] flex-col items-center gap-4">
-			<h1 class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px] lg:text-[36px]">
+		<div class="satin-container mx-auto flex w-full max-w-[760px] flex-col gap-8">
+			<h1 class="font-logo text-[28px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]">
 				{page.title}
 			</h1>
-			<p class="font-manrope text-[16px] font-light leading-[1.6] text-[#606060]">
-				{disclaimer}
-			</p>
+			<div class="flex flex-col gap-5 font-manrope text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]">
+				{page.body.map((para) => <p>{para}</p>)}
+			</div>
 		</div>
 	</section>
 </Layout>

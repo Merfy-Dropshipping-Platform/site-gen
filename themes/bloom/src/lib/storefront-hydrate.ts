@@ -24,6 +24,7 @@ export interface RealProduct {
 	description?: string;
 	hasVariants?: boolean;
 	variantCombinations?: VariantCombination[];
+	variantSwatches?: Array<{ color?: string; value?: string; available?: boolean }>;
 }
 
 /** Конкретная покупаемая комбинация вариантов (из products.json). */
@@ -294,9 +295,17 @@ function wishlistHeartHtml(id: string): string {
  * опускаем — реальные товары их в products.json не несут. Overlay-сердце
  * избранного (`data-wishlist-toggle`) — поверх картинки (через relative-обёртку).
  */
-export function renderCardHtml(p: RealProduct, aspectRatio: string = "1/1"): string {
+export function renderCardHtml(
+	p: RealProduct,
+	aspectRatio: string = "1/1",
+	cardVariant: "rich" | "minimal" = "rich",
+	captionUppercase = false,
+): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
+	const nameCls = captionUppercase
+		? "bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70 uppercase"
+		: "bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70";
 	const image = escapeHtml(productImage(p));
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
@@ -304,6 +313,31 @@ export function renderCardHtml(p: RealProduct, aspectRatio: string = "1/1"): str
 		? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	const priceStr = escapeHtml(formatPrice(p.price));
+	const oldNum = parseFloat(String(p.oldPrice ?? p.compareAtPrice ?? ""));
+	const curNum = parseFloat(String(p.price ?? ""));
+	const saleBadge =
+		Number.isFinite(oldNum) && Number.isFinite(curNum) && oldNum > curNum && curNum > 0
+			? `<span class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[rgb(var(--color-accent,227_142_159))] px-1.5 font-inter text-[12px] font-normal leading-none text-white">-${Math.round(((oldNum - curNum) / oldNum) * 100)}%</span>`
+			: "";
+	const swatchList = Array.isArray(p.variantSwatches)
+		? Array.from(
+				new Set(
+					p.variantSwatches
+						.map((s) => String((s as { color?: string })?.color ?? "").trim())
+						.filter((c) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c)),
+				),
+			).slice(0, 6)
+		: [];
+	const swatchesHtml =
+		swatchList.length > 0
+			? `<div class="flex items-center gap-1">${swatchList
+					.map((c) => `<span class="size-5 rounded-[2px]" style="background:${escapeHtml(c)}" aria-hidden="true"></span>`)
+					.join("")}</div>`
+			: "";
+	const articleCls =
+		cardVariant === "rich"
+			? "group flex h-full w-full flex-col gap-4 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-3 transition-transform duration-300 hover:-translate-y-1"
+			: "group flex flex-col gap-4";
 	// Решение владельца: карточная «В корзину» для товара с вариантами добавляет
 	// ПЕРВУЮ доступную комбинацию (combo.id + combo.price), а не ведёт на PDP и
 	// не кладёт строку без варианта. Без комбинаций (битый товар) — ссылка на PDP.
@@ -322,15 +356,17 @@ export function renderCardHtml(p: RealProduct, aspectRatio: string = "1/1"): str
 			? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`
 			: `<a href="${href}" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</a>`
 		: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${priceStr}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" data-quantity="1" class="flex h-12 w-full items-center justify-center rounded-full bg-[#e38e9f] px-4 font-inter text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90 active:scale-95">В корзину</button>`;
-	return `<article class="group flex flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}">
+	return `<article class="${articleCls}" data-nt="bloom-product-card" aria-label="${name}">
 	<div class="relative w-full">
 		<a href="${href}" class="relative block w-full overflow-hidden rounded-[12px] bg-[#F5F5F5]" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
 			<img src="${image}" alt="${name}" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105" />
+			${saleBadge}
 		</a>
 		${wishlistHeartHtml(p.id)}
 	</div>
 	<div class="flex flex-col gap-2">
-		<a href="${href}" class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70">${name}</a>
+		${swatchesHtml}
+		<a href="${href}" class="${nameCls}">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-2">
 			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">${price}</span>
 			${oldPrice}

@@ -5,15 +5,18 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import StorefrontRuntime from '../components/StorefrontRuntime.astro';
+import { ViewTransitions } from 'astro:transitions';
 
 type Props = CollectionEntry<'blog'>['data'];
 
 const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="ru">
 	<head>
 		<BaseHead title={title} description={description} image={heroImage} />
+		<ViewTransitions />
 		<style>
 			main {
 				width: calc(100% - 2em);
@@ -56,7 +59,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 	</head>
 
 	<body>
-		<Header />
+		<Header promo={false} />
 		<main>
 			<article>
 				<div class="hero-image">
@@ -82,5 +85,6 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			</article>
 		</main>
 		<Footer />
+		<StorefrontRuntime />
 	</body>
 </html>

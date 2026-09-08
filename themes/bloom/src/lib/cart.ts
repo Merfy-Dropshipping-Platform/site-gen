@@ -1,18 +1,56 @@
 /**
- * Корзина Bloom — обёртка над локальным {@link createNtCart} (`nt-cart-bloom.ts`,
- * копия DS с поддержкой `variantCombinationId` для backend cart → order_items).
+ * Корзина Bloom — theme-base {@link createNtCart} + bloom-разметка drawer/modal/toggle.
  */
 import {
 	createNtCart,
 	type NtCartLine,
 	type NtCartLineVariant,
-} from "./nt-cart-bloom";
+} from "../../../../packages/theme-base/runtime/nt-cart";
 import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 import { withBase } from "./with-base";
+
+const escapeHtml = (value: string) =>
+	value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+
+const productHref = (productId: string) => `/products/${encodeURIComponent(productId)}`;
 
 const api = createNtCart({
 	storageKey: "bloom:cart:v1",
 	eventPrefix: "bloom:cart",
+	catalogUrl: "/data/products.json",
+	renderDrawerItem: (line, { formatPrice }) => {
+		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+		const href = productHref(line.productId);
+		return `
+					<li class="flex items-start gap-4" data-line-id="${escapeHtml(line.id)}">
+						<a href="${href}" class="group block size-20 shrink-0 overflow-hidden rounded-[12px] bg-[#F5F5F5]">
+							${cartLineThumbPictureHtml(line.image, line.name)}
+						</a>
+						<div class="flex flex-1 flex-col gap-2">
+							<div class="flex items-start justify-between gap-2">
+								<div class="flex flex-col gap-1">
+									<a href="${href}" class="font-inter text-[16px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70">${escapeHtml(line.name)}</a>
+									${variant ? `<span class="font-inter text-[14px] font-light leading-normal text-[#999999]">${escapeHtml(variant)}</span>` : ""}
+								</div>
+								<button type="button" data-cart-remove data-id="${escapeHtml(line.id)}" class="font-inter text-[14px] font-light leading-normal text-[#999999] transition-colors hover:text-[#E38E9F]" aria-label="Удалить">Удалить</button>
+							</div>
+							<div class="flex items-center justify-between gap-3">
+								<div class="inline-flex h-9 items-center rounded-full border border-[#FFD4E5] bg-white">
+									<button type="button" data-cart-dec data-id="${escapeHtml(line.id)}" class="flex h-9 w-9 items-center justify-center text-[#E38E9F] transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
+									<span class="min-w-[28px] text-center font-inter text-[14px] font-light text-[#000000]">${line.quantity}</span>
+									<button type="button" data-cart-inc data-id="${escapeHtml(line.id)}" class="flex h-9 w-9 items-center justify-center text-[#E38E9F] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
+								</div>
+								<span class="font-inter text-[16px] font-light leading-none text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
+							</div>
+						</div>
+					</li>
+				`;
+	},
 });
 
 export type CartLine = NtCartLine;
@@ -26,25 +64,12 @@ export const clearCart = api.clearCart;
 export const getCartCount = api.getCartCount;
 export const getCartTotal = api.getCartTotal;
 export const formatCartPrice = api.formatCartPrice;
+export const reconcileCart = api.reconcileCart;
 
 let cartUiInitialized = false;
 
 const events = api.events;
 
-const escapeHtml = (value: string) =>
-	value
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
-
-const productHref = (productId: string) => `/products/${encodeURIComponent(productId)}`;
-
-// Строгое совпадение по конкретному варианту (verstka: карточка отражает «В
-// корзине» именно выбранного цвета/размера). Порт добавляет variantCombinationId
-// (спек 098) в id-ключ, поэтому строим его тем же makeLineId-набором. Мягкий
-// фолбэк «по productId» УБРАН: он ломал per-variant toggle-состояние (#17).
 const lineIdOf = (productId: string, variant?: NtCartLineVariant) =>
 	[productId, variant?.variantCombinationId, variant?.color, variant?.size].filter(Boolean).join("|");
 
@@ -53,9 +78,6 @@ const findLine = (productId: string, variant?: NtCartLineVariant) => {
 	return getCart().find((line) => line.id === id);
 };
 
-// Карточная «В корзину» (toggle) отражает вариант карточки. combinationId в id
-// карточки нет (SSR-демо не несёт комбинаций), поэтому для сопоставления с уже
-// добавленной строкой матчим по productId+color+size, игнорируя combinationId.
 const findCardLine = (productId: string, variant?: NtCartLineVariant) =>
 	getCart().find(
 		(line) =>
@@ -209,9 +231,6 @@ export const initCartUI = () => {
 		total.textContent = formatCartPrice(getCartTotal(lines));
 	};
 
-	// Кнопки-карточки «В корзину» с data-cart-toggle отражают, лежит ли выбранный
-	// вариант товара в корзине: «Inactive»-стиль (data-in-cart) + метка «В корзине»
-	// (#17). Гоняется из syncCartChrome — на astro:page-load и на bloom:cart:updated.
 	const syncProductCards = () => {
 		document.querySelectorAll<HTMLButtonElement>("[data-add-to-cart][data-cart-toggle]").forEach((btn) => {
 			const inCart = Boolean(
@@ -236,9 +255,6 @@ export const initCartUI = () => {
 	const onClick = (event: MouseEvent) => {
 		const target = event.target as HTMLElement;
 
-		// Свотч цвета на карточке товара (#16): выбор варианта для «В корзину».
-		// Переключает aria-checked внутри radiogroup и переносит выбранный цвет на
-		// кнопку добавления, затем пересинхронивает toggle-состояние карточек.
 		const swatch = target.closest<HTMLButtonElement>("[data-card-color]");
 		if (swatch) {
 			const card = swatch.closest<HTMLElement>('[data-nt="bloom-product-card"]');
@@ -259,7 +275,6 @@ export const initCartUI = () => {
 			const variant = {
 				color: addBtn.dataset.variantColor || undefined,
 				size: addBtn.dataset.variantSize || undefined,
-				// combinationId реальной комбинации (Phase 2) → backend cart → order_items.
 				variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 			};
 			const productId = addBtn.dataset.productId ?? "";
@@ -268,9 +283,6 @@ export const initCartUI = () => {
 			const image = addBtn.dataset.image ?? "";
 			const volume = addBtn.dataset.volume ?? "";
 
-			// Toggle-кнопки карточек (#17): повторный клик по товару «в корзине» —
-			// удаляет его (без модалки). Кнопки без data-cart-toggle (PDP/гидрация)
-			// всегда добавляют. combinationId в SSR-карточке нет → матчим findCardLine.
 			if (addBtn.hasAttribute("data-cart-toggle")) {
 				const existing = findCardLine(productId, variant);
 				if (existing) {
@@ -339,5 +351,6 @@ export const initCartUI = () => {
 	document.addEventListener("astro:before-swap", closeAddedModal);
 	document.addEventListener("astro:page-load", syncCartChrome);
 	window.addEventListener(events.updated, syncCartChrome);
+	void reconcileCart();
 	syncCartChrome();
 };

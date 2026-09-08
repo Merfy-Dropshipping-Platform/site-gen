@@ -9,6 +9,7 @@ import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_SECTION_TH
 import { assembleChrome, injectChromeIntoHtml } from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
+import { catalogFromStoreData, type RenderContext } from '../render/create-render-context';
 
 const logger = new Logger('V2LivePages');
 
@@ -17,6 +18,15 @@ const logger = new Logger('V2LivePages');
 // Container factory + v2-резолвер секций (через defaultComponentResolver).
 let renderer: PreviewService | null = null;
 const getRenderer = (): PreviewService => (renderer ??= new PreviewService());
+
+function merfyFromBuild(ctx: BuildContext, theme: string): RenderContext {
+  return {
+    siteId: ctx.siteId,
+    themeId: theme,
+    catalog: catalogFromStoreData(ctx.storeData ?? { products: [], collections: [] }),
+    themeSettings: (ctx.revisionData as { themeSettings?: unknown })?.themeSettings ?? {},
+  };
+}
 
 /**
  * Фаза 2: после copyThemeV2Dist перезаписывает контентные страницы live-диста
@@ -36,6 +46,7 @@ export async function composeContentPagesIntoDist(
   theme: string,
 ): Promise<number> {
   if (!(await getRenderer().hasV2Sections(theme))) return 0;
+  const merfy = merfyFromBuild(ctx, theme);
 
   const revPages = Array.isArray((ctx.revisionData as { pages?: unknown })?.pages)
     ? ((ctx.revisionData as { pages: Array<Record<string, unknown>> }).pages)
@@ -193,6 +204,7 @@ export async function composeContentPagesIntoDist(
           props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
           themeId: theme,
           isPreview: false,
+          merfy,
         }),
       ),
     );
@@ -262,6 +274,7 @@ export async function renderProductSectionForId(
       props: { ...prod.props, siteId: (prod.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
       themeId: theme,
       isPreview: false,
+      merfy: merfyFromBuild(ctx, theme),
     });
     if (!html || !html.trim()) return null;
     const scheme = schemeIdFromProp((prod.props as Record<string, unknown>)?.colorScheme);
@@ -318,6 +331,7 @@ export async function composeLegalPagesIntoDist(
   policies: Array<{ type: string; content: string | null }>,
 ): Promise<number> {
   if (!(await getRenderer().hasV2Sections(theme))) return 0;
+  const merfy = merfyFromBuild(ctx, theme);
   if (!Array.isArray(policies) || policies.length === 0) return 0;
 
   // Шапка/подвал из home-ревизии (рамка для каждой legal-страницы).
@@ -372,6 +386,7 @@ export async function composeLegalPagesIntoDist(
           props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? ctx.siteId },
           themeId: theme,
           isPreview: false,
+          merfy,
         }),
       ),
     );
@@ -527,7 +542,7 @@ export async function applyChromeToDist(
     chrome: 'full',
     // Bound: модуль chrome-assembler не создаёт свой Container — переиспользует
     // общий getRenderer() (как контентные страницы live-цикла).
-    renderBlock: (input) => getRenderer().renderBlock(input),
+    renderBlock: (input) => getRenderer().renderBlock({ ...input, merfy: merfyFromBuild(ctx, theme) }),
     isPreview: false,
   });
   if (!chrome.headerHtml) {
@@ -606,6 +621,7 @@ export async function unifyChromeInDist(
       props: checkoutProps,
       themeId: theme,
       isPreview: false,
+      merfy: merfyFromBuild(ctx, theme),
     });
     checkoutHeader = html && html.trim() ? html.trim() : null;
   } catch (err) {

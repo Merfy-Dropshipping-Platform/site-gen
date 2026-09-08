@@ -30,11 +30,149 @@ const POLICY_TITLE_MAP: Record<string, string> = {
   shipping: "Политика доставки",
 };
 
+/** Страницы, которые не попадают в колонку «Навигация» футера. */
+const FOOTER_NAV_EXCLUDED_PAGE_IDS = new Set([
+  "page-cart",
+  "page-checkout",
+  "page-checkout-result",
+  "page-product",
+  "page-collection",
+]);
+
+const FOOTER_NAV_EXCLUDED_SLUGS = new Set([
+  "",
+  "cart",
+  "checkout",
+  "checkout-result",
+  "product",
+  "collections/preview",
+]);
+
+const FOOTER_NAV_SYSTEM_ORDER: Record<string, number> = {
+  home: 0,
+  "page-catalog": 10,
+  "page-about": 20,
+  "page-delivery": 30,
+  "page-contacts": 40,
+};
+
+const FOOTER_NAV_SYSTEM_IDS = new Set([
+  "home",
+  "page-catalog",
+  "page-about",
+  "page-delivery",
+  "page-contacts",
+]);
+
+interface FooterNavPageMeta {
+  id?: string;
+  name?: string;
+  slug?: string;
+  role?: string;
+  isCustom?: boolean;
+  createdAt?: number;
+}
+
+export type FooterNavLink = { label: string; href: string };
+
+/** Нормализует href для dedupe (trailing slash, root). */
+export function normalizeFooterNavHref(href: string): string {
+  const trimmed = href.trim();
+  if (!trimmed || trimmed === "/") return "/";
+  return trimmed.replace(/\/+$/, "");
+}
+
+/**
+ * Ссылки навигации футера из `revision.pages`: системные content-страницы
+ * (home, catalog, about, delivery, contacts) + кастомные страницы мерчанта.
+ */
+export function buildFooterNavigationLinks(pages: unknown): FooterNavLink[] {
+  if (!Array.isArray(pages)) return [];
+  const items: Array<FooterNavLink & { order: number }> = [];
+
+  for (const raw of pages) {
+    const p = raw as FooterNavPageMeta;
+    if (!p || typeof p.id !== "string") continue;
+    const id = p.id;
+    if (FOOTER_NAV_EXCLUDED_PAGE_IDS.has(id)) continue;
+
+    const slugRaw =
+      typeof p.slug === "string" ? p.slug.replace(/^\/+|\/+$/g, "") : "";
+
+    if (id === "home") {
+      const label =
+        typeof p.name === "string" && p.name.trim() ? p.name.trim() : "Главная";
+      items.push({ label, href: "/", order: FOOTER_NAV_SYSTEM_ORDER.home });
+      continue;
+    }
+
+    if (FOOTER_NAV_EXCLUDED_SLUGS.has(slugRaw)) continue;
+    if (
+      slugRaw.startsWith("checkout") ||
+      slugRaw.startsWith("product") ||
+      slugRaw.startsWith("collections/")
+    ) {
+      continue;
+    }
+
+    const isCustom = p.isCustom === true || p.role === "custom";
+    if (!isCustom && !FOOTER_NAV_SYSTEM_IDS.has(id)) continue;
+
+    const href = slugRaw ? `/${slugRaw}` : "/";
+    const label =
+      typeof p.name === "string" && p.name.trim() ? p.name.trim() : id;
+    const order =
+      FOOTER_NAV_SYSTEM_ORDER[id] ??
+      (isCustom ? 100 + (typeof p.createdAt === "number" ? p.createdAt : 0) : 50);
+
+    items.push({ label, href, order });
+  }
+
+  items.sort((a, b) => a.order - b.order);
+  return items.map(({ label, href }) => ({ label, href }));
+}
+
+/**
+ * Дополняет navigationColumn.links недостающими страницами из `pages[]`.
+ * Явные ссылки мерчанта сохраняются; новые страницы добавляются в конец.
+ */
+export function mergeFooterNavigationLinks(
+  existingColumn: unknown,
+  fromPages: FooterNavLink[],
+): FooterNavLink[] {
+  const rawLinks = (existingColumn as { links?: unknown } | null)?.links;
+  const base: FooterNavLink[] = Array.isArray(rawLinks)
+    ? rawLinks
+        .filter(
+          (l): l is { label?: unknown; href?: unknown } =>
+            !!l && typeof (l as { href?: unknown }).href === "string",
+        )
+        .map((l) => ({
+          label: String(l.label ?? "").trim() || String(l.href),
+          href: String(l.href).trim(),
+        }))
+        .filter((l) => l.href && l.href !== "#")
+    : [];
+
+  if (base.length === 0) return fromPages;
+
+  const seen = new Set(base.map((l) => normalizeFooterNavHref(l.href)));
+  const merged = [...base];
+  for (const link of fromPages) {
+    const key = normalizeFooterNavHref(link.href);
+    if (seen.has(key)) continue;
+    merged.push(link);
+    seen.add(key);
+  }
+  return merged;
+}
+
 /**
  * Мутирует Footer-блоки `revisionData.pagesData[*].content` (+ legacy `content`)
  * реальными данными магазина — элемент футера показывается ТОЛЬКО при настроенных
  * данных:
  *  • informationColumn.links — только заполненные политики (site_policy);
+ *  • navigationColumn.links — дополняются ссылками из revision.pages[];
  *  • phone / socialColumn.email — телефон/почта из «Информация о компании» (site_contacts);
  *  • socialColumn.contactFields — ОСТАЛЬНЫЕ поля (адрес/часы/ИНН/любая инфа);
  *  • socialColumn.socialLinks — фильтр пустых/«#» + нормализация схемы (https://);
@@ -114,9 +252,11 @@ export async function applyFooterData(
     }
 
     const rev = revisionData as {
+      pages?: unknown;
       pagesData?: Record<string, { content?: unknown[] }>;
       content?: unknown[];
     };
+    const pageNavLinks = buildFooterNavigationLinks(rev.pages);
     const contentArrays: any[][] = [];
     if (rev.pagesData && typeof rev.pagesData === "object") {
       for (const key of Object.keys(rev.pagesData)) {
@@ -137,6 +277,12 @@ export async function applyFooterData(
 
         const infoCol = (props.informationColumn ?? {}) as Record<string, unknown>;
         props.informationColumn = { ...infoCol, links: policyLinks };
+
+        const navCol = (props.navigationColumn ?? {}) as Record<string, unknown>;
+        props.navigationColumn = {
+          ...navCol,
+          links: mergeFooterNavigationLinks(navCol, pageNavLinks),
+        };
 
         const social = (props.socialColumn ?? {}) as Record<string, any>;
         const filteredSocialLinks = Array.isArray(social.socialLinks)
@@ -166,6 +312,7 @@ export async function applyFooterData(
     }
     logger?.log(
       `[footer-data] site ${siteId}: ${footerCount} footer block(s), ${policyLinks.length} policy link(s), ` +
+        `navPages=${pageNavLinks.length}, ` +
         `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
         `extraFields=${extraContactFields.length}, payment=${paymentEnabled ? "on" : "off"}`,
     );

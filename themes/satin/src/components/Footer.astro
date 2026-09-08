@@ -167,15 +167,12 @@ const stripText =
 		? strip.text
 		: `© ${today.getFullYear()} ${siteTitle} Theme Все права защищены. Powered by Merfy`;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителях отступов
-// верстальщика (desktop pt-16 pb-10, mobile pt-8 pb-8). {80,80} = canon-default
-// puckConfig (его впрыскивает коэрсер) → литерал (правило canon-default → пиксель).
+// Канон padding {top,bottom} — inline-стиль при любом заданном пропе, как rose
+// Footer (включая {80,80}, иначе слайдер «Отступы» мёртв). Без пропа — литерал.
 const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
-const isCanonPad = pad && Number(pad.top) === 80 && Number(pad.bottom) === 80;
-const footerPadStyle =
-	pad && !isCanonPad
-		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
-		: undefined;
+const footerPadStyle = pad
+	? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
+	: undefined;
 const desktopWrapCls = footerPadStyle
 	? "satin-pad mx-auto w-full max-w-[1920px]"
 	: "satin-pad mx-auto w-full max-w-[1920px] pb-10 pt-16";

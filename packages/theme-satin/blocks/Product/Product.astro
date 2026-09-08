@@ -1,0 +1,1157 @@
+---
+/**
+ * Product — РОДНАЯ PDP верстальщика satin как per-theme override
+ * (порт из themes/satin/src/components/products/satinProductDetail.astro).
+ * Схема полей = theme-base Product.puckConfig (как у rose). Тело ниже —
+ * verbatim 2×2 Kelly Slab / Arsenal; настройки конструктора раскладываются
+ * по существующим хукам разметки, без чужого макета theme-base Product.
+ *
+ * Рендер одинаковый:
+ *   • Live — composeContentPagesIntoDist / renderBlock(Product, satin)
+ *   • Превью — compile-astro-blocks → theme-satin__Product__Product.mjs
+ *
+ * Импорты только siblings: compile-astro-blocks не резолвит bare-NPM
+ * и пути за пределы block-папки.
+ */
+import NtIcon from "./SatinNtIcon.astro";
+import SatinPicture from "./SatinPicture.astro";
+
+interface CatalogProduct {
+	id: string;
+	name: string;
+	price: string;
+	oldPrice?: string;
+	image: string;
+	gallery?: string[];
+	colors?: string[];
+	brand?: string;
+	description?: string;
+	discount?: boolean;
+	inStock?: boolean;
+}
+
+const raw = Astro.props as Record<string, any>;
+const id = raw.id as string | undefined;
+const siteId = raw.siteId as string | undefined;
+const skeleton = {
+	id: "",
+	name: "Товар",
+	price: "",
+	image: "/images/placeholder.png",
+	gallery: ["/images/placeholder.png"],
+	colors: [],
+	inStock: true,
+	description: "",
+} as CatalogProduct;
+const product: CatalogProduct =
+	raw.product && typeof raw.product === "object" ? (raw.product as CatalogProduct) : skeleton;
+
+// Канон Product.puckConfig — натягиваем на разметку верстальщика, не меняя сетку.
+const padding = raw.padding as { top?: number; bottom?: number } | undefined;
+const padStyle = padding
+	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
+	: undefined;
+const colorScheme = raw.colorScheme as string | undefined;
+const schemeClass =
+	typeof colorScheme === "string" && colorScheme
+		? `color-scheme-${colorScheme.replace("scheme-", "")}`
+		: "";
+const photoOnLeft = raw.photoPosition !== "right";
+const titleSize = raw.title?.size === "small" || raw.title?.size === "large" ? raw.title.size : "medium";
+const titleSizeCls =
+	titleSize === "small"
+		? "text-[18px] md:text-[22px]"
+		: titleSize === "large"
+			? "text-[26px] md:text-[32px]"
+			: "text-[22px] md:text-[28px]";
+const quantityVisible = raw.quantity?.enabled !== "false" && raw.quantity?.enabled !== false;
+const priceVisible = raw.price?.show !== "false" && raw.price?.show !== false;
+const addBtnTextRaw = raw.buttons?.addToCart?.text;
+const addBtnText = addBtnTextRaw === undefined ? "Добавить в корзину" : addBtnTextRaw;
+const showAddToCart = String(addBtnText).trim() !== "";
+const buyBtnText = String(raw.buttons?.buyNow?.text ?? "").trim() || "Купить сейчас";
+const dynVal =
+	raw.dynamicButton && typeof raw.dynamicButton === "object"
+		? raw.dynamicButton.enabled
+		: raw.dynamicButton;
+const showBuyNow = dynVal !== "false" && dynVal !== false;
+const shareText = typeof raw.share?.text === "string" && raw.share.text.trim() ? raw.share.text : "Поделиться";
+const brandOverride =
+	typeof raw.text?.content === "string" && raw.text.content.trim() ? raw.text.content.trim() : undefined;
+const descOverride =
+	typeof raw.description?.content === "string" && raw.description.content.trim()
+		? raw.description.content.trim()
+		: undefined;
+
+// ── Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Товар». ──
+// Когда товар НЕ выбран мерчантом (preview/skeleton `/product` без products.json
+// или нейтральный skeleton-консьюмер), секция рендерит дизайн-плейсхолдер Figma
+// (куртка-заглушка + «Новая коллекция!» + «Товар» + «2 500 ₽» + «Количество» +
+// кнопки + «Поделиться»), а НЕ demo-контент верстальщика («Джинсы женские» /
+// «Satin» / «6 990 ₽» / `/images/4x/Товар_N.png` / demo-строку цвета). Когда
+// мерчант ЗАДАЛ товар (реальный demo catalogProduct / гидрация live API) —
+// рендерим ЕГО без изменений. Текст 1:1 с контрактом theme-base Product
+// (text='Новая коллекция!', name='Товар', price='2 500 ₽'); главное фото PDP =
+// /placeholders/sweater-blue-large.svg (Figma 1:19335 — крупный кадр товара;
+// copyPublic из packages/theme-base, доступна на live, паритет rose
+// Popular/RoseProductDetail).
+const PLACEHOLDER_PRODUCT_IMAGE = "/placeholders/sweater-blue-large.svg";
+const PLACEHOLDER_BRAND = "Новая коллекция!";
+const PLACEHOLDER_NAME = "Товар";
+const PLACEHOLDER_PRICE = "2 500 ₽";
+
+// Пустое состояние = товар НЕ реальный мерчант-товар. Реальный определяется по
+// наличию реальных медиа (gallery с реальными кадрами / http-MinIO-URL картинки)
+// либо реальных цветов-вариантов. Demo-скелетон (`/images/placeholder.png`,
+// пустая цена, colors=[]) → плейсхолдер; demo catalogProducts (`/images/4x/...`,
+// gallery+colors) — НЕ плейсхолдер (видны их данные). Зеркало RoseProductDetail.
+const rawImg = typeof product.image === "string" ? product.image : "";
+const isMockImage = !rawImg || /\/(placeholder)\b/i.test(rawImg);
+const hasRealMedia =
+	(product.gallery && product.gallery.length > 0) ||
+	(Array.isArray(product.colors) && product.colors.length > 0) ||
+	!isMockImage;
+const isPlaceholder = !hasRealMedia;
+
+const colorLabels: Record<string, string> = {
+	blue: "Синий",
+	black: "Чёрный",
+	gray: "Серый",
+	brown: "Коричневый",
+	white: "Белый",
+	beige: "Бежевый",
+};
+
+// В пустом состоянии (Figma-плейсхолдер) строка цвета НЕ показывается — только
+// реальный/demo товар несёт чипы цвета (live-гидрация заменит их селектором или
+// скроет контейнер [data-pdp-variants]).
+const colors = isPlaceholder
+	? []
+	: (product.colors ?? []).map((color) => ({
+			id: color,
+			label: colorLabels[color] ?? color,
+		}));
+
+// Отображаемые значения: реальный товар → как есть; пустое состояние → Figma.
+const displayName = isPlaceholder ? PLACEHOLDER_NAME : product.name;
+const displayBrand = isPlaceholder ? PLACEHOLDER_BRAND : (brandOverride ?? product.brand);
+const displayPrice = isPlaceholder ? PLACEHOLDER_PRICE : product.price;
+const displayOldPrice = isPlaceholder ? undefined : product.oldPrice;
+const displayDescription = isPlaceholder ? "" : (descOverride ?? product.description);
+
+const galleryImages = (
+	isPlaceholder ? [PLACEHOLDER_PRODUCT_IMAGE] : product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]
+).slice(0, 4);
+const single = galleryImages.length === 1;
+const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
+---
+
+<section
+	class:list={[
+		"satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))]",
+		schemeClass,
+		padStyle ? "" : "py-10 md:py-16",
+	]}
+	style={padStyle}
+	aria-labelledby="product-title"
+	data-pdp-section
+	data-cart-color={cartVariantColor}
+	data-site-id={siteId}
+	data-puck-component-id={id}
+>
+	{/* Скелетон-лоадер PDP (satin) — РЕЗЕРВ на время живой гидрации реального
+	    API-товара. По умолчанию СКРЫТ (hidden): видимое пустое состояние — это
+	    Figma-плейсхолдер в `data-pdp-layout` ниже (куртка-заглушка / «Новая
+	    коллекция!» / «Товар» / «2 500 ₽» / «Количество»), а НЕ pulse-скелетон, и
+	    реальный/demo товар сразу виден в layout (без мелькания pulse). Гидрация
+	    держит skel.hidden = true в обеих развязках (success/not-found) — здесь
+	    стартуем уже скрытым. Зеркалит раскладку satin 1:1 (сетка
+	    `lg:grid-cols-[652px_minmax(0,1fr)] gap-10`, 2×2-галерея `aspect-[318/470]`,
+	    инфо-колонка): surface-токен `rgb(var(--color-surface,245_245_245))`, ОСТРЫЕ
+	    углы, шиммер animate-pulse. aria-hidden — не озвучивается скринридером. */}
+	<div
+		class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10"
+		data-pdp-skeleton
+		hidden
+		aria-hidden="true"
+	>
+		{/* Галерея: 2×2 surface-плитки, острые углы, пропорции реальных ячеек (318/470). */}
+		<div class="grid grid-cols-2 gap-4">
+			{Array.from({ length: 4 }).map((_, index) => (
+				<div
+					class="relative aspect-[318/470] w-full animate-pulse overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
+					style={`animation-delay:${index * 90}ms`}
+				></div>
+			))}
+		</div>
+
+		{/* Инфо-колонка: повторяет реальный стек (gap-6, sticky), полосы = surface-токен. */}
+		<div class="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+			<div class="flex flex-col gap-3">
+				{/* Бренд (одна короткая строка, высота как text-[14px] uppercase). */}
+				<div class="h-[14px] w-24 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				{/* Заголовок: две полосы под h1 font-logo text-[28px]/leading-[1.1]. */}
+				<div class="flex flex-col gap-2">
+					<div class="h-7 w-4/5 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-7 w-3/5 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+				{/* Цена + старая цена (одна строка, baseline). */}
+				<div class="flex items-baseline gap-3">
+					<div class="h-5 w-28 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-16 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+			</div>
+
+			{/* Чипы вариантов: квадратные h-10 плитки (как кнопки цвета satin). */}
+			<div class="flex flex-wrap gap-2">
+				{Array.from({ length: 3 }).map(() => (
+					<div class="h-10 w-20 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				))}
+			</div>
+
+			{/* Кнопки: ряд (h-14 «В корзину» + квадрат количества w-[120px]) + полная «Купить». */}
+			<div class="flex flex-col gap-3">
+				<div class="flex gap-3">
+					<div class="h-14 flex-1 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-14 w-[120px] shrink-0 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+				<div class="h-14 w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+			</div>
+
+			{/* Описание: разделитель (как border-t pt-6) + заголовок + строки текста. */}
+			<div class="flex flex-col gap-3 border-t border-[#DDDDDD] pt-6">
+				<div class="h-5 w-32 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				<div class="flex flex-col gap-2">
+					<div class="h-4 w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-full animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-11/12 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+					<div class="h-4 w-2/3 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+				</div>
+			</div>
+
+			{/* «Поделиться»: короткая полоса. */}
+			<div class="h-[18px] w-28 animate-pulse bg-[rgb(var(--color-surface,245_245_245))]"></div>
+		</div>
+	</div>
+
+	{/* Основной layout PDP — ВИДИМ по умолчанию (opacity:1): рендерит либо данные
+	    реального/demo товара (isPlaceholder=false), либо ДОСЛОВНЫЙ Figma-плейсхолдер
+	    пустого состояния (isPlaceholder=true). Гидрация (skel-резерв выше скрыт)
+	    перезаписывает значения реальным товаром и оставляет layout видимым. */}
+	<div class="satin-container grid grid-cols-1 gap-10 lg:grid-cols-[652px_minmax(0,1fr)] lg:gap-10" data-pdp-layout style="opacity:1;transition:opacity .15s ease">
+		<!-- Gallery: 2×2 portrait grid. Пустое состояние (Figma 1:19335) — пустая
+		     surface-карточка с курткой-плейсхолдером (object-contain), без скидки. -->
+		<div class:list={["grid grid-cols-2 gap-4", !photoOnLeft && "lg:order-2"]} data-pdp-gallery>
+			{galleryImages.map((img, index) => (
+				<div
+					class:list={["relative aspect-[318/470] w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]", single && "col-span-2"]}
+					data-pdp-gallery-cell={index === 0 ? "main" : "extra"}
+				>
+					{/* Пустое состояние (Figma 1:19335) — куртка-плейсхолдер раздаётся
+					    ТОЛЬКО как PNG (/placeholders/sweater-blue-large.svg, .webp нет),
+					    поэтому рендерим ПЛОСКИЙ <img>, как остальные секции satin
+					    (Hero/Gallery/ImageWithText). SatinPicture эмитит <source srcset
+					    type="image/webp">, который для PNG-only плейсхолдера даёт 404 и
+					    <picture> НЕ откатывается к <img> → битый кадр (project_cart_thumb
+					    _image_bug). SatinPicture оставляем для реальных MinIO-URL мерчанта. */}
+					{isPlaceholder ? (
+						<img
+							src={img}
+							alt={displayName}
+							loading="eager"
+							fetchpriority={index === 0 ? "high" : undefined}
+							class="absolute inset-0 size-full object-contain p-[15%]"
+							{...(index === 0 ? { "data-pdp-main": true } : {})}
+						/>
+					) : (
+						<SatinPicture
+							src={img}
+							alt={displayName}
+							loading="eager"
+							fetchpriority={index === 0 ? "high" : undefined}
+							class="absolute inset-0 size-full object-cover"
+							{...(index === 0 ? { "data-pdp-main": true } : {})}
+						/>
+					)}
+					{!isPlaceholder && product.discount && index === 0 && (
+						<span class="absolute left-0 top-0 inline-flex h-5 items-center bg-[#000000] px-2 font-manrope text-[9px] font-normal uppercase leading-none text-white" data-pdp-badge>
+							Скидка
+						</span>
+					)}
+				</div>
+			))}
+		</div>
+
+		<!-- Info -->
+		<div class:list={["flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start", !photoOnLeft && "lg:order-1"]}>
+			<div class="flex flex-col gap-3">
+				<p
+					class="font-manrope text-[12px] font-light uppercase leading-normal text-[#999999] md:text-[14px]"
+					data-pdp-brand
+					hidden={!displayBrand}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="text"
+				>
+					{displayBrand}
+				</p>
+				<h1
+					id="product-title"
+					class:list={["font-logo font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))]", titleSizeCls]}
+					data-pdp-name
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="title"
+				>
+					{displayName}
+				</h1>
+				<div
+					class="flex flex-wrap items-baseline gap-2"
+					hidden={!priceVisible}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="price"
+				>
+					<span class="font-manrope text-[20px] font-normal leading-normal text-[#000000]" data-pdp-price>{displayPrice}</span>
+					<span
+						class="font-manrope text-[16px] font-light leading-normal text-[#999999] line-through"
+						data-pdp-oldprice
+						hidden={!displayOldPrice}
+					>
+						{displayOldPrice}
+					</span>
+				</div>
+			</div>
+
+			<div
+				class="flex flex-wrap gap-2"
+				role="radiogroup"
+				aria-label="Цвет"
+				data-pdp-variants
+				data-pdp-colors
+				hidden={colors.length === 0 || isPlaceholder}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="103"
+				data-puck-subsection-field="variants"
+			>
+				{/* Пустое состояние (Figma 1:19335) строку вариантов НЕ показывает —
+				    рендерим чипы цвета ТОЛЬКО для реального/demo товара; на live
+				    гидрация заменяет их реальным селектором или скрывает контейнер. */}
+				{!isPlaceholder && colors.map((color, index) => (
+					<button
+						type="button"
+						role="radio"
+						aria-checked={index === 0 ? "true" : "false"}
+						data-id={color.id}
+						class:list={[
+							"inline-flex h-10 shrink-0 items-center justify-center border border-[#000000] px-3 font-manrope text-[14px] font-normal leading-none transition-colors",
+							index === 0 ? "bg-[#000000] text-white" : "bg-white text-[#000000]",
+						]}
+					>
+						{color.label}
+					</button>
+				))}
+			</div>
+
+			{/* Лейбл «Количество» (Figma 1:19335 — плейсхолдер «Товар» содержит его
+			    над счётчиком). Реальный товар сохраняет прежний вид без лейбла;
+			    live-гидрация удаляет этот SSR-лейбл при подстановке товара. */}
+			{isPlaceholder && (
+				<span
+					data-pdp-qty-placeholder-label
+					class="font-manrope text-[14px] font-normal uppercase leading-none text-[#000000]"
+				>
+					Количество
+				</span>
+			)}
+
+			<div
+				class="flex flex-col gap-3"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="105"
+				data-puck-subsection-field="buttons"
+			>
+				<div class="flex gap-3">
+					<button
+						type="button"
+						data-add-to-cart
+						data-product-id={isPlaceholder ? "" : product.id}
+						data-name={displayName}
+						data-price={displayPrice}
+						data-old-price={displayOldPrice ?? ""}
+						data-image={galleryImages[0]}
+						data-variant-color={cartVariantColor}
+						data-quantity="1"
+						hidden={!showAddToCart}
+						class="flex h-14 flex-1 items-center justify-center border border-[rgb(var(--color-button-2-border,0_0_0))] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-80"
+					>
+						{addBtnText}
+					</button>
+					<div
+						class="flex h-14 w-[120px] shrink-0 items-center justify-between border border-[#DDDDDD] px-2"
+						data-pdp-qty
+						hidden={!quantityVisible}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="104"
+						data-puck-subsection-field="quantity"
+					>
+						<button type="button" class="flex size-10 items-center justify-center transition-opacity hover:opacity-70" aria-label="Уменьшить количество" data-action="qty-dec">
+							<NtIcon name="minus" sizeClass="size-6" />
+						</button>
+						<input
+							type="number"
+							min="1"
+							value="1"
+							class="h-10 w-8 bg-transparent text-center font-manrope text-[14px] font-normal leading-normal text-[#000000] outline-none"
+							aria-label="Количество"
+							data-pdp-qty-value
+						/>
+						<button type="button" class="flex size-10 items-center justify-center transition-opacity hover:opacity-70" aria-label="Увеличить количество" data-action="qty-inc">
+							<NtIcon name="plus" sizeClass="size-6" />
+						</button>
+					</div>
+				</div>
+				<button
+					type="button"
+					data-action="buy-now"
+					data-product-id={isPlaceholder ? "" : product.id}
+					data-name={displayName}
+					data-price={displayPrice}
+					data-image={galleryImages[0]}
+					hidden={!showBuyNow}
+					class="flex h-14 w-full items-center justify-center bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+				>
+					{buyBtnText}
+				</button>
+				{/* Избранное: сердце-тоггл [data-wishlist-toggle] (механизм lib/wishlist.ts,
+				    общий с rose). Острые углы satin, бордер как у вторичной кнопки темы.
+				    data-product-id ставит гидрация (там же, где data-add-to-cart) — на
+				    demo остаётся пустым (no-op). ИНЛАЙН-SVG (не NtIcon) — 2-state fill. */}
+				<button
+					type="button"
+					data-wishlist-toggle
+					data-product-id={isPlaceholder ? "" : product.id}
+					aria-pressed="false"
+					aria-label="В избранное"
+					class="satin-fav flex h-14 w-full items-center justify-center gap-2 border border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal uppercase leading-none text-[#000000] transition-opacity hover:opacity-80"
+				>
+					<span data-wishlist-icon class="block size-5">
+						<svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display:block">
+							<g transform="translate(4.22 5.867)">
+								<path d="M10.0342 18.882C6.93786 16.5652 0.8 11.2695 0.8 6.50305C0.8 3.35396 3.11131 0.8 6.29004 0.8C7.93705 0.8 9.58406 1.349 11.7801 3.54502C13.9761 1.349 15.6231 0.8 17.2701 0.8C20.4488 0.8 22.7601 3.35396 22.7601 6.50305C22.7601 11.2684 16.6223 16.5652 13.5259 18.882C12.4828 19.6616 11.0773 19.6616 10.0342 18.882Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+							</g>
+						</svg>
+					</span>
+					<span>В избранное</span>
+				</button>
+			</div>
+
+			{/* Описание: Figma-плейсхолдер «Товар» (пустое состояние) описания НЕ
+			    показывает — рендерим только для реального/demo товара. Live-гидрация
+			    заполняет [data-pdp-desc] реальным текстом и раскрывает контейнер. */}
+			<div
+				class="flex flex-col gap-3 border-t border-[#DDDDDD] pt-6"
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="106"
+				data-puck-subsection-field="description"
+				hidden={isPlaceholder}
+			>
+				<h2 class="font-logo text-[18px] font-normal uppercase leading-normal text-[#000000] md:text-[20px]">Описание</h2>
+				<p class="font-manrope text-[16px] font-light leading-[1.55] text-[rgb(var(--color-muted,153_153_153))]" data-pdp-desc>{displayDescription}</p>
+			</div>
+
+			<div
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="107"
+				data-puck-subsection-field="share"
+			>
+				<button type="button" data-action="share" class="inline-flex w-fit items-center gap-2 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70" aria-label={shareText}>
+					<NtIcon name="share" sizeClass="size-6" />
+					<span>{shareText}</span>
+				</button>
+			</div>
+		</div>
+	</div>
+
+	{/* «Товар не найден» — показывается live-гидрацией ТОЛЬКО когда товар не
+	    резолвится (магазин пуст / неверный slug). Живёт в КОМПОНЕНТЕ, чтобы оба
+	    маршрута (`/product` и demo `products/[id]`) получили его без дублей в
+	    consumer-страницах. На demo-сборке без products.json гидрация — no-op
+	    (остаётся demo-скелетон), блок остаётся скрытым. */}
+	<div data-pdp-notfound hidden class="w-full bg-white py-24 text-center">
+		<p class="font-logo text-[24px] uppercase text-[#000000]">Товар не найден</p>
+		<a
+			href="/catalog"
+			class="mt-6 inline-flex h-12 items-center justify-center bg-[#000000] px-6 font-manrope text-[16px] uppercase text-white transition-opacity hover:opacity-90"
+		>В каталог</a>
+	</div>
+</section>
+
+<script is:inline>
+	(function () {
+		function stampProductBlockId() {
+			var id = window.__MERFY_PRODUCT_BLOCK_ID__;
+			if (!id) return;
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			if (!section.getAttribute("data-puck-component-id")) section.setAttribute("data-puck-component-id", id);
+			section.querySelectorAll("[data-puck-subsection-index]").forEach(function (el) {
+				if (!el.getAttribute("data-puck-subsection-parent")) el.setAttribute("data-puck-subsection-parent", id);
+			});
+		}
+		stampProductBlockId();
+		document.addEventListener("astro:page-load", stampProductBlockId);
+	})();
+</script>
+
+<script is:inline define:vars={{ propSiteId: siteId }}>
+	/**
+	 * ЖИВАЯ ГИДРАЦИЯ PDP (satin). Грузит РЕАЛЬНЫЙ товар из ЖИВОГО
+	 * /api/store/products (как каталог satin) и заполняет существующие data-pdp-*
+	 * хуки разметки. Без живых данных (demo-сборка) — чистый no-op: остаётся
+	 * SSR-скелетон, вёрстка/цвета/шрифты не трогаются.
+	 *
+	 * ТОЛЬКО is:inline (НЕ module-<script> с import): module client-script темы НЕ
+	 * компилится в live theme build → 404 на проде → вся логика мертва. Поэтому
+	 * тела хелперов гидрации (loadRealProducts/deriveVariantGroups/findCombination/
+	 * applyCombo/cart) инлайнены 1:1 из пилота rose (RoseProductDetail).
+	 *
+	 * КОРЗИНА: НЕ зовём cart-API вручную. Тема satin вешает ГЛОБАЛЬНЫЙ
+	 * делегированный обработчик [data-add-to-cart] (nt-cart-satin.ts → initCartUI в
+	 * Layout), который читает data-product-id/-name/-price/-old-price/-image/
+	 * -quantity/-variant-color/-variant-size/-variant-combination-id, кладёт линию в
+	 * локальную корзину satin (localStorage `satin:cart:v1`) и открывает drawer.
+	 * Наша задача — заполнить эти атрибуты реальными значениями. «Купить сейчас» =
+	 * диспатч клика по [data-add-to-cart] + переход на /cart (там мост NtCart →
+	 * серверный cartStore → /checkout).
+	 */
+	(function () {
+		// ─── Источник данных: ЖИВОЙ storefront API (спек 098 — «не products.json»). ───
+		// apiBase: на live (*.merfy.ru) cross-origin к gateway (CORS пропускает
+		// *.merfy.ru); в превью iframe на gateway-origin → тот же URL same-origin.
+		var apiBase =
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+		// store_id (shopId) = siteId. На live build сам siteId инжектится на секцию
+		// (data-site-id) консьюмером ИЛИ глобалом превью __MERFY_SITE_ID__.
+		function resolveSiteId() {
+			if (typeof window !== "undefined" && window.__MERFY_SITE_ID__) return window.__MERFY_SITE_ID__;
+			var sec = document.querySelector("[data-pdp-section]");
+			var fromAttr = sec && sec.getAttribute("data-site-id");
+			if (fromAttr) return fromAttr;
+			return propSiteId || undefined;
+		}
+
+		var PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
+		var __cachedProducts; // undefined — не грузили; null — данных нет (demo).
+
+		// Цена из API — в КОПЕЙКАХ (basePrice "79000.00" / variant.price 79000).
+		function toCents(v) {
+			var n = typeof v === "string" ? parseFloat(v) : v;
+			return Number.isFinite(n) ? n : null;
+		}
+		function variantMinCents(p) {
+			var vc = p.variantCombinations;
+			if (Array.isArray(vc) && vc.length) {
+				var ps = vc.map(function (v) { return toCents(v.price); }).filter(function (n) { return n !== null && n > 0; });
+				if (ps.length) return Math.min.apply(null, ps);
+			}
+			return null;
+		}
+		// mapApiProduct: товар /api/store/products → форма клиента PDP. Цены
+		// копейки→рубли; title→name; handle→slug; variantCombinations as-is (для
+		// селектора вариантов). Зеркало Catalog.mapApiProduct.
+		function mapApiProduct(p) {
+			var cents =
+				(p.hasVariants ? variantMinCents(p) : null) ??
+				toCents(p.basePrice) ??
+				variantMinCents(p) ??
+				0;
+			var oldCents = toCents(p.compareAtPrice);
+			return {
+				id: p.id,
+				name: p.title || p.name || "",
+				price: cents,
+				oldPrice: oldCents && oldCents > 0 ? oldCents : null,
+				slug: p.handle || p.slug,
+				description: p.description || p.metaDescription || "",
+				images: Array.isArray(p.images) ? p.images : [],
+				hasVariants: !!p.hasVariants,
+				// variantCombinations: нормализуем price копейки→рубли, чтобы
+				// applyCombo/корзина работали в рублях (как basePrice выше).
+				variantCombinations: Array.isArray(p.variantCombinations)
+					? p.variantCombinations.map(function (vc) {
+							var vcCents = toCents(vc.price);
+							var vcOld = toCents(vc.compareAtPrice);
+							return {
+								id: vc.id,
+								title: vc.title,
+								price: vcCents !== null ? vcCents : 0,
+								compareAtPrice: vcOld && vcOld > 0 ? vcOld : null,
+								available: vc.available,
+								quantity: vc.quantity,
+								options: vc.options || {},
+							};
+						})
+					: [],
+				// Медиа вариантов: опции (напр. «Цвет») несут images[]; нужны applyCombo
+				// для смены галереи при выборе варианта. API их отдаёт, но mapApiProduct
+				// раньше дропал variantGroups целиком → фото варианта не подхватывалось.
+				variantGroups: Array.isArray(p.variantGroups)
+					? p.variantGroups.map(function (g) {
+							return {
+								name: g.name,
+								options: Array.isArray(g.options)
+									? g.options.map(function (o) {
+											return {
+												value: o.value,
+												images: Array.isArray(o.images) ? o.images : [],
+												swatchHex: o.swatchHex || null,
+											};
+										})
+									: [],
+							};
+						})
+					: [],
+			};
+		}
+
+		// loadRealProducts: 1) ЖИВОЙ /api/store/products (как каталог) →
+		// 2) статический per-site /data/products.json (build.service инжектит на
+		// live, богатый shape с variantCombinations) → 3) preview storefront-data.
+		// Любой источник, давший ≥1 товар, выигрывает; иначе null (demo — no-op).
+		async function loadRealProducts() {
+			if (__cachedProducts !== undefined) return __cachedProducts;
+			var sid = resolveSiteId();
+
+			// 1. ЖИВОЙ API (спек 098). Тянет первую страницу — PDP ищет один товар.
+			if (sid) {
+				try {
+					var url =
+						apiBase + "/api/store/products?store_id=" + encodeURIComponent(sid) + "&limit=100";
+					var res = await fetch(url);
+					if (res.ok) {
+						var json = await res.json();
+						var apiItems = Array.isArray(json.products) ? json.products.map(mapApiProduct) : [];
+						if (apiItems.length > 0) {
+							__cachedProducts = apiItems;
+							return __cachedProducts;
+						}
+					}
+				} catch (e) { /* API недоступен → фолбэк ниже */ }
+			}
+
+			// 2. Статический per-site файл — опубликованный сайт. Богатый shape
+			// (variantCombinations) пишет build.service. ⚠️ Цены в products.json — в
+			// КОПЕЙКАХ (как API basePrice: 269000 = 2690₽) → делим на 100. Фолбэк:
+			// обычно на live build.service инжектит __MERFY_SITE_ID__ → путь №1 (API).
+			try {
+				var r2 = await fetch("/data/products.json");
+				if (r2.ok) {
+					var data = await r2.json();
+					if (Array.isArray(data) && data.length > 0) {
+						var k100 = function (v) { return v; }; // цены уже в рублях (basePrice как есть) — НЕ делим
+						__cachedProducts = data.map(function (p) {
+							return Object.assign({}, p, {
+								price: k100(p.price),
+								compareAtPrice: k100(p.compareAtPrice),
+								oldPrice: k100(p.oldPrice),
+								variantCombinations: Array.isArray(p.variantCombinations)
+									? p.variantCombinations.map(function (vc) { return Object.assign({}, vc, { price: k100(vc.price) }); })
+									: p.variantCombinations,
+							});
+						});
+						return __cachedProducts;
+					}
+				}
+			} catch (e) { /* файла нет — preview-фолбэк ниже */ }
+
+			// 3. Preview-фолбэк: built-theme БЕЗ products.json → storefront-data.
+			if (sid) {
+				try {
+					var r3 = await fetch("/api/sites/" + encodeURIComponent(sid) + "/storefront-data");
+					if (r3.ok) {
+						var payload = await r3.json();
+						var products = payload && payload.products;
+						if (Array.isArray(products) && products.length > 0) {
+							__cachedProducts = products;
+							return __cachedProducts;
+						}
+					}
+				} catch (e) { /* preview-фолбэк не удался */ }
+			}
+
+			__cachedProducts = null;
+			return __cachedProducts;
+		}
+
+		function formatPrice(value) {
+			if (value === null || value === undefined || value === "") return "";
+			if (typeof value === "string") return value; // demo строка "5 990 ₽"
+			return value.toLocaleString("ru-RU") + " ₽";
+		}
+		function productImageRaw(p) {
+			return (Array.isArray(p.images) && typeof p.images[0] === "string" && p.images[0]) || "";
+		}
+		function productImage(p) {
+			return productImageRaw(p) || PLACEHOLDER_IMAGE;
+		}
+		function escapeHtml(value) {
+			return String(value === null || value === undefined ? "" : value)
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#39;");
+		}
+
+		// Выводит группы вариантов из combos[].options (variantGroups часто null).
+		function deriveVariantGroups(combos) {
+			var order = [];
+			var byGroup = {};
+			for (var i = 0; i < combos.length; i++) {
+				var opts = combos[i].options || {};
+				for (var group in opts) {
+					if (!Object.prototype.hasOwnProperty.call(opts, group)) continue;
+					var value = opts[group];
+					if (!byGroup[group]) { byGroup[group] = []; order.push(group); }
+					if (byGroup[group].indexOf(value) === -1) byGroup[group].push(value);
+				}
+			}
+			return order.map(function (name) { return { name: name, values: byGroup[name] }; });
+		}
+		// Находит комбинацию, у которой ВСЕ выбранные значения групп совпали.
+		function findCombination(combos, selected) {
+			for (var i = 0; i < combos.length; i++) {
+				var c = combos[i];
+				var ok = true;
+				for (var group in selected) {
+					if (!Object.prototype.hasOwnProperty.call(selected, group)) continue;
+					if (!c.options || c.options[group] !== selected[group]) { ok = false; break; }
+				}
+				if (ok) return c;
+			}
+			return null;
+		}
+
+		// Классы вариант-кнопок (satin: квадратные, выбран — чёрный фон/белый текст;
+		// невыбран — белый фон/чёрный border; высота h-10, font-manrope — как demo
+		// color-row выше). Core-utility (не arbitrary), чтобы попасть в CSS превью.
+		var VARIANT_BTN_BASE =
+			"inline-flex h-10 shrink-0 items-center justify-center px-3 font-manrope text-[14px] font-normal leading-none outline-none transition-colors";
+		var VARIANT_BTN_SEL = "border border-[#000000] !bg-[#000000] !text-white";
+		var VARIANT_BTN_UNSEL = "border border-[#000000] !bg-white !text-[#000000]";
+		function renderVariantGroupsHtml(groups, selected) {
+			return groups
+				.map(function (g) {
+					var buttons = g.values
+						.map(function (v) {
+							var isSel = selected[g.name] === v;
+							var cls = VARIANT_BTN_BASE + " " + (isSel ? VARIANT_BTN_SEL : VARIANT_BTN_UNSEL);
+							return (
+								'<button type="button" class="' + cls + '" role="radio" aria-checked="' +
+								isSel + '" data-variant-value="' + escapeHtml(v) + '">' + escapeHtml(v) + "</button>"
+							);
+						})
+						.join("");
+					return (
+						'<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="' +
+						escapeHtml(g.name) + '">' +
+						'<span class="font-manrope text-[14px] font-normal uppercase leading-none text-[#000000]">' +
+						escapeHtml(g.name) + "</span>" +
+						'<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="' +
+						escapeHtml(g.name) + '">' + buttons + "</div></div>"
+					);
+				})
+				.join("");
+		}
+
+		// ─── Определение товара: slug из пути → ?id= → __MERFY_DEFAULT_PRODUCT_ID__ → первый ───
+		function lookupRefFromUrl() {
+			var m = location.pathname.match(/\/product\/([^/]+)\/?$/);
+			if (m) return decodeURIComponent(m[1]); // pretty /product/<slug>
+			var q = new URLSearchParams(location.search).get("id");
+			return q || null;
+		}
+
+		async function hydrateProductPage() {
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			var notFound = section.querySelector("[data-pdp-notfound]");
+
+			var products = await loadRealProducts();
+			if (!products) return; // demo-сборка без данных — оставляем SSR-скелетон
+
+			// Приоритет: pretty-slug / ?id= → выбранный в конструкторе товар
+			// (__MERFY_DEFAULT_PRODUCT_ID__) → первый.
+			var urlRef = lookupRefFromUrl();
+			var defaultId =
+				(typeof window !== "undefined" && window.__MERFY_DEFAULT_PRODUCT_ID__) || null;
+			var lookupRef = urlRef || defaultId;
+			var explicit = !!urlRef;
+
+			var p = null;
+			if (lookupRef) {
+				// Матч по id ИЛИ slug ИЛИ handle: live-API даёт slug=handle||slug,
+				// а per-site products.json может нести handle без slug.
+				for (var i = 0; i < products.length; i++) {
+					var it = products[i];
+					if (it.id === lookupRef || it.slug === lookupRef || it.handle === lookupRef) { p = it; break; }
+				}
+				if (!p && !explicit) p = products[0] || null; // дефолтный/первый, но не при явном неверном slug
+			} else {
+				p = products[0] || null;
+			}
+
+			// not-found блок и layout-грид живут ВНУТРИ секции → НЕ прячем всю секцию
+			// (иначе спрятали бы и сам not-found). Тогглим внутренний layout-грид.
+			var layout = section.querySelector("[data-pdp-layout]");
+			// Скелетон-лоадер виден ТОЛЬКО пока грузится товар — прячем его в обеих
+			// развязках (success + not-found), как только знаем, что показывать.
+			var skel = section.querySelector("[data-pdp-skeleton]");
+			if (!p) {
+				if (layout) layout.hidden = true;
+				if (skel) skel.hidden = true;
+				if (notFound) notFound.hidden = false;
+				return;
+			}
+			if (layout) { layout.hidden = false; layout.style.opacity = "1"; }
+			if (skel) skel.hidden = true;
+			if (notFound) notFound.hidden = true;
+
+			function setText(sel, t) {
+				var el = section.querySelector(sel);
+				if (el) el.textContent = t;
+			}
+
+			// ── Заголовок / бренд / описание / цена ──
+			document.title = p.name || "Товар";
+			setText("[data-pdp-name]", p.name || "Товар");
+			setText("[data-pdp-price]", formatPrice(p.price));
+			setText("[data-pdp-desc]", p.description || p.metaDescription || "");
+
+			// Бренд: реальные товары обычно без бренда в API → прячем demo-остаток,
+			// показываем только если поле реально пришло.
+			var brandVal = p.brand || p.vendor || "";
+			var brandEl = section.querySelector("[data-pdp-brand]");
+			if (brandEl) {
+				brandEl.textContent = brandVal;
+				brandEl.hidden = !brandVal;
+			}
+
+			var oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
+			var oldEl = section.querySelector("[data-pdp-oldprice]");
+			if (oldEl) { oldEl.textContent = oldRaw; oldEl.hidden = !oldRaw; }
+
+			// Бейдж «Скидка»: показываем при наличии старой цены.
+			var badgeEl = section.querySelector("[data-pdp-badge]");
+			if (badgeEl) badgeEl.hidden = !oldRaw;
+
+			// ── Галерея satin (2×2 grid): вынесена в applyGallery (переиспользуется
+			//    applyCombo при смене варианта). Главное фото = первая ячейка
+			//    [data-pdp-main]; остальные ячейки [data-pdp-gallery-cell='extra']
+			//    заполняем из переданного списка или прячем (товар с 1 фото). src —
+			//    главное фото товара, используется ниже для data-image CTA. ──
+			var src = productImage(p);
+			var productGalleryImages = (Array.isArray(p.images) ? p.images : []).filter(function (s) {
+				return typeof s === "string" && s;
+			});
+			// Медиа выбранного варианта: первая опция группы (обычно «Цвет») с
+			// непустым images[]. null → у варианта нет своих фото (берём товара).
+			function variantImagesFor(sel) {
+				var groups = Array.isArray(p.variantGroups) ? p.variantGroups : [];
+				for (var gi = 0; gi < groups.length; gi++) {
+					var g = groups[gi];
+					var val = sel ? sel[g.name] : null;
+					if (val == null) continue;
+					var opts = g.options || [];
+					for (var oi = 0; oi < opts.length; oi++) {
+						if (opts[oi].value === val && Array.isArray(opts[oi].images) && opts[oi].images.length) {
+							return opts[oi].images;
+						}
+					}
+				}
+				return null;
+			}
+			// Рисует главное фото + extra-ячейки (миниатюры) из переданного списка
+			// и синкает data-image на CTA (корзина читает текущее фото). Миниатюры
+			// satin динамичны (перестраиваются), поэтому свапаются вместе с фото.
+			function applyGallery(list) {
+				var arr = (Array.isArray(list) ? list : []).filter(function (s) {
+					return typeof s === "string" && s;
+				});
+				var mainSrc = arr[0] || productImage(p);
+				var mainImg = section.querySelector("[data-pdp-main]");
+				if (mainImg) {
+					mainImg.src = mainSrc;
+					mainImg.alt = p.name || "";
+					// <picture><source webp> от skeleton/demo больше не валиден — снимаем.
+					var picture = mainImg.closest("picture");
+					var source = picture && picture.querySelector("source");
+					if (source) source.removeAttribute("srcset");
+				}
+				var addCta = section.querySelector("[data-add-to-cart]");
+				var buyCta = section.querySelector("[data-action='buy-now']");
+				if (addCta) addCta.setAttribute("data-image", mainSrc);
+				if (buyCta) buyCta.setAttribute("data-image", mainSrc);
+				// extra-ячейки 2×2 grid: индексы 1.. из arr. Лишние без картинки прячем.
+				var extraCells = Array.prototype.slice.call(
+					section.querySelectorAll("[data-pdp-gallery-cell='extra']")
+				);
+				var mainCell = section.querySelector("[data-pdp-gallery-cell='main']");
+				var extraUrls = arr.slice(1, 1 + extraCells.length);
+				if (extraUrls.length === 0) {
+					// Товар/вариант с одним фото — прячем extra-ячейки, главная на всю ширину.
+					extraCells.forEach(function (cell) { cell.hidden = true; });
+					if (mainCell) mainCell.classList.add("col-span-2");
+				} else {
+					if (mainCell) mainCell.classList.remove("col-span-2");
+					for (var ec = 0; ec < extraCells.length; ec++) {
+						var cell = extraCells[ec];
+						var u = extraUrls[ec];
+						if (!u) { cell.hidden = true; continue; }
+						cell.hidden = false;
+						cell.innerHTML =
+							'<img src="' + escapeHtml(u) + '" alt="' + escapeHtml(p.name) +
+							'" class="absolute inset-0 size-full object-cover" loading="eager" data-pdp-thumb data-image="' +
+							escapeHtml(u) + '" />';
+					}
+				}
+			}
+			applyGallery(productGalleryImages);
+
+			// ── Атрибуты корзины: глобальный делегат [data-add-to-cart] (satin
+			//    nt-cart-satin) читает их при клике. Слаг кладём на секцию (buy-now). ──
+			section.setAttribute("data-product-id", p.id);
+			section.setAttribute("data-product-slug", p.slug || p.id);
+			var priceStr = formatPrice(p.price);
+			var ctas = ["[data-add-to-cart]", "[data-action='buy-now']"];
+			for (var k = 0; k < ctas.length; k++) {
+				var btn = section.querySelector(ctas[k]);
+				if (!btn) continue;
+				btn.setAttribute("data-product-id", p.id);
+				btn.setAttribute("data-name", p.name || "");
+				btn.setAttribute("data-price", priceStr);
+				btn.setAttribute("data-image", src);
+			}
+			var addBtn0 = section.querySelector("[data-add-to-cart]");
+			if (addBtn0) {
+				addBtn0.setAttribute("data-old-price", oldRaw);
+				addBtn0.setAttribute("data-variant-color", "");
+			}
+
+			// ── Избранное: стампим реальный data-product-id на сердце-тоггл (как CTA),
+			//    затем красим filled/aria-pressed через глобал __satinWishlist (его
+			//    ставит initWishlistUI в Layout). Делегат клика — там же, глобальный. ──
+			var favBtn = section.querySelector("[data-wishlist-toggle]");
+			if (favBtn) {
+				favBtn.setAttribute("data-product-id", p.id);
+				var wl = window.__satinWishlist;
+				if (wl) {
+					var fav = wl.has(p.id);
+					favBtn.setAttribute("aria-pressed", fav ? "true" : "false");
+					var iconSlot = favBtn.querySelector("[data-wishlist-icon]");
+					if (iconSlot) iconSlot.innerHTML = wl.heartSvg(fav);
+				}
+			}
+
+			// ── Варианты УСЛОВНО: селектор только если есть variantCombinations ──
+			var variantsEl = section.querySelector("[data-pdp-variants]");
+			var combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+			var COLOR_KEYS = ["Цвет", "Color"];
+			var SIZE_KEYS = ["Размер", "Size"];
+			function pick(opts, keys) {
+				for (var i = 0; i < keys.length; i++) {
+					if (opts && opts[keys[i]] != null) return opts[keys[i]];
+				}
+				return "";
+			}
+
+			if (variantsEl && combos.length > 0) {
+				// Skeleton-контейнер сам был radiogroup цвета — снимаем его роль, теперь
+				// это обёртка реальных групп вариантов (вертикальный стек как rose).
+				variantsEl.removeAttribute("role");
+				variantsEl.removeAttribute("aria-label");
+				variantsEl.removeAttribute("data-pdp-colors");
+				variantsEl.classList.remove("flex-wrap", "flex-row");
+				variantsEl.classList.add("flex", "flex-col", "gap-4");
+
+				var groups = deriveVariantGroups(combos);
+				var firstAvailable = null;
+				for (var fa = 0; fa < combos.length; fa++) {
+					if (combos[fa].available !== false) { firstAvailable = combos[fa]; break; }
+				}
+				if (!firstAvailable) firstAvailable = combos[0];
+				var selected = Object.assign({}, firstAvailable.options || {});
+
+				function applyCombo() {
+					var combo = findCombination(combos, selected);
+					var priceVal = combo && combo.price ? combo.price : p.price;
+					setText("[data-pdp-price]", formatPrice(priceVal));
+					// Старая цена комбинации (если есть).
+					var comboOld = formatPrice((combo && combo.compareAtPrice) || p.oldPrice || p.compareAtPrice || null);
+					var oEl = section.querySelector("[data-pdp-oldprice]");
+					if (oEl) { oEl.textContent = comboOld; oEl.hidden = !comboOld; }
+					var available = combo
+						? combo.available !== false && (combo.quantity == null || combo.quantity > 0)
+						: false;
+					for (var c = 0; c < ctas.length; c++) {
+						var b = section.querySelector(ctas[c]);
+						if (!b) continue;
+						b.setAttribute("data-price", formatPrice(priceVal));
+						b.setAttribute("data-old-price", comboOld);
+						b.setAttribute("data-variant-combination-id", (combo && combo.id) || "");
+						b.setAttribute("data-variant-color", pick(combo && combo.options, COLOR_KEYS));
+						b.setAttribute("data-variant-size", pick(combo && combo.options, SIZE_KEYS));
+					}
+					var addEl = section.querySelector("[data-add-to-cart]");
+					if (addEl) {
+						addEl.disabled = !available;
+						addEl.classList.toggle("opacity-50", !available);
+						addEl.classList.toggle("pointer-events-none", !available);
+						addEl.textContent = available ? "Добавить в корзину" : "Нет в наличии";
+					}
+					// Свап галереи под выбранный вариант: медиа опции (цвет) при
+					// наличии, иначе медиа товара. Чинит баг «фото не меняется».
+					var vImgs = variantImagesFor(selected);
+					applyGallery(vImgs && vImgs.length ? vImgs : productGalleryImages);
+				}
+
+				variantsEl.hidden = false;
+				variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+				applyCombo();
+
+				variantsEl.onclick = function (e) {
+					var btn = e.target.closest("[data-variant-value]");
+					if (!btn) return;
+					var groupEl = btn.closest("[data-pdp-variant-group]");
+					var group = groupEl && groupEl.getAttribute("data-pdp-variant-group");
+					var value = btn.getAttribute("data-variant-value");
+					if (!group || value == null) return;
+					selected[group] = value;
+					variantsEl.innerHTML = renderVariantGroupsHtml(groups, selected);
+					applyCombo();
+				};
+			} else if (variantsEl) {
+				// Невариативный реальный товар — demo color-row убираем.
+				variantsEl.hidden = true;
+				variantsEl.innerHTML = "";
+			}
+		}
+
+		// ─── UI: количество (±), миниатюры (свап главного фото), поделиться, купить сейчас ───
+		function syncQtyToCtas(qty) {
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			var ctas = section.querySelectorAll("[data-add-to-cart], [data-action='buy-now']");
+			for (var i = 0; i < ctas.length; i++) ctas[i].setAttribute("data-quantity", String(qty));
+		}
+
+		function initSatinProductUi() {
+			var section = document.querySelector("[data-pdp-section]");
+			if (!section) return;
+			// Идемпотентность при View Transitions (astro:page-load): не вешаем
+			// обработчики повторно на ту же секцию.
+			if (section.getAttribute("data-pdp-ui-bound") === "1") return;
+			section.setAttribute("data-pdp-ui-bound", "1");
+
+			// Количество (±). Делегируем на секцию.
+			var qtyInput = section.querySelector("[data-pdp-qty-value]");
+			var dec = section.querySelector("[data-action='qty-dec']");
+			var inc = section.querySelector("[data-action='qty-inc']");
+			if (dec && qtyInput) {
+				dec.addEventListener("click", function () {
+					var next = Math.max(1, Number(qtyInput.value || 1) - 1);
+					qtyInput.value = String(next);
+					syncQtyToCtas(next);
+				});
+			}
+			if (inc && qtyInput) {
+				inc.addEventListener("click", function () {
+					var next = Number(qtyInput.value || 1) + 1;
+					qtyInput.value = String(next);
+					syncQtyToCtas(next);
+				});
+			}
+			if (qtyInput) {
+				qtyInput.addEventListener("input", function () {
+					var value = Math.max(1, Number(qtyInput.value || 1));
+					qtyInput.value = String(value);
+					syncQtyToCtas(value);
+				});
+			}
+
+			// Миниатюры: делегат на секцию (extra-ячейки галереи перерисовываются
+			// гидрацией) — свапаем главное фото + синкаем data-image на CTA.
+			section.addEventListener("click", function (ev) {
+				var thumb = ev.target.closest("[data-pdp-thumb]");
+				if (!thumb || !section.contains(thumb)) return;
+				var img = thumb.getAttribute("data-image");
+				var mainEl = section.querySelector("[data-pdp-main]");
+				if (mainEl && img) {
+					mainEl.src = img;
+					var pic = mainEl.closest("picture");
+					var s = pic && pic.querySelector("source");
+					if (s) s.removeAttribute("srcset");
+				}
+				var add = section.querySelector("[data-add-to-cart]");
+				var buy = section.querySelector("[data-action='buy-now']");
+				if (add) add.setAttribute("data-image", img || "");
+				if (buy) buy.setAttribute("data-image", img || "");
+			});
+
+			// Поделиться.
+			var shareBtn = section.querySelector("[data-action='share']");
+			if (shareBtn) {
+				shareBtn.addEventListener("click", async function () {
+					try {
+						if (navigator.share) {
+							await navigator.share({ title: document.title, url: location.href });
+						} else if (navigator.clipboard) {
+							await navigator.clipboard.writeText(location.href);
+							var span = shareBtn.querySelector("span");
+							if (span) {
+								var orig = span.textContent;
+								span.textContent = "Ссылка скопирована!";
+								setTimeout(function () { span.textContent = orig; }, 1500);
+							}
+						}
+					} catch (e) { /* пользователь отменил */ }
+				});
+			}
+
+			// «Купить сейчас» = ЭКСПРЕСС: оформляем ТОЛЬКО выбранный товар, корзину
+			// покупателя (nt-cart) НЕ трогаем. Товар кладём в sessionStorage (НЕ в URL,
+			// НЕ в корзину); чекаут читает его и собирает корзину ТОЛЬКО из него. URL
+			// остаётся чистым /checkout. Регулярное «Оформить» сбрасывает этот ключ
+			// (Layout), поэтому повторный buy-now всегда даёт именно нажатый товар.
+			// На превью конструктора этот hard-nav перехватывает nav-агент iframe.
+			var buyBtn = section.querySelector("[data-action='buy-now']");
+			if (buyBtn) {
+				buyBtn.addEventListener("click", function () {
+					if (buyBtn.disabled) return;
+					var add = section.querySelector("[data-add-to-cart]");
+					if (!add || add.disabled) return;
+					var pid = add.getAttribute("data-product-id") || "";
+					if (!pid) return;
+					var vci = add.getAttribute("data-variant-combination-id") || "";
+					var qty = parseInt(add.getAttribute("data-quantity") || "1", 10) || 1;
+					try {
+						sessionStorage.setItem(
+							"satin:buynow",
+							JSON.stringify({ productId: pid, variantCombinationId: vci || null, quantity: qty }),
+						);
+					} catch (e) {}
+					window.location.href = "/checkout";
+				});
+			}
+		}
+
+		function bootProduct() {
+			hydrateProductPage();
+			initSatinProductUi();
+		}
+
+		bootProduct();
+		document.addEventListener("astro:page-load", bootProduct);
+	})();
+</script>

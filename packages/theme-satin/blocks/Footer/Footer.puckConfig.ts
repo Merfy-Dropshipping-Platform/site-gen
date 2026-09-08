@@ -1,18 +1,11 @@
 import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
-// Satin Footer — КОНТРОЛЫ (fields + schema) приведены к КАНОНУ theme-base/blocks/
-// Footer ДОСЛОВНО (директива «всё к розе»): сайдбар = Рассылка (toggle) + Заголовок/
-// Текст (sub-panel) + Цветовая схема + Отступы; колонки/соцсети/copyright/bottomStrip/
-// siteTitle — hidden (как в theme-base). Схема расширена до superset theme-base
-// (siteTitle/variant/bottomStrip/copyright/colorScheme). ДЕФОЛТЫ ниже — satin'овские
-// (манера: newsletter ВКЛ + ALL-CAPS заголовок, satin-колонки), СОХРАНЕНЫ.
-// Render-safe: themes/satin/.../Footer.astro читает эти канон-пропсы
-// (siteTitle/copyright/bottomStrip/newsletter.enabled/navigationColumn/
-// informationColumn/socialColumn/padding) защитно с фолбэками — расширение схемы
-// его не ломает (verified). heading.text/text.content (рассылка), contentAlign
-// (выравнивание подвала) и colorScheme ОЖИВЛЕНЫ рендером (паритет rose Footer):
-// заголовок/подзаголовок рассылки, выравнивание колонок, схема на <footer>.
+// Satin Footer — КОНТРОЛЫ (fields + schema) = канон theme-base/rose:
+// Рассылка, Заголовок/Текст в основной панели, Выравнивание, Навигация/Информация/
+// Соцсети/Копирайт, Цветовая схема, Отступы. siteTitle/bottomStrip hidden.
+// ДЕФОЛТЫ ниже — satin'овские (newsletter ВКЛ + ALL-CAPS). Рендер:
+// themes/satin/.../Footer.astro читает те же канон-пропсы, что rose.
 
 const FooterLinkSchema = z.object({
   label: z.string(),
@@ -104,10 +97,10 @@ const linkArrayField = {
 // legacy/internal fields (variant). Cast keeps runtime config shape unchanged
 // (паритет theme-base/blocks/Footer).
 export const FooterPuckConfig = {
-  label: 'Footer',
+  label: 'Подвал',
   category: 'navigation',
-  // Figma 314-34558 (канон theme-base): Рассылка (toggle) / Заголовок (sub-panel) /
-  // Размер заголовка / Текст (sub-panel) / Размер текста / Цветовая схема / Отступы.
+  // Канон theme-base/rose: Рассылка / Заголовок / Текст / Выравнивание /
+  // Навигация / Информация / Соцсети / Копирайт / Цветовая схема / Отступы.
   fields: {
     newsletter: {
       type: 'object',
@@ -128,47 +121,84 @@ export const FooterPuckConfig = {
     },
     heading: {
       type: 'object',
-      label: 'Заголовок',
-      hiddenInMainPanel: true,
+      label: '',
       objectFields: {
         text: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер заголовка', options: sizeOptions },
-        // Выравнивание вынесено в top-level контрол contentAlign (канон theme-base/rose).
         alignment: { type: 'hidden', label: '' },
       },
     } as any,
     text: {
       type: 'object',
-      label: 'Текст',
-      hiddenInMainPanel: true,
+      label: '',
       objectFields: {
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
         size: { type: 'select', label: 'Размер текста', options: sizeOptions },
       },
     } as any,
-    // Hidden — нет в Figma 314-34558.
+    contentAlign: { type: 'alignment', label: 'Выравнивание' },
     siteTitle: { type: 'hidden', label: '' },
     bottomStrip: { type: 'hidden', label: '' },
-    // Columns hidden из main по Figma 314-34558 (footer-specific advanced).
     navigationColumn: {
-      type: 'hidden' as const,
-      label: '',
+      type: 'object',
+      label: 'Навигация',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
         links: linkArrayField,
       },
-    },
+    } as any,
     informationColumn: {
-      type: 'hidden' as const,
-      label: '',
+      type: 'object',
+      label: 'Информация',
       objectFields: {
         title: { type: 'text', label: 'Заголовок колонки' },
-        links: linkArrayField,
+        links: { type: 'hidden', label: '' },
       },
-    },
-    socialColumn: { type: 'hidden' as const, label: '' },
-    copyright: { type: 'hidden' as const, label: '' },
-    contentAlign: { type: 'alignment', label: 'Выравнивание' },
+    } as any,
+    socialColumn: {
+      type: 'object',
+      label: 'Соцсети',
+      objectFields: {
+        title: { type: 'text', label: 'Заголовок колонки' },
+        socialLinks: {
+          type: 'array',
+          label: 'Ссылки на соцсети',
+          arrayFields: {
+            platform: {
+              type: 'select',
+              label: 'Соцсеть',
+              options: [
+                { label: 'Telegram', value: 'telegram' },
+                { label: 'VK', value: 'vk' },
+                { label: 'YouTube', value: 'youtube' },
+                { label: 'TikTok', value: 'tiktok' },
+                { label: 'Дзен', value: 'dzen' },
+              ],
+            },
+            href: { type: 'text', label: 'Ссылка' },
+          },
+          defaultItemProps: { platform: 'telegram', href: '' },
+          max: 6,
+        },
+        email: { type: 'hidden', label: '' },
+      },
+    } as any,
+    copyright: {
+      type: 'object',
+      label: 'Копирайт',
+      objectFields: {
+        companyName: { type: 'text', label: 'Название компании' },
+        poweredBy: { type: 'text', label: 'Подпись' },
+        showYear: {
+          type: 'toggle',
+          label: 'Показывать год',
+          options: [
+            { label: 'Да', value: true },
+            { label: 'Нет', value: false },
+          ],
+        },
+      },
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
   },

@@ -30,6 +30,15 @@ describe('@merfy/theme-satin theme.json', () => {
     expect(names).toEqual(['1', '2', '3', '4']);
   });
 
+  it('scheme-1 and scheme-2 are light like rose (content uses scheme-2)', () => {
+    const byId = Object.fromEntries(
+      manifest.colorSchemes.map((s: { id: string; tokens: Record<string, string> }) => [s.id, s]),
+    );
+    expect(byId['scheme-1'].tokens['--color-bg']).toBe('255 255 255');
+    expect(byId['scheme-2'].tokens['--color-bg']).toBe('255 255 255');
+    expect(byId['scheme-4'].tokens['--color-bg']).toBe('8 2 0');
+  });
+
   it('first scheme has required color tokens', () => {
     const first = manifest.colorSchemes[0];
     const required = [

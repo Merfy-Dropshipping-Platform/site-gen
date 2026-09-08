@@ -84,19 +84,19 @@
       "id": "scheme-1",
       "name": "1",
       "tokens": {
-        "--color-bg": "8 2 0",
-        "--color-surface": "8 2 0",
-        "--color-heading": "255 255 255",
-        "--color-text": "255 255 255",
-        "--color-muted": "200 200 200",
-        "--color-primary": "255 255 255",
-        "--color-accent": "68 68 68",
-        "--color-button-bg": "255 255 255",
-        "--color-button-text": "0 0 0",
-        "--color-button-border": "255 255 255",
-        "--color-button-2-bg": "0 0 0",
-        "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "68 68 68"
+        "--color-bg": "255 255 255",
+        "--color-surface": "245 245 245",
+        "--color-heading": "0 0 0",
+        "--color-text": "0 0 0",
+        "--color-muted": "153 153 153",
+        "--color-primary": "0 0 0",
+        "--color-accent": "0 0 0",
+        "--color-button-bg": "0 0 0",
+        "--color-button-text": "255 255 255",
+        "--color-button-border": "0 0 0",
+        "--color-button-2-bg": "255 255 255",
+        "--color-button-2-text": "0 0 0",
+        "--color-button-2-border": "238 238 238"
       }
     },
     {
@@ -104,9 +104,9 @@
       "name": "2",
       "tokens": {
         "--color-bg": "255 255 255",
-        "--color-surface": "255 255 255",
-        "--color-heading": "0 0 0",
-        "--color-text": "0 0 0",
+        "--color-surface": "245 245 245",
+        "--color-heading": "18 18 18",
+        "--color-text": "18 18 18",
         "--color-muted": "153 153 153",
         "--color-primary": "0 0 0",
         "--color-accent": "0 0 0",
@@ -141,19 +141,19 @@
       "id": "scheme-4",
       "name": "4",
       "tokens": {
-        "--color-bg": "68 68 68",
-        "--color-surface": "68 68 68",
+        "--color-bg": "8 2 0",
+        "--color-surface": "8 2 0",
         "--color-heading": "255 255 255",
         "--color-text": "255 255 255",
         "--color-muted": "200 200 200",
         "--color-primary": "255 255 255",
-        "--color-accent": "100 100 100",
+        "--color-accent": "68 68 68",
         "--color-button-bg": "255 255 255",
-        "--color-button-text": "68 68 68",
+        "--color-button-text": "0 0 0",
         "--color-button-border": "255 255 255",
-        "--color-button-2-bg": "68 68 68",
+        "--color-button-2-bg": "8 2 0",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "100 100 100"
+        "--color-button-2-border": "68 68 68"
       }
     }
   ],
@@ -218,7 +218,12 @@
         "reason": "Satin FAQ style — hairline dividers instead of rounded cards, Kelly Slab 32px uppercase section heading, Arsenal 16px uppercase summary rows, zero radii."
       }
     },
-    "Product": {},
+    "Product": {
+      "override": {
+        "path": "./blocks/Product",
+        "reason": "Satin PDP uses the native 2×2 Kelly Slab/Arsenal markup from satinProductDetail; Rose Product puckConfig settings are mapped onto that layout."
+      }
+    },
     "Newsletter": {},
     "ContactForm": {}
   },
@@ -226,9 +231,10 @@
     "newsletter": true,
     "cart-drawer": true,
     "otp-auth": true,
-    "wishlist": false,
+    "wishlist": true,
     "color-swatches": true,
-    "filter-sidebar": true
+    "filter-sidebar": true,
+    "puckDrivenPages": true
   },
   "fonts": [
     {
@@ -344,6 +350,13 @@
       "slug": "/checkout",
       "role": "system",
       "contentFile": "pages/checkout.json"
+    },
+    {
+      "id": "page-checkout-result",
+      "name": "Спасибо за заказ",
+      "slug": "/checkout-result",
+      "role": "system",
+      "contentFile": "pages/checkout-result.json"
     }
   ]
 }

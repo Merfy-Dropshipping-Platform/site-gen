@@ -12,6 +12,18 @@
 // дополнительно добавлен data-puck-component-id (его не было в моке).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 // Legacy direct-usage (about.astro / index.astro импортят <TextBlock /> без
 // пропсов) — поддержим старые имена пропов title/body как алиасы canon
 // heading/text, чтобы прямой рендер не сломался (пустые → плейсхолдер).
@@ -25,11 +37,11 @@ const headingRaw =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? legacyTitle;
 const textRaw =
 	(typeof p.text === "string" ? p.text : p.text?.content) ?? legacyBody;
-// Гейт пустого состояния: ни заголовка, ни текста (паттерн PopularProducts
-// collectionRef / Collections hasManualCollections).
-const isEmptyState = !(headingRaw && headingRaw.trim()) && !(textRaw && textRaw.trim());
+const headingSet = contentSet(["heading", "title"], headingRaw);
+const textSet = contentSet("text", textRaw);
+const isEmptyState = !headingSet && !textSet;
 
-const heading = headingRaw ?? (isEmptyState ? "Расскажи о своем бренде" : "");
+const heading = headingSet && headingRaw ? headingRaw : isEmptyState ? "Расскажи о своем бренде" : "";
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -41,7 +53,7 @@ const headingCls =
 // Канон text: string | { content, size }. Пустое состояние → контрактный
 // поясняющий текст плейсхолдера (НЕ длинная копия верстальщика).
 const text =
-	textRaw ?? (isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "");
+	textSet && textRaw ? textRaw : isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "";
 const textSize = p.textSize ?? p.text?.size;
 const textCls =
 	textSize === "small"

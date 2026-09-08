@@ -9,6 +9,18 @@
 // astro:page-load (его шлёт превью-агент после hot-replace).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+function slotImage(url: unknown): string {
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
 // мок-демо верстальщика). Эталон: theme-base Slideshow.astro + satin
@@ -17,7 +29,13 @@ const id = p.id;
 // реальных слайдов у мерчанта (p.slides[] непустой). Нет ни одного слайда →
 // пустое состояние = ПЛЕЙСХОЛДЕР (НЕ 3 мок-слайда «Там, где классика…» с фото-
 // кампаниями верстальщика /images/4x/*.png).
-const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
+const hasSlides =
+	Array.isArray(p.slides) &&
+	p.slides.some((s: any) => {
+		const image = (typeof s?.imageUrl === "string" && s.imageUrl) || (typeof s?.image === "string" && s.image) || "";
+		const heading = typeof s?.heading === "string" ? s.heading : s?.heading?.text;
+		return !!slotImage(image) || slotSet(typeof heading === "string" ? heading : "");
+	});
 
 // Лейблы пустого состояния (контракт Figma 1:19335 «Слайд-шоу»: заголовок секции
 // + поясняющий текст + Кнопка). Один слайд-болванка. Контракт картиночных секций
@@ -92,12 +110,27 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		// position per-slide (приоритет) | top-level contentAlign: 'center'
 		// (canon-default puckConfig) И отсутствие = центр about-полотна (литерал
 		// `justify-center px-4`, about.astro:47); left/right — в полях satin-pad.
-		posCls:
-			s.position === "left" || (!s.position && p.contentAlign === "left")
-				? "satin-pad justify-start"
-				: s.position === "right"
-					? "satin-pad justify-end"
-					: "justify-center px-4",
+		posCls: (() => {
+			const posRaw = typeof s.position === "string" && s.position ? s.position : "";
+			const norm = posRaw === "left" ? "center-left" : posRaw === "right" ? "center-right" : posRaw;
+			const vPos = norm.startsWith("top")
+				? "top"
+				: norm.startsWith("bottom")
+					? "bottom"
+					: norm === "center" || norm.startsWith("center")
+						? "middle"
+						: "";
+			const hPos = norm.endsWith("left") ? "left" : norm.endsWith("right") ? "right" : "center";
+			const vItems =
+				vPos === "top" ? "items-start" : vPos === "middle" ? "items-center" : "items-end";
+			const hJustify =
+				hPos === "left" || (!norm && p.contentAlign === "left")
+					? "justify-start"
+					: hPos === "right"
+						? "justify-end"
+						: "justify-center";
+			return `${vItems} ${hJustify}`;
+		})(),
 		// alignment per-slide: 'center' (canon-default) И отсутствие =
 		// items-center text-center литерала about.astro:48-49.
 		alignCls:
@@ -220,7 +253,7 @@ const paddingStyle = p.padding
 						)}
 						{/* Контент about-полотна: вертикальный центр, кикер → заголовок → CTA
 						    (gap-8 / gap-2.5 — литерал about.astro:48-49). */}
-						<div class={`absolute inset-0 z-10 flex items-center ${s.posCls}`}>
+						<div class={`absolute inset-0 z-10 flex ${s.posCls}`}>
 							<div class={`flex flex-col gap-8 text-white ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
 								<div class={`flex flex-col gap-2.5 ${s.alignCls}`}>
 									{s.subtitle && (

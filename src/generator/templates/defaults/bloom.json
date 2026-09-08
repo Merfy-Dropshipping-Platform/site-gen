@@ -50,10 +50,16 @@
           "type": "Hero",
           "props": {
             "id": "Hero-1",
-            "variant": "split",
+            "variant": "split-bloom",
             "title": "ИСКУССТВО ЗАБОТЫ О СЕБЕ",
             "subtitle": "Уходовая косметика, которая дарит здоровье и сияние твоей коже и волосам",
-            "image": { "url": "/main-image.png", "alt": "Bloom hero" },
+            "image": {
+              "url": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp",
+              "alt": "Bloom hero"
+            },
+            "backgroundImages": {
+              "url1": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp"
+            },
             "cta": { "text": "Начать ритуал", "href": "/catalog" },
             "colorScheme": "scheme-3",
             "padding": { "top": 0, "bottom": 0 }
@@ -95,12 +101,35 @@
           "props": {
             "id": "Gallery-1",
             "heading": { "text": "НАШИ КОЛЛЕКЦИИ", "size": "small" },
-            "text": { "content": "", "size": "small" },
+            "text": {
+              "content": "Стиль для каждой ситуации - найдите свой в каталоге.",
+              "size": "small"
+            },
             "displayMode": "products",
             "columnsCount": 3,
             "imageView": "square",
             "colorScheme": "scheme-3",
-            "padding": { "top": 120, "bottom": 120 }
+            "padding": { "top": 120, "bottom": 120 },
+            "items": [
+              {
+                "id": "item-1",
+                "type": "image",
+                "url": "https://minio.merfy.ru/product-images/5065b5f2-813a-482f-955f-79d59961781d.webp",
+                "alt": "Изображение"
+              },
+              {
+                "id": "item-2",
+                "type": "image",
+                "url": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp",
+                "alt": "Изображение"
+              },
+              {
+                "id": "item-3",
+                "type": "image",
+                "url": "https://minio.merfy.ru/product-images/c35a2f11-cc45-4e3c-9c1a-6fec10024a30.webp",
+                "alt": "Изображение"
+              }
+            ]
           }
         },
         {
@@ -112,19 +141,19 @@
                 "id": "feat-1",
                 "heading": "Натуральные ингредиенты",
                 "text": "Только органические компоненты без парабенов и сульфатов.",
-                "imageUrl": ""
+                "imageUrl": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp"
               },
               {
                 "id": "feat-2",
                 "heading": "Эксперты рекомендуют",
                 "text": "Формулы разработаны совместно с дерматологами.",
-                "imageUrl": ""
+                "imageUrl": "https://minio.merfy.ru/product-images/52a3d7a3-c4ef-4cee-839a-9c3cc4138d5f.webp"
               },
               {
                 "id": "feat-3",
                 "heading": "Качественный состав",
                 "text": "Проверенная эффективность и бережный уход каждый день.",
-                "imageUrl": ""
+                "imageUrl": "https://minio.merfy.ru/product-images/5065b5f2-813a-482f-955f-79d59961781d.webp"
               }
             ],
             "displayColumns": 3,
@@ -150,16 +179,13 @@
               "links": [
                 { "label": "Каталог", "href": "/catalog" },
                 { "label": "О нас", "href": "/about" },
+                { "label": "Доставка", "href": "/delivery" },
                 { "label": "Контакты", "href": "/contacts" }
               ]
             },
             "informationColumn": {
               "title": "Информация",
-              "links": [
-                { "label": "Доставка", "href": "#" },
-                { "label": "Возврат", "href": "#" },
-                { "label": "Условия", "href": "#" }
-              ]
+              "links": []
             },
             "socialColumn": {
               "title": "Контакты",

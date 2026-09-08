@@ -1,9 +1,21 @@
 {
   "content": [
-    { "type": "CheckoutHeader", "props": { "id": "CheckoutHeader-1" } },
-    { "type": "CheckoutLayout", "props": { "id": "CheckoutLayout-1" } },
-    { "type": "CheckoutForm", "props": { "id": "CheckoutForm-1" } },
-    { "type": "CheckoutSummary", "props": { "id": "CheckoutSummary-1" } }
+    {
+      "type": "CheckoutHeader",
+      "props": { "id": "CheckoutHeader-1", "siteTitle": "Satin", "logo": "/logo.svg", "colorScheme": "scheme-2" }
+    },
+    {
+      "type": "CheckoutLayout",
+      "props": { "id": "CheckoutLayout-1", "colorScheme": "scheme-2" }
+    },
+    {
+      "type": "CheckoutForm",
+      "props": { "id": "CheckoutForm-1", "colorScheme": "scheme-2" }
+    },
+    {
+      "type": "CheckoutSummary",
+      "props": { "id": "CheckoutSummary-1", "colorScheme": "scheme-2" }
+    }
   ],
   "root": { "props": { "title": "Оформление заказа" } },
   "zones": {}

@@ -156,6 +156,10 @@ describe('PreviewService', () => {
       expect(html).not.toContain("HOT_UPDATE_ALLOWED_THEMES");
       // Endpoint URL для fetch (через api-gateway proxy)
       expect(html).toContain('/preview/block');
+      // Type comes from Puck (`Header`), never id.split('-')[0] (`header` from header-satin).
+      expect(html).toContain('LAST_TYPES');
+      expect(html).toContain('ev.data.blockType');
+      expect(html).not.toContain("var blockType = blockId.split('-')[0]");
     });
 
     it('hot-update доступен для всех тем (allowlist удалён, 121b720)', async () => {

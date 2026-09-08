@@ -65,7 +65,26 @@ const { rows: rowsProp, compact = false } = Astro.props;
 // Курировано? — мерчант передал ряды (about.astro). Тогда рендерим реальные
 // данные без изменений; иначе (index.astro: <CollectionRows /> без пропсов) —
 // плейсхолдер пустого состояния (НЕ мок-демо верстальщика).
-const hasRealRows = Array.isArray(rowsProp) && rowsProp.length > 0;
+function slotImage(url: unknown): string {
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
+function slotSet(raw: unknown): boolean {
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+const hasRealRows =
+	Array.isArray(rowsProp) &&
+	rowsProp.some((r) => {
+		const heading = r?.title || "";
+		const image = r?.image || "";
+		const btn = r?.ctaLabel || "";
+		return !!slotImage(image) || slotSet(heading) || slotSet(btn);
+	});
 const rows: Row[] = hasRealRows ? rowsProp! : PLACEHOLDER_ROWS;
 
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния секции (тип

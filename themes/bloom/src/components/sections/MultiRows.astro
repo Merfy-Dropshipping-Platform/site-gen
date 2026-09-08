@@ -4,6 +4,7 @@
 // в чередующейся раскладке по паттерну ImageWithText (медиа галереи §4,
 // типографика §1, розовый pill §3, сетка §2); процесс-эталон — rose MultiRows
 // (T16). Схема полей = packages/theme-base/blocks/MultiRows/MultiRows.puckConfig.ts.
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -138,12 +139,15 @@ const alignCls =
 // токены, CTA Philosophy); outlined = бордер цвета заливки на прозрачном.
 const btnBase =
 	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95";
+// puckConfig: primary | secondary; secondary = белый pill (white branch).
+const rowButtonStyle =
+	p.buttonStyle === "secondary" ? "white" : p.buttonStyle;
 const btnCls =
-	p.buttonStyle === "outlined"
+	rowButtonStyle === "outlined"
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent text-[rgb(var(--color-button-bg,227_142_159))]`
-		: p.buttonStyle === "white"
+		: rowButtonStyle === "white"
 			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-			: p.buttonStyle === "black"
+			: rowButtonStyle === "black"
 				? `${btnBase} bg-[rgb(var(--color-text,0_0_0))] text-[rgb(var(--color-bg,255_255_255))]`
 				: `${btnBase} bg-[rgb(var(--color-button-bg,227_142_159))] text-[rgb(var(--color-button-text,255_255_255))]`;
 
@@ -187,9 +191,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
+					set:html={inlineFormat(heading)}
+				/>
 			)
 		}
 		<ul class={`flex w-full flex-col gap-10${containerSchemeCls}`} role="list">
@@ -219,9 +222,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							{r.heading && (
 								<h3
 									class={`font-urbanist ${r.headingCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]`}
-								>
-									{r.heading}
-								</h3>
+									set:html={inlineFormat(r.heading)}
+								/>
 							)}
 							{r.text && (
 								<div

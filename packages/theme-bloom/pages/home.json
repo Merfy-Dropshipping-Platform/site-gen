@@ -60,11 +60,11 @@
       "type": "Hero",
       "props": {
         "id": "Hero-1",
-        "variant": "split",
+        "variant": "split-bloom",
         "title": "Искусство заботы о себе",
         "subtitle": "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам",
         "image": {
-          "url": "/main-image.png",
+          "url": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp",
           "alt": "Bloom hero"
         },
         "cta": {
@@ -77,7 +77,7 @@
           "bottom": 0
         },
         "backgroundImages": {
-          "url1": "/images/hero-photo.webp"
+          "url1": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp"
         }
       }
     },
@@ -231,6 +231,10 @@
               "href": "/about"
             },
             {
+              "label": "Доставка",
+              "href": "/delivery"
+            },
+            {
               "label": "Контакты",
               "href": "/contacts"
             }
@@ -238,20 +242,7 @@
         },
         "informationColumn": {
           "title": "Информация",
-          "links": [
-            {
-              "label": "Доставка",
-              "href": "#"
-            },
-            {
-              "label": "Возврат",
-              "href": "#"
-            },
-            {
-              "label": "Условия",
-              "href": "#"
-            }
-          ]
+          "links": []
         },
         "socialColumn": {
           "title": "Контакты",

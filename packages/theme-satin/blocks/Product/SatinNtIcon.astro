@@ -1,0 +1,74 @@
+---
+/**
+ * RoseNtIcon (порт из themes/rose/src/components/icons/RoseNtIcon.astro
+ * + components/ui/NtIcon.astro + lib/icon-paths.ts, сведённые в один
+ * self-contained sibling).
+ *
+ * Зачем свести: блок-папка override-темы должна быть автономной —
+ * compile-astro-blocks.mjs (превью, Container API) НЕ умеет резолвить
+ * bare-NPM импорты (@merfy-dropshipping-platform/...) и пути за пределы
+ * block-папки (../../lib/...). Поэтому карта иконок и резолв URL живут
+ * прямо здесь, импортов наружу нет.
+ *
+ * Иконки берутся из /icons/<file>.svg (статика темы, public/icons/* —
+ * копируется build pipeline). base="/" на live storefront, поэтому
+ * withBase-префикс не нужен.
+ */
+
+// Карта имён иконок DS → файлы в /public/icons. Зеркалит NT_ICON_FILES из
+// design-systems-theme/src/lib/icon-paths.ts (каталог использует только
+// dropdown-chevron, остальные оставлены для совместимости подписи name).
+const NT_ICON_FILES: Record<string, string> = {
+  "search-lg": "search-lg.svg",
+  "search-sm": "search-sm.svg",
+  cart: "cart.svg",
+  "cart-sm": "cart-sm.svg",
+  user: "user.svg",
+  "user-sm": "user-sm.svg",
+  "dropdown-chevron": "dropdown-chevron.svg",
+  "dropdown-collapsed": "dropdown-collapsed.svg",
+  "dropdown-expanded": "dropdown-expanded.svg",
+  "nav-underline": "nav-underline.svg",
+  "menu-burger": "menu-burger.svg",
+  "menu-close": "menu-close.svg",
+  favourite: "favourite.svg",
+  "icon-filter": "icon-filter.svg",
+  "arrow-left": "arrow-left.svg",
+  "arrow-right": "arrow-right.svg",
+  "arrow-slide-left": "arrow-slide-left.svg",
+  "arrow-slide-right": "arrow-slide-right.svg",
+  share: "share.svg",
+  plus: "plus.svg",
+  minus: "minus.svg",
+  delete: "delete.svg",
+  "radio-unchecked": "radio-unchecked.svg",
+  "radio-checked": "radio-checked.svg",
+  "scroll-track-vertical": "scroll-track-vertical.svg",
+};
+
+interface Props {
+  name: string;
+  class?: string;
+  iconBasePath?: string;
+  sizeClass?: string;
+}
+
+const {
+  name,
+  class: className = "",
+  iconBasePath = "/icons",
+  sizeClass = "size-[24px]",
+} = Astro.props as Props;
+
+const file = NT_ICON_FILES[name] ?? `${name}.svg`;
+const src = `${iconBasePath.replace(/\/$/, "")}/${file}`;
+---
+
+<img
+  src={src}
+  alt=""
+  class={`shrink-0 object-contain pointer-events-none ${sizeClass} ${className}`}
+  width="24"
+  height="24"
+  aria-hidden="true"
+/>

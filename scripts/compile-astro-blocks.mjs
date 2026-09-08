@@ -256,6 +256,16 @@ function rewriteRelativeImports(source, pkg, blockName) {
       return `${prefix}./${pkg}__${otherBlock}__${otherBlock}.mjs${suffix}`;
     },
   );
+  // Theme-override re-exports of base puckConfig/classes/tokens:
+  // `from '../../../theme-base/blocks/Product/Product.puckConfig'`
+  // → `./theme-base__Product__Product.puckConfig.mjs` (flat dist/astro-blocks).
+  // Without this, satin/rose Catalog-style re-exports 500 the puck-config API.
+  out = out.replace(
+    /(from\s+["'])(?:\.\.\/)+theme-base\/blocks\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_.-]+?)(\.ts)?(["'])/g,
+    (_match, prefix, block, modName, _tsExt, suffix) => {
+      return `${prefix}./theme-base__${block}__${modName}.mjs${suffix}`;
+    },
+  );
   return out;
 }
 

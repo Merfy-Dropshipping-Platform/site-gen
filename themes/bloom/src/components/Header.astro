@@ -1,5 +1,7 @@
 ---
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
+import NavItem from "./NavItem.astro";
 import { SITE_TITLE } from "../consts";
 import { DEFAULT_CATEGORY_HREF, categoryPages, getCategoryBySlug } from "../data/categories";
 import { getProductById } from "../data/products";
@@ -7,6 +9,7 @@ import { getProductById } from "../data/products";
 interface NavLink {
 	label: string;
 	href: string;
+	submenu?: NavLink[];
 	match?: (pathname: string) => boolean;
 }
 
@@ -34,20 +37,44 @@ const defaultNav: NavLink[] = [
 // ОЖИВЛЕНИЕ (Фаза B, объём rose Header): канон-схема theme-base Header.puckConfig —
 // siteTitle, navigationLinks, logo, logoPosition, stickiness, padding. Тело ниже —
 // verbatim верстальщика; дефолтные ветки тернарников = прежним строкам байт-в-байт.
+interface Props {
+	promo?: boolean;
+}
+const { promo = true } = Astro.props as Props & Record<string, unknown>;
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+const mapNavLink = (l: any): NavLink => ({
+	label: l.label ?? l.text ?? "",
+	href: l.href ?? l.link ?? "/",
+	submenu: Array.isArray(l.submenu) ? l.submenu.map(mapNavLink) : undefined,
+});
 const nav: NavLink[] =
 	Array.isArray(p.navigationLinks) && p.navigationLinks.length > 0
-		? p.navigationLinks.map((l: any) => ({ label: l.label ?? l.text ?? "", href: l.href ?? l.link ?? "/" }))
+		? p.navigationLinks.map(mapNavLink)
 		: defaultNav;
 
-// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img> ВЫСОТОЙ var(--size-logo-width) (семантика канона: слайдер «Размер» задаёт
-// высоту лого) в mobile И desktop. Дефолт = лого верстальщика /icons/Bloom.svg
-// h-[19px] литералом, фоллбек токена = родные 19px.
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
+// Канон promoBar (как theme-base Header / flux Header.puckConfig).
+const promoBar = p.promoBar as
+	| { enabled?: boolean | string; text?: string; linkText?: string; linkHref?: string }
+	| undefined;
+const promoEnabled = promoBar?.enabled === true || promoBar?.enabled === "true";
+const promoText = (promoBar?.text || "").trim();
+const promoLinkText = (promoBar?.linkText || "").trim();
+const promoLinkHref = promoBar?.linkHref || "/";
+const showPromoBar = promo && promoEnabled && promoText.length > 0;
+
+// Канон logo: placeholder «/logo.svg» не существует на сторфронте (404) → не рендерим
+// битую картинку; реальные загрузки лежат в /branding/.../logo-*.svg.
+const rawLogo = typeof p.logo === "string" ? p.logo.trim() : "";
+let logoPath = "";
+try {
+	logoPath = new URL(rawLogo, "https://_merfy_").pathname;
+} catch {
+	logoPath = rawLogo;
+}
+const logo = rawLogo && logoPath !== "/logo.svg" ? rawLogo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-contain";
 
 // Канон logoPosition: 'top-center' (canon-default) → TWO rows: row1=grid [search|logo|icons],
@@ -69,7 +96,7 @@ const rootCls =
 		? "sticky top-0 z-50 w-full"
 		: stickiness === "scroll-up"
 			? "sticky top-0 z-50 w-full transition-transform duration-300"
-			: "w-full";
+			: "relative z-50 w-full";
 const SCROLL_UP_JS = [
 	"(function(){",
 	"var root=document.querySelector('[data-bloom-sticky=\"scroll-up\"]');",
@@ -120,6 +147,13 @@ const isMegaMenu = menuType === "mega-menu";
 const isSidebar = menuType === "sidebar";
 const megaLinkCls = "";
 
+const navLinkCls = [
+	"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+	megaLinkCls,
+]
+	.filter(Boolean)
+	.join(" ");
+
 // Канон menuColorScheme: опциональная отдельная цветовая схема для десктопного <nav>.
 // При задании — добавляем класс color-scheme-<X> к обёртке <nav>.
 const menuColorScheme = typeof p.menuColorScheme === "string" ? p.menuColorScheme : "";
@@ -143,13 +177,13 @@ const headerHeartSvg =
 	data-bloom-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
 >
 	{
-		/* Встроенная полоса объявления — ТОЛЬКО статик-режим (без props.id):
-		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
-		!id && (
-			<div class="w-full bg-[#E38E9F] py-2 text-center" role="region" aria-live="polite" data-bloom-announcement>
-				<p class="font-inter text-[12px] font-normal uppercase leading-normal text-white">
-					Акция на новую коллекцию. Узнать больше
-				</p>
+		showPromoBar && (
+			<div data-bloom-announcement>
+				<NtPromoBanner
+					text={promoText}
+					link={promoLinkHref}
+					linkText={promoLinkText || undefined}
+				/>
 			</div>
 		)
 	}
@@ -319,26 +353,14 @@ const headerHeartSvg =
 							<nav
 								class:list={["flex w-full flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
+								data-nav-inline
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
 								data-puck-subsection-field="navigationLinks"
 							>
-								{nav.map((link) => {
-									const active = isActive(link);
-									return (
-										<a
-											href={link.href}
-											aria-current={active ? "page" : undefined}
-											class:list={[
-												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
-												megaLinkCls,
-											]}
-										>
-											{link.label}
-										</a>
-									);
-								})}
+								{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 							</nav>
 						</>
 					) : (
@@ -431,26 +453,14 @@ const headerHeartSvg =
 							<nav
 								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
+								data-nav-inline
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
 								data-puck-subsection-field="navigationLinks"
 							>
-								{nav.map((link) => {
-									const active = isActive(link);
-									return (
-										<a
-											href={link.href}
-											aria-current={active ? "page" : undefined}
-											class:list={[
-												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
-												megaLinkCls,
-											]}
-										>
-											{link.label}
-										</a>
-									);
-								})}
+								{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 							</nav>
 						</>
 					)}
@@ -466,26 +476,14 @@ const headerHeartSvg =
 							<nav
 								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
+								data-nav-inline
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
 								data-puck-subsection-field="navigationLinks"
 							>
-								{nav.map((link) => {
-									const active = isActive(link);
-									return (
-										<a
-											href={link.href}
-											aria-current={active ? "page" : undefined}
-											class:list={[
-												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
-												megaLinkCls,
-											]}
-										>
-											{link.label}
-										</a>
-									);
-								})}
+								{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 							</nav>
 
 							<a href="/" class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center hover:opacity-90" aria-label={siteTitle}>
@@ -588,26 +586,14 @@ const headerHeartSvg =
 							<nav
 								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
+								data-nav-inline
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="997"
 								data-puck-subsection-field="navigationLinks"
 							>
-								{nav.map((link) => {
-									const active = isActive(link);
-									return (
-										<a
-											href={link.href}
-											aria-current={active ? "page" : undefined}
-											class:list={[
-												"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
-												active && "underline decoration-[rgb(var(--color-accent,227_142_159))] underline-offset-4",
-												megaLinkCls,
-											]}
-										>
-											{link.label}
-										</a>
-									);
-								})}
+								{nav.map((link) => (
+									<NavItem link={link} menuType={menuType} linkClass={navLinkCls} active={isActive(link)} />
+								))}
 							</nav>
 
 							<div class="flex flex-1 items-center justify-end gap-4">
@@ -786,13 +772,17 @@ const headerHeartSvg =
 			</div>
 		)}
 
-		<nav class="mt-10 flex flex-col gap-5" aria-label="Основное меню">
+		<nav class="mt-10 flex flex-col gap-5" aria-label="Основное меню" data-nav-drawer>
 			{nav.map((link) => {
 				const active = isActive(link);
+				const subs = Array.isArray(link.submenu)
+					? link.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+					: [];
 				return (
-					<div class="flex flex-col gap-1">
+					<div class="flex flex-col gap-3">
 						<a
 							href={link.href}
+							aria-current={active ? "page" : undefined}
 							class:list={[
 								"font-inter text-[14px] font-light leading-normal",
 								active ? "text-[#000000]" : "text-[#999999]",
@@ -800,7 +790,38 @@ const headerHeartSvg =
 						>
 							{link.label}
 						</a>
-						{active && <div class="h-px w-[54px] bg-[#e38e9f]" aria-hidden="true"></div>}
+						{active && subs.length === 0 && <div class="h-px w-[54px] bg-[#e38e9f]" aria-hidden="true"></div>}
+						{subs.length > 0 && (
+							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4">
+								{subs.map((c2) => {
+									const kids2 = Array.isArray(c2.submenu)
+										? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
+										: [];
+									return (
+										<div class="flex flex-col gap-2">
+											<a
+												href={c2.href}
+												class="font-inter text-[13px] font-light leading-normal text-[#999999] transition-colors hover:text-[#000000]"
+											>
+												{c2.label}
+											</a>
+											{kids2.length > 0 && (
+												<div class="flex flex-col gap-2 pl-4">
+													{kids2.map((k) => (
+														<a
+															href={k.href}
+															class="font-inter text-[12px] font-light leading-normal text-[#999999] transition-colors hover:text-[#000000]"
+														>
+															{k.label}
+														</a>
+													))}
+												</div>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						)}
 					</div>
 				);
 			})}

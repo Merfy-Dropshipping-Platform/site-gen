@@ -9,6 +9,18 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон heading: string | { text, alignment, size }. Пустое состояние секции
 // (мерчант не задал заголовок) = ДОСЛОВНЫЙ Figma-плейсхолдер 1:19335
@@ -16,8 +28,8 @@ const id = p.id;
 // курсе наших новостей» (F:71). Когда мерчант вводит свой заголовок — он
 // выигрывает (фоллбек ниже срабатывает лишь при пустых данных).
 // Манера satin сохранена: font-logo 14 400 uppercase leading-normal, токен 0_0_0.
-const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "Подпишитесь на нашу рассылку";
 // Лестница §9 «Заголовок рассылки» (база-литерал 14 = medium): small 12, large 17.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
@@ -30,10 +42,12 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-no
 // description не рендерился; Figma требует его как плейсхолдер). Свой текст
 // мерчанта выигрывает (?? fallback срабатывает лишь при пустых данных).
 // Манера satin: body-роль §1 Arsenal 16 light muted; лестница body §9: small 14, large 19.
-const description =
+const descriptionRaw =
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
-	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
+	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined);
+const description = contentSet(["description", "text"], descriptionRaw) && descriptionRaw
+	? descriptionRaw
+	: "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 const descSize = p.text?.size;
 const descSizeCls =
 	descSize === "small" ? "text-[14px]" : descSize === "large" ? "text-[19px]" : "text-[16px]";
@@ -52,7 +66,9 @@ const placeholder =
 // Непустой текст → текстовая кнопка-прямоугольник h-8 px-4 Arsenal 12 uppercase
 // (манера кнопки «Найти», Header.astro:165) на токенах кнопки-1.
 const buttonText =
-	typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : "Кнопка";
+	contentSet("buttonText", p.buttonText) && typeof p.buttonText === "string" && p.buttonText.trim()
+		? p.buttonText
+		: "Кнопка";
 const inlineTextBtnCls =
 	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95";
 // Тёмная md-кнопка (роль satin-button-md DARK, g:106-126,155-159) пересобрана

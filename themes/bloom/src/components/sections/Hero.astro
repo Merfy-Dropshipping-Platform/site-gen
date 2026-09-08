@@ -1,6 +1,7 @@
 ---
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
+import { inlineFormat } from "../../lib/rich-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim,
@@ -9,12 +10,20 @@ import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 // Поддержаны nested (Pupa) и legacy flat-пропсы.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const title = p.heading?.text ?? p.title ?? "Искусство заботы о себе";
+// Пустая строка после coerce/adapt ≠ «не задано» для ?? — trim → фолбэк верстальщика.
+const pickText = (...vals: unknown[]) => {
+	for (const v of vals) {
+		if (typeof v === "string" && v.trim()) return v;
+	}
+	return undefined;
+};
+const title =
+	pickText(p.heading?.text, p.title) ?? "Искусство заботы о себе";
 const subtitle =
-	p.text?.content ??
-	p.subtitle ??
+	pickText(p.text?.content, p.subtitle) ??
 	"Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам";
-const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "Начать ритуал";
+const ctaText =
+	pickText(p.primaryButton?.text, p.cta?.text, p.ctaText) ?? "Начать ритуал";
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	p.primaryButton?.link ??
@@ -87,20 +96,23 @@ const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
 //     родных #E38E9F по §7).
 //   заголовок large 18/20 → medium 15/17 → small 13/14
 //   текст     large 14/16 → medium 12/14 → small 10/11
+// Канон rose: текст ПОВЕРХ фото = белый. Светлая scheme-3 (--color-heading чёрный)
+// + затемнение → текст «пропадает». Не читаем scheme-токен на фото: !text-white.
+// Контейнер (boxed) сам переключает на тёмный через [&_h1]/[&_p].
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[14px]"
+		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none !text-white md:text-[14px]"
 		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
+			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none !text-white md:text-[17px]"
+			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none !text-white md:text-[20px]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
-		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[11px]"
+		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] !text-white md:text-[11px]"
 		: textSize === "medium"
-			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
-			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
+			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] !text-white md:text-[14px]"
+			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] !text-white md:text-[16px]";
 // ОЖИВЛЕНИЕ (F-002): силуэт Hero диктует ПОБРЕЙКПОИНТНАЯ aspect-ratio-лесенка
 // верстальщика (нормативный визуал) — это ДЕФОЛТ-геометрия. Ранее порт заменил её
 // на size-driven min-h-лесенку, из-за чего силуэт секции менялся на каждом брейкпоинте
@@ -208,9 +220,16 @@ const textAlignCls =
 	p.alignment === "center" ? " text-center" : p.alignment === "right" ? " text-right" : "";
 const buttonsJustifyCls =
 	p.alignment === "center" ? "justify-center" : p.alignment === "right" ? "justify-end" : "justify-start";
-// Верхний отступ контейнера нужен только при верхней/средней позиции (низ — литерал).
-const needsTopPad = vPos === "top" || vPos === "middle";
-const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
+const vPadCls =
+	vPos === "middle"
+		? "py-8 md:py-12 xl:py-20"
+		: vPos === "top"
+			? "pt-8 pb-8 md:pt-12 md:pb-12 xl:pt-20 xl:pb-20"
+			: "pb-8 md:pb-12 xl:pb-20";
+const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 md:px-20 2xl:px-[300px] ${vPadCls}`;
+const buttonsCls = secondaryText
+	? `hero-animate-3 inline-grid w-full max-w-[540px] [grid-template-columns:1fr_1fr] items-stretch gap-3 ${buttonsJustifyCls}`
+	: `hero-animate-3 ${buttonsJustifyCls}`;
 
 // Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
 // заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
@@ -227,9 +246,10 @@ const ctaBtnCls = p.buttonStyle === "outlined" ? outlinedCls : solidCls;
 // outlined («вторая кнопка не меняла заливку»). Bloom-манера (font-inter/100px) цела.
 const secondaryBtnCls = p.buttonStyle === "outlined" ? solidCls : outlinedCls;
 
-// Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
+// Канон padding {top,bottom} — clamp на мобиле (паритет rose T14).
+const clampPad = (v: number) => `clamp(20px,7vw,${v}px)`;
 const paddingStyle = p.padding
-	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	? `padding-top:${clampPad(p.padding.top)};padding-bottom:${clampPad(p.padding.bottom)};`
 	: undefined;
 ---
 
@@ -268,17 +288,15 @@ const paddingStyle = p.padding
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
-						>
-							{PH_LABEL}
-						</h1>
+							set:html={inlineFormat(PH_LABEL)}
+						/>
 						<p
 							class="font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"
-						>
-							{PH_HELPER}
-						</p>
+							set:html={inlineFormat(PH_HELPER)}
+						/>
 					</div>
 					<a
 						href={ctaLink}
@@ -343,7 +361,18 @@ const paddingStyle = p.padding
 		overlayN > 0 && (
 			<div
 				class="pointer-events-none absolute inset-0 z-[1] bg-black"
-				style={`opacity:${overlayN / 100}`}
+				style={`background-color:#000;opacity:${overlayN / 100}`}
+			/>
+		)
+	}
+
+	{/* Подложка-градиент как у плейсхолдера / rose: читаемость белого текста
+	    на реальном фото. Без неё при смене плейсхолдер→фото «пропадала подложка». */}
+	{
+		Boolean(String(backgroundImage).trim() || backgroundImage2) && (
+			<div
+				class="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 to-black/10"
+				aria-hidden="true"
 			/>
 		)
 	}
@@ -371,24 +400,22 @@ const paddingStyle = p.padding
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
-					>
-						{title}
-					</h1>
+						set:html={inlineFormat(title)}
+					/>
 					<p
 						class={subtitleCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
-					>
-						{subtitle}
-					</p>
+						set:html={inlineFormat(subtitle)}
+					/>
 				</div>
 				{
 					secondaryText ? (
-						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls}`}>
+						<div class={buttonsCls}>
 							<a
 								href={ctaLink}
-								class={ctaBtnCls}
+								class={`${ctaBtnCls} w-full justify-center`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
 								data-puck-subsection-field="primaryButton"
@@ -397,7 +424,7 @@ const paddingStyle = p.padding
 							</a>
 							<a
 								href={secondaryLink}
-								class={secondaryBtnCls}
+								class={`${secondaryBtnCls} w-full justify-center`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"

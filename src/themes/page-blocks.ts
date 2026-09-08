@@ -2,6 +2,9 @@ import type { Logger } from '@nestjs/common';
 import { getThemeManifest } from './theme-manifest-loader';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
+import { normalizeMultiRowsStoredProps } from '../../packages/theme-base/blocks/MultiRows/MultiRows.puckConfig';
+import { normalizeMultiColumnsStoredProps } from '../../packages/theme-base/blocks/MultiColumns/MultiColumns.puckConfig';
+import { normalizeVideoStoredProps } from '../../packages/theme-base/blocks/Video/Video.puckConfig';
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.
@@ -265,6 +268,21 @@ export function adaptLegacyProps(
       coerceGenericLegacyProps(out);
       coercePublicationsProps(out);
       break;
+    case 'MultiRows':
+      coerceGenericLegacyProps(out);
+      return normalizeMultiRowsStoredProps(out) as Record<string, unknown>;
+    case 'MultiColumns':
+      coerceGenericLegacyProps(out);
+      return normalizeMultiColumnsStoredProps(out) as Record<string, unknown>;
+    case 'Video':
+      coerceGenericLegacyProps(out);
+      return normalizeVideoStoredProps(out) as Record<string, unknown>;
+    case 'Newsletter':
+      coerceGenericLegacyProps(out);
+      if (typeof out.alignment === 'string' && out.position === undefined) {
+        out.position = out.alignment;
+      }
+      break;
     case 'Slideshow':
       return normalizeSlideshowProps(out);
     default:
@@ -459,8 +477,10 @@ function coerceHeroProps(
   // padding: normalise only when present; absent → undefined lets blockDefaults win.
   // size: same — absent → theme manifest / Astro default applies.
   // overlay: convert legacy overlayOpacity float only when the source field is present.
-  if (typeof out.title !== 'string') out.title = '';
-  if (typeof out.subtitle !== 'string') out.subtitle = '';
+  // Не затираем отсутствующий title/subtitle пустой строкой — Astro Hero ждёт
+  // undefined, чтобы сработал фолбэк верстальщика («Искусство заботы…»).
+  if (typeof out.title === 'string' && !out.title.trim()) delete out.title;
+  if (typeof out.subtitle === 'string' && !out.subtitle.trim()) delete out.subtitle;
   if (!out.image) out.image = { url: '', alt: '' };
   if (!out.cta) out.cta = { text: '', href: '#' };
   // overlay: numeric 0-100. legacy overlayOpacity may be 0..1 float.
@@ -491,6 +511,18 @@ function coerceHeaderProps(out: Record<string, unknown>): void {
 }
 
 function coercePopularProductsProps(out: Record<string, unknown>): void {
+  const headingEnvelope = isPlainObject(out.heading)
+    ? (out.heading as Record<string, unknown>)
+    : null;
+  if (!isHeadingSize(out.headingSize) && isHeadingSize(headingEnvelope?.size)) {
+    out.headingSize = headingEnvelope.size;
+  }
+  const textEnvelope = isPlainObject(out.text)
+    ? (out.text as Record<string, unknown>)
+    : null;
+  if (!isHeadingSize(out.textSize) && isHeadingSize(textEnvelope?.size)) {
+    out.textSize = textEnvelope.size;
+  }
   // T13: heading в схеме PopularProducts — union (строка | {text, size,
   // alignment}); Popular.astro читает `p.headingSize ?? p.heading?.size`.
   // Раньше envelope всегда плющился в строку и size терялся. Плющим только
@@ -567,11 +599,23 @@ function coerceImageWithTextProps(
   out: Record<string, unknown>,
   publicUrl: string | null,
 ): void {
-  // heading: {text, enabled} → flat string
+  // heading: {text, size} → flat string + top-level headingSize (ContactForm parity)
+  if (isPlainObject(out.heading)) {
+    const env = out.heading as Record<string, unknown>;
+    if (typeof env.size === 'string' && out.headingSize === undefined) {
+      out.headingSize = env.size;
+    }
+  }
   const h = unwrapTextSize(out.heading);
   if (h.present) out.heading = h.value;
   else if (typeof out.heading !== 'string') out.heading = '';
-  // text: {content, enabled} → flat string
+  // text: {content, size} → flat string + top-level textSize
+  if (isPlainObject(out.text)) {
+    const env = out.text as Record<string, unknown>;
+    if (typeof env.size === 'string' && out.textSize === undefined) {
+      out.textSize = env.size;
+    }
+  }
   const t = unwrapTextSize(out.text);
   if (t.present) out.text = t.value;
   else if (typeof out.text !== 'string') out.text = '';
@@ -689,6 +733,15 @@ function coerceCollectionsProps(
     }
     if (h.present) out.heading = h.value;
   }
+  if (isPlainObject(out.subtitle)) {
+    const env = out.subtitle as Record<string, unknown>;
+    if (typeof env.size === 'string' && out.subtitleSize === undefined) {
+      out.subtitleSize = env.size;
+    }
+    if (typeof env.content === 'string') {
+      out.subtitle = env.content;
+    }
+  }
   if (typeof out.subtitle !== 'string') out.subtitle = '';
   if (typeof out.columnsCount === 'number' && !out.columns) {
     out.columns = out.columnsCount;
@@ -773,6 +826,8 @@ function rewriteAssetUrl(url: string, publicUrl: string | null): string {
   if (!publicUrl) return url;
   if (!url.startsWith('/')) return url;
   if (url.startsWith('//')) return url;
+  if (url.startsWith('/placeholders/')) return url;
+  if (url.startsWith('/__theme/')) return url;
   if (!ASSET_EXT_RE.test(url)) return url;
   const origin = publicUrl.replace(/\/$/, '');
   return origin + url;

@@ -4,20 +4,18 @@ import Header from "../components/Header.astro";
 import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
 import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
-import BloomCartAddedModal from "../components/cart/BloomCartAddedModal.astro";
-import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+import StorefrontRuntime from "../components/StorefrontRuntime.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
 interface Props {
 	title?: string;
 	description?: string;
-	// "checkout" → минимальная шапка оформления (CheckoutHeader, Figma 1:13563);
-	// build.service патчит бренд CheckoutHeader под мерчанта на сборке сайта.
 	header?: "default" | "checkout";
+	promo?: boolean;
 }
 
-const { title, description = SITE_DESCRIPTION, header = "default" } = Astro.props;
+const { title, description = SITE_DESCRIPTION, header = "default", promo = true } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 ---
 
@@ -25,7 +23,7 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 <html lang="ru">
 	<head>
 		<BaseHead title={pageTitle} description={description} />
-		<ViewTransitions />
+		{header !== "checkout" && <ViewTransitions />}
 	</head>
 	<body class="antialiased bg-white">
 		{header === "checkout" ? (
@@ -33,12 +31,11 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 				<CheckoutHeader siteTitle={SITE_TITLE} logoMode="text" logoImage={null} rightIcon="cart" accountLink="/account" backLink="/cart" cartLink="/cart" padding={{ top: 24, bottom: 24 }} />
 			</div>
 		) : (
-			<Header />
+			<Header promo={promo} />
 		)}
 		<main>
 			<slot />
 		</main>
-		{/* Чекаут — без футера (header="checkout"), паритет с rose. */}
 		{header !== "checkout" ? (
 			<Footer />
 		) : (
@@ -46,121 +43,8 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 				<CheckoutFooterStrip siteTitle={SITE_TITLE} />
 			</div>
 		)}
-		<NtCartDrawer rootId="bloom-cart-drawer-root" eventPrefix="bloom:cart" />
-		<BloomCartAddedModal />
-		<script>
-			import { initCartUI } from "../lib/cart";
-			import { initWishlistUI } from "../lib/wishlist";
-			import { initAuthUI } from "../lib/auth";
-			initCartUI();
-			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
-			initWishlistUI();
-			// Аккаунт покупателя — красит [data-auth-link] и грузит профиль.
-			initAuthUI();
+		<StorefrontRuntime />
 
-			// Корзина-дровер тянет настройки корзины из конструктора: цветовую схему,
-			// дисклеймер и редактируемые тексты (build-глобалы __MERFY_CART_DRAWER_*).
-			const applyCartDrawerSettings = () => {
-				const w = window as unknown as {
-					__MERFY_CART_DRAWER_SCHEME__?: string;
-					__MERFY_CART_DRAWER_DISCLAIMER__?: string;
-					__MERFY_CART_DRAWER_TITLE__?: string;
-					__MERFY_CART_DRAWER_CHECKOUT__?: string;
-					__MERFY_CART_DRAWER_EMPTY__?: string;
-				};
-				const cfg = {
-					scheme: w.__MERFY_CART_DRAWER_SCHEME__,
-					disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
-					title: w.__MERFY_CART_DRAWER_TITLE__,
-					checkout: w.__MERFY_CART_DRAWER_CHECKOUT__,
-					empty: w.__MERFY_CART_DRAWER_EMPTY__,
-				};
-				if (!cfg.scheme && !cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
-				const root = document.getElementById("bloom-cart-drawer-root");
-				if (!root) return;
-				if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
-					Array.from(root.classList).forEach((c) => {
-						if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
-					});
-					root.classList.add("color-scheme-" + cfg.scheme.replace("scheme-", ""));
-				}
-				if (cfg.disclaimer) {
-					const summary = root.querySelector("[data-cart-summary]");
-					if (summary && !summary.querySelector(".cart-drawer-disclaimer")) {
-						const p = document.createElement("p");
-						p.className = "cart-drawer-disclaimer";
-						p.style.cssText =
-							"font-family:var(--font-body);font-size:14px;line-height:20px;color:rgb(var(--color-muted));margin:0 0 4px;";
-						p.textContent = cfg.disclaimer;
-						summary.insertBefore(p, summary.firstChild);
-					}
-				}
-				if (cfg.title) {
-					const h2 = root.querySelector("[data-cart-panel] h2");
-					if (h2) h2.textContent = cfg.title;
-				}
-				if (cfg.checkout) {
-					const btn = root.querySelector("[data-cart-summary] > a");
-					if (btn) btn.textContent = cfg.checkout;
-				}
-				if (cfg.empty) {
-					const emptyP = root.querySelector("[data-cart-empty] > p");
-					if (emptyP) emptyP.textContent = cfg.empty;
-				}
-			};
-			applyCartDrawerSettings();
-			document.addEventListener("astro:page-load", applyCartDrawerSettings);
-
-			// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
-			// сбрасывает express «Купить сейчас» (sessionStorage bloom:buynow) — чтобы
-			// чекаут показал корзину покупателя, а не залипший buy-now товар.
-			document.addEventListener(
-				"click",
-				(e) => {
-					const el = e.target as Element | null;
-					if (el && el.closest("[data-action='checkout']")) {
-						try { sessionStorage.removeItem("bloom:buynow"); } catch (err) {}
-					}
-				},
-				true,
-			);
-
-				// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
-				// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик
-				// панели (DS NtCartDrawer). page → /cart (live: переход; превью: <a> →
-				// nav-агент → postMessage navigate). drawer (дефолт) → панель открывается сама.
-				document.addEventListener(
-					"click",
-					(e) => {
-						const el = e.target as Element | null;
-						if (!el || !el.closest("[data-cart-open]")) return;
-						const cartType = getComputedStyle(document.documentElement)
-							.getPropertyValue("--cart-type")
-							.trim()
-							.replace(/['"]/g, "");
-						if (cartType !== "page") {
-							// drawer: открыть панель напрямую — DS NtCartDrawer отбрасывает клики с
-							// target=<svg> (`if (!(target instanceof HTMLElement)) return`), а иконка
-							// корзины это <svg> → по прямому клику дровер не открывался. closest() на
-							// svg работает, поэтому открываем сами через событие.
-							window.dispatchEvent(new CustomEvent("bloom:cart:open"));
-							return;
-						}
-						e.preventDefault();
-						e.stopImmediatePropagation();
-						if (window.self === window.top) {
-							window.location.assign("/cart");
-						} else {
-							const a = document.createElement("a");
-							a.href = "/cart";
-							document.body.appendChild(a);
-							a.click();
-							a.remove();
-						}
-					},
-					true,
-				);
-		</script>
 		<script>
 			const initScrollAnimations = () => {
 				const targets = document.querySelectorAll<HTMLElement>("[data-animate]");

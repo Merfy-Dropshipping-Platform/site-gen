@@ -52,7 +52,7 @@ export interface BloomReleaseContract {
     /** shared canonical contract (nullish precedence, Math.trunc, clamp 1..4). */
     canonical: { clampMin: number; clampMax: number; fallback: number; rounding: 'trunc' };
     /** the Bloom mapped renderer’s DIVERGENT behavior on the target ref. */
-    mappedRenderer: { maxColumns: number; maxCards: number; rounding: 'round' };
+    mappedRenderer: { maxColumns: number; maxCards: number; rounding: 'trunc' };
   };
   /** cart-drawer + preview-demo contract from the extracted helpers. */
   cartDrawer: {
@@ -85,11 +85,13 @@ const BLOOM = 'bloom';
 /** Required runtime source files named by the contract (F-037 all-open). */
 export const BLOOM_REQUIRED_RUNTIME_SOURCES: readonly string[] = [
   'themes/bloom/src/lib/cart.ts',
-  'themes/bloom/src/lib/nt-cart-bloom.ts',
+  'packages/theme-base/runtime/nt-cart.ts',
   'themes/bloom/src/lib/cart-thumb-html.ts',
   'themes/bloom/src/lib/wishlist.ts',
   'themes/bloom/src/lib/auth.ts',
   'themes/bloom/src/lib/storefront-hydrate.ts',
+  'themes/bloom/src/components/StorefrontRuntime.astro',
+  'packages/theme-bloom/blocks/Catalog/storefront-hydrate.ts',
 ];
 
 /** Build the confirmed release contract for Bloom. */
@@ -125,7 +127,7 @@ function buildContract(): BloomReleaseContract {
     cartSection: CART_SECTION_THEMES.has(BLOOM),
     publications: {
       canonical: { clampMin: 1, clampMax: 4, fallback: 3, rounding: 'trunc' },
-      mappedRenderer: { maxColumns: 6, maxCards: 12, rounding: 'round' },
+      mappedRenderer: { maxColumns: 4, maxCards: 4, rounding: 'trunc' },
     },
     cartDrawer: {
       globals: [
@@ -148,8 +150,8 @@ function buildContract(): BloomReleaseContract {
         lineItemMarker: 'preview-demo',
         previewOnly: true,
       },
-      // The contract REQUIRES the built-theme path to inject drawer globals; on
-      // the target ref it does NOT (F-053) → structural GAP.
+      // Preview + live both inject drawer globals via injectPreviewGlobals /
+      // build.service.injectGlobalsIntoDist (F-053 repaired 2026-08-29).
       requiredCallSites: { v2Sections: true, builtTheme: true, liveBuild: true },
     },
   };

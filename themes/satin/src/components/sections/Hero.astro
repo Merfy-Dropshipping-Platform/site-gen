@@ -9,6 +9,28 @@ import { SITE_TITLE } from "../../consts";
 // index.astro:17-23 зовёт секцию с ними, их рендер не меняется.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function merchantImage(keys: string | string[], url: unknown): string {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		if (merfy?.fields?.[key]?.set === false) return "";
+	}
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
 
 // ── Пустое состояние (Figma 1:19335) ────────────────────────────────────────
 // Контракт плейсхолдеров: когда мерчант НИЧЕГО не настроил (секция в дефолте),
@@ -25,47 +47,76 @@ const rawBackgroundImage =
 		: undefined) ??
 	(typeof p.backgroundImage === "string" && p.backgroundImage.trim() ? p.backgroundImage : undefined) ??
 	(typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : undefined);
-const hasMerchantTitle = typeof (p.heading?.text ?? p.title) === "string" && String(p.heading?.text ?? p.title).trim();
-const hasMerchantSubtitle =
-	typeof (p.text?.content ?? p.subtitle) === "string" && String(p.text?.content ?? p.subtitle).trim();
-// Реальные данные есть, если задано фоновое фото или собственный текст героя.
-const hasData = !!rawBackgroundImage || !!hasMerchantTitle || !!hasMerchantSubtitle;
-// Пустое состояние = инверсия hasData. Тогда секция рендерит ДОСЛОВНЫЙ
-// Figma-плейсхолдер типа «Изображение» (1:19335): пустой image-rect surface-тона
-// + overlay-лейбл «Изображение» + хелпер «Покажи и расскажи о своем товаре в одном
-// блоке» + кнопка «Кнопка». Эталон — rose Hero.astro (isEmpty-ветка). НЕ
-// split-блок верстальщика с «Заголовок»/«Поясняющий текст».
-const isEmpty = !hasData;
-// Дословные тексты Figma-плейсхолдера (тип «Изображение»).
+const rawHeadingText =
+	typeof p.heading?.text === "string"
+		? p.heading.text
+		: typeof p.title === "string"
+			? p.title
+			: "";
+const rawSubtitleText =
+	typeof p.text?.content === "string"
+		? p.text.content
+		: typeof p.subtitle === "string"
+			? p.subtitle
+			: "";
+const rawPrimaryText =
+	typeof p.primaryButton?.text === "string"
+		? p.primaryButton.text
+		: typeof p.cta?.text === "string"
+			? p.cta.text
+			: typeof p.ctaText === "string"
+				? p.ctaText
+				: "";
+const hasMerchantTitle = contentSet(["heading", "title"], rawHeadingText);
+const hasMerchantSubtitle = contentSet(["text", "subtitle"], rawSubtitleText);
+// /placeholders/ и /images/4x/* — не фото мерчанта. Пустой фон и заглушки
+// считаем отсутствием картинки → landscape empty-state, как в rose.
+const merchantBackground = merchantImage(["backgroundImage", "image"], rawBackgroundImage) || undefined;
+// Дословные тексты Figma-плейсхолдера (тип «Изображение»). Без английского
+// мока верстальщика STYLE'S WEAR — и в empty-state, и когда фото есть, а текста нет.
 const PH_LABEL = "Изображение";
 const PH_HELPER = "Покажи и расскажи о своем товаре в одном блоке";
 const PH_BUTTON = "Кнопка";
+const VERSTKA_TITLE = PH_LABEL;
+const VERSTKA_SUB = PH_HELPER;
+const VERSTKA_CTA = PH_BUTTON;
 // Контракт картиночных секций (правило 2): в пустом состоянии картинка
 // показывается ВСЕГДА — фолбэк = дизайн-ассет landscape-image.png из
 // packages/theme-base/public/placeholders (раздаётся на каждой теме как
 // /placeholders/landscape-image.png), а НЕ пустой surface-rect и НЕ мок-фото
 // героя. Паритет vanilla/rose Hero.astro empty-state.
 const PH_IMAGE = "/placeholders/landscape-image.png";
+const rawBackgroundImage2 =
+	typeof p.backgroundImages?.url2 === "string" && p.backgroundImages.url2.trim()
+		? p.backgroundImages.url2
+		: typeof p.backgroundImage2 === "string" && p.backgroundImage2.trim()
+			? p.backgroundImage2
+			: undefined;
+const merchantBackground2 = merchantImage(["backgroundImage2"], rawBackgroundImage2) || undefined;
+const hasMerchantCta = contentSet(["buttonText"], rawPrimaryText);
+const isEmpty = !merchantBackground && !merchantBackground2 && !hasMerchantTitle && !hasMerchantSubtitle;
 
 // Лейблы заданного состояния (рендер мерчанта — НЕ трогаем при наличии данных).
-const title = hasData ? (p.heading?.text ?? p.title ?? SITE_TITLE) : PH_LABEL;
-// Канон text.content — КИКЕР НАД заголовком (порядок верстальщика: subtitle перед h1).
-const subtitle = hasData
-	? (p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером")
-	: PH_HELPER;
-const ctaText = hasData ? (p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог") : PH_BUTTON;
+const title = hasMerchantTitle
+	? (p.heading?.text ?? p.title)
+	: VERSTKA_TITLE;
+const subtitle = hasMerchantSubtitle
+	? (p.text?.content ?? p.subtitle)
+	: VERSTKA_SUB;
+const ctaRaw = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText;
+const ctaText = hasMerchantCta && typeof ctaRaw === "string" && ctaRaw.trim() ? ctaRaw : VERSTKA_CTA;
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	(typeof p.primaryButton?.link === "string" ? p.primaryButton.link : undefined) ??
 	p.cta?.href ??
 	p.ctaLink ??
-	"#collections";
-// Фоновое фото рендерим ТОЛЬКО когда мерчант его задал. Пусто → image-rect
-// surface-тона (пустое состояние), без демо-фото кампании верстальщика.
-const backgroundImage = rawBackgroundImage;
+	"/catalog";
+// Фото мерчанта; нет своего (или стоит 4x верстальщика) → landscape-заглушка,
+// не кампания /images/4x/Главный_экран.png и не чёрный кадр.
+const backgroundImage = merchantBackground ?? (isEmpty ? undefined : PH_IMAGE);
 // Канон backgroundImages.url2 (+legacy backgroundImage2): фото-половина делится на
 // 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
-const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
+const backgroundImage2 = merchantBackground2;
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:
 //   • p.size — ВЫСОТА фото-половины/текст-колонки (heroHeightCls ниже). НЕ шрифт.

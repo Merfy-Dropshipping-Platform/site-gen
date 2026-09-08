@@ -5,10 +5,30 @@
 // packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
 // Смысловой маппинг: canon heading → title баннера (Kelly Slab 26/32),
 // canon text → строка-КИКЕР верстальщика НАД заголовком (ImageBanner.astro:45).
-import SatinPicture from "../img/SatinPicture.astro";
-
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
+function merchantImage(keys: string | string[], url: unknown): string {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		if (merfy?.fields?.[key]?.set === false) return "";
+	}
+	if (typeof url !== "string") return "";
+	const u = url.trim();
+	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
+	return u;
+}
 
 // КОНТРАКТ ПЛЕЙСХОЛДЕРОВ (Figma 1:19335 — пустое состояние секции, ЗАМЕНЯЕТ
 // мок-демо верстальщика). Эталон: theme-base ImageWithText.astro
@@ -31,7 +51,9 @@ const rawText =
 		: typeof p.text?.content === "string"
 			? p.text.content.trim() || undefined
 			: undefined;
-const isPlaceholder = !rawImageUrl && !rawHeading && !rawText;
+const merchantImageUrl = merchantImage("image", rawImageUrl);
+const isPlaceholder =
+	!merchantImageUrl && !contentSet("heading", rawHeading) && !contentSet("text", rawText);
 
 // Лейблы пустого состояния (контракт: заголовок секции + поясняющий текст).
 // Контракт картиночных секций (правило 2): фолбэк-картинка пустого состояния =
@@ -46,7 +68,7 @@ const PLACEHOLDER_IMAGE = "/placeholders/landscape-iwt.png";
 
 // Канон heading: string | { text, alignment, size }. С данными — реальный
 // заголовок мерчанта; пустое состояние — лейбл-плейсхолдер.
-const heading = rawHeading ?? PLACEHOLDER_HEADING;
+const heading = contentSet("heading", rawHeading) && rawHeading ? rawHeading : PLACEHOLDER_HEADING;
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -77,7 +99,7 @@ const colAlignCls =
 // плейсхолдер (НЕ мок-кикер «Новая мужская коллекция» верстальщика).
 // Лестница §9 «Кикер 16» (canon-носитель large): large/отсутствие = 16/20,
 // medium 14/17, small 11/14.
-const text = rawText ?? (isPlaceholder ? PLACEHOLDER_TEXT : "");
+const text = contentSet("text", rawText) && rawText ? rawText : isPlaceholder ? PLACEHOLDER_TEXT : "";
 const textSize = p.textSize ?? p.text?.size;
 const textCls =
 	textSize === "small"
@@ -94,7 +116,7 @@ const italicCls = p.textStyle === "italic" ? " italic" : "";
 // Пустое состояние (нет своего url) → дизайн-ассет landscape-iwt.png (контракт
 // картиночных секций, правило 2 — картинка показывается ВСЕГДА), а НЕ пустой
 // image-rect (#FBFBFB) и НЕ мок-фото /images/4x/Мужская_кампания.png верстальщика.
-const imageUrl = rawImageUrl ?? PLACEHOLDER_IMAGE;
+const imageUrl = merchantImageUrl || PLACEHOLDER_IMAGE;
 const imageAlt =
 	typeof p.image?.alt === "string" && p.image.alt.trim() ? p.image.alt : "";
 const isThemeAsset = !!imageUrl && imageUrl.startsWith("/");
@@ -180,25 +202,15 @@ const paddingStyle = p.padding
 				mdHeightCls,
 				imgRight ? "md:order-2" : "md:order-1",
 			]}
-			aria-hidden={isPlaceholder ? "true" : undefined}
 		>
 			{
 				imageUrl ? (
-					isThemeAsset ? (
-						<SatinPicture
-							src={imageUrl}
-							alt={imageAlt}
-							loading="lazy"
-							class="absolute inset-0 size-full object-cover object-center"
-						/>
-					) : (
-						<img
-							src={imageUrl}
-							alt={imageAlt}
-							loading="lazy"
-							class="absolute inset-0 size-full object-cover object-center"
-						/>
-					)
+					<img
+						src={imageUrl}
+						alt={imageAlt || heading || ""}
+						loading="eager"
+						class="absolute inset-0 size-full object-cover object-center"
+					/>
 				) : null
 			}
 		</div>

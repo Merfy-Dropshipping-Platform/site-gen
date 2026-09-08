@@ -39,6 +39,15 @@ function walk(value: unknown, baseUrl: string): unknown {
 }
 
 /**
+ * Global preview assets — gateway/sites serve these at the URL root
+ * (`/placeholders/*`), NOT under `/__theme/<theme>/` or `site.publicUrl`.
+ */
+export function isGlobalPreviewAssetPath(path: string): boolean {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return normalized.startsWith('/placeholders/');
+}
+
+/**
  * Heuristic: string выглядит как relative asset path?
  *   - Начинается с `/` НО НЕ `//` (protocol-relative)
  *   - Не http(s):// или data: URL
@@ -50,6 +59,8 @@ function walk(value: unknown, baseUrl: string): unknown {
 function rewriteIfRelative(s: string, baseUrl: string): string {
   if (!s.startsWith('/') || s.startsWith('//')) return s;
   if (/^(?:https?|data|blob):/.test(s)) return s;
+  if (isGlobalPreviewAssetPath(s)) return s;
+  if (s.startsWith('/__theme/')) return s;
   // file path → есть extension в последнем сегменте
   const lastSeg = s.split('?')[0].split('#')[0].split('/').pop() ?? '';
   if (!/\.[a-z0-9]{2,5}$/i.test(lastSeg)) return s;
@@ -66,11 +77,21 @@ function rewriteIfRelative(s: string, baseUrl: string): string {
  *      (build-time, не из revision.data).
  *   2. Inline-script JS строит innerHTML c relative src.
  */
+function rewriteHtmlAssetPath(path: string, base: string): string {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  if (isGlobalPreviewAssetPath(normalized)) return normalized;
+  if (normalized.startsWith('/__theme/')) return normalized;
+  const trimmed = path.replace(/^\/+/, '');
+  return `${base}/${trimmed}`;
+}
+
 export function rewriteHtmlAssets(html: string, baseUrl: string | null | undefined): string {
   if (!baseUrl) return html;
   const base = baseUrl.replace(/\/$/, '');
   return html
-    .replace(/\bsrc="\/(?!\/)([^"]*)"/g, (_m, p) => `src="${base}/${p}"`)
-    .replace(/\bsrcset="\/(?!\/)([^"]*)"/g, (_m, p) => `srcset="${base}/${p}"`)
-    .replace(/url\(\s*['"]?\/(?!\/)([^'")]*)['"]?\s*\)/g, (_m, p) => `url('${base}/${p}')`);
+    .replace(/\bsrc="\/(?!\/)([^"]*)"/g, (_m, p) => `src="${rewriteHtmlAssetPath(p, base)}"`)
+    .replace(/\bsrcset="\/(?!\/)([^"]*)"/g, (_m, p) => `srcset="${rewriteHtmlAssetPath(p, base)}"`)
+    .replace(/url\(\s*['"]?\/(?!\/)([^'")]*)['"]?\s*\)/g, (_m, p) =>
+      `url('${rewriteHtmlAssetPath(p, base)}')`,
+    );
 }

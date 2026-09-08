@@ -135,7 +135,7 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     },
     textPosition: {
       type: 'radio',
-      label: 'Положение колонн',
+      label: 'Положение текста',
       options: [
         { label: 'Слева', value: 'left' },
         { label: 'Центр', value: 'center' },
@@ -157,7 +157,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     // «Цветовая схема контейнера» скрыта из main panel (канон theme-base).
     containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
-    // Hidden — нет в Figma 314-34917.
     headingAlignment: { type: 'hidden', label: '' },
     link: { type: 'hidden', label: '' },
     columns: {

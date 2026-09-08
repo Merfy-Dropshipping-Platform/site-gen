@@ -8,14 +8,26 @@ import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/compo
 // themes/satin/MANNER.md (§1 заголовок секции, §5 поля, §3 кнопки).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния ContactForm/Contacts:
 // заголовок «Контактная форма» (без хелпер-описания). Дефолт-текст верстальщика
 // («Обратная связь» contacts.astro:49) заменён на Figma-текст. Когда мерчант
 // задал свой heading — рендерим ЕГО (?? fallback срабатывает только при пустых
 // данных). font-logo 20 uppercase leading-[1.15], токен heading 0_0_0.
-const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Контактная форма");
+const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "Контактная форма";
 // Лестница §9 «ContactForm заголовок» (база-литерал 20 = medium): small 17, large 24.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
@@ -35,8 +47,8 @@ const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1
 // контакты...» contacts.astro:50) убран → абзац рендерится ТОЛЬКО когда мерчант
 // задал непустой description (Arsenal 16 light muted). Явная пустая строка тоже
 // скрывает абзац.
-const description =
-	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
+const descriptionRaw = typeof p.description === "string" && p.description.trim() ? p.description : undefined;
+const description = contentSet("description", descriptionRaw) ? descriptionRaw : undefined;
 
 // Flat-пропсы контактов магазина (addresses/phone/email) — блок «Свяжитесь
 // с нами» (contacts.astro:12-38, dl-манера: label muted 16 / значение

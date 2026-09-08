@@ -6,6 +6,18 @@
 // с нулевым фоллбеком); только utility-классы с токенами.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
+function contentSet(keys: string | string[], raw: unknown): boolean {
+	const ks = Array.isArray(keys) ? keys : [keys];
+	for (const key of ks) {
+		const f = merfy?.fields?.[key];
+		if (f && typeof f.set === "boolean") return f.set;
+	}
+	if (typeof raw !== "string") return false;
+	const t = raw.trim();
+	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
+	return true;
+}
 
 // Канон videoUrl + pupa video{url, coverImage}. blob:-URL — временные ObjectURL
 // вкладки конструктора, на live дадут 404 — отбрасываем (паттерн theme-base/bloom).
@@ -42,9 +54,16 @@ const headingTextRaw =
 // ?? fallback срабатывает только при пустых данных). Свой заголовок мерчанта
 // рендерим как есть. Явно отключённый заголовок (enabled === 'false') скрывает
 // его даже в пустом состоянии.
-const headingText = headingTextRaw.trim() ? headingTextRaw : "Видео";
+const headingText = contentSet("heading", headingTextRaw) && headingTextRaw.trim() ? headingTextRaw : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = Boolean(headingText.trim()) && headingEnabled;
+const subheadingRaw =
+	(typeof p.subheading === "string" && p.subheading.trim() ? p.subheading : undefined) ??
+	(typeof p.content?.subheading?.text === "string" &&
+	p.content.subheading.text.trim() &&
+	String(p.content.subheading.enabled ?? "true") !== "false"
+		? p.content.subheading.text
+		: undefined);
 // Канон headingSize («Размер заголовка», кегль <h2>) + дубли heading.size /
 // content.heading.size. Секционный `size` теперь = ВЫСОТА блока (не кегль) —
 // исключён из цепочки. Лестница §9 «Заголовок секции»: small 17,
@@ -125,6 +144,11 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 					>
 						{headingText}
 					</h2>
+					{subheadingRaw && (
+						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`}>
+							{subheadingRaw}
+						</p>
+					)}
 				</div>
 			)
 		}

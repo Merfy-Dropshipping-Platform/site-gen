@@ -5,14 +5,27 @@ import BloomPicture from "../img/BloomPicture.astro";
 interface Props {
 	product: CatalogProduct;
 	priority?: boolean;
-	// aspect-ratio (W/H) карточного медиа — «Вид изображения» секции Popular
-	// (square→1/1, portrait→430/500, wide→16/9). Дефолт 1/1 = прежний хардкод
-	// aspect-square (каталог/категория/wishlist зовут без пропа → байт-в-байт).
 	aspectRatio?: string;
+	variant?: "rich" | "minimal";
+	salePercent?: string;
+	swatchHexes?: string[];
+	captionUppercase?: boolean;
 }
 
-const { product, priority = false, aspectRatio = "1/1" } = Astro.props;
+const {
+	product,
+	priority = false,
+	aspectRatio = "1/1",
+	variant = "minimal",
+	salePercent = "",
+	swatchHexes = [],
+	captionUppercase = false,
+} = Astro.props;
 const href = `/products/${product.id}`;
+const articleCls =
+	variant === "rich"
+		? "group flex h-full w-full flex-col gap-4 rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-3 transition-transform duration-300 hover:-translate-y-1"
+		: "group flex flex-col gap-4";
 
 // Outline-сердце избранного — тот же heart-path, что wishlist.ts heartSvg()/
 // wishlist.astro overlay. Outline по умолчанию; глобальный делегат initWishlistUI
@@ -50,7 +63,7 @@ const defaultColor = product.colors[0] ?? "";
 ---
 
 <article
-	class="group flex flex-col gap-4"
+	class={articleCls}
 	data-nt="bloom-product-card"
 	aria-label={product.name}
 >
@@ -70,9 +83,9 @@ const defaultColor = product.colors[0] ?? "";
 			/>
 			{product.discount && (
 				<span
-					class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[#e38e9f] px-1.5 font-inter text-[12px] font-normal leading-none text-white"
+					class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[rgb(var(--color-accent,227_142_159))] px-1.5 font-inter text-[12px] font-normal leading-none text-white"
 				>
-					Скидка
+					{salePercent || "Скидка"}
 				</span>
 			)}
 			{!hasColorSwatches && product.colors.length > 0 && (
@@ -101,9 +114,19 @@ const defaultColor = product.colors[0] ?? "";
 		</button>
 	</div>
 	<div class="flex flex-col gap-2">
+		{swatchHexes.length > 0 && !hasColorSwatches && (
+			<div class="flex items-center gap-1" aria-hidden="true">
+				{swatchHexes.map((hex) => (
+					<span class="size-5 rounded-[2px]" style={`background:${hex}`} />
+				))}
+			</div>
+		)}
 		<a
 			href={href}
-			class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70"
+			class:list={[
+				"bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70",
+				captionUppercase && "uppercase",
+			]}
 		>
 			{product.name}
 		</a>

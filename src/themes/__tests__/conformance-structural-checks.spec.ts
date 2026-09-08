@@ -24,7 +24,7 @@ import type { CapabilityRecord } from '../../../packages/theme-contract/conforma
 
 const THEME = 'bloom';
 
-/** The twenty named structural findings the real-current fixture must expose. */
+/** The nineteen named structural findings the real-current fixture must expose. */
 const REQUIRED_CURRENT_FINDINGS = [
   'bloom.block.Benefits.anatomy.classes',
   'bloom.block.Benefits.anatomy.tokens',
@@ -41,7 +41,6 @@ const REQUIRED_CURRENT_FINDINGS = [
   'bloom.block.Publications.normalization.cards',
   'bloom.block.Publications.normalization.columns',
   'bloom.flow.benefits.feature',
-  'bloom.flow.cart-drawer.preview-built-theme-global-injection',
   'bloom.flow.wishlist.feature',
   'bloom.page.page-checkout-result.manifest',
   'bloom.page.page-checkout-result.seed',
@@ -115,7 +114,7 @@ function currentSnapshot(): StructuralCheckSnapshot {
       cardsWithinCanonical: false, // renderer allows up to 12 (canonical max 4)
       columnsWithinCanonical: false, // renderer allows up to 6 (canonical max 4)
     },
-    cartDrawerReachability: { v2Sections: true, builtTheme: false, liveBuild: true },
+    cartDrawerReachability: { v2Sections: true, builtTheme: true, liveBuild: true },
     runtimeSourcesPresent: [...BLOOM_RELEASE_CONTRACT.runtimeSources],
     renderersReachable: BLOOM_RELEASE_CONTRACT.renderers.map((r) => r.name),
     sectionMappingsResolved: true,
@@ -238,13 +237,13 @@ describe('runStructuralChecks — real-current fixture', () => {
   );
   const ids = issues.map((i) => i.id);
 
-  it('exposes ALL twenty named structural findings', () => {
+  it('exposes ALL nineteen named structural findings', () => {
     for (const id of REQUIRED_CURRENT_FINDINGS) {
       expect(ids).toContain(id);
     }
   });
 
-  it('exposes EXACTLY the twenty named findings for this fixture (no more, no less)', () => {
+  it('exposes EXACTLY the nineteen named findings for this fixture (no more, no less)', () => {
     // A tight equality guards the current↔complete mapping: any accidental extra
     // finding here would otherwise be a silent ratchet expansion, and any
     // missing one a hidden gap.

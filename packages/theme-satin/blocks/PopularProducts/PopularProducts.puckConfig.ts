@@ -206,7 +206,7 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
   },
   // Дефолты satin сохранены (редакторская манера satin), приведены к канон-форме.
   defaults: {
-    heading: { text: 'Коллекция товаров', size: 'medium', alignment: 'left' },
+    heading: { text: '', size: 'medium', alignment: 'left' },
     headingSize: 'medium',
     text: { content: '', size: 'small' },
     textSize: 'small',

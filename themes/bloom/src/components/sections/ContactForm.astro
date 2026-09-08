@@ -105,7 +105,7 @@ const paddingStyle = p.padding
 							data-puck-subsection-index={0}
 							data-puck-subsection-field="fields"
 						>
-							<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+							<label for="nt-field-name" class="font-inter text-[16px] font-normal leading-normal text-[#000000]">
 								{formFields.name.label}{formFields.name.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 							</label>
 							<div class="relative w-full">
@@ -115,7 +115,7 @@ const paddingStyle = p.padding
 									type="text"
 									autocomplete="name"
 									required={formFields.name.required}
-									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-inter text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 								/>
 							</div>
 						</div>
@@ -128,7 +128,7 @@ const paddingStyle = p.padding
 							data-puck-subsection-index={1}
 							data-puck-subsection-field="fields"
 						>
-							<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+							<label for="nt-field-email" class="font-inter text-[16px] font-normal leading-normal text-[#000000]">
 								{formFields.email.label}{formFields.email.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 							</label>
 							<div class="relative w-full">
@@ -138,7 +138,7 @@ const paddingStyle = p.padding
 									type="email"
 									autocomplete="email"
 									required={formFields.email.required}
-									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-inter text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 								/>
 							</div>
 						</div>
@@ -151,7 +151,7 @@ const paddingStyle = p.padding
 							data-puck-subsection-index={2}
 							data-puck-subsection-field="fields"
 						>
-							<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+							<label for="nt-field-phone" class="font-inter text-[16px] font-normal leading-normal text-[#000000]">
 								{formFields.phone.label}{formFields.phone.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 							</label>
 							<div class="relative w-full">
@@ -161,7 +161,7 @@ const paddingStyle = p.padding
 									type="tel"
 									autocomplete="tel"
 									required={formFields.phone.required}
-									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+									class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid bg-[#FFFFFF] px-4 font-inter text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 								/>
 							</div>
 						</div>
@@ -183,7 +183,7 @@ const paddingStyle = p.padding
 						data-puck-subsection-index={3}
 						data-puck-subsection-field="fields"
 					>
-						<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+						<label for="contacts-question" class="font-inter text-[16px] font-normal leading-normal text-[#000000]">
 							{formFields.message.label}{formFields.message.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 						</label>
 						<textarea
@@ -191,20 +191,20 @@ const paddingStyle = p.padding
 							name="question"
 							rows={8}
 							required={formFields.message.required}
-							class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+							class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-inter text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 						></textarea>
 					</div>
 				)
 			) : (
 				<div class="flex flex-col gap-2">
-					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+					<label for="contacts-question" class="font-inter text-[16px] font-normal leading-normal text-[#000000]">
 						Комментарий
 					</label>
 					<textarea
 						id="contacts-question"
 						name="question"
 						rows={8}
-						class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+						class="min-h-[232px] w-full rounded-[var(--radius-input,4px)] border border-[#000000] bg-white p-4 font-inter text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 					></textarea>
 				</div>
 			)}
@@ -221,8 +221,25 @@ const paddingStyle = p.padding
 			<p
 				data-contacts-status
 				role="status"
-				class="hidden lg:col-span-2 font-manrope text-[16px] font-normal leading-normal text-[#4AD300]"
+				class="hidden lg:col-span-2 font-inter text-[16px] font-normal leading-normal text-[#4AD300]"
 			></p>
 		</form>
 	</div>
 </section>
+
+<script>
+	// Demo-сабмит формы контактов. Делегирование на document: работает для всех
+	// экземпляров секции и переживает hot-replace превью (паттерн flux ContactForm).
+	document.addEventListener("submit", (event) => {
+		const target = event.target as HTMLElement | null;
+		const form = target?.closest<HTMLFormElement>("form[data-contacts-form]");
+		if (!form) return;
+		event.preventDefault();
+		const status = form.querySelector<HTMLElement>("[data-contacts-status]");
+		if (status) {
+			status.textContent = "Спасибо! Мы свяжемся с вами в ближайшее время.";
+			status.classList.remove("hidden");
+		}
+		form.reset();
+	});
+</script>

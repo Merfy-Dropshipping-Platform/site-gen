@@ -107,20 +107,20 @@ const propCollections = (Array.isArray(p.collections) ? p.collections : [])
 			href: collectionId ? `${cardLinkBase}${collectionId}` : "#",
 		};
 	});
-const usePropCollections = propCollections.length > 0;
+type CollectionTile = {
+	collectionId: string | null;
+	name: string;
+	image: string;
+	href: string;
+	hasOwnImage?: boolean;
+};
+const merfy = p.__merfy as { resolved?: { collectionTiles?: CollectionTile[] | null } } | undefined;
+const merfyTiles = merfy?.resolved?.collectionTiles;
+const hasMerfyTiles = Array.isArray(merfyTiles) && merfyTiles.length > 0;
 
-// SSR-резолв реальных коллекций по collectionId (Figma-цель: коллекция ВЫБРАНА →
-// реальное имя/обложка ПРЯМО в статике, чтобы их видело и ПРЕВЬЮ конструктора —
-// Astro Container не исполняет клиентскую module-гидрацию ниже). Эталон —
-// rose Popular.astro (siteId инжектит рендер-пайплайн preview.service / build).
-// Нет siteId / выбранных collectionId / ошибка → resolved пуст → остаётся SSR
-// (heading/обложка из пропса), а живая гидрация ниже освежит данные на live.
-// Паритет theme-base resolveManual: имя коллекции перебивает ручной heading,
-// обложка коллекции подставляется только при пустой своей (hasOwnImage).
 const siteId = typeof p.siteId === "string" ? p.siteId : "";
-const wantResolve = usePropCollections && propCollections.some((c) => c.collectionId);
 const resolvedCols = new Map<string, { name?: string; image?: string }>();
-if (wantResolve && siteId) {
+if (!merfy && propCollections.some((c) => c.collectionId) && siteId) {
 	try {
 		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
 		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
@@ -151,9 +151,7 @@ if (wantResolve && siteId) {
 		/* нет данных — остаётся SSR из пропса, гидрация освежит на live */
 	}
 }
-// Применяем резолв к карточкам пропса: реальное имя перебивает ручной heading,
-// обложка — только если мерчант не загрузил свою.
-const resolvedCollections = propCollections.map((c) => {
+const resolvedFromProps = propCollections.map((c) => {
 	const r = c.collectionId ? resolvedCols.get(c.collectionId) : undefined;
 	if (!r) return c;
 	return {
@@ -162,6 +160,21 @@ const resolvedCollections = propCollections.map((c) => {
 		image: c.hasOwnImage ? c.image : r.image || c.image,
 	};
 });
+const resolvedCollections: CollectionTile[] = hasMerfyTiles
+	? merfyTiles.map((c) => ({
+			collectionId: c.collectionId ?? null,
+			name: (c.name && String(c.name)) || "Коллекция",
+			image: typeof c.image === "string" ? c.image : "",
+			href:
+				typeof c.href === "string" && c.href
+					? c.href
+					: c.collectionId
+						? `${cardLinkBase}${c.collectionId}`
+						: "#",
+			hasOwnImage: typeof c.image === "string" && !!c.image,
+		}))
+	: resolvedFromProps;
+const usePropCollections = resolvedCollections.length > 0;
 
 // Канон пустого состояния (Figma 1:19335, паритет theme-base DEMO_COLLECTIONS):
 // без ручного выбора — 3 ПЛЕЙСХОЛДЕР-карточки (пустая surface-плитка #FBFBFB +
@@ -315,7 +328,12 @@ const paddingStyle = p.padding
 	</a></li>`;
 			})
 			.join("");
-		for (const grid of grids) grid.innerHTML = html;
+		for (const grid of grids) {
+			const existing = grid.querySelector("[data-collection-ref]");
+			const ref = existing?.getAttribute("data-collection-ref")?.trim();
+			if (ref) continue;
+			grid.innerHTML = html;
+		}
 	};
 
 	hydrateCollectionTiles();

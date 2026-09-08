@@ -56,9 +56,9 @@
         "informationColumn": {
           "title": "ИНФОРМАЦИЯ",
           "links": [
-            { "label": "Доставка", "href": "/delivery" },
-            { "label": "Возврат", "href": "/returns" },
-            { "label": "Оплата", "href": "/payment" }
+            { "label": "Доставка", "href": "/legal/shipping-policy" },
+            { "label": "Возврат", "href": "/legal/refund" },
+            { "label": "Конфиденциальность", "href": "/legal/privacy" }
           ]
         },
         "socialColumn": {

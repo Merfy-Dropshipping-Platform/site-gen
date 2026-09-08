@@ -19,15 +19,19 @@ const apiUrl = "https://gateway.merfy.ru/api";
 const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
 	: undefined;
-// Цветовая схема секции (как Newsletter): пусто → наследует :root сайта.
-const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
+// Как rose CartSection: схема только если проп задан (иначе :root / обёртка
+// композитора). Раньше `?? 2` всегда вешал scheme-2 и ломал picker секции.
+const schemeClass =
+	colorScheme !== undefined && colorScheme !== null && String(colorScheme) !== ""
+		? `color-scheme-${String(colorScheme).replace("scheme-", "")}`
+		: "";
 ---
 
 <section
 	data-puck-component-id={id}
 	data-block="cart-section"
 	class:list={[
-		"w-full bg-white px-4 md:px-20 2xl:px-[300px]",
+		"w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 md:px-20 2xl:px-[300px]",
 		schemeClass,
 		padStyle ? "" : "pb-[60px] pt-16 md:pb-[80px] md:pt-20",
 	]}
@@ -42,7 +46,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		>
 			<h1
 				id="cart-title"
-				class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px]"
+				class="font-logo text-[28px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]"
 			>
 				Корзина
 			</h1>
@@ -51,7 +55,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			</p>
 			<a
 				href="/catalog"
-				class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 			>
 				Продолжить покупки
 			</a>
@@ -82,7 +86,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				<button
 					type="button"
 					data-action="checkout"
-					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 				>
 					Оформить заказ
 				</button>

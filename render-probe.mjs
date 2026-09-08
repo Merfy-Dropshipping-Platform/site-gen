@@ -1,0 +1,11 @@
+import { experimental_AstroContainer } from 'astro/container';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+const theme = process.argv[2], name = process.argv[3];
+const props = JSON.parse(process.argv[4] || '{}');
+const dir = resolve(process.cwd(), 'dist', 'theme-sections', theme);
+const manifest = JSON.parse(await readFile(resolve(dir, 'manifest.json'), 'utf-8'));
+const mod = await import(resolve(dir, manifest[name]));
+const c = await experimental_AstroContainer.create();
+const html = await c.renderToString(mod.default, { props });
+console.log(html);

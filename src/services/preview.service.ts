@@ -4,6 +4,8 @@ import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { previewTokensCssWithFonts } from '../themes/tokens-css';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
+import { resolveBlockProps } from '../render/resolve-props';
+import type { RenderContext } from '../render/create-render-context';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
   '&': '&amp;',
@@ -63,6 +65,7 @@ export interface RenderBlockInput {
    * - false (live build): show invisible empty fragment
    */
   isPreview?: boolean;
+  merfy?: RenderContext;
 }
 
 /**
@@ -83,6 +86,7 @@ export interface RenderPreviewPageInput {
    * customize.merfy.ru их не имеет. Inject'им CSS-var overrides в head.
    */
   publicUrl?: string | null;
+  merfy?: RenderContext;
 }
 
 /**
@@ -292,10 +296,26 @@ export class PreviewService {
         blockDefaults,
         (input.props ?? {}) as Record<string, unknown>,
       );
-      const renderProps =
+      const merfy = input.merfy;
+      let renderProps =
         input.blockName === 'Slideshow'
           ? normalizeSlideshowProps(mergedProps)
           : mergedProps;
+      if (merfy) {
+        const resolved = resolveBlockProps(input.blockName, renderProps, merfy.catalog);
+        renderProps = {
+          ...resolved.props,
+          siteId: merfy.siteId,
+          __merfy: {
+            siteId: merfy.siteId,
+            themeId: merfy.themeId,
+            catalog: merfy.catalog,
+            themeSettings: merfy.themeSettings,
+            fields: resolved.merfy.fields,
+            resolved: resolved.merfy.resolved,
+          },
+        };
+      }
       const container = await this.getContainer();
       const html = await container.renderToString(Component, {
         props: renderProps,
@@ -485,6 +505,7 @@ export class PreviewService {
     siteId?: string;
     /** revision.data.themeSettings — для tokens.css (паритет с live). */
     themeSettings?: unknown;
+    merfy?: RenderContext;
   }): Promise<string | null> {
     const shellHtml =
       (await this.tryLoadBuiltThemeHtml(input.themeId, input.route)) ??
@@ -492,7 +513,7 @@ export class PreviewService {
     if (!shellHtml) return null;
     const blocksHtml = await Promise.all(
       input.blocks.map((b) =>
-        this.renderBlock({ blockName: b.type, props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId }, themeId: input.themeId }),
+        this.renderBlock({ blockName: b.type, props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId }, merfy: input.merfy, themeId: input.themeId }),
       ),
     );
     const composed = composeV2Page({
@@ -631,6 +652,7 @@ export class PreviewService {
             blockName: b.type,
             props: { ...b.props, siteId: (b.props as Record<string, unknown>)?.siteId ?? input.siteId },
             themeId: input.themeId ?? null,
+            merfy: input.merfy,
           });
           const schemeId = schemeIdFromProp(b.props?.colorScheme);
           // Header sticky: display:contents убирает бокс обёртки схемы, чтобы
@@ -797,7 +819,7 @@ export class PreviewService {
     const megaSummaryBlock = input.blocks.find((b) => b.type === 'CheckoutSummary');
 
     const renderOne = async (b: { type: string; props: Record<string, unknown> }) =>
-      this.renderBlock({ blockName: b.type, props: b.props, themeId });
+      this.renderBlock({ blockName: b.type, props: b.props, themeId, merfy: input.merfy });
 
     const headerHtml = headerBlock ? await renderOne(headerBlock) : '';
     const toggleHtml = summaryToggleBlock
@@ -824,6 +846,7 @@ export class PreviewService {
         blockName: 'CheckoutLayout',
         props: layoutBlock.props,
         themeId,
+        merfy: input.merfy,
       });
       const formInner = formInnerParts.join('');
       const summaryInner = summaryInnerParts.join('');
@@ -1034,6 +1057,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // Spec 090 — local-patch state. Хранит последний known props per blockId
   // чтобы compute diff при следующем update-block.
   var LAST_PROPS = {};
+  var LAST_TYPES = {};
 
   // 098-fix «блок исчез при правке слайдера»: монотонный порядок применения
   // hot-replace. Слайдер генерит серию update-block одного блока; ответы
@@ -1557,17 +1581,43 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // Pupa parity: pill только на section (subsection — только outline, без pill).
   var sectionPill = makePill('section');
 
+  function lookupComponentLabel(key) {
+    if (!key) return '';
+    if (componentLabels[key]) return componentLabels[key];
+    var lower = String(key).toLowerCase();
+    if (componentLabels[lower]) return componentLabels[lower];
+    var prefix = lower.split('-')[0];
+    if (prefix && componentLabels[prefix]) return componentLabels[prefix];
+    if (prefix) {
+      var pascal = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+      if (componentLabels[pascal]) return componentLabels[pascal];
+    }
+    var keys = Object.keys(componentLabels);
+    var best = '';
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var kl = k.toLowerCase();
+      if (kl === lower) return componentLabels[k];
+      if (prefix && kl === prefix) return componentLabels[k];
+      if ((kl.indexOf(lower) === 0 || lower.indexOf(kl) === 0) && k.length > best.length) best = k;
+    }
+    return best ? componentLabels[best] : '';
+  }
   function inferLabel(layer, target) {
     if (layer === 'section') {
       var blockId = target.getAttribute('data-puck-component-id') || '';
+      var type = LAST_TYPES[blockId] || '';
       var dashIdx = blockId.indexOf('-');
-      var type = dashIdx >= 0 ? blockId.slice(0, dashIdx) : blockId;
-      return componentLabels[type] || componentLabels[blockId] || type || 'Секция';
+      var prefix = dashIdx >= 0 ? blockId.slice(0, dashIdx) : blockId;
+      return lookupComponentLabel(type) || lookupComponentLabel(blockId) || lookupComponentLabel(prefix) || type || prefix || 'Секция';
     }
     var parentId = target.getAttribute('data-puck-subsection-parent') || '';
-    var dashIdx2 = parentId.indexOf('-');
-    var parentType = dashIdx2 >= 0 ? parentId.slice(0, dashIdx2) : parentId;
-    return subsectionItemLabels[parentType] || 'Элемент';
+    var parentType = LAST_TYPES[parentId] || '';
+    if (!parentType) {
+      var dashIdx2 = parentId.indexOf('-');
+      parentType = dashIdx2 >= 0 ? parentId.slice(0, dashIdx2) : parentId;
+    }
+    return subsectionItemLabels[parentType] || subsectionItemLabels[String(parentType).toLowerCase()] || lookupComponentLabel(parentType) || 'Элемент';
   }
 
   function positionPill(pill, target) {
@@ -1860,6 +1910,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Parent шлёт init после iframe ready (см. PreviewFrame.tsx).
       currentThemeId = (ev.data.themeId || '') + '';
       currentSiteId = (ev.data.siteId || '') + '';
+      if (ev.data.componentLabels && typeof ev.data.componentLabels === 'object') {
+        componentLabels = ev.data.componentLabels;
+      }
+      if (ev.data.subsectionItemLabels && typeof ev.data.subsectionItemLabels === 'object') {
+        subsectionItemLabels = ev.data.subsectionItemLabels;
+      }
       // 091 — populate LAST_PROPS из initial data чтобы первый update-block
       // мог сразу пойти через local-patch (без fetch + outerHTML replace).
       // До этого фикса первый edit любого блока вызывал re-fetch → image flicker.
@@ -1870,6 +1926,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
           var block = initContent[ci];
           if (block && block.props && block.props.id) {
             LAST_PROPS[block.props.id] = block.props;
+            if (typeof block.type === 'string' && block.type) LAST_TYPES[block.props.id] = block.type;
           }
         }
       }
@@ -1880,8 +1937,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
       if (!currentThemeId) return;
       var blockId = ev.data.blockId;
       if (!blockId || !currentSiteId) return;
-      var blockType = blockId.split('-')[0];
+      var blockType = (ev.data.blockType || LAST_TYPES[blockId] || blockId.split('-')[0] || '') + '';
       if (!blockType) return;
+      LAST_TYPES[blockId] = blockType;
 
       // Spec 090 — local-patch attempt перед server fetch fallback.
       var newProps = ev.data.props || {};

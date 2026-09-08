@@ -202,10 +202,16 @@ const footerBandCls = footerPadStyle
 // композитора и берёт :root — подвал перекрашивается сам собой при правке
 // соседней секции. На живом сайте обёртка даёт ту же схему, дубль безвреден.
 // Нет пропа = канон вёрстки (тёмное полотно, белый текст).
-const footerSchemeClass =
-	typeof p.colorScheme === "string" && p.colorScheme
-		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
-		: "";
+// Схема приходит строкой ("scheme-2") ИЛИ числом (нормализатор Slideshow
+// приводит к номеру) — проверка только на string молча не срабатывает (§4).
+const _footerSchemeRaw = p.colorScheme;
+const _footerSchemeId =
+	typeof _footerSchemeRaw === "number"
+		? String(_footerSchemeRaw)
+		: typeof _footerSchemeRaw === "string" && _footerSchemeRaw
+			? String(_footerSchemeRaw).replace("scheme-", "")
+			: "";
+const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : "";
 ---
 
 <footer class:list={["flex w-full flex-col", footerSchemeClass ? "text-[rgb(var(--color-text,255_255_255))]" : "text-white", footerSchemeClass]} data-vanilla-footer data-puck-component-id={id}>

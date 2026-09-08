@@ -1,6 +1,6 @@
 # Footer @ vanilla — прогон реестра
 
-Дата: 2026-09-08T22:45:10.931Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId Footer-home
+Дата: 2026-09-08T22:54:12.493Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId Footer-home
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

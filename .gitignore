@@ -37,3 +37,4 @@ docs/figma-snapshots/
 # The TRACKED inventory (conformance/inventory/) and baselines
 # (conformance/baselines/) are intentionally NOT ignored.
 conformance-results/
+.worktrees/

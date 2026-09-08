@@ -114,8 +114,14 @@ export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['ros
  * Иначе настройки секций корзины в конструкторе мёртвые: превью отдаёт
  * статичный blob, блоков с data-puck-component-id нет.
  * Rose-first + flux (текущий слой паритета). Откат темы = убрать её отсюда.
+ * vanilla добавлена 2026-09-09: все четыре блока рендерятся (проверено
+ * `/preview/block`), собственный шелл `dist/cart/index.html` есть.
+ * bloom добавлен 2026-09-09 по той же проверке: без него страница корзины в
+ * конструкторе отдавалась статичным blob'ом — секции «Корзина»/«Промежуточный
+ * итог»/«Итоговая цена»/«Кнопка оформления» в дереве были, а клик по превью не
+ * открывал панель (кликать не по чему: узлов с data-puck-component-id нет).
  */
-export const CART_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'flux']);
+export const CART_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'flux', 'vanilla', 'bloom']);
 
 /**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,

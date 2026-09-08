@@ -160,7 +160,11 @@ const fmtPrice = (v: unknown): string => {
 	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
 };
 let realProducts: any[] = [];
-if (collectionRef && siteId) {
+// Товары показываем ВСЕГДА, когда они у магазина есть: коллекция не выбрана —
+// берём первые N товаров каталога. Раньше без коллекции секция рисовала
+// заглушки «Товар · 2 500 ₽», хотя в магазине лежали реальные товары —
+// это ровно то, что владелец запретил: плейсхолдеры только при пустом магазине.
+if (siteId) {
 	try {
 		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
 		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);

@@ -631,6 +631,18 @@ export class PreviewController {
           `/__theme/${PreviewService.bareThemeKey(ctx.themeId)}`,
         );
       }
+      // Схема блока — ТЕМ ЖЕ правилом, что и первичный рендер страницы
+      // (`composeV2Page` через `resolveBlockScheme`): props ревизии, иначе
+      // `blockDefaults` темы. Агент превью читает заголовок и ставит ровно её.
+      // Без этого hot-replace знал только `props.colorScheme`: у секции, где
+      // схему задаёт тема (flux: MultiRows/MultiColumns/ImageWithText/…),
+      // обёртка при первой же правке снималась, и секция «перекрашивалась».
+      const blockScheme = await this.preview.resolveBlockScheme(
+        body.blockType,
+        propsWithContext,
+        ctx.themeId,
+      );
+      res.setHeader('X-Block-Scheme', blockScheme ?? '');
       res.type('text/html').send(html);
     } catch (err: unknown) {
       const e = err as Error;

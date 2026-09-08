@@ -623,8 +623,18 @@ const CARD_BTN_CLS =
  * разметка, см. renderCardHtml doc-comment) молча игнорировала настройку текста
  * кнопки, всегда показывая литерал «В корзину» (Task 6, Step 2/3).
  */
-function cardButtonHtml(p: RealProduct, ctaLabel?: string): string {
+function cardButtonHtml(p: RealProduct, ctaLabel?: string, qaMode?: string): string {
   const label = escapeHtml(ctaLabel || "В корзину");
+  // «Быстрое добавление → Количество»: степпер «− N +» перед кнопкой; делегат
+  // корзины читает data-quantity с кнопки. Паритет bloom/rose, метрики flux.
+  const qaStepper =
+    qaMode === "cart"
+      ? '<div class="mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[rgb(var(--color-input-border,221_221_221))] px-1" data-qa-stepper>' +
+        '<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>' +
+        '<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>' +
+        '<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>' +
+        "</div>"
+      : "";
   const hasVariants =
     p.hasVariants === true ||
     (Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
@@ -639,6 +649,7 @@ function cardButtonHtml(p: RealProduct, ctaLabel?: string): string {
     const color = opt["Цвет"] || opt["Color"] || "";
     const size = opt["Размер"] || opt["Size"] || "";
     return (
+      qaStepper +
       `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}"` +
       ` data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(firstCombo.price))}"` +
       ` data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"` +
@@ -669,7 +680,7 @@ function cardButtonHtml(p: RealProduct, ctaLabel?: string): string {
  * page-load, поверх SSR-вывода FluxProductCard) — поэтому паритет ctaLabel
  * с FluxProductCard здесь обязателен, не косметика.
  */
-export function renderCardHtml(p: RealProduct, ctaLabel?: string): string {
+export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: string): string {
   const href = escapeHtml(productHref(p));
   const name = escapeHtml(p.name);
   const image = escapeHtml(productImage(p));
@@ -728,7 +739,7 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string): string {
 			</div>
 		</div>
 		${memoryHtml}
-		${cardButtonHtml(p, ctaLabel)}
+		${cardButtonHtml(p, ctaLabel, qaMode)}
 	</div>
 </article>`;
 }

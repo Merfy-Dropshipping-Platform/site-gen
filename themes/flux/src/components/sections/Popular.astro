@@ -117,6 +117,33 @@ const quickAddText =
 // Чёрная CTA манеры (§3, литерал «Смотреть ещё» catalog.astro:112 + w-full в
 // карточке): токены кнопки-2 — в схемах flux чёрная кнопка = кнопка-2
 // (MANNER.md §7); active:scale в манере не используется.
+
+// «Быстрое добавление → Количество»: −/+ правят data-quantity на кнопке карточки,
+// делегат корзины кладёт выбранное число. Механика bloom/rose; is:inline+set:html
+// (define:vars компилятор секций не умеет), идемпотентность data-qa-step-bound.
+const QA_STEPPER_JS = [
+	"(function(){",
+	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-quick-add=\"cart\"]');",
+	"for(var i=0;i<grids.length;i++){(function(g){",
+	"if(g.getAttribute('data-qa-step-bound')==='true')return;",
+	"g.setAttribute('data-qa-step-bound','true');",
+	"g.addEventListener('click',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var inc=t.closest('[data-qa-inc]');var dec=t.closest('[data-qa-dec]');",
+	"if(!inc&&!dec)return;",
+	"var li=t.closest('li');if(!li)return;",
+	"var q=li.querySelector('[data-qa-qty]');var btn=li.querySelector('[data-add-to-cart]');",
+	"if(!q)return;",
+	"var n=parseInt(q.textContent,10)||1;",
+	"n=inc?Math.min(99,n+1):Math.max(1,n-1);",
+	"q.textContent=String(n);",
+	"if(btn)btn.setAttribute('data-quantity',String(n));",
+	"e.preventDefault();",
+	"});",
+	"})(grids[i]);}",
+	"})();",
+].join("");
+
 const quickAddCls =
 	"mt-3 inline-flex h-12 w-full items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-roboto-flex text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]";
 
@@ -349,6 +376,7 @@ const containerCls = paddingStyle
 						product={product}
 						href={`/product?id=${encodeURIComponent(product.id)}`}
 						ctaLabel={quickAddText}
+						qaMode={quickAddMode}
 					/>
 				</li>
 			)) : placeholderCards.map((product) => (
@@ -400,6 +428,7 @@ const containerCls = paddingStyle
 		)}
 	</div>
 </section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
+{quickAddMode === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {
@@ -432,6 +461,8 @@ const containerCls = paddingStyle
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
 			const ctaLabel = grid.getAttribute("data-qa-text") || undefined;
+			// «Быстрое добавление» из атрибута грида: 'cart' добавляет степпер в карточку.
+			const qaMode = grid.getAttribute("data-quick-add") || undefined;
 			if (!collectionRef) continue;
 			const pool = resolveCollectionProducts(products, collections, collectionRef);
 			if (pool.length === 0) continue;
@@ -445,7 +476,7 @@ const containerCls = paddingStyle
 					// Кнопка «В корзину» (вариант-aware) теперь внутри renderCardHtml —
 					// отдельный qaBtn не добавляем (был бы дубль). data-btn-style на гриде
 					// продолжает стилизовать её через <style is:global> ниже.
-					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, ctaLabel)}</li>`;
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, ctaLabel, qaMode)}</li>`;
 				})
 				.join("");
 		}

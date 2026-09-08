@@ -2098,10 +2098,17 @@ const PREVIEW_NAV_AGENT_INLINE = `
             console.error('[preview] update-block HTTP ' + r.status + ' for ' + blockId + ' — keep old DOM');
             return null;
           }
-          return r.text();
+          // Схему считает СЕРВЕР (тем же правилом, что и первичный рендер:
+          // props ревизии, иначе blockDefaults темы) и отдаёт заголовком.
+          // Клиент её больше не выводит сам — иначе секция, чью схему задаёт
+          // тема, теряла обёртку при первой правке любого поля.
+          var hdr = r.headers.get('X-Block-Scheme');
+          return r.text().then(function (t) { return { html: t, scheme: hdr }; });
         })
-        .then(function (html) {
-          if (html === null) return;
+        .then(function (payload) {
+          if (payload === null) return;
+          var html = payload.html;
+          var serverScheme = payload.scheme;
           if (!isValidBlockHtml(html, blockId)) {
             console.error('[preview] update-block invalid HTML for ' + blockId + ' — keep old DOM:', String(html).slice(0, 120));
             return;
@@ -2119,12 +2126,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
           var hasSchemeWrapper = wrapper && wrapper.hasAttribute(schemeAttr);
           // Нормализация newProps.colorScheme → newSchemeId — нужна ОБЕИМ
           // веткам (sync существующей обёртки И создание новой on demand).
-          var rawScheme = newProps && newProps.colorScheme;
+          // Приоритет — схема от сервера (единый источник правды с первичным
+          // рендером). Заголовка нет (старый сервер) → прежний путь по props.
           var newSchemeId = '';
-          if (typeof rawScheme === 'string' && rawScheme.length > 0) {
-            newSchemeId = String(rawScheme).replace(/^scheme-/, '');
-          } else if (typeof rawScheme === 'number') {
-            newSchemeId = String(rawScheme);
+          if (typeof serverScheme === 'string') {
+            newSchemeId = serverScheme.replace(/^scheme-/, '');
+          } else {
+            var rawScheme = newProps && newProps.colorScheme;
+            if (typeof rawScheme === 'string' && rawScheme.length > 0) {
+              newSchemeId = String(rawScheme).replace(/^scheme-/, '');
+            } else if (typeof rawScheme === 'number') {
+              newSchemeId = String(rawScheme);
+            }
           }
           if (hasSchemeWrapper) {
             // Sync wrapper class to current newProps.colorScheme (cleaned through

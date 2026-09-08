@@ -49,13 +49,22 @@ export function revisionContent(siteId, page = 'home') {
 export async function focusBlock(pg, blockId) {
   // ЛОВУШКА 1: без scrollIntoView секции ниже вьюпорта законно opacity:0 (reveal).
   await pg.evaluate(
-    (id) => document.querySelector(`[data-puck-component-id="${id}"]`)?.scrollIntoView({ block: 'center' }),
+    // block:'start' — ровно так секцию показывает САМ конструктор (превью-агент,
+    // preview.service.ts: sectionEl.scrollIntoView({behavior:'smooth',block:'start'})).
+    // С 'center' у высокой секции её шапка уезжает ВЫШЕ экрана, reveal-анимация
+    // (data-animate) не срабатывает, и заголовок ложно считается невидимым.
+    (id) => document.querySelector(`[data-puck-component-id="${id}"]`)?.scrollIntoView({ block: 'start' }),
     blockId,
   );
   await pg.waitForTimeout(SETTLE_MS);
 }
 
-export async function applyProps(pg, pageId, blockId, props, { timeoutMs = 4000 } = {}) {
+export async function applyProps(pg, pageId, blockId, props, { timeoutMs = 4000, blockType } = {}) {
+  // 2026-09-08: превью-агент требует blockType (коммит 61d4f00c убрал фолбэк
+  // `blockId.split('-')[0]` и добавил `if (!blockType) return`). Настоящий
+  // конструктор его шлёт (PreviewFrame.tsx:387) — зонд обязан тоже, иначе
+  // update-block молча no-op и ВСЕ проверки читают прошлый DOM.
+  const typeForMsg = blockType || String(blockId).split('-')[0];
   // Настоящий канал конструктора — тот же postMessage, что шлёт PreviewFrame.
   // Фикс-ожидание ненадёжно: рендер бывает дольше, а сообщение может молча
   // потеряться → замер видит ПРОШЛЫЙ DOM (ловил в полном прогоне Hero:
@@ -81,10 +90,10 @@ export async function applyProps(pg, pageId, blockId, props, { timeoutMs = 4000 
   for (let attempt = 0; attempt < 2; attempt++) {
     const preLen = await stamp();
     await pg.evaluate(
-      ({ pageId, blockId, props }) => {
-        window.postMessage({ type: 'update-block', pageId, blockId, props }, '*');
+      ({ pageId, blockId, blockType, props }) => {
+        window.postMessage({ type: 'update-block', pageId, blockId, blockType, props }, '*');
       },
-      { pageId, blockId, props },
+      { pageId, blockId, blockType: typeForMsg, props },
     );
     const t0 = Date.now();
     while (Date.now() - t0 < timeoutMs) {

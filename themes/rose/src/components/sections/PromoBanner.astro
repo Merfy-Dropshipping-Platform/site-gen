@@ -27,9 +27,13 @@ const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 const upper = p.textTransform === "uppercase";
-// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
-// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
-// с padding {12,12} выходят за макетную высоту (полоса толще макета).
+// Канон «Отступы» {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
+// Slideshow/rose T11). «Размер» задаёт минимальную высоту полосы, «Отступы» добавляют
+// вертикальные поля поверх неё. Легаси-значение старого сида {12,12} снимается
+// миграцией ревизий (normalizePromoBannerPadding) — вид ненастроенных баннеров тот же.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 
 // Заполнено → цвета цветовой схемы (Цветовая схема секции); пусто → surface-полоса
 // плейсхолдера. Шрифт/высота от «Размер текста» в обоих состояниях.
@@ -45,7 +49,7 @@ const pCls = `max-w-full text-center font-manrope ${sz.text} font-light leading-
 	data-puck-subsection-index="100"
 	data-puck-subsection-field="text"
 >
-	<div data-nt="promo-banner" class={barCls}>
+	<div data-nt="promo-banner" class={barCls} style={paddingStyle}>
 		<p class={pCls}>
 			<span class="whitespace-pre-wrap">{text}</span>{" "}
 			<a

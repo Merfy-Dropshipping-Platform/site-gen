@@ -91,31 +91,58 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		</script>
 
 		<script>
+			let animationObserver: IntersectionObserver | null = null;
+
+			const observeAnimated = (el: HTMLElement) => {
+				if (!animationObserver) return;
+				el.classList.remove("is-visible");
+				const delay = el.dataset.animateDelay;
+				if (delay) el.style.animationDelay = delay;
+				animationObserver.observe(el);
+			};
+
 			const initScrollAnimations = () => {
 				const targets = document.querySelectorAll<HTMLElement>("[data-animate]");
 				if (!targets.length) return;
 
-				const observer = new IntersectionObserver(
+				animationObserver?.disconnect();
+				animationObserver = new IntersectionObserver(
 					(entries) => {
 						entries.forEach((entry) => {
 							if (entry.isIntersecting) {
 								entry.target.classList.add("is-visible");
-								observer.unobserve(entry.target);
+								animationObserver?.unobserve(entry.target);
 							}
 						});
 					},
 					{ threshold: 0.08, rootMargin: "0px 0px -36px 0px" },
 				);
 
-				targets.forEach((el) => {
-					el.classList.remove("is-visible");
-					const delay = el.dataset.animateDelay;
-					if (delay) el.style.animationDelay = delay;
-					observer.observe(el);
+				targets.forEach(observeAnimated);
+			};
+
+			// Секции, ПОДМЕНЁННЫЕ после загрузки, тоже должны показываться.
+			// В конструкторе превью заменяет узел секции целиком на каждую правку
+			// настройки: новый элемент не наблюдается прежним IntersectionObserver,
+			// поэтому оставался с opacity:0 навсегда — мерчант видел пустоту вместо
+			// секции. На живом сайте узлы не подменяются, поведение не меняется.
+			const watchAddedAnimated = () => {
+				const mo = new MutationObserver((records) => {
+					for (const rec of records) {
+						for (const node of Array.from(rec.addedNodes)) {
+							if (!(node instanceof HTMLElement)) continue;
+							if (node.matches("[data-animate]")) observeAnimated(node);
+							node
+								.querySelectorAll<HTMLElement>("[data-animate]")
+								.forEach(observeAnimated);
+						}
+					}
 				});
+				mo.observe(document.body, { childList: true, subtree: true });
 			};
 
 			initScrollAnimations();
+			watchAddedAnimated();
 			document.addEventListener("astro:after-swap", initScrollAnimations);
 		</script>
 	</body>

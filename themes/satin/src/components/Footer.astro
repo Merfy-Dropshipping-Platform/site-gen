@@ -157,7 +157,7 @@ const socials = Array.isArray(p.socialColumn?.socialLinks)
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал info-ряда верстальщика байт-в-байт:
-// «© {год} {siteTitle} Theme Все права защищены.» — БЕЗ хвоста Powered by
+// «© {год} {siteTitle} Все права защищены.» — БЕЗ хвоста Powered by
 // (он живёт в чёрной полосе bottomStrip). canon-default poweredBy 'Powered by Merfy'
 // из puckConfig трактуется как «не задан» → литерал (правило canon-default → пиксель).
 const copyrightProp = p.copyright;
@@ -168,7 +168,7 @@ const showYear = !(copyrightObj.showYear === false || copyrightObj.showYear === 
 const companyPart =
 	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
 		? copyrightObj.companyName
-		: `${siteTitle} Theme`;
+		: siteTitle;
 const poweredByTail =
 	typeof copyrightObj.poweredBy === "string" &&
 	copyrightObj.poweredBy.trim() &&
@@ -187,7 +187,7 @@ const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled 
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim()
 		? strip.text
-		: `© ${today.getFullYear()} ${siteTitle} Theme Все права защищены. Powered by Merfy`;
+		: `© ${today.getFullYear()} ${siteTitle} Все права защищены. Powered by Merfy`;
 
 // Канон padding {top,bottom} — inline-стиль при любом заданном пропе, как rose
 // Footer (включая {80,80}, иначе слайдер «Отступы» мёртв). Без пропа — литерал.

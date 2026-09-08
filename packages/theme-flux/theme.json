@@ -112,7 +112,8 @@
         "buttonStyle": "primary",
         "cardBackground": "true",
         "cardStyle": "square",
-        "quickAdd": "cart"
+        "quickAdd": "cart",
+        "nextPhotoMode": "simple"
       },
       "filterPosition": "side",
       "showSort": "true",
@@ -136,16 +137,26 @@
         "showDescription": false
       }
     },
-    "Hero": {},
+    "Hero": {
+      "size": "large",
+      "position": "center-left"
+    },
     "ImageWithText": {
-      "colorScheme": "scheme-2"
+      "colorScheme": "scheme-2",
+      "size": "medium",
+      "width": "large"
     },
     "Gallery": {
       "colorScheme": "scheme-2"
     },
-    "Slideshow": {},
+    "Slideshow": {
+      "size": "medium"
+    },
     "MultiRows": {
-      "colorScheme": "scheme-2"
+      "colorScheme": "scheme-2",
+      "size": "medium",
+      "width": "large",
+      "buttonStyle": "primary"
     },
     "MultiColumns": {
       "colorScheme": "scheme-2"
@@ -157,13 +168,18 @@
       "colorScheme": "scheme-2"
     },
     "Newsletter": {
-      "colorScheme": "scheme-2"
+      "colorScheme": "scheme-2",
+      "text": {
+        "size": "medium"
+      }
     },
     "PromoBanner": {
-      "colorScheme": "scheme-1"
+      "colorScheme": "scheme-1",
+      "textTransform": "none"
     },
     "Video": {
-      "colorScheme": "scheme-2"
+      "colorScheme": "scheme-2",
+      "size": "medium"
     }
   },
   "colorSchemes": [

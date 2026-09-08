@@ -179,7 +179,11 @@ main + [data-vanilla-newsletter] {
   z-index: 2;
 }
 footer[data-vanilla-footer] {
-  background-color: var(--vanilla-announcement-bg);
+  /* Полотно-заполнитель под стыками секций подвала (-2px перекрытия). Берём фон
+     ИЗ ЦВЕТОВОЙ СХЕМЫ, а не из темо-переменной: иначе при светлой схеме подвала
+     корень оставался тёмным и просвечивал в стыках и отступах. Фолбэк 38 49 28 =
+     #26311c — ровно прежний цвет вёрстки, поэтому вид по умолчанию не меняется. */
+  background-color: rgb(var(--color-bg, 38 49 28));
   isolation: isolate;
   margin-top: -2px;
   position: relative;

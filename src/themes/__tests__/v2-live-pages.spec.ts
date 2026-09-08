@@ -97,7 +97,12 @@ describe('composeContentPagesIntoDist', () => {
     } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
 
     const n = await composeContentPagesIntoDist(ctx, 'rose');
-    expect(n).toBe(1);
+    // home + about + contacts. Раньше ждали 1: страницы, которых нет в ревизии,
+    // не резолвились из-за бага ленивого сида (PageResolver искал пакеты тем в
+    // несуществующем dist/packages/*, а page-blocks отдавал файл целиком вместо
+    // массива блоков). После починки контентные страницы темы честно берутся из
+    // пакета и тоже пересаживаются в dist — это и есть желаемое поведение.
+    expect(n).toBe(3);
 
     const html = await fs.readFile(path.join(dist, 'index.html'), 'utf8');
     // Hero пересажен из ревизии (в <main>).
@@ -260,8 +265,9 @@ describe('composeContentPagesIntoDist', () => {
     } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
 
     const n = await composeContentPagesIntoDist(ctx, 'rose');
-    // home + catalog (collections/preview шелла нет → пропущен).
-    expect(n).toBe(2);
+    // home + catalog (collections/preview шелла нет → пропущен) + about/contacts
+    // из пакета темы (см. пояснение в первом тесте про ленивый сид).
+    expect(n).toBe(4);
 
     const catalogHtml = await fs.readFile(
       path.join(dist, 'catalog', 'index.html'),
@@ -292,8 +298,9 @@ describe('composeContentPagesIntoDist', () => {
     } as unknown as Parameters<typeof composeContentPagesIntoDist>[0];
 
     const n = await composeContentPagesIntoDist(ctx, 'rose');
-    // Только home; catalog без своего шелла пропущен (home-фоллбэка нет).
-    expect(n).toBe(1);
+    // home + about/contacts из пакета темы; catalog без своего шелла пропущен
+    // (home-фоллбэка нет) — проверяемое поведение теста не изменилось.
+    expect(n).toBe(3);
 
     // Файл каталога не создан из home-шелла.
     await expect(

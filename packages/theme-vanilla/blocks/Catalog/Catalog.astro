@@ -43,12 +43,23 @@ interface Props {
 	showFilter?: boolean | "true" | "false";
 	showSort?: boolean | "true" | "false";
 	columns?: number;
+	/** «Карточки» — сколько товаров на одну «страницу» пагинации (2..24). */
+	cards?: number;
+	/** «Отступы» секции. Нет пропа = отступы вёрстки (py-16 md:py-20). */
+	padding?: { top?: number; bottom?: number };
 	colorScheme?: string;
-	/** Под-настройки «Карточка товара» конструктора (общая Puck-схема). Родная
-	    вёрстка vanilla читает только cardBackground («Контейнер»); прочие поля
-	    (cardStyle/buttonStyle/quickAdd) принимаем, но не используем. */
+	/** «Цветовая схема контейнера» — схема внутренней обёртки каталога. */
+	containerColorScheme?: string;
+	/** Под-настройки «Карточка товара» конструктора (общая Puck-схема). */
 	productCard?: {
 		cardBackground?: boolean | "true" | "false";
+		/** «Стиль (аспект фото)»: square 1:1 · portrait 318/444 · landscape 4/3. */
+		cardStyle?: string;
+		/** «Быстрое добавление»: none — кнопки нет; standard/cart — кнопка в карточке. */
+		quickAdd?: string;
+		quickAddText?: string;
+		/** «Стиль кнопки» быстрого добавления: primary (заливка) · outlined (обводка). */
+		buttonStyle?: string;
 	};
 	/** Настройка «Выбор коллекции» конструктора (страница page-collection).
 	    Приходит как slug/id выбранной коллекции; null/пусто → весь каталог. */
@@ -65,7 +76,10 @@ const {
 	showFilter,
 	showSort,
 	columns,
+	cards,
+	padding,
 	colorScheme,
+	containerColorScheme,
 	productCard,
 	collectionSlug,
 } = Astro.props as Props;
@@ -85,9 +99,58 @@ const cardWrapClass = cardContainerOn
 	? "group flex flex-col gap-3 rounded-[12px] bg-[var(--vanilla-card)] p-3"
 	: "group flex flex-col gap-3";
 
-// Кол-во товаров на «страницу» пагинации: columns*3 (3 ряда) или 12 по умолчанию.
+// Кол-во товаров на «страницу» пагинации: настройка «Карточки» (cards, 2..24).
+// Без пропа — прежнее поведение вёрстки: columns*3 (3 ряда) или 12.
 const colsNum = Number(columns);
-const pageSize = Number.isFinite(colsNum) && colsNum > 0 ? colsNum * 3 : 12;
+const cardsNum = Number(cards);
+const pageSize = Number.isFinite(cardsNum) && cardsNum > 0
+	? Math.max(2, Math.min(24, cardsNum))
+	: Number.isFinite(colsNum) && colsNum > 0
+		? colsNum * 3
+		: 12;
+
+// «Колонки» (desktop ≥1280) — числом через CSS-переменную, как у flux: Tailwind
+// arbitrary-класс `lg:grid-cols-[repeat(var())]` не генерится @source-сканом
+// превью, поэтому правило живёт в <style> секции и читает --vanilla-cols.
+// Mobile/планшет остаются на классах вёрстки (1/2/3 колонки).
+const colCount = Math.max(2, Math.min(6, Number.isFinite(colsNum) && colsNum > 0 ? colsNum : 3));
+
+// «Отступы» секции. Проп отсутствует = отступы вёрстки (py-16 md:py-20 классами);
+// заданное значение применяется честно инлайном и перебивает классы.
+const containerStyle =
+	(padding ? `padding-top:${padding.top ?? 0}px;padding-bottom:${padding.bottom ?? 0}px;` : "") +
+	`--vanilla-cols:${colCount};`;
+
+// «Цветовая схема контейнера» — на внутреннюю обёртку каталога (отдельно от
+// схемы секции), зеркалит theme-base/flux.
+const containerSchemeClass =
+	typeof containerColorScheme === "string" && containerColorScheme
+		? ` color-scheme-${containerColorScheme.replace("scheme-", "")}`
+		: "";
+
+// «Стиль (аспект фото)» карточки: square 1:1 (канон vanilla) · portrait 318/444 ·
+// landscape 4/3. Нет пропа = канон вёрстки.
+const cardAspectClass =
+	productCard?.cardStyle === "portrait" || productCard?.cardStyle === "auto"
+		? "aspect-[318/444]"
+		: productCard?.cardStyle === "wide"
+			? "aspect-[4/3]"
+			: "aspect-square";
+
+// «Быстрое добавление»: 'none' (или отсутствие пропа) = канон вёрстки vanilla —
+// кнопки в карточке нет. Любое другое значение показывает кнопку.
+const quickAddMode = typeof productCard?.quickAdd === "string" ? productCard.quickAdd : "none";
+const quickAddOn = quickAddMode !== "none" && quickAddMode !== "false";
+const quickAddLabel =
+	typeof productCard?.quickAddText === "string" && productCard.quickAddText.trim()
+		? productCard.quickAddText
+		: "В КОРЗИНУ";
+// «Стиль кнопки»: secondary/outlined — обводка на белом; primary (дефолт) — заливка.
+const quickAddOutlined =
+	productCard?.buttonStyle === "secondary" || productCard?.buttonStyle === "outlined";
+const quickAddClass = quickAddOutlined
+	? "mt-1 inline-flex h-11 min-h-11 w-full items-center justify-center border border-[var(--vanilla-header-bg)] bg-white px-4 font-vanilla-arsenal text-sm font-normal uppercase leading-none text-[var(--vanilla-header-bg)] transition-opacity hover:opacity-70"
+	: "mt-1 inline-flex h-11 min-h-11 w-full items-center justify-center bg-[var(--vanilla-header-bg)] px-4 font-vanilla-arsenal text-sm font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
 
 // Заголовок/подзаголовок: aiText в puck может быть строкой или { text }.
 function pickText(v: unknown, fallback: string): string {
@@ -207,7 +270,7 @@ const rowStockOptions: RadioOption[] = [
 		{placeholderCards.map((card) => (
 			<li data-nt="catalog-placeholder-card" aria-hidden="true">
 				<div class="flex flex-col gap-3">
-					<div class="relative aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]">
+					<div class={`relative ${cardAspectClass} w-full overflow-hidden bg-[var(--vanilla-card)]`}>
 						<img src={card.image} alt="" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
 					</div>
 					<div class="flex flex-col gap-1">
@@ -219,8 +282,13 @@ const rowStockOptions: RadioOption[] = [
 		))}
 	</template>
 
-	<div class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20">
-		<div class="vanilla-container flex flex-col gap-10">
+	<div class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20" style={containerStyle}>
+		<div
+			class={`vanilla-container flex flex-col gap-10${containerSchemeClass}`}
+			style={containerSchemeClass
+				? "background:rgb(var(--color-bg,238 238 238));color:rgb(var(--color-text,0 0 0));"
+				: undefined}
+		>
 			<header class="flex flex-col gap-2">
 				<h1
 					id="catalog-title"
@@ -311,7 +379,7 @@ const rowStockOptions: RadioOption[] = [
 						{skeletons.map(() => (
 							<li data-nt="catalog-skeleton" aria-hidden="true">
 								<div class="flex flex-col gap-3">
-									<div class="aspect-square w-full animate-pulse bg-[var(--vanilla-card)]"></div>
+									<div class={`${cardAspectClass} w-full animate-pulse bg-[var(--vanilla-card)]`}></div>
 									<div class="flex flex-col gap-1">
 										<div class="h-4 w-2/3 animate-pulse bg-[var(--vanilla-card)]"></div>
 										<div class="h-4 w-1/3 animate-pulse bg-[var(--vanilla-card)]"></div>
@@ -337,7 +405,7 @@ const rowStockOptions: RadioOption[] = [
 						{skeletons.map(() => (
 							<li data-nt="catalog-skeleton" aria-hidden="true">
 								<div class="flex flex-col gap-3">
-									<div class="aspect-square w-full animate-pulse bg-[var(--vanilla-card)]"></div>
+									<div class={`${cardAspectClass} w-full animate-pulse bg-[var(--vanilla-card)]`}></div>
 									<div class="flex flex-col gap-1">
 										<div class="h-4 w-2/3 animate-pulse bg-[var(--vanilla-card)]"></div>
 										<div class="h-4 w-1/3 animate-pulse bg-[var(--vanilla-card)]"></div>
@@ -358,6 +426,15 @@ const rowStockOptions: RadioOption[] = [
 </section>
 
 <style is:global>
+	/* «Колонки» (desktop ≥1280): число из настройки через --vanilla-cols (секция
+	   несёт переменную, mobile/планшет остаются на классах вёрстки 1/2/3).
+	   Явное media-правило вместо Tailwind arbitrary-класса — lg:grid-cols-[repeat(var())]
+	   не генерится @source-сканом превью. */
+	@media (min-width: 1280px) {
+		[data-nt="vanilla-catalog-section"] [data-nt="catalog-grid"] {
+			grid-template-columns: repeat(var(--vanilla-cols, 3), minmax(0, 1fr)) !important;
+		}
+	}
 	/* Переключение раскладок каталога: виден только выбранный вариант.
 	   data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
 	   (или дефолт из настройки filterPosition). */
@@ -373,7 +450,7 @@ const rowStockOptions: RadioOption[] = [
 	}
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardContainerOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
 	// перенесены телами 1:1 (без import/типов), данные frontmatter — через define:vars.
@@ -531,6 +608,74 @@ const rowStockOptions: RadioOption[] = [
 			? "border-radius:12px;background:var(--vanilla-card);padding:12px;"
 			: "";
 
+		// ─────────── nt-cart (vanilla:cart:v1) — инлайн-запись как lib/nt-cart-vanilla.ts ───────────
+		// is:inline НЕ резолвит `import { addToCart }`, поэтому тело перенесено 1:1:
+		// тот же storageKey ("vanilla:cart:v1") и событие ("vanilla:cart:updated"),
+		// которые читают шапка-дровер (initCartUI) и страница корзины. Единый стор
+		// витрины → быстрое добавление из каталога сразу видно везде. cartStore
+		// (бэкенд) не трогаем — он наполняется из nt-cart при оформлении.
+		const NT_CART_KEY = "vanilla:cart:v1";
+		const NT_CART_EVENT = "vanilla:cart:updated";
+		function ntPriceAttr(raw) {
+			if (typeof raw === "number") return Number.isFinite(raw) ? raw : "";
+			const digits = String(raw == null ? "" : raw).replace(/[^\d]/g, "");
+			return digits ? Number(digits) : "";
+		}
+		function ntReadCart() {
+			try {
+				const parsed = JSON.parse(window.localStorage.getItem(NT_CART_KEY) || "[]");
+				return Array.isArray(parsed) ? parsed : [];
+			} catch (e) {
+				return [];
+			}
+		}
+		function ntAddToCart(opts) {
+			const lines = ntReadCart();
+			const id = String(opts.productId);
+			const quantity = Math.max(1, opts.quantity || 1);
+			const price = Number(ntPriceAttr(opts.price)) || 0;
+			const oldPriceRaw = ntPriceAttr(opts.oldPrice);
+			const existing = lines.find((l) => l.id === id);
+			if (existing) {
+				existing.quantity += quantity;
+			} else {
+				lines.push({
+					id: id,
+					productId: id,
+					name: opts.name || "",
+					price: price,
+					oldPrice: oldPriceRaw === "" ? undefined : Number(oldPriceRaw),
+					image: opts.image || "",
+					quantity: quantity,
+					variant: {},
+				});
+			}
+			window.localStorage.setItem(NT_CART_KEY, JSON.stringify(lines));
+			window.dispatchEvent(new CustomEvent(NT_CART_EVENT, { detail: lines }));
+		}
+		// Делегат «быстрого добавления»: один слушатель на документ, поэтому
+		// переживает перерисовку грида (renderCatalog заменяет <li> целиком).
+		function bindQuickAdd() {
+			if (document.body.getAttribute("data-vn-quick-add") === "1") return;
+			document.body.setAttribute("data-vn-quick-add", "1");
+			document.addEventListener("click", (event) => {
+				const btn = event.target.closest("button[data-quick-add-id]");
+				if (!btn) return;
+				if (!btn.closest('[data-nt="catalog-grid"]')) return;
+				event.preventDefault();
+				event.stopPropagation();
+				ntAddToCart({
+					productId: btn.getAttribute("data-quick-add-id"),
+					name: btn.getAttribute("data-name") || "",
+					price: btn.getAttribute("data-price"),
+					oldPrice: btn.getAttribute("data-old-price"),
+					image: btn.getAttribute("data-image") || "",
+					quantity: 1,
+				});
+			});
+		}
+		bindQuickAdd();
+
 		// renderCardHtml — зеркалит vanilla-карточку (aspect-square, font-vanilla-arsenal).
 		function renderCardHtml(p) {
 			const href = escapeHtml(productHref(p));
@@ -560,9 +705,24 @@ const rowStockOptions: RadioOption[] = [
 				`<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(p.id)}" aria-pressed="${wished ? "true" : "false"}" aria-label="В избранное" ` +
 				`class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center bg-white text-[var(--vanilla-dark)] shadow-[0_2px_8px_rgba(0,0,0,0.10)] transition-opacity hover:opacity-80">` +
 				`<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
+			// «Быстрое добавление» (productCard.quickAdd). Канон вёрстки vanilla —
+			// кнопки нет; настройка её включает, «Стиль кнопки» задаёт заливку/обводку.
+			// Кнопка НЕ внутри <a> (button-in-anchor невалиден) — она в текстовом
+			// блоке карточки. data-quick-add-id ловит делегат ниже и кладёт строку
+			// в nt-cart (vanilla:cart:v1) — тот же стор, что читают шапка-дровер и
+			// страница корзины, поэтому добавленное сразу видно везде.
+			const _price = ntPriceAttr(p.price);
+			const _oldPrice = ntPriceAttr(p.oldPrice || p.compareAtPrice || null);
+			const quickAddBtn = quickAddOn
+				? `<button type="button" data-nt="catalog-quick-add" data-quick-add-id="${escapeHtml(p.id)}"` +
+					` data-name="${name}" data-price="${escapeHtml(String(_price))}"` +
+					(_oldPrice ? ` data-old-price="${escapeHtml(String(_oldPrice))}"` : "") +
+					(rawImage ? ` data-image="${escapeHtml(rawImage)}"` : "") +
+					` class="${quickAddClass}">${escapeHtml(quickAddLabel)}</button>`
+				: "";
 			return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}"${cardChromeStyle ? ` style="${cardChromeStyle}"` : ""}>
 	<div class="relative w-full">
-	<a href="${href}" class="relative block aspect-square w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label="${name}">${media}</a>
+	<a href="${href}" class="relative block ${cardAspectClass} w-full overflow-hidden bg-[var(--vanilla-card)]" aria-label="${name}">${media}</a>
 	${heartBtn}
 	</div>
 	<div class="flex flex-col gap-1">
@@ -571,6 +731,7 @@ const rowStockOptions: RadioOption[] = [
 			<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">${price}</span>
 			${oldPrice}
 		</div>
+		${quickAddBtn}
 	</div>
 </article>`;
 		}

@@ -67,9 +67,13 @@ const textCls =
 		? `text-center font-roboto-flex font-light leading-normal max-w-full uppercase ${textSizeCls}`
 		: `text-center font-roboto-flex font-light leading-normal max-w-full ${textSizeCls}`;
 
-// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
-// (min-h 32/40/48 = heightCls). padding из ревизии НЕ применяется — иначе старые
-// баннеры с padding {12,12} выходят за макетную высоту (полоса толще макета).
+// Канон «Отступы» {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
+// Slideshow/rose T11). «Размер» задаёт минимальную высоту полосы, «Отступы» добавляют
+// вертикальные поля поверх неё. Легаси-значение старого сида {12,12} снимается
+// миграцией ревизий (normalizePromoBannerPadding) — вид ненастроенных баннеров тот же.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 {
@@ -78,6 +82,7 @@ const textCls =
 		   (классы/токены rootCls + textCls байт-в-байт, поведение не меняется). */
 		<div
 			class={rootCls}
+			style={paddingStyle}
 			role="region"
 			aria-live="polite"
 			data-nt="promo-banner"
@@ -106,6 +111,7 @@ const textCls =
 		   и НЕ дефолт-акция «Бесплатная доставка…»). Эталон rose/bloom PromoBanner.astro. */
 		<div
 			class="flex min-h-12 items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]"
+			style={paddingStyle}
 			role="region"
 			aria-live="polite"
 			data-nt="promo-banner"

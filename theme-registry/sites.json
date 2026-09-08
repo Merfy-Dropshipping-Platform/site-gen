@@ -12,5 +12,12 @@
     "note": "локальный e2e-сайт flux, 50 товаров",
     "variantProductId": "11111111-2222-4333-8444-555555550001",
     "altProductId": "4ad208f2-0c1e-420d-8d64-9812cd83615c"
+  },
+  "vanilla": {
+    "siteId": "13a40348-4546-4213-aca0-29db6fe2be26",
+    "tenantId": "bf8c5126-99fd-435e-a785-6c0e6491d593",
+    "note": "локальный сайт vanilla (аудит) — свежий тенант; каталог склонирован с rose-гейта (61 товар, 7 коллекций, sku -vn)",
+    "variantProductId": "c017a29e-c64e-4f1c-afd8-d8ff357aed6e",
+    "altProductId": "d1ebcd7b-df42-404d-b47f-ad6719c7a4cf"
   }
 }

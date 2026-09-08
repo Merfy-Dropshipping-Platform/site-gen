@@ -543,7 +543,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddMode, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → на проде остаётся сырой путь Catalog.astro?astro&type=script
   // → HTTP 404 → вся клиентская логика мертва. is:inline компилится всегда.
@@ -758,8 +758,21 @@ const skeletons = Array.from({ length: skeletonCount });
     const comboAttr = _firstCombo
       ? ` data-quick-add-combo-id="${escapeHtml(String(_firstCombo.id))}"`
       : "";
+    // Режим «Количество» (cart) — степпер «− N +» ПЕРЕД кнопкой, как в секции
+    // «Коллекция товаров» (themes/bloom/src/lib/storefront-hydrate.ts). Раньше
+    // каталог рисовал в этом режиме только кнопку, и «Количество» ничем не
+    // отличалось от «Стандарта» (пользователь #17).
+    const qaStepper =
+      quickAddMode === "cart"
+        ? '<div class="mb-2 flex h-12 w-full items-center justify-between rounded-full border border-solid border-[rgb(var(--color-input-border,255_212_229))] px-1" data-qa-stepper>' +
+          '<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-inter text-[18px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>' +
+          '<span data-qa-qty class="min-w-[28px] flex-1 text-center font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>' +
+          '<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-inter text-[18px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>' +
+          "</div>"
+        : "";
     const quickBtn = showQuickAdd
-      ? `<button type="button" data-quick-add-id="${escapeHtml(p.id)}"${comboAttr} style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
+      ? qaStepper +
+        `<button type="button" data-quick-add-id="${escapeHtml(p.id)}"${comboAttr} style="${QUICK_BTN_STYLE}">${escapeHtml(quickAddText)}</button>`
       : "";
     // Сердце избранного (overlay top-right) — зеркалит BloomProductCard.astro (parity
     // SSG↔client). Начальное состояние читаем из глобала window.__bloomWishlist
@@ -1318,6 +1331,20 @@ const skeletons = Array.from({ length: skeletonCount });
     if (document.body.getAttribute("data-cf-card") === "1") return;
     document.body.setAttribute("data-cf-card", "1");
 
+    // Степпер «Количества»: +/− меняют число на карточке, в корзину уходит именно оно.
+    document.addEventListener("click", (event) => {
+      const step = event.target.closest("[data-qa-inc], [data-qa-dec]");
+      if (!step || !step.closest('[data-nt="catalog-grid"]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const box = step.closest("[data-qa-stepper]");
+      const out = box && box.querySelector("[data-qa-qty]");
+      if (!out) return;
+      const current = parseInt(out.textContent, 10) || 1;
+      const next = step.hasAttribute("data-qa-inc") ? current + 1 : Math.max(1, current - 1);
+      out.textContent = String(next);
+    });
+
     document.addEventListener("click", (event) => {
       const btn = event.target.closest("button[data-quick-add-id]");
       if (!btn) return;
@@ -1328,8 +1355,11 @@ const skeletons = Array.from({ length: skeletonCount });
       // Товар с вариантами → добавляем первую комбинацию (variantId = combo.id),
       // иначе товар без варианта (null). Решение владельца.
       const comboId = btn.getAttribute("data-quick-add-combo-id") || null;
+      const card = btn.closest('[data-nt="bloom-product-card"]');
+      const qtyEl = card && card.querySelector("[data-qa-stepper] [data-qa-qty]");
+      const qty = qtyEl ? Math.max(1, parseInt(qtyEl.textContent, 10) || 1) : 1;
       if (window.cartStore && typeof window.cartStore.addItem === "function") {
-        window.cartStore.addItem(productId, comboId, 1);
+        window.cartStore.addItem(productId, comboId, qty);
       }
       const orig = btn.textContent;
       btn.textContent = "✓ ДОБАВЛЕНО";

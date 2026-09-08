@@ -103,7 +103,8 @@
   },
   "blockDefaults": {
     "PromoBanner": {
-      "colorScheme": "scheme-4"
+      "colorScheme": "scheme-4",
+      "textTransform": "none"
     },
     "Hero": {
       "colorScheme": "scheme-4"

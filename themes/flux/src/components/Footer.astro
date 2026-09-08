@@ -148,7 +148,7 @@ const socialColumnHasContent =
 	Boolean(phone) || Boolean(email) || contactFields.length > 0 || socials.length > 0 || paymentEnabled;
 
 // copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком). Дефолт = литерал
-// чёрной полосы верстальщика байт-в-байт: «© {год} {siteTitle} Theme Все права защищены.
+// чёрной полосы верстальщика байт-в-байт: «© {год} {siteTitle} Все права защищены.
 // Powered by Merfy» (F:142) — формула rose (без точки после companyPart).
 const copyrightProp = p.copyright;
 const copyrightOverride =
@@ -158,7 +158,7 @@ const showYear = !(copyrightObj.showYear === false || copyrightObj.showYear === 
 const companyPart =
 	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
 		? copyrightObj.companyName
-		: `${siteTitle} Theme`;
+		: siteTitle;
 const poweredBy =
 	typeof copyrightObj.poweredBy === "string" ? copyrightObj.poweredBy.trim() : "Powered by Merfy";
 const copyrightText =

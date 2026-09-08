@@ -16,7 +16,10 @@ export const CartBodySchema = z.object({
 export type CartBodyProps = z.infer<typeof CartBodySchema>;
 
 export const CartBodyPuckConfig: BlockPuckConfig<CartBodyProps> = {
-  label: 'Товары',
+  // Тот же лейбл, что и в конструкторе (`componentLabels.ts`): в дереве секций
+  // блок подписан «Корзина», и панель/список «Добавить секцию» не должны звать
+  // его иначе («Товары» читалось как отдельная секция товаров).
+  label: 'Корзина',
   category: 'content',
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },

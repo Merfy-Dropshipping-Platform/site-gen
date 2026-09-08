@@ -55,9 +55,13 @@ const caseCls = p.textTransform === "none" ? "" : " uppercase";
 // масштабируется от «Размер текста» — small 12 / medium 14 / large 16.
 const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center border-0 bg-[rgb(var(--color-bg,38_49_28))] px-4 text-center font-vanilla-arsenal ${sz.text} font-normal${caseCls} leading-none tracking-normal text-[rgb(var(--color-text,255_255_255))]`;
 
-// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
-// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
-// с padding {12,12} выходят за макетную высоту (полоса толще макета).
+// Канон «Отступы» {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
+// Slideshow/rose T11). «Размер» задаёт минимальную высоту полосы, «Отступы» добавляют
+// вертикальные поля поверх неё. Легаси-значение старого сида {12,12} снимается
+// миграцией ревизий (normalizePromoBannerPadding) — вид ненастроенных баннеров тот же.
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 ---
 
 {
@@ -69,6 +73,7 @@ const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center
 		   ссылка — отдельный подчёркнутый хвост; иначе только текст. */
 		<div
 			class={rootCls}
+			style={paddingStyle}
 			role="region"
 			aria-live="polite"
 			data-vanilla-announcement

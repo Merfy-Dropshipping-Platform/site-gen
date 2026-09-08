@@ -176,6 +176,11 @@ export class SitesDomainService {
           previewDesktop: schema.theme.previewDesktop,
           previewMobile: schema.theme.previewMobile,
           badge: schema.theme.badge,
+          // Даты темы — карточка «Активная тема» в админке показывает
+          // «Добавлено» / «Последнее обновление». Без них в выборке фронт
+          // рисовал прочерки (пользователь #17).
+          createdAt: schema.theme.createdAt,
+          updatedAt: schema.theme.updatedAt,
         },
       })
       .from(schema.site)
@@ -226,6 +231,11 @@ export class SitesDomainService {
           templateId: schema.theme.templateId,
           badge: schema.theme.badge,
           tags: schema.theme.tags,
+          // Даты темы — карточка «Активная тема» в админке показывает
+          // «Добавлено» / «Последнее обновление». Без них в выборке фронт
+          // рисовал прочерки (пользователь #17).
+          createdAt: schema.theme.createdAt,
+          updatedAt: schema.theme.updatedAt,
         },
       })
       .from(schema.site)
@@ -260,6 +270,11 @@ export class SitesDomainService {
           slug: schema.theme.slug,
           templateId: schema.theme.templateId,
           badge: schema.theme.badge,
+          // Даты темы — карточка «Активная тема» в админке показывает
+          // «Добавлено» / «Последнее обновление». Без них в выборке фронт
+          // рисовал прочерки (пользователь #17).
+          createdAt: schema.theme.createdAt,
+          updatedAt: schema.theme.updatedAt,
         },
       })
       .from(schema.site)
@@ -303,6 +318,11 @@ export class SitesDomainService {
           slug: schema.theme.slug,
           templateId: schema.theme.templateId,
           badge: schema.theme.badge,
+          // Даты темы — карточка «Активная тема» в админке показывает
+          // «Добавлено» / «Последнее обновление». Без них в выборке фронт
+          // рисовал прочерки (пользователь #17).
+          createdAt: schema.theme.createdAt,
+          updatedAt: schema.theme.updatedAt,
         },
       })
       .from(schema.site)

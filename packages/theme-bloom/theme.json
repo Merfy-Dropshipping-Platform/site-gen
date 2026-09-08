@@ -81,12 +81,14 @@
       },
       "text": {
         "content": "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам"
-      }
+      },
+      "position": "bottom-left"
     },
     "Slideshow": {
       "alignment": "left",
       "pagination": "numbers",
-      "contentAlign": "left"
+      "contentAlign": "left",
+      "size": "medium"
     },
     "Collections": {
       "cardCaptionStyle": "uppercase",
@@ -104,14 +106,17 @@
     "Video": {
       "padded": true,
       "align": "container",
-      "heading": "Видео"
+      "heading": "Видео",
+      "size": "medium"
     },
     "ImageWithText": {
       "imagePosition": "right",
       "ctaPosition": "bottom-pinned",
       "heading": {
         "text": "Изображение с текстом"
-      }
+      },
+      "size": "medium",
+      "width": "large"
     },
     "PopularProducts": {
       "cardCaptionStyle": "uppercase",
@@ -125,7 +130,8 @@
         "text": "Подпишитесь на нашу рассылку"
       },
       "text": {
-        "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях."
+        "content": "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.",
+        "size": "medium"
       }
     },
     "Catalog": {
@@ -142,7 +148,8 @@
       },
       "productCard": {
         "cardStyle": "auto",
-        "quickAdd": "none"
+        "quickAdd": "none",
+        "nextPhotoMode": "simple"
       }
     },
     "Footer": {
@@ -165,10 +172,25 @@
       "heading": "Мультиколонны"
     },
     "MultiRows": {
-      "heading": "Мультиряды"
+      "heading": "Мультиряды",
+      "size": "medium",
+      "width": "large",
+      "buttonStyle": "primary"
     },
     "Publications": {
       "heading": "Публикации"
+    },
+    "CartBody": {
+      "colorScheme": "scheme-3"
+    },
+    "CartSummary": {
+      "colorScheme": "scheme-3"
+    },
+    "CartTotals": {
+      "colorScheme": "scheme-3"
+    },
+    "CartCheckoutButton": {
+      "colorScheme": "scheme-3"
     }
   },
   "colorSchemes": [

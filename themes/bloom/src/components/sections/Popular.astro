@@ -85,7 +85,11 @@ const fmtPrice = (v: unknown): string => {
 	return Number.isFinite(n) ? `${Math.round(n).toLocaleString("ru-RU")} ₽` : "";
 };
 let realProducts: any[] = [];
-if (collectionRef && siteId) {
+// Товары показываем ВСЕГДА, когда они у магазина есть: коллекция не выбрана —
+// берём первые N товаров каталога. Раньше без коллекции секция рисовала
+// заглушки «Товар · 2 500 ₽», хотя в магазине лежали реальные товары —
+// это ровно то, что владелец запретил: плейсхолдеры только при пустом магазине.
+if (siteId) {
 	try {
 		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
 		const res = await fetch(`${base}/api/sites/${siteId}/storefront-data`).catch(() => null);
@@ -491,10 +495,11 @@ const paddingStyle = p.padding
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
-			// Shopify-модель: без выбранной коллекции / пустая коллекция → оставляем
-			// SSR-моки (demo), не подтягиваем весь каталог магазина.
-			if (!collectionRef) continue;
-			const pool = resolveCollectionProducts(products, collections, collectionRef);
+			// Коллекция выбрана → её товары; не выбрана → первые N товаров магазина.
+			// Оставлять заглушки при наличии товаров нельзя (правило владельца).
+			const pool = collectionRef
+				? resolveCollectionProducts(products, collections, collectionRef)
+				: products;
 			if (pool.length === 0) continue;
 			const items = pool.slice(0, limit);
 			const cardVariant = grid.getAttribute("data-card-variant") === "minimal" ? "minimal" : "rich";

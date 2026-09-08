@@ -28,6 +28,14 @@ export const PromoBannerSchema = z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
   }),
+  /**
+   * Служебный проп видимости секции (тот же, что ставит «глаз» в outline
+   * конструктора): true → секция вырезается из рендера (extractPageBlocks /
+   * page-generator фильтруют `props.hidden === true`). В панели промо-баннера
+   * он выведен тумблером «Скрыть/показать» — по просьбе пользователя рядом с
+   * «Отступами», как у остальных секций.
+   */
+  hidden: z.boolean().optional(),
   // Legacy back-compat fields (hidden from picker UI, read-only fallback in .astro).
   linkText: z.string().optional(),
   linkUrl: z.string().optional(),
@@ -45,8 +53,20 @@ export const PromoBannerPuckConfig = {
   // редактируются через sub-panel «Объявление» при subsection click.
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    // Отступы убраны из main panel: высота баннера задаётся «Размером» (32/40/48px).
-    padding: { type: 'padding', label: 'Отступы', hiddenInMainPanel: true } as any,
+    // Тумблер показа секции (props.hidden). Первый вариант = «включено», поэтому
+    // «Показать» → hidden:false. Пишет ровно тот проп, что и «глаз» в outline.
+    hidden: {
+      type: 'toggle',
+      label: 'Показ',
+      toggleLabel: 'Скрыть/показать',
+      options: [
+        { label: 'Показать', value: false },
+        { label: 'Скрыть', value: true },
+      ],
+    } as any,
+    // «Отступы» — как у остальных секций (пользователь #17). Высоту полосы
+    // задаёт «Размер» (min-h 24/32/40/48), отступы добавляются поверх неё.
+    padding: { type: 'padding', label: 'Отступы' } as any,
     // Sub-panel «Объявление» (314:34600) — text + link + size editable.
     text: { type: 'text', label: 'Текст', hiddenInMainPanel: true } as any,
     link: {
@@ -69,13 +89,26 @@ export const PromoBannerPuckConfig = {
         { label: 'Большой', value: 'large' },
       ],
     } as any,
-    textTransform: { type: 'hidden', label: '' },
+    // «Регистр текста» — по просьбе пользователя выведен в панель. Настройка
+    // была живой, но скрытой: полоса рисовалась заглавными, а снять капс из
+    // конструктора было нечем. Дефолт задаёт ТЕМА (`theme.json → blockDefaults`),
+    // потому что фолбэк рендера у тем разный: bloom/satin/vanilla без пропа
+    // дают капс, rose/flux — нет.
+    textTransform: {
+      type: 'select',
+      label: 'Регистр текста',
+      options: [
+        { label: 'Как введено', value: 'none' },
+        { label: 'Заглавными', value: 'uppercase' },
+      ],
+    } as any,
   },
   defaults: {
     text: 'Бесплатная доставка от 3000 ₽',
     link: { text: 'Подробнее', href: '/delivery' },
     size: 'medium',
     padding: { top: 0, bottom: 0 },
+    hidden: false,
   },
   schema: PromoBannerSchema,
   maxInstances: null,

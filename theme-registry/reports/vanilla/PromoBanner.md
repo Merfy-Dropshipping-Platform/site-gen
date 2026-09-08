@@ -1,15 +1,16 @@
-# PromoBanner @ rose — прогон реестра
+# PromoBanner @ vanilla — прогон реестра
 
-Дата: 2026-09-08T20:38:03.487Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId PromoBanner-1781971905363
+Дата: 2026-09-08T22:10:45.195Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId PromoBanner-home
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|
 | Текст (`text`) | ✓ | «Объявление проба Альфа» видим · «Объявление проба Бета» видим | введённый текст объявления видим (PromoBanner.astro:9-11) |
 | Ссылка · текст (`link.text`) | ✓ | «Ссылка проба Альфа» видим · «Ссылка проба Бета» видим | подпись ссылки видима (PromoBanner.astro:14) |
-| Ссылка · адрес (`link.href`) | ✓ | href="/__theme/rose/catalog?promo-probe=1" (ждали /catalog?promo-probe=1) | ссылка ведёт по введённому адресу (PromoBanner.astro:13) |
-| Размер (`size`) | ✓ | высота 24 → 32 → 40 → 48px | высота полосы растёт: thin 24 / small 32 / medium 40 / large 48 (SIZE_MAP; thin — additive 084) |
+| Ссылка · адрес (`link.href`) | ✓ | href="/__theme/vanilla/catalog?promo-probe=1" (ждали /catalog?promo-probe=1) | ссылка ведёт по введённому адресу (PromoBanner.astro:13) |
+| Размер (`size`) | ✗ | высота 48 → 32 → 40 → 48px | высота полосы растёт: thin 24 / small 32 / medium 40 / large 48 (SIZE_MAP; thin — additive 084) |
 
 ## Не покрыто
 
 - `padding` — rose СОЗНАТЕЛЬНО не применяет (Figma 648:57318 убрала отступы у полосы — высоту задаёт только «Размер», PromoBanner.astro:28); поле в общей панели — кандидат на скрытие
 - `colorScheme` — схему вешает компоновщик страницы — page-tier волна
+- `hidden` — платформенный тумблер видимости блока (появился в панели 2026-09-08): скрывает секцию целиком на всех темах — не настройка секции, меряется гейтом страниц

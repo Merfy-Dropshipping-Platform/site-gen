@@ -17,9 +17,18 @@ interface Props {
 	href?: string;
 	/** Текст CTA «В корзину» (Popular.astro прокидывает quickAddText/канон-настройку «Быстрое добавление»). */
 	ctaLabel?: string;
+	/** Режим «Быстрое добавление»: 'cart' («Количество») добавляет степпер −/+ над
+	    кнопкой; 'standard' — только кнопка. Паритет bloom/rose. */
+	qaMode?: string;
 }
 
-const { product, priority = false, href: hrefProp, ctaLabel = "В корзину" } = Astro.props;
+const { product, priority = false, href: hrefProp, ctaLabel = "В корзину", qaMode } = Astro.props;
+// «Быстрое добавление → Количество»: степпер над кнопкой. Метрики flux —
+// высота 44 (h-11) под кнопкой той же высоты, радиус 4px, Roboto Flex.
+const qaStepperCls =
+	"mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[rgb(var(--color-input-border,221_221_221))] px-1";
+const qaStepBtnCls =
+	"flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]";
 const href = hrefProp ?? `/products/${product.id}`;
 // Бейджи эталона: «Новинка» (isNew) + процент скидки (salePercent). Legacy
 // demo-флаг discount сохранён как третий бейдж «Скидка» (его несут
@@ -154,6 +163,13 @@ const wishlistOutlineSvg =
 			</div>
 		)}
 
+		{qaMode === "cart" && (
+			<div class={qaStepperCls} data-qa-stepper>
+				<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
+				<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>
+				<button type="button" data-qa-inc class={qaStepBtnCls} aria-label="Увеличить">+</button>
+			</div>
+		)}
 		<button
 			type="button"
 			data-add-to-cart

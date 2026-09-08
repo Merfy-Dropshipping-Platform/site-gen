@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (chrome): новая канон-секция PromoBanner в манере bloom (themes/bloom/MANNER.md §8).
 // Схема полей = packages/theme-base/blocks/PromoBanner/PromoBanner.puckConfig.ts:
 // text, link {text, href} (+ legacy linkText/linkUrl), size (thin/small/medium/large),
@@ -90,7 +91,8 @@ const textCls =
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="text"
 			>
-				{text}
+				{/* §7 Контракта секции: «Ж»/«К» панели оборачивают значение в <strong>/<em>, Astro экранирует {text} → в полосе появлялся сырой «<EM>…</EM>», да ещё и заглавными из-за uppercase. XSS-safe inlineFormat. */}
+				<span set:html={inlineFormat(text)} />
 				{linkText && (
 					<a
 						href={linkHref}

@@ -130,7 +130,7 @@ const socials: SocialLink[] = Array.isArray(p.socialColumn?.socialLinks)
 
 // Канон copyright {companyName, poweredBy, showYear} (+ legacy-строка целиком).
 // Дефолтная сборка = литерал верстальщика байт-в-байт:
-// «© {год} {siteTitle} Theme Все права защищены. Powered by Merfy».
+// «© {год} {siteTitle} Все права защищены. Powered by Merfy».
 const copyrightProp = p.copyright;
 const copyrightOverride =
 	typeof copyrightProp === "string" && copyrightProp.trim() ? copyrightProp : undefined;
@@ -139,7 +139,7 @@ const showYear = !(copyrightObj.showYear === false || copyrightObj.showYear === 
 const companyPart =
 	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
 		? copyrightObj.companyName
-		: `${siteTitle} Theme`;
+		: siteTitle;
 const poweredBy =
 	typeof copyrightObj.poweredBy === "string" ? copyrightObj.poweredBy : "Powered by Merfy";
 const copyrightText =

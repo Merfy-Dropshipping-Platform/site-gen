@@ -1190,6 +1190,98 @@ function normalizeFooterContacts(
 }
 
 /**
+ * Корзина: снять схему платформенного сида там, где тема задаёт свою.
+ *
+ * `migrateCartPage` сеет блоки корзины с жёстким `colorScheme: 'scheme-2'` —
+ * у rose/flux/satin это светлое полотно, а у bloom scheme-2 РОЗОВАЯ: страница
+ * корзины заливалась акцентом целиком. Схема корзины принадлежит теме, поэтому
+ * для тем, где она задана в `theme.json → blockDefaults`, значение сида снимаем
+ * — рендер возьмёт дефолт темы (`resolveBlockScheme`). Снимается ТОЛЬКО точное
+ * 'scheme-2' (значение сида); осознанный выбор мерчанта не трогаем.
+ *
+ * Список тем расширяется по мере того, как тема назначает Cart-блокам свои
+ * `blockDefaults` — без них снятие вернуло бы корзину к базовой схеме темы
+ * (у flux это чёрная scheme-1), то есть сломало бы вид.
+ */
+const CART_SEED_SCHEME = 'scheme-2';
+const CART_THEME_SCHEME_THEMES = new Set(['bloom']);
+const CART_BLOCK_TYPES = new Set([
+  'CartBody',
+  'CartSummary',
+  'CartTotals',
+  'CartCheckoutButton',
+]);
+
+function dropSeededCartScheme(
+  pagesData: Record<string, unknown>,
+  themeId?: string | null,
+): Record<string, unknown> {
+  const bare = (themeId ?? '').split('-')[0];
+  if (!CART_THEME_SCHEME_THEMES.has(bare)) return pagesData;
+  const page = pagesData['page-cart'] as PageData | undefined;
+  if (!page || !Array.isArray(page.content)) return pagesData;
+  let changed = false;
+  const content = page.content.map((block) => {
+    const b = block as { type?: string; props?: Record<string, unknown> };
+    if (!b?.type || !CART_BLOCK_TYPES.has(b.type) || !b.props) return block;
+    if (b.props.colorScheme !== CART_SEED_SCHEME) return block;
+    const props = { ...b.props };
+    delete props.colorScheme;
+    changed = true;
+    return { ...b, props };
+  });
+  if (!changed) return pagesData;
+  return { ...pagesData, 'page-cart': { ...(page as object), content } };
+}
+
+/**
+ * PromoBanner: снять легаси-`padding {12,12}` старого сида.
+ *
+ * До этой волны «Отступы» промо-баннера не были выведены в панель и НЕ
+ * применялись в рендере тем — высоту полосы задавал только «Размер». Сид ставил
+ * `padding {top:12,bottom:12}`, который ничего не делал. Теперь «Отступы» —
+ * живой контрол панели, поэтому мёртвое легаси-значение нужно снять: иначе у
+ * баннеров, которые мерчант никогда не настраивал, полоса внезапно стала бы
+ * толще на 24px. Убираем ТОЛЬКО точное {12,12} (значение сида); любое другое
+ * значение — осознанная настройка мерчанта и сохраняется как есть.
+ */
+const PROMO_BANNER_LEGACY_PADDING = { top: 12, bottom: 12 };
+
+function normalizePromoBannerPadding(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (!b || b.type !== 'PromoBanner' || !b.props) return block;
+      const padding = b.props.padding as { top?: unknown; bottom?: unknown } | undefined;
+      if (
+        !padding ||
+        typeof padding !== 'object' ||
+        padding.top !== PROMO_BANNER_LEGACY_PADDING.top ||
+        padding.bottom !== PROMO_BANNER_LEGACY_PADDING.bottom
+      ) {
+        return block;
+      }
+      const props = { ...b.props };
+      delete props.padding;
+      pageChanged = true;
+      return { ...b, props };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Strip "designer demo" content from decorative image sections.
  *
  * theme.json `blockDefaults` seeded Hero/MultiRows/ImageWithText/Gallery/
@@ -1408,6 +1500,12 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = normalizeFooterContacts(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = normalizePromoBannerPadding(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);

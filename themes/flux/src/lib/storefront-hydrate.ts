@@ -608,7 +608,7 @@ function saleBadgeHtml(p: RealProduct): string {
 // Чёрная CTA эталона (literal — карточка верстальщиков светлая независимо от
 // схемы; data-btn-style на гриде Popular перекрывает её через <style is:global>).
 const CARD_BTN_CLS =
-  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
+  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
 /**
  * Кнопка «В корзину» карточки. Вариативный товар → добавляет ПЕРВУЮ доступную
@@ -629,10 +629,10 @@ function cardButtonHtml(p: RealProduct, ctaLabel?: string, qaMode?: string): str
   // корзины читает data-quantity с кнопки. Паритет bloom/rose, метрики flux.
   const qaStepper =
     qaMode === "cart"
-      ? '<div class="mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[rgb(var(--color-input-border,221_221_221))] px-1" data-qa-stepper>' +
-        '<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>' +
-        '<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>' +
-        '<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>' +
+      ? '<div class="mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[#DDDDDD] px-1" data-qa-stepper>' +
+        '<button type="button" data-qa-dec class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[#000000]" aria-label="Уменьшить">−</button>' +
+        '<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[#000000]">1</span>' +
+        '<button type="button" data-qa-inc class="flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[#000000]" aria-label="Увеличить">+</button>' +
         "</div>"
       : "";
   const hasVariants =
@@ -659,7 +659,11 @@ function cardButtonHtml(p: RealProduct, ctaLabel?: string, qaMode?: string): str
     );
   }
   const old = formatPrice(p.oldPrice || p.compareAtPrice || null);
+  // Степпер — и для простого товара тоже: «Быстрое добавление → Количество» не
+  // зависит от наличия вариантов (без этого настройка молча пропадала на
+  // невариативных карточках — самый частый случай в каталоге).
   return (
+    qaStepper +
     `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}"` +
     ` data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"` +
     (old ? ` data-old-price="${escapeHtml(old)}"` : "") +

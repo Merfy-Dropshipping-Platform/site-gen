@@ -325,7 +325,7 @@ export function renderCardHtml(p: RealProduct): string {
 	const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
 	const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
 	const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
-	const cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80";
+	const cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-80";
 	const cartBtn = hasVariants
 		? firstCombo
 			? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" class="${cartBtnCls}">В корзину</button>`

@@ -138,9 +138,12 @@ input[type="search"]::-webkit-search-results-decoration {
 
   [data-nt="flux-product-card"] {
     background: var(--product-card-bg, transparent);
-    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
-    border-radius: var(--product-card-radius, 0px);
-    padding: var(--product-card-padding, 0px);
+    /* !important обязателен: карточки верстальщиков несут собственные утилиты
+       (rounded-[12px], p-3) из @layer utilities, а слой utilities бьёт base —
+       без important ползунки «Обводка»/«Скругление»/отступ оставались мёртвыми. */
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240)) !important;
+    border-radius: var(--product-card-radius, 0px) !important;
+    padding: var(--product-card-padding, 0px) !important;
   }
   /* Медиа (фото) → радиус карточки в card-режиме; !important бьёт утилиту rounded-[…]. */
   [data-nt="flux-product-card"] [data-nt="flux-card-media"] {
@@ -730,5 +733,29 @@ blockquote {
   }
   .account-form {
     width: 100%;
+  }
+}
+
+/* Цвета кнопок при наведении — из цветовой схемы («Фон/Текст при наведении»).
+   До этого темы гасили кнопку прозрачностью (hover:opacity-*), а hover-токены
+   схемы не читались нигде: мерчант менял цвет и не видел эффекта. Селектор по
+   подстроке класса ловит любую кнопку, покрашенную токеном схемы, — в том числе
+   отрисованную на клиенте (renderCardHtml), — без правки десятков файлов вёрстки.
+   !important обязателен: hover:opacity-* лежит в @layer utilities, который бьёт
+   @layer base; opacity возвращаем в 1, иначе цвет виден сквозь затемнение. */
+@layer base {
+  [class*="bg-[rgb(var(--color-button-bg"]:hover {
+    background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0))) !important;
+    opacity: 1 !important;
+  }
+  [class*="text-[rgb(var(--color-button-text"]:hover {
+    color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255))) !important;
+  }
+  [class*="bg-[rgb(var(--color-button-2-bg"]:hover {
+    background-color: rgb(var(--color-button-2-bg-hover, var(--color-button-2-bg, 0 0 0))) !important;
+    opacity: 1 !important;
+  }
+  [class*="text-[rgb(var(--color-button-2-text"]:hover {
+    color: rgb(var(--color-button-2-text-hover, var(--color-button-2-text, 255 255 255))) !important;
   }
 }

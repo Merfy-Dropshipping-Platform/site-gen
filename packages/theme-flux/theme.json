@@ -41,7 +41,8 @@
     "--card-alignment": "left",
     "--color-error": "255 148 148",
     "--color-heading": "0 0 0",
-    "--color-text": "153 153 153"
+    "--color-text": "153 153 153",
+    "--product-card-padding": "12px"
   },
   "blockDefaults": {
     "Footer": {
@@ -394,5 +395,28 @@
       "contentFile": "pages/checkout-result.json"
     }
   ],
-  "defaultScheme": "scheme-2"
+  "defaultScheme": "scheme-2",
+  "blockPlaceholders": {
+    "MultiColumns": {
+      "heading": "Мультиколонны"
+    },
+    "MultiRows": {
+      "heading": "Мультиряды"
+    },
+    "Video": {
+      "heading": "Видео"
+    },
+    "CollapsibleSection": {
+      "heading": "Сворачиваемый раздел"
+    },
+    "Publications": {
+      "heading": "Публикации"
+    },
+    "Newsletter": {
+      "heading.text": "Подпишитесь на нашу рассылку"
+    },
+    "Hero": {
+      "heading.text": "Изображение"
+    }
+  }
 }

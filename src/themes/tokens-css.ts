@@ -43,6 +43,7 @@ const ROOT_RULES_EXPLICIT = new Set<string>([
   '--product-card-media-radius',
   '--color-bottom-strip-bg', '--color-bottom-strip-text',
   '--promo-banner-h-thin',
+  '--cart-drawer-title', '--cart-drawer-checkout-text', '--cart-drawer-empty-text',
 ]);
 
 export function buildTokensCss(
@@ -109,6 +110,29 @@ export function buildTokensCss(
   // не считались — панель работала визуально, но карточка не реагировала.
   const cardBorder = toPx(s.cardBorder, 0);
   const cardStyled = (s.productCardStyle ?? themeDefaults['--card-style']) === 'card';
+  // «Обводка» и «Скругление» — САМОСТОЯТЕЛЬНЫЕ настройки: раньше они гасились в
+  // ноль при стиле «Стандарт», и мерчант видел мёртвые ползунки (значение в
+  // панели меняется, карточка нет). Стиль «Карточка» отвечает только за
+  // подложку (--product-card-bg) и внутренний отступ. Отступ настраивается
+  // ползунком cardPadding; без него — прежнее поведение (card 12px / standard 0).
+  // Порядок: ползунок мерчанта → собственный отступ темы (theme.json) → 12px в
+  // стиле «Карточка» / 0 в «Стандарте». Дефолт темы нужен потому, что правило
+  // карточки идёт с !important: без него у тем с собственным p-3 (flux) отступ
+  // молча схлопывался бы в ноль.
+  const cardPadding =
+    typeof s.cardPadding === 'number'
+      ? toPx(s.cardPadding, 0)
+      : (themeDefaults['--product-card-padding'] ?? (cardStyled ? '12px' : '0px'));
+  // Тексты панели корзины («Заголовок панели», «Текст кнопки оформления»,
+  // «Текст пустой корзины»): у настроек не было НИ ОДНОГО читателя — панель
+  // сохраняла их, а витрина не показывала. Едут строковыми CSS-переменными по
+  // уже работающему каналу токенов (превью и live одинаково), тема подставляет
+  // их в дровер через textContent — разметка дизайн-пакета не трогается.
+  const cssString = (v: unknown): string | null =>
+    typeof v === 'string' && v.trim() ? JSON.stringify(v.trim()) : null;
+  const cartTitle = cssString(s.cartDrawerTitle);
+  const cartCheckout = cssString(s.cartDrawerCheckoutText);
+  const cartEmpty = cssString(s.cartDrawerEmptyText);
   const _pcAlignRaw = s.productCardAlignment ?? themeDefaults['--card-alignment'];
   const pcAlign =
     _pcAlignRaw === 'center' ? 'center' : _pcAlignRaw === 'right' ? 'right' : 'left';
@@ -130,12 +154,13 @@ export function buildTokensCss(
   --radius-input: ${merchantFirst(inputRadius, inputRadiusSet, themeDefaults['--radius-input'], '8px')};
   --radius-media: ${merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
   --radius-field: ${merchantFirst(fieldRadius, fieldRadiusSet, themeDefaults['--radius-field'], '4px')};
-  --product-card-bw: ${cardStyled ? cardBorder : '0px'};
-  --product-card-radius: ${cardStyled ? merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px') : '0px'};
-  --product-card-padding: ${cardStyled ? '12px' : '0px'};
+  --product-card-bw: ${cardBorder};
+  --product-card-radius: ${merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px')};
+  --product-card-padding: ${cardPadding};
   --product-card-align: ${pcAlign};
   --product-card-justify: ${pcAlign === 'center' ? 'center' : pcAlign === 'right' ? 'flex-end' : 'flex-start'};
   --product-card-bg: ${cardStyled ? 'rgb(var(--color-surface,245 245 245))' : 'transparent'};
+${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n  --cart-drawer-checkout-text: ${cartCheckout};` : ''}${cartEmpty ? `\n  --cart-drawer-empty-text: ${cartEmpty};` : ''}
   --product-card-media-radius: ${cardStyled ? merchantFirst(cardRadius, cardRadiusSet, themeDefaults['--radius-card'], '8px') : merchantFirst(mediaRadius, mediaRadiusSet, themeDefaults['--radius-media'], '8px')};
   --font-heading: ${merchantFirst(headingFont, headingFontSet, themeDefaults['--font-heading'], 'system-ui')};
   --font-body: ${merchantFirst(bodyFont, bodyFontSet, themeDefaults['--font-body'], 'system-ui')};

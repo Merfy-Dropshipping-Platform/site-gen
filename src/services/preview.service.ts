@@ -2370,7 +2370,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (document.head && !document.getElementById(esId)) {
       var es = document.createElement('style');
       es.id = esId;
-      es.textContent = '[data-edit-field][contenteditable]:empty:before{content:attr(data-edit-placeholder);color:rgb(var(--color-muted));opacity:.55;pointer-events:none}';
+      // Плейсхолдер пустой секции «Страница». Было: гейт по [contenteditable]
+      // (подсказки нет, пока агент не навесил атрибут) и цвет --color-muted,
+      // который у части схем bloom равен 245 245 245 — почти белый, то есть
+      // подсказка была невидима и мерчант видел пустую полосу. currentColor
+      // берёт цвет самого заголовка/текста, поэтому читается в любой схеме.
+      es.textContent = '[data-edit-field]:empty:before{content:attr(data-edit-placeholder);color:currentColor;opacity:.45;pointer-events:none}';
       document.head.appendChild(es);
     }
     function applyEditable() {

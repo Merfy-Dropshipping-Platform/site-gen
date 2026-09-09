@@ -50,7 +50,7 @@ const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 
 // Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
 // рендерится только при true/'true'.
-const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
 // Канон publicationType (pagePicker) — носитель data-атрибут на гриде для
 // платформенного резолва публикаций.
@@ -195,7 +195,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								)}
 							</div>
 							<div class="flex flex-col gap-1">
-								{showDate && !item.isPlaceholder && item.date && (
+								{showDate && item.date && (
 									<span class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
 										{item.date}
 									</span>

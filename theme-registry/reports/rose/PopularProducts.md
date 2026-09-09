@@ -1,6 +1,6 @@
 # PopularProducts @ rose — прогон реестра
 
-Дата: 2026-08-06T18:39:12.777Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId PopularProducts-1
+Дата: 2026-09-09T09:03:45.091Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId PopularProducts-1781996455545
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

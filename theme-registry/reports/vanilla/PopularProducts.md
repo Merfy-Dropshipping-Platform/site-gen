@@ -1,6 +1,6 @@
 # PopularProducts @ vanilla — прогон реестра
 
-Дата: 2026-09-08T22:09:52.360Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId PopularProducts-home
+Дата: 2026-09-09T08:47:38.894Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId PopularProducts-home
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

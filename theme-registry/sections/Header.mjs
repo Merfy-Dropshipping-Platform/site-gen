@@ -31,9 +31,11 @@ export default {
     },
     menuColorScheme: {
       label: 'Цветовая схема меню',
-      // пара схем с РАЗНЫМ --color-text в обеих темах (у flux схемы 1 и 4
-      // совпадают по цвету текста — обе white)
-      values: ['scheme-1', 'scheme-2'],
+      // Пара схем, у которых --color-text РАЗНЫЙ во ВСЕХ темах:
+      //   rose 18 18 18 → 26 26 26 · flux 153 153 153 → 0 0 0 · vanilla 255 255 255 → 38 49 28.
+      // 1/2 не годилась (у vanilla обе белые), 1/3 тоже (у flux обе рендерятся белыми:
+      // цвет меню там задаёт CSS-правило по классу схемы, а не токен).
+      values: ['scheme-2', 'scheme-3'],
       meaning: 'схема перекрашивает ТОЛЬКО строку меню (патчер menuColorScheme на [data-nav-inline])',
       also: { navigationLinks: NAV2 },
       check: { type: 'scheme-change', mediaSelector: '[data-nav-inline] a' },

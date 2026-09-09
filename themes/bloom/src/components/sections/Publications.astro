@@ -5,8 +5,8 @@ import { inlineFormat } from "../../lib/rich-text";
 // позиций без Publications). Схема полей = packages/theme-base/blocks/
 // Publications/Publications.puckConfig.ts.
 // ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (3 колонки: пустой image-rect + «Колонна» + «Сочетай текст…» + кнопка), НЕ
-// мок-демо верстальщика (статьи про уход + /images/trend-*.webp). Когда у
+// 1:19335 (3 карточки: /placeholders/publication-card.png + заголовок + дата +
+// анонс), НЕ мок-демо верстальщика (статьи про уход + /images/trend-*.webp). Когда у
 // магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications →
 // fallback publications.json) — рендерим их без изменений (Shopify-модель, как
 // theme-base PopularProducts/Collections/MultiColumns: пустое = заглушка,
@@ -73,7 +73,7 @@ const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 
 // Канон showDateTime (toggle) / legacy dateTime.enabled (hidden) — дата
 // рендерится только при true/'true'.
-const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "false") === "true";
+const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
 // Канон publicationType (pagePicker) — носитель data-атрибут на гриде для
 // платформенного резолва публикаций.
@@ -129,24 +129,30 @@ function formatPubDate(iso: string | null | undefined): string {
 }
 
 // Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
-// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 колонки: пустой image-rect
-// + «Колонна» + «Сочетай текст…» + кнопка), НЕ мок-демо верстальщика.
+// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 карточки публикаций:
+// дизайн-ассет + заголовок + дата + анонс), НЕ мок-демо верстальщика.
 const hasRealPublications = realPublications.length > 0;
-// ДОСЛОВНЫЙ Figma-плейсхолдер (контракт типа «Publications» 1:19335): колонка =
+// Figma-плейсхолдер (контракт типа «Publications» 1:19335): карточка =
 // дизайн-ассет /placeholders/publication-card.png (раздаётся на каждой теме из
-// packages/theme-base/public/placeholders, copyPublic) + «Колонна» + «Сочетай
-// текст…» + кнопка (= «стрелки/кнопки» контракта, рендер как «Кнопка» в манере
-// bloom MultiColumns). Фото показывается ВСЕГДА (НЕ пустой image-rect, контракт
-// картиночных секций). Текст байт-в-байт совпадает с MultiColumns.astro PLACEHOLDER_TEXT.
+// packages/theme-base/public/placeholders, copyPublic). Фото показывается ВСЕГДА
+// (НЕ пустой image-rect, контракт картиночных секций).
 const PLACEHOLDER_IMAGE = "/placeholders/publication-card.png";
-const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
-const PLACEHOLDER_LINK_TEXT = "Кнопка";
-const PLACEHOLDER_LINK_HREF = "/catalog";
+// Заглушка ПУБЛИКАЦИЙ, а не колонок: раньше карточки подписывались «Колонна» и
+// текстом Мультиколонн — мерчант видел чужую секцию и не понимал, что за блок.
+// Состав (заголовок / дата / анонс) — по эталону theme-base Publications и
+// порту flux, тексты байт-в-байт совпадают между темами.
+const PLACEHOLDER_ARTICLES = [
+	{ date: "15 марта 2025", title: "Новая коллекция весна 2025", excerpt: "Рассказываем о вдохновении и ключевых силуэтах новой коллекции." },
+	{ date: "28 февраля 2025", title: "Как ухаживать за изделиями", excerpt: "Простые правила, чтобы ваши вещи служили долгие годы." },
+	{ date: "10 февраля 2025", title: "История бренда: от идеи до магазина", excerpt: "Путь от первой вещи, сделанной вручную, до собственной коллекции." },
+	{ date: "25 января 2025", title: "Тренды сезона 2025", excerpt: "Обзор ключевых трендов — от цветов до фактур." },
+];
 type PubItem = {
 	title: string;
 	date: string;
 	image: string;
 	slug?: string;
+	excerpt?: string;
 	isPlaceholder: boolean;
 };
 const items: PubItem[] = hasRealPublications
@@ -157,10 +163,11 @@ const items: PubItem[] = hasRealPublications
 			slug: pub.slug,
 			isPlaceholder: false,
 		}))
-	: Array.from({ length: cards }, () => ({
-			title: "Колонна",
-			date: "",
+	: Array.from({ length: cards }, (_, i) => ({
+			title: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].title,
+			date: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].date,
 			image: PLACEHOLDER_IMAGE,
+			excerpt: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].excerpt,
 			isPlaceholder: true,
 		}));
 
@@ -222,7 +229,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								)}
 							</div>
 							<div class="flex flex-col gap-1">
-								{showDate && !item.isPlaceholder && item.date && (
+								{showDate && item.date && (
 									<span class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
 										{item.date}
 									</span>
@@ -230,21 +237,12 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
 									{item.title}
 								</span>
-								{/* Пустое состояние — ДОСЛОВНЫЙ Figma-плейсхолдер (контракт
-								   «Publications»): хелпер-текст «Сочетай текст…» + кнопка
-								   «Кнопка» (= «стрелки/кнопки» контракта), как bloom MultiColumns. */}
-								{item.isPlaceholder && (
+								{/* Пустое состояние — анонс публикации-заглушки (заголовок и
+								   дата выше). Раньше здесь стоял текст Мультиколонн и кнопка. */}
+								{item.isPlaceholder && item.excerpt && (
 									<p class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
-										{PLACEHOLDER_TEXT}
+										{item.excerpt}
 									</p>
-								)}
-								{item.isPlaceholder && (
-									<a
-										href={PLACEHOLDER_LINK_HREF}
-										class="mt-2 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
-									>
-										{PLACEHOLDER_LINK_TEXT}
-									</a>
 								)}
 							</div>
 						</Wrapper>

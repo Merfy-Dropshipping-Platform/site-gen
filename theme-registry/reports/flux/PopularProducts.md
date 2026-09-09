@@ -1,6 +1,6 @@
 # PopularProducts @ flux — прогон реестра
 
-Дата: 2026-08-06T18:39:35.617Z · site 132d3a3e-a28f-40b7-98fa-a0200151cfb8 · page home · blockId PopularProducts-home
+Дата: 2026-09-09T09:06:57.676Z · site 132d3a3e-a28f-40b7-98fa-a0200151cfb8 · page home · blockId PopularProducts-home
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

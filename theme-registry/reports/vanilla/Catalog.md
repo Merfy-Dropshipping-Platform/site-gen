@@ -1,6 +1,6 @@
 # Catalog @ vanilla — прогон реестра
 
-Дата: 2026-09-08T21:51:12.815Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page page-catalog · blockId Catalog-1
+Дата: 2026-09-09T08:46:19.849Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page page-catalog · blockId Catalog-1
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

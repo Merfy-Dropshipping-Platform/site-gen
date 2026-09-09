@@ -99,7 +99,12 @@ const headingAlignment =
 const headingSize =
   (typeof headingObj === 'object' ? (headingObj as { size?: string })?.size : undefined) ??
   (typeof raw.headingSize === 'string' ? raw.headingSize : undefined);
-const dateTimeEnabled = (raw.dateTime as { enabled?: string } | undefined)?.enabled !== 'false';
+const dateTimeEnabled =
+  String(
+    (raw.showDateTime as string | undefined) ??
+      (raw.dateTime as { enabled?: string } | undefined)?.enabled ??
+      'true',
+  ) !== 'false';
 const colorScheme = raw.colorScheme as string | undefined;
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 const headingAlignClass =

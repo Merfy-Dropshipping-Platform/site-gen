@@ -1,6 +1,6 @@
 # CartSummary @ vanilla — прогон реестра
 
-Дата: 2026-09-08T21:25:02.917Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page page-cart · blockId CartSummary-1
+Дата: 2026-09-09T01:43:36.855Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page page-cart · blockId CartSummary-1
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

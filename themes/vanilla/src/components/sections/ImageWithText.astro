@@ -42,9 +42,16 @@ const headingCls =
 		: headingSize === "large"
 			? "font-vanilla-bitter text-[24px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
 			: "font-vanilla-bitter text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
+// §11: видимое поле панели «Выравнивание» (alignment) решает; headingAlignment и
+// heading.alignment — скрытые legacy-поля старых ревизий, они лишь фолбэк (как rose).
+const headingAlignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+// Текстовая колонка вёрстки — flex с items-start: дети ужимаются по содержимому,
+// поэтому одного text-align мало (у rose колонка — ячейка грида во всю ширину, там
+// хватает). Двигаем и поперечную ось колонки; нет пропа = items-start вёрстки.
+const columnAlignCls =
+	headingAlignment === "center" ? " !items-center" : headingAlignment === "right" ? " !items-end" : "";
 
 // Канон text: string | { content, size }. Дефолт зависит от режима: есть фото →
 // careTextLead + careTextTail двумя <p> VERBATIM (реальный контент); нет фото →
@@ -86,8 +93,12 @@ const imageLeft = p.imagePosition === "left";
 
 // Канон size — аспект медиа лестницей манеры §4: medium/отсутствие = фото
 // care-бэнда 652/366 (литерал, Gal:111), small = широкое 16/9, large = квадрат.
+// Лестница «Размер» = пропорция медиа, от той же ширины 652 что и канон:
+// small 652/300 (2.17, шире) → medium 652/366 (1.78, канон вёрстки) → large 1/1.
+// Раньше small был 16/9 = 1.78, то есть в точности канон: «маленький» и «средний»
+// давали одинаковую картинку, лестница не росла.
 const aspectCls =
-	p.size === "small" ? "aspect-[16/9]" : p.size === "large" ? "aspect-square" : "aspect-[652/366]";
+	p.size === "small" ? "aspect-[652/300]" : p.size === "large" ? "aspect-square" : "aspect-[652/366]";
 
 // Канон width (s/m/l/full): large/отсутствие = 1280 (контейнер care-бэнда,
 // Gal:89), medium 1080, small 780, full — без лимита (поля .vanilla-pad остаются).
@@ -154,7 +165,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 		class={`mx-auto flex w-full ${widthCls} flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10${containerSchemeCls}`}
 		data-animate
 	>
-		<div class={`flex w-full max-w-[352px] flex-col items-start${imageLeft ? " lg:order-2" : ""}`}>
+		<div class={`flex w-full max-w-[352px] flex-col items-start${columnAlignCls}${imageLeft ? " lg:order-2" : ""}`}>
 			{
 				heading && (
 					<h2

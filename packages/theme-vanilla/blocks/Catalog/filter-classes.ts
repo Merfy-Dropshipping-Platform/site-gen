@@ -18,7 +18,7 @@ export const CATALOG_FILTER_TITLE =
 
 /** Радио-кружок в манере сайдбара vanilla: приглушённая окружность, точка цвета текста. */
 export const CATALOG_RADIO_CIRCLE =
-	"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[rgb(var(--color-text,0_0_0))]";
+	"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[14px] after:w-[14px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[rgb(var(--color-text,0_0_0))]";
 
 /** Подпись радио-опции: приглушённая, выбранная — цветом текста. */
 export const CATALOG_RADIO_TEXT =

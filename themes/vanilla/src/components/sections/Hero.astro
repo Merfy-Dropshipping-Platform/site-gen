@@ -244,7 +244,14 @@ const layoutFor = (posInput: unknown, alignInput: unknown, contentAlignInput: un
 	const vItemsCls = vPos === "top" ? "items-start" : vPos === "bottom" ? "items-end" : "items-center";
 	// Горизонталь блока — auto-margin на copyWrapCls. left = литерал верстальщика
 	// (md:ml-4 lg:ml-0, без auto), center = mx-auto, right = ml-auto.
-	const hMarginCls = hPos === "center" ? "mx-auto" : hPos === "right" ? "ml-auto" : "md:ml-4 lg:ml-0";
+	// Блок копии вёрстки широкий (52rem): при w-full auto-margin двигать нечего, и
+	// «справа» визуально оставалось слева. Поэтому при ЯВНО выбранной позиции блок
+	// сжимается по содержимому (md:w-auto) и реально уезжает в свою зону. Без пропа —
+	// ровно вёрстка: w-full, 52rem, слева.
+	const explicitH = posNorm !== "";
+	const hMarginCls =
+		(hPos === "center" ? "mx-auto" : hPos === "right" ? "ml-auto" : "md:ml-4 lg:ml-0") +
+		(explicitH ? " md:w-fit" : "");  // w-auto у блочного div = во всю ширину; нужен fit-content
 	// Канон alignment / contentAlign: 'left' (canon-default) И отсутствие = литерал
 	// верстальщика (text-left). Теперь это ТОЛЬКО выравнивание контента ВНУТРИ блока
 	// (items-* + text-*), НЕЗАВИСИМО от размещения самого блока (это hPos/vPos).

@@ -1,0 +1,27 @@
+---
+// Правовые страницы /legal/<slug> — тот же маршрут и та же схема, что у rose и
+// flux (`pages/legal/[slug].astro` + `data/legal.ts`). Вёрстка — родная vanilla:
+// компонент `policy/PolicyArticle.astro` из репо верстальщиков (страницы
+// `policies/*.astro` там собраны ровно из него).
+// На живом сайте платформа подменяет тело реальным текстом мерчанта из
+// «Политика и контакты» (composeLegalPagesIntoDist) — эти тексты остаются
+// заглушкой темы до первого заполнения.
+import Layout from "../../layouts/Layout.astro";
+import PolicyArticle from "../../components/policy/PolicyArticle.astro";
+import { legalPages, type LegalSlug } from "../../data/legal";
+
+export const getStaticPaths = async () => {
+	const { legalPages } = await import("../../data/legal");
+	return Object.keys(legalPages).map((slug) => ({
+		params: { slug },
+		props: { slug },
+	}));
+};
+
+const { slug } = Astro.props as { slug: LegalSlug };
+const page = legalPages[slug];
+---
+
+<Layout title={page.title} description={page.title} showNewsletter={false}>
+	<PolicyArticle heading={page.title} updated={page.updated} sections={page.sections} />
+</Layout>

@@ -89,7 +89,7 @@ const errorId = `${rootId}-error`;
 						type="email"
 						autocomplete="email"
 						placeholder="example@merfy.ru"
-						class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)] md:bg-transparent"
+						class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,4px)] border border-solid border-[#000000] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[var(--vanilla-dark)] outline-none placeholder:text-[#999999] focus-visible:border-[var(--vanilla-header-bg)] md:bg-transparent"
 					/>
 				</div>
 				<p id={errorId} class="hidden text-center font-manrope text-[13px] font-normal leading-normal text-red-500" role="alert"></p>

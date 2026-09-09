@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { migrateRevisionData } from '../revision-migrations';
+import { CART_UNIFIED_THEMES } from '../../themes/page-registry';
 
 describe('migrateCartPage', () => {
   // Корзина = ОДНА секция CartSection (вся ванильная логика корзины) + chrome;
@@ -218,105 +221,37 @@ describe('migrateCartPage', () => {
   });
 });
 
-describe('migrateCartPage — split themes (rose, Spec 110)', () => {
-  // Для тем из CART_SPLIT_THEMES (rose) корзина = ДВА блока: CartBody («Корзина»)
-  // + CartSummary («Промежуточный итог»), Figma 1:20818. Прочие темы — монолит.
-  it('seeds [Header, CartBody, CartSummary, Footer] when page-cart missing (rose)', () => {
-    const result = migrateRevisionData({ pagesData: {} }, 'rose') as {
-      pagesData: Record<string, any>;
-    };
-    expect(result.pagesData['page-cart'].content.map((b: any) => b.type)).toEqual([
-      'Header',
-      'CartBody',
-      'CartSummary',
-      'Footer',
-    ]);
+/**
+ * Унификация корзины — текущая архитектура (2026-09).
+ *
+ * Прежний блок тестов ждал, что `migrateRevisionData(data, '<тема>')` сам
+ * разложит корзину на CartBody + CartSummary. Этого пути больше нет:
+ * `migrateCartPage` темы не принимает и сеет канонический монолит CartSection,
+ * а сплит обеспечивают две другие вещи —
+ *   1) сид темы `packages/theme-<t>/pages/cart.json`, уже собранный из
+ *      CartBody / CartSummary / CartTotals / CartCheckoutButton;
+ *   2) гейт `CART_UNIFIED_THEMES`, по которому /cart рендерится Puck-блоками,
+ *      а не verbatim-портом (иначе панели секций корзины мертвы).
+ * Тесты ниже закрепляют именно это, чтобы тема снова не выпала из гейта —
+ * как выпадал satin, у которого из-за этого в дереве висела «Корзина (устар.)».
+ */
+describe('унификация корзины: гейт и сиды тем', () => {
+  it('CART_UNIFIED_THEMES содержит все пять тем', () => {
+    expect([...CART_UNIFIED_THEMES].sort()).toEqual(
+      ['bloom', 'flux', 'rose', 'satin', 'vanilla'].sort(),
+    );
   });
 
-  it('decomposes monolith CartSection → [CartBody, CartSummary], carries colorScheme/padding', () => {
-    const result = migrateRevisionData(
-      {
-        pagesData: {
-          'page-cart': {
-            content: [
-              { type: 'Header', props: {} },
-              { type: 'CartSection', props: { id: 'mono', colorScheme: 'scheme-4', padding: { top: 24, bottom: 24 } } },
-              { type: 'Footer', props: {} },
-            ],
-          },
-        },
-      },
-      'rose',
-    ) as { pagesData: Record<string, any> };
-    const content = result.pagesData['page-cart'].content;
-    expect(content.map((b: any) => b.type)).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
-    const body = content.find((b: any) => b.type === 'CartBody');
-    expect(body.props.colorScheme).toBe('scheme-4');
-    expect(body.props.padding).toEqual({ top: 24, bottom: 24 });
-  });
-
-  it('is idempotent on already-split cart (rose no-op)', () => {
-    const split = {
-      pagesData: {
-        'page-cart': {
-          content: [
-            { type: 'Header', props: {} },
-            { type: 'CartBody', props: { id: 'cb' } },
-            { type: 'CartSummary', props: { id: 'cs' } },
-            { type: 'Footer', props: {} },
-          ],
-          root: { props: { title: 'Корзина' } },
-          zones: {},
-        },
-      },
-    };
-    const first = migrateRevisionData(split, 'rose');
-    const second = migrateRevisionData(first, 'rose');
-    expect(JSON.stringify(first)).toBe(JSON.stringify(second));
-    const types = (first as any).pagesData['page-cart'].content.map((b: any) => b.type);
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
-  });
-
-  it('drops demo PopularProducts when decomposing (rose)', () => {
-    const result = migrateRevisionData(
-      {
-        pagesData: {
-          'page-cart': {
-            content: [
-              { type: 'Header', props: {} },
-              { type: 'CartSection', props: { id: 'mono' } },
-              { type: 'PopularProducts', props: { heading: 'Возможно вам понравится' } },
-              { type: 'Footer', props: {} },
-            ],
-          },
-        },
-      },
-      'rose',
-    ) as { pagesData: Record<string, any> };
-    const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
-    expect(types).toEqual(['Header', 'CartBody', 'CartSummary', 'Footer']);
-    expect(types).not.toContain('PopularProducts');
-  });
-
-  it('non-split theme (vanilla) keeps monolith CartSection', () => {
-    const result = migrateRevisionData(
-      {
-        pagesData: {
-          'page-cart': {
-            content: [
-              { type: 'Header', props: {} },
-              { type: 'CartSection', props: { id: 'mono' } },
-              { type: 'Footer', props: {} },
-            ],
-          },
-        },
-      },
-      'vanilla',
-    ) as { pagesData: Record<string, any> };
-    expect(result.pagesData['page-cart'].content.map((b: any) => b.type)).toEqual([
-      'Header',
-      'CartSection',
-      'Footer',
-    ]);
-  });
+  it.each([...CART_UNIFIED_THEMES])(
+    'сид cart.json темы %s собран из сплит-блоков',
+    (theme) => {
+      const file = join(__dirname, '..', '..', '..', 'packages', `theme-${theme}`, 'pages', 'cart.json');
+      const page = JSON.parse(readFileSync(file, 'utf-8')) as {
+        content?: Array<{ type?: string }>;
+      };
+      const types = (page.content ?? []).map((b) => b.type);
+      expect(types).toEqual(expect.arrayContaining(['CartBody', 'CartSummary']));
+      expect(types).not.toContain('CartSection');
+    },
+  );
 });

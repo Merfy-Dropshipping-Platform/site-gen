@@ -2533,3 +2533,35 @@ rose тоже 11/13, красные те же:
 
 Коммит: `411e9664` (site-gen main). Сборки: 5 тем `astro build` зелёные, `nest build` без ошибок,
 `check-css-layers --check` зелёный.
+
+## 2026-09-09 — vanilla доведена до прода
+
+Ветка `flux-constructor-live-markup` слита в `main` (`cbd8775e`, четыре коммита: ваниль;
+публикации + починка стенда; и две работы соседних сессий — hero-картинка/высота ряда,
+схемы-ховеры/ручки карточки/тексты дровера). Семь конфликтов: в шести кодовых взята
+сторона `main` (там более поздняя версия той же работы — общий хелпер
+`resolvePublicationsDateTime`, `itemsCls` вместо моего `columnAlignCls`), журнал склеен.
+
+Деплой `sites-service` (`q40c8ww44ss4ckogo8w0csso`, `force=false`) — `finished` за ~19 мин
+(дольше обычных трёх: теперь пересобираются все шесть тем через Astro). Прод-сайт
+`76ae9332-490a-444a-8dda-93588c776b42` (https://e0a8a827f393.merfy.ru) републикован.
+
+**Пруфы на живом сайте:** маркеры правок — `data-nav-inline`, `--size-nav-link` ×5,
+`--size-logo-width` ×3, `--radius-input` ×3, `--product-card-media-radius`; каталог —
+`data-nt="filter-sidebar"`, `--vanilla-cols` ×3, `data-quick-add-id` ×4; правовые страницы
+`/legal/{privacy,delivery,return,terms}` — все 200 со своими заголовками, вёрстка родная
+(Bitter italic + Arsenal). Скриншоты сняты Playwright (Chrome с MCP-профилем был занят).
+
+### Гочи, стоившие времени
+
+- **Адреса в `CLAUDE.md` врали дважды.** IP из заблокированной ТСПУ-подсети (поправлено на
+  `200.169.180.243`; sslip.io-имена НЕ трогать — в них IP внутри имени и сертификат на
+  старый) и UUID деплоя: `zs8g88k4g0o0c0gokgccwkgk` — это **api-gateway**, а не sites.
+  Разведены все три UUID.
+- **Темы нельзя проверять во временном воркtree с симлинками `node_modules`:** Astro
+  склеивает пути двух деревьев («No cached compile metadata») и валит 3 темы из 6. Чистый
+  `origin/main` в тех же условиях падает так же — верить можно только дереву с настоящими
+  `node_modules`.
+- `packages/theme-base/blocks/Product/Product.astro:80` — в КОММЕНТАРИИ строка
+  `text-[length:var(--product-...,fallback)]`, Tailwind принимает её за класс и генерит
+  невалидный CSS. Сборку не валит, но предупреждение в каждой сборке тем. Не чинил.

@@ -164,7 +164,9 @@ describe('migrateVanillaHomePage (084 — Stage 2 v10)', () => {
 
     // PromoBanner
     const promoBanner = blocks[0].props as Record<string, unknown>;
-    expect(promoBanner.size).toBe('thin');
+    // Сид называет размер честно: 'large' = полоса вёрстки vanilla (48px).
+    // Раньше стояло 'thin', а порт молча подменял его на large (0a37abb4).
+    expect(promoBanner.size).toBe('large');
     expect(promoBanner.textTransform).toBe('uppercase');
     expect(promoBanner.colorScheme).toBe('scheme-1');
 

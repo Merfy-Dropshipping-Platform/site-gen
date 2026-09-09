@@ -52,7 +52,7 @@ describe('migrateCartPage', () => {
     expect(types).toEqual(['Header', 'CartSection', 'Collections', 'Footer']);
   });
 
-  it('дропает PopularProducts старого сида (демо-кросс-селл) → чистая корзина', () => {
+  it('сохраняет PopularProducts рядом с корзиной (кросс-селл не сносим)', () => {
     const result = migrateRevisionData({
       pagesData: {
         'page-cart': {
@@ -69,10 +69,14 @@ describe('migrateCartPage', () => {
       },
     }) as { pagesData: Record<string, any> };
     const types = result.pagesData['page-cart'].content.map((b: any) => b.type);
-    // Полный старый сид (5 cart-блоков + демо-PopularProducts) → чистый
-    // [Header, CartSection, Footer]. Мерчант добавит кросс-селл сам, если нужен.
-    expect(types).toEqual(['Header', 'CartSection', 'Footer']);
-    expect(types).not.toContain('PopularProducts');
+    // Cart-блоки схлопываются в канонический CartSection, а всё остальное на
+    // странице остаётся на месте. Ожидание «дропаем PopularProducts» здесь
+    // держалось с тех пор, когда миграция вычищала демо-кросс-селл старого
+    // сида; от этого отказались намеренно (см. doc-comment migrateCartPage:
+    // «прочие секции … сохраняются»), потому что отличить блок из сида от
+    // добавленного мерчантом вручную нечем, а удаление необратимо. Рядом
+    // лежит кейс с Collections, который закрепляет ту же гарантию.
+    expect(types).toEqual(['Header', 'CartSection', 'PopularProducts', 'Footer']);
   });
 
   it('is idempotent (running twice = no-op)', () => {

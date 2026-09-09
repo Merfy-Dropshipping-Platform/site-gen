@@ -114,10 +114,19 @@ const ctaLink =
 	"/catalog";
 // Фото мерчанта; нет своего (или стоит 4x верстальщика) → landscape-заглушка,
 // не кампания /images/4x/Главный_экран.png и не чёрный кадр.
-const backgroundImage = merchantBackground ?? (isEmpty ? undefined : PH_IMAGE);
+const backgroundImageRaw = merchantBackground ?? (isEmpty ? undefined : PH_IMAGE);
 // Канон backgroundImages.url2 (+legacy backgroundImage2): фото-половина делится на
 // 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
-const backgroundImage2 = merchantBackground2;
+
+// Сплит 50/50 — ТОЛЬКО когда мерчант заполнил ОБА слота. Если задан лишь один
+// (в том числе второй), он показывается на всю ширину: раньше заполнение второго
+// слота включало сетку из двух колонок, и первая половина оставалась пустой.
+const _bg2Raw = merchantBackground2;
+const _bg1Filled = Boolean(String(backgroundImageRaw ?? "").trim());
+const _bg2Filled = Boolean(String(_bg2Raw ?? "").trim());
+const backgroundImage = _bg1Filled ? backgroundImageRaw : _bg2Filled ? _bg2Raw : backgroundImageRaw;
+const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
+
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:
 //   • p.size — ВЫСОТА фото-половины/текст-колонки (heroHeightCls ниже). НЕ шрифт.

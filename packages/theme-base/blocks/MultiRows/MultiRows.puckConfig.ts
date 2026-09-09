@@ -14,7 +14,9 @@ const MultiRowItemSchema = z.object({
   }).optional(),
   // Pupa parity per-row.
   image: z.string().optional(),
-  size: z.enum(['small', 'medium', 'large']).optional(),
+  // 'inherit' — ряд берёт «Высоту» секции; это дефолт нового ряда, иначе
+  // собственный размер ряда молча перебивал общую настройку секции.
+  size: z.enum(['inherit', 'small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   title: z.string().optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
@@ -139,6 +141,7 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
           type: 'select',
           label: 'Размер',
           options: [
+            { label: 'Как в секции', value: 'inherit' },
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
             { label: 'Большой', value: 'large' },
@@ -186,8 +189,10 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         image: '',
         title: '',
         description: '',
-        // Figma 1:33349 — дропдауны по умолчанию «Маленький» (не пустые «Выберите...»).
-        size: 'small',
+        // Figma 1:33349 — дропдауны не пустые. У «Размера» дефолт «Как в секции»:
+        // с жёстким 'small' общая настройка «Высота» у секции была мертва —
+        // каждый ряд нёс собственный размер и перебивал её.
+        size: 'inherit',
         headingSize: 'small',
         textSize: 'small',
         button: { text: 'Подробнее', link: '/catalog' },

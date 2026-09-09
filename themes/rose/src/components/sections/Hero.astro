@@ -13,7 +13,7 @@ const subtitle =
 const ctaText = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "В каталог";
 const ctaLink =
 	p.primaryButton?.link?.href ?? p.primaryButton?.link ?? p.cta?.href ?? p.ctaLink ?? "/catalog";
-const backgroundImage =
+const backgroundImageRaw =
 	p.backgroundImages?.url1 ?? p.backgroundImage ?? p.image?.url ?? "";
 
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Изображение»
@@ -46,7 +46,7 @@ const rawPrimaryText =
 				? p.ctaText
 				: "";
 const isEmpty =
-	!String(backgroundImage).trim() &&
+	!String(backgroundImageRaw).trim() &&
 	!String(p.backgroundImages?.url2 ?? p.backgroundImage2 ?? "").trim() &&
 	!rawHeadingText.trim() &&
 	!rawSubtitleText.trim() &&
@@ -62,7 +62,16 @@ const PH_BUTTON = "Кнопка";
 const PH_BACKGROUND_IMAGE = "/placeholders/landscape-image.png";
 // Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
 // картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
-const backgroundImage2 = p.backgroundImages?.url2 ?? p.backgroundImage2;
+
+// Сплит 50/50 — ТОЛЬКО когда мерчант заполнил ОБА слота. Если задан лишь один
+// (в том числе второй), он показывается на всю ширину: раньше заполнение второго
+// слота включало сетку из двух колонок, и первая половина оставалась пустой.
+const _bg2Raw = p.backgroundImages?.url2 ?? p.backgroundImage2;
+const _bg1Filled = Boolean(String(backgroundImageRaw ?? "").trim());
+const _bg2Filled = Boolean(String(_bg2Raw ?? "").trim());
+const backgroundImage = _bg1Filled ? backgroundImageRaw : _bg2Filled ? _bg2Raw : backgroundImageRaw;
+const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
+
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:
 //   • p.size (small/medium/large) — ВЫСОТА секции (heroHeightCls ниже). НЕ шрифт.

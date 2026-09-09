@@ -1,6 +1,6 @@
 # Collections @ flux — прогон реестра
 
-Дата: 2026-08-06T17:46:25.984Z · site 132d3a3e-a28f-40b7-98fa-a0200151cfb8 · page home · blockId Collections-home
+Дата: 2026-09-09T09:06:40.745Z · site 132d3a3e-a28f-40b7-98fa-a0200151cfb8 · page home · blockId Collections-home
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

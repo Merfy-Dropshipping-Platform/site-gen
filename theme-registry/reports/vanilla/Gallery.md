@@ -1,6 +1,6 @@
 # Gallery @ vanilla — прогон реестра
 
-Дата: 2026-09-08T22:10:34.396Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId Gallery-home
+Дата: 2026-09-09T08:48:19.408Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page home · blockId Gallery-home
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

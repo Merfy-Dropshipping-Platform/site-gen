@@ -62,7 +62,7 @@
   },
   "blockDefaults": {
     "PromoBanner": {
-      "size": "thin",
+      "size": "large",
       "textTransform": "uppercase",
       "colorScheme": "scheme-1"
     },

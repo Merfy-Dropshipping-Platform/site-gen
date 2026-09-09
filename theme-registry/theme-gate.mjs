@@ -19,7 +19,19 @@ const THEME = args.theme;
 if (!THEME) { console.error('usage: theme-gate.mjs --theme rose|flux'); process.exit(2); }
 const sites = JSON.parse(readFileSync(path.join(import.meta.dirname, 'sites.json'), 'utf-8'));
 const { siteId } = sites[THEME];
-const CATALOG_PAGE = THEME === 'flux' ? 'page-catalog' : 'catalog';
+// Ключ страницы каталога в ревизии стенда: канонический платформенный id —
+// 'page-catalog' (так её называют theme.json и миграции). У старого rose-стенда
+// он засеян как 'catalog'. Берём тот, который реально есть в ревизии, иначе
+// карточные проверки (радиус медиа, плашка карточки) меряют пустую страницу.
+const CATALOG_PAGE = await (async () => {
+  for (const key of ['page-catalog', 'catalog']) {
+    const r = await fetch(`http://localhost:3110/api/sites/${siteId}/preview?page=${key}`).catch(() => null);
+    if (!r || !r.ok) continue;
+    const html = await r.text();
+    if (/data-puck-component-id="Catalog-/.test(html)) return key;
+  }
+  return 'page-catalog';
+})();
 
 const results = [];
 const uncovered = {
@@ -96,7 +108,10 @@ await pg.waitForTimeout(300);
 const blockId = await pg.evaluate(() => document.querySelector('[data-puck-component-id^="Catalog"]')?.getAttribute('data-puck-component-id'));
 // quickAdd → кнопки для замера радиуса; cardBackground:'' сбрасывает блочный
 // «Контейнер» в auto — меряем именно ТЕМУ, а не inline блочной плашки.
-await pg.evaluate(({ blockId, page }) => window.postMessage({ type: 'update-block', pageId: page, blockId, props: { id: blockId, productCard: { quickAdd: 'cart', cardBackground: '' } } }, '*'), { blockId, page: CATALOG_PAGE });
+// blockType обязателен: без него превью-агент молча ничего не делает (коммит 61d4f00c
+// убрал фолбэк по префиксу id), кнопки быстрого добавления не появляются и «Скругление
+// кнопок» меряется на пустоте.
+await pg.evaluate(({ blockId, page }) => window.postMessage({ type: 'update-block', pageId: page, blockId, blockType: 'Catalog', props: { id: blockId, productCard: { quickAdd: 'cart', cardBackground: '' } } }, '*'), { blockId, page: CATALOG_PAGE });
 for (let t = 0; t < 20; t++) {
   if (await pg.evaluate(() => !!document.querySelector('[data-quick-add-id]'))) break;
   await pg.waitForTimeout(400);

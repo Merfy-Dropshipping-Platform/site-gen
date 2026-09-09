@@ -35,10 +35,14 @@ const linkHref =
 
 // Канон «Размер текста» (Figma 648:57318) — меняет И ШРИФТ, И высоту полосы:
 //   Маленький: h32 / 12px · Средний: h40 / 14px · Большой: h48 / 16px.
-// Дефолт (нет пропа / canon-default 'thin') = large (48/16) — манера vanilla, но
-// высота и шрифт теперь масштабируются от size (раньше шрифт был фиксирован).
+// Дефолт (нет пропа) = large (48/16) — полоса вёрстки vanilla.
+// 'thin' (additive-значение панели, 084) раньше молча подменялся на large, из-за
+// чего лестница ехала вспять: «тонкий» давал 48px, а «маленький» 32px. Теперь
+// каждое значение честное, как у rose; вид по умолчанию держит blockDefaults
+// темы (size: 'large').
 const size = typeof p.size === "string" ? p.size : "large";
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
+	thin: { mh: "min-h-6", text: "text-[11px]" },
 	small: { mh: "min-h-8", text: "text-[12px]" },
 	medium: { mh: "min-h-10", text: "text-[14px]" },
 	large: { mh: "min-h-12", text: "text-[16px]" },

@@ -1,6 +1,6 @@
 # Product @ vanilla — прогон реестра
 
-Дата: 2026-09-08T20:45:16.413Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page product · blockId Product-1
+Дата: 2026-09-09T01:43:21.585Z · site 13a40348-4546-4213-aca0-29db6fe2be26 · page page-product · blockId Product-1
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

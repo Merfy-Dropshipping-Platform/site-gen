@@ -1,6 +1,6 @@
 # ImageWithText @ rose — прогон реестра
 
-Дата: 2026-09-08T20:37:51.896Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId ImageWithText-1782039479494
+Дата: 2026-09-09T09:04:10.991Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId ImageWithText-1782039479494
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

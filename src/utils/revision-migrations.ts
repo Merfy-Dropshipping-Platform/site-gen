@@ -728,7 +728,10 @@ export function migrateVanillaHomePage(
         id: `PromoBanner-${ts}`,
         text: 'СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10',
         link: { text: 'В каталог', href: '/catalog' },
-        size: 'thin',
+        // 'large' = полоса вёрстки vanilla (48px). Раньше сид ставил 'thin', а порт
+        // молча подменял его на large; теперь 'thin' честно даёт 24px, поэтому сид
+        // обязан называть тот размер, который реально имеет в виду.
+        size: 'large',
         textTransform: 'uppercase',
         colorScheme: 'scheme-1',
         padding: { top: 12, bottom: 12 },

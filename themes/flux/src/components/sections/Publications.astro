@@ -132,6 +132,12 @@ type PubItem = { title: string; date: string; image: string; slug?: string; isPl
 // фото колонки = /placeholders/publication-card.png — картинка показывается
 // ВСЕГДА, НЕ пустой surface). Раздаётся на каждой теме как /placeholders/
 // publication-card.png (copyPublic из packages/theme-base).
+const PLACEHOLDER_ARTICLES = [
+	{ date: "15 марта 2025", title: "Новая коллекция весна 2025", excerpt: "Рассказываем о вдохновении и ключевых силуэтах новой коллекции." },
+	{ date: "28 февраля 2025", title: "Как ухаживать за изделиями", excerpt: "Простые правила, чтобы ваши вещи служили долгие годы." },
+	{ date: "10 февраля 2025", title: "История бренда: от идеи до магазина", excerpt: "Путь от первой вещи, сделанной вручную, до собственной коллекции." },
+	{ date: "25 января 2025", title: "Тренды сезона 2025", excerpt: "Обзор ключевых трендов — от цветов до фактур." },
+];
 const PLACEHOLDER_PUB_IMAGE = "/placeholders/publication-card.png";
 const items: PubItem[] = hasRealPublications
 	? realPublications.slice(0, cards).map((pub) => ({
@@ -141,9 +147,12 @@ const items: PubItem[] = hasRealPublications
 			slug: pub.slug,
 			isPlaceholder: false,
 		}))
-	: Array.from({ length: cards }, () => ({
-			title: "Колонна",
-			date: "",
+	: Array.from({ length: cards }, (_, i) => ({
+			// Заглушка ПУБЛИКАЦИЙ, а не колонок: раньше сюда подставлялись
+			// «Колонна» и текст Мультиколонн — мерчант видел чужую секцию.
+			// Состав дат/заголовков — по эталону theme-base Publications.
+			title: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].title,
+			date: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].date,
 			image: PLACEHOLDER_PUB_IMAGE,
 			isPlaceholder: true,
 		}));
@@ -213,7 +222,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								)}
 							</div>
 							<div class="flex flex-col gap-1">
-								{showDate && !item.isPlaceholder && item.date && (
+								{showDate && item.date && (
 									<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
 										{item.date}
 									</span>
@@ -223,7 +232,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								</span>
 								{item.isPlaceholder && (
 									<p class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">
-										{PLACEHOLDER_TEXT}
+										{PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].excerpt}
 									</p>
 								)}
 							</div>

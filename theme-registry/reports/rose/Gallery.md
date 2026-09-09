@@ -1,6 +1,6 @@
 # Gallery @ rose — прогон реестра
 
-Дата: 2026-08-06T18:49:40.181Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId Gallery-1
+Дата: 2026-09-09T09:04:28.000Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId Gallery-1781996459029
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

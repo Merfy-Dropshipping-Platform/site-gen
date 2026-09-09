@@ -201,9 +201,12 @@ const items: PubItem[] = legacyPosts
 				href: pub.slug ? `/publication/${pub.slug}` : undefined,
 				isPlaceholder: false,
 			}))
-		: Array.from({ length: cards }, () => ({
-				title: "Колонна",
-				date: "",
+		: Array.from({ length: cards }, (_, i) => ({
+				// Заглушка ПУБЛИКАЦИЙ, а не колонок: раньше сюда подставлялись
+				// «Колонна» и текст Мультиколонн — мерчант видел чужую секцию.
+				// Состав дат/заголовков — по эталону theme-base Publications.
+				title: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].title,
+				date: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].date,
 				excerpt: PLACEHOLDER_TEXT,
 				image: PLACEHOLDER_IMAGE,
 				href: PLACEHOLDER_LINK.href,
@@ -296,7 +299,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 								))}
 						</div>
 						<div class="flex flex-col gap-2">
-							{showDate && !post.isPlaceholder && post.date && (
+							{showDate && post.date && (
 								<p class="font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]">
 									{post.date}
 								</p>

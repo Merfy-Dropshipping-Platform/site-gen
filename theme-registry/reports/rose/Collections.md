@@ -1,6 +1,6 @@
 # Collections @ rose — прогон реестра
 
-Дата: 2026-09-08T22:08:25.629Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId Collections-1781996456979
+Дата: 2026-09-09T09:03:27.279Z · site e03dd420-febf-4499-9fc4-992412cc1b99 · page home · blockId Collections-1781996456979
 
 | поле | вердикт | измерено | смысл (по Rose) |
 |---|---|---|---|

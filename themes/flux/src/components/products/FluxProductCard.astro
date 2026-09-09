@@ -25,10 +25,13 @@ interface Props {
 const { product, priority = false, href: hrefProp, ctaLabel = "В корзину", qaMode } = Astro.props;
 // «Быстрое добавление → Количество»: степпер над кнопкой. Метрики flux —
 // высота 44 (h-11) под кнопкой той же высоты, радиус 4px, Roboto Flex.
+// Карточка flux жёстко светлая (bg-[#FBFBFB], весь текст text-[#000000]) и не
+// участвует в цветовой схеме секции — поэтому степпер тоже фиксированных
+// цветов: с токенами --color-text «− 1 +» становились белыми на белом.
 const qaStepperCls =
-	"mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[rgb(var(--color-input-border,221_221_221))] px-1";
+	"mb-2 flex h-11 w-full items-center justify-between rounded-[4px] border border-solid border-[#DDDDDD] px-1";
 const qaStepBtnCls =
-	"flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]";
+	"flex h-full w-10 shrink-0 items-center justify-center font-roboto-flex text-[18px] font-normal leading-none text-[#000000]";
 const href = hrefProp ?? `/products/${product.id}`;
 // Бейджи эталона: «Новинка» (isNew) + процент скидки (salePercent). Legacy
 // demo-флаг discount сохранён как третий бейдж «Скидка» (его несут
@@ -166,7 +169,7 @@ const wishlistOutlineSvg =
 		{qaMode === "cart" && (
 			<div class={qaStepperCls} data-qa-stepper>
 				<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
-				<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">1</span>
+				<span data-qa-qty class="min-w-[28px] flex-1 text-center font-roboto-flex text-[16px] font-normal leading-none text-[#000000]">1</span>
 				<button type="button" data-qa-inc class={qaStepBtnCls} aria-label="Увеличить">+</button>
 			</div>
 		)}
@@ -179,7 +182,7 @@ const wishlistOutlineSvg =
 			data-old-price={product.oldPrice ?? ""}
 			data-image={product.image}
 			data-quantity="1"
-			class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] bg-[#000000] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+			class="mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 		>
 			{ctaLabel}
 		</button>

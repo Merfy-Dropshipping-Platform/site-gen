@@ -802,3 +802,62 @@ blockquote {
     font-style: italic;
   }
 }
+
+/* Стиль карточки товара (ThemeSettings) — зеркало rose/flux.
+   «Обводка» (--product-card-bw) и «Скругление» (--product-card-radius) действуют
+   ВСЕГДА, в обоих стилях; «Карточка» добавляет подложку (--product-card-bg) и
+   внутренний отступ (--product-card-padding). Выравнивание (--product-card-align/
+   justify) двигает весь текст под товаром (имя + цену) — !important обязателен,
+   иначе Tailwind-утилиты из @layer utilities бьют это правило из @layer base.
+   Правило по data-nt покрывает и SSR-карточку, и клиентский renderCardHtml.
+   @layer base обязателен для attr-селекторов (гард scripts/check-css-layers.mjs). */
+@layer base {
+  [data-nt="satin-product-card"] {
+    background: var(--product-card-bg, transparent);
+    /* !important обязателен: карточки верстальщиков несут собственные утилиты
+       (rounded-[12px], p-3) из @layer utilities, а слой utilities бьёт base —
+       без important ползунки «Обводка»/«Скругление»/отступ оставались мёртвыми. */
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240)) !important;
+    border-radius: var(--product-card-radius, 0px) !important;
+    padding: var(--product-card-padding, 0px) !important;
+  }
+  /* Медиа (фото) — радиус по карточке в стиле «Карточка», иначе собственный
+     медиа-радиус; !important бьёт утилиту rounded-[…] на самом контейнере. */
+  [data-nt="satin-product-card"] > div:first-child {
+    border-radius: var(--product-card-media-radius, var(--radius-media, 8px)) !important;
+  }
+  /* Текст-блок под товаром — второй div карточки (в satin за ним идёт ещё
+     кнопка, поэтому :nth-of-type(2), а не :last-child). */
+  [data-nt="satin-product-card"] > div:nth-of-type(2) {
+    align-items: var(--product-card-justify, flex-start) !important;
+    text-align: var(--product-card-align, left) !important;
+  }
+  /* Строка цены (имя + старая цена) — выравнивается вместе с текстом. */
+  [data-nt="satin-product-card"] > div:nth-of-type(2) .items-baseline {
+    justify-content: var(--product-card-justify, flex-start) !important;
+  }
+}
+
+/* Цвета кнопок при наведении — из цветовой схемы («Фон/Текст при наведении»).
+   До этого темы гасили кнопку прозрачностью (hover:opacity-*), а hover-токены
+   схемы не читались нигде: мерчант менял цвет и не видел эффекта. Селектор по
+   подстроке класса ловит любую кнопку, покрашенную токеном схемы, — в том числе
+   отрисованную на клиенте (renderCardHtml), — без правки десятков файлов вёрстки.
+   !important обязателен: hover:opacity-* лежит в @layer utilities, который бьёт
+   @layer base; opacity возвращаем в 1, иначе цвет виден сквозь затемнение. */
+@layer base {
+  [class*="bg-[rgb(var(--color-button-bg"]:hover {
+    background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0))) !important;
+    opacity: 1 !important;
+  }
+  [class*="text-[rgb(var(--color-button-text"]:hover {
+    color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255))) !important;
+  }
+  [class*="bg-[rgb(var(--color-button-2-bg"]:hover {
+    background-color: rgb(var(--color-button-2-bg-hover, var(--color-button-2-bg, 0 0 0))) !important;
+    opacity: 1 !important;
+  }
+  [class*="text-[rgb(var(--color-button-2-text"]:hover {
+    color: rgb(var(--color-button-2-text-hover, var(--color-button-2-text, 255 255 255))) !important;
+  }
+}

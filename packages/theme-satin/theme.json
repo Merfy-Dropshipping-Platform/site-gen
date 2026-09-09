@@ -35,7 +35,8 @@
     "--cart-type": "drawer",
     "--card-style": "standard",
     "--card-alignment": "left",
-    "--color-error": "255 148 148"
+    "--color-error": "255 148 148",
+    "--product-card-padding": "0px"
   },
   "blockDefaults": {
     "Header": {

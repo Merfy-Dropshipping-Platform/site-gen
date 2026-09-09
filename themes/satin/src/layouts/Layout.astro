@@ -44,6 +44,52 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			</div>
 		)}
 		<NtCartDrawer rootId="satin-cart-drawer-root" eventPrefix="satin:cart" />
+		{/* Тексты панели корзины из настроек темы («Заголовок панели», «Текст
+		    кнопки оформления», «Текст пустой корзины»). До этого у настроек не
+		    было ни одного читателя: панель сохраняла значения, витрина
+		    показывала литералы дизайн-пакета. Значения приезжают строковыми
+		    CSS-переменными (tokens-css) — тем же каналом, что и остальные
+		    настройки темы, поэтому превью и живой сайт совпадают. Подстановка
+		    через textContent (не innerHTML) — разметка DS не трогается. */}
+		<script is:inline define:vars={{ evPrefix: "satin:cart" }}>
+			(() => {
+				const readVar = (name) => {
+					const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+					if (!raw) return null;
+					try {
+						return JSON.parse(raw);
+					} catch {
+						return raw.replace(/^["']|["']$/g, "") || null;
+					}
+				};
+				const apply = () => {
+					const root = document.querySelector('[data-nt="cart-drawer"]');
+					if (!root) return;
+					const title = readVar("--cart-drawer-title");
+					const checkout = readVar("--cart-drawer-checkout-text");
+					const empty = readVar("--cart-drawer-empty-text");
+					if (title) {
+						const h = root.querySelector("[data-cart-panel] h2");
+						if (h && h.textContent !== title) h.textContent = title;
+					}
+					if (checkout) {
+						const btn = root.querySelector("[data-cart-summary] > a");
+						if (btn && btn.textContent.trim() !== checkout) btn.textContent = checkout;
+					}
+					if (empty) {
+						const p = root.querySelector("[data-cart-empty] p");
+						if (p && p.textContent.trim() !== empty) p.textContent = empty;
+					}
+				};
+				apply();
+				document.addEventListener("astro:page-load", apply);
+				document.addEventListener(evPrefix + ":open", apply);
+				const root = document.querySelector('[data-nt="cart-drawer"]');
+				// Содержимое панели перерисовывается стором корзины — держим тексты.
+				if (root) new MutationObserver(apply).observe(root, { childList: true, subtree: true });
+			})();
+		</script>
+
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initWishlistUI } from "../lib/wishlist";

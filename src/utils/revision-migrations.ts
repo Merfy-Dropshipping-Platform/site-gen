@@ -1145,6 +1145,50 @@ function normalizeFooterContacts(
 }
 
 /**
+ * Мультиряды: снять размер ряда, доставшийся от дефолта нового ряда.
+ *
+ * Каждый добавленный ряд получал собственный `size: 'small'`, и он перебивал
+ * общую настройку секции «Высота» — мерчант крутил её, а ряды не менялись.
+ * Теперь дефолт ряда — «Как в секции» (`inherit`), а у существующих ревизий
+ * значение сида снимаем: ТОЛЬКО когда оно одинаковое `small` у ВСЕХ рядов
+ * блока (признак дефолта, а не осознанного выбора). Ряды с разными размерами
+ * не трогаем — там мерчант настраивал каждый ряд сам.
+ */
+function relaxMultiRowsItemSize(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (b?.type !== 'MultiRows' || !b.props) return block;
+      const rows = b.props.rows;
+      if (!Array.isArray(rows) || rows.length === 0) return block;
+      const allSmall = rows.every(
+        (r) => r && typeof r === 'object' && (r as { size?: unknown }).size === 'small',
+      );
+      if (!allSmall) return block;
+      const nextRows = rows.map((r) => {
+        const row = { ...(r as Record<string, unknown>) };
+        row.size = 'inherit';
+        return row;
+      });
+      pageChanged = true;
+      return { ...b, props: { ...b.props, rows: nextRows } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Корзина: снять схему платформенного сида там, где тема задаёт свою.
  *
  * `migrateCartPage` сеет блоки корзины с жёстким `colorScheme: 'scheme-2'` —
@@ -1566,6 +1610,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = relaxMultiRowsItemSize(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);

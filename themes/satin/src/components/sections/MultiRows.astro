@@ -186,7 +186,12 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 		})(),
 		alt: (typeof r.alt === "string" && r.alt.trim()) || headingText || "Ряд",
 		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
-		aspectCls: aspectFor(r.size ?? p.size),
+		aspectCls: aspectFor(
+			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
+			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
+			// общую настройку «Высота» — она выглядела мёртвой.
+			r.size && r.size !== "inherit" ? r.size : p.size,
+		),
 		headingCls: rowHeadingCls(r.headingSize),
 		textCls: rowTextCls(r.textSize),
 		btnText,

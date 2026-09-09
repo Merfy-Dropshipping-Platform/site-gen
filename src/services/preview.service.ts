@@ -1163,12 +1163,13 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // NB: НЕ ставим z-index на section-hover/selected — это перебивает sticky
       // header z-50 → Hero z-10 поднимается выше Header → submenu panel недоступен.
       // Outline это border-like rendering, в z-stack не участвует.
+      // Подсветка наведения — ТОЛЬКО рамка. Полупрозрачная заливка поверх секции
+      // читалась как «свечение» на самом контенте (пользователь: «убрать свечение»)
+      // и мешала оценивать цвета секции под курсором.
       '[data-puck-section-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
-      '[data-puck-section-hover="true"]::after{content:"";position:absolute;inset:0;background:rgba(171,199,229,0.3);pointer-events:none;z-index:0}',
       '[data-puck-section-selected="true"]{outline:2px solid #88b0da !important;outline-offset:-2px}',
       '[data-puck-subsection-parent]{position:relative;cursor:pointer}',
       '[data-puck-subsection-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:2px;z-index:3}',
-      '[data-puck-subsection-hover="true"]::after{content:"";position:absolute;inset:0;background:rgba(171,199,229,0.3);pointer-events:none;z-index:0}',
       '[data-puck-subsection-selected="true"]{outline:2px solid #88b0da !important;outline-offset:2px;z-index:4}',
       // Puck ActionBar styling (1:1 with @measured/puck DraggableComponent action overlay).
       '.__merfy_pill{position:fixed;display:none;align-items:center;cursor:default;padding:4px;border-radius:8px;background:#181818;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;z-index:9999;user-select:none;white-space:nowrap}',

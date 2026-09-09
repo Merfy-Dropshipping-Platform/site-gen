@@ -89,7 +89,12 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			(typeof r.image === "string" && r.image.trim()) ||
 			PLACEHOLDER_ROW_IMAGE,
 		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
-		aspectCls: aspectFor(r.size ?? p.size),
+		aspectCls: aspectFor(
+			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
+			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
+			// общую настройку «Высота» — она выглядела мёртвой.
+			r.size && r.size !== "inherit" ? r.size : p.size,
+		),
 		headingSizeCls:
 			(r.headingSize ?? undefined) === "small"
 				? " [--size-section-heading:17px] [--size-section-heading-m:12px]"

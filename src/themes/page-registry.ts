@@ -124,8 +124,13 @@ export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['ros
  * конструкторе отдавалась статичным blob'ом — секции «Корзина»/«Промежуточный
  * итог»/«Итоговая цена»/«Кнопка оформления» в дереве были, а клик по превью не
  * открывал панель (кликать не по чему: узлов с data-puck-component-id нет).
+ * satin добавлен 2026-09-10 по той же проверке: `packages/theme-satin/pages/cart.json`
+ * уже собран из CartBody/CartSummary/CartTotals/CartCheckoutButton, все четыре
+ * блока рендерятся через `/preview/block`. Без гейта satin оставался на legacy
+ * CartSection — отсюда «Корзина (устар.)» в дереве и настройки товара вместо
+ * настроек корзины в панели (баг-репорт владельца).
  */
-export const CART_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'flux', 'vanilla', 'bloom']);
+export const CART_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'flux', 'vanilla', 'bloom', 'satin']);
 
 /**
  * Темы с composable page-cart (CartSection + мерчантские секции), зеркало

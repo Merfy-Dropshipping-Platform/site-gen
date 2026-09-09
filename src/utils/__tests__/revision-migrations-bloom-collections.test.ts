@@ -1,175 +1,92 @@
 import { migrateRevisionData } from '../revision-migrations';
 
 /**
- * Bloom «оживление» Collections: секция переехала с навигационной сетки плиток-
- * коллекций (nav-tile `collections[]` + `cardLinkBase`) на сетку карточек товара
- * одной коллекции (сингулярный строковый проп `collection`). Существующие
- * bloom-ревизии со старым shape мигрируются: ПЕРВЫЙ `collectionId` из массива →
- * `collection`, stale `collections[]`/`cardLinkBase` удаляются. Theme-gated (bloom).
+ * Collections и легаси-форма nav-tile (`collections[]` + `cardLinkBase`).
+ *
+ * ИСТОРИЯ. Секция bloom переезжала с навигационной сетки плиток-коллекций на
+ * сетку карточек одной коллекции, и для этого существовала миграция ревизий
+ * `migrateBloomCollectionsProps` (первый `collectionId` из массива →
+ * сингулярный `collection`, stale-пропы вычищались). Она появилась в
+ * `dad995ed` и была удалена в `e861cb47` — сейчас в `revision-migrations.ts`
+ * её нет, и тесты, ожидавшие превращения пропов, врали про поведение.
+ *
+ * ФАКТ СЕГОДНЯ. Легаси-пропы просто остаются в данных, а порт их игнорирует и
+ * берёт коллекции магазина. Пруф (2026-09-09, прод-bloom `c868ab50…`):
+ * `POST /api/sites/<id>/preview/block` с `{collections:[…], cardLinkBase:'/c/'}`
+ * и с `{collection:'hydro'}` даёт БАЙТ-В-БАЙТ одинаковый HTML (30040 байт,
+ * 29 ссылок). То есть потеря миграции безвредна для витрины.
+ *
+ * ЧТО ОХРАНЯЕТ ЭТОТ ФАЙЛ. Что миграции ревизий не мутируют пропы Collections ни
+ * для bloom, ни для других тем: данные мерчанта переживают прогон без потерь и
+ * прогон идемпотентен. Если миграцию когда-нибудь вернут — эти ожидания
+ * покраснеют, и это будет правильный сигнал пересмотреть файл, а не тихая
+ * рассинхронизация, как было до 2026-09-10.
  */
-describe('migrateBloomCollectionsProps', () => {
+describe('Collections: легаси nav-tile пропы переживают миграцию ревизий', () => {
   const coll = (result: unknown, page = 'home', idx = 0) =>
     (result as { pagesData: Record<string, any> }).pagesData[page].content[idx];
 
-  it('maps first old collectionId → singular `collection` and drops nav-tile props', () => {
-    const result = migrateRevisionData(
-      {
-        pagesData: {
-          home: {
-            content: [
-              {
-                type: 'Collections',
-                props: {
-                  id: 'Collections-1',
-                  heading: 'Сейчас в тренде',
-                  columns: 3,
-                  imageView: 'square',
-                  padding: { top: 80, bottom: 80 },
-                  cardLinkBase: '/catalog?collection=',
-                  collections: [
-                    { id: 'col-1', collectionId: 'hydro', heading: 'HYDRO', image: '' },
-                    { id: 'col-2', collectionId: 'daily', heading: 'DAILY', image: '' },
-                  ],
-                },
-              },
-            ],
-          },
-        },
-      },
-      'bloom',
-    );
-    const c = coll(result);
-    expect(c.props.collection).toBe('hydro'); // первый collectionId
-    expect(c.props.collections).toBeUndefined(); // stale массив удалён
-    expect(c.props.cardLinkBase).toBeUndefined(); // stale префикс удалён
-    // прочие пропы сохранены дословно
-    expect(c.props.heading).toBe('Сейчас в тренде');
-    expect(c.props.columns).toBe(3);
-    expect(c.props.imageView).toBe('square');
-    expect(c.props.padding).toEqual({ top: 80, bottom: 80 });
+  const legacyBlock = (id: string) => ({
+    type: 'Collections',
+    props: {
+      id,
+      heading: 'Сейчас в тренде',
+      columns: 3,
+      imageView: 'square',
+      padding: { top: 80, bottom: 80 },
+      cardLinkBase: '/catalog?collection=',
+      collections: [
+        { id: 'col-1', collectionId: 'hydro', heading: 'HYDRO', image: '' },
+        { id: 'col-2', collectionId: 'daily', heading: 'DAILY', image: '' },
+      ],
+    },
   });
 
-  it('does NOT overwrite an existing singular `collection` (only clears stale props)', () => {
+  const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
+  it('bloom: пропы остаются дословно (миграции больше нет)', () => {
+    const before = legacyBlock('Collections-1');
     const result = migrateRevisionData(
-      {
-        pagesData: {
-          home: {
-            content: [
-              {
-                type: 'Collections',
-                props: {
-                  id: 'Collections-2',
-                  collection: 'lift', // мерчант уже выбрал источник
-                  cardLinkBase: '/catalog?collection=',
-                  collections: [{ id: 'col-1', collectionId: 'hydro', heading: 'HYDRO' }],
-                },
-              },
-            ],
-          },
-        },
-      },
+      { pagesData: { home: { content: [clone(before)] } } },
       'bloom',
     );
-    const c = coll(result);
-    expect(c.props.collection).toBe('lift'); // не перезаписан
-    expect(c.props.collections).toBeUndefined();
-    expect(c.props.cardLinkBase).toBeUndefined();
+    expect(coll(result).props).toEqual(before.props);
   });
 
-  it('clears stale props even when every collectionId is null (empty picker → SSG demo)', () => {
+  it('другая тема: пропы тоже остаются дословно', () => {
+    const before = legacyBlock('Collections-2');
     const result = migrateRevisionData(
-      {
-        pagesData: {
-          home: {
-            content: [
-              {
-                type: 'Collections',
-                props: {
-                  id: 'Collections-3',
-                  cardLinkBase: '/catalog?collection=',
-                  collections: [
-                    { id: 'col-1', collectionId: null, heading: 'Коллекция 1' },
-                    { id: 'col-2', collectionId: null, heading: 'Коллекция 2' },
-                  ],
-                },
-              },
-            ],
-          },
-        },
-      },
-      'bloom',
+      { pagesData: { home: { content: [clone(before)] } } },
+      'satin',
     );
-    const c = coll(result);
-    expect(c.props.collection).toBeUndefined(); // нет валидного id → остаётся демо
-    expect(c.props.collections).toBeUndefined(); // но stale shape вычищен
-    expect(c.props.cardLinkBase).toBeUndefined();
+    expect(coll(result).props).toEqual(before.props);
   });
 
-  it('leaves an already-new-shape Collections block untouched (no-op)', () => {
+  it('новая форма (сингулярный `collection`) не трогается', () => {
     const initial = {
       pagesData: {
         home: {
           content: [
             {
               type: 'Collections',
-              props: { id: 'Collections-4', collection: 'daily', columns: 3 },
+              props: { id: 'Collections-3', collection: 'daily', columns: 3 },
             },
           ],
         },
       },
     };
     const result = migrateRevisionData(initial, 'bloom');
-    const c = coll(result);
-    expect(c.props).toEqual({ id: 'Collections-4', collection: 'daily', columns: 3 });
+    expect(coll(result).props).toEqual({
+      id: 'Collections-3',
+      collection: 'daily',
+      columns: 3,
+    });
   });
 
-  it('does NOT touch Collections for non-bloom themes', () => {
-    const initial = {
-      pagesData: {
-        home: {
-          content: [
-            {
-              type: 'Collections',
-              props: {
-                id: 'Collections-5',
-                cardLinkBase: '/catalog?collection=',
-                collections: [{ id: 'col-1', collectionId: 'mebel', heading: 'Мебель' }],
-              },
-            },
-          ],
-        },
-      },
-    };
-    const result = migrateRevisionData(initial, 'satin');
-    const c = coll(result);
-    // satin оставляет nav-tile shape нетронутым (порт-параметр другой темы)
-    expect(c.props.collections).toEqual([
-      { id: 'col-1', collectionId: 'mebel', heading: 'Мебель' },
-    ]);
-    expect(c.props.cardLinkBase).toBe('/catalog?collection=');
-    expect(c.props.collection).toBeUndefined();
-  });
-
-  it('is idempotent (running twice = identical result)', () => {
-    const initial = {
-      pagesData: {
-        home: {
-          content: [
-            {
-              type: 'Collections',
-              props: {
-                id: 'Collections-6',
-                cardLinkBase: '/catalog?collection=',
-                collections: [{ id: 'col-1', collectionId: 'hydro', heading: 'HYDRO' }],
-              },
-            },
-          ],
-        },
-      },
-    };
+  it('идемпотентность: второй прогон ничего не меняет', () => {
+    const initial = { pagesData: { home: { content: [legacyBlock('Collections-4')] } } };
     const first = migrateRevisionData(initial, 'bloom');
     const second = migrateRevisionData(first, 'bloom');
     expect(JSON.stringify(coll(second))).toBe(JSON.stringify(coll(first)));
-    expect(coll(second).props.collection).toBe('hydro');
   });
 });

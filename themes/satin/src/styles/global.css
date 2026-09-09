@@ -791,12 +791,14 @@ blockquote {
    `bolder` считается ОТНОСИТЕЛЬНО родителя, а типографика satin лёгкая (300/400)
    → <strong> давал всего 400 и был неотличим от обычного текста. Явные 700/italic,
    как в rose/bloom global.css (Контракт секции §7). */
-strong,
-b {
-  font-weight: 700;
-}
+@layer base {
+  strong,
+  b {
+    font-weight: 700;
+  }
 
-em,
-i {
-  font-style: italic;
+  em,
+  i {
+    font-style: italic;
+  }
 }

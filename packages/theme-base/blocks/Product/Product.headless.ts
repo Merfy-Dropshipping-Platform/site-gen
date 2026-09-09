@@ -37,7 +37,10 @@ export function formatRub(amount: number): string {
 }
 
 function toPriceView(raw: number | string | null | undefined): PriceView {
-  const amount = parsePrice(raw);
+  // Цены storefront-data / products.json (basePrice/compareAtPrice) — уже в РУБЛЯХ
+  // (storefront-data.controller эмитит basePrice как есть; заказ = basePrice×100→копейки).
+  // Показываем как есть; НЕ делим /100 (это ломало PDP реальных магазинов: 100₽→1₽).
+  const amount = Math.round(parsePrice(raw));
   return { amount, formatted: formatRub(amount) };
 }
 

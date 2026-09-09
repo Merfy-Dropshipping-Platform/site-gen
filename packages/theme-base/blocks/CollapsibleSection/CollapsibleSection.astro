@@ -1,6 +1,7 @@
 ---
 import type { CollapsibleSectionProps } from './CollapsibleSection.puckConfig';
 import { CollapsibleSectionClasses as C } from './CollapsibleSection.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends CollapsibleSectionProps {
   id?: string;
@@ -63,7 +64,7 @@ const allItems: any[] = (Array.isArray(raw.items) && (raw.items as any[]).length
 >
   <div class:list={[C.container, containerEnabled ? containerSchemeClass : '']}>
     {headingText && (
-      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+      <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(headingText)} /></h2>
     )}
     <div class={C.list}>
       {allItems.map((item, i) => {
@@ -76,7 +77,7 @@ const allItems: any[] = (Array.isArray(raw.items) && (raw.items as any[]).length
             data-puck-subsection-index={i}
             data-puck-subsection-field={Array.isArray(raw.items) ? 'items' : 'sections'}
           >
-            <summary class={C.summary}>{itemTitle}</summary>
+            <summary class={C.summary}><Fragment set:html={sanitizeInline(itemTitle)} /></summary>
             <div class={C.content} set:html={item.content} />
           </details>
         );

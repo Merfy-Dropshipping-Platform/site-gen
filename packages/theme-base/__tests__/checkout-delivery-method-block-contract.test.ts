@@ -18,7 +18,7 @@ describe('CheckoutDeliveryMethod block', () => {
   });
   it('Schema accepts customMethods array', () => {
     const ok = CheckoutDeliveryMethodSchema.safeParse({
-      heading: 'X', cdekEnabled: true, cdekDoorLabel: 'A', cdekPvzLabel: 'B',
+      heading: 'X', cdekEnabled: true, cdekDoorLabel: 'A', cdekPvzLabel: 'B', cdekPostamatLabel: 'C',
       pickupEnabled: false, pickupLabel: 'P',
       customMethods: [{ label: 'Boxberry', priceCents: 39900, etaText: '5-7 дней' }],
       freeShippingThresholdCents: null,

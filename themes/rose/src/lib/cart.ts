@@ -15,6 +15,9 @@ import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 const api = createNtCart({
 	storageKey: "rose:cart:v1",
 	eventPrefix: "rose:cart",
+	// Само-лечение: цены/наличие пере-резолвятся из актуального каталога на загрузке
+	// → корзина всегда совпадает с оформлением (не «зависает» на старой цене).
+	catalogUrl: "/data/products.json",
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
 		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
 		const pHref = `${productPathPrefix}/${line.productId}`;
@@ -33,10 +36,10 @@ const api = createNtCart({
 								<button type="button" data-cart-remove data-id="${line.id}" class="font-manrope text-[14px] font-normal leading-normal text-[#999999] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
 							</div>
 							<div class="flex items-center justify-between">
-								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#F5F5F5]">
-									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Уменьшить">−</button>
-									<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
-									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Увеличить">+</button>
+								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#E5E5E5]">
+									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center font-manrope text-[16px] text-[#000000]" aria-label="Уменьшить">−</button>
+									<span class="min-w-[28px] text-center font-manrope text-[14px] text-[#000000]">${line.quantity}</span>
+									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center font-manrope text-[16px] text-[#000000]" aria-label="Увеличить">+</button>
 								</div>
 								<span class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
 							</div>
@@ -58,3 +61,4 @@ export const getCartCount = api.getCartCount;
 export const getCartTotal = api.getCartTotal;
 export const formatCartPrice = api.formatCartPrice;
 export const initCartUI = api.initCartUI;
+export const reconcileCart = api.reconcileCart;

@@ -186,3 +186,44 @@ const paddingStyle = padding
     });
   })();
 </script>
+
+<script is:inline define:vars={{ blockId: id, fieldFullClass: C.fieldFull }}>
+  // Рантайм-конфиг чекаута (Фаза 4a): contactMethod управляет видимостью телефона.
+  //  "email-phone" (дефолт) → email + телефон в 2 колонки (текущее поведение).
+  //  "email"                → телефон скрыт, email растянут на всю ширину.
+  // Консюмер конфига: применяем ДВУМЯ путями (гонка с продюсером в checkout.astro):
+  //  (1) сразу на init, если window.__MERFY_CONFIG__.checkout уже есть;
+  //  (2) по событию document 'checkout:config-ready'. Идемпотентно.
+  function initCheckoutContactConfig() {
+    var root = window.__merfyRoot(blockId) || document.querySelector('[data-checkout-contact]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
+    if (!root) return;
+
+    function apply() {
+      var cfg = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
+      var emailOnly = cfg.contactMethod === 'email';
+      var emailWrap = root.querySelector('[data-checkout-field="email"]');
+      var phoneWrap = root.querySelector('[data-checkout-field="phone"]');
+      // Скрытие через DOM-атрибут hidden (не Tailwind-строку) — скрытый input
+      // не получает focus/input, поэтому маска телефона на нём не «стреляет».
+      if (phoneWrap) phoneWrap.hidden = emailOnly;
+      if (emailWrap) {
+        if (emailOnly) emailWrap.classList.add(fieldFullClass);
+        else emailWrap.classList.remove(fieldFullClass);
+      }
+    }
+
+    // Один listener на форму (guard-флаг от двойной инициализации при
+    // повторном прогоне на astro:page-load). Повторный init только пере-применяет.
+    if (!root.__merfyContactCfgInit) {
+      root.__merfyContactCfgInit = true;
+      document.addEventListener('checkout:config-ready', apply);
+    }
+    apply();
+  }
+
+  initCheckoutContactConfig();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCheckoutContactConfig);
+  }
+  document.addEventListener('astro:page-load', initCheckoutContactConfig);
+</script>

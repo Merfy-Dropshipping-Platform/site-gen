@@ -16,6 +16,10 @@ import {
   type BaseBlockEntry,
   type ThemeConfigForResolver,
 } from "../../packages/theme-contract/resolver/resolveBlocks";
+import {
+  THEME_PUCK_BASE_BLOCK_NAMES,
+  THEME_PUCK_BASE_BLOCKS,
+} from '../themes/theme-puck-block-catalog';
 
 const ROOT = resolve(__dirname, "..", "..");
 
@@ -189,6 +193,79 @@ describe("Theme manifest resolver (Phase 2a multi-theme wiring)", () => {
       expect(resolved.Footer.source).toBe("base");
       expect(resolved.Hero.source).toBe("base");
       expect(resolved.AuthModal.source).toBe("base");
+    }
+  });
+});
+
+describe('ThemePuckConfigController base-block catalog parity (extraction)', () => {
+  // The controller previously hard-coded a 35-entry BASE_BLOCKS array inline.
+  // Task 3 extracted it byte-for-byte into theme-puck-block-catalog.ts and the
+  // controller now imports THEME_PUCK_BASE_BLOCKS. These assertions pin the
+  // canonical list + shape so a future edit to either the controller or the
+  // catalog cannot silently diverge.
+  const EXPECTED_NAMES = [
+    // 18 content blocks
+    'Hero',
+    'PromoBanner',
+    'PopularProducts',
+    'Collections',
+    'Gallery',
+    'Product',
+    'MainText',
+    'ImageWithText',
+    'Slideshow',
+    'MultiColumns',
+    'MultiRows',
+    'CollapsibleSection',
+    'Newsletter',
+    'ContactForm',
+    'Video',
+    'Publications',
+    'Page',
+    'CartSection',
+    'CheckoutSection',
+    'CartBody',
+    'CartSummary',
+    'CartTotals',
+    'CartCheckoutButton',
+    'CheckoutForm',
+    'CheckoutSummary',
+    'OrderConfirmation',
+    'Catalog',
+    // 7 chrome blocks
+    'Header',
+    'Footer',
+    'CheckoutHeader',
+    'AuthModal',
+    'CartDrawer',
+    'CheckoutLayout',
+    'AccountLayout',
+  ];
+
+  it('preserves the exact ordered base-block name list', () => {
+    expect([...THEME_PUCK_BASE_BLOCK_NAMES]).toEqual(EXPECTED_NAMES);
+  });
+
+  it('derives { source:"base", path:<name> } for every catalog entry', () => {
+    expect(Object.keys(THEME_PUCK_BASE_BLOCKS)).toEqual(EXPECTED_NAMES);
+    for (const name of EXPECTED_NAMES) {
+      expect(THEME_PUCK_BASE_BLOCKS[name]).toEqual({
+        source: 'base',
+        path: name,
+      });
+    }
+  });
+
+  it('resolves every base block to `base` for a no-override manifest (controller wiring)', () => {
+    const noOverride: ThemeConfigForResolver = {
+      blocks: {},
+      features: {},
+      customBlocks: {},
+    };
+    const resolved = resolveBlocks(THEME_PUCK_BASE_BLOCKS, noOverride);
+    for (const name of EXPECTED_NAMES) {
+      expect(resolved[name].source).toBe('base');
+      expect(resolved[name].path).toBe(name);
     }
   });
 });

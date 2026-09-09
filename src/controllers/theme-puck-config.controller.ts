@@ -9,6 +9,12 @@ import {
   resolveConstructorConfig,
   type BlockConfigLoader,
 } from '../../packages/theme-contract/resolver/resolveConstructorConfig';
+// Canonical base-block catalog — extracted so the controller and the
+// conformance source snapshot share ONE source of truth (no silent drift).
+import { THEME_PUCK_BASE_BLOCKS } from '../themes/theme-puck-block-catalog';
+// Path/package resolution extracted so conformance can ask the SAME helper
+// whether a canonical block artifact is reachable.
+import { resolveBlockArtifact } from '../themes/block-artifact-resolver';
 // 097: same deep-merge used server-side in preview.service.ts so constructor
 // frontend receives theme.json blockDefaults as part of defaultProps. Single
 // source of truth for merge semantics across both render paths.
@@ -66,58 +72,17 @@ export interface PuckConfigJson {
 }
 
 /**
- * Registry of the 25 base blocks shipped by @merfy/theme-base. Paths are
+ * Registry of the base blocks shipped by @merfy/theme-base. Paths are
  * resolved relative to this controller at runtime (packages/ lives alongside
  * src/ in the sites service). This mirrors the pattern used by
  * `generator/theme-bridge.ts` which references the same packages via
  * shape-matching rather than `@merfy/*` imports (the sub-repo doesn't have
  * pnpm-workspace access to @merfy/* as installed node_modules).
+ *
+ * The catalog itself lives in `src/themes/theme-puck-block-catalog.ts` so the
+ * conformance source snapshot can consume the identical list.
  */
-const BASE_BLOCKS: Record<string, BaseBlockEntry> = Object.fromEntries(
-  [
-    // 18 content blocks
-    'Hero',
-    'PromoBanner',
-    'PopularProducts',
-    'Collections',
-    'Gallery',
-    'Product',
-    'MainText',
-    'ImageWithText',
-    'Slideshow',
-    'MultiColumns',
-    'MultiRows',
-    'CollapsibleSection',
-    'Newsletter',
-    'ContactForm',
-    'Video',
-    'Publications',
-    // Page (Страница) — embed-карточка ссылки на другую страницу магазина (Figma 314-35117).
-    'Page',
-    'CartSection',
-    'CheckoutSection',
-    // Cart page Puck-driven sections
-    'CartBody',
-    'CartSummary',
-    'CartTotals',
-    'CartCheckoutButton',
-    // Checkout page mega-blocks (Figma 1:19998 — 2 секции вместо 11)
-    'CheckoutForm',
-    'CheckoutSummary',
-    // Thank-you / order confirmation (Spec 103) — Figma 1:20389/1:20698
-    'OrderConfirmation',
-    // Catalog page-only block (filter sidebar + product grid + pagination)
-    'Catalog',
-    // 7 chrome blocks
-    'Header',
-    'Footer',
-    'CheckoutHeader',
-    'AuthModal',
-    'CartDrawer',
-    'CheckoutLayout',
-    'AccountLayout',
-  ].map((name) => [name, { source: 'base' as const, path: name }]),
-);
+const BASE_BLOCKS: Record<string, BaseBlockEntry> = THEME_PUCK_BASE_BLOCKS;
 
 /**
  * Default (empty) theme config — uses base for everything. When ThemesService
@@ -207,6 +172,20 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
 }
 
 /**
+ * Dedupe concurrent dynamic imports of the same astro-block artifact.
+ * Nest compiles this controller to CJS; parallel HTTP requests that hit
+ * `import(absPath)` for the same .mjs (notably Video) can trip Node's
+ * "Cannot require() ES Module … not yet fully loaded" race.
+ */
+const blockModuleLoadCache = new Map<
+  string,
+  Promise<Record<string, unknown>>
+>();
+
+/** In-process puck-config cache — config is static per deploy. */
+const puckConfigResponseCache = new Map<string, Promise<PuckConfigJson>>();
+
+/**
  * Build a block loader that resolves overridden blocks from the theme package
  * and everything else from @merfy/theme-base. The loader receives the `path`
  * field from ResolvedBlockEntry — for base blocks this is just the block name
@@ -214,16 +193,6 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
  * declared in theme.json (e.g. "./blocks/Header" for rose).
  */
 function createBlockLoader(themeId: string): BlockConfigLoader {
-  // Map themeId → package dir for override lookups. Unknown ids fall through
-  // to base-only loading.
-  const themePackageByThemeId: Record<string, string> = {
-    rose: 'theme-rose',
-    vanilla: 'theme-vanilla',
-    bloom: 'theme-bloom',
-    satin: 'theme-satin',
-    flux: 'theme-flux',
-  };
-
   // Blocks are precompiled to flat ESM by `pnpm build:blocks` (see
   // scripts/compile-astro-blocks.mjs). Layout on disk:
   //   dist/astro-blocks/<pkg>__<BlockName>__index.mjs
@@ -231,23 +200,26 @@ function createBlockLoader(themeId: string): BlockConfigLoader {
   // The `resolveConstructorConfig` expects a sync-or-async loader that returns
   // a record of named exports — dynamic import's namespace object is exactly
   // that.
+  //
+  // Path/package resolution + flat artifact naming come from the extracted
+  // `resolveBlockArtifact` (single source of truth shared with conformance).
   const blocksDir = resolve(__dirname, '..', '..', 'astro-blocks');
 
   return async (pathOrName: string) => {
-    // Theme override path starts with "./blocks/<Name>" per manifest convention.
-    const themePackage = themePackageByThemeId[themeId];
-    let pkg: string;
-    let blockName: string;
-    if (pathOrName.startsWith('./blocks/') && themePackage) {
-      pkg = themePackage;
-      blockName = pathOrName.split('/').pop() as string;
-    } else {
-      pkg = 'theme-base';
-      blockName = pathOrName;
+    const { artifact } = resolveBlockArtifact(themeId, pathOrName);
+    const absPath = resolve(blocksDir, artifact);
+
+    let pending = blockModuleLoadCache.get(absPath);
+    if (!pending) {
+      pending = import(absPath)
+        .then((mod) => mod as Record<string, unknown>)
+        .catch((err: unknown) => {
+          blockModuleLoadCache.delete(absPath);
+          throw err;
+        });
+      blockModuleLoadCache.set(absPath, pending);
     }
-    const absPath = resolve(blocksDir, `${pkg}__${blockName}__index.mjs`);
-    const mod = (await import(absPath)) as Record<string, unknown>;
-    return mod;
+    return pending;
   };
 }
 
@@ -268,6 +240,19 @@ export class ThemePuckConfigController {
   async getPuckConfig(
     @Param('themeId') themeId: string,
   ): Promise<PuckConfigJson> {
+    const cacheKey = themeId;
+    let pending = puckConfigResponseCache.get(cacheKey);
+    if (!pending) {
+      pending = this.buildPuckConfigJson(themeId).catch((err: unknown) => {
+        puckConfigResponseCache.delete(cacheKey);
+        throw err;
+      });
+      puckConfigResponseCache.set(cacheKey, pending);
+    }
+    return pending;
+  }
+
+  private async buildPuckConfigJson(themeId: string): Promise<PuckConfigJson> {
     const themeManifest = getThemeManifest(themeId);
     const resolvedBlocks = resolveBlocks(BASE_BLOCKS, themeManifest);
     const loader = createBlockLoader(themeId);

@@ -15,8 +15,32 @@ export interface BillingEntitlements {
   shopsLimit: number;
   staffLimit: number;
   frozen: boolean;
+  /**
+   * Authoritative storefront-suspend signal from billing = {frozen, canceled}
+   * (NOT past_due). The billing-sync reconcile keys on this instead of `frozen`
+   * so a terminal `canceled` storefront stays suspended (no hourly flip-flop).
+   * Optional for backward-compat while billing rolls out the field.
+   */
+  storefrontSuspended?: boolean;
   planName?: string;
   status?: string;
+}
+
+/**
+ * Whether the public storefront should be suspended for these entitlements:
+ * billing's authoritative `storefrontSuspended` = {frozen, canceled}, with a
+ * fallback of `frozen || status==='canceled'` for old billing builds /
+ * success:false payloads that omit the field. `??` (NOT `||`) so an explicit
+ * billing `false` (past_due, active, trialing) is honored and never overridden
+ * by the status fallback. Shared by billing-sync reconcile and
+ * checkSiteAvailability so the predicate cannot drift between them.
+ */
+export function isStorefrontSuspended(
+  e: Partial<
+    Pick<BillingEntitlements, "storefrontSuspended" | "frozen" | "status">
+  >,
+): boolean {
+  return e.storefrontSuspended ?? (e.frozen || e.status === "canceled");
 }
 
 @Injectable()
@@ -102,6 +126,7 @@ export class BillingClient {
         shopsLimit: result?.shopsLimit ?? 1,
         staffLimit: result?.staffLimit ?? 1,
         frozen: result?.frozen ?? false,
+        storefrontSuspended: result?.storefrontSuspended,
         planName: result?.planName,
         status: result?.status,
       };
@@ -126,7 +151,11 @@ export class BillingClient {
   ): Promise<{ allowed: boolean; limit: number; reason?: string }> {
     const entitlements = await this.getEntitlements(tenantId);
 
-    if (entitlements.frozen) {
+    // Block create when the storefront is suspended ({frozen, canceled}), not
+    // just on raw `frozen` — a terminal `canceled` has frozen=false and would
+    // otherwise be allowed to create a new site. `account_frozen` reason reused
+    // (its consumer only distinguishes it from the quota case).
+    if (isStorefrontSuspended(entitlements)) {
       return {
         allowed: false,
         limit: entitlements.shopsLimit,
@@ -161,6 +190,7 @@ export class BillingClient {
       shopsLimit: 1,
       staffLimit: 1,
       frozen: false,
+      storefrontSuspended: false,
     };
   }
 }

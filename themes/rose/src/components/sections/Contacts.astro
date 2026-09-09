@@ -1,6 +1,7 @@
 ---
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+import NtSectionHeading from "../ui/RoseSectionHeading.astro";
+import { resolveRoseHeadingSize, roseHeadingStyle } from "../../lib/heading-size";
 
 // ОЖИВЛЕНИЕ: канон-схема ContactForm. Секция рендерит форму обратной связи.
 // Схема описывает поля ФОРМЫ. Когда мерчант настроил поля (fields-проп) —
@@ -56,6 +57,9 @@ const formFields = fieldsProp
 const buttonText =
 	typeof p.buttonText === "string" && p.buttonText.length > 0 ? p.buttonText : "Отправить";
 
+const headingSize = resolveRoseHeadingSize(p.headingSize, p.heading?.size, "nested");
+const headingSizeStyle = roseHeadingStyle("contacts", headingSize);
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -71,7 +75,7 @@ const paddingStyle = p.padding
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
 		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
-		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
+		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading" style={headingSizeStyle}>
 			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} />
 		</div>
 		<div class="flex flex-col">
@@ -100,7 +104,7 @@ const paddingStyle = p.padding
 										type="text"
 										autocomplete="name"
 										required={formFields.name.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -123,7 +127,7 @@ const paddingStyle = p.padding
 										type="email"
 										autocomplete="email"
 										required={formFields.email.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -146,7 +150,7 @@ const paddingStyle = p.padding
 										type="tel"
 										autocomplete="tel"
 										required={formFields.phone.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -176,7 +180,7 @@ const paddingStyle = p.padding
 								name="question"
 								rows={8}
 								required={formFields.message.required}
-								class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+								class="min-h-[232px] w-full rounded-[var(--radius-input,8px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 							></textarea>
 						</div>
 					)
@@ -189,7 +193,7 @@ const paddingStyle = p.padding
 						id="contacts-question"
 						name="question"
 						rows={8}
-						class="min-h-[232px] w-full rounded-[var(--radius-field,4px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
+						class="min-h-[232px] w-full rounded-[var(--radius-input,8px)] border border-[#000000] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000]"
 					></textarea>
 				</div>
 				)}
@@ -214,11 +218,15 @@ const paddingStyle = p.padding
 </section>
 
 <style>
+	:global(#contacts-title) {
+		font-size: var(--contacts-heading-size, 20px) !important;
+	}
+
 	/* Figma 375: section title Comfortaa 14 на мобиле (как Collections/Popular).
 	   NtSectionHeading не пробрасывает class на h2 — задаём через ID-правило. */
 	@media (max-width: 639.98px) {
 		:global(#contacts-title) {
-			font-size: 14px !important;
+			font-size: var(--contacts-heading-size-mobile, 14px) !important;
 			line-height: 1 !important;
 		}
 

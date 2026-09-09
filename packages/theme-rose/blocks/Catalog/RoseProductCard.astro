@@ -57,7 +57,7 @@ const showSaleBadge = product.discount === true;
 // width:100% → cardW−24). false (дефолт) → пусто, родной флеш-вид (фото full-bleed,
 // кнопка край-в-край). Зеркалит client renderCardHtml (CARD_CONTAINER_STYLE) — parity.
 const cardContainerStyle = cardContainerOn
-  ? "background:rgb(var(--color-surface,245 245 245));border-radius:var(--radius-media,8px);padding:12px;"
+  ? "background:rgb(var(--color-surface,245 245 245));border-radius:var(--product-card-radius,8px);padding:12px;"
   : undefined;
 // Стиль кнопки quickAdd (зеркалит client renderCardHtml). link → текст-ссылка.
 const quickBtnStyle =

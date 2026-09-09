@@ -1,7 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
-import { buildTokensCss } from '../themes/tokens-css';
+import { buildTokensCss, previewTokensCssWithFonts } from '../themes/tokens-css';
 import { getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
@@ -636,7 +636,7 @@ export class PreviewService {
       blockSchemes: await Promise.all(input.blocks.map((b) => this.resolveBlockScheme(b.type, b.props, input.themeId))),
       assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
       titleOverride: input.titleOverride,
-      tokensCss: buildTokensCss(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
+      tokensCss: previewTokensCssWithFonts(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
     });
     if (composed === null) return null;
     // Агент конструктора (select/hot-replace/postMessage) — то, чего
@@ -1342,6 +1342,16 @@ const PREVIEW_NAV_AGENT_INLINE = `
       Idiomorph.morph(rcMain, rcParts.join(''), {
         morphStyle: 'innerHTML',
         callbacks: {
+          // 110-fix: поддеревья с data-rc-preserve — клиент-управляемый контент
+          // (список товаров корзины / тоггл пусто↔наполнено), которого НЕТ в SSR
+          // (рендерится на клиенте из getCart()). Морф обновляет ТОЛЬКО обёртку
+          // секции (padding/scheme), такой контент пропускает (return false) →
+          // смена настроек реактивна (CSS-апдейт), товары не пересоздаются и не
+          // мигают, состояние пусто/наполнено не сбрасывается в SSR-дефолт.
+          beforeNodeMorphed: function (oldNode) {
+            if (oldNode && oldNode.nodeType === 1 && oldNode.hasAttribute && oldNode.hasAttribute('data-rc-preserve')) return false;
+            return true;
+          },
           beforeNodeRemoved: function (n) { __rcStash(n, rcMain); },
           afterNodeAdded: function (n) { __rcAfterAdd(n); }
         }
@@ -1508,6 +1518,35 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
         // Ни одного носителя меню не нашли (тема без маркеров) → server fetch.
         return patched;
+      }
+    },
+    // 110 — корзина: отступы/схема патчатся ТОЧЕЧНО (без re-fetch/replace). Иначе
+    // слайдер отступов перефетчивал блок и пересоздавал список товаров → сдвиг/моргание.
+    // Меняем только padding/класс самой секции → реактивно, двигается лишь корзина.
+    CartBody: {
+      padding: function (el, _oldVal, newVal) {
+        var v = newVal || { top: 0, bottom: 0 };
+        el.style.paddingTop = Math.min(Number(v.top) || 0, 160) + 'px';
+        el.style.paddingBottom = Math.min(Number(v.bottom) || 0, 160) + 'px';
+        return true;
+      },
+      colorScheme: function (el, _oldVal, newVal) {
+        el.className = el.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
+        return true;
+      }
+    },
+    CartSummary: {
+      padding: function (el, _oldVal, newVal) {
+        var v = newVal || { top: 0, bottom: 0 };
+        el.style.paddingTop = Math.min(Number(v.top) || 0, 160) + 'px';
+        el.style.paddingBottom = Math.min(Number(v.bottom) || 0, 160) + 'px';
+        return true;
+      },
+      colorScheme: function (el, _oldVal, newVal) {
+        el.className = el.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
+        return true;
       }
     },
     // 091 — Hero local-patch: heading/text text changes БЕЗ outerHTML replace.
@@ -1793,6 +1832,20 @@ const PREVIEW_NAV_AGENT_INLINE = `
     for (var i = 0; i < subs.length; i++) subs[i].removeAttribute('data-puck-subsection-hover');
   }
 
+  // Checkout-мегаблоки (CheckoutForm «Оформление заказа» / CheckoutSummary
+  // «Сводка заказа») содержат ВНУТРЕННИЕ блоки со своими data-puck-component-id
+  // (нужны для __merfyRoot-гидрации DaData/СДЭК/оплаты, Spec 102). В дереве
+  // конструктора это ОДНА секция → hover/select резолвим к КОНТЕЙНЕРУ мегаблока
+  // (у него тоже есть свой data-puck-component-id), иначе цепляется внутренний
+  // блок и пилюля показывает «checkout». Прочие страницы не затронуты — вложенные
+  // data-puck-component-id есть только в checkout-мегаблоках.
+  function resolveSection(t) {
+    if (!t || !t.closest) return null;
+    var mega = t.closest('[data-block="checkout-form"],[data-block="checkout-summary"]');
+    if (mega && mega.getAttribute('data-puck-component-id')) return mega;
+    return t.closest('[data-puck-component-id]');
+  }
+
   document.addEventListener('mouseover', function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
@@ -1815,7 +1868,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       refreshPills();
       return;
     }
-    var sec = t.closest('[data-puck-component-id]');
+    var sec = resolveSection(t);
     if (sec !== hoveredSection) {
       if (hoveredSection) {
         hoveredSection.removeAttribute('data-puck-section-hover');
@@ -1858,13 +1911,24 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // Зеркалит navigate-путь: pageIdFromPath('/checkout') → page-checkout →
     // switchPage в конструкторе.
     var navBtn = e.target && e.target.closest
-      ? e.target.closest('[data-action="checkout"], [data-action="buy-now"]')
+      ? e.target.closest('[data-action="checkout"], [data-action="buy-now"], [data-cart-open]')
       : null;
     if (navBtn) {
+      // Иконка корзины (<button data-cart-open>): перехватываем на /cart ТОЛЬКО когда
+      // «Вид корзины» = Страница (--cart-type: page). В drawer-режиме (Сайдбар, дефолт)
+      // НЕ перехватываем — пропускаем клик к NtCartDrawer (bubble-обработчик темы),
+      // который открывает сайдбар прямо в превью, как на live. Без этой проверки при
+      // «Сайдбар» иконка всё равно уходила навигацией на страницу /cart (баг тестера).
+      if (navBtn.hasAttribute('data-cart-open')) {
+        var __ct = getComputedStyle(document.documentElement)
+          .getPropertyValue('--cart-type').trim().replace(/['"]/g, '');
+        if (__ct !== 'page') return;
+      }
       e.preventDefault();
       e.stopPropagation();
-      // «Купить сейчас» (buy-now) и «Оформить» (checkout) → обе ведут в оформление.
-      var navPath = '/checkout';
+      // «Купить сейчас» (buy-now) и «Оформить» (checkout) → в оформление (/checkout).
+      // Иконка корзины в page-режиме → /cart. Зеркалит navigate-путь <a href>.
+      var navPath = navBtn.hasAttribute('data-cart-open') ? '/cart' : '/checkout';
       // «Купить сейчас» = вся корзина + ЭТОТ товар (как на live). Nav-агент глушит
       // обработчик темы (stopPropagation выше), поэтому САМ кладём кликнутый товар в
       // nt-cart — кликом по его add-кнопке В КОНТЕКСТЕ нажатой buy-now (делегат
@@ -1964,7 +2028,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       }
       return;
     }
-    var block = e.target && e.target.closest ? e.target.closest('[data-puck-component-id]') : null;
+    var block = resolveSection(e.target);
     if (block) {
       post({ type: 'select-block', blockId: block.getAttribute('data-puck-component-id') });
     }

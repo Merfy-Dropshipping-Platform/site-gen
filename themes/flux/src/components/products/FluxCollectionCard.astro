@@ -17,7 +17,7 @@ const href = `/catalog?collection=${encodeURIComponent(collection.name)}`;
 	aria-label={collection.name}
 	data-nt="flux-collection-card"
 >
-	<div class="aspect-[430/500] w-full overflow-hidden bg-[#F5F5F5] rounded-[8px]">
+	<div class="aspect-[430/500] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]">
 		<FluxPicture
 			src={collection.image}
 			alt={collection.name}

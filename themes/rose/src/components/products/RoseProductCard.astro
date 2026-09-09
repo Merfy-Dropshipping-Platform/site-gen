@@ -5,9 +5,15 @@ import RosePicture from "../img/RosePicture.astro";
 interface Props {
 	product: Product;
 	priority?: boolean;
+	/**
+	 * aspect-ratio (W/H) карточного медиа — «Вид изображения» секции:
+	 * "318/444" (Квадрат, дефолт) | "430/500" (Портрет) | "16/9" (Широкий).
+	 * Дефолт = прежний литерал верстальщика (byte-identical до-фикса).
+	 */
+	aspectRatio?: string;
 }
 
-const { product, priority = false } = Astro.props;
+const { product, priority = false, aspectRatio = "318/444" } = Astro.props;
 const href = `/products/${product.id}`;
 const showSaleBadge = product.discount === true;
 
@@ -28,7 +34,8 @@ const wishlistOutlineSvg =
 	<div class="relative w-full">
 	<a
 		href={href}
-		class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white"
+		class="relative block w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-white"
+		style={`aspect-ratio:${aspectRatio}`}
 		aria-label={product.name}
 	>
 		{product.image ? (

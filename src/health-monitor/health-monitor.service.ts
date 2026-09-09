@@ -30,7 +30,21 @@ import {
   type HealthCheckSummary,
 } from "./health-monitor.types";
 
-const MINIO_URL = "https://minio.merfy.ru";
+/**
+ * Публичный endpoint MinIO для pre-check. Источник тот же, что у
+ * S3StorageService (см. src/storage/s3.service.ts): S3_PUBLIC_ENDPOINT →
+ * MINIO_API_URL → MINIO_PUBLIC_ENDPOINT. Дефолт равен ранее захардкоженному
+ * значению, поэтому без переменных поведение не меняется.
+ */
+function minioPublicUrl(): string {
+  return (
+    process.env.S3_PUBLIC_ENDPOINT ||
+    process.env.MINIO_API_URL ||
+    process.env.MINIO_PUBLIC_ENDPOINT ||
+    "https://minio.merfy.ru"
+  );
+}
+
 const CHECK_TIMEOUT_MS = 10_000;
 const GRACE_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_REPAIRS_PER_24H = 3;
@@ -154,7 +168,7 @@ export class HealthMonitorService {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
-      const res = await fetch(MINIO_URL, { signal: controller.signal });
+      const res = await fetch(minioPublicUrl(), { signal: controller.signal });
       clearTimeout(timer);
       // 400/403 = MinIO is alive (auth required). 5xx = problem.
       return res.status < 500;

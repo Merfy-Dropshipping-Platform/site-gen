@@ -317,7 +317,7 @@ function wishlistHeartHtml(id: string): string {
 	);
 }
 
-export function renderCardHtml(p: RealProduct): string {
+export function renderCardHtml(p: RealProduct, aspectRatio: string = "318/444"): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
 	const rawImage = productImageRaw(p);
@@ -331,7 +331,7 @@ export function renderCardHtml(p: RealProduct): string {
 		: "";
 	return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
 	<div class="relative w-full">
-		<a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">
+		<a href="${href}" class="relative block w-full overflow-hidden rounded-[8px] bg-white" style="aspect-ratio:${aspectRatio}" aria-label="${name}">
 			${media}
 		</a>
 		${wishlistHeartHtml(p.id)}

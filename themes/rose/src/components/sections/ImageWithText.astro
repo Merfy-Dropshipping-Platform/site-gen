@@ -4,6 +4,7 @@
 // Секции нет у верстальщика — композиция из манеры: сетка секций §2, зазоры галереи
 // (gap-6 md:gap-8), медиа §4 (rounded 8 на медиа, плейсхолдер-поверхность #F5F5F5),
 // типографика §1, кнопка §3 (solid чёрная, габариты Contacts CTA).
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -140,7 +141,7 @@ const titleId = id ? `${id}-title` : undefined;
 				data-puck-subsection-index="101"
 				data-puck-subsection-field="heading"
 			>
-				{heading}
+				<Fragment set:html={inlineFormat(heading)} />
 			</h2>
 			<div
 				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}

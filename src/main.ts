@@ -63,6 +63,17 @@ async function bootstrap() {
   // reachable static mechanism as /placeholders/ above.
   app.useStaticAssets(path.resolve(process.cwd(), "dist", "theme-preview"), {
     prefix: "/__theme/",
+    setHeaders: (res: { setHeader: (k: string, v: string) => void }, filePath: string) => {
+      // Плоские скрипты/стили БЕЗ content-хэша (cart-store.js, cart-api.js,
+      // styles.css) — no-cache, must-revalidate. Иначе превью-iframe конструктора
+      // держит СТАРУЮ версию бандла до max-age (браузер, hard-refresh не чистит
+      // iframe-субресурсы) → юзер видит старое поведение после деплоя. Хэшированные
+      // ассеты (Astro/Vite _assets/*.HASH.js) остаются immutable-кэшируемыми.
+      const isHashed = /[.-][a-f0-9]{8,}\.(js|css)$/i.test(filePath);
+      if (/\.(js|css)$/i.test(filePath) && !isHashed) {
+        res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      }
+    },
   });
 
   // Использовать Pino как основной logger

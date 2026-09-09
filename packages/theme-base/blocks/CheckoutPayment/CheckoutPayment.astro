@@ -20,18 +20,18 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
   <h2 class={C.heading}>{heading}</h2>
   <p class={C.subheading}>{subheading}</p>
 
+  {/* Figma 1:19998 — методы оплаты простыми радио-строками (без боксов-рамок);
+      форма карты раскрывается ИНЛАЙН прямо под «Банковская карта», до остальных
+      методов (СБП/Sber Pay/T-Pay). */}
   <div class={C.list} data-checkout-payment-list>
     {enabledMethods.map((m, i) => (
-      <label
-        class:list={[
-          'flex flex-col gap-3 px-3 py-5 border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] cursor-pointer transition-colors',
-          i === 0 ? 'border-[rgb(var(--color-text))]' : 'hover:border-[rgb(var(--color-text)/.4)]',
-        ]}
-        data-payment-key={m.key}
-        data-payment-method={m.key}
-        data-payment-selected={String(i === 0)}
-      >
-        <div class="flex items-center gap-2 w-full">
+      <Fragment>
+        <label
+          class={C.option}
+          data-payment-key={m.key}
+          data-payment-method={m.key}
+          data-payment-selected={String(i === 0)}
+        >
           <input
             type="radio"
             name="paymentMethod"
@@ -67,18 +67,16 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
               <text x="0" y="12" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="currentColor">T-Pay</text>
             </svg>
           )}
-        </div>
-      </label>
-    ))}
-  </div>
+        </label>
 
-  <div
-    class="w-full grid grid-cols-1 gap-3 mt-4"
-    data-card-form-wrapper
-    data-checkout-card-form
-    hidden={firstKey !== 'bank_card'}
-  >
-    <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
+        {m.key === 'bank_card' && (
+          <div
+            class="w-full grid grid-cols-1 gap-3 pl-8"
+            data-card-form-wrapper
+            data-checkout-card-form
+            hidden={firstKey !== 'bank_card'}
+          >
+            <div class="relative flex flex-col justify-center bg-[rgb(var(--color-input-bg,255,255,255))] border border-[rgb(var(--color-input-border))] rounded-[var(--radius-input)] px-3 h-14">
       <label class="text-[length:var(--size-tiny)] text-[rgb(var(--color-input-label,156,163,175))]">Номер карты</label>
       <input
         class="bg-transparent outline-none text-[length:var(--size-body)] text-[rgb(var(--color-text))]"
@@ -138,6 +136,10 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
       data-payment-sdk-status
       hidden
     ></p>
+          </div>
+        )}
+      </Fragment>
+    ))}
   </div>
 </section>
 
@@ -163,13 +165,8 @@ const nameOnCardEnabled = cardForm?.nameOnCardEnabled !== false;
       labels.forEach(function (lbl) {
         var isSelected = lbl.getAttribute('data-payment-key') === method;
         lbl.setAttribute('data-payment-selected', String(isSelected));
-        if (isSelected) {
-          lbl.classList.add('border-[rgb(var(--color-text))]');
-          lbl.classList.remove('hover:border-[rgb(var(--color-text)/.4)]');
-        } else {
-          lbl.classList.remove('border-[rgb(var(--color-text))]');
-          lbl.classList.add('hover:border-[rgb(var(--color-text)/.4)]');
-        }
+        // Figma 1:19998 — строки без рамок: выделение показывает только радио-точка
+        // (заливка ниже), рамку у label НЕ трогаем.
         var dot = lbl.querySelector('[data-payment-radio-dot]');
         if (dot) {
           if (isSelected) {

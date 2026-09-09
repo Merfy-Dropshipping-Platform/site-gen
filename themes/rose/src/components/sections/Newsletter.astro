@@ -58,6 +58,10 @@ const inlineSubmit = p.formLayout === "inline-submit";
 // согласия под формой (манера rose: Manrope мелкий muted); иначе ничего.
 const showAgreement = p.agreement === "true";
 
+// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
+// 'true' блок heading+description не рендерится (форма/согласие остаются).
+const hideTitle = p.hideTitle === "true";
+
 // Канон «Выравнивание» = ЕДИНЫЙ контрол (конструктор пишет position): рулит И
 // позицией блока в контейнере (posCls), И выключкой содержимого внутри
 // (alignCls: заголовок/текст/форма), И выравниванием stacked-кнопки (selfCls).
@@ -79,7 +83,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id ? `${id}-title` : undefined;
+const titleId = id && !hideTitle ? `${id}-title` : undefined;
 ---
 
 <section
@@ -90,25 +94,29 @@ const titleId = id ? `${id}-title` : undefined;
 >
 	<div class="mx-auto w-full max-w-[1320px]">
 		<div class={`flex w-full max-w-[430px] flex-col gap-5 ${posCls} ${alignCls}`} data-animate>
-			<div class="flex w-full flex-col gap-2">
-				<h2
-					id={titleId}
-					class={headingCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="heading"
-				>
-					{heading}
-				</h2>
-				<p
-					class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
-					data-puck-subsection-field="text"
-				>
-					{description}
-				</p>
-			</div>
+			{
+				!hideTitle && (
+					<div class="flex w-full flex-col gap-2">
+						<h2
+							id={titleId}
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							{heading}
+						</h2>
+						<p
+							class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+						>
+							{description}
+						</p>
+					</div>
+				)
+			}
 
 			{
 				inlineSubmit ? (

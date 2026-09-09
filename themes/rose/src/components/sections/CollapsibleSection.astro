@@ -11,6 +11,8 @@
 // вопросы клиентов»), а НЕ мок-вопросы верстальщика. Когда мерчант задал
 // sections/items — рендерим их (интерактивный <details>). Принцип паритета с
 // Collections/MultiRows: пусто = surface-карточки + лейбл/хелпер, без контента.
+import { inlineFormat } from "../../lib/rich-text";
+
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -128,7 +130,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
 									<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal uppercase leading-snug text-[rgb(var(--color-heading,0_0_0))] sm:text-[16px]">
-										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+										<span class="min-w-0 flex-1 break-words"><Fragment set:html={inlineFormat(s.heading)} /></span>
 										<svg
 											class="size-4 shrink-0 rotate-180"
 											viewBox="0 0 16 16"
@@ -144,7 +146,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
 										<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal uppercase leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 sm:text-[16px]">
-											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<svg
 												class="size-4 shrink-0 rotate-180 transition-transform duration-200 group-open:rotate-0"
 												viewBox="0 0 16 16"

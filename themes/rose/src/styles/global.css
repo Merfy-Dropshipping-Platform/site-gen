@@ -114,7 +114,7 @@
 .rose-input {
   height: 56px;
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-input, 8px);
   border: 1px solid #E5E5E5;
   background: #FFFFFF;
   padding-left: 16px;
@@ -144,14 +144,14 @@
 
 /* Кнопка авторизации — чёрная, override глобального button{background:transparent}.
    Фаза 3 (T8): фон/текст → панельные --color-button-* (носитель по tokens.map.md);
-   радиус 8px и высота 56px — per-context (≠ дефолтов 6px/48px), остаются литералами. */
+   высота 56px — per-context литерал; радиус → --radius-button (слайдер «Кнопки»), fallback 8px. */
 .rose-btn-primary {
   display: flex;
   height: 56px;
   width: 100%;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-button, 8px);
   background-color: rgb(var(--color-button-bg, 0 0 0)) !important;
   padding-left: 20px;
   padding-right: 20px;
@@ -166,6 +166,37 @@
 }
 .rose-btn-primary:hover {
   opacity: 0.88;
+}
+
+/* Стиль карточки товара «Карточка» (ThemeSettings productCardStyle=card):
+   фон-подложка (--product-card-bg=surface) + Обводка (--product-card-bw, цвет --color-border)
+   + Скругление (--product-card-radius) + отступ. Медиа (фото) скругляется ПО КАРТОЧКЕ
+   (--product-card-media-radius). standard → 0px/transparent (нейтрально).
+   Выравнивание (--product-card-align/justify) !important — бьёт Tailwind text-left и
+   двигает ВЕСЬ текст под товаром (имя+цену). Правило по data-nt покрывает SSR
+   (RoseProductCard) И client-рендеры (storefront-hydrate/wishlist renderCardHtml).
+   ⚠️ Каталог-блок packages/theme-rose несёт инлайн фон+радиус+отступ (инлайн бьёт CSS),
+   поэтому его радиус тоже переведён на --product-card-radius; бордер/медиа/выравнивание — отсюда. */
+@layer base {
+  [data-nt="rose-product-card"] {
+    background: var(--product-card-bg, transparent);
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240));
+    border-radius: var(--product-card-radius, 0px);
+    padding: var(--product-card-padding, 0px);
+  }
+  /* Медиа (фото) → радиус карточки в card-режиме; !important бьёт утилиту rounded-[--radius-media]. */
+  [data-nt="rose-product-card"] a.overflow-hidden {
+    border-radius: var(--product-card-media-radius, var(--radius-media, 8px)) !important;
+  }
+  /* Выравнивание всего текста под товаром (имя): !important бьёт класс text-left. */
+  [data-nt="rose-product-card"] > div:last-child {
+    align-items: var(--product-card-justify, flex-start) !important;
+    text-align: var(--product-card-align, left) !important;
+  }
+  /* Цена — flex-строка: центр/право через justify-content. */
+  [data-nt="rose-product-card"] > div:last-child > div {
+    justify-content: var(--product-card-justify, flex-start) !important;
+  }
 }
 
 /* Те же метрики, что .rose-title, без uppercase (посты блога и т.п.) */
@@ -413,9 +444,10 @@ hr {
   body {
     font-size: 18px;
   }
-  main {
-    padding: 1em;
-  }
+  /* NB: `main { padding: 1em }` УДАЛЁН (legacy из старого rose-шаблона). Секции
+     сами держат свой горизонтальный padding и должны быть full-bleed на мобиле.
+     18px-гаттер на <main> ломал full-bleed и обнажал тёмный фон <body> по бокам
+     → «чёрные полосы по бокам» на мобиле. НЕ возвращать padding на <main>. */
 }
 
 .sr-only {
@@ -546,12 +578,12 @@ input[type="search"]::-webkit-search-results-decoration {
   color: rgb(var(--color-muted, 153 153 153));
 }
 
-/* Поле формы (NtTextField): радиус → --radius-field; fallback = литерал DS
-   rounded-[4px] (NtTextField.astro:60). Бордер НЕ мигрирован: фактический
-   литерал strong-состояния #000000 ≠ дефолт --color-input-border темы
-   (153 153 153), и перекрытие снаружи убило бы state-цвета muted/error. */
+/* Поле формы (NtTextField): радиус → --radius-input (слайдер «Поля ввода»),
+   fallback 8px. Бордер НЕ мигрирован: фактический литерал strong-состояния
+   #000000 ≠ дефолт --color-input-border темы (153 153 153), и перекрытие
+   снаружи убило бы state-цвета muted/error. */
 [data-nt="text-field"] input {
-  border-radius: var(--radius-field, 4px);
+  border-radius: var(--radius-input, 8px);
 }
 
 /* ============================================================
@@ -564,6 +596,10 @@ input[type="search"]::-webkit-search-results-decoration {
    JS не модифицируется). Оверлей bg-black/35 — без панельного токена. */
 [data-nt="cart-drawer"] [data-cart-panel] {
   background-color: rgb(var(--color-bg, 255 255 255));
+  /* Базовый цвет текста панели — по схеме КОРЗИНЫ (--color-text), а не наследованный
+     со страницы. Без этого JS-строки товаров (data-cart-items, не покрытые точечными
+     правилами ниже) брали page-color: на светлой scheme-2 = белый текст на белом фоне. */
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 /* Заголовок «Корзина» (font-comfortaa #000000) */
@@ -654,7 +690,7 @@ input[type="search"]::-webkit-search-results-decoration {
   width: 100%;
   height: 3.5rem;
   padding: 0 1rem;
-  border-radius: 0;
+  border-radius: var(--radius-input, 8px);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;

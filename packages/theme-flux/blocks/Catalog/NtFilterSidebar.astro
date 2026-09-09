@@ -34,12 +34,11 @@ const nameSfx = is1280 ? "-1280" : "";
     <div class:list={["flex flex-col", sortStackGap]}>
       <NtRadioField
         name={`nt-sort-side${nameSfx}`}
-        value="popularity"
-        label="По популярности"
+        value="new"
+        label="По новизне"
         checked
         density={density}
       />
-      <NtRadioField name={`nt-sort-side${nameSfx}`} value="new" label="По новизне" density={density} />
       <NtRadioField
         name={`nt-sort-side${nameSfx}`}
         value="price-desc"

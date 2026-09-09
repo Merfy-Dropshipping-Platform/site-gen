@@ -1,6 +1,7 @@
 ---
 import type { NewsletterProps } from './Newsletter.puckConfig';
 import { NewsletterClasses as C } from './Newsletter.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends NewsletterProps {
   id?: string;
@@ -117,7 +118,7 @@ const innerOverrideClass =
   <div class={C.container}>
     <div class:list={[C.inner, positionClass, innerOverrideClass]}>
       {heading && (
-        <h2 class:list={[headingClass, formLayoutProp === 'inline-submit' ? '' : headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+        <h2 class:list={[headingClass, formLayoutProp === 'inline-submit' ? '' : headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(heading)} /></h2>
       )}
       {description && (
         <p class:list={[descriptionClass, formLayoutProp === 'inline-submit' ? '' : textSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{description}</p>

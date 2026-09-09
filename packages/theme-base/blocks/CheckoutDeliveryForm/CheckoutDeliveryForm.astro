@@ -78,55 +78,56 @@ const paddingStyle = padding
       </div>
     ))}
 
-    {/* Город + Индекс — один ряд, 65/35 на десктопе. Индекс не вешает
-        одиночный ряд, и логически связан с городом (postal_code города). */}
-    <div class={C.cityIndexRow}>
-      <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
+    {/* Город — отдельный ряд на всю ширину (Figma 1:19998). */}
+    <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
+      <input
+        class={cityDadata ? C.inputWithIcon : C.input}
+        id="checkout-city"
+        name="city"
+        type="text"
+        autocomplete="off"
+        placeholder=" "
+        data-checkout-dadata-input="city"
+      />
+      <label class={C.label} for="checkout-city">Город</label>
+      {cityDadata && (
+        <span class={C.searchIcon}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+      )}
+      {cityDadata && (
+        <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
+      )}
+    </div>
+
+    {/* Полный адрес + Индекс — один ряд 50/50 (Figma 1:19998). Индекс
+        автозаполняется из выбранного адреса DaData (см. инлайн-скрипт ниже,
+        postal autofill), поэтому логически в одном ряду с адресом. */}
+    <div class={C.addressIndexRow}>
+      <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
         <input
-          class={cityDadata ? C.inputWithIcon : C.input}
-          id="checkout-city"
-          name="city"
+          class={addressDadata ? C.inputWithIcon : C.input}
+          id="checkout-address"
+          name="address"
           type="text"
           autocomplete="off"
           placeholder=" "
-          data-checkout-dadata-input="city"
+          data-checkout-dadata-input="address"
         />
-        <label class={C.label} for="checkout-city">Город</label>
-        {cityDadata && (
+        <label class={C.label} for="checkout-address">Полный адрес</label>
+        {addressDadata && (
           <span class={C.searchIcon}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
           </span>
         )}
-        {cityDadata && (
-          <ul class={C.dropdown} data-checkout-dadata-list="city" hidden></ul>
+        {addressDadata && (
+          <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
         )}
       </div>
       <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
         <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="off" placeholder=" " />
         <label class={C.label} for="checkout-postal">Индекс</label>
       </div>
-    </div>
-
-    {/* Адрес — full row, до квартиры. */}
-    <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
-      <input
-        class={addressDadata ? C.inputWithIcon : C.input}
-        id="checkout-address"
-        name="address"
-        type="text"
-        autocomplete="off"
-        placeholder=" "
-        data-checkout-dadata-input="address"
-      />
-      <label class={C.label} for="checkout-address">Полный адрес</label>
-      {addressDadata && (
-        <span class={C.searchIcon}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-        </span>
-      )}
-      {addressDadata && (
-        <ul class={C.dropdown} data-checkout-dadata-list="address" hidden></ul>
-      )}
     </div>
   </div>
 </section>

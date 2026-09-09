@@ -1,8 +1,9 @@
 ---
-// CartSummary — «Промежуточный итог» (disclaimer).
-// Раньше блок содержал disclaimer + total + checkout button. После Figma
-// 1:20818 split на 3 блока: CartSummary (этот) + CartTotals + CartCheckoutButton.
-// Скрывается когда корзина пустая.
+// CartSummary — «Промежуточный итог»: дисклеймер + «Итого» + «Оформить заказ»
+// в ОДНОМ блоке (Figma 1:20818). «Итоговая цена» и «Кнопка оформления заказа»
+// в конструкторе показываются вложенными read-only сабсекциями этого блока
+// (disabledHint-поля cartTotals/cartCheckoutButton, NAMED_SUBSECTIONS.CartSummary).
+// На странице — единый блок. Скрывается когда корзина пустая.
 import type { CartSummaryProps } from './CartSummary.puckConfig';
 
 interface Props extends CartSummaryProps {
@@ -13,7 +14,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
-  : 'padding-top:0px; padding-bottom:0px;';
+  : 'padding-top:0px; padding-bottom:80px;';
 
 const schemeClass =
   typeof colorScheme === 'string' && colorScheme
@@ -33,6 +34,21 @@ const schemeClass =
       <p class="cart-summary-disclaimer [font-family:var(--font-body)]" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-align: right; margin: 0; max-width: 318px;">
         Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
       </p>
+      {/* «Итоговая цена» (Figma 1:20819) — read-only sub-node в конструкторе */}
+      <div class="cart-summary-totals" style="display: flex; align-items: center; gap: 15px;">
+        <span class="[font-family:var(--font-body)]" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-heading));">Итого</span>
+        <span class="[font-family:var(--font-body)]" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-heading));" id="cart-page-total" data-cart-total>0&nbsp;₽</span>
+      </div>
+      {/* «Кнопка оформления заказа» (Figma 1:20830) — read-only sub-node в конструкторе.
+          data-astro-reload: форсим полную загрузку /checkout, чтобы inline-скрипты
+          checkout (DaData/СДЭК/оплата) стартовали свежими на VT-темах (rose/bloom/vanilla). */}
+      <a
+        href="/checkout"
+        class="cart-checkout-btn flex items-center justify-center [font-family:var(--font-body)] cursor-pointer transition-colors border-0 no-underline bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]!"
+        style="width: 195px; height: 60px; font-size: 20px; line-height: 27px; border-radius: var(--radius-button, 10px);"
+        data-cart-checkout-button
+        data-astro-reload
+      >Оформить заказ</a>
     </div>
   </div>
 </section>
@@ -43,9 +59,16 @@ const schemeClass =
     // значит корень блока и есть искомый элемент (без отдельного поиска).
     var section = window.__merfyRoot(blockId) || document.getElementById('cart-page-summary'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!section) return;
+    var totalEl = section.querySelector('#cart-page-total');
+    function fmt(cents) {
+      if (!cents && cents !== 0) return '0 ₽';
+      return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 }).format(cents / 100);
+    }
     function refresh() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      var total = (window.cartStore && typeof window.cartStore.getTotal === 'function') ? window.cartStore.getTotal() : 0;
       section.style.display = items.length > 0 ? '' : 'none';
+      if (totalEl) totalEl.textContent = fmt(total);
     }
     document.addEventListener('cart:updated', refresh);
     document.addEventListener('DOMContentLoaded', function () { setTimeout(refresh, 150); });

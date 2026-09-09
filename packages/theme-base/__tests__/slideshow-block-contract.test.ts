@@ -18,7 +18,7 @@ describe('Slideshow block', () => {
   it('exports SlideshowPuckConfig with required fields', () => {
     expect(SlideshowPuckConfig.label).toBe('Слайд-шоу');
     expect(SlideshowPuckConfig.category).toBe('hero');
-    expect(SlideshowPuckConfig.defaults.slides.length).toBe(3);
+    expect(SlideshowPuckConfig.defaults.slides.length).toBe(2);
     expect(SlideshowPuckConfig.defaults.interval).toBe(5);
     expect(SlideshowPuckConfig.defaults.autoplay).toBe(true);
   });
@@ -37,14 +37,14 @@ describe('Slideshow block', () => {
       ],
       interval: 5,
       autoplay: true,
-      colorScheme: 1,
+      colorScheme: 'scheme-1',
       padding: { top: 80, bottom: 80 },
     });
     expect(ok.success).toBe(true);
   });
 
-  it('SlideshowSchema rejects invalid interval (e.g. 4)', () => {
-    const bad = SlideshowSchema.safeParse({
+  it('SlideshowSchema keeps the current continuous interval contract', () => {
+    const parsed = SlideshowSchema.safeParse({
       slides: [
         {
           id: 's1',
@@ -55,12 +55,29 @@ describe('Slideshow block', () => {
           ctaUrl: '/',
         },
       ],
-      interval: 4 as unknown as 3,
+      interval: 4,
       autoplay: false,
-      colorScheme: 1,
+      colorScheme: 'scheme-1',
       padding: { top: 0, bottom: 0 },
     });
-    expect(bad.success).toBe(false);
+    expect(parsed.success).toBe(true);
+  });
+
+  it('SlideshowSchema accepts canonical PagePicker object links', () => {
+    const parsed = SlideshowSchema.safeParse({
+      slides: [{
+        id: 's1',
+        imageUrl: '',
+        heading: { text: 'Slide', size: 'large' },
+        text: { content: 'Description', size: 'small' },
+        button: { text: 'Open', link: { href: '/catalog', text: 'Catalog' } },
+      }],
+      interval: 5,
+      autoplay: true,
+      padding: { top: 0, bottom: 0 },
+    });
+
+    expect(parsed.success).toBe(true);
   });
 
   it('SlideshowTokens lists at least one CSS var', () => {

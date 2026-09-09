@@ -108,6 +108,8 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
       // billingClient (BILLING_RMQ_SERVICE) — роутинг-тесты стабят loadRevisionData
       // и до applyFooterData не доходят; presence-мока ClientProxy достаточно.
       { send: jest.fn(), emit: jest.fn() } as never,
+      // productClient (PRODUCT_RMQ_SERVICE) — нужен только для product context.
+      { send: jest.fn(), emit: jest.fn() } as never,
     );
     // loadRevisionData is private and hits the DB — stub it on the instance.
     jest
@@ -126,7 +128,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/about', undefined, res);
+    await ctrl.getPreview('site-1', '/about', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about');
     expect(res._body).toBe('<!DOCTYPE html><html>ABOUT</html>');
@@ -143,7 +145,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-about', undefined, res);
+    await ctrl.getPreview('site-1', 'page-about', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about');
   });
@@ -158,7 +160,22 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
+
+    expect(tryLoad).toHaveBeenCalledWith('rose', '');
+  });
+
+  it('page=/ resolves to the same root route as home', async () => {
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue('<!DOCTYPE html><html>HOME</html>');
+    const ctrl = makeController({
+      tryLoadBuiltThemeHtml: tryLoad,
+      firstBuiltProductRoute: jest.fn(),
+    } as any);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', '/', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', '');
   });
@@ -177,7 +194,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/checkout', undefined, res);
+    await ctrl.getPreview('site-1', '/checkout', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('rose', 'checkout');
     expect(extractPageBlocksMock).toHaveBeenCalled();
@@ -209,7 +226,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Product', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/product', undefined, res);
+    await ctrl.getPreview('site-1', '/product', undefined, undefined, res);
 
     // unified-тема: НЕ remap в firstBuiltProductRoute, НЕ блоб-путь.
     expect(firstBuiltProductRoute).not.toHaveBeenCalled();
@@ -261,7 +278,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+    await ctrl.getPreview('site-1', 'page-collection', undefined, undefined, res);
 
     expect(getPageResolverMock).toHaveBeenCalledWith('rose');
     // Route resolves to the manifest slug, NOT the raw 'page-collection'.
@@ -310,7 +327,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+    await ctrl.getPreview('site-1', 'page-collection', undefined, undefined, res);
 
     // Route resolves via the constant, NOT the raw 'page-collection'.
     expect(tryLoad).toHaveBeenCalledWith('bloom', 'collections/preview');
@@ -349,7 +366,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(tryLoad).toHaveBeenCalledWith('bloom', '');
   });
@@ -387,7 +404,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     );
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-about', undefined, res);
+    await ctrl.getPreview('site-1', 'page-about', undefined, undefined, res);
 
     // Revision slug '/about-us' wins over manifest '/about'.
     expect(tryLoad).toHaveBeenCalledWith('rose', 'about-us');
@@ -412,7 +429,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     ]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalledWith(
       expect.objectContaining({ themeId: 'rose', route: '' }),
@@ -436,7 +453,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalled();
     expect(tryLoad).toHaveBeenCalledWith('rose', '');
@@ -454,7 +471,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     } as any);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', '/checkout', undefined, res);
+    await ctrl.getPreview('site-1', '/checkout', undefined, undefined, res);
 
     expect(renderV2ContentPage).not.toHaveBeenCalled();
     expect(tryLoad).toHaveBeenCalledWith('rose', 'checkout');
@@ -475,7 +492,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     extractPageBlocksMock.mockResolvedValue([{ type: 'Hero', props: {} }]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'home', undefined, res);
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
 
     expect(res._status).toBe(200);
     expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
@@ -503,7 +520,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     ]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-catalog', undefined, res);
+    await ctrl.getPreview('site-1', 'page-catalog', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalledWith(
       expect.objectContaining({ themeId: 'rose', route: 'catalog' }),
@@ -511,6 +528,83 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     expect(tryLoad).not.toHaveBeenCalled();
     expect(res._headers['X-Preview-Mode']).toBe('v2-sections');
     expect(String(res._body)).toContain('V2-CATALOG');
+  });
+
+  // ——— Task 3: observed GAP input for Task 4 (F-053) ———
+  // Drawer globals currently reach the v2-sections call but NOT the built-theme
+  // blob call. This is an OBSERVED FACT recorded so Task 4 can log the missing
+  // built-theme reachability as a GAP — NOT an expectation to preserve after the
+  // GAP is later repaired.
+  const DRAWER_REVISION = {
+    data: {
+      pages: [
+        { id: 'page-home', slug: '/' },
+        { id: 'page-about', slug: '/about' },
+      ],
+      pagesData: {
+        'page-cart': {
+          content: [{ type: 'CartBody', props: { colorScheme: 'scheme-4' } }],
+        },
+      },
+    },
+    publicUrl: 'https://shop.example',
+    themeId: 'rose',
+    revisionId: 'rev-drawer',
+  } as unknown as typeof REVISION;
+
+  it('drawer globals reach the v2-sections path (SCHEME injected in head)', async () => {
+    const renderV2ContentPage = jest
+      .fn()
+      .mockResolvedValue(
+        '<!DOCTYPE html><html><head></head><body><main>V2</main></body></html>',
+      );
+    const tryLoad = jest.fn().mockResolvedValue('<html><head></head>BLOB</html>');
+    const ctrl = makeController(
+      {
+        hasV2Sections: jest.fn().mockResolvedValue(true),
+        renderV2ContentPage,
+        tryLoadBuiltThemeHtml: tryLoad,
+        firstBuiltProductRoute: jest.fn(),
+      } as any,
+      DRAWER_REVISION,
+    );
+    extractPageBlocksMock.mockResolvedValue([
+      { type: 'Hero', props: { id: 'Hero-1' } },
+    ]);
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', 'home', undefined, undefined, res);
+
+    expect(res._headers['X-Preview-Mode']).toBe('v2-sections');
+    // v2-sections output DOES carry the cart-drawer SCHEME global.
+    expect(String(res._body)).toContain('__MERFY_CART_DRAWER_SCHEME__');
+    expect(String(res._body)).toContain('scheme-4');
+  });
+
+  it('drawer globals do NOT reach the built-theme blob path (observed GAP for Task 4)', async () => {
+    // Force the blob path: no v2-sections, built page present.
+    const tryLoad = jest
+      .fn()
+      .mockResolvedValue(
+        '<!DOCTYPE html><html><head></head><body>ABOUT</body></html>',
+      );
+    const ctrl = makeController(
+      {
+        hasV2Sections: jest.fn().mockResolvedValue(false),
+        tryLoadBuiltThemeHtml: tryLoad,
+        firstBuiltProductRoute: jest.fn(),
+        // injectTokensIntoBlobPage is called on the blob path; pass-through.
+        injectNavAgent: (html: string) => html,
+      } as any,
+      DRAWER_REVISION,
+    );
+    const res = makeRes();
+
+    await ctrl.getPreview('site-1', '/about', undefined, undefined, res);
+
+    expect(res._headers['X-Preview-Mode']).toBe('v2-built-theme');
+    // OBSERVED GAP: the blob path does NOT inject cart-drawer globals today.
+    expect(String(res._body)).not.toContain('__MERFY_CART_DRAWER_SCHEME__');
   });
 
   it('v2-sections: collections/preview идёт по-секционно с блоками page-collection', async () => {
@@ -531,7 +625,7 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
     ]);
     const res = makeRes();
 
-    await ctrl.getPreview('site-1', 'page-collection', undefined, res);
+    await ctrl.getPreview('site-1', 'page-collection', undefined, undefined, res);
 
     expect(renderV2ContentPage).toHaveBeenCalledWith(
       expect.objectContaining({ themeId: 'rose', route: 'collections/preview' }),

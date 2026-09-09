@@ -1,6 +1,7 @@
 ---
 import type { HeroProps } from './Hero.puckConfig';
 import { HeroClasses as C } from './Hero.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 // Hero placeholder bg — neutral gray (Hero всегда имеет heading/text content,
 // Figma PNG content overlay'ало бы с real text).
 
@@ -230,10 +231,10 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     <div class={C.inner['split-bloom']}>
       <div class={C.splitBloomTextCol}>
         {resolvedTitle && (
-          <h1 class={C.splitBloomKicker} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+          <h1 class={C.splitBloomKicker} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(resolvedTitle)} /></h1>
         )}
         {resolvedSubtitle && (
-          <p class={C.splitBloomSubtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class={C.splitBloomSubtitle} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text"><Fragment set:html={sanitizeInline(resolvedSubtitle)} /></p>
         )}
         {(resolvedCta?.text || resolvedSecondaryCta?.text) && (
           <div class="flex flex-wrap gap-3">
@@ -308,13 +309,13 @@ const heroButtonStyleClass = heroButtonStyle === 'outlined'
     ]}>
       <header class="flex flex-col gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-[5px]">
         {variant === 'split' && resolvedSubtitle && (
-          <p class={C.subtitle} style="font-size:var(--hero-subtitle-font-size,clamp(14px,1.8vw,20px));padding-inline:var(--hero-subtitle-padding-x,4px)" data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class={C.subtitle} style="font-size:var(--hero-subtitle-font-size,clamp(14px,1.8vw,20px));padding-inline:var(--hero-subtitle-padding-x,4px)" data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text"><Fragment set:html={sanitizeInline(resolvedSubtitle)} /></p>
         )}
         {resolvedTitle && (
-          <h1 class={C.title} style="font-size:var(--hero-title-size,clamp(20px,5vw,40px))" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{resolvedTitle}</h1>
+          <h1 class={C.title} style="font-size:var(--hero-title-size,clamp(20px,5vw,40px))" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(resolvedTitle)} /></h1>
         )}
         {variant !== 'split' && resolvedSubtitle && (
-          <p class={C.subtitle} style="font-size:var(--hero-subtitle-font-size,clamp(14px,1.8vw,20px));padding-inline:var(--hero-subtitle-padding-x,4px)" data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text">{resolvedSubtitle}</p>
+          <p class={C.subtitle} style="font-size:var(--hero-subtitle-font-size,clamp(14px,1.8vw,20px));padding-inline:var(--hero-subtitle-padding-x,4px)" data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text"><Fragment set:html={sanitizeInline(resolvedSubtitle)} /></p>
         )}
       </header>
       {variant === 'grid-4' && (

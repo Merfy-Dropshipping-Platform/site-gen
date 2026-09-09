@@ -12,6 +12,7 @@
 // полей: заголовок «Расскажи о своем бренде», текст «Расскажи подробнее о своем
 // онлайн-магазине в этом блоке», кнопка «Кнопка». Когда мерчант задаёт свои
 // heading/text/button — рендерятся ИХ значения (ветки p.heading/p.text/p.button ниже).
+import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -107,7 +108,7 @@ const titleId = id ? `${id}-title` : undefined;
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="heading"
 			>
-				{heading}
+				<Fragment set:html={inlineFormat(heading)} />
 			</h2>
 			<div
 				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}`}

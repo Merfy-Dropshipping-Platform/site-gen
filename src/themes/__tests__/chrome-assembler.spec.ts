@@ -110,7 +110,6 @@ describe('assembleChrome', () => {
     });
     const props = captured[0];
     // Дефолты unifyChromeInDist:435-446.
-    expect(props['logoMode']).toBe('text');
     expect(props['rightIcon']).toBe('cart');
     expect(props['cartLink']).toBe('/cart');
     expect(props['padding']).toEqual({ top: 24, bottom: 24 });
@@ -118,8 +117,11 @@ describe('assembleChrome', () => {
     expect(props['backLink']).toBe('/cart-custom');
     // siteTitle из home-Header перекрывает дефолт.
     expect(props['siteTitle']).toBe('Магазин Мерчанта');
-    // logo из home-Header (его не было в checkoutProps).
-    expect(props['logo']).toBe('/logo.svg');
+    // Лого темы (home-Header.logo) зеркалится в logoImage + logoMode='image'
+    // (CheckoutHeader рендерит картинку, а не текст). Мёртвое поле `logo` не пишем.
+    expect(props['logoMode']).toBe('image');
+    expect(props['logoImage']).toBe('/logo.svg');
+    expect(props['logo']).toBeUndefined();
   });
 
   it('chrome="none" → {null, null}, renderBlock не вызывается', async () => {

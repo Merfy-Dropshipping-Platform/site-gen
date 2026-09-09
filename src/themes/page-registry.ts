@@ -84,8 +84,12 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
     kind: 'content',
     chrome: 'full',
   },
+  // page-cart — composable (kind:content): корзина = секция CartSection +
+  // мерчант добавляет другие секции, как на главной. Дефолт [CartSection]
+  // приходит из packages/theme-rose/pages/cart.json через lazy-seed (без
+  // миграции ревизий существующих сайтов). Шелл — cart.astro (Layout).
+  { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
   // ── Verbatim системные страницы (есть id в SYSTEM_PAGE_ROUTES) ──────────
-  { id: 'page-cart', route: 'cart', kind: 'verbatim', chrome: 'full' },
   { id: 'page-product', route: 'product', kind: 'verbatim', chrome: 'full' },
   {
     id: 'page-checkout',
@@ -122,6 +126,18 @@ export const PRODUCT_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['ros
  * открывал панель (кликать не по чему: узлов с data-puck-component-id нет).
  */
 export const CART_UNIFIED_THEMES: ReadonlySet<string> = new Set<string>(['rose', 'flux', 'vanilla', 'bloom']);
+
+/**
+ * Темы с composable page-cart (CartSection + мерчантские секции), зеркало
+ * PRODUCT_UNIFIED_THEMES. Тема вне множества → verbatim cart.astro.
+ */
+export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
+  'rose',
+  'vanilla',
+  'bloom',
+  'satin',
+  'flux',
+]);
 
 /**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,

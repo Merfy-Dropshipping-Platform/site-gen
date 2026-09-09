@@ -1,11 +1,13 @@
 ---
-import Layout from '../layouts/BlogPost.astro';
+// Контентная страница «О нас» — шелл для системы контент-страниц
+// (composeContentPagesIntoDist пересаживает Page-блоки ревизии в <main>). Берёт
+// ПОЛНЫЙ storefront-Layout (как contacts.astro), иначе бейджи корзины/избранного
+// и View Transitions на странице не работают (BlogPost.astro их не подключал).
+import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout
-	title="О нас"
-	description="Черновик — замените контентом из Figma"
-	pubDate={new Date('2025-01-01')}
->
-	<p>Замените этот текст на контент из макета Figma.</p>
+<Layout title="О нас" description="О нашем магазине">
+	<section class="mx-auto w-full max-w-[800px] px-4 py-16 sm:px-6 lg:px-8">
+		<p>Замените этот текст на контент из макета Figma.</p>
+	</section>
 </Layout>

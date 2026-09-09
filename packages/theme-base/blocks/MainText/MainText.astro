@@ -1,6 +1,7 @@
 ---
 import type { MainTextProps } from './MainText.puckConfig';
 import { MainTextClasses as C } from './MainText.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends MainTextProps {
   id?: string;
@@ -94,7 +95,7 @@ const schemeClass = colorSchemeRaw ? `color-scheme-${colorSchemeRaw.replace('sch
 >
   <div class:list={[C.container, alignClass, textStyleClass]}>
     {heading && (
-      <h2 class:list={[C.heading, headingSizeClass, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+      <h2 class:list={[C.heading, headingSizeClass, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(heading)} /></h2>
     )}
     {text && (
       <div class:list={[C.text, textStyleClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="text" set:html={text} />

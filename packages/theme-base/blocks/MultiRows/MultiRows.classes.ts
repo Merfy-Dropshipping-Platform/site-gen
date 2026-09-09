@@ -4,7 +4,13 @@ export const MultiRowsClasses = {
   // для контейнера рядов) реально проявлялась визуально. Без них color-scheme-N
   // wrapper менял только CSS-vars в inner scope, но container не имел bg/text
   // utility которые читают эти vars (паттерн CollapsibleSection / Catalog).
-  container: 'mx-auto max-w-[var(--container-max-width)] px-4 bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  container: 'mx-auto px-4 bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  width: {
+    small: 'max-w-3xl',
+    medium: 'max-w-5xl',
+    large: 'max-w-7xl',
+    full: 'w-full max-w-none',
+  },
   stack: 'flex flex-col gap-y-[var(--spacing-grid-row-gap)]',
   row: {
     imageLeft:
@@ -19,6 +25,12 @@ export const MultiRowsClasses = {
   textCol: {
     imageLeft: 'order-2',
     imageRight: 'order-2 md:order-1',
+  },
+  textColBase: 'flex flex-col',
+  textAlignment: {
+    left: 'items-start text-left',
+    center: 'items-center text-center',
+    right: 'items-end text-right',
   },
   // aspect НЕ фиксирован здесь — задаётся per-row (row.size ?? секционная size)
   // через imageAspect[] ниже (мирроль rose aspectFor: small/medium/large).
@@ -52,4 +64,6 @@ export const MultiRowsClasses = {
   },
   button:
     'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 border border-[rgb(var(--color-button-border))] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))] hover:bg-[rgb(var(--color-button-bg-hover))] hover:text-[rgb(var(--color-button-text-hover))] transition-colors no-underline',
+  buttonSecondary:
+    'inline-flex items-center justify-center h-[var(--size-hero-button-h)] rounded-[var(--radius-button)] px-8 border border-[rgb(var(--color-button-2-border))] bg-[rgb(var(--color-button-2-bg))] text-[rgb(var(--color-button-2-text))] hover:opacity-80 transition-opacity no-underline',
 } as const;

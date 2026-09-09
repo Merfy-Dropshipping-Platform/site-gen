@@ -47,6 +47,154 @@ function notify(eventName, detail) {
   document.dispatchEvent(new CustomEvent(eventName, { detail }));
 }
 
+// ── Само-лечение корзины из АКТУАЛЬНОГО каталога ──────────────────────────────
+// Корзина по сути хранит ID+кол-во; цена/имя/картинка — снимок с момента добавления
+// и устаревает, когда мерчант меняет цену или удаляет товар. Без пере-резолва
+// страница корзины показывает старую цену, а checkout (серверный синк) — новую →
+// «в корзине и в оформлении разное». Пере-резолв приводит ОБА дисплея (оба читают
+// getItems()) к текущему каталогу. Цены products.json — в РУБЛЯХ → *100 в копейки.
+const optionsMatch = (catalogOpts, itemOpts) => {
+  if (!catalogOpts || !itemOpts) return false;
+  const keys = Object.keys(itemOpts);
+  if (keys.length === 0) return false;
+  for (const k of keys) {
+    if (String(catalogOpts[k]) !== String(itemOpts[k])) return false;
+  }
+  return true;
+};
+
+/**
+ * Чистый пере-резолв позиций из каталога (экспорт для юнит-теста).
+ * Товар/вариант отсутствует в каталоге → строка ВЫКИДЫВАЕТСЯ (удалён мерчантом).
+ * Мёртвый variantCombinationId → ре-матч по options (Цвет/Размер). isBonus не трогаем.
+ * @param {Array<any>} items
+ * @param {Array<any>} products
+ * @returns {{items: Array<any>, changed: boolean, dropped: number}}
+ */
+// Фото ВЫБРАННОГО варианта живёт в опции (variantGroups[].options[].images,
+// напр. Цвет=Чёрный→штаны), НЕ в product.images[0] (= первый/дефолтный вариант).
+// Резолвим фото по options позиции; null если у выбранной опции своего фото нет
+// (тогда вызывающий оставляет фото позиции / дефолт товара — НЕ перетирает на первый).
+export function variantImageFromCatalog(product, options) {
+  if (!product || !options) return null;
+  const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+  const selected = Object.keys(options).map((k) => String(options[k]));
+  for (const g of groups) {
+    const opts = Array.isArray(g.options) ? g.options : [];
+    for (const o of opts) {
+      if (selected.indexOf(String(o.value)) !== -1 && Array.isArray(o.images) && o.images[0]) {
+        return o.images[0];
+      }
+    }
+  }
+  return null;
+}
+
+export function reconcileItemsAgainstCatalog(items, products) {
+  if (!Array.isArray(items) || items.length === 0) return { items: items || [], changed: false, dropped: 0 };
+  if (!Array.isArray(products) || products.length === 0) return { items, changed: false, dropped: 0 };
+  const byId = new Map();
+  for (const p of products) {
+    if (p && p.id != null) byId.set(String(p.id), p);
+  }
+  let changed = false;
+  let dropped = 0;
+  const next = [];
+  for (const it of items) {
+    if (it && it.isBonus) { next.push(it); continue; } // серверный подарок (0₽) — не трогаем
+    const p = it ? byId.get(String(it.productId)) : null;
+    if (!p) { changed = true; dropped++; continue; } // товар удалён из каталога → выкинуть
+    const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+    let combo = null;
+    if (combos.length > 0) {
+      const vcId = it.variantCombinationId;
+      if (vcId) combo = combos.find((c) => String(c.id) === String(vcId)) || null;
+      if (!combo && it.options) combo = combos.find((c) => optionsMatch(c.options, it.options)) || null;
+      if (!combo) { changed = true; dropped++; continue; } // вариант удалён → выкинуть
+    }
+    const priceRub = combo ? Number(combo.price) : Number(p.price);
+    const priceCents = Number.isFinite(priceRub) ? Math.round(priceRub * 100) : (it.unitPriceCents || it.priceCents || 0);
+    const oldRaw = combo ? combo.compareAtPrice : p.compareAtPrice;
+    const oldCents = (oldRaw != null && Number.isFinite(Number(oldRaw))) ? Math.round(Number(oldRaw) * 100) : undefined;
+    const name = p.name || it.name;
+    // Фото выбранного варианта (Цвет) из каталога → иначе фото позиции (add-time,
+    // уже верное для варианта) → лишь в крайнем случае первое фото товара. НЕ клобберим
+    // верное фото варианта на p.images[0] (= первый вариант) — это и был баг «встаёт
+    // фото другого варианта после подгрузки».
+    const variantImg = variantImageFromCatalog(p, it.options);
+    const image = variantImg || it.imageUrl || it.image || (Array.isArray(p.images) && p.images[0]) || undefined;
+    const qty = it.quantity || 1;
+    const nit = {
+      ...it,
+      name,
+      imageUrl: image,
+      image,
+      priceCents,
+      unitPriceCents: priceCents,
+      totalCents: priceCents * qty,
+      compareAtPriceCents: oldCents,
+    };
+    if (combo) nit.variantCombinationId = String(combo.id);
+    if (
+      nit.priceCents !== it.priceCents ||
+      nit.unitPriceCents !== it.unitPriceCents ||
+      nit.name !== it.name ||
+      nit.imageUrl !== it.imageUrl ||
+      nit.variantCombinationId !== it.variantCombinationId
+    ) {
+      changed = true;
+    }
+    next.push(nit);
+  }
+  return { items: next, changed, dropped };
+}
+
+// Кэш каталога на сессию (одна сетевая загрузка на страницу). Ошибка/пустой → [];
+// тогда reconcile НЕ трогает корзину (оффлайн-защита — не теряем товары при недоступном
+// каталоге). cache:'default' — уважаем cache-заголовки products.json (свежесть = публикация).
+let catalogPromise = null;
+// Preview-фолбэк: в конструктор-превью (iframe на gateway) /data/products.json = 404.
+// Берём каталог из того же storefront-data, которым продукт-блоки превью грузят
+// товары (storefront-hydrate.ts) → reconcile лечит стейл-корзину и в превью.
+function fetchStorefrontDataProducts() {
+  const siteId =
+    typeof window !== 'undefined'
+      ? window.__MERFY_SITE_ID__ || (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId)
+      : null;
+  if (!siteId) return Promise.resolve([]);
+  return fetch('/api/sites/' + encodeURIComponent(siteId) + '/storefront-data')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((p) => (p && Array.isArray(p.products) ? p.products : []))
+    .catch(() => []);
+}
+function loadCatalogProducts(url) {
+  if (!catalogPromise) {
+    catalogPromise = fetch(url, { cache: 'default' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const arr = Array.isArray(j) ? j : (j && (j.products || j.data)) || [];
+        if (Array.isArray(arr) && arr.length) return arr;
+        return fetchStorefrontDataProducts();
+      })
+      .catch(() => fetchStorefrontDataProducts());
+  }
+  return catalogPromise;
+}
+
+// Пере-резолвит state.items из products.json и, если что-то поменялось (цена/имя/
+// картинка/выкинутый товар), сохраняет + шлёт cart:updated → сводка/корзина перерисуются.
+async function reconcileFromCatalog(url) {
+  if (typeof window === 'undefined') return;
+  if (!Array.isArray(state.items) || state.items.length === 0) return;
+  const products = await loadCatalogProducts(url || '/data/products.json');
+  const result = reconcileItemsAgainstCatalog(state.items, products);
+  if (result.changed) {
+    state.items = result.items;
+    saveToStorage();
+    notify('cart:updated', { items: state.items });
+  }
+}
+
 function syncFromCartData(cartData) {
   if (cartData && Array.isArray(cartData.items)) {
     state.items = cartData.items;
@@ -87,7 +235,14 @@ export const cartStore = {
     loadFromStorage();
     notify('cart:updated', { items: state.items });
 
-    if (state.cartId) {
+    // Серверная корзина (по сохранённому cartId) — лишь СНИМОК с последнего
+    // syncToServer; локальная (merfy:cartItems) отражает ТЕКУЩИЙ состав (юзер мог
+    // менять товары/кол-во без серверного синка). НЕ перетираем НЕПУСТУЮ локальную
+    // стейл-серверной — иначе на чекауте корректная корзина мерцает и заменяется
+    // старой серверной (баг: другие товары/цены/картинки). Пул с сервера ТОЛЬКО
+    // когда локальная ПУСТА (восстановление, напр. новое устройство/новая вкладка).
+    // На промокоде/сабмите syncToServer создаёт СВЕЖУЮ серверную корзину из локальной.
+    if (state.cartId && state.items.length === 0) {
       try {
         const res = await CartAPI.getCart(state.cartId);
         if (res.success && res.data) {
@@ -103,6 +258,11 @@ export const cartStore = {
         // Network error — keep local cache, don't reset
       }
     }
+
+    // Само-лечение: пере-резолв цен/наличия из текущего каталога (products.json).
+    // Страница корзины наполняется через init() (BaseLayout зовёт на КАЖДОЙ странице)
+    // → корзина всегда показывает актуальные цены, ровно как checkout.
+    reconcileFromCatalog();
   },
 
   /**
@@ -271,6 +431,28 @@ export const cartStore = {
     state.items = Array.isArray(items) ? items : [];
     saveToStorage();
     notify('cart:updated', { items: state.items });
+    // Само-лечение: checkout передаёт display из nt-cart (снимок add-time цен) →
+    // пере-резолвим из каталога, чтобы сводка показала АКТУАЛЬНЫЕ цены/наличие.
+    reconcileFromCatalog();
+  },
+
+  // Публичный пере-резолв позиций из products.json (само-лечение стейл-цен и
+  // удалённых товаров). Автоматически зовётся из init()/setLocalItems();
+  // экспонируем для ручного вызова из блоков при необходимости.
+  reconcileFromCatalog(url) {
+    return reconcileFromCatalog(url);
+  },
+
+  // Как setLocalItems, но СНАЧАЛА пере-резолвит из каталога, ПОТОМ ставит — ОДИН
+  // рендер сразу актуальными данными. Чекаут зовёт это вместо setLocalItems, чтобы
+  // первый кадр сводки был верным (без мелькания старой цены → текущей).
+  async setLocalItemsReconciled(items, url) {
+    const src = Array.isArray(items) ? items : [];
+    const products = await loadCatalogProducts(url || '/data/products.json');
+    const result = reconcileItemsAgainstCatalog(src, products);
+    state.items = result.items;
+    saveToStorage();
+    notify('cart:updated', { items: state.items });
   },
 
   // Публичная ре-синхронизация позиций из ответа сервера (плоский order с items).
@@ -314,7 +496,9 @@ export const cartStore = {
       const cartId = await ensureCart();
       for (let i = 0; i < lines.length; i++) {
         const l = lines[i];
-        try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null); } catch (e) {}
+        // options (Цвет/Размер) → сервер пере-матчит вариант по ним, если
+        // variantCombinationId устарел (ресед пересоздал комбинации).
+        try { await CartAPI.addItem(cartId, l.productId, l.quantity || 1, l.variantCombinationId || null, l.options || null); } catch (e) {}
       }
       try {
         const res = await CartAPI.getCart(cartId);
@@ -347,6 +531,6 @@ export const cartStore = {
 };
 
 // Make available globally for inline onclick handlers in Astro templates
-window.cartStore = cartStore;
+if (typeof window !== 'undefined') window.cartStore = cartStore;
 
 export default cartStore;

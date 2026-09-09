@@ -2,6 +2,7 @@
 import type { SlideshowProps } from './Slideshow.puckConfig';
 import { SlideshowClasses as C } from './Slideshow.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends SlideshowProps {
   id?: string;
@@ -129,8 +130,8 @@ const imageFullBleed = raw.imageFullBleed === true;
               <img src={PLACEHOLDER_ASSETS.landscape.slideshow} alt="" class:list={[C.image, imageFullBleed && C.imageFullBleed, '-z-10 object-cover']} aria-hidden="true" loading="lazy" />
             )}
             <div class:list={[C.content, slideAlignClass]}>
-              {slide.headingText && <h2 class={C.heading}>{slide.headingText}</h2>}
-              {slide.textContent && <p class={C.subtitle}>{slide.textContent}</p>}
+              {slide.headingText && <h2 class={C.heading}><Fragment set:html={sanitizeInline(slide.headingText)} /></h2>}
+              {slide.textContent && <p class={C.subtitle}><Fragment set:html={sanitizeInline(slide.textContent)} /></p>}
               {slide.buttonText && (
                 <a href={slide.buttonLink ?? '#'} class:list={[C.ctaButton, buttonStyleClass]}>{slide.buttonText}</a>
               )}

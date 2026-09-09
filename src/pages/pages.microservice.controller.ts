@@ -4,6 +4,7 @@
  * Обрабатывает паттерны сообщений (зеркалит HTTP endpoints PagesController):
  * - sites.pages.create — создать страницу (опц. клон шаблона)
  * - sites.pages.delete — удалить кастомную страницу (system запрещены)
+ * - sites.pages.list   — лёгкий листинг метаданных страниц (без pagesData)
  *
  * Используется api-gateway для проксирования HTTP запросов конструктора
  * к sites-service через RabbitMQ.
@@ -24,6 +25,21 @@ interface DeletePagePayload {
   tenantId: string;
   siteId: string;
   pageId: string;
+}
+
+interface ListPagesPayload {
+  tenantId: string;
+  siteId: string;
+}
+
+interface UpdatePagePayload {
+  tenantId: string;
+  siteId: string;
+  pageId: string;
+  seo?: { title?: string; description?: string; keywords?: string };
+  name?: string;
+  /** Тело контент-страницы («Описание») → секция «Страница» дерева страницы. */
+  content?: string;
 }
 
 @Controller()
@@ -82,6 +98,61 @@ export class PagesMicroserviceController {
       return { success: true, ...result };
     } catch (e: any) {
       this.logger.error("pages.delete failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  @MessagePattern("sites.pages.list")
+  async listPages(
+    @Payload() data: ListPagesPayload,
+    @Ctx() _ctx: RmqContext,
+  ) {
+    try {
+      this.logger.log(`pages.list request: ${JSON.stringify(data)}`);
+      const { tenantId, siteId } = data ?? ({} as ListPagesPayload);
+      if (!tenantId || !siteId) {
+        return {
+          success: false,
+          message: "tenantId, siteId are required",
+        };
+      }
+      const result = await this.pagesService.listPages({ tenantId, siteId });
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error("pages.list failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  @MessagePattern("sites.pages.update")
+  async updatePage(
+    @Payload() data: UpdatePagePayload,
+    @Ctx() _ctx: RmqContext,
+  ) {
+    try {
+      this.logger.log(`pages.update request: ${JSON.stringify(data)}`);
+      const { tenantId, siteId, pageId, seo, name, content } =
+        data ?? ({} as UpdatePagePayload);
+      if (!tenantId || !siteId || !pageId) {
+        return {
+          success: false,
+          message: "tenantId, siteId, pageId are required",
+        };
+      }
+      if (seo === undefined && name === undefined && content === undefined) {
+        return { success: false, message: "nothing_to_update" };
+      }
+      const result = await this.pagesService.updatePage({
+        tenantId,
+        siteId,
+        pageId,
+        ...(seo !== undefined ? { seo } : {}),
+        ...(name !== undefined ? { name } : {}),
+        ...(content !== undefined ? { content } : {}),
+      });
+      return { success: true, ...result };
+    } catch (e: any) {
+      this.logger.error("pages.update failed", e);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }

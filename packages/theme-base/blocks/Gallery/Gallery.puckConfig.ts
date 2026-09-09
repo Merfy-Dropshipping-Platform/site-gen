@@ -105,12 +105,17 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
             { label: 'Коллекция', value: 'collection' },
           ],
         },
-        url: { type: 'image', label: 'Изображение' },
+        // Figma 1236-42152: элемент «Изображение» = шапка панели «Изображение»
+        // (тип) + ГОЛЫЙ бокс «Добавить фото» без field-лейбла (label='' →
+        // FocusedItemPanel рендерит без FieldGroup-заголовка).
+        url: { type: 'image', label: '' },
         // alt-текст убран из сайдбара Галереи (по требованию тестера). Значение
         // item.alt сохраняется в схеме для рендера <img alt> (SEO).
         alt: { type: 'hidden', label: '' },
-        productId: { type: 'productPicker', label: 'Товар' },
-        collectionId: { type: 'collectionPicker', label: 'Коллекция' },
+        // Figma 1236-42152: «Товар» = «Выбор товара», «Коллекция» = «Выбор
+        // коллекции» (лейбл над picker'ом; шапка панели = имя типа).
+        productId: { type: 'productPicker', label: 'Выбор товара' },
+        collectionId: { type: 'collectionPicker', label: 'Выбор коллекции' },
       },
       defaultItemProps: { id: '', type: 'image', url: '', alt: '' },
       max: 3,

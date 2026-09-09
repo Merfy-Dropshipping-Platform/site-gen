@@ -59,12 +59,18 @@ export const CartAPI = {
    * @param {string} productId
    * @param {number} quantity
    * @param {string|null} variantCombinationId
+   * @param {Record<string,string>|null} options
    * @returns {Promise<{success: boolean, data: object}>}
    */
-  async addItem(cartId, productId, quantity = 1, variantCombinationId = null) {
+  async addItem(cartId, productId, quantity = 1, variantCombinationId = null, options = null) {
     const body = { productId, quantity };
     if (variantCombinationId) {
       body.variantCombinationId = variantCombinationId;
+    }
+    // Опции варианта (Цвет/Размер) — сервер пере-матчит вариант по ним, если
+    // variantCombinationId устарел (ресед пересоздал комбинации).
+    if (options && typeof options === 'object' && Object.keys(options).length) {
+      body.options = options;
     }
     return request(`/orders/cart/${cartId}/items`, {
       method: 'POST',

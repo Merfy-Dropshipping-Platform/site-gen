@@ -6,12 +6,14 @@
  * - React Islands get client:* directives (client:load, client:visible, client:idle)
  * - Astro components import directly (.astro)
  *
- * Props from JSON are passed through to each component — after being
- * unwrapped by `normalizeLegacyProps` to collapse the constructor's
- * `{text,size}` / `{content,size}` / `{text, link}` envelopes into the
- * flat strings / {text,href} shape theme-base .astro templates expect.
+ * Props from JSON are passed through a compatibility adapter. Most blocks use
+ * the generic legacy envelope flattener; Slideshow keeps its semantic nested
+ * heading/text sizes and PagePicker link object via a block-aware adapter.
  */
-import { normalizeLegacyProps } from "./legacy-prop-normalizer";
+import {
+  normalizeLegacyProps,
+  normalizeSlideshowProps,
+} from "./legacy-prop-normalizer";
 import { deepMergeBlockProps } from "../services/preview.service";
 
 /** How a component should be rendered in Astro */
@@ -144,7 +146,10 @@ function processContentItems(
         : (rawItem.props ?? {});
     // Unwrap legacy envelopes so the generated .astro receives flat strings
     // instead of "[object Object]" when the Astro template serialises them.
-    const normalized = normalizeLegacyProps(mergedProps);
+    const normalized =
+      rawItem.type === "Slideshow"
+        ? normalizeSlideshowProps(mergedProps)
+        : normalizeLegacyProps(mergedProps);
     const item = { ...rawItem, props: normalized };
 
     // Server-island components: emit <merfy-island> Web Component, no import needed

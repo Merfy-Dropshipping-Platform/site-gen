@@ -19,6 +19,9 @@ import { timeout } from "rxjs/operators";
 import { resolveAssetUrls } from "../themes/asset-resolver";
 import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
+// Shared cart-drawer globals resolver — same export the preview controller
+// uses, so live ≡ preview byte-for-byte (F-054).
+import { resolveCartDrawerGlobals } from "../themes/cart-drawer-contract";
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
@@ -29,6 +32,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
 import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
+import { escapeHtml, patchPdpMetaTags, patchCollectionMetaTags } from "./seo-meta";
 import { migrateRevisionData } from "../utils/revision-migrations";
 import { applyFooterData } from "../utils/footer-data";
 import {
@@ -212,20 +216,6 @@ export async function patchShopIdInDist(
 }
 
 /**
- * SEO: экранирование для безопасной подстановки текста в HTML-атрибуты
- * (content="…", href="…") и текстовые узлы (<title>…</title>). Имена/описания
- * товаров — пользовательский ввод, без экранирования рвут разметку или дают XSS.
- */
-function escapeHtml(input: string): string {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-/**
  * SEO themes-v2: pre-built dist собран с astro.config `site="https://example.com"`,
  * который травит canonical/og:url/og:image/sitemap во ВСЕХ страницах (копируются
  * verbatim на каждый сайт). Заменяем плейсхолдер-домен на реальный домен сайта во
@@ -377,13 +367,25 @@ export interface BuildContext {
   storeData: FetchedStoreData;
   /** Whether the site uses server-island smart revalidation */
   islandsEnabled: boolean;
-  /** Branding overrides (logo, colors) from site table */
-  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string } };
+  /** Branding overrides (logo, colors, favicons, home SEO) from site table */
+  branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string }; seo?: { title?: string; description?: string; keywords?: string } };
   /** Site settings (checkout config, etc.) */
   settings?: { requireCustomerAuth?: boolean };
+  /** Название магазина (site.name) — для name/short_name в web-manifest. */
+  siteName?: string;
 }
 
-const ANALYTICS_COLLECTOR_URL = "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
+/**
+ * Адрес analytics-collector, который вшивается в статику КАЖДОЙ витрины.
+ * Переопределяется через ANALYTICS_COLLECTOR_URL; дефолт равен ранее
+ * захардкоженному значению, поэтому без переменной поведение не меняется.
+ */
+const ANALYTICS_COLLECTOR_URL_DEFAULT =
+  "https://iowcg0sw4wsoo0s4k8g0ws0o.176.57.218.121.sslip.io";
+
+function analyticsCollectorUrl(): string {
+  return process.env.ANALYTICS_COLLECTOR_URL ?? ANALYTICS_COLLECTOR_URL_DEFAULT;
+}
 
 /** Inject tracker.js + loader.js into all HTML files before </head> */
 async function injectAnalyticsTracker(distDir: string, siteId: string): Promise<void> {
@@ -398,7 +400,8 @@ async function injectAnalyticsTracker(distDir: string, siteId: string): Promise<
   }
   await findHtml(distDir);
 
-  const trackerSnippet = `<script src="${ANALYTICS_COLLECTOR_URL}/tracker.js?shop=${siteId}" defer></script>\n<script src="${ANALYTICS_COLLECTOR_URL}/loader.js?shop=${siteId}" defer></script>`;
+  const collectorUrl = analyticsCollectorUrl();
+  const trackerSnippet = `<script src="${collectorUrl}/tracker.js?shop=${siteId}" defer></script>\n<script src="${collectorUrl}/loader.js?shop=${siteId}" defer></script>`;
 
   for (const file of htmlFiles) {
     let html = await fs.readFile(file, "utf8");
@@ -793,6 +796,7 @@ export async function trySnapshotDeploy(
   const [siteRow] = await deps.db
     .select({
       id: schema.site.id,
+      name: schema.site.name,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
       storageSlug: schema.site.storageSlug,
@@ -936,6 +940,20 @@ export async function trySnapshotDeploy(
 
     // ── Inject analytics tracker + pixel loader ──
     await injectAnalyticsTracker(distDir, params.siteId);
+
+    // ── Inject favicons + web manifest ──
+    // Снапшот-ctx не несёт branding (снапшот скипается на colors/logo, но НЕ на
+    // favicons) → передаём siteRow.branding напрямую. Пустой набор → noop.
+    {
+      const { injectFavicons } = await import("../themes/favicon-inject");
+      await injectFavicons(distDir, branding, { name: siteRow.name ?? undefined });
+    }
+
+    // ── Inject home SEO (title/description/keywords → index.html) ──
+    {
+      const { injectHomeSeo } = await import("./home-seo-inject");
+      await injectHomeSeo(distDir, branding?.seo);
+    }
 
     // ── Inject islands script if enabled ──
     const siteIslandsEnabled = siteRow.islandsEnabled ?? false;
@@ -1273,6 +1291,23 @@ export async function runBuildPipeline(
       } catch (layErr) {
         logger.warn(`[themes-v2] catalog layout inject failed: ${(layErr as Error)?.message ?? layErr}`);
       }
+      // Цветовая схема корзины-дровера: дровер (chrome на каждой странице) красится
+      // scheme-токенами, но живёт вне color-scheme-обёртки → берёт :root-дефолт, а
+      // не выбранную схему корзины. Достаём CartBody.colorScheme (главная секция
+      // page-cart; fallback — CartSummary) и доставляем глобалом; StorefrontRuntime
+      // темы вешает .color-scheme-N на #cart-drawer-root + рендерит дисклеймер.
+      // Без корзины/схемы — глобал не инжектится (дровер как раньше).
+      try {
+        // Shared resolver (F-054): identical algorithm the preview controller
+        // uses → live drawer globals ≡ preview drawer globals byte-for-byte.
+        const drawerGlobals = resolveCartDrawerGlobals(ctx.revisionData);
+        if (Object.keys(drawerGlobals).length > 0) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, drawerGlobals);
+          logger.log(`[themes-v2] Injected cart drawer globals [${Object.keys(drawerGlobals).join(', ')}] into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (cdErr) {
+        logger.warn(`[themes-v2] cart drawer global inject failed: ${(cdErr as Error)?.message ?? cdErr}`);
+      }
       // Инжект реального products.json — на статичном nginx-live гидрация читает
       // /data/products.json (fallback на storefront-data НЕ резолвится: origin сайта
       // ≠ API). themes-v2 копирует pre-built dist БЕЗ products.json → без этого live
@@ -1328,89 +1363,14 @@ export async function runBuildPipeline(
             // может быть null — тогда canonical/og:url не патчим, остальное патчим).
             const pub = ctx.publicUrl ? ctx.publicUrl.replace(/\/+$/, "") : "";
 
-            // Per-product патч мета. Возвращает HTML с подставленными SEO-тегами.
+            // Per-product патч мета — форвард в чистую seo-meta.patchPdpMetaTags
+            // (siteTitle/pub захвачены из внешнего скоупа). Реализация + unit-тесты
+            // (canonical/og:*/twitter:*/title/description + XSS-экранирование) — seo-meta.ts.
             const patchPdpMeta = (
               html: string,
               p: Record<string, unknown>,
               slug: string,
-            ): string => {
-              let out = html;
-              const name = typeof p.name === "string" ? p.name : "";
-              // description: предпочитаем metaDescription (явное SEO-поле), иначе description.
-              const descRaw =
-                (typeof p.metaDescription === "string" && p.metaDescription.trim()
-                  ? p.metaDescription
-                  : typeof p.description === "string"
-                    ? p.description
-                    : "") ?? "";
-              const desc = descRaw.trim();
-              // главное изображение: image / images[0] / gallery[0] (поддержка строки и {url}).
-              const pickImg = (v: unknown): string | null => {
-                if (typeof v === "string" && v.trim()) return v.trim();
-                if (v && typeof v === "object" && typeof (v as { url?: unknown }).url === "string")
-                  return (v as { url: string }).url;
-                return null;
-              };
-              const imgs = Array.isArray(p.images) ? p.images : [];
-              const gallery = Array.isArray((p as { gallery?: unknown[] }).gallery)
-                ? ((p as { gallery: unknown[] }).gallery)
-                : [];
-              const mainImage =
-                pickImg(p.image) ?? pickImg(imgs[0]) ?? pickImg(gallery[0]);
-
-              const canonical = pub ? `${pub}/product/${slug}` : "";
-              // canonical href (ВСЕГДА slug) — толерантный regex по атрибутам link.
-              if (canonical) {
-                out = out.replace(
-                  /(<link\b[^>]*\brel=["']canonical["'][^>]*\bhref=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-                // og:url (та же canonical) — property до/после content, толерантно.
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-              }
-              // <title> и og:title → "<name> — <siteTitle>" (или просто name без суффикса).
-              if (name) {
-                const fullTitle = siteTitle ? `${name} — ${siteTitle}` : name;
-                out = out.replace(
-                  /<title>[^<]*<\/title>/i,
-                  `<title>${escapeHtml(fullTitle)}</title>`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(fullTitle)}$2`,
-                );
-              }
-              // description / og:description / twitter:description → обрезка ~160 симв.
-              // Пусто → не трогаем (оставляем скелет, чтобы не было пустых тегов).
-              if (desc) {
-                const trimmed =
-                  desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}…` : desc;
-                const ed = escapeHtml(trimmed);
-                out = out.replace(
-                  /(<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']twitter:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-              }
-              // og:image → абсолютный URL главного изображения (если есть).
-              if (mainImage) {
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(mainImage)}$2`,
-                );
-              }
-              return out;
-            };
+            ): string => patchPdpMetaTags(html, p, slug, siteTitle, pub);
 
             let made = 0;
             let madeId = 0;
@@ -1531,109 +1491,14 @@ export async function runBuildPipeline(
             const cSiteTitle = cDashIdx >= 0 ? cRawTitle.slice(cDashIdx + 3).trim() : "";
             const pub = ctx.publicUrl ? ctx.publicUrl.replace(/\/+$/, "") : "";
 
-            // Per-collection патч меты. Возвращает HTML с подставленными SEO-тегами.
-            // Зеркало patchPdpMeta (тот же escapeHtml + толерантные regex по атрибутам).
+            // Per-collection патч меты — форвард в чистую seo-meta.patchCollectionMetaTags
+            // (cSiteTitle/pub захвачены из внешнего скоупа). Реализация + unit-тесты
+            // (canonical/og:*/twitter:*/title/description + body-патч + XSS-экранирование) — seo-meta.ts.
             const patchCollectionMeta = (
               html: string,
               c: Record<string, unknown>,
               slug: string,
-            ): string => {
-              let out = html;
-              const name = typeof c.name === "string" && c.name.trim()
-                ? c.name
-                : (typeof c.title === "string" ? c.title : "");
-              // description: metaDescription (явное SEO-поле) → description.
-              const descRaw =
-                (typeof c.metaDescription === "string" && c.metaDescription.trim()
-                  ? c.metaDescription
-                  : typeof c.description === "string"
-                    ? c.description
-                    : "") ?? "";
-              const desc = descRaw.trim();
-              // обложка: image / images[0] (поддержка строки и {url}) — как у PDP.
-              const pickImg = (v: unknown): string | null => {
-                if (typeof v === "string" && v.trim()) return v.trim();
-                if (v && typeof v === "object" && typeof (v as { url?: unknown }).url === "string")
-                  return (v as { url: string }).url;
-                return null;
-              };
-              const cImgs = Array.isArray((c as { images?: unknown[] }).images)
-                ? ((c as { images: unknown[] }).images)
-                : [];
-              const mainImage = pickImg(c.image) ?? pickImg(cImgs[0]);
-
-              const canonical = pub ? `${pub}/collections/${slug}` : "";
-              if (canonical) {
-                out = out.replace(
-                  /(<link\b[^>]*\brel=["']canonical["'][^>]*\bhref=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:url["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(canonical)}$2`,
-                );
-              }
-              if (name) {
-                const fullTitle = cSiteTitle ? `${name} — ${cSiteTitle}` : name;
-                out = out.replace(
-                  /<title>[^<]*<\/title>/i,
-                  `<title>${escapeHtml(fullTitle)}</title>`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(fullTitle)}$2`,
-                );
-              }
-              if (desc) {
-                const trimmed =
-                  desc.length > 160 ? `${desc.slice(0, 157).trimEnd()}…` : desc;
-                const ed = escapeHtml(trimmed);
-                out = out.replace(
-                  /(<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']twitter:description["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${ed}$2`,
-                );
-              }
-              if (mainImage) {
-                out = out.replace(
-                  /(<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["'])[^"']*(["'])/i,
-                  `$1${escapeHtml(mainImage)}$2`,
-                );
-              }
-              // --- BODY (не только SEO): per-collection страница = копия шелла
-              // collections/preview, поэтому тело показывает хардкод «Каталог» и
-              // не скоуплено. Патчим тело под коллекцию. No-op если тема рендерит
-              // иначе (regex не совпал) — безопасно. ---
-              // 1. Скоуп Catalog на товары коллекции (клиент читает data-collection-slug).
-              out = out.replace(
-                /(\bdata-collection-slug=["'])[^"']*(["'])/gi,
-                `$1${escapeHtml(slug)}$2`,
-              );
-              if (name) {
-                // 2. Заголовок каталога → имя коллекции (id="catalog-title" —
-                //    цель aria-labelledby секции Catalog во всех темах).
-                out = out.replace(
-                  /(<(h1|h2)\b[^>]*\bid=["']catalog-title["'][^>]*>)[\s\S]*?(<\/\2>)/i,
-                  `$1${escapeHtml(name)}$3`,
-                );
-              }
-              if (desc) {
-                // 3. Подзаголовок каталога → описание коллекции (замена известных
-                //    тема-хардкодов; vanilla подзаголовок пуст).
-                const edSub = escapeHtml(desc);
-                out = out
-                  .replace("Здесь начинается персональный стиль", () => edSub)
-                  .replace("Следующее поколение уже с вами", () => edSub);
-              }
-              return out;
-            };
+            ): string => patchCollectionMetaTags(html, c, slug, cSiteTitle, pub);
 
             let cmade = 0;
             let cmadeId = 0;
@@ -1729,6 +1594,45 @@ export async function runBuildPipeline(
     // === Stage 4.6: INJECT ANALYTICS TRACKER ===
     await injectAnalyticsTracker(ctx.distDir, params.siteId);
 
+    // === Stage 4.65: INJECT FAVICONS + WEB MANIFEST (v2 + legacy) ===
+    // Мерчантские favicon (universal/dark/light/apple) + web-manifest в <head>
+    // каждой страницы. Стоит в пост-ветке (после закрытия v2/legacy) → кроет оба
+    // пути. Пустой набор → noop (дефолт темы цел). Публичные S3 URL как есть;
+    // cache-bust ниже их не трогает (только js/css/шрифты, не .webmanifest/иконки).
+    {
+      const { injectFavicons } = await import("../themes/favicon-inject");
+      const faviconFiles = await injectFavicons(ctx.distDir, ctx.branding, {
+        name: ctx.siteName,
+      });
+      logger.log(
+        `[favicons] Injected into ${faviconFiles} HTML files for site ${params.siteId}`,
+      );
+    }
+
+    // === Stage 4.66: INJECT HOME SEO (title/description/keywords → dist/index.html) ===
+    // Site-level SEO Главной из branding.seo. Пустой SEO → noop. Трогает ТОЛЬКО
+    // index.html (Главная); заодно закрывает v2-дыру «description дропнут».
+    {
+      const { injectHomeSeo } = await import("./home-seo-inject");
+      const seoPatched = await injectHomeSeo(ctx.distDir, ctx.branding?.seo);
+      if (seoPatched) {
+        logger.log(`[home-seo] Patched index.html for site ${params.siteId}`);
+      }
+    }
+
+    // === Stage 4.67: INJECT PER-PAGE SEO (кастомные страницы → dist/<slug>/index.html) ===
+    // SEO кастомных страниц из revision.pages[i].seo. Системные/home пропускаются
+    // (home = branding.seo, Stage 4.66). Пустой набор → noop.
+    {
+      const { injectCustomPagesSeo } = await import("./custom-pages-seo-inject");
+      const pagesSeo = await injectCustomPagesSeo(ctx.distDir, ctx.revisionData);
+      if (pagesSeo) {
+        logger.log(
+          `[per-page-seo] Patched ${pagesSeo} custom page(s) for site ${params.siteId}`,
+        );
+      }
+    }
+
     // === Stage 4.7: INJECT ISLANDS SCRIPT (legacy path only) ===
     if (!useThemeV2 && ctx.islandsEnabled) {
       const islandsServerUrl =
@@ -1805,6 +1709,7 @@ async function stageMerge(
   const [siteRow] = await deps.db
     .select({
       id: schema.site.id,
+      name: schema.site.name,
       themeId: schema.site.themeId,
       currentRevisionId: schema.site.currentRevisionId,
       publicUrl: schema.site.publicUrl,
@@ -1828,6 +1733,7 @@ async function stageMerge(
   ctx.islandsEnabled = siteRow.islandsEnabled ?? false;
   ctx.branding = (siteRow.branding as BuildContext["branding"]) ?? undefined;
   ctx.settings = (siteRow.settings as BuildContext["settings"]) ?? undefined;
+  ctx.siteName = siteRow.name ?? undefined;
 
   // Load or create revision
   let revisionId: string | null = null;

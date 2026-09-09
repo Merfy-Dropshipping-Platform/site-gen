@@ -19,14 +19,14 @@ describe('CartSection block', () => {
   it('exports CartSectionPuckConfig with required fields', () => {
     expect(CartSectionPuckConfig.label).toBe('Корзина');
     expect(CartSectionPuckConfig.category).toBe('layout');
-    expect(CartSectionPuckConfig.defaults.colorScheme).toBe(1);
+    expect(CartSectionPuckConfig.defaults.colorScheme).toBe(2);
     expect(CartSectionPuckConfig.defaults.padding).toEqual({ top: 80, bottom: 80 });
     expect(CartSectionPuckConfig.maxInstances).toBe(1);
   });
 
   it('CartSectionSchema parses valid props', () => {
     const ok = CartSectionSchema.safeParse({
-      colorScheme: 1,
+      colorScheme: 2,
       padding: { top: 40, bottom: 40 },
     });
     expect(ok.success).toBe(true);

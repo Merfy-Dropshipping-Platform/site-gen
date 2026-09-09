@@ -13,7 +13,7 @@ const { name, price, oldPrice, image, alt = name } = Astro.props;
 ---
 
 <article class="flex flex-col gap-4 sm:gap-5 md:gap-6 lg:gap-[25px] group cursor-pointer">
-	<div class="bg-gray-100 rounded-lg sm:rounded-[8px] md:rounded-[10px] overflow-hidden w-full aspect-[318/515]">
+	<div class="w-full aspect-[318/515] overflow-hidden rounded-[var(--radius-media,8px)] bg-gray-100">
 		<FluxPicture
 			src={image}
 			alt={alt}

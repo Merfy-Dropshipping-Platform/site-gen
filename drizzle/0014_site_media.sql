@@ -5,7 +5,7 @@
 -- artifact or creating a new revision.
 
 CREATE TABLE IF NOT EXISTS "site_media" (
-  "site_id" uuid NOT NULL,
+  "site_id" text NOT NULL,
   "block_id" text NOT NULL,
   "url" text NOT NULL,
   "mime_type" text,

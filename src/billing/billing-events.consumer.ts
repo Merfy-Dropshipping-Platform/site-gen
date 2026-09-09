@@ -186,8 +186,12 @@ export class BillingEventsConsumer implements OnModuleInit, OnModuleDestroy {
         payload?.previousStatus ?? "",
       ).toLowerCase();
 
-      // Определяем нужно ли заморозить или разморозить
-      const freezeStatuses = ["past_due", "frozen", "canceled"];
+      // Статусы, при которых витрину гасим. ЗЕРКАЛО billing.storefrontSuspended
+      // (единый источник истины) = {frozen, canceled}. `past_due` НАМЕРЕННО
+      // исключён: платящий мерчант с временно отвалившейся картой держит витрину
+      // живой на окне soft-dunning, до хард-freeze. При правке синхронизировать
+      // с billing.listener.ts и billing-sync.scheduler.ts.
+      const freezeStatuses = ["frozen", "canceled"];
       const shouldFreeze = freezeStatuses.includes(status);
       const wasFreeze = freezeStatuses.includes(previousStatus);
 

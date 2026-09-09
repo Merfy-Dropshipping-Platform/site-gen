@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 const MultiColumnItemSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   heading: z.string().optional(),
   text: z.string().optional(),
   imageUrl: z.string().optional(),
@@ -13,21 +13,13 @@ const MultiColumnItemSchema = z.object({
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
   description: z.string().optional(),
   textSize: z.enum(['small', 'medium', 'large']).optional(),
-  link: z.object({
-    text: z.string().optional(),
-    href: z.string().optional(),
-  }).optional(),
+  linkText: z.string().optional(),
+  link: z.string().optional(),
+  hidden: z.boolean().optional(),
 });
 
-export const MultiColumnsSchema = z.object({
-  heading: z.union([
-    z.string(),
-    z.object({
-      text: z.string().optional(),
-      alignment: z.enum(['left', 'center', 'right']).optional(),
-      size: z.enum(['small', 'medium', 'large']).optional(),
-    }),
-  ]).optional(),
+export const MultiColumnsAuthoringSchema = z.object({
+  heading: z.string().optional(),
   // Pupa parity: heading object с alignment + size (legacy `heading` text — fallback).
   headingAlignment: z.enum(['left', 'center', 'right']).optional(),
   headingSize: z.enum(['small', 'medium', 'large']).optional(),
@@ -37,7 +29,7 @@ export const MultiColumnsSchema = z.object({
   buttonLink: z.string().optional(),
   // Pupa parity: nested heading {text,alignment,size} + textPosition + background + containerColorScheme.
   textPosition: z.enum(['left', 'center']).optional(),
-  background: z.object({ enabled: z.enum(['true', 'false']) }).optional(),
+  containerEnabled: z.enum(['true', 'false']).optional(),
   containerColorScheme: z.string().optional(),
   link: z.string().optional(),
   columns: z.array(MultiColumnItemSchema).min(1).max(10),
@@ -46,7 +38,7 @@ export const MultiColumnsSchema = z.object({
     z.literal(2),
     z.literal(3),
     z.literal(4),
-  ]),
+  ]).optional(),
   colorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -54,7 +46,90 @@ export const MultiColumnsSchema = z.object({
   }),
 });
 
-export type MultiColumnsProps = z.infer<typeof MultiColumnsSchema>;
+export const MultiColumnsSchema = MultiColumnsAuthoringSchema;
+export type MultiColumnsProps = z.infer<typeof MultiColumnsAuthoringSchema>;
+
+type LegacyToggle = { enabled?: unknown };
+type LegacyHeading = { enabled?: unknown; text?: unknown; alignment?: unknown; size?: unknown };
+type LegacyLink = { enabled?: unknown; text?: unknown; href?: unknown };
+
+export interface MultiColumnsStoredInput {
+  heading?: unknown;
+  headingAlignment?: unknown;
+  headingSize?: unknown;
+  width?: unknown;
+  imageAspectRatio?: unknown;
+  button?: unknown;
+  buttonText?: unknown;
+  buttonLink?: unknown;
+  link?: unknown;
+  textPosition?: unknown;
+  background?: LegacyToggle;
+  containerEnabled?: unknown;
+  containerColorScheme?: unknown;
+  columnsCount?: unknown;
+  displayColumns?: unknown;
+  columns?: unknown;
+  colorScheme?: unknown;
+  padding?: unknown;
+}
+
+const DEFAULT_PADDING = { top: 80, bottom: 80 } as const;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+const enumValue = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
+  typeof value === 'string' && allowed.includes(value as T) ? value as T : fallback;
+
+export function normalizeMultiColumnsStoredProps(input: unknown): MultiColumnsProps | unknown {
+  if (!isRecord(input)) return input;
+  const raw = input as MultiColumnsStoredInput;
+  const heading = isRecord(raw.heading) ? raw.heading as LegacyHeading : undefined;
+  const legacySectionLink = isRecord(raw.link) ? raw.link as LegacyLink : undefined;
+  const rawColumns = Array.isArray(raw.columns) ? raw.columns : [];
+  const columns = rawColumns.map((entry, index) => {
+    const column = isRecord(entry) ? entry : {};
+    const legacyLink = isRecord(column.link) ? column.link as LegacyLink : undefined;
+    const enabled = legacyLink?.enabled !== 'false';
+    return {
+      id: typeof column.id === 'string' ? column.id : `col-${index + 1}`,
+      title: typeof column.title === 'string' ? column.title : typeof column.heading === 'string' ? column.heading : '',
+      description: typeof column.description === 'string' ? column.description : typeof column.text === 'string' ? column.text : '',
+      image: typeof column.image === 'string' ? column.image : typeof column.imageUrl === 'string' ? column.imageUrl : '',
+      imageSize: enumValue(column.imageSize, ['small', 'medium', 'large'], 'small'),
+      headingSize: enumValue(column.headingSize, ['small', 'medium', 'large'], 'small'),
+      textSize: enumValue(column.textSize, ['small', 'medium', 'large'], 'small'),
+      linkText: typeof column.linkText === 'string'
+        ? column.linkText
+        : enabled && typeof legacyLink?.text === 'string' ? legacyLink.text : '',
+      link: typeof column.link === 'string'
+        ? column.link
+        : typeof legacyLink?.href === 'string' ? legacyLink.href : '',
+      ...(typeof column.hidden === 'boolean' ? { hidden: column.hidden } : {}),
+    };
+  });
+
+  return {
+    heading: typeof raw.heading === 'string' ? raw.heading : typeof heading?.text === 'string' ? heading.text : '',
+    headingAlignment: enumValue(raw.headingAlignment ?? heading?.alignment, ['left', 'center', 'right'], 'center'),
+    headingSize: enumValue(raw.headingSize ?? heading?.size, ['small', 'medium', 'large'], 'medium'),
+    width: enumValue(raw.width, ['small', 'medium', 'large', 'full'], 'large'),
+    imageAspectRatio: enumValue(raw.imageAspectRatio, ['adapt', 'square', 'portrait', 'landscape'], 'square'),
+    buttonText: typeof raw.buttonText === 'string' ? raw.buttonText : typeof raw.button === 'string' ? raw.button : '',
+    buttonLink: typeof raw.buttonLink === 'string'
+      ? raw.buttonLink
+      : typeof raw.link === 'string' ? raw.link : typeof legacySectionLink?.href === 'string' ? legacySectionLink.href : '',
+    textPosition: enumValue(raw.textPosition, ['left', 'center'], 'left'),
+    containerEnabled: String(raw.containerEnabled ?? raw.background?.enabled ?? 'false') === 'true' ? 'true' : 'false',
+    ...(typeof raw.containerColorScheme === 'string' ? { containerColorScheme: raw.containerColorScheme } : {}),
+    displayColumns: resolveMultiColumnsDisplayColumns(raw),
+    columns,
+    ...(typeof raw.colorScheme === 'string' ? { colorScheme: raw.colorScheme } : {}),
+    padding: isRecord(raw.padding) ? raw.padding : DEFAULT_PADDING,
+  };
+}
+
+export const MultiColumnsStoredSchema: z.ZodType<MultiColumnsProps, z.ZodTypeDef, unknown> =
+  z.preprocess(normalizeMultiColumnsStoredProps, MultiColumnsAuthoringSchema);
 
 export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
   label: 'Мультиколонны',
@@ -118,7 +193,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     },
     // user #23: Контейнер дублировался (object с вложенным toggle). Заменил
     // на flat toggle field — рендерится FieldRenderer без nesting.
-    background: { type: 'hidden', label: '' } as any,
     containerEnabled: {
       type: 'toggle',
       label: 'Контейнер',
@@ -227,7 +301,6 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     ],
     displayColumns: 3,
     headingSize: 'medium',
-    textSize: 'medium',
     // Канон соседних секций (Collections/Gallery/MultiRows) = 1320px контейнер.
     width: 'large',
     imageAspectRatio: 'square',
@@ -235,7 +308,7 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     containerEnabled: 'false',
     padding: { top: 80, bottom: 80 },
   },
-  schema: MultiColumnsSchema,
+  schema: MultiColumnsAuthoringSchema,
   maxInstances: null,
   constraints: {
     padding: { min: 0, max: 160, step: 8 },
@@ -244,3 +317,58 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     maxItems: 10,
   },
 };
+
+export function resolveMultiColumnsContainerEnabled(raw: {
+  containerEnabled?: unknown;
+  background?: { enabled?: unknown };
+}): boolean {
+  const value = raw.containerEnabled ?? raw.background?.enabled ?? 'false';
+  return String(value) === 'true';
+}
+
+export function resolveMultiColumnsDisplayColumns(raw: {
+  displayColumns?: unknown;
+  columnsCount?: unknown;
+}): 1 | 2 | 3 | 4 {
+  const value = raw.displayColumns ?? raw.columnsCount ?? 3;
+  const numeric = typeof value === 'string' ? Number.parseInt(value, 10) : Number(value);
+  return numeric === 1 || numeric === 2 || numeric === 3 || numeric === 4 ? numeric : 3;
+}
+
+export function resolveMultiColumnsSectionLink(raw: {
+  buttonLink?: unknown;
+  link?: unknown;
+}): string {
+  if (typeof raw.buttonLink === 'string') return raw.buttonLink;
+  if (typeof raw.link === 'string') return raw.link;
+  if (isRecord(raw.link) && typeof raw.link.href === 'string') return raw.link.href;
+  return '/';
+}
+
+export function getVisibleMultiColumns<T extends { hidden?: unknown }>(columns: readonly T[]): T[] {
+  return getVisibleMultiColumnEntries(columns).map(({ item }) => item);
+}
+
+export function getVisibleMultiColumnEntries<T extends { hidden?: unknown }>(
+  columns: readonly T[],
+): Array<{ item: T; originalIndex: number }> {
+  return columns
+    .map((item, originalIndex) => ({ item, originalIndex }))
+    .filter(({ item }) => item.hidden !== true);
+}
+
+export function resolveMultiColumnLink(column: {
+  linkText?: unknown;
+  link?: unknown;
+}): { text: string; href: string } | null {
+  if (typeof column.link === 'object' && column.link !== null) {
+    const legacy = column.link as LegacyLink;
+    if (legacy.enabled === 'false') return null;
+    return typeof legacy.text === 'string' && legacy.text
+      ? { text: legacy.text, href: typeof legacy.href === 'string' ? legacy.href : '#' }
+      : null;
+  }
+  return typeof column.linkText === 'string' && column.linkText
+    ? { text: column.linkText, href: typeof column.link === 'string' ? column.link : '#' }
+    : null;
+}

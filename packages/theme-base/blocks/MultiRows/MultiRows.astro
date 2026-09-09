@@ -2,6 +2,7 @@
 import type { MultiRowsProps } from './MultiRows.puckConfig';
 import { MultiRowsClasses as C } from './MultiRows.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends MultiRowsProps {
   id?: string;
@@ -62,7 +63,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
 >
   <div class:list={[C.container, containerSchemeClass]}>
     {headingText && (
-      <h2 class:list={['[font-family:var(--font-heading)] text-[rgb(var(--color-heading))]', headingAlignClass, headingSizeClass, 'mb-8 font-medium']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{headingText}</h2>
+      <h2 class:list={['[font-family:var(--font-heading)] text-[rgb(var(--color-heading))]', headingAlignClass, headingSizeClass, 'mb-8 font-medium']} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(headingText)} /></h2>
     )}
     <div class={C.stack}>
       {rows.map((row: any, i: number) => {
@@ -101,7 +102,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
               )}
             </div>
             <div class={C.textCol[variantKey]}>
-              {rowTitle && <h3 class:list={[C.rowHeading, rowHeadingSizeClass]}>{rowTitle}</h3>}
+              {rowTitle && <h3 class:list={[C.rowHeading, rowHeadingSizeClass]}><Fragment set:html={sanitizeInline(rowTitle)} /></h3>}
               {rowDescription && <p class:list={[C.rowText, rowTextSizeClass]}>{rowDescription}</p>}
               {row.button?.text && (
                 <a href={buttonHref ?? '#'} class={C.button}>{row.button.text}</a>

@@ -46,6 +46,17 @@ describe("rewriteRootUrlsToPrefix — CSS comment safety", () => {
     // the @media toggle block must survive intact (delimiter before it untouched)
     expect(out).toContain("@media (max-width: 1023px)");
   });
+
+  it("does not rewrite SVG/HTML self-closing `/>` (inline icons)", () => {
+    const input =
+      '<svg viewBox="0 0 17.4 10.2"><path d="M16.8 5.1H0.6" stroke-linejoin="round"/></svg>' +
+      '<img src="/icons/arrow-right.svg" alt="">';
+    const out = rewriteRootUrlsToPrefix(input, "/__theme/flux");
+
+    expect(out).toContain('stroke-linejoin="round"/>');
+    expect(out).not.toContain("/__theme/flux/>");
+    expect(out).toContain('src="/__theme/flux/icons/arrow-right.svg"');
+  });
 });
 
 let sandbox: string;

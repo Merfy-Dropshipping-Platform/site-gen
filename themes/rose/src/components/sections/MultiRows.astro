@@ -3,6 +3,8 @@
 // Схема полей = packages/theme-base/blocks/MultiRows/MultiRows.puckConfig.ts.
 // Секции нет у верстальщика — ряд «картинка + текст» в чередующейся раскладке;
 // сетка/зазоры/медиа/кнопки — из манеры §2-4 (паттерн ImageWithText T15).
+import { inlineFormat } from "../../lib/rich-text";
+import { normalizeRoseMultiRowsButtonStyle } from "../../lib/section-settings";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -117,20 +119,25 @@ const widthCls =
 				: "max-w-[1320px]";
 
 // Канон alignment — выравнивание текстовой колонки рядов.
+// Мобилка (<sm=640): тема форсит заголовки по центру (global.css .rose-title
+// @≤639.98px), поэтому весь контент ряда центрируем (иначе кнопка/текст слева
+// «криво» под центрированным заголовком). Настройка выравнивания уважается с sm:+
+// (desktop) — эмитим sm:-варианты; base — центр.
 const alignCls =
 	p.alignment === "center"
-		? "items-center text-center"
+		? "sm:items-center sm:text-center"
 		: p.alignment === "right"
-			? "items-end text-right"
-			: "items-start text-left";
+			? "sm:items-end sm:text-right"
+			: "sm:items-start sm:text-left";
 
 // Канон buttonStyle (primary/black/white): primary|black/отсутствие = чёрная
 // заливка манеры §3 (габариты Contacts CTA); white = белая (button-2 токены,
 // манера hero CTA).
 const btnBase =
 	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
+const buttonStyle = normalizeRoseMultiRowsButtonStyle(p.buttonStyle);
 const btnCls =
-	p.buttonStyle === "white"
+	buttonStyle === "white"
 		? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 		: `${btnBase} bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
 
@@ -174,7 +181,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{heading}
+					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)
 		}
@@ -196,8 +203,8 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<img src={r.image} alt={r.heading || "Ряд"} loading="lazy" class="!h-full !w-full object-cover" />
 							)}
 						</div>
-						<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
-							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={r.heading} />}
+						<div class={`flex w-full flex-col gap-6 items-center text-center ${alignCls}${r.right ? " lg:order-1" : ""}`}>
+							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={inlineFormat(r.heading)} />}
 							{r.text && (
 								<div
 									class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${r.textSizeCls}`}

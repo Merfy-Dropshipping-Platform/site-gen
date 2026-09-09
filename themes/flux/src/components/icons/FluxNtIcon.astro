@@ -1,0 +1,38 @@
+---
+import { withBase } from "../../lib/with-base";
+import { FLUX_ICON_SVGS } from "./flux-icon-svgs";
+
+interface Props {
+	name: string;
+	class?: string;
+	iconBasePath?: string;
+	sizeClass?: string;
+}
+
+const {
+	name,
+	class: className = "",
+	iconBasePath: iconBaseProp,
+	sizeClass = "size-[24px]",
+} = Astro.props as Props;
+
+const raw = FLUX_ICON_SVGS[name];
+const iconCls = `shrink-0 text-[rgb(var(--color-text,0_0_0))] ${sizeClass} ${className}`.trim();
+const inlined = raw ? raw.replace("<svg ", `<svg class="${iconCls}" aria-hidden="true" `) : null;
+const fallbackSrc = `${(iconBaseProp ?? withBase("/icons")).replace(/\/$/, "")}/${name}.svg`;
+---
+
+{
+	inlined ? (
+		<Fragment set:html={inlined} />
+	) : (
+		<img
+			src={fallbackSrc}
+			alt=""
+			class={`shrink-0 object-contain pointer-events-none ${sizeClass} ${className}`}
+			width="24"
+			height="24"
+			aria-hidden="true"
+		/>
+	)
+}

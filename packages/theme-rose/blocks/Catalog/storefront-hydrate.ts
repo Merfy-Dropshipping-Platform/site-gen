@@ -431,7 +431,7 @@ export function parsePriceNumber(value: number | string | null | undefined): num
 export function productInStock(p: RealProduct): boolean {
 	const combos = p.variantCombinations;
 	if (!Array.isArray(combos) || combos.length === 0) return true;
-	return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0));
+	return combos.some((c) => c.available !== false && (c.quantity === undefined || c.quantity === null || c.quantity > 0 || (c as { allowBackorder?: boolean }).allowBackorder === true));
 }
 
 /** Фильтр по наличию. 'all' → исходный список без копии. */

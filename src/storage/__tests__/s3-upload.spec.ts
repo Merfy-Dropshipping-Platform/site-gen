@@ -236,6 +236,20 @@ describe("S3StorageService", () => {
         "https://myshop.merfy.ru",
       );
     });
+
+    it("should default to merfy.ru when SITES_WILDCARD_DOMAIN is unset", () => {
+      delete process.env.SITES_WILDCARD_DOMAIN;
+      expect(service.getSitePublicUrlBySubdomain("myshop")).toBe(
+        "https://myshop.merfy.ru",
+      );
+    });
+
+    it("should honour SITES_WILDCARD_DOMAIN override", () => {
+      process.env.SITES_WILDCARD_DOMAIN = "dev.merfy.ru";
+      expect(service.getSitePublicUrlBySubdomain("myshop.merfy.ru")).toBe(
+        "https://myshop.dev.merfy.ru",
+      );
+    });
   });
 
   describe("getContentType (via uploadFile path checking)", () => {

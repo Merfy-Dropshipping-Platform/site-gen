@@ -29,6 +29,19 @@ const FAVICON_ALLOWED_MIME_TYPES = [
   "image/vnd.microsoft.icon",
 ];
 
+/**
+ * Разрешён ли файл как favicon. По mimetype из allowlist, ЛИБО `.ico` пришедший
+ * как `application/octet-stream`/пустой type (браузеры непредсказуемо маркируют
+ * .ico) — принимаем по расширению, НЕ расширяя приём произвольных octet-stream.
+ */
+export function isAllowedFaviconFile(mimetype: string, originalname: string): boolean {
+  if (FAVICON_ALLOWED_MIME_TYPES.includes(mimetype)) return true;
+  const looseIco =
+    (mimetype === "application/octet-stream" || mimetype === "" || !mimetype) &&
+    /\.ico$/i.test(originalname ?? "");
+  return looseIco;
+}
+
 const FAVICON_TYPES = ['universal', 'dark', 'light', 'apple'] as const;
 type FaviconType = (typeof FAVICON_TYPES)[number];
 
@@ -165,7 +178,7 @@ export class BrandingController {
     FileInterceptor("favicon", {
       limits: { fileSize: MAX_FILE_SIZE },
       fileFilter: (_req, file, cb) => {
-        cb(null, FAVICON_ALLOWED_MIME_TYPES.includes(file.mimetype));
+        cb(null, isAllowedFaviconFile(file.mimetype, file.originalname));
       },
     }),
   )
@@ -272,6 +285,32 @@ export class BrandingController {
         (site.branding as Record<string, unknown>) ?? {};
       const currentFavicons =
         (currentBranding.favicons as Record<string, unknown>) ?? {};
+
+      // Best-effort: удалить объект(ы) фавикона этого типа из S3 — раньше DELETE
+      // чистил только jsonb-ключ, а байты в merfy-sites оставались сиротами.
+      // removePrefix по `favicon-{type}-` сносит текущую версию И orphans от
+      // прежних re-upload'ов; коллизионно безопасен (тип завершается `-`,
+      // logo=`logo-`, соседние типы не пересекаются, путь скоупит tenant+site).
+      // Падение S3 не должно мешать снять <link> с live-сайта → вложенный catch.
+      if (currentFavicons[faviconType]) {
+        try {
+          const bucket = this.s3.getBucketName();
+          if (bucket) {
+            const { removed } = await this.s3.removePrefix(
+              bucket,
+              `branding/${tenantId}/${siteId}/favicon-${faviconType}-`,
+            );
+            this.logger.log(
+              `Favicon (${faviconType}) S3 cleanup for site ${siteId}: removed ${removed}`,
+            );
+          }
+        } catch (s3err) {
+          this.logger.warn(
+            `Favicon (${faviconType}) S3 cleanup failed for site ${siteId}: ${s3err instanceof Error ? s3err.message : s3err}`,
+          );
+        }
+      }
+
       delete currentFavicons[faviconType];
       await this.sitesService.update({
         tenantId,

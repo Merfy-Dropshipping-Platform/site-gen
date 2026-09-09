@@ -15,13 +15,22 @@ const {
   accountLink,
   backLink,
   cartLink,
+  colorScheme,
   padding,
 } = Astro.props as Props;
 
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
+
+// Цветовая схема узла «Header» (Figma 1:19998). Зеркало CheckoutForm/Summary:
+// классы color-scheme-N несут --color-* → шапка перекрашивается под выбранную
+// схему. На live эти пропсы приходят через unifyChromeInDist (page-checkout).
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
 ---
 <header
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-checkout-slot="header"
   style={paddingStyle}

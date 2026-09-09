@@ -53,7 +53,7 @@ const totalCount = products.length;
 					<div class="flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
 						<div class="flex flex-wrap items-start gap-3">
 							<details class="relative">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[var(--radius-button,6px)] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 									<span>Наличие</span>
 									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 								</summary>
@@ -63,7 +63,7 @@ const totalCount = products.length;
 							</details>
 
 							<details class="relative">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[var(--radius-button,6px)] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 									<span>Стоимость</span>
 									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 								</summary>
@@ -73,7 +73,7 @@ const totalCount = products.length;
 							</details>
 
 							<details class="relative">
-								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+								<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[var(--radius-button,6px)] border border-[#F5F5F5] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 									<span>Цвет</span>
 									<NtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
 								</summary>
@@ -84,7 +84,7 @@ const totalCount = products.length;
 						</div>
 
 						<details class="relative">
-							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
+							<summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[var(--radius-button,6px)] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
 								<span>По популярности</span>
 								<NtIcon name="dropdown-chevron" sizeClass="size-5" />
 							</summary>
@@ -110,7 +110,7 @@ const totalCount = products.length;
 						<button
 							type="button"
 							data-action="load-more"
-							class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]"
+							class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]"
 						>
 							Смотреть ещё
 						</button>
@@ -140,7 +140,7 @@ const totalCount = products.length;
 							<button
 								type="button"
 								data-action="load-more"
-								class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-4 font-manrope text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]"
+								class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-95 md:text-[16px]"
 							>
 								Смотреть ещё
 							</button>

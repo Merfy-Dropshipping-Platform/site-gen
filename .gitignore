@@ -35,3 +35,8 @@ docs/figma-snapshots/
 
 # Local git worktrees (isolated task workspaces)
 .worktrees/
+
+# Theme structural-conformance local evidence (JSON/Markdown reports).
+# The TRACKED inventory (conformance/inventory/) and baselines
+# (conformance/baselines/) are intentionally NOT ignored.
+conformance-results/

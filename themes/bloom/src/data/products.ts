@@ -10,6 +10,8 @@ export interface CatalogProduct extends Product {
 	description: string;
 	gallery: string[];
 	sizes?: string[];
+	/** Размеры из `sizes`, показанные, но недоступные к выбору (Figma: серая рамка #d9d9d9) */
+	disabledSizes?: string[];
 	brand?: string;
 }
 
@@ -44,6 +46,7 @@ export const catalogProducts: CatalogProduct[] = [
 		collection: "DAILY",
 		category: "hair-care",
 		volume: "200 мл",
+		sizes: ["200 мл", "160 мл"],
 		inStock: true,
 		description: "Питательная маска восстанавливает структуру волос и придаёт им мягкость.",
 	},
@@ -82,12 +85,12 @@ export const catalogProducts: CatalogProduct[] = [
 		price: "1 190 ₽",
 		image: trendImage(5),
 		gallery: [trendImage(5)],
-		colors: ["pink", "light-pink", "white"],
+		colors: ["berry", "light-pink", "coral", "nude"],
 		collection: "DAILY",
 		category: "cosmetics",
-		volume: "7 мл",
+		volume: "10 мл",
 		inStock: true,
-		description: "Компактный блеск с комфортной текстурой и лёгким сиянием.",
+		description: "Компактный блеск с комфортной текстурой и лёгким сиянием. Четыре оттенка — от нюда до глубокого ягодного.",
 	},
 	{
 		id: "bag-6",
@@ -115,9 +118,11 @@ export const catalogProducts: CatalogProduct[] = [
 		colors: ["pink"],
 		collection: "LIFT",
 		category: "skin-care",
-		volume: "120 мл",
+		volume: "400 мл",
+		sizes: ["400 мл", "200 мл", "100 мл"],
+		disabledSizes: ["100 мл"],
 		inStock: true,
-		description: "Освежающий тоник для ежедневного ухода.",
+		description: "Освежающий тоник для ежедневного ухода. Объёмы 400, 200 и 100 мл.",
 	},
 	{
 		id: "bag-8",

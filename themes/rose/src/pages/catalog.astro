@@ -32,8 +32,8 @@ const totalCount = products.length;
 
 			{/* Раскладка top — фильтры строкой над гридом (родной вид rose) */}
 			<div class="flex flex-col gap-6 lg:gap-8" data-catalog-variant="top">
-				<div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters">
-					<div class="flex flex-wrap items-center gap-3">
+				<div class="relative z-30 flex flex-col items-start gap-5 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-3 lg:gap-4" data-nt="catalog-filters">
+					<div class="flex flex-col items-start gap-5 md:flex-row md:flex-wrap md:items-center md:gap-3">
 						<details class="relative [&[open]]:z-30">
 							<summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
 								<span class="flex items-center gap-2">
@@ -99,7 +99,7 @@ const totalCount = products.length;
 								<RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
 							</span>
 						</summary>
-						<div class="absolute right-0 top-full z-30 mt-2 w-[180px]">
+						<div class="absolute left-0 top-full z-30 mt-2 w-[180px] md:left-auto md:right-0">
 							<NtFilterPanel panel="sort" />
 						</div>
 					</details>
@@ -189,6 +189,14 @@ const totalCount = products.length;
 	}
 	[data-catalog-layout="side"] [data-catalog-variant="top"] {
 		display: none;
+	}
+
+	/* Мобилка (<md): фильтры «top» идут вертикальным стеком (flex-col) — лейблы
+	   крупнее, как в макете каталога. На ≥md — прежняя строка 16px. */
+	@media (max-width: 767px) {
+		[data-catalog-variant="top"] [data-nt="catalog-filters"] summary {
+			font-size: 22px;
+		}
 	}
 
 	/* ── Переопределения DS-компонентов фильтров (сами DS-файлы не трогаем). ──

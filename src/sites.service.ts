@@ -21,13 +21,14 @@ import * as fs from "fs";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import {
   COOLIFY_RMQ_SERVICE,
   PG_CONNECTION,
   CENTRAL_PROXY_APP_SENTINEL,
 } from "./constants";
 import { migrateRevisionData } from "./utils/revision-migrations";
+import { buildSiteHost, buildSitePublicUrl } from "./common/site-domain";
 import { resolveAssetUrls } from "./themes/asset-resolver";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
@@ -35,7 +36,7 @@ import { SitesEventsService } from "./events/events.service";
 import { DeploymentsService } from "./deployments/deployments.service";
 import { S3StorageService } from "./storage/s3.service";
 import { DomainClient } from "./domain";
-import { BillingClient } from "./billing/billing.client";
+import { BillingClient, isStorefrontSuspended } from "./billing/billing.client";
 import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
@@ -50,6 +51,27 @@ function slugify(input: string) {
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+/**
+ * JSON.stringify с рекурсивной сортировкой ключей объектов. Нужно для
+ * стабильного сравнения branding: Postgres нормализует порядок ключей jsonb,
+ * поэтому наивный JSON.stringify давал бы «отличие» на no-op-сохранении и лишний
+ * (безобидный, но напрасный) republish.
+ */
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, val) => {
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      const obj = val as Record<string, unknown>;
+      return Object.keys(obj)
+        .sort()
+        .reduce<Record<string, unknown>>((acc, k) => {
+          acc[k] = obj[k];
+          return acc;
+        }, {});
+    }
+    return val;
+  });
 }
 
 /**
@@ -103,6 +125,17 @@ export function shouldReseedOnThemeSwitch(p: {
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
   private static readonly MAX_THEME_BYTES = 512 * 1024; // 512KB
+  /** Окно коалесценции republish при сохранении branding (см. scheduleBrandingRepublish). */
+  private static readonly BRANDING_REPUBLISH_DEBOUNCE_MS = 8_000;
+  /** Активные debounce-таймеры republish по siteId (branding-save). */
+  private readonly brandingRepublishTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
+  /** siteId с идущей publish() — не даём перекрывающимся сборкам гоняться за S3-префиксом. */
+  private readonly brandingRepublishInFlight = new Set<string>();
+  /** siteId, которым нужна ещё одна пересборка после текущей (правки прилетели во время сборки). */
+  private readonly brandingRepublishPending = new Set<string>();
 
   constructor(
     @Inject(PG_CONNECTION)
@@ -142,7 +175,7 @@ export class SitesDomainService {
   }
 
   async listAllForDev(): Promise<
-    Array<{ id: string; name: string; themeId: string | null; tenantId: string; storageSlug: string | null }>
+    Array<{ id: string; name: string; themeId: string | null; tenantId: string; storageSlug: string | null; createdAt: Date | null }>
   > {
     return this.db
       .select({
@@ -151,6 +184,7 @@ export class SitesDomainService {
         themeId: schema.site.themeId,
         tenantId: schema.site.tenantId,
         storageSlug: schema.site.storageSlug,
+        createdAt: schema.site.createdAt,
       })
       .from(schema.site)
       .orderBy(schema.site.name);
@@ -167,6 +201,7 @@ export class SitesDomainService {
         themeId: schema.site.themeId,
         publicUrl: schema.site.publicUrl,
         branding: schema.site.branding,
+        settings: schema.site.settings,
         createdAt: schema.site.createdAt,
         // JOIN: theme data
         theme: {
@@ -220,6 +255,7 @@ export class SitesDomainService {
         coolifyProjectUuid: schema.site.coolifyProjectUuid,
         domainId: schema.site.domainId,
         branding: schema.site.branding,
+        settings: schema.site.settings,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,
@@ -310,6 +346,10 @@ export class SitesDomainService {
         publicUrl: schema.site.publicUrl,
         storageSlug: schema.site.storageSlug,
         branding: schema.site.branding,
+        // Настройки магазина (checkout contactMethod/customerNameMode/addressRequired).
+        // Зеркалит проекцию list/get — публичный чекаут читает их через
+        // sites.get_shop RPC → gateway /public/sites/:shopId/settings.
+        settings: schema.site.settings,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
         theme: {
@@ -688,6 +728,10 @@ export class SitesDomainService {
       .select({
         themeId: schema.site.themeId,
         status: schema.site.status,
+        // settings нужны для shallow-merge частичного settings-патча (см. ниже)
+        settings: schema.site.settings,
+        // branding нужен для change-detection republish при сохранении favicon/лого/цветов
+        branding: schema.site.branding,
       })
       .from(schema.site)
       .where(
@@ -735,13 +779,59 @@ export class SitesDomainService {
       nextThemeId = params.patch.theme.id;
       updates.themeId = nextThemeId;
     }
-    // Handle branding (logo + colors); null clears branding
+    // Handle branding (logo + цвета + favicons) — shallow-merge, НЕ replace
+    // (зеркалит settings-merge ниже). Частичный сейв цветов/лого из BrandingModal
+    // НЕ должен затирать branding.favicons, записанные server-authoritative
+    // favicon-эндпоинтом: иначе stale-снапшот FE-кэша ['sites'] клобберил бы
+    // только что загруженный фавикон. branding === null|undefined очищает блок.
+    let brandingChanged = false;
     if ("branding" in (params.patch ?? {})) {
-      updates.branding = params.patch.branding ?? null;
+      const incoming = params.patch.branding;
+      const base = (existingSite?.branding as Record<string, unknown>) ?? {};
+      let nextBranding: Record<string, unknown> | null;
+      if (incoming === null || incoming === undefined) {
+        nextBranding = null;
+      } else {
+        const merged: Record<string, unknown> = { ...base, ...incoming };
+        // seo — DEEP-merge по ключам (title/description/keywords): SEO-блок шлёт
+        // партиал ОДНОГО поля, и top-level replace терял бы соседние seo-поля при
+        // последовательных сохранениях (тихая потеря). favicons/logo/цвета остаются
+        // top-level replace (их пишет server-authoritative RMW полным объектом).
+        if (
+          incoming.seo &&
+          typeof incoming.seo === "object" &&
+          base.seo &&
+          typeof base.seo === "object"
+        ) {
+          merged.seo = {
+            ...(base.seo as Record<string, unknown>),
+            ...(incoming.seo as Record<string, unknown>),
+          };
+        }
+        nextBranding = merged;
+      }
+      updates.branding = nextBranding;
+      // change-detection сравнивает ЭФФЕКТИВНЫЙ (merged) branding, а не сырой
+      // partial: partial всегда != full existing → republish палил бы вхолостую.
+      brandingChanged =
+        stableStringify(existingSite?.branding ?? null) !==
+        stableStringify(nextBranding ?? null);
     }
-    // Handle settings (checkout config, etc.)
+    // Handle settings (checkout config, etc.) — shallow-merge, НЕ replace.
+    // Частичный сейв (напр. только addressRequired) не должен затирать другие
+    // ключи (requireCustomerAuth, contactMethod, customerNameMode): мёржим
+    // входящий объект в текущие настройки сайта. settings === null (или
+    // undefined) очищает блок целиком.
     if ("settings" in (params.patch ?? {})) {
-      updates.settings = params.patch.settings ?? null;
+      const incoming = params.patch.settings;
+      if (incoming === null || incoming === undefined) {
+        updates.settings = null;
+      } else {
+        updates.settings = {
+          ...(existingSite?.settings ?? {}),
+          ...incoming,
+        };
+      }
     }
 
     updates.updatedAt = new Date();
@@ -850,6 +940,24 @@ export class SitesDomainService {
       });
     }
 
+    // Сохранение branding (favicon/лого/цвета) у опубликованного сайта: live
+    // собран со старым брендингом и сам не пересоберётся (sites.site.updated —
+    // no-op). Мирроринг theme-switch republish выше, но с debounce по siteId: FE
+    // шлёт отдельный PATCH на КАЖДЫЙ вариант фавикона → без коалесценции это N
+    // пересборок за сессию правки. Гейт status==='published' как у theme-switch
+    // (черновики подхватят брендинг при явной публикации). Дедуп: если тема уже
+    // сменилась (publish дёрнут выше синхронно) — branding-ветку пропускаем.
+    const themeAlreadyRepublished =
+      typeof nextThemeId === "string" && nextThemeId && nextThemeId !== prevThemeId;
+    if (
+      row &&
+      existingSite?.status === "published" &&
+      !themeAlreadyRepublished &&
+      brandingChanged
+    ) {
+      this.scheduleBrandingRepublish(params.tenantId, params.siteId);
+    }
+
     if (row)
       this.events.emit("sites.site.updated", {
         tenantId: params.tenantId,
@@ -857,6 +965,51 @@ export class SitesDomainService {
         patch: params.patch ?? {},
       });
     return Boolean(row);
+  }
+
+  /**
+   * Debounced republish после сохранения branding. Сбрасывает предыдущий таймер
+   * по siteId — серия быстрых сохранений (4 фавикона по одному) коалесцируется в
+   * одну пересборку live. Best-effort и неблокирующе, как theme-switch republish;
+   * .unref() чтобы pending-таймер не держал event loop при остановке процесса.
+   */
+  private scheduleBrandingRepublish(tenantId: string, siteId: string): void {
+    const existing = this.brandingRepublishTimers.get(siteId);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(
+      () => this.fireBrandingRepublish(tenantId, siteId),
+      SitesDomainService.BRANDING_REPUBLISH_DEBOUNCE_MS,
+    );
+    if (typeof timer.unref === "function") timer.unref();
+    this.brandingRepublishTimers.set(siteId, timer);
+  }
+
+  /**
+   * Запуск debounced republish — но НЕ параллельно уже идущей публикации того же
+   * сайта: перекрывающиеся publish() гонятся за S3-префиксом sites/<slug>/
+   * (removePrefix()+uploadDirectory() не атомарны). Если сборка идёт — помечаем
+   * pending и до-пересобираем ОДИН раз после её завершения (догнать новейший branding).
+   */
+  private fireBrandingRepublish(tenantId: string, siteId: string): void {
+    this.brandingRepublishTimers.delete(siteId);
+    if (this.brandingRepublishInFlight.has(siteId)) {
+      this.brandingRepublishPending.add(siteId);
+      return;
+    }
+    this.brandingRepublishInFlight.add(siteId);
+    this.logger.log(`branding republish (debounced): site=${siteId}`);
+    void this.publish({ tenantId, siteId, mode: "production" })
+      .catch((e) => {
+        this.logger.error(
+          `branding republish failed for ${siteId}: ${e instanceof Error ? e.message : e}`,
+        );
+      })
+      .finally(() => {
+        this.brandingRepublishInFlight.delete(siteId);
+        if (this.brandingRepublishPending.delete(siteId)) {
+          this.scheduleBrandingRepublish(tenantId, siteId);
+        }
+      });
   }
 
   async softDelete(tenantId: string, siteId: string) {
@@ -1025,7 +1178,7 @@ export class SitesDomainService {
     // 1. Определить публичный URL (если не установлен — генерируем subdomain)
     if (!finalUrl) {
       const slug = params.tenantId.replace(/-/g, "").slice(0, 12);
-      finalUrl = `https://${slug}.merfy.ru`;
+      finalUrl = buildSitePublicUrl(slug);
 
       await this.db
         .update(schema.site)
@@ -1042,7 +1195,7 @@ export class SitesDomainService {
         );
 
       this.logger.log(
-        `Generated local subdomain on publish: ${slug}.merfy.ru, publicUrl: ${finalUrl}`,
+        `Generated local subdomain on publish: ${buildSiteHost(slug)}, publicUrl: ${finalUrl}`,
       );
     }
 
@@ -1069,7 +1222,7 @@ export class SitesDomainService {
               ),
             );
           this.logger.log(
-            `Central proxy: ensured Traefik router for ${effectiveStorageSlug}.merfy.ru (no per-site app)`,
+            `Central proxy: ensured Traefik router for ${buildSiteHost(effectiveStorageSlug)} (no per-site app)`,
           );
         } catch (e) {
           this.logger.warn(
@@ -1094,7 +1247,7 @@ export class SitesDomainService {
           const sitePath = `sites/${effectiveStorageSlug}`;
 
           this.logger.log(
-            `Creating Coolify static site app for ${effectiveStorageSlug}.merfy.ru`,
+            `Creating Coolify static site app for ${buildSiteHost(effectiveStorageSlug)}`,
           );
           const coolifyResult = await this.callCoolify<{
             success: boolean;
@@ -1104,7 +1257,7 @@ export class SitesDomainService {
           }>("coolify.create_static_site_app", {
             projectUuid,
             name: `site-${effectiveStorageSlug}`,
-            subdomain: `${effectiveStorageSlug}.merfy.ru`,
+            subdomain: buildSiteHost(effectiveStorageSlug),
             sitePath,
           });
 
@@ -1427,10 +1580,44 @@ export class SitesDomainService {
     meta?: any;
     actorUserId?: string;
     setCurrent?: boolean;
+    expectedCurrentRevisionId?: string | null;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
     const id = crypto.randomUUID();
+    if (params.setCurrent && params.expectedCurrentRevisionId !== undefined) {
+      const expectedCurrentRevisionId = params.expectedCurrentRevisionId;
+      await this.db.transaction(async (tx) => {
+        await tx.insert(schema.siteRevision).values({
+          id,
+          siteId: params.siteId,
+          data: params.data ?? {},
+          meta: params.meta ?? {},
+          createdAt: new Date(),
+          createdBy: params.actorUserId,
+        });
+
+        const expectedPredicate =
+          expectedCurrentRevisionId === null
+            ? isNull(schema.site.currentRevisionId)
+            : eq(schema.site.currentRevisionId, expectedCurrentRevisionId);
+
+        const updated = await tx
+          .update(schema.site)
+          .set({ currentRevisionId: id, updatedAt: new Date() })
+          .where(
+            and(
+              eq(schema.site.id, params.siteId),
+              eq(schema.site.tenantId, params.tenantId),
+              expectedPredicate,
+            ),
+          )
+          .returning({ id: schema.site.id });
+
+        if (updated.length === 0) throw new Error("revision_conflict");
+      });
+      return { revisionId: id };
+    }
     await this.db.insert(schema.siteRevision).values({
       id,
       siteId: params.siteId,
@@ -1655,8 +1842,13 @@ export class SitesDomainService {
       }
     }
 
-    // Автопубликация draft сайтов при активной подписке
-    await this.autoPublishDraftSites(tenantId);
+    // Автопубликация draft сайтов ТОЛЬКО при реальной разморозке (frozen→live
+    // этим вызовом). Раньше вызов был безусловным и на каждом reconcile-тике
+    // форс-публиковал намеренные черновики любого live-тенанта; для погашенного
+    // canceled/suspended он теперь недостижим (reconcile в unfreeze-ветку не идёт).
+    if (res.length > 0) {
+      await this.autoPublishDraftSites(tenantId);
+    }
 
     return { affected: res.length };
   }
@@ -1808,7 +2000,11 @@ export class SitesDomainService {
 
     const entitlements = await this.billingClient.getEntitlements(tenantId);
     const checks = {
-      billingAllowed: !entitlements.frozen,
+      // Key on the storefront-suspend signal ({frozen, canceled}), not raw
+      // `frozen` — which is false for a terminal `canceled`, so this endpoint
+      // reported a churned storefront as available (and, once frozen, gave the
+      // wrong 'site_not_published' reason instead of the suspend reason).
+      billingAllowed: !isStorefrontSuspended(entitlements),
       isPublished: site.status === "published",
       isDeployed: Boolean(site.coolifyAppUuid),
     };
@@ -2140,7 +2336,7 @@ export class SitesDomainService {
             await this.deployments.ensureCentralRouter(slug);
             updates.coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
             this.logger.log(
-              `Site ${site.id}: central proxy router ensured for ${slug}.merfy.ru (no per-site app)`,
+              `Site ${site.id}: central proxy router ensured for ${buildSiteHost(slug)} (no per-site app)`,
             );
           } catch (e) {
             this.logger.warn(
@@ -2152,7 +2348,7 @@ export class SitesDomainService {
             const sitePath = `sites/${slug}`;
 
             this.logger.log(
-              `Site ${site.id}: creating Coolify app for ${slug}.merfy.ru`,
+              `Site ${site.id}: creating Coolify app for ${buildSiteHost(slug)}`,
             );
 
             const coolifyResult = await this.callCoolify<{
@@ -2163,7 +2359,7 @@ export class SitesDomainService {
             }>("coolify.create_static_site_app", {
               projectUuid,
               name: `site-${slug}`,
-              subdomain: `${slug}.merfy.ru`,
+              subdomain: buildSiteHost(slug),
               sitePath,
             });
 

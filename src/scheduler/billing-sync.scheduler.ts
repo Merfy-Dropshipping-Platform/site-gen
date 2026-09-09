@@ -12,6 +12,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { SitesDomainService } from "../sites.service";
 import { S3StorageService } from "../storage/s3.service";
 import { SiteGeneratorService } from "../generator/generator.service";
+import { isStorefrontSuspended } from "../billing/billing.client";
 
 @Injectable()
 export class BillingSyncScheduler implements OnModuleInit {
@@ -102,12 +103,17 @@ export class BillingSyncScheduler implements OnModuleInit {
             { accountId },
           );
           if (!entitlements?.success) continue;
-          // Only react to billing's authoritative freeze decision.
-          // hasOpenInvoice is a UI hint (e.g. failed domain payment) and must
-          // NOT auto-freeze tenant sites — that's billing's responsibility via
-          // subscription.status/frozenAt and the subscription.updated event.
-          const frozen = Boolean(entitlements.frozen);
-          if (frozen) {
+          // React to billing's authoritative storefront-suspend decision, NOT
+          // the raw `frozen` boolean. `frozen` is false for a terminal
+          // `canceled` (frozenAt=null), so keying on it here unfroze churned
+          // storefronts every hour — the flip-flop against the event consumer.
+          // Single source of truth = billing.storefrontSuspended = {frozen,
+          // canceled}; the helper's fallback keeps this correct before billing
+          // ships the field. `past_due` is intentionally NOT suspended (the
+          // storefront stays live through the dunning grace window). Same
+          // predicate as checkSiteAvailability — shared to avoid drift.
+          const suspended = isStorefrontSuspended(entitlements);
+          if (suspended) {
             const res = await this.sites.freezeTenant(tenantId);
             this.logger.debug(
               `Billing cron: froze tenant ${tenantId} (affected=${res.affected})`,

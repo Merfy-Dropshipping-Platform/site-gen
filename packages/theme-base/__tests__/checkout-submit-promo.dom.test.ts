@@ -27,8 +27,7 @@ function mountSubmitDom(): HTMLElement {
       <div data-checkout-submit-error role="alert" hidden></div>
       <button data-checkout-submit disabled>Оформить — —</button>
     </section>
-    <div data-checkout-delivery data-selected-city-fias-id="fias-1"
-         data-addr-street="Ленина" data-addr-building="1" data-addr-apartment="5"></div>
+    <div data-checkout-delivery data-selected-city-fias-id="fias-1"></div>
     <div data-checkout-field="email"><input value="a@b.ru" /></div>
     <div data-checkout-field="phone"><input value="+79990000000" /></div>
     <div data-checkout-field="firstName"><input value="Иван" /></div>
@@ -36,7 +35,9 @@ function mountSubmitDom(): HTMLElement {
     <div data-checkout-field="fullName"><input value="" /></div>
     <div data-checkout-field="city"><input value="Москва" /></div>
     <div data-checkout-field="postalCode"><input value="101000" /></div>
-    <div data-checkout-field="address"><input value="Ленина, 1, 5" /></div>
+    <div data-checkout-field="street"><input value="Ленина" /></div>
+    <div data-checkout-field="building"><input value="1" /></div>
+    <div data-checkout-field="apartment"><input value="5" /></div>
     <div data-checkout-field="country"><input value="Россия" /></div>`;
   return document.querySelector('[data-block="checkout-submit"]') as HTMLElement;
 }

@@ -1,0 +1,3048 @@
+[
+  {
+    "id": "home",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "home",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-about",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-about",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-cart",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-cart",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-catalog",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-catalog",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-checkout",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-checkout",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-checkout-result",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-checkout-result",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-collection",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-collection",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-contacts",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-contacts",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-delivery",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-delivery",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "page-product",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-page"
+      }
+    ],
+    "required": true,
+    "label": "page-product",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.block.Catalog.manifest-declaration",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/blocks"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.block.Catalog.manifest-declaration"
+      }
+    ],
+    "required": true,
+    "label": "Catalog is a registry/physical block absent from theme.json.blocks",
+    "contract": null
+  },
+  {
+    "id": "satin.decision.collapsiblesection.sidebar-layout",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:src/components/sections/Faq.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:src/pages/catalog.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/sections/CollapsibleSection.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.collapsiblesection.sidebar-layout"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.collapsiblesection.sidebar-layout: collapsiblesection-sidebar-layout-open",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.decision.footer.groups-defaults",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:src/components/Footer.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/Footer.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.footer.groups-defaults"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.footer.groups-defaults: footer-groups-defaults-open",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.decision.header.recursion-depth",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:src/components/Header.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/Header.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.header.recursion-depth"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.header.recursion-depth: header-recursion-depth-open",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.decision.imagewithtext.alignment",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:src/components/sections/ImageBanner.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/sections/ImageWithText.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.imagewithtext.alignment"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.imagewithtext.alignment: imagewithtext-alignment-open",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.decision.lifecycle.fresh-default-cohort",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/pages"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.lifecycle.fresh-default-cohort"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.lifecycle.fresh-default-cohort: fresh-default-cohort-open",
+    "contract": null
+  },
+  {
+    "id": "satin.decision.lifecycle.switch-reseed-preservation",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/pages"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.lifecycle.switch-reseed-preservation"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.lifecycle.switch-reseed-preservation: switch-reseed-preservation-open",
+    "contract": null
+  },
+  {
+    "id": "satin.decision.logo.migration-cohorts",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/layouts/Layout.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.logo.migration-cohorts"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.logo.migration-cohorts: logo-migration-cohorts-open",
+    "contract": null
+  },
+  {
+    "id": "satin.decision.multirows.behavior",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:src/components/sections/CollectionRows.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/sections/MultiRows.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.multirows.behavior"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.multirows.behavior: multirows-behavior-open",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.decision.version-domain.meaning",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-007"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.decision.version-domain.meaning"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.decision.version-domain.meaning: version-domain-meaning-open",
+    "contract": null
+  },
+  {
+    "id": "satin.flow.account.order-detail-safe-dom",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/account/order.astro#/sink"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.account.order-detail-safe-dom"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "API/product data reaches an unsafe HTML sink without an allowlisted adapter",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.account.orders-safe-dom",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/account/orders.astro#/sink"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.account.orders-safe-dom"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "API/product data reaches an unsafe HTML sink without an allowlisted adapter",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.account.route-index",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.account.route-index",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.account.route-order-detail",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.account.route-order-detail",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.account.route-orders",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.account.route-orders",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.account.route-profile",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-008"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.account.route-profile",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.auth.canonical-links",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.auth.canonical-links",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.auth.demo-routes",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/login.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.auth.demo-routes"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "/auth/* demo forms coexist with the working auth route",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.auth.login-return-propagation",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/login.astro#/navTo"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.auth.login-return-propagation"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "successful login falls back to /account and loses the checkout return",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.auth.return-parameter",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/login.astro#/return"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.auth.return-parameter"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "auth surfaces read divergent return parameters",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.auth.verify-return-propagation",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/verify.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.auth.verify-return-propagation"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "verify flow does not preserve one canonical return target",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.cart.cart-section-target",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.cart.cart-section-target",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.cart.disclaimer-coupling",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.cart.disclaimer-coupling",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.cart.drawer-cart-section-source",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/scripts/gsap/cart-drawer.ts#/source"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.cart.drawer-cart-section-source"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "the cart-drawer scheme resolver inspects legacy CartBody/CartSummary, not the migrated CartSection",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.cart.preview-empty-array",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.cart.preview-empty-array",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.cart.preview-product-context",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.cart.preview-product-context",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.cart.safe-dom",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/lib/cart.ts#/sink"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.cart.safe-dom"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "API/product data reaches an unsafe HTML sink without an allowlisted adapter",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-config.require-auth-live",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:src/generator/build.service.ts#/checkout-auth"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.checkout-config.require-auth-live"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "preview injects the checkout auth config while the live path drops it",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-config.require-auth-preview",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.checkout-config.require-auth-preview",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-config.scheme-initial-injection",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:src/generator/build.service.ts#/checkout-scheme"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.checkout-config.scheme-initial-injection"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "live composition and initial preview inject a different scheme/context",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-result.confirmation-grant",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout-result.astro#/order-access"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.checkout-result.confirmation-grant"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "raw order UUID access lacks the approved scoped confirmation grant",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-result.redirect-target",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.checkout-result.redirect-target",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-result.status-endpoint",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.checkout-result.status-endpoint",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-result.status-not-found",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout-result.astro#/status"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.checkout-result.status-not-found"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "a valid but absent order is reported as pending instead of terminal not-found",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.checkout-result.summary-endpoint",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.checkout-result.summary-endpoint",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.checkout-cookies",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout.astro#/cookies"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.legal.checkout-cookies"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "the cookies link is emitted without a generated policy route",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.footer-privacy",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/Footer.astro#/privacy"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.legal.footer-privacy"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "footer does not map the canonical legal target /legal/privacy",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.footer-refund",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/Footer.astro#/refund"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.legal.footer-refund"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "footer does not map the canonical legal target /legal/refund",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.footer-shipping",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/Footer.astro#/shipping"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.legal.footer-shipping"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "footer does not map the canonical legal target /legal/shipping-policy",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.footer-tos",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/Footer.astro#/tos"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.legal.footer-tos"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "footer does not map the canonical legal target /legal/terms",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.generator-prefix",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.legal.generator-prefix",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.legal.static-demo-exclusion",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.legal.static-demo-exclusion",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.merchant-order-settings.address.persistence",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout.astro#/address"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.merchant-order-settings.address.persistence"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "visible address order-settings options are no-op (not applied by the storefront form)",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.merchant-order-settings.contact.persistence",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout.astro#/contact"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.merchant-order-settings.contact.persistence"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "visible contact order-settings options are no-op (not applied by the storefront form)",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.merchant-order-settings.customer-info.persistence",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout.astro#/customer-info"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.merchant-order-settings.customer-info.persistence"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "visible customer-info order-settings options are no-op (not applied by the storefront form)",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.merchant-order-settings.persisted-mapping",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout.astro#/persisted-mapping"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.merchant-order-settings.persisted-mapping"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.merchant-order-settings.persisted-mapping: mapping-unresolved",
+    "contract": null
+  },
+  {
+    "id": "satin.flow.merchant-order-settings.processing.persistence",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/checkout.astro#/processing"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-006"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.merchant-order-settings.processing.persistence"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "visible processing order-settings options are no-op (not applied by the storefront form)",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.page-generation.puck-driven-pages",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/features"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.page-generation.puck-driven-pages"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "Satin package pages exist while features.puckDrivenPages is absent",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.publications.canonical-route",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/blog/index.astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-005"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.publications.canonical-route"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.publications.canonical-route: route-conflict",
+    "contract": null
+  },
+  {
+    "id": "satin.flow.publications.detail-route",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/blog/[...slug].astro"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-005"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.publications.detail-route"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "the emitted publication card link has no working merchant detail route",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.publications.list-route",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.publications.list-route",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.publications.live-demo-exclusion",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.publications.live-demo-exclusion",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.publications.merchant-data",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/blog/index.astro#/data-source"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-005"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.publications.merchant-data"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "the publications list/detail source falls back to a static/demo collection",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.publications.rich-text-sanitizer",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.publications.rich-text-sanitizer",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.publications.rss-data-source",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42159"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.publications.rss-data-source",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.search.catalog-forward-q",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.search.catalog-forward-q",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.search.catalog-read-q",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/pages/catalog.astro#/q"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.search.catalog-read-q"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "the Satin catalog page does not consume the submitted q query key",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.search.form-action",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "satin.flow.search.form-action",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.search.suggestions-data-source",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/scripts/gsap/search.ts"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.search.suggestions-data-source"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "header search suggestions are built from local demo products",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.flow.wishlist.feature",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/features/wishlist"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.flow.wishlist.feature"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "wishlist route/UI/runtime exists while theme.json declares wishlist:false",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.page.page-checkout-result.live-output",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:src/generator/build.service.ts#/composeContentPagesIntoDist"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.page.page-checkout-result.live-output"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "checkout success target is not generated for Satin",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.page.page-checkout-result.manifest",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/pages"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.page.page-checkout-result.manifest"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "checkout-result is required by the registry but absent from the manifest",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.page.page-checkout-result.seed",
+    "sources": [
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/theme.json#/pages"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-004"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.page.page-checkout-result.seed"
+      },
+      {
+        "kind": "user",
+        "ref": "required-flow"
+      }
+    ],
+    "required": true,
+    "label": "checkout-result has no Satin seed",
+    "contract": {
+      "kind": "surface",
+      "modes": [
+        "hot-preview",
+        "initial-preview",
+        "live"
+      ],
+      "viewports": [
+        "desktop",
+        "mobile"
+      ]
+    }
+  },
+  {
+    "id": "satin.section.MultiColumns.columns[].stored-shape",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42153"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:PRESENT#MultiColumns=themes/satin/src/components/sections/MultiColumns.astro~figma=1236:42153"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:packages/theme-satin/blocks/MultiColumns/MultiColumns.puckConfig.ts#/MultiColumnItemSchema"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.section.MultiColumns.columns[].stored-shape"
+      }
+    ],
+    "required": true,
+    "label": "MultiColumns stored column keeps aliased leaves that fields/schema/renderer disagree on",
+    "contract": null
+  },
+  {
+    "id": "satin.section.Slideshow.slides[].alias-precedence",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42150"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:PRESENT#Slideshow=themes/satin/src/components/sections/Slideshow.astro~figma=1236:42150"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/sections/Slideshow.astro#/slides/imageUrl"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.section.Slideshow.slides[].alias-precedence"
+      }
+    ],
+    "required": true,
+    "label": "compiled Slideshow renderer reads legacy aliases before canonical nested values",
+    "contract": null
+  },
+  {
+    "id": "satin.section.Slideshow.slides[].position.renderer-domain",
+    "sources": [
+      {
+        "kind": "figma",
+        "ref": "figma:6nIZaQqW5FP52OUc3LmWAU#1236:42150"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "Satin-theme:PRESENT#Slideshow=themes/satin/src/components/sections/Slideshow.astro~figma=1236:42150"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "code:code:themes/satin/src/components/sections/Slideshow.astro#/slides/posCls"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-001"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "conformance/decisions/satin.v1.md#D-SATIN-002"
+      },
+      {
+        "kind": "project-doc",
+        "ref": "structural:satin.section.Slideshow.slides[].position.renderer-domain"
+      }
+    ],
+    "required": true,
+    "label": "Slideshow renderer distinguishes fewer positions than the sidebar exposes",
+    "contract": null
+  }
+]

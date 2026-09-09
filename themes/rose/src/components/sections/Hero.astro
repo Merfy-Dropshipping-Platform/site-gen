@@ -1,6 +1,7 @@
 ---
 import { SITE_TITLE } from "../../consts";
 import RosePicture from "../img/RosePicture.astro";
+import { inlineFormat } from "../../lib/rich-text";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
@@ -94,9 +95,45 @@ const subtitleCls =
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
 const heroHeightCls = {
-	large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
-	medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
-	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
+	large: "min-h-[min(46svh,320px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
+	medium: "min-h-[min(38svh,260px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
+	small: "min-h-[min(30svh,210px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
+}[heroSize];
+// Мобила = стек (картинка сверху + подложка снизу, Shopify Image banner), десктоп
+// = оверлей. Поэтому min-h секции нужен ТОЛЬКО на md+ (на мобиле высота = картинка
+// + блок-подложка). md-only лестница высоты (без base/sm min-h).
+const heroHeightMdCls = {
+	large: "md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
+	medium: "md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
+	small: "md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
+}[heroSize];
+
+// «Размер» (p.size) масштабирует не только высоту медиа, но и подложку-контейнер
+// (max-w/gap/padding) + кнопку — симметрично (medium ≈0.82×, small ≈0.64×). Шрифты
+// героя НЕ трогаем (у них свои поля heading.size/text.size).
+// Мобила (стек): подложка-контейнер на всю ширину гаттера (без узкого max-w-кэпа —
+// раньше small max-w-[380px] центрировался → ~47px пустые поля по бокам = «неточности
+// по бокам»). Десктоп-оверлей (md+): max-w-кэп остаётся (карточка не во всю ширину
+// поверх фото).
+const panelMaxWCls = {
+	large: "md:max-w-[640px]",
+	medium: "md:max-w-[540px]",
+	small: "md:max-w-[440px]",
+}[heroSize];
+const panelGapCls = {
+	large: "gap-6 sm:gap-10",
+	medium: "gap-5 sm:gap-8",
+	small: "gap-4 sm:gap-6",
+}[heroSize];
+const panelPadCls = {
+	large: "p-6 md:p-10",
+	medium: "p-5 md:p-8",
+	small: "p-4 md:p-6",
+}[heroSize];
+const ctaSizeCls = {
+	large: "h-10 min-h-10 min-w-[120px] px-3 py-2.5 text-[14px] sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]",
+	medium: "h-10 min-h-10 min-w-[110px] px-3 py-2.5 text-[13px] sm:h-[46px] sm:min-h-[46px] sm:min-w-[140px] sm:px-5 sm:py-[9px] sm:text-[14px] md:text-[15px]",
+	small: "h-9 min-h-9 min-w-[100px] px-2.5 py-2 text-[12px] sm:h-10 sm:min-h-10 sm:min-w-[120px] sm:px-4 sm:py-2 sm:text-[13px] md:text-[14px]",
 }[heroSize];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
@@ -119,8 +156,16 @@ const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 // переключаем заголовок/текст на тёмный цвет схемы ([&_h1]/[&_p] override).
 const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
-	? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-10 [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]"
+	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
+// Мобила-обёртка контента ПОД медиа (стек). «Контейнер» ON → карточка (boxedCls) сама
+// = плашка-контейнер, поэтому обёртка ПРОЗРАЧНАЯ (только боковой гаттер + зазор от
+// медиа) — иначе «контейнер внутри контейнера» (белая полоса-обёртка + вложенная
+// карточка). «Контейнер» OFF → обёртка = сама подложка (фон схемы + вертик.паддинги).
+// Десктоп (md+) — всегда absolute-оверлей, фон прозрачный (md:bg-transparent ниже).
+const wrapperMobileCls = boxed
+	? "px-4 pt-4 pb-8 sm:px-5"
+	: "bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (Figma 648-55404):
@@ -143,30 +188,64 @@ const vPos = posRaw.startsWith("top")
 			: ""; // пусто = дефолт (низ)
 const hPos = posRaw.endsWith("left") ? "left" : posRaw.endsWith("right") ? "right" : "center";
 const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "justify-center" : "justify-end";
+// Вертикальный паддинг overlay: для позиции «центр» СИММЕТРИЧНЫЙ, иначе asymmetric
+// pt-28/pb-10 (112/40) центрирует контент в перекошенном боксе → он уезжает вниз
+// на ~36px = «ниже центра». Верх/низ оставляем asymmetric (верх отодвигает контент
+// от края, низ держит нижний отступ). Одинаково mobile+desktop.
+const vPadCls =
+	vPos === "middle"
+		? "py-10 sm:py-12 md:py-16"
+		: "pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
+// md-only верт.паддинг для десктоп-оверлея (на мобиле блок-подложка имеет свой py-10).
+const vPadMdCls = vPos === "middle" ? "md:py-16" : "md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center";
 // alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
 // Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
 // кнопки друг относительно друга, text-align — многострочный текст.
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : "text-center";
 const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : "items-center";
-const buttonsJustifyCls = p.alignment === "left" ? "justify-start" : p.alignment === "right" ? "justify-end" : "justify-center";
 
 // Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
 // прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
+const ctaBaseCls = `inline-flex w-auto items-center justify-center rounded font-manrope font-normal leading-none transition-opacity hover:opacity-90 sm:rounded-[var(--radius-button,6px)] ${ctaSizeCls}`;
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-bg,255_255_255))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
-		: "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
+		? `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`
+		: `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`;
+// Вторая кнопка = ТОТ ЖЕ каркас ctaBaseCls (один размер/радиус/шрифт/паддинг,
+// масштабируется «Размером» — раньше была отдельная захардкоженная строка + свои
+// button-2 токены → «другие стили»). Заливка ПРОТИВОПОЛОЖНА первой в ТОМ ЖЕ цвете
+// (button-1): первая залита → вторая контур того же цвета, и наоборот. Согласованная
+// пара «главная + второстепенная», а не отдельный button-2 (белый-на-белом).
+const secondaryCtaCls =
+	p.buttonStyle === "outlined"
+		? `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`
+		: `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`;
 
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
-// secondaryButton кнопки встают рядом (row) с зазором манеры.
+// secondaryButton — две кнопки РАВНОЙ ширины «по большей»: inline-grid из двух
+// равных колонок (bare 1fr = minmax(auto,1fr) → обе колонки = ширине более
+// широкой кнопки, контейнер обнимает контент). Кнопки — grid-items с дефолтным
+// justify-self:stretch + w-auto → заполняют свою колонку, поэтому «Whats'up»
+// подтягивается до ширины «Смотреть каталог» (баг «разные кнопки по размерам»).
+// Позиция блока (left/center/right) задаётся родителем через alignItemsCls.
 const buttonsCls = secondaryText
-	? `hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls} sm:gap-4`
+	? `hero-animate-3 inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3 sm:gap-4`
 	: `hero-animate-3 flex w-full flex-col ${alignItemsCls} justify-center`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T14).
+// АДАПТИВ: значение настройки «Отступы» = ДЕСКТОП-паддинг (clamp-верх), на мобиле
+// сжимается через 7vw (≥1140px → 8vw≥80 → упирается в кап = точная настройка;
+// 375px → ~26px). Иначе 80×2=160px на секцию = блок «высокий»/растянутый на телефоне.
+const clampPad = (v: number) => `clamp(20px,7vw,${v}px)`;
 const paddingStyle = p.padding
-	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	? `padding-top:${clampPad(p.padding.top)};padding-bottom:${clampPad(p.padding.bottom)};`
+	: undefined;
+// Стек-секция (мобила): «Отступы» как CSS-переменные → верхний паддинг применяется
+// ТОЛЬКО на десктопе (md:pt), на мобиле pt=0 — медиа встык под шапкой (убрать
+// «промежуток над медиа»). Нижний паддинг (pb) — на всех ширинах.
+const paddingVars = p.padding
+	? `--hero-pt:${clampPad(p.padding.top)};--hero-pb:${clampPad(p.padding.bottom)};`
 	: undefined;
 ---
 
@@ -208,7 +287,7 @@ const paddingStyle = p.padding
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{PH_LABEL}
+							<Fragment set:html={inlineFormat(PH_LABEL)} />
 						</h1>
 						<p
 							class="max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]"
@@ -216,7 +295,7 @@ const paddingStyle = p.padding
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"
 						>
-							{PH_HELPER}
+							<Fragment set:html={inlineFormat(PH_HELPER)} />
 						</p>
 					</div>
 					<div class="flex w-full flex-col items-center justify-center">
@@ -235,61 +314,66 @@ const paddingStyle = p.padding
 		</section>
 	) : (
 <section
-	class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]"
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${heroHeightMdCls}`}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
+	style={paddingVars}
 >
 	{/* Баг M$rkul «чёрные полосы сверху/снизу»: фон-картинка кроет ВСЮ секцию
 	    (absolute на уровне <section> → заполняет padding-box целиком, включая зону
 	    «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
 	    (padding на <section>) теперь отодвигают КОНТЕНТ (inner-div в нормальном
 	    потоке ниже), а не создают полосы. */}
-	{
-		backgroundImage2 ? (
-			<div class="absolute inset-0 z-0 grid grid-cols-2">
+	{/* КАРТИНКА — мобила: блок-картинка сверху (стек как Shopify Image banner);
+	    десктоп: absolute на всю секцию (оверлей под текстом). */}
+	<div class="relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto">
+		{
+			backgroundImage2 ? (
+				<div class="absolute inset-0 grid grid-cols-2">
+					<RosePicture
+						src={backgroundImage}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="!size-full object-cover object-center"
+					/>
+					<RosePicture
+						src={backgroundImage2}
+						alt={title}
+						loading="eager"
+						fetchpriority="high"
+						class="!size-full object-cover object-center"
+					/>
+				</div>
+			) : backgroundImage ? (
 				<RosePicture
 					src={backgroundImage}
 					alt={title}
 					loading="eager"
 					fetchpriority="high"
-					class="!size-full object-cover object-center"
+					class="absolute inset-0 !size-full object-cover object-center"
 				/>
-				<RosePicture
-					src={backgroundImage2}
-					alt={title}
-					loading="eager"
-					fetchpriority="high"
-					class="!size-full object-cover object-center"
-				/>
-			</div>
-		) : backgroundImage ? (
-			<RosePicture
-				src={backgroundImage}
-				alt={title}
-				loading="eager"
-				fetchpriority="high"
-				class="absolute inset-0 z-0 !size-full object-cover object-center"
-			/>
-		) : null
-	}
+			) : (
+				<div class="absolute inset-0 bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden="true" />
+			)
+		}
+	</div>
 
+	{/* Затемнение фото — только десктоп (на мобиле текст на подложке снизу). */}
 	{
 		overlayN > 0 && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[1] bg-black"
+				class="pointer-events-none absolute inset-0 z-[1] hidden bg-black md:block"
 				style={`opacity:${overlayN / 100}`}
 			/>
 		)
 	}
 
+	{/* КОНТЕНТ — мобила: блок-подложка (фон схемы) ПОД картинкой; десктоп: overlay поверх. */}
 	<div
-		class={`relative w-full ${heroHeightCls}`}
+		class={`relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} ${wrapperMobileCls} md:absolute md:inset-0 md:bg-transparent md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadMdCls}`}
 	>
-		<div
-			class={`absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-10 pt-28 sm:px-5 sm:pb-11 sm:pt-32 md:px-10 md:pb-14 md:pt-36 lg:px-16 lg:pb-16 xl:px-20 xl:pb-20 2xl:px-[280px]`}
-		>
-			<div class={`flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-6 sm:gap-10 md:max-w-[640px]${boxedCls}`}>
+			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
 					<h1
 						id="hero-title"
@@ -298,7 +382,7 @@ const paddingStyle = p.padding
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						{title}
+						<Fragment set:html={inlineFormat(title)} />
 					</h1>
 					<p
 						class={subtitleCls}
@@ -306,7 +390,7 @@ const paddingStyle = p.padding
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
 					>
-						{subtitle}
+						<Fragment set:html={inlineFormat(subtitle)} />
 					</p>
 				</div>
 
@@ -324,7 +408,7 @@ const paddingStyle = p.padding
 						secondaryText && (
 							<a
 								href={secondaryLink}
-								class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-2-border,0_0_0))] !bg-[rgb(var(--color-button-2-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+								class={secondaryCtaCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"
@@ -336,7 +420,6 @@ const paddingStyle = p.padding
 				</div>
 			</div>
 		</div>
-	</div>
 </section>
 	)
 }

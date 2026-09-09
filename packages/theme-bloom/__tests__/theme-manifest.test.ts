@@ -81,7 +81,7 @@ describe('@merfy/theme-bloom theme.json', () => {
     expect(manifest.blockDefaults.Hero.variant).toBe('split-bloom');
     expect(manifest.blockDefaults.Footer.variant).toBe('2-part');
     expect(manifest.blockDefaults.Footer.bottomStrip.enabled).toBe(true);
-    expect(manifest.blockDefaults.Catalog.showFilter).toBe('false');
+    expect(manifest.blockDefaults.Catalog.showFilter).toBe('true');
     expect(manifest.blockDefaults.Catalog.productCard.cardStyle).toBe('auto');
     expect(manifest.blockDefaults.Catalog.productCard.quickAdd).toBe('none');
   });

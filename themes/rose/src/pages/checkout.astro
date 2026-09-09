@@ -32,18 +32,40 @@ const dadataToken = "";
 <Layout title="Оформление заказа" description="Оформление заказа" header="checkout">
   {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
-    <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
-      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
-        <div data-checkout-column="form" class="min-w-0">
+    {/* Figma 1:19998 — split-checkout: форма на белом (--color-bg), сводка на
+        тонированной панели (--color-surface), панель уходит до правого края.
+        Контент сходится к центру. ВАЖНО: разметка + CSS .mfy-checkout-* ДОЛЖНЫ
+        совпадать с preview.service.ts:wrapCheckoutGrid (конструктор-превью). */}
+    <main class="flex-1 w-full mfy-checkout-split" style="color: rgb(var(--color-text));">
+      <div class="mfy-checkout-pane mfy-checkout-pane--form">
+        <div class="mfy-checkout-pane__inner" data-checkout-column="form">
           <CheckoutForm />
         </div>
-        <div data-checkout-column="summary" class="min-w-0">
+      </div>
+      <div class="mfy-checkout-pane mfy-checkout-pane--summary">
+        <div class="mfy-checkout-pane__inner" data-checkout-column="summary">
           <CheckoutSummary />
         </div>
       </div>
     </main>
   </div>
+
+  {/* Split-checkout CSS — ЗЕРКАЛО preview.service.ts:wrapCheckoutGrid. Любая
+      правка здесь дублируется там (live ↔ конструктор-превью паритет). */}
+  <style is:global>
+    .mfy-checkout-split { display: flex; flex-direction: column; width: 100%; background: rgb(var(--color-bg)); }
+    .mfy-checkout-pane { width: 100%; box-sizing: border-box; }
+    .mfy-checkout-pane__inner { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+    .mfy-checkout-pane--summary { background: rgb(var(--color-surface)); }
+    @media (min-width: 1024px) {
+      .mfy-checkout-split { flex-direction: row; align-items: stretch; }
+      .mfy-checkout-pane { width: 50%; display: flex; }
+      .mfy-checkout-pane--form { justify-content: flex-end; }
+      .mfy-checkout-pane--summary { justify-content: flex-start; }
+      .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
+      .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
+    }
+  </style>
 
   {/* --- Live checkout plumbing (checkout page only) --- */}
   {/* Config injection (templates pattern). build.service.ts patches shopId +
@@ -96,7 +118,10 @@ const dadataToken = "";
           variantCombinationId: (v.variantCombinationId) || null,
         };
       });
-      if (cs.setLocalItems) cs.setLocalItems(display);
+      // Резолвим из каталога ДО показа → первый кадр сводки актуальный (цена/наличие),
+      // без мелькания старой цены. Fallback — обычный setLocalItems.
+      if (cs.setLocalItemsReconciled) cs.setLocalItemsReconciled(display, "/data/products.json");
+      else if (cs.setLocalItems) cs.setLocalItems(display);
       else if (cs.init) cs.init();
 
       // Фоновый синк серверной корзины ПОСЛЕ мгновенного локального first-paint.

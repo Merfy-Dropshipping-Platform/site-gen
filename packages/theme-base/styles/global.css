@@ -994,7 +994,9 @@ input[type="search"]::-webkit-search-results-decoration {
   body {
     font-size: 18px;
   }
-  main {
-    padding: 1em;
-  }
+  /* NB: `main { padding: 1em }` УДАЛЁН (legacy из старого rose-шаблона, приехал
+     bulk-импортом 36d04ae3). В секционной архитектуре секции сами держат свой
+     горизонтальный padding и должны быть full-bleed на мобиле. 1em-гаттер на
+     <main> ломал full-bleed и обнажал фон <body> по бокам → «чёрные полосы»
+     (когда корневой --color-bg тёмный). НЕ возвращать padding на <main>. */
 }

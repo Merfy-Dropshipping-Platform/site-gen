@@ -2,6 +2,7 @@
 import type { ContactFormProps } from './ContactForm.puckConfig';
 import { ContactFormPuckConfig } from './ContactForm.puckConfig';
 import { ContactFormClasses as C } from './ContactForm.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 // Single source of truth: defaults живут в puckConfig.ts. Astro fallback
 // импортирует их вместо дублирования — иначе расхождение неизбежно при
@@ -97,7 +98,7 @@ const norm = {
   <div class={C.container}>
     <div class={C.inner}>
       {heading && (
-        <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">{heading}</h2>
+        <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(heading)} /></h2>
       )}
       {description && (
         <p class={C.description} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description">{description}</p>

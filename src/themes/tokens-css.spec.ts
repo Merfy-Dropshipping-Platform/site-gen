@@ -171,6 +171,41 @@ describe('buildTokensCss merchant precedence', () => {
 });
 
 /**
+ * Spec 2026-07-06 — «общий отступ темы» = настоящий margin МЕЖДУ секциями,
+ * развязанный от per-section padding. Слайдер темы пишет `sectionGap` →
+ * токен `--section-gap`; owl-правило `main > * + *` даёт зазор между прямыми
+ * детьми <main> (секциями), НЕ трогая header/footer (вне <main>) и НЕ трогая
+ * props.padding блоков. Дефолт 0px — нулевая визуальная регрессия.
+ */
+describe('section gap — margin между секциями', () => {
+  it('merchant sectionGap → --section-gap токен', () => {
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    expect(css).toContain('--section-gap: 40px');
+  });
+
+  it('дефолт --section-gap: 0px когда мерчант не задал (нулевая регрессия)', () => {
+    const css = buildTokensCss({}, 'rose');
+    expect(css).toContain('--section-gap: 0px');
+  });
+
+  it('sectionGap=0 от мерчанта уважается (не falsy-coerce)', () => {
+    const css = buildTokensCss({ sectionGap: 0 }, 'rose');
+    expect(css).toContain('--section-gap: 0px');
+  });
+
+  it('всегда инжектит owl-правило margin между детьми <main> (live+preview)', () => {
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    expect(css).toContain('main > * + *{margin-top:var(--section-gap, 0px)}');
+  });
+
+  it('owl-правило есть даже без темы и при нулевом зазоре', () => {
+    expect(buildTokensCss({}, null)).toContain(
+      'main > * + *{margin-top:var(--section-gap, 0px)}',
+    );
+  });
+});
+
+/**
  * Фаза 3 «Цвета» — themeSchemeToMerchantShape экспортируется и конвертирует
  * theme.json-схему (rgb-триплеты) в merchant-hex shape. Использует реальный
  * манифест rose: puck-config API отдаёт именно этот результат конструктору
@@ -225,5 +260,30 @@ describe('themeSchemeToMerchantShape (схемы темы → merchant shape)', 
       expect(merchant.heading).toMatch(/^#[0-9a-f]{6}$/);
       expect(merchant.primaryButton.background).toMatch(/^#[0-9a-f]{6}$/);
     }
+  });
+
+  // Регрессия: :root наследует accent/muted из манифеста темы, когда активная
+  // merchant-схема их не несёт (admin ThemeSettings их не редактирует). Без
+  // этого :root accent падает в BASE_DEFAULTS (17 17 17) → секции без scheme-
+  // обёртки (напр. vanilla Slideshow контрол-бар bg-[rgb(var(--color-accent))])
+  // рендерятся чёрными вместо зелёного манифеста (58 69 48).
+  it('root inherits accent from theme manifest when active merchant scheme lacks it', () => {
+    const css = buildTokensCss(
+      {
+        defaultSchemeIndex: 0,
+        colorSchemes: [
+          { id: 'scheme-1', name: 'Dark Olive', background: '#26311c', heading: '#ffffff', text: '#ffffff' },
+        ],
+      },
+      'vanilla',
+    );
+    // Всё до первого .color-scheme-N — два :root блока (catch-all BASE_DEFAULTS
+    // + активная схема). Зелёный accent манифеста должен присутствовать в :root
+    // И идти после чёрного BASE_DEFAULT (каскад-победа последнего :root).
+    const rootPart = css.slice(0, css.indexOf('.color-scheme-'));
+    const idxBaseBlack = rootPart.lastIndexOf('--color-accent: 17 17 17');
+    const idxManifestGreen = rootPart.lastIndexOf('--color-accent: 58 69 48');
+    expect(idxManifestGreen).toBeGreaterThan(-1);
+    expect(idxManifestGreen).toBeGreaterThan(idxBaseBlack);
   });
 });

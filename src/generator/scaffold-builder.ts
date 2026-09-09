@@ -24,7 +24,7 @@ import {
   type MerchantSettings,
   type ThemeDefaults,
 } from "./tokens-generator";
-import { generateGoogleFontsUrl } from "./constructor-theme-bridge";
+import { generateGoogleFontsUrl, googleFontsHref } from "./constructor-theme-bridge";
 import {
   generateProductPage,
   generateCollectionPage,
@@ -562,10 +562,9 @@ export async function buildScaffold(
         const families = new Set<string>();
         if (headingName) families.add(headingName);
         if (bodyName) families.add(bodyName);
-        const familyParams = [...families]
-          .map((name) => `family=${name.replace(/ /g, "+")}:wght@100..900`)
-          .join("&");
-        const newUrl = `https://fonts.googleapis.com/css2?${familyParams}&display=optional`;
+        // Реальные веса per-font + display=swap (css2 400-ит `wght@100..900`
+        // для узко-осных/невариативных шрифтов → шрифт не грузился).
+        const newUrl = googleFontsHref([...families]);
         // Replace existing Google Fonts import in global.css
         globalCss = globalCss.replace(
           /@import url\("https:\/\/fonts\.googleapis\.com\/css2\?[^"]+"\);/,
@@ -626,7 +625,16 @@ export async function buildScaffold(
   if (config.siteId) {
     const metaPath = path.join(outputDir, "public", "site-meta.js");
     const siteIdJson = JSON.stringify(config.siteId);
-    const apiUrlJson = JSON.stringify("https://gateway.merfy.ru/api");
+    // Тот же источник, что и в astro.builder.ts: API_GATEWAY_URL с дефолтом
+    // на текущий прод-адрес (обратная совместимость).
+    // ВАЖНО: переменная задаётся и с суффиксом /api, и без него (на живом
+    // контуре у sites-service она без него), поэтому нормализуем так же, как
+    // build.service.ts — иначе витрина получит адрес без /api и запросы уйдут
+    // мимо гейтвея.
+    const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";
+    const apiUrlJson = JSON.stringify(
+      rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`,
+    );
     const content =
       `window.__MERFY__ = window.__MERFY__ || {}; window.__MERFY__.siteId = ${siteIdJson};\n` +
       `window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: ${siteIdJson}, apiUrl: ${apiUrlJson}, requireCustomerAuth: false };\n`;

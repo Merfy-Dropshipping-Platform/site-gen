@@ -14,6 +14,9 @@ import {
 const api = createNtCart({
 	storageKey: "vanilla:cart:v1",
 	eventPrefix: "vanilla:cart",
+	// Само-лечение корзины из каталога: пере-резолв цен/имён/фото и выкидывание
+	// удалённых товаров (reconcileNtLines) → корзина == оформлению, без стейл-снапшота.
+	catalogUrl: "/data/products.json",
 });
 
 export type CartLine = NtCartLine;

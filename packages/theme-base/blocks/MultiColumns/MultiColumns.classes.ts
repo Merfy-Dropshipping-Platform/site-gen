@@ -3,6 +3,8 @@ export const MultiColumnsClasses = {
   container: 'mx-auto max-w-[var(--container-max-width)] px-4',
   grid: 'grid gap-x-[var(--spacing-grid-col-gap)] gap-y-[var(--spacing-grid-row-gap)]',
   column: 'flex flex-col',
+  columnContainer:
+    'rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-surface))] p-6',
   image:
     'w-full aspect-video object-cover rounded-[var(--radius-media)] mb-4',
   columnHeading:

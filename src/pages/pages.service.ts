@@ -22,6 +22,23 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { getPageResolver } from "../themes/page-resolver-instance";
+import { getThemeManifest } from "../themes/theme-manifest-loader";
+
+/**
+ * Извлекает тело («Описание») контент-страницы из её Puck-дерева: props.content
+ * первой секции «Страница». Пусто, если секции/тела нет. Нужно для гидратации
+ * редактора «Страницы» текущим содержимым (иначе пустой редактор затрёт сейв).
+ */
+function extractPageBodyContent(pageData: unknown): string {
+  const content = (pageData as { content?: unknown } | undefined)?.content;
+  if (!Array.isArray(content)) return "";
+  const pageBlock = content.find(
+    (b: unknown) => (b as { type?: string })?.type === "Page",
+  );
+  const body = (pageBlock as { props?: { content?: unknown } } | undefined)
+    ?.props?.content;
+  return typeof body === "string" ? body : "";
+}
 
 @Injectable()
 export class PagesService {
@@ -217,5 +234,283 @@ export class PagesService {
       .where(eq(schema.siteRevision.id, rev.id));
 
     return { deleted: params.pageId };
+  }
+
+  /**
+   * updatePage — редактирование метаданных + тела существующей страницы
+   * (SEO + опц. name + опц. content). RMW-зеркало deletePage: site (scope tenant) →
+   * current revision → найти страницу в revData.pages → merge seo → name → тело
+   * (content→секция «Страница» дерева pagesData[pageId]; heading=name) → lockVersion+1
+   * → update. Create/delete — вне scope. Доставка в live: seo → <head>
+   * (injectCustomPagesSeo) на следующей публикации; тело → секция «Страница» рендерит
+   * heading/content на витрине. Тело правим только для страниц с секцией «Страница».
+   */
+  async updatePage(params: {
+    tenantId: string;
+    siteId: string;
+    pageId: string;
+    seo?: { title?: string; description?: string; keywords?: string };
+    name?: string;
+    content?: string;
+  }) {
+    const [site] = await this.db
+      .select()
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      );
+    if (!site) throw new NotFoundException("site_not_found");
+
+    const [rev] = await this.db
+      .select()
+      .from(schema.siteRevision)
+      .where(eq(schema.siteRevision.id, site.currentRevisionId!));
+    if (!rev) throw new NotFoundException("revision_not_found");
+
+    const revData = rev.data as Record<string, any>;
+    const pages = Array.isArray(revData.pages) ? revData.pages : [];
+    const idx = pages.findIndex((p: any) => p.id === params.pageId);
+    if (idx === -1) throw new NotFoundException("page_not_found");
+
+    const target = pages[idx];
+    const nextPage = { ...target };
+    if (params.seo !== undefined) {
+      nextPage.seo = { ...(target.seo ?? {}), ...params.seo };
+    }
+    if (typeof params.name === "string" && params.name.trim()) {
+      nextPage.name = params.name.trim();
+    }
+
+    const newPages = [...pages];
+    newPages[idx] = nextPage;
+
+    // Тело контент-страницы («Описание» + заголовок) живёт в секции «Страница»
+    // Puck-дерева этой страницы (revData.pagesData[pageId].content[Page].props) —
+    // именно оттуда билд берёт heading/content на витрину. Метаданные pages[i] не
+    // рендерятся. Трогаем дерево только при изменении name/content (иначе чистый
+    // SEO-патч не дёргает pagesData). Тело хранится как есть — авторитетная
+    // санитизация на рендере (Page.astro sanitizePageContent), XSS в дерево не течёт.
+    let nextPagesData = revData.pagesData;
+    const touchesBody =
+      params.content !== undefined ||
+      (typeof params.name === "string" && !!params.name.trim());
+    if (touchesBody) {
+      const allPagesData =
+        revData.pagesData && typeof revData.pagesData === "object"
+          ? (revData.pagesData as Record<string, any>)
+          : {};
+      const pd = allPagesData[params.pageId] as
+        | { content?: unknown }
+        | undefined;
+      const blocks =
+        pd && Array.isArray(pd.content) ? [...(pd.content as any[])] : null;
+
+      // heading нового блока «Страница»: имя из патча, иначе текущее имя страницы.
+      const headingFromName =
+        typeof params.name === "string" && params.name.trim()
+          ? params.name.trim()
+          : typeof target.name === "string"
+            ? target.name
+            : "";
+      // Форма блока Page зеркалит createPage (+ heading/content тела). Строим
+      // лениво — нужен только на D4-путях создания секции.
+      const buildPageBlock = () => ({
+        type: "Page",
+        props: {
+          id: `Page-${params.pageId}`,
+          pageId: "",
+          heading: headingFromName,
+          content: params.content ?? "",
+          headingSize: "medium",
+          colorScheme: "scheme-1",
+          padding: { top: 80, bottom: 80 },
+        },
+      });
+
+      if (blocks) {
+        const pageIdx = blocks.findIndex((b: any) => b?.type === "Page");
+        if (pageIdx !== -1) {
+          // Секция «Страница» есть — правим тело/заголовок на месте.
+          const block = blocks[pageIdx];
+          const nextBlock = { ...block, props: { ...(block?.props ?? {}) } };
+          if (typeof params.name === "string" && params.name.trim()) {
+            nextBlock.props.heading = params.name.trim();
+          }
+          if (params.content !== undefined) {
+            nextBlock.props.content = params.content;
+          }
+          blocks[pageIdx] = nextBlock;
+          nextPagesData = {
+            ...allPagesData,
+            [params.pageId]: { ...(pd ?? {}), content: blocks },
+          };
+        } else if (params.content !== undefined) {
+          // D4: content-массив есть, но секции «Страница» нет — иначе тело
+          // молча терялось бы. Вставляем блок Page перед завершающим Footer
+          // (если он есть), иначе в конец.
+          const footerIdx = blocks.findIndex((b: any) => b?.type === "Footer");
+          const insertAt = footerIdx !== -1 ? footerIdx : blocks.length;
+          blocks.splice(insertAt, 0, buildPageBlock());
+          nextPagesData = {
+            ...allPagesData,
+            [params.pageId]: { ...(pd ?? {}), content: blocks },
+          };
+        }
+      } else if (params.content !== undefined) {
+        // D4: записи pagesData[pageId] нет (или content не массив) — создаём
+        // корректное Puck-дерево (Header + Page + Footer) по образцу createPage,
+        // иначе тело молча терялось бы.
+        nextPagesData = {
+          ...allPagesData,
+          [params.pageId]: {
+            content: [
+              { type: "Header", props: { id: `Header-${params.pageId}` } },
+              buildPageBlock(),
+              { type: "Footer", props: { id: `Footer-${params.pageId}` } },
+            ],
+            root: { props: { title: headingFromName } },
+            zones: {},
+          },
+        };
+      }
+    }
+
+    const newRevData = {
+      ...revData,
+      pages: newPages,
+      pagesData: nextPagesData,
+      lockVersion: (revData.lockVersion ?? 1) + 1,
+    };
+
+    await this.db
+      .update(schema.siteRevision)
+      .set({ data: newRevData })
+      .where(eq(schema.siteRevision.id, rev.id));
+
+    return { page: nextPage };
+  }
+
+  /**
+   * listPages — лёгкий листинг метаданных страниц сайта (БЕЗ pagesData).
+   *
+   * Оптимизация относительно тяжёлого GET /sites/:id/revisions/:revisionId,
+   * который тянет весь Puck-контент. Читаем current revision, нормализуем ТЕМ
+   * ЖЕ resolver-путём, что deletePage (гарантирует role/isCustom/slug на каждой
+   * странице, включая legacy-ревизии без `role`), и возвращаем только
+   * метаданные. `revision.data.pagesData` в ответ не попадает — в этом суть
+   * оптимизации.
+   */
+  async listPages(params: { tenantId: string; siteId: string }) {
+    const [site] = await this.db
+      .select()
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      );
+    if (!site) throw new NotFoundException("site_not_found");
+
+    // Свежий сайт без ревизии → страниц ещё нет. Для read-роута отдаём пустой
+    // список (терпимость к отсутствию данных — как в page-meta.controller),
+    // а не 404.
+    if (!site.currentRevisionId) return { pages: [] };
+
+    const [rev] = await this.db
+      .select()
+      .from(schema.siteRevision)
+      .where(eq(schema.siteRevision.id, site.currentRevisionId));
+    if (!rev) return { pages: [] };
+
+    const revData = rev.data as Record<string, any>;
+    let pages: any[] = Array.isArray(revData.pages) ? revData.pages : [];
+
+    // Нормализуем тем же resolver-путём, что deletePage — гарантирует
+    // role/isCustom/slug на каждой странице (legacy-ревизии без `role`).
+    // pagesData из нормализованного результата НЕ используем.
+    if (site.themeId) {
+      try {
+        const resolver = getPageResolver(site.themeId);
+        pages = resolver.normalizeRevision(revData).pages;
+      } catch (e) {
+        // resolver недоступен — отдаём сырые pages как есть
+      }
+    }
+
+    // Определяем home-страницу по манифесту темы (та же логика, что
+    // buildInitialRevision: страница с isHome, иначе первая), с фолбэком на
+    // slug '/' — чистого home-маркера на RevisionPage нет. Манифест
+    // resolveJsonModule-инлайнится: обращение суб-миллисекундное. TS-интерфейс
+    // ThemeManifest не декларирует `pages`, но рантайм-JSON их содержит.
+    let homePageId: string | null = null;
+    if (site.themeId) {
+      const manifest = getThemeManifest(site.themeId) as
+        | { pages?: Array<{ id?: string; isHome?: boolean }> }
+        | null;
+      const manifestPages = manifest?.pages ?? [];
+      const homeEntry =
+        manifestPages.find((p) => p?.isHome) ?? manifestPages[0];
+      homePageId =
+        homeEntry && typeof homeEntry.id === "string" ? homeEntry.id : null;
+    }
+
+    // Тело секции «Страница» тянем из raw pagesData (для гидратации редактора).
+    const rawPagesData =
+      revData.pagesData && typeof revData.pagesData === "object"
+        ? (revData.pagesData as Record<string, unknown>)
+        : {};
+
+    return {
+      pages: pages.map((p: any) => {
+        const slug = typeof p.slug === "string" ? p.slug : "";
+        // isHome: authoritative match is the manifest home id; slug '/' is the
+        // canonical home slug (always trusted). The legacy "home" string
+        // fallbacks are merchant-controllable (a custom page could use slug
+        // "home" / id "home"), so gate them to the unknown-manifest case only —
+        // otherwise a custom "home"-slugged page would falsely collapse to '/'.
+        const isHome =
+          (homePageId != null && p.id === homePageId) ||
+          slug === "/" ||
+          (homePageId == null && (slug === "home" || p.id === "home"));
+        // path: home → '/', иначе slug как есть (если с ведущим '/') либо
+        // '/'+slug. Зеркалит page-meta.controller.
+        const path = isHome
+          ? "/"
+          : slug.startsWith("/")
+            ? slug
+            : slug
+              ? `/${slug}`
+              : "/";
+        // role и isCustom — из ОДНОГО предиката. Иначе кастомная страница, чей
+        // сохранённый p.role ≠ 'custom' (создана до нормализации / role потерян
+        // → normalizeRevision дефолтит его в 'system'), приходила как
+        // role:'system'+isCustom:true. Это ломало выбор/удаление в редакторе
+        // (гейт по role!=='system'), хотя deletePage её удалить даёт (её нет в
+        // манифесте темы). Единый источник истины «кастомная» = isCustom.
+        const isCustomPage = p.role === "custom" || Boolean(p.isCustom);
+        return {
+          id: p.id,
+          name: typeof p.name === "string" ? p.name : "",
+          slug,
+          role: isCustomPage ? ("custom" as const) : ("system" as const),
+          isCustom: isCustomPage,
+          isHome,
+          path,
+          // seo — чтобы редактор гидратировался текущими значениями (иначе пустой
+          // редактор затрёт сохранённое). null если не задано.
+          seo: (p.seo ?? null) as {
+            title?: string;
+            description?: string;
+            keywords?: string;
+          } | null,
+          // Тело («Описание») из секции «Страница» — для гидратации формы.
+          content: extractPageBodyContent(rawPagesData[p.id]),
+        };
+      }),
+    };
   }
 }

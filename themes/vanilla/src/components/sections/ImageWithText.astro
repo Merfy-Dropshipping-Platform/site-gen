@@ -42,9 +42,22 @@ const headingCls =
 		: headingSize === "large"
 			? "font-vanilla-bitter text-[24px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
 			: "font-vanilla-bitter text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
-const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
-const headingAlignCls =
-	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+// Канон «Выравнивание» (Figma 1:17086) — секция-уровневый контрол (puckConfig
+// alignment, type:'alignment'), применяется к заголовку + тексту + кнопке.
+// Раньше vanilla читал только heading.alignment / headingAlignment и вешал класс
+// ЛИШЬ на <h2> → top-level `alignment` конструктора был мёртв, а текст/кнопка не
+// выравнивались (паритет rose ImageWithText). Back-compat: старые ревизии хранили
+// выключку в заголовке → читаем headingAlignment / heading.alignment как fallback.
+const alignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
+const alignCls =
+	alignment === "center" ? " text-center" : alignment === "right" ? " text-right" : "";
+// Колонка контента = flex-col items-start по манере верстальщика; при center/right
+// двигаем И cross-axis (блок-элементы: заголовок, кнопка), чтобы выключка была
+// цельной, а не только у текста. Кнопка (self-start в btnCls) — отдельный selfCls.
+const itemsCls =
+	alignment === "center" ? "items-center" : alignment === "right" ? "items-end" : "items-start";
+const selfCls =
+	alignment === "center" ? "self-center" : alignment === "right" ? "self-end" : "self-start";
 
 // Канон text: string | { content, size }. Дефолт зависит от режима: есть фото →
 // careTextLead + careTextTail двумя <p> VERBATIM (реальный контент); нет фото →
@@ -127,8 +140,8 @@ const btnHref =
 // Радиус 0 ≡ var(--radius-button,0px); active:scale в манере НЕ используется.
 const btnCls =
 	p.buttonStyle === "solid"
-		? "inline-flex h-12 min-h-12 items-center justify-center self-start rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
-		: "inline-flex h-12 min-h-12 items-center justify-center self-start rounded-[var(--radius-button,0px)] border-[1.3px] border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+		? "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
+		: "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border-[1.3px] border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
 
 // Канон ctaPosition: 'bottom-pinned' (canon-default из theme.json blockDefaults)
 // и отсутствие = литерал care-бэнда (кнопка mt-10 self-start под текстом);
@@ -154,12 +167,12 @@ const titleId = id && heading ? `${id}-title` : undefined;
 		class={`mx-auto flex w-full ${widthCls} flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10${containerSchemeCls}`}
 		data-animate
 	>
-		<div class={`flex w-full max-w-[352px] flex-col items-start${imageLeft ? " lg:order-2" : ""}`}>
+		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""}`}>
 			{
 				heading && (
 					<h2
 						id={titleId}
-						class={headingCls + headingAlignCls + italicCls}
+						class={headingCls + alignCls + italicCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
@@ -169,7 +182,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				)
 			}
 			<div
-				class={textCls + italicCls}
+				class={textCls + italicCls + alignCls}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="101"
 				data-puck-subsection-field="text"
@@ -179,7 +192,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				btnText && (
 					<a
 						href={btnHref}
-						class={`${ctaMtCls} ${btnCls}`}
+						class={`${ctaMtCls} ${selfCls} ${btnCls}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="button"

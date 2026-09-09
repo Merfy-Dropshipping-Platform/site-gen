@@ -3,8 +3,9 @@ import BaseHead from "../components/BaseHead.astro";
 import PromoBanner from "../components/sections/PromoBanner.astro";
 import Header from "../components/Header.astro";
 import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
+import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
-import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+import StorefrontRuntime from "../components/StorefrontRuntime.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -15,9 +16,13 @@ interface Props {
 	// без PromoBanner; иначе обычная шапка магазина. build.service патчит бренд
 	// CheckoutHeader под мерчанта на сборке сайта.
 	header?: "default" | "checkout";
+	// Скрыть PromoBanner (маркетинговую полосу объявлений). Дефолт true (все
+	// витринные страницы). Страницы личного кабинета (/account/*) передают false
+	// — промо в кабинете неуместно.
+	promo?: boolean;
 }
 
-const { title, description = SITE_DESCRIPTION, header = "default" } = Astro.props;
+const { title, description = SITE_DESCRIPTION, header = "default", promo = true } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 ---
 
@@ -25,7 +30,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 <html lang="ru">
 	<head>
 		<BaseHead title={pageTitle} description={description} />
-		<ViewTransitions />
+		{/* VT отключены на checkout: ClientRouter пере-выполняет is:inline-скрипты на
+		    astro:page-load → cart-store грузится дважды → форма/сводка перерисовываются
+		    ~1с = «скачки интерфейса». Checkout терминальный → грузим полной страницей. */}
+		{header !== "checkout" && <ViewTransitions />}
 		<slot name="head" />
 	</head>
 	<body class="antialiased bg-[rgb(var(--color-bg,255_255_255))]">
@@ -37,75 +45,28 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			<Fragment>
 				{/* Обёртка схемы зеркалит композер v2 (PromoBanner.colorScheme=scheme-4):
 				    на сложных страницах tokens.css задаёт :root=scheme-1, без обёртки полоса белеет. */}
-				<div class="color-scheme-4" data-block-scheme="4">
-					<PromoBanner />
-				</div>
+				{promo && (
+					<div class="color-scheme-4" data-block-scheme="4">
+						<PromoBanner />
+					</div>
+				)}
 				<Header />
 			</Fragment>
 		)}
 		<main>
 			<slot />
 		</main>
-		{/* Чекаут — без футера (рассылка/меню/копирайт): чистое оформление без
-		    отвлекающих ссылок. Только эта страница использует header="checkout".
-		    Хром чекаута (CheckoutHeader) правит unifyChromeInDist — его не трогаем. */}
-		{header !== "checkout" && <Footer />}
-		<NtCartDrawer rootId="cart-drawer-root" eventPrefix="rose:cart" />
-		<script>
-			import { initCartUI } from "../lib/cart";
-			import { initWishlistUI } from "../lib/wishlist";
-			import { initAuthUI } from "../lib/auth";
-			initCartUI();
-			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
-			initWishlistUI();
-			// Аккаунт покупателя — красит [data-auth-link] (/account vs /login),
-			// auth/guest-only элементы; фоновая подгрузка профиля при наличии токена.
-			initAuthUI();
-
-				// Регулярное оформление («Оформить» корзины/drawer, data-action=checkout)
-				// сбрасывает express «Купить сейчас» (sessionStorage rose:buynow) — чтобы
-				// чекаут показал корзину покупателя, а не залипший buy-now товар. Сам
-				// buy-now (data-action=buy-now) ставит express заново при следующем клике.
-				document.addEventListener(
-					"click",
-					(e) => {
-						const el = e.target as Element | null;
-						if (el && el.closest("[data-action='checkout']")) {
-							try { sessionStorage.removeItem("rose:buynow"); } catch (err) {}
-						}
-					},
-					true,
-				);
-
-				// Корзина «Сайдбар»/«Страница» (--cart-type): перехват клика по иконке
-				// (<button data-cart-open>) в capture-фазе, опережая bubble-обработчик
-				// панели (DS NtCartDrawer). page → /cart (live: переход; превью: <a> →
-				// nav-агент → postMessage navigate). drawer (дефолт) → панель открывается сама.
-				document.addEventListener(
-					"click",
-					(e) => {
-						const el = e.target as Element | null;
-						if (!el || !el.closest("[data-cart-open]")) return;
-						const cartType = getComputedStyle(document.documentElement)
-							.getPropertyValue("--cart-type")
-							.trim()
-							.replace(/['"]/g, "");
-						if (cartType !== "page") return;
-						e.preventDefault();
-						e.stopImmediatePropagation();
-						if (window.self === window.top) {
-							window.location.assign("/cart");
-						} else {
-							const a = document.createElement("a");
-							a.href = "/cart";
-							document.body.appendChild(a);
-							a.click();
-							a.remove();
-						}
-					},
-					true,
-				);
-		</script>
+		{/* Чекаут — без рассылки/меню (чистое оформление), но с чёрной полосой
+		    копирайта (CheckoutFooterStrip): легальная строка должна быть. Полный
+		    Footer — только на остальных страницах. */}
+		{header !== "checkout" ? (
+			<Footer />
+		) : (
+			<div class="color-scheme-2" style="display:contents;">
+				<CheckoutFooterStrip siteTitle={SITE_TITLE} />
+			</div>
+		)}
+		<StorefrontRuntime />
 
 		<script>
 			// Scroll-triggered анимации для секций

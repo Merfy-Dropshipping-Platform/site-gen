@@ -47,10 +47,10 @@ const headingText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = Boolean(headingText.trim()) && headingEnabled;
-// Канон size (панель «Размер заголовка») + дубли headingSize / heading.size /
-// content.heading.size. Лестница §9 (база-литерал 20 = medium): small 17, large 24.
+// Канон headingSize («Размер заголовка», кегль <h2>) + дубли heading.size /
+// content.heading.size. Секционный `size` теперь = ВЫСОТА блока (не кегль) —
+// исключён из цепочки. Лестница §9 (база-литерал 20 = medium): small 17, large 24.
 const headingSize =
-	p.size ??
 	p.headingSize ??
 	(typeof headingRaw === "object" ? headingRaw?.size : undefined) ??
 	p.content?.heading?.size;
@@ -109,6 +109,12 @@ const headingWrapCls = fullBleed ? "vanilla-pad" : undefined;
 // Канон overlay 0-100 (hidden) — слой поверх медиа; клики проходят сквозь.
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
+// «Размер» (секционный size) — ВЫСОТА медиа-плитки (канон Hero). small короче
+// (21:9), large выше (4:3); medium/absent — базовый 1319/742 (без inline-override,
+// default-preserving). Inline aspect-ratio перебивает класс плитки.
+const mediaHeightStyle =
+	p.size === "small" ? "aspect-ratio:21/9" : p.size === "large" ? "aspect-ratio:4/3" : undefined;
+
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
@@ -140,6 +146,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 
 		<div
 			class="relative aspect-[1319/742] w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]"
+			style={mediaHeightStyle}
 			data-animate
 			data-animate-delay="0.1s"
 			data-puck-subsection-parent={id}

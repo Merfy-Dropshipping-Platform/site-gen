@@ -13,5 +13,6 @@
   "MultiRows": "src/components/sections/MultiRows.astro",
   "CollapsibleSection": "src/components/sections/CollapsibleSection.astro",
   "Newsletter": "src/components/sections/Newsletter.astro",
-  "Slideshow": "src/components/sections/Slideshow.astro"
+  "Slideshow": "src/components/sections/Slideshow.astro",
+  "CartSection": "src/components/sections/CartSection.astro"
 }

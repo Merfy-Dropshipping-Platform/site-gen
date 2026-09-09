@@ -56,7 +56,14 @@ const inlineSubmit = p.formLayout === "inline-submit";
 
 // Канон agreement (toggle 'true'/'false', default 'false'): при 'true' — чекбокс
 // согласия под формой (манера rose: Manrope мелкий muted); иначе ничего.
-const showAgreement = p.agreement === "true";
+const showAgreement = p.agreement === true || p.agreement === "true";
+// Текст согласия и «Сделать ссылкой» из панели (agreementText / agreementLink) —
+// раньше порт печатал захардкоженную строку, тумблер выглядел мёртвым.
+const agreeText =
+	typeof p.agreementText === "string" && p.agreementText.trim()
+		? p.agreementText
+		: "Согласен на обработку персональных данных";
+const agreeLink = typeof p.agreementLink === "string" ? p.agreementLink.trim() : "";
 
 // Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
 // 'true' блок heading+description не рендерится (форма/согласие остаются).
@@ -178,7 +185,13 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							required
 							class="mt-0.5 size-4 shrink-0 accent-[rgb(var(--color-button-bg,0_0_0))]"
 						/>
-						<span>Согласен на обработку персональных данных</span>
+						{
+							agreeLink ? (
+								<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
+							) : (
+								<span>{agreeText}</span>
+							)
+						}
 					</label>
 				)
 			}

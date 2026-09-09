@@ -363,10 +363,20 @@ export async function hydrateGrid(gridSelector: string, limit?: number): Promise
 	return items;
 }
 
+/** Склонение «товар / товара / товаров» — счётчик выводил «1 товаров». */
+export function productsWord(n: number): string {
+  const d = Math.abs(n) % 10;
+  const t = Math.abs(n) % 100;
+  if (t >= 11 && t <= 19) return "товаров";
+  if (d === 1) return "товар";
+  if (d >= 2 && d <= 4) return "товара";
+  return "товаров";
+}
+
 /** Обновляет текстовый счётчик "N товаров" (по data-hook). */
 export function updateCount(countSelector: string, n: number): void {
 	for (const el of Array.from(document.querySelectorAll<HTMLElement>(countSelector))) {
-		el.textContent = `${n} товаров`;
+		el.textContent = `${n} ${productsWord(n)}`;
 	}
 }
 

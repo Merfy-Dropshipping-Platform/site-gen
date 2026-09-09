@@ -365,7 +365,7 @@ const skeletons = Array.from({ length: skeletonCount });
       <div class="flex flex-col gap-8 lg:flex-row lg:gap-10" data-catalog-variant="side">
         {/* Колонка сайдбара: DS-компонент + своя секция «Коллекции» рядом. */}
         <div class="hidden w-[172px] shrink-0 flex-col gap-4 lg:flex xl:w-[294px]">
-          {filterVisible && <NtFilterSidebar class="w-full" />}
+          {filterVisible && <NtFilterSidebar class="w-full" sortVisible={sortVisible} />}
 
           {/* Фильтр по коллекциям в манере секций сайдбара: скрыт на demo-сборке,
               гидрация показывает его при наличии коллекций магазина. */}

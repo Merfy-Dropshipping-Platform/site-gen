@@ -92,6 +92,15 @@ const collFilterLegacy =
   showCollectionFilter !== 'false' && showCollectionFilter !== false;
 
 const cardCount = Math.max(2, Math.min(24, Number(cards) || 8));
+// Склонение «товар / товара / товаров» — счётчик выводил «1 товаров».
+function productsWord(n: number): string {
+	const d = Math.abs(n) % 10;
+	const t = Math.abs(n) % 100;
+	if (t >= 11 && t <= 19) return "товаров";
+	if (d === 1) return "товар";
+	if (d >= 2 && d <= 4) return "товара";
+	return "товаров";
+}
 // 098 revised: columns 1-6 без cap к sidebar mode. User: «после 5+ колонок
 // не применяется, лимит 4 в ряду». Раньше capped к 4 на filterSide=true —
 // теперь user сам решает. Desktop min 2 (1 column layout некрасиво на
@@ -532,7 +541,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       </div>
 
       {/* 096: counter под grid (Figma 905-19049 "8 товаров" внизу) */}
-      <div data-catalog-count style="margin-top: 24px; text-align: center; color: rgb(var(--color-muted)); font-size: 16px; font-family: var(--font-body); grid-column: 1 / -1;">{cardCount} товаров</div>
+      <div data-catalog-count style="margin-top: 24px; text-align: center; color: rgb(var(--color-muted)); font-size: 16px; font-family: var(--font-body); grid-column: 1 / -1;">{cardCount} {productsWord(cardCount)}</div>
     </div>
   </div>
 </section>
@@ -792,6 +801,13 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     }
 
     function rerender() {
+      function productsWordJs(n) {
+        var d = Math.abs(n) % 10, t = Math.abs(n) % 100;
+        if (t >= 11 && t <= 19) return 'товаров';
+        if (d === 1) return 'товар';
+        if (d >= 2 && d <= 4) return 'товара';
+        return 'товаров';
+      }
       const filtered = applyFilters(state.allProducts);
       const total = filtered.length;
       const ps = cardCount;
@@ -799,8 +815,9 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       const pageSafe = Math.max(1, Math.min(state.page, Math.max(1, totalP)));
       const slice = filtered.slice((pageSafe - 1) * ps, pageSafe * ps);
 
-      // 096 Figma 905-19049: counter format "{total} товаров" (без "X из Y")
-      if (count) count.textContent = total + ' товаров';
+      // 096 Figma 905-19049: counter format "{total} товаров" (без "X из Y").
+      // Склонение — иначе «1 товаров».
+      if (count) count.textContent = total + ' ' + productsWordJs(total);
       // Заглушки (placeholder свитеры) видны ТОЛЬКО когда total=0. Если есть
       // хотя бы 1 товар — рендерим только реальные карточки, без добивки до cardCount.
       grid.removeAttribute('data-loading');
@@ -826,7 +843,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
           pagination.style.display = 'none';
         } else {
           pagination.style.display = '';
-          if (pageTotalEl) pageTotalEl.textContent = total + ' товаров';
+          if (pageTotalEl) pageTotalEl.textContent = total + ' ' + productsWordJs(total);
           if (pageNumbersEl) {
             const pages = computePageNumbers(pageSafe, totalP);
             pageNumbersEl.innerHTML = pages.map(function (p) {

@@ -11,9 +11,12 @@ import NtRadioField from "./NtRadioField.astro";
 interface Props {
   density?: "1920" | "1280";
   class?: string;
+  /** Тумблер «Сортировка» из панели секции. Блок «Сортировать» жил в сайдбаре
+   *  безусловно — при «Скрыть» каталог выглядел так же, как при «Показать». */
+  sortVisible?: boolean;
 }
 
-const { density = "1920", class: className = "" } = Astro.props;
+const { density = "1920", class: className = "", sortVisible = true } = Astro.props;
 const is1280 = density === "1280";
 const W = is1280 ? "w-[172px]" : "w-[294px]";
 const sectionPad = is1280 ? "p-1" : "p-3";
@@ -29,30 +32,32 @@ const nameSfx = is1280 ? "-1280" : "";
   data-nt="filter-sidebar"
   data-nt-density={density}
 >
-  <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Сортировать</p>
-    <div class:list={["flex flex-col", sortStackGap]}>
-      <NtRadioField
-        name={`nt-sort-side${nameSfx}`}
-        value="new"
-        label="По новизне"
-        checked
-        density={density}
-      />
-      <NtRadioField
-        name={`nt-sort-side${nameSfx}`}
-        value="price-desc"
-        label="По убыванию цены"
-        density={density}
-      />
-      <NtRadioField
-        name={`nt-sort-side${nameSfx}`}
-        value="price-asc"
-        label="По возрастанию цены"
-        density={density}
-      />
+  {sortVisible && (
+    <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
+      <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Сортировать</p>
+      <div class:list={["flex flex-col", sortStackGap]}>
+        <NtRadioField
+          name={`nt-sort-side${nameSfx}`}
+          value="new"
+          label="По новизне"
+          checked
+          density={density}
+        />
+        <NtRadioField
+          name={`nt-sort-side${nameSfx}`}
+          value="price-desc"
+          label="По убыванию цены"
+          density={density}
+        />
+        <NtRadioField
+          name={`nt-sort-side${nameSfx}`}
+          value="price-asc"
+          label="По возрастанию цены"
+          density={density}
+        />
+      </div>
     </div>
-  </div>
+  )}
 
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
     <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Наличие</p>

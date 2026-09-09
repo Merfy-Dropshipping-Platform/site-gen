@@ -281,7 +281,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     buttonStyle: { type: 'hidden', label: '' },
     // В Figma 314-34815 «Отступы» нет — скрыто из sidebar. Padding в данных
     // сохраняется (для Hero.astro), но мерчант не редактирует.
-    padding: { type: 'hidden', label: '' } as any,
+    // «Отступы» у секции «Изображение» были скрыты — баннер нечем было отодвинуть
+    // от шапки. Поле открыто; дефолт 0/0, чтобы новая секция выглядела как раньше
+    // (полотно во всю ширину), а мерчант мог добавить воздух.
+    padding: { type: 'padding', label: 'Отступы' } as any,
   },
   defaults: {
     title: 'Добро пожаловать',
@@ -291,7 +294,7 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     cta: { text: 'Смотреть каталог', href: '/catalog' },
     variant: 'centered',
     contentPosition: 'center',
-    padding: { top: 80, bottom: 80 },
+    padding: { top: 0, bottom: 0 },
   },
   schema: HeroSchema,
   maxInstances: null,

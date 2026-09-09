@@ -391,7 +391,7 @@ const skeletons = Array.from({ length: skeletonCount });
       {/* Раскладка side — левый сайдбар фильтров (родной дефолт flux) */}
       <div class="flex flex-col gap-8 lg:flex-row lg:gap-10" data-catalog-variant="side">
         <div class="hidden w-[172px] shrink-0 flex-col gap-4 lg:flex xl:w-[294px]">
-          {filterVisible && <NtFilterSidebar class="w-full" />}
+          {filterVisible && <NtFilterSidebar class="w-full" sortVisible={sortVisible} />}
 
           {/* Фильтр по коллекциям в манере секций сайдбара (NtFilterSidebar не трогаем):
               скрыт на demo-сборке, гидрация показывает его при наличии коллекций

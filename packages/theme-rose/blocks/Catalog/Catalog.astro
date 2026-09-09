@@ -778,8 +778,12 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 
   function updateCount(countSelector, n) {
+    // Склонение «товар / товара / товаров» — счётчик выводил «1 товаров».
+    const d = Math.abs(n) % 10;
+    const t = Math.abs(n) % 100;
+    const word = t >= 11 && t <= 19 ? 'товаров' : d === 1 ? 'товар' : d >= 2 && d <= 4 ? 'товара' : 'товаров';
     for (const el of Array.from(document.querySelectorAll(countSelector))) {
-      el.textContent = `${n} товаров`;
+      el.textContent = `${n} ${word}`;
     }
   }
 

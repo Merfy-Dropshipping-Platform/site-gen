@@ -128,9 +128,17 @@ export class PagesService {
       // фронтовый createEmptyPageData в конструкторе (ConstructorContext.tsx) —
       // оба источника дефолта должны совпадать, иначе reload до сохранения
       // покажет иную структуру.
+      // Шапку и подвал берём с главной: они общие для сайта, без клонирования
+      // новая страница получала пустую шапку — без логотипа и без меню магазина.
+      const homeContent =
+        (pagesData["home"] as { content?: Array<Record<string, any>> } | undefined)?.content ?? [];
+      const homeHeader = homeContent.find((b) => b?.type === "Header");
+      const homeFooter = homeContent.find((b) => b?.type === "Footer");
       newContent = {
         content: [
-          { type: "Header", props: { id: `Header-${newId}` } },
+          homeHeader
+            ? { ...homeHeader, props: { ...homeHeader.props, id: `Header-${newId}` } }
+            : { type: "Header", props: { id: `Header-${newId}` } },
           {
             type: "Page",
             props: {
@@ -141,17 +149,50 @@ export class PagesService {
               padding: { top: 80, bottom: 80 },
             },
           },
-          { type: "Footer", props: { id: `Footer-${newId}` } },
+          homeFooter
+            ? { ...homeFooter, props: { ...homeFooter.props, id: `Footer-${newId}` } }
+            : { type: "Footer", props: { id: `Footer-${newId}` } },
         ],
         root: { props: { title: params.name } },
         zones: {},
       };
     }
 
+    // Новая страница попадает в меню магазина. Без этого она рендерилась, но
+    // ссылки на неё не было нигде — покупатель на неё не попадал, а добавить
+    // пункт вручную можно только через модалку меню шапки. Шапка общая, поэтому
+    // дописываем ссылку в navigationLinks каждой страницы. Идемпотентно по href.
+    const withNavLink = (data: unknown): unknown => {
+      const pageData = data as { content?: Array<Record<string, any>> } | undefined;
+      if (!pageData || !Array.isArray(pageData.content)) return data;
+      let touched = false;
+      const content = pageData.content.map((block) => {
+        if (block?.type !== "Header") return block;
+        const links: Array<{ href?: string }> = Array.isArray(block.props?.navigationLinks)
+          ? block.props.navigationLinks
+          : [];
+        if (links.some((l) => l?.href === newPage.slug)) return block;
+        touched = true;
+        return {
+          ...block,
+          props: {
+            ...block.props,
+            navigationLinks: [...links, { href: newPage.slug, label: newPage.name }],
+          },
+        };
+      });
+      return touched ? { ...pageData, content } : data;
+    };
+
+    const pagesDataWithNav: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(pagesData)) {
+      pagesDataWithNav[key] = withNavLink(value);
+    }
+
     const newRevData = {
       ...revData,
       pages: [...pages, newPage],
-      pagesData: { ...pagesData, [newId]: newContent },
+      pagesData: { ...pagesDataWithNav, [newId]: withNavLink(newContent) },
       lockVersion: (revData.lockVersion ?? 1) + 1,
     };
 

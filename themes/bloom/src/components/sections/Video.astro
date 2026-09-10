@@ -115,9 +115,14 @@ const containerCls = fullBleed
 	: "mx-auto flex w-full max-w-[1320px] flex-col gap-10";
 // На full-bleed полотне заголовок остаётся в полях секции §2.
 const headingWrapCls = fullBleed ? "px-4 md:px-20 2xl:px-[300px]" : undefined;
+// Пустая секция (нет ролика и обложки) не растягивается на 16:9: при ширине
+// контента это ~950px пустоты — мерчант добавлял «Видео» и получал почти
+// экран заглушки без намёка, что нужен файл. Компактная плитка + подпись.
+const mediaEmpty = !videoUrl && !poster;
+const mediaSizeCls = mediaEmpty ? "h-[220px] md:h-[280px]" : "aspect-video";
 const mediaCls = fullBleed
-	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
-	: "relative aspect-video w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]";
+	? `relative ${mediaSizeCls} w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]`
+	: `relative ${mediaSizeCls} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]`;
 
 // Канон overlay 0-100 (число или строка) — слой поверх медиа, как у Hero;
 // клики проходят сквозь (controls видео остаются доступны).

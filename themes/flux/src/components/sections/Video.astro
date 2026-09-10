@@ -136,9 +136,14 @@ const containerCls = fullBleed
 		: `mx-auto flex w-full max-w-[1920px] flex-col gap-8${pyCls}`;
 // На full-bleed полотне шапка остаётся в полях секций эталона.
 const headingWrapPx = fullBleed ? " px-4 md:px-20 2xl:px-80" : "";
+// Пустая секция (нет ролика и обложки) не растягивается на 16:9: при ширине
+// контента это ~950px пустоты — мерчант добавлял «Видео» и получал почти
+// экран заглушки без намёка, что нужен файл. Компактная плитка + подпись.
+const mediaEmpty = !video?.embedUrl && !videoUrl && !poster;
+const mediaSizeCls = mediaEmpty ? "h-[220px] md:h-[280px]" : "aspect-video";
 const mediaCls = fullBleed
-	? "relative aspect-video w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]"
-	: "relative aspect-video w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]";
+	? `relative ${mediaSizeCls} w-full overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]`
+	: `relative ${mediaSizeCls} w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`;
 
 // Канон overlay 0-100 — слой поверх медиа; клики проходят сквозь (controls видео
 // остаются доступны).
@@ -146,8 +151,13 @@ const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
 // «Размер» (секционный size) — ВЫСОТА медиа-плитки (канон Hero). small короче
 // (21:9), large выше (4:3); medium/absent = базовый aspect-video (без override).
-const mediaHeightStyle =
-	p.size === "small" ? "aspect-ratio:21/9" : p.size === "large" ? "aspect-ratio:4/3" : undefined;
+const mediaHeightStyle = mediaEmpty
+	? undefined
+	: p.size === "small"
+		? "aspect-ratio:21/9"
+		: p.size === "large"
+			? "aspect-ratio:4/3"
+			: undefined;
 
 const titleId = id && showHeading ? `${id}-title` : undefined;
 ---
@@ -229,6 +239,17 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 							</svg>
 						</div>
 					</>
+				)
+			}
+			{
+				/* Подсказка мерчанту: пустая секция раньше молчала о том, что нужен файл. */
+				mediaEmpty && (
+					<div
+						class="pointer-events-none absolute inset-x-0 bottom-4 z-[2] text-center font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+						data-media-placeholder-hint
+					>
+						Загрузите видео или укажите ссылку в настройках секции
+					</div>
 				)
 			}
 			{

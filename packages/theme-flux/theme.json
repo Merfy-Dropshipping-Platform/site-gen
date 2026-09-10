@@ -181,7 +181,9 @@
     "Video": {
       "colorScheme": "scheme-2",
       "size": "medium"
-    }
+    },
+    "Publications": {},
+    "ContactForm": {}
   },
   "colorSchemes": [
     {
@@ -417,6 +419,86 @@
     },
     "Hero": {
       "heading.text": "Изображение"
+    }
+  },
+  "panelDefaults": {
+    "CollapsibleSection": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "Collections": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "Gallery": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "ImageWithText": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "MainText": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "MultiColumns": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "MultiRows": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "Newsletter": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "PopularProducts": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "Publications": {
+      "padding": {
+        "top": 96,
+        "bottom": 96
+      }
+    },
+    "Video": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "ContactForm": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
+    },
+    "Slideshow": {
+      "padding": {
+        "top": 64,
+        "bottom": 64
+      }
     }
   }
 }

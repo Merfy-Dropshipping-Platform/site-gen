@@ -20,7 +20,10 @@ export const CheckoutFormPuckConfig: BlockPuckConfig<CheckoutFormProps> = {
   category: 'checkout',
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'hidden', label: '' },
+    // Отступы открыты как у остальных секций страницы: у «Шапки оформления»
+    // блок был, а у формы и сводки — нет, и мерчант не мог развести секции
+    // по вертикали (баг-репорт тестера «у секций чекаута нет отступов»).
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     colorScheme: 'scheme-2',

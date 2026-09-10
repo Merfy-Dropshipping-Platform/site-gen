@@ -759,3 +759,18 @@ blockquote {
     color: rgb(var(--color-button-2-text-hover, var(--color-button-2-text, 255 255 255))) !important;
   }
 }
+
+/* Обводка кнопок — из цветовой схемы («Обводка» у основной и дополнительной
+   кнопки). У большинства кнопок тем рамки не было вовсе, поэтому цвет обводки,
+   заданный мерчантом, нигде не проявлялся. Дефолт рамки = цвет фона кнопки:
+   пока обводку не задали, вид не меняется (box-sizing:border-box держит
+   размеры), заданный цвет становится виден. Кнопки, у которых рамка уже описана
+   в вёрстке темы, исключены — их оформление остаётся за версткой. */
+@layer base {
+  [class*="bg-[rgb(var(--color-button-bg"]:not([class*="border-["]) {
+    border: 1px solid rgb(var(--color-button-border, var(--color-button-bg, 0 0 0)));
+  }
+  [class*="bg-[rgb(var(--color-button-2-bg"]:not([class*="border-["]) {
+    border: 1px solid rgb(var(--color-button-2-border, var(--color-button-2-bg, 0 0 0)));
+  }
+}

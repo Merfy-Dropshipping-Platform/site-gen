@@ -443,5 +443,67 @@
       "role": "system",
       "contentFile": "pages/checkout-result.json"
     }
-  ]
+  ],
+  "panelDefaults": {
+    "CollapsibleSection": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "Collections": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "Gallery": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "ImageWithText": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "MainText": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "MultiColumns": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "MultiRows": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "Newsletter": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "PopularProducts": {
+      "padding": {
+        "top": 140,
+        "bottom": 140
+      }
+    },
+    "ContactForm": {
+      "padding": {
+        "top": 80,
+        "bottom": 80
+      }
+    }
+  }
 }

@@ -1,9 +1,17 @@
 import { z } from 'zod';
 import { TOKEN_REGISTRY, type TokenKey } from '../tokens/registry';
 
+// Второй аргумент refine в zod 4 — параметры issue, а не функция от значения
+// (в zod 3 была именно функция). Из-за старой сигнатуры весь пакет не
+// компилировался, и `nest start` падал ещё до запуска сервиса; прод-сборка
+// этого не замечала, потому что tsconfig.build.json исключает packages/.
+// Имя неизвестного токена сохраняем через issue.input.
 const TokenKeySchema = z.string().refine(
   (k): k is TokenKey => k in TOKEN_REGISTRY,
-  (k) => ({ message: `Unknown token "${k}". Must be in TOKEN_REGISTRY.` }),
+  {
+    error: (issue) =>
+      `Unknown token "${String(issue.input)}". Must be in TOKEN_REGISTRY.`,
+  },
 );
 
 const TokensMapSchema = z.record(TokenKeySchema, z.string());

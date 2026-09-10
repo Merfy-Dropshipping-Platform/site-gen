@@ -454,5 +454,79 @@
       "heading.text": "ПОДПИШИТЕСЬ НА РАССЫЛКУ",
       "text.content": "Подпишитесь на наши акции и новости"
     }
+  },
+  "panelDefaults": {
+    "CollapsibleSection": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "Collections": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "Gallery": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "ImageWithText": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "MainText": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "MultiColumns": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "MultiRows": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "Newsletter": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "PopularProducts": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "Publications": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "Video": {
+      "padding": {
+        "top": 120,
+        "bottom": 120
+      }
+    },
+    "ContactForm": {
+      "padding": {
+        "top": 80,
+        "bottom": 80
+      }
+    }
   }
 }

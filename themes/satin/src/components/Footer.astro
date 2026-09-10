@@ -187,7 +187,9 @@ const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled 
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim()
 		? strip.text
-		: `© ${today.getFullYear()} ${siteTitle} Все права защищены. Powered by Merfy`;
+		// Дефолт полосы — только подпись платформы: прежний дефолт дублировал
+		// строку копирайта выше (два «© … Все права защищены» в подвале).
+		: "Powered by Merfy";
 
 // Канон padding {top,bottom} — inline-стиль при любом заданном пропе, как rose
 // Footer (включая {80,80}, иначе слайдер «Отступы» мёртв). Без пропа — литерал.

@@ -182,7 +182,10 @@ const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled 
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT
 		? strip.text
-		: `© ${today.getFullYear()} ${siteTitle} Все права защищены. Powered by Merfy`;
+		// Дефолт полосы — только подпись платформы. Раньше он дословно повторял
+		// строку копирайта выше, и в подвале было два одинаковых «© … Все права
+		// защищены» подряд. Мерчантский текст полосы, если задан, идёт как есть.
+		: "Powered by Merfy";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе отступов
 // верстальщика (контейнер pt-16 pb-24 md:pb-28). {80,80} = canon-default puckConfig

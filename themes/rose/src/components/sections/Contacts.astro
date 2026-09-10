@@ -14,6 +14,13 @@ const id = p.id;
 // «Контактная форма» + поля «Имя» / «Email» / «Номер телефона» / «Комментарий» +
 // кнопка «Отправить». Заголовок берём из пропса (heading), если мерчант задал свой,
 // иначе — дословный Figma-литерал.
+// «Размер заголовка» из панели: NtSectionHeading не принимает размер и не
+// пробрасывает class на h2, поэтому секция всегда рисовала 20px — настройка
+// выглядела мёртвой. Отдаём размер CSS-переменной, её читает правило в
+// global.css темы (scoped-<style> секции в сборку CSS темы не попадает).
+const headingSizeRaw = p.heading?.size ?? p.headingSize;
+const headingFontSize =
+	headingSizeRaw === "small" ? "17px" : headingSizeRaw === "large" ? "24px" : "20px";
 const placeholderHeading =
 	(typeof p.heading?.text === "string" && p.heading.text) ||
 	(typeof p.heading === "string" && p.heading) ||
@@ -70,7 +77,7 @@ const paddingStyle = p.padding
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 sm:px-5 md:px-10 md:pb-[80px] md:pt-20 lg:px-16 xl:px-20 2xl:px-[280px]"
 	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
-	style={paddingStyle}
+	style={`${paddingStyle ?? ""};--contacts-title-size:${headingFontSize}`}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки

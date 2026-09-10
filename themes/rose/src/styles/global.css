@@ -1194,3 +1194,14 @@ input[type="search"]::-webkit-search-results-decoration {
     color: rgb(var(--color-button-2-text-hover, var(--color-button-2-text, 255 255 255))) !important;
   }
 }
+
+/* «Размер заголовка» секции «Контактная форма»: её заголовок рисует
+   NtSectionHeading из дизайн-пакета — он не принимает размер и не пробрасывает
+   class на h2, поэтому настройка была мёртвой (всегда 20px). Порт кладёт
+   выбранный размер в --contacts-title-size на секции, правило читает его.
+   @layer base обязателен для id-селекторов (гард check-css-layers). */
+@layer base {
+  #contacts-title {
+    font-size: var(--contacts-title-size, 20px) !important;
+  }
+}

@@ -40,7 +40,11 @@
   },
   "blockDefaults": {
     "Header": {
-      "logoPosition": "center-absolute"
+      "logoPosition": "center-absolute",
+      "padding": {
+        "top": 12,
+        "bottom": 12
+      }
     },
     "Footer": {
       "variant": "2-part"

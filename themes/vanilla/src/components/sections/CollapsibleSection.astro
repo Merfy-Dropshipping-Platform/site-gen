@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla, группа misc): новая канон-секция CollapsibleSection в манере
 // vanilla (см. themes/vanilla/MANNER.md; эталоны — themes/bloom CollapsibleSection,
 // процесс-эталон rose T16). Схема полей = packages/theme-base/blocks/
@@ -111,7 +112,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
-					set:html={heading}
+					set:html={inlineFormat(heading)}
 				/>
 			)
 		}
@@ -133,7 +134,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
 									<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))]">
-										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+										<span class="min-w-0 flex-1 break-words"><Fragment set:html={inlineFormat(s.heading)} /></span>
 										<svg
 											aria-hidden="true"
 											viewBox="0 0 10 6"
@@ -144,14 +145,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 										</svg>
 									</div>
 									<p class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base">
-										{s.content}
+										<Fragment set:html={inlineFormat(s.content)} />
 									</p>
 								</div>
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
 										<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70">
-											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<svg
 												aria-hidden="true"
 												viewBox="0 0 10 6"
@@ -164,7 +165,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 									</summary>
 									<div
 										class="pb-5 font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base"
-										set:html={s.content}
+										set:html={inlineFormat(s.content)}
 									/>
 								</details>
 							)}

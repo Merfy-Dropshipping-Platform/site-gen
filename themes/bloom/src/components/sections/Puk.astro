@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // ОЖИВЛЕНИЕ Puk (figmaType=Collections — контракт rose/bloom Collections.astro,
 // theme-base Collections.astro). Раньше секция была статическим мок-демо
 // верстальщика. Теперь — паритет канон-секции «Список коллекций» (Figma 1:19335):
@@ -147,8 +148,8 @@ const resolvedCollections = propCollections.map((c) => {
         data-puck-subsection-parent={id}
         data-puck-subsection-index="100"
         data-puck-subsection-field="heading"
-      >{sectionTitle}</h2>
-      {sectionSubtitle && <p class="puk-subtitle">{sectionSubtitle}</p>}
+      ><Fragment set:html={inlineFormat(sectionTitle)} /></h2>
+      {sectionSubtitle && <p class="puk-subtitle"><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
     </div>
 
     <div class="puk-grid" data-collections-autofill={!usePropCollections ? '' : undefined}>

@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Figma 1:19335 — ПУСТОЕ СОСТОЯНИЕ секции «Галерея» (заменяет мок-демо
 // верстальщика). Гейт = наличие выбранных в конструкторе плиток `p.items[]`
 // (товар/коллекция/изображение).
@@ -232,12 +233,12 @@ const paddingStyle = p.padding
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{sectionTitle}
+					<Fragment set:html={inlineFormat(sectionTitle)} />
 				</h2>
 			)}
 			{sectionText && (
 				<p class={textCls}>
-					{sectionText}
+					<Fragment set:html={inlineFormat(sectionText)} />
 				</p>
 			)}
 			<ul class="mt-10 grid w-full grid-cols-1 gap-4 text-left lg:grid-cols-2" role="list">

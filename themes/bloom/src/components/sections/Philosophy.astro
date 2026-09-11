@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Philosophy = текст-манифест + CTA без картинки (bloom-аналог MainText, см.
 // themes/bloom/MANNER.md §10). Используется на home (index.astro) и страницах.
 //
@@ -86,7 +87,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{heading}
+					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)
 		}
@@ -101,7 +102,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 					data-puck-subsection-index="101"
 					data-puck-subsection-field="text"
 				>
-					{text}
+					<Fragment set:html={inlineFormat(text)} />
 				</p>
 			)
 		}

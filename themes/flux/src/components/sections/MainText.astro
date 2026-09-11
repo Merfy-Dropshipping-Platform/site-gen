@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Секция MainText («Основной текст») в манере flux. Донора-манифеста у
 // верстальщика flux НЕТ (секций всего 4, MANNER §10) — но есть родственная Puk
 // («Основной текст» / CTA репо), потому MainText дизайним в ЕДИНОМ flux-языке:
@@ -148,7 +149,7 @@ const titleId = id ? `${id}-title` : undefined;
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{heading}
+							<Fragment set:html={inlineFormat(heading)} />
 						</h2>
 					)
 				}
@@ -157,7 +158,7 @@ const titleId = id ? `${id}-title` : undefined;
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="101"
 					data-puck-subsection-field="text"
-					set:html={text}
+					set:html={inlineFormat(text)}
 				/>
 			</div>
 

@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla): новая канон-секция MultiColumns в манере vanilla (см.
 // themes/vanilla/MANNER.md §10: карточек-фич у верстальщика нет — композиция
 // из манеры: светлая секция §2 (vanilla-pad, py-20 md:py-28, контейнер 1180
@@ -205,7 +206,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					{heading}
+					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)
 		}
@@ -244,13 +245,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 							<h3
 								class={`font-vanilla-arsenal ${itemHeadingCls(c.headingSize)} font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}
 							>
-								{c.heading}
+								<Fragment set:html={inlineFormat(c.heading)} />
 							</h3>
 						)}
 						{c.text && (
 							<p
 								class={`font-vanilla-arsenal ${itemTextCls(c.textSize)} font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]`}
-								set:html={c.text}
+								set:html={inlineFormat(c.text)}
 							/>
 						)}
 						{c.link && (

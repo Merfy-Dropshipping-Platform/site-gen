@@ -188,7 +188,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 								<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 								<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
 							</div>
-							<div class="satin-copy max-w-[1100px]">{s.content}</div>
+							<div class="satin-copy max-w-[1100px]"><Fragment set:html={inlineFormat(s.content)} /></div>
 						</div>
 					) : (
 						<details
@@ -209,7 +209,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 								</div>
 							</summary>
 							<div class="overflow-hidden" data-faq-answer>
-								<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
+								<div class="satin-copy mt-3 max-w-[1100px]" set:html={inlineFormat(s.content)} />
 							</div>
 						</details>
 					),

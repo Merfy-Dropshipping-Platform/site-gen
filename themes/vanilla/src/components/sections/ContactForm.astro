@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla, группа misc): канон-секция ContactForm — адаптация формы
 // «Свяжитесь с нами» pages/about.astro:64-136 (страница НЕ меняется, разметка
 // перенесена КОПИЕЙ; pages/contacts.astro — клон rose с Manrope/.vanilla-button,
@@ -115,14 +116,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						{heading}
+						<Fragment set:html={inlineFormat(heading)} />
 					</h2>
 				)
 			}
 			{
 				description && (
 					<p class="font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
-						{description}
+						<Fragment set:html={inlineFormat(description)} />
 					</p>
 				)
 			}

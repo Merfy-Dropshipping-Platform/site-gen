@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla): канон-секция ImageWithText — адаптация care-бэнда
 // sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
 // MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ — Gallery.astro НЕ
@@ -177,7 +178,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						{heading}
+						<Fragment set:html={inlineFormat(heading)} />
 					</h2>
 				)
 			}
@@ -186,7 +187,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="101"
 				data-puck-subsection-field="text"
-				set:html={text}
+				set:html={inlineFormat(text)}
 			/>
 			{
 				btnText && (

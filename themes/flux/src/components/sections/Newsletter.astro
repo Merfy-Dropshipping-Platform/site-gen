@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Канон-секция Newsletter в манере flux. Схема полей = packages/theme-base/blocks/
 // Newsletter/Newsletter.puckConfig.ts; настройки применяются КАК rose T17
 // (heading/headingSize · text/textSize · position-«Выравнивание» · formLayout ·
@@ -128,7 +129,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{heading}
+							<Fragment set:html={inlineFormat(heading)} />
 						</h2>
 						<p
 							class={`font-roboto-flex ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
@@ -136,7 +137,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"
 						>
-							{description}
+							<Fragment set:html={inlineFormat(description)} />
 						</p>
 					</div>
 				)

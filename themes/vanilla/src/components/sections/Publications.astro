@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla, группа misc): канон-секция Publications в манере vanilla
 // (см. themes/vanilla/MANNER.md §2/§4/§9/§11; эталон — themes/bloom Publications,
 // rose-эталона нет). Схема полей = packages/theme-base/blocks/Publications/
@@ -163,7 +164,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						{heading}
+						<Fragment set:html={inlineFormat(heading)} />
 					</h2>
 				</div>
 			)

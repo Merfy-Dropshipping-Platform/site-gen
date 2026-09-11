@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import FluxProductCard from "../products/FluxProductCard.astro";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular / rose T13): полная конструкторная
@@ -334,8 +335,8 @@ const containerCls = paddingStyle
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<h2 id="popular-title" class={headingCls}>{sectionTitle}</h2>
-			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
+			<h2 id="popular-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>
+			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 
 		<ul

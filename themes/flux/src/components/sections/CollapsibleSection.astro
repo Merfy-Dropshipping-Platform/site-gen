@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Секция CollapsibleSection («Сворачиваемый раздел» / аккордеон-FAQ) в манере
 // flux. Донора у верстальщика flux НЕТ (секций всего 4, MANNER §10) — потому
 // дизайним в ЕДИНОМ flux-языке (эталон процесса — MainText.astro): ВСЯ секция
@@ -135,7 +136,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
-						set:html={heading}
+						set:html={inlineFormat(heading)}
 					/>
 				)
 			}
@@ -156,7 +157,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
 									<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] md:text-[19px]">
-										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
+										<span class="min-w-0 flex-1 break-words"><Fragment set:html={inlineFormat(s.heading)} /></span>
 										<svg
 											class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))]"
 											viewBox="0 0 16 16"
@@ -167,14 +168,14 @@ const titleId = id && heading ? `${id}-title` : undefined;
 										</svg>
 									</div>
 									<p class="font-roboto-flex text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]">
-										{s.content}
+										<Fragment set:html={inlineFormat(s.content)} />
 									</p>
 								</div>
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
 										<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 md:text-[19px]">
-											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
+											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<svg
 												class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))] transition-[transform,color] duration-300 group-open:rotate-0 group-open:text-[#FA5109]"
 												viewBox="0 0 16 16"
@@ -187,7 +188,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 									</summary>
 									<div
 										class="pb-5 font-roboto-flex text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]"
-										set:html={s.content}
+										set:html={inlineFormat(s.content)}
 									/>
 								</details>
 							)}

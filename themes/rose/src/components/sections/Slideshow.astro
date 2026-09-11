@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза 3 (T17): новая канон-секция Slideshow в манере rose (см. themes/rose/MANNER.md).
 // Схема полей = packages/theme-base/blocks/Slideshow/Slideshow.puckConfig.ts.
 // Композиция = hero-полотно манеры: фон-фото, белый текст лестницей героя §1,
@@ -249,7 +250,7 @@ const paddingStyle = p.padding
 											s.image && !s.boxed ? "text-white" : "text-[rgb(var(--color-heading,0_0_0))]"
 										}`}
 									>
-										{s.heading}
+										<Fragment set:html={inlineFormat(s.heading)} />
 									</h2>
 								)}
 								{s.subtitle && (
@@ -258,7 +259,7 @@ const paddingStyle = p.padding
 											s.image && !s.boxed ? "text-white" : "text-[rgb(var(--color-text,0_0_0))]"
 										}`}
 									>
-										{s.subtitle}
+										<Fragment set:html={inlineFormat(s.subtitle)} />
 									</p>
 								)}
 								{s.ctaText && (

@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Figma 1:19335 — ПУСТОЕ СОСТОЯНИЕ секции «Видео» (заменяет мок-демо
 // верстальщика). Контракт пустого состояния: пустой image-rect (surface) +
 // Play-иконка по центру. Гейт = наличие реального видео (videoUrl / video.url):
@@ -147,10 +148,10 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{headingText}
+							<Fragment set:html={inlineFormat(headingText)} />
 						</h2>
 					)}
-					{subheading && <p class={subheadingCls}>{subheading}</p>}
+					{subheading && <p class={subheadingCls}><Fragment set:html={inlineFormat(subheading)} /></p>}
 				</div>
 			)
 		}

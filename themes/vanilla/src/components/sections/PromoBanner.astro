@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (chrome): новая канон-секция PromoBanner в манере vanilla (MANNER.md §8).
 // Схема полей = packages/theme-base/blocks/PromoBanner/PromoBanner.puckConfig.ts:
 // text, link {text, href} (+ legacy linkText/linkUrl), size (thin/small/medium/large),
@@ -89,7 +90,7 @@ const paddingStyle = p.padding
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="text"
 			>
-				{text}
+				<Fragment set:html={inlineFormat(text)} />
 				{linkText && (
 					<a
 						href={linkHref}

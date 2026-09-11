@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза 3 (T17): новая канон-секция Newsletter в манере rose (см. themes/rose/MANNER.md).
 // Схема полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
 // Дизайн = блок подписки подвала верстальщика (Footer.astro:132-176, перенесён
@@ -111,7 +112,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{heading}
+							<Fragment set:html={inlineFormat(heading)} />
 						</h2>
 						<p
 							class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
@@ -119,7 +120,7 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"
 						>
-							{description}
+							<Fragment set:html={inlineFormat(description)} />
 						</p>
 					</div>
 				)

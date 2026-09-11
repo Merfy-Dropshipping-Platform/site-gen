@@ -899,8 +899,13 @@ export class PreviewService {
 
   /**
    * Mirror /checkout.astro: header → summary toggle → 2-column grid via
-   * CheckoutLayout (form column on left, summary column on right). Wraps in
-   * .color-scheme-2 because Figma 1:13398 says checkout always renders light.
+   * CheckoutLayout (form column on left, summary column on right).
+   *
+   * Схема страницы берётся из секции «Оформление заказа» (CheckoutForm), иначе
+   * из «Сводки заказа» или «Шапки оформления». Раньше обёртка была жёстко
+   * .color-scheme-2 («чекаут всегда светлый», Figma 1:13398) — мерчант менял
+   * схему секции, а страница оставалась прежней (баг-репорт тестера). Светлая
+   * вторая схема осталась значением по умолчанию, когда секции схему не несут.
    */
   private async renderCheckoutLayout(
     input: RenderPreviewPageInput,
@@ -936,6 +941,19 @@ export class PreviewService {
     const renderOne = async (b: { type: string; props: Record<string, unknown> }) =>
       this.renderBlock({ blockName: b.type, props: b.props, themeId, merfy: input.merfy });
 
+    // Схема всей страницы: что выбрано у формы → у сводки → у шапки; иначе
+    // светлая вторая (прежнее жёсткое поведение).
+    const checkoutSchemeId =
+      schemeIdFromProp(
+        input.blocks.find((b) => b.type === 'CheckoutForm')?.props?.colorScheme,
+      ) ??
+      schemeIdFromProp(
+        input.blocks.find((b) => b.type === 'CheckoutSummary')?.props?.colorScheme,
+      ) ??
+      schemeIdFromProp(headerBlock?.props?.colorScheme) ??
+      '2';
+    const checkoutSchemeClass = `color-scheme-${checkoutSchemeId}`;
+
     const headerHtml = headerBlock ? await renderOne(headerBlock) : '';
     const toggleHtml = summaryToggleBlock
       ? await renderOne(summaryToggleBlock)
@@ -947,7 +965,7 @@ export class PreviewService {
         renderOne(megaFormBlock),
         renderOne(megaSummaryBlock),
       ]);
-      return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"><div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center"><div data-checkout-column="form">${formHtml}</div><div data-checkout-column="summary">${summaryHtml}</div></div></main></div>`;
+      return `<div class="${checkoutSchemeClass}">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"><div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center"><div data-checkout-column="form">${formHtml}</div><div data-checkout-column="summary">${summaryHtml}</div></div></main></div>`;
     }
 
     const formInnerParts = await Promise.all(formBlocks.map(renderOne));
@@ -979,12 +997,12 @@ export class PreviewService {
           /(<[^<>]+data-checkout-column="summary"[^<>]*>)([\s\S]*?)(<\/div>)/i,
           (_m, open, _inner, close) => `${open}${summaryInner}${close}`,
         );
-      return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}${withSlots}</main></div>`;
+      return `<div class="${checkoutSchemeClass}">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}${withSlots}</main></div>`;
     }
 
     // No CheckoutLayout configured — fall back to linear column.
     const linearInner = [...formInnerParts, ...summaryInnerParts].join('');
-    return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}<div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col gap-6">${linearInner}</div></main></div>`;
+    return `<div class="${checkoutSchemeClass}">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}<div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col gap-6">${linearInner}</div></main></div>`;
   }
 }
 

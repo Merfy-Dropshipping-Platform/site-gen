@@ -58,7 +58,25 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 						return raw.replace(/^["']|["']$/g, "") || null;
 					}
 				};
+				// Те же тексты нужны и на СТРАНИЦЕ корзины: мерчант задаёт «Заголовок
+				// панели» и «Текст пустой корзины» один раз, а страница показывала
+				// свои литералы «Корзина» / «Вы пока не добавили товар в корзину»
+				// (баг-репорт тестера).
+				const applyPage = () => {
+					const title = readVar("--cart-drawer-title");
+					const empty = readVar("--cart-drawer-empty-text");
+					if (title) {
+						document.querySelectorAll("#cart-page-heading, #cart-page-empty h1").forEach((h) => {
+							if (h.textContent.trim() !== title) h.textContent = title;
+						});
+					}
+					if (empty) {
+						const p = document.querySelector("#cart-page-empty p");
+						if (p && p.textContent.trim() !== empty) p.textContent = empty;
+					}
+				};
 				const apply = () => {
+					applyPage();
 					const root = document.querySelector('[data-nt="cart-drawer"]');
 					if (!root) return;
 					const title = readVar("--cart-drawer-title");

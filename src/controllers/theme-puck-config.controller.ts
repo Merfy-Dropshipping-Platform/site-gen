@@ -357,6 +357,20 @@ export class ThemePuckConfigController {
       // превью, и мог его править (раньше дефолт здесь обнулялся, и поле
       // выглядело пустым при заполненном заголовке на экране).
       applyPlaceholders(hydratedFields as Record<string, unknown>, themeBlockPlaceholders[name]);
+      // Ограничения отступов блока (constraints.padding: min/max/step) кладём
+      // прямо в поле: конструктор рисовал ползунок универсальным шагом 8, и у
+      // шапки с шагом 4 подпись показывала 12, а ползунок вставал на 16
+      // (баг-репорт тестера). Теперь поле несёт ограничения темы.
+      const paddingConstraints = (cfg as { constraints?: { padding?: { min?: number; max?: number; step?: number } } })
+        .constraints?.padding;
+      const paddingField = (hydratedFields as Record<string, unknown>)?.padding as
+        | Record<string, unknown>
+        | undefined;
+      if (paddingConstraints && paddingField && paddingField.type === 'padding') {
+        if (typeof paddingConstraints.min === 'number') paddingField.min = paddingConstraints.min;
+        if (typeof paddingConstraints.max === 'number') paddingField.max = paddingConstraints.max;
+        if (typeof paddingConstraints.step === 'number') paddingField.step = paddingConstraints.step;
+      }
       components[name] = {
         label: cfg.label,
         category: componentToCategory[name] ?? 'other',

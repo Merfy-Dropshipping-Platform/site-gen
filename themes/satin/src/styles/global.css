@@ -876,3 +876,15 @@ blockquote {
     border: 1px solid rgb(var(--color-button-2-border, var(--color-button-2-bg, 0 0 0)));
   }
 }
+
+/* Карточки коллекций — та же обводка и скругление, что у карточек товара.
+   Настройки «Карточки товара» на них не действовали вовсе: правило было
+   привязано только к product-card, и мерчант видел разнобой на одной странице
+   (баг-репорт тестера). Отступ не трогаем — у плиток коллекций своя вёрстка
+   подписи. */
+@layer base {
+  [data-nt="satin-collection-card"] {
+    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240)) !important;
+    border-radius: var(--product-card-radius, 0px) !important;
+  }
+}

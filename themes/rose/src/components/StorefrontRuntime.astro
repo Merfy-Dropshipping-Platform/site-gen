@@ -43,7 +43,24 @@ import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/comp
 				if (p && p.textContent.trim() !== empty) p.textContent = empty;
 			}
 		};
+		// Цветовая схема панели корзины. Дровер живёт вне обёртки .color-scheme-N
+		// (он общий для всех страниц), поэтому без явного класса берёт :root и
+		// остаётся светлым даже в тёмной теме (баг-репорт тестера). Схему
+		// доставляет build глобалом — как в bloom/satin/flux/vanilla.
+		const applyDrawerScheme = () => {
+			const scheme = (window as unknown as { __MERFY_CART_DRAWER_SCHEME__?: string })
+				.__MERFY_CART_DRAWER_SCHEME__;
+			if (!scheme || !/^scheme-\d+$/.test(scheme)) return;
+			const root = document.getElementById("cart-drawer-root");
+			if (!root) return;
+			Array.from(root.classList).forEach((c) => {
+				if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
+			});
+			root.classList.add("color-scheme-" + scheme.replace("scheme-", ""));
+		};
+
 		const apply = () => {
+			applyDrawerScheme();
 			applyPage();
 			const root = document.querySelector('[data-nt="cart-drawer"]');
 			if (!root) return;

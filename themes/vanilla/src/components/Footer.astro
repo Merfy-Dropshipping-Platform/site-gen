@@ -68,7 +68,7 @@ const newsletterDescription =
 	(typeof p.newsletter?.description === "string" && p.newsletter.description.trim()
 		? p.newsletter.description
 		: undefined) ??
-	"Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.";
+	"Станьте частью сообщества Vanilla. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.";
 // Размер/выравнивание «Заголовка» рассылки (heading.size/alignment). Канон-дефолт
 // puckConfig/сида = {size:'small', alignment:'center'}, но манерный дизайн рассылки
 // vanilla (footer/FooterNewsletter.astro:10,16) = Bitter 20 СЛЕВА. Правило «canon-
@@ -188,12 +188,12 @@ const stripText =
 const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
 const isCanonPad = pad && Number(pad.top) === 80 && Number(pad.bottom) === 80;
 
-// Aria-label логотипа: без пропа = литерал верстальщика «Vanila — на главную»
+// Aria-label логотипа: без пропа = литерал верстальщика «Vanilla — на главную»
 // (бренд вордмарка, одна «l»); заданный siteTitle подставляется в подпись.
 const logoAriaLabel =
 	typeof p.siteTitle === "string" && p.siteTitle.trim()
 		? `${siteTitle} — на главную`
-		: "Vanila — на главную";
+		: "Vanilla — на главную";
 const footerPadStyle =
 	pad && !isCanonPad
 		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`

@@ -422,5 +422,35 @@
         "bottom": 120
       }
     }
+  },
+  "blockPlaceholders": {
+    "Newsletter": {
+      "heading.text": "Подпишитесь на нашу рассылку",
+      "heading": "Подпишитесь на нашу рассылку"
+    },
+    "ContactForm": {
+      "heading.text": "Контактная форма",
+      "heading": "Контактная форма"
+    },
+    "Publications": {
+      "heading.text": "Публикации",
+      "heading": "Публикации"
+    },
+    "MultiRows": {
+      "heading.text": "Мультиряды",
+      "heading": "Мультиряды"
+    },
+    "CollapsibleSection": {
+      "heading.text": "Сворачиваемый раздел",
+      "heading": "Сворачиваемый раздел"
+    },
+    "PopularProducts": {
+      "heading.text": "Коллекция товаров",
+      "heading": "Коллекция товаров"
+    },
+    "Collections": {
+      "heading.text": "Список коллекций",
+      "heading": "Список коллекций"
+    }
   }
 }

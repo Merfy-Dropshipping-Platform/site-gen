@@ -114,7 +114,7 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
       label: 'Кнопка',
       hiddenInMainPanel: true,
       objectFields: {
-        text: { type: 'text', label: 'Текст' },
+        text: { type: 'text', label: 'Текст', placeholder: 'Например, «Смотреть каталог»' } as any,
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
     } as any,

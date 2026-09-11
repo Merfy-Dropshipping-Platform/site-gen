@@ -61,7 +61,7 @@
       "props": {
         "id": "Hero-home",
         "backgroundImages": {
-          "url1": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png?e2eSeed=0"
+          "url1": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png"
         }
       }
     },
@@ -97,19 +97,19 @@
           {
             "id": "item-1",
             "type": "image",
-            "url": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png?e2eSeed=1",
+            "url": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png",
             "alt": "Изображение"
           },
           {
             "id": "item-2",
             "type": "image",
-            "url": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png?e2eSeed=2",
+            "url": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png",
             "alt": "Изображение"
           },
           {
             "id": "item-3",
             "type": "image",
-            "url": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png?e2eSeed=3",
+            "url": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png",
             "alt": "Изображение"
           }
         ]

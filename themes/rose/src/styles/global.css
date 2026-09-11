@@ -7,6 +7,13 @@
 @source "../components/**/*.{astro,ts,tsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
 @source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
+/* Блоки САМОЙ темы: без этого их утилиты не попадают в CSS. Каталог flux
+   лежит в packages/theme-<t>/blocks, и в превью у него не работали ни
+   `grid`, ни ширины колонки фильтров — сетка рисовалась как block, а
+   колонка фильтров растягивалась на всю ширину (баг-репорт владельца
+   «настройки карточки ломают страницу»: настройка лишь вызывала
+   перерисовку, а раскладка была сломана всегда). */
+@source "../../../../packages/theme-rose/blocks/**/*.{astro,ts}";
 
 @theme {
   --font-family-sans: "Manrope", system-ui, -apple-system, sans-serif;

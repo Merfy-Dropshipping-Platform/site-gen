@@ -176,11 +176,7 @@ const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled 
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT
 		? strip.text
-		// Дефолт полосы — только подпись платформы. Раньше он дословно повторял
-		// строку копирайта выше, и в подвале шли два одинаковых «© … Все права
-		// защищены» подряд (bloom и satin уже исправлены). Мерчантский текст
-		// полосы, если задан, идёт как есть.
-		: "Powered by Merfy";
+		: `© ${COPYRIGHT_YEAR} ${siteTitle} Все права защищены. Powered by Merfy`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе отступов
 // верстальщика (основное полотно py-12 md:py-16). {80,80} = canon-default puckConfig

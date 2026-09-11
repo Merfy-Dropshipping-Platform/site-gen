@@ -285,11 +285,9 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     imageFullBleed: { type: 'hidden', label: '' },
     contentAlign: { type: 'hidden', label: '' },
     buttonStyle: { type: 'hidden', label: '' },
-    // «Отступы» открыты: в макете 314-34815 их не было, но у всех остальных
-    // секций satin блок есть, и мерчант не мог отодвинуть баннер от соседей
-    // (баг-репорт тестера). Дефолт остаётся 0/0 — edge-to-edge вид не меняется,
-    // пока отступ не задали руками.
-    padding: { type: 'padding', label: 'Отступы' } as any,
+    // В Figma 314-34815 «Отступы» нет — скрыто из sidebar. Padding в данных
+    // сохраняется (для Hero.astro), но мерчант не редактирует.
+    padding: { type: 'hidden', label: '' } as any,
   },
   // defaults — satin'овская манера (НЕ канон-дефолты). Редакторский настрой satin:
   // STYLE'S WEAR заголовок, серый кикер, split-вариант, padding 0 (edge-to-edge),

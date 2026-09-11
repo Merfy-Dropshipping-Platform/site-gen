@@ -109,22 +109,11 @@ const headingWrapCls = fullBleed ? "vanilla-pad" : undefined;
 // Канон overlay 0-100 (hidden) — слой поверх медиа; клики проходят сквозь.
 const overlayN = Math.max(0, Math.min(100, Number(p.overlay) || 0));
 
-// Пустая секция (нет ролика и обложки) не растягивается на 1319/742: при ширине
-// контента это почти экран пустоты, и мерчанту негде прочитать, что нужен файл.
-// Компактная плитка + подпись — как во flux, bloom и satin.
-const mediaEmpty = !videoUrl && !merchantPoster;
-const mediaSizeCls = mediaEmpty ? "h-[220px] md:h-[280px]" : "aspect-[1319/742]";
-
 // «Размер» (секционный size) — ВЫСОТА медиа-плитки (канон Hero). small короче
 // (21:9), large выше (4:3); medium/absent — базовый 1319/742 (без inline-override,
 // default-preserving). Inline aspect-ratio перебивает класс плитки.
-const mediaHeightStyle = mediaEmpty
-	? undefined
-	: p.size === "small"
-		? "aspect-ratio:21/9"
-		: p.size === "large"
-			? "aspect-ratio:4/3"
-			: undefined;
+const mediaHeightStyle =
+	p.size === "small" ? "aspect-ratio:21/9" : p.size === "large" ? "aspect-ratio:4/3" : undefined;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -156,7 +145,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 		}
 
 		<div
-			class={`relative ${mediaSizeCls} w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]`}
+			class="relative aspect-[1319/742] w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]"
 			style={mediaHeightStyle}
 			data-animate
 			data-animate-delay="0.1s"
@@ -215,17 +204,6 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 						stroke-linejoin="round"
 					/>
 				</svg>
-			}
-			{
-				/* Подсказка мерчанту: пустая секция раньше молчала о том, что нужен файл. */
-				mediaEmpty && (
-					<div
-						class="pointer-events-none absolute inset-x-0 bottom-4 z-[2] text-center text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
-						data-media-placeholder-hint
-					>
-						Загрузите видео или укажите ссылку в настройках секции
-					</div>
-				)
 			}
 			{
 				overlayN > 0 && (

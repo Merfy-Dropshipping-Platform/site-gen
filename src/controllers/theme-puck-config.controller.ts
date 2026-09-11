@@ -112,8 +112,6 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
       // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
       blockPlaceholders: (liveManifest('rose', roseManifestJsonRaw) as any).blockPlaceholders ?? {},
-      // Ритм отступов темы для панели конструктора (см. themePanelDefaults ниже).
-      panelDefaults: (liveManifest('rose', roseManifestJsonRaw) as any).panelDefaults ?? {},
       defaults: (liveManifest('rose', roseManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('rose', roseManifestJsonRaw).colorSchemes ?? [],
     };
@@ -127,8 +125,6 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
       // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
       blockPlaceholders: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).blockPlaceholders ?? {},
-      // Ритм отступов темы для панели конструктора (см. themePanelDefaults ниже).
-      panelDefaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).panelDefaults ?? {},
       defaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('vanilla', vanillaManifestJsonRaw).colorSchemes ?? [],
     };
@@ -142,8 +138,6 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
       // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
       blockPlaceholders: (liveManifest('bloom', bloomManifestJsonRaw) as any).blockPlaceholders ?? {},
-      // Ритм отступов темы для панели конструктора (см. themePanelDefaults ниже).
-      panelDefaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).panelDefaults ?? {},
       defaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('bloom', bloomManifestJsonRaw).colorSchemes ?? [],
     };
@@ -157,8 +151,6 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
       // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
       blockPlaceholders: (liveManifest('satin', satinManifestJsonRaw) as any).blockPlaceholders ?? {},
-      // Ритм отступов темы для панели конструктора (см. themePanelDefaults ниже).
-      panelDefaults: (liveManifest('satin', satinManifestJsonRaw) as any).panelDefaults ?? {},
       defaults: (liveManifest('satin', satinManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('satin', satinManifestJsonRaw).colorSchemes ?? [],
     };
@@ -172,8 +164,6 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       // Плейсхолдеры полей панели (см. applyPlaceholders ниже) — тот же текст,
       // что порт рендерит заглушкой, чтобы инпут не выглядел пустым.
       blockPlaceholders: (liveManifest('flux', fluxManifestJsonRaw) as any).blockPlaceholders ?? {},
-      // Ритм отступов темы для панели конструктора (см. themePanelDefaults ниже).
-      panelDefaults: (liveManifest('flux', fluxManifestJsonRaw) as any).panelDefaults ?? {},
       defaults: (liveManifest('flux', fluxManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('flux', fluxManifestJsonRaw).colorSchemes ?? [],
     };
@@ -303,18 +293,6 @@ export class ThemePuckConfigController {
       (themeManifest as { blockPlaceholders?: Record<string, Record<string, string>> } | undefined)
         ?.blockPlaceholders ?? {};
 
-    // Ритм отступов темы для ПАНЕЛИ (`theme.json → panelDefaults`). Секции
-    // рисуют вертикальные отступы вёрсткой (rose 140, bloom 120, satin 48–80,
-    // flux 64), а ползунок «Отступы» показывал универсальные 80 — панель
-    // расходилась с витриной, и добавленная секция вставала с чужим отступом.
-    // Живёт отдельно от blockDefaults намеренно: blockDefaults подмешиваются и
-    // в рендер (scaffold), а там inline-значение убило бы адаптивность вёрстки
-    // (pt-14 → md:100 → xl:140). Здесь оно только дефолт панели: родная секция
-    // остаётся на вёрстке темы, новая получает тот же отступ, что и родные.
-    const themePanelDefaults =
-      (themeManifest as { panelDefaults?: Record<string, Record<string, unknown>> } | undefined)
-        ?.panelDefaults ?? {};
-
     const applyPlaceholders = (
       fields: Record<string, unknown>,
       map: Record<string, string> | undefined,
@@ -346,10 +324,7 @@ export class ThemePuckConfigController {
       // keys theme doesn't override.
       const themeDefaults = (themeBlockDefaults[name] as Record<string, unknown> | undefined) ?? {};
       const mergedDefaults = deepMergeBlockProps(
-        deepMergeBlockProps(
-          (cfg.defaultProps ?? {}) as Record<string, unknown>,
-          (themePanelDefaults[name] as Record<string, unknown> | undefined) ?? {},
-        ),
+        (cfg.defaultProps ?? {}) as Record<string, unknown>,
         themeDefaults,
       );
       // Плейсхолдер — подсказка для ПУСТОГО поля; значение из blockDefaults темы

@@ -10,8 +10,8 @@
         "stickiness": "scroll-up",
         "colorScheme": "scheme-2",
         "padding": {
-          "top": 12,
-          "bottom": 12
+          "top": 0,
+          "bottom": 0
         },
         "navigationLinks": [
           {

@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import { TOKEN_REGISTRY, type TokenKey } from '../tokens/registry';
 
-// Пакет живёт на zod 3 (см. packages/theme-contract/package.json) — здесь
-// валидна именно функция-параметр, а не объект с `error`. Правка на синтаксис
-// zod 4 ломала прод-сборку: локальный tsc брал zod 4 из корневых зависимостей
-// и не замечал этого.
 const TokenKeySchema = z.string().refine(
   (k): k is TokenKey => k in TOKEN_REGISTRY,
   (k) => ({ message: `Unknown token "${k}". Must be in TOKEN_REGISTRY.` }),

@@ -32,15 +32,6 @@ export interface ThemeConfigForResolver {
    */
   blockPlaceholders?: Record<string, Record<string, string>>;
   /**
-   * Ритм отступов темы ДЛЯ ПАНЕЛИ конструктора (theme.json `panelDefaults`):
-   * `{ <Block>: { padding: { top, bottom } } }`. Секции держат вертикальные
-   * отступы вёрсткой и адаптивно, поэтому в рендер эти значения не идут —
-   * иначе inline-padding обнулил бы брейкпоинты. Панели они нужны, чтобы
-   * ползунок «Отступы» показывал отступ темы, а не универсальные 80, и чтобы
-   * добавленная секция вставала в один ритм с родными.
-   */
-  panelDefaults?: Record<string, Record<string, unknown>>;
-  /**
    * 100: CSS-token defaults (theme.json `defaults` block). Передаются в
    * /api/themes/:id/puck-config response → конструктор TokenThemeProvider
    * инициализирует slider'ы Theme Settings с темо-эталонными значениями.

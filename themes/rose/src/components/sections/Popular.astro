@@ -305,12 +305,7 @@ const paddingStyle = p.padding
 				   «2 500 ₽». Без data-product-id / data-add-to-cart — это не
 				   реальный товар (add-to-cart недоступен, как в theme-base DEMO). */
 				<li>
-					{/* data-nt — тот же носитель, что у настоящей карточки: к нему
-					    привязаны правила «Карточки товара» (обводка, скругление,
-					    внутренний отступ, выравнивание). Без него мерчант крутил
-					    настройки на пустом магазине и не видел ничего, пока не
-					    добавит первый товар (баг-репорт тестера). */}
-					<article class="flex w-full flex-col gap-5" aria-label={card.name} data-nt="rose-product-card">
+					<article class="flex w-full flex-col gap-5" aria-label={card.name}>
 						<div class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]">
 							<img
 								src={card.image}

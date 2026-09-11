@@ -141,10 +141,7 @@
     },
     "Gallery": {},
     "MultiRows": {},
-    "MultiColumns": {},
-    "CollapsibleSection": {},
-    "Publications": {},
-    "ContactForm": {}
+    "MultiColumns": {}
   },
   "colorSchemes": [
     {
@@ -348,79 +345,5 @@
       "role": "system",
       "contentFile": "pages/checkout.json"
     }
-  ],
-  "panelDefaults": {
-    "CollapsibleSection": {
-      "padding": {
-        "top": 112,
-        "bottom": 112
-      }
-    },
-    "Collections": {
-      "padding": {
-        "top": 112,
-        "bottom": 112
-      }
-    },
-    "Gallery": {
-      "padding": {
-        "top": 80,
-        "bottom": 80
-      }
-    },
-    "ImageWithText": {
-      "padding": {
-        "top": 120,
-        "bottom": 120
-      }
-    },
-    "MainText": {
-      "padding": {
-        "top": 120,
-        "bottom": 120
-      }
-    },
-    "MultiColumns": {
-      "padding": {
-        "top": 112,
-        "bottom": 112
-      }
-    },
-    "MultiRows": {
-      "padding": {
-        "top": 112,
-        "bottom": 112
-      }
-    },
-    "Newsletter": {
-      "padding": {
-        "top": 120,
-        "bottom": 120
-      }
-    },
-    "PopularProducts": {
-      "padding": {
-        "top": 112,
-        "bottom": 112
-      }
-    },
-    "Publications": {
-      "padding": {
-        "top": 112,
-        "bottom": 112
-      }
-    },
-    "Video": {
-      "padding": {
-        "top": 80,
-        "bottom": 80
-      }
-    },
-    "ContactForm": {
-      "padding": {
-        "top": 120,
-        "bottom": 120
-      }
-    }
-  }
+  ]
 }

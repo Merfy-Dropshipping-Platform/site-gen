@@ -40,11 +40,7 @@
   },
   "blockDefaults": {
     "Header": {
-      "logoPosition": "center-absolute",
-      "padding": {
-        "top": 12,
-        "bottom": 12
-      }
+      "logoPosition": "center-absolute"
     },
     "Footer": {
       "variant": "2-part"
@@ -90,12 +86,7 @@
     },
     "PromoBanner": {
       "textTransform": "uppercase"
-    },
-    "CollapsibleSection": {},
-    "Collections": {},
-    "MainText": {},
-    "Publications": {},
-    "ContactForm": {}
+    }
   },
   "colorSchemes": [
     {
@@ -402,74 +393,6 @@
     },
     "Footer": {
       "heading.text": "Будьте в курсе наших новостей"
-    }
-  },
-  "panelDefaults": {
-    "CollapsibleSection": {
-      "padding": {
-        "top": 56,
-        "bottom": 56
-      }
-    },
-    "Collections": {
-      "padding": {
-        "top": 48,
-        "bottom": 48
-      }
-    },
-    "Gallery": {
-      "padding": {
-        "top": 56,
-        "bottom": 56
-      }
-    },
-    "MainText": {
-      "padding": {
-        "top": 64,
-        "bottom": 64
-      }
-    },
-    "MultiColumns": {
-      "padding": {
-        "top": 80,
-        "bottom": 80
-      }
-    },
-    "MultiRows": {
-      "padding": {
-        "top": 64,
-        "bottom": 64
-      }
-    },
-    "Newsletter": {
-      "padding": {
-        "top": 56,
-        "bottom": 56
-      }
-    },
-    "PopularProducts": {
-      "padding": {
-        "top": 56,
-        "bottom": 56
-      }
-    },
-    "Publications": {
-      "padding": {
-        "top": 56,
-        "bottom": 56
-      }
-    },
-    "Video": {
-      "padding": {
-        "top": 56,
-        "bottom": 56
-      }
-    },
-    "ContactForm": {
-      "padding": {
-        "top": 64,
-        "bottom": 64
-      }
     }
   }
 }

@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla): новая канон-секция MultiRows в манере vanilla (см.
 // themes/vanilla/MANNER.md §10: секции нет у верстальщика — ряды «текст +
 // медиа» по паттерну care-бэнда Gallery.astro:82-123 / about-сплита, с
@@ -204,7 +203,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					<Fragment set:html={inlineFormat(heading)} />
+					{heading}
 				</h2>
 			)
 		}
@@ -237,13 +236,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								<h3
 									class={`font-vanilla-bitter ${r.headingCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}
 								>
-									<Fragment set:html={inlineFormat(r.heading)} />
+									{r.heading}
 								</h3>
 							)}
 							{r.text && (
 								<div
 									class={`mt-5 w-full font-vanilla-arsenal ${r.textCls} font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]`}
-									set:html={inlineFormat(r.text)}
+									set:html={r.text}
 								/>
 							)}
 							{r.btnText && (

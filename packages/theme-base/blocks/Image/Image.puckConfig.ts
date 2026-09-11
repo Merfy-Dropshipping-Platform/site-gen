@@ -86,7 +86,7 @@ export const ImagePuckConfig: BlockPuckConfig<ImageProps> = {
       type: 'object',
       label: 'Кнопка',
       objectFields: {
-        text: { type: 'text', label: 'Текст', placeholder: 'Например, «Смотреть каталог»' } as any,
+        text: { type: 'text', label: 'Текст' },
         href: { type: 'text', label: 'Ссылка' },
       },
     },

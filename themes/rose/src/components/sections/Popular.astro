@@ -1,5 +1,5 @@
 ---
-import NtSectionHeading from "../ui/RoseSectionHeading.astro";
+import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
 import RoseProductCard from "../products/RoseProductCard.astro";
 
 // ОЖИВЛЕНИЕ: конструкторная схема PopularProducts (heading/subtitle union). Тело + данные verbatim.
@@ -304,7 +304,7 @@ const paddingStyle = p.padding
 				   Figma 1:19335 — куртка-заглушка (object-contain), «Товар»,
 				   «2 500 ₽». Без data-product-id / data-add-to-cart — это не
 				   реальный товар (add-to-cart недоступен, как в theme-base DEMO). */
-				<li class:list={quickAddMode ? ["group"] : undefined}>
+				<li>
 					{/* data-nt — тот же носитель, что у настоящей карточки: к нему
 					    привязаны правила «Карточки товара» (обводка, скругление,
 					    внутренний отступ, выравнивание). Без него мерчант крутил
@@ -330,20 +330,6 @@ const paddingStyle = p.padding
 							</span>
 						</div>
 					</article>
-					{quickAddMode && (
-						/* Демо-карточка показывает кнопку быстрого добавления, но товар не
-						   кладёт: пока коллекция не выбрана, мерчант включал настройку и не
-						   видел на карточках ничего (баг-репорт тестера). Настоящего товара
-						   тут нет, поэтому кнопка неактивна и объясняет причину. */
-						<button
-							type="button"
-							disabled
-							title="Демонстрационная карточка — выберите коллекцию, чтобы кнопка заработала"
-							class={`${quickAddCls} cursor-not-allowed opacity-60`}
-						>
-							{quickAddText}
-						</button>
-					)}
 				</li>
 			))}
 		</ul>{viewAllShow && (

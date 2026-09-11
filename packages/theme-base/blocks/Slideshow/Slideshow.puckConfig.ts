@@ -100,7 +100,7 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
           type: 'object',
           label: 'Заголовок',
           objectFields: {
-            text: { type: 'text', label: 'Текст', placeholder: 'Например, «Смотреть каталог»' } as any,
+            text: { type: 'text', label: 'Текст' },
             size: {
               type: 'radio',
               label: 'Размер',
@@ -132,7 +132,7 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
           type: 'object',
           label: 'Кнопка',
           objectFields: {
-            text: { type: 'text', label: 'Текст', placeholder: 'Например, «Смотреть каталог»' } as any,
+            text: { type: 'text', label: 'Текст' },
             link: { type: 'pagePicker', label: 'Ссылка' },
           },
         },

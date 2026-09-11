@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Канон-секция Video в чистой манере flux (см. themes/flux/MANNER.md; эталон
 // чистого стиля — Collections.astro). Шапка font-roboto-flex uppercase (дефолт
 // 19/23), подзаголовок font-roboto-flex font-light muted; медиа aspect-video в
@@ -180,7 +179,7 @@ const titleId = id && showHeading ? `${id}-title` : undefined;
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							<Fragment set:html={inlineFormat(headingText)} />
+							{headingText}
 						</h2>
 					)}
 					{subheadingText && <p class={subheadingCls}>{subheadingText}</p>}

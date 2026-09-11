@@ -91,7 +91,7 @@ const textCls =
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="text"
 			>
-				{/* §7 Контракта секции: «Ж»/«К» панели оборачивают значение в <strong>/<em>, Astro экранирует <Fragment set:html={inlineFormat(text)} /> → в полосе появлялся сырой «<EM>…</EM>», да ещё и заглавными из-за uppercase. XSS-safe inlineFormat. */}
+				{/* §7 Контракта секции: «Ж»/«К» панели оборачивают значение в <strong>/<em>, Astro экранирует {text} → в полосе появлялся сырой «<EM>…</EM>», да ещё и заглавными из-за uppercase. XSS-safe inlineFormat. */}
 				<span set:html={inlineFormat(text)} />
 				{linkText && (
 					<a

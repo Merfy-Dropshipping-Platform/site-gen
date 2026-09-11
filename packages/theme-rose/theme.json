@@ -505,39 +505,5 @@
         "bottom": 80
       }
     }
-  },
-  "blockPlaceholders": {
-    "MainText": {
-      "heading.text": "Расскажи о своем бренде",
-      "heading": "Расскажи о своем бренде"
-    },
-    "Newsletter": {
-      "heading.text": "Подпишитесь на нашу рассылку",
-      "heading": "Подпишитесь на нашу рассылку"
-    },
-    "MultiRows": {
-      "heading.text": "Мультиряды",
-      "heading": "Мультиряды"
-    },
-    "CollapsibleSection": {
-      "heading.text": "Сворачиваемый раздел",
-      "heading": "Сворачиваемый раздел"
-    },
-    "PopularProducts": {
-      "heading.text": "Коллекция товаров",
-      "heading": "Коллекция товаров"
-    },
-    "Collections": {
-      "heading.text": "Список коллекций",
-      "heading": "Список коллекций"
-    },
-    "Gallery": {
-      "heading.text": "Галерея",
-      "heading": "Галерея"
-    },
-    "Hero": {
-      "heading.text": "Там, где классика встречается с характером",
-      "heading": "Там, где классика встречается с характером"
-    }
   }
 }

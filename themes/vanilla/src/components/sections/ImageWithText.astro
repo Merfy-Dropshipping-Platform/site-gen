@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla): канон-секция ImageWithText — адаптация care-бэнда
 // sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
 // MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ — Gallery.astro НЕ
@@ -68,7 +67,7 @@ const selfCls =
 // зазор между абзацами даёт gap-4 обёртки, как у верстальщика (Gal:95). Роль =
 // текст полотна 14 (Gal:96; лестница §9): large/отсутствие = литерал 14, medium 12, small 10.
 const textDefault = hasImage
-	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanilla создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanilla вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
+	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
 	: "<p>Покажи и расскажи о своем товаре в одном блоке</p>";
 const text =
 	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() || textDefault;
@@ -178,7 +177,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						<Fragment set:html={inlineFormat(heading)} />
+						{heading}
 					</h2>
 				)
 			}
@@ -187,7 +186,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="101"
 				data-puck-subsection-field="text"
-				set:html={inlineFormat(text)}
+				set:html={text}
 			/>
 			{
 				btnText && (

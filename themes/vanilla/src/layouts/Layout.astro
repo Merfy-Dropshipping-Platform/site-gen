@@ -112,25 +112,6 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 					if (emptyP) emptyP.textContent = cfg.empty;
 				}
 			};
-			// Те же тексты — на СТРАНИЦЕ корзины: мерчант задаёт заголовок и текст
-			// пустой корзины один раз, а /cart показывал свои литералы
-			// (баг-репорт тестера).
-			const applyCartPageTexts = () => {
-				const w = window as any;
-				const title = w.__MERFY_CART_DRAWER_TITLE__;
-				const empty = w.__MERFY_CART_DRAWER_EMPTY__;
-				if (title) {
-					document.querySelectorAll("#cart-page-heading, #cart-page-empty h1").forEach((h) => {
-						if (h.textContent && h.textContent.trim() !== title) h.textContent = title;
-					});
-				}
-				if (empty) {
-					const p = document.querySelector("#cart-page-empty p");
-					if (p && p.textContent && p.textContent.trim() !== empty) p.textContent = empty;
-				}
-			};
-			applyCartPageTexts();
-			document.addEventListener("astro:page-load", applyCartPageTexts);
 			applyCartDrawerSettings();
 			document.addEventListener("astro:page-load", applyCartDrawerSettings);
 

@@ -10,13 +10,6 @@
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
 @source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
-/* Блоки САМОЙ темы: без этого их утилиты не попадают в CSS. Каталог flux
-   лежит в packages/theme-<t>/blocks, и в превью у него не работали ни
-   `grid`, ни ширины колонки фильтров — сетка рисовалась как block, а
-   колонка фильтров растягивалась на всю ширину (баг-репорт владельца
-   «настройки карточки ломают страницу»: настройка лишь вызывала
-   перерисовку, а раскладка была сломана всегда). */
-@source "../../../../packages/theme-bloom/blocks/**/*.{astro,ts}";
 /* Порты верстальщика: без скана group-hover/d1 у NavItem дропдаун меню остаётся invisible. Как у rose/satin. */
 @source "../components/**/*.{astro,ts,tsx}";
 
@@ -858,17 +851,5 @@ blockquote {
   }
   [class*="bg-[rgb(var(--color-button-2-bg"]:not([class*="border-["]) {
     border: 1px solid rgb(var(--color-button-2-border, var(--color-button-2-bg, 0 0 0)));
-  }
-}
-
-/* Карточки коллекций — та же обводка и скругление, что у карточек товара.
-   Настройки «Карточки товара» на них не действовали вовсе: правило было
-   привязано только к product-card, и мерчант видел разнобой на одной странице
-   (баг-репорт тестера). Отступ не трогаем — у плиток коллекций своя вёрстка
-   подписи. */
-@layer base {
-  [data-nt="bloom-collection-card"] {
-    border: var(--product-card-bw, 0px) solid rgb(var(--color-border, 240 240 240)) !important;
-    border-radius: var(--product-card-radius, 0px) !important;
   }
 }

@@ -436,20 +436,6 @@ const paddingStyle = p.padding
 										{ph.price}
 									</span>
 								</div>
-								{quickAddMode && quickAddMode !== "none" && (
-									/* Демо-карточка показывает кнопку быстрого добавления, но товар
-									   не кладёт: пока коллекция не выбрана, мерчант включал
-									   настройку и не видел на карточках ничего (баг-репорт
-									   тестера). Реального товара тут нет — кнопка неактивна. */
-									<button
-										type="button"
-										disabled
-										title="Демонстрационная карточка — выберите коллекцию, чтобы кнопка заработала"
-										class="mt-3 flex h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] opacity-60"
-									>
-										{quickAddText}
-									</button>
-								)}
 							</article>
 						</li>
 					))}

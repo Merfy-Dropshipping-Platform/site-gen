@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 import FluxPicture from "../img/FluxPicture.astro";
 import { SITE_TITLE } from "../../consts";
 
@@ -469,7 +468,7 @@ const overlayPadCls = p.padding ? "" : "py-10 md:py-14 lg:py-16 xl:py-20";
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="heading"
 				>
-					<Fragment set:html={inlineFormat(title)} />
+					{title}
 				</h1>
 				<p
 					class={subtitleCls}

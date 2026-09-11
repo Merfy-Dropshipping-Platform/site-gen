@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Канон-секция MultiRows («Мультиряды») в ЧИСТОМ стиле flux. Секции нет у
 // верстальщика (MANNER §10) — ряды «изображение + текст» с чередованием стороны
 // медиа по индексу. ЕДИНЫЙ flux-язык: ВСЯ секция — font-roboto-flex
@@ -215,7 +214,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						<Fragment set:html={inlineFormat(heading)} />
+						{heading}
 					</h2>
 				)
 			}
@@ -245,13 +244,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 								{r.heading && (
 									<h3
 										class={`font-roboto-flex ${r.headingCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
-										set:html={inlineFormat(r.heading)}
+										set:html={r.heading}
 									/>
 								)}
 								{r.text && (
 									<div
 										class={`font-roboto-flex ${r.textCls} font-light leading-relaxed text-[rgb(var(--color-text,0_0_0))]`}
-										set:html={inlineFormat(r.text)}
+										set:html={r.text}
 									/>
 								)}
 								{r.btnText && (

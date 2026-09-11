@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Канон-секция Slideshow в манере flux (см. themes/flux/MANNER.md). Полотно =
 // Hero flux (full-bleed фото; заголовок Roboto Flex uppercase §1; текст Roboto
 // Flex 300; чёрная CTA героя §3 / outlined-вариант); 9-grid позиция слайда как
@@ -259,8 +258,8 @@ const paddingStyle = p.padding
 								class={`flex max-w-[432px] flex-col gap-6 ${s.alignItemsCls} ${s.textAlignCls}${s.boxed ? " rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 p-6 shadow-sm md:p-8 [&_h2]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]" : ""}`}
 							>
 								<div class={`flex flex-col gap-2 ${s.alignItemsCls} ${s.textAlignCls}`}>
-									{s.heading && <h2 class={s.headingCls}><Fragment set:html={inlineFormat(s.heading)} /></h2>}
-									{s.subtitle && <p class={s.textCls}><Fragment set:html={inlineFormat(s.subtitle)} /></p>}
+									{s.heading && <h2 class={s.headingCls}>{s.heading}</h2>}
+									{s.subtitle && <p class={s.textCls}>{s.subtitle}</p>}
 								</div>
 								{s.ctaText && (
 									<a href={s.ctaHref} class={ctaCls}>

@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla, группа misc): новая канон-секция Newsletter в манере vanilla
 // (см. themes/vanilla/MANNER.md §8; эталон процесса — themes/bloom Newsletter).
 // Схема полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -122,14 +121,14 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						<Fragment set:html={inlineFormat(heading)} />
+						{heading}
 					</h2>
 					<p
 						class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
-						set:html={inlineFormat(description)}
+						set:html={description}
 					/>
 				</div>
 			)

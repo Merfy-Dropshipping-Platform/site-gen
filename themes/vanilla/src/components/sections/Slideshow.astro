@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Фаза B: новая канон-секция Slideshow в манере vanilla (см. themes/vanilla/
 // MANNER.md; процесс-эталон — bloom Slideshow). Схема полей = packages/
 // theme-base/blocks/Slideshow/Slideshow.puckConfig.ts. Композиция = полотно
@@ -287,11 +286,11 @@ const paddingStyle = p.padding
 							<h2
 								data-hero-title
 								class={`hero-animate-1 vanilla-slideshow-title ${hasSlides ? headingCls : phHeadingCls}`}
-							 set:html={inlineFormat(slides[0].title)}></h2>
+							>{slides[0].title}</h2>
 							<p
 								data-hero-subtitle
 								class={`hero-animate-2 vanilla-slideshow-subtitle ${hasSlides ? textCls : phTextCls}`}
-							 set:html={inlineFormat(slides[0].subtitle)}></p>
+							>{slides[0].subtitle}</p>
 							<a
 								data-hero-cta
 								class={`hero-animate-3 ${hasSlides ? ctaCls : phCtaCls}`}

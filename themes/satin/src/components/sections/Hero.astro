@@ -330,13 +330,9 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 							{PH_HELPER}
 						</p>
 					</div>
-					{/* Кнопка пустого состояния берёт цвета из схемы: раньше белый фон и
-					    #111111 были прибиты в разметке, и ни цвет текста, ни наведение из
-					    схемы до неё не доходили (баг-репорт тестера). Дефолты токенов равны
-					    прежним литералам — вид не меняется. */}
 					<a
 						href={ctaLink}
-						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,255_255_255)))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,17_17_17))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-white bg-white px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[#111111] transition-opacity duration-[180ms] hover:opacity-[0.78]"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"

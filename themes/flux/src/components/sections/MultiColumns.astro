@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Секция MultiColumns («Мультиколонны») в манере flux. Донора-секции у
 // верстальщика flux НЕТ (секций всего 4, MANNER §10) — секция собрана в ЕДИНОМ
 // flux-языке: ВСЯ секция = font-roboto-flex (заголовок секции / заголовок колонки /
@@ -239,7 +238,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						<Fragment set:html={inlineFormat(heading)} />
+						{heading}
 					</h2>
 				)
 			}
@@ -280,13 +279,13 @@ const titleId = id && heading ? `${id}-title` : undefined;
 									<h3
 										class={`font-roboto-flex ${itemHeadingCls(c.headingSize)} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
 									>
-										<Fragment set:html={inlineFormat(c.heading)} />
+										{c.heading}
 									</h3>
 								)}
 								{c.text && (
 									<div
 										class={`font-roboto-flex ${itemTextCls(c.textSize)} font-light leading-relaxed text-[rgb(var(--color-text,0_0_0))]`}
-										set:html={inlineFormat(c.text)}
+										set:html={c.text}
 									/>
 								)}
 								{c.link && (

@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 import VanillaProductCard from "../products/VanillaProductCard.astro";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular T13): полная конструкторная схема
@@ -301,9 +300,9 @@ const paddingStyle = p.padding
 			data-puck-subsection-field="heading"
 		>
 			<h2 id="popular-title" class={headingCls}>
-				<Fragment set:html={inlineFormat(sectionTitle)} />
+				{sectionTitle}
 			</h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
 		<ul
@@ -376,21 +375,6 @@ const paddingStyle = p.padding
 							</span>
 						</div>
 					</article>
-					{quickAddMode && (
-						/* Демо-карточка показывает кнопку быстрого добавления, но не
-						   кладёт товар: мерчант включал настройку и не видел ничего,
-						   пока в секции не выбрана коллекция (баг-репорт тестера).
-						   Настоящий data-add-to-cart тут неоткуда взять — это не
-						   товар, поэтому кнопка неактивна и говорит об этом. */
-						<button
-							type="button"
-							disabled
-							title="Демонстрационная карточка — выберите коллекцию, чтобы кнопка заработала"
-							class={`${QA_BTN_CLS} cursor-not-allowed opacity-60`}
-						>
-							{quickAddText}
-						</button>
-					)}
 				</li>
 			))}
 		</ul>{viewAllShow && (

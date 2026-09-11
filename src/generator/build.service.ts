@@ -1291,53 +1291,6 @@ export async function runBuildPipeline(
       } catch (layErr) {
         logger.warn(`[themes-v2] catalog layout inject failed: ${(layErr as Error)?.message ?? layErr}`);
       }
-      // Оформление заказа: схема и отступы секций. Страница чекаута не
-      // пересобирается из блоков ревизии (она на React, со своим shopId), а
-      // корневой div темы жёстко несёт `color-scheme-2` — поэтому смена схемы
-      // и отступов в конструкторе на витрину не доезжала (баг-репорт тестера).
-      // Глобалы читает инлайн-скрипт checkout.astro темы; без мерчантских
-      // значений глобалы не инжектятся, и страница выглядит как раньше.
-      try {
-        const coContent = (ctx.revisionData as { pagesData?: Record<string, { content?: Array<{ type?: string; props?: Record<string, unknown> }> }> } | null)
-          ?.pagesData?.['page-checkout']?.content;
-        const coBlocks = Array.isArray(coContent) ? coContent : [];
-        const blockProps = (type: string) => coBlocks.find((b) => b?.type === type)?.props;
-        const schemeOf = (v: unknown): string | null => {
-          if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-          if (typeof v === 'string' && v.trim()) return v.replace(/^scheme-/, '');
-          return null;
-        };
-        const padOf = (v: unknown): { top: number; bottom: number } | null => {
-          const p2 = v as { top?: unknown; bottom?: unknown } | undefined;
-          if (!p2 || typeof p2 !== 'object') return null;
-          const top = Number(p2.top);
-          const bottom = Number(p2.bottom);
-          if (!Number.isFinite(top) && !Number.isFinite(bottom)) return null;
-          return { top: Number.isFinite(top) ? top : 0, bottom: Number.isFinite(bottom) ? bottom : 0 };
-        };
-        const coScheme =
-          schemeOf(blockProps('CheckoutForm')?.colorScheme) ??
-          schemeOf(blockProps('CheckoutSummary')?.colorScheme) ??
-          schemeOf(blockProps('CheckoutHeader')?.colorScheme);
-        const coPadding: Record<string, { top: number; bottom: number }> = {};
-        const headerPad = padOf(blockProps('CheckoutHeader')?.padding);
-        const formPad = padOf(blockProps('CheckoutForm')?.padding);
-        const summaryPad = padOf(blockProps('CheckoutSummary')?.padding);
-        if (headerPad) coPadding.header = headerPad;
-        if (formPad) coPadding.form = formPad;
-        if (summaryPad) coPadding.summary = summaryPad;
-        const coGlobals: Record<string, string> = {};
-        // Схему шлём, только если мерчант увёл её от светлой второй — иначе
-        // страница остаётся ровно такой, какой её нарисовали верстальщики.
-        if (coScheme && coScheme !== '2') coGlobals.__MERFY_CHECKOUT_SCHEME__ = coScheme;
-        if (Object.keys(coPadding).length > 0) coGlobals.__MERFY_CHECKOUT_PADDING__ = JSON.stringify(coPadding);
-        if (Object.keys(coGlobals).length > 0) {
-          const n = await injectGlobalsIntoDist(ctx.distDir, coGlobals);
-          logger.log(`[themes-v2] Injected checkout settings (${Object.keys(coGlobals).join(', ')}) into ${n} HTML files for site ${params.siteId}`);
-        }
-      } catch (coErr) {
-        logger.warn(`[themes-v2] checkout settings inject failed: ${(coErr as Error)?.message ?? coErr}`);
-      }
       // Цветовая схема корзины-дровера: дровер (chrome на каждой странице) красится
       // scheme-токенами, но живёт вне color-scheme-обёртки → берёт :root-дефолт, а
       // не выбранную схему корзины. Достаём CartBody.colorScheme (главная секция

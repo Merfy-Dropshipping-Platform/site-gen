@@ -139,7 +139,7 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       label: 'Кнопка',
       hiddenInMainPanel: true,
       objectFields: {
-        text: { type: 'text', label: 'Текст', placeholder: 'Например, «Смотреть каталог»' } as any,
+        text: { type: 'text', label: 'Текст' },
         link: { type: 'pagePicker', label: 'Ссылка' },
       },
     } as any,

@@ -164,17 +164,6 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
       objectFields: {
         // Figma 1236-42145: «Размер» как dropdown (был radio).
         size: { type: 'select', label: 'Размер', options: sizeOptions },
-        // Единственной настройкой был «Размер», и откуда берётся сам текст —
-        // нигде не сказано (баг-репорт тестера). Подсказка со ссылкой на
-        // карточку товара в админке, как у «Стоимости» и «Количества».
-        _source: {
-          type: 'disabledHint',
-          label: '',
-          hintTitle: 'Текст названия берётся из карточки товара',
-          hintBody: 'Изменения проводятся на странице',
-          hintLinkText: 'Товары',
-          hintLinkHref: '/products',
-        },
       },
     } as any,
     // Figma 1236-42145: Стоимость — «Настройка недоступна / Изменения

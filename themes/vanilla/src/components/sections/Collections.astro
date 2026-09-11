@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // ПЛЕЙСХОЛДЕР пустого состояния (контракт Figma 1:19335 / theme-base
 // Collections 1:33070): когда у секции НЕТ ручного выбора коллекций —
 // рендерим N пустых квадратных карточек (rounded-rect bg surface) с подписью
@@ -208,9 +207,9 @@ const paddingStyle = p.padding
 			data-puck-subsection-field="heading"
 		>
 			<h2 id="collections-title" class={headingCls}>
-				<Fragment set:html={inlineFormat(sectionTitle)} />
+				{sectionTitle}
 			</h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
 
 		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle}>

@@ -36,35 +36,6 @@ const dadataToken = "";
         тонированной панели (--color-surface), панель уходит до правого края.
         Контент сходится к центру. ВАЖНО: разметка + CSS .mfy-checkout-* ДОЛЖНЫ
         совпадать с preview.service.ts:wrapCheckoutGrid (конструктор-превью). */}
-    {/* Настройки секций «Оформление заказа» из конструктора: схема и отступы.
-        Страница на React и из блоков ревизии не пересобирается, поэтому build
-        доставляет выбор мерчанта глобалами, а здесь он применяется к разметке.
-        Глобалов нет → страница ровно такая, какой её нарисовали верстальщики. */}
-    <script is:inline>
-      (function () {
-        var root = document.currentScript.parentElement;
-        var scheme = window.__MERFY_CHECKOUT_SCHEME__;
-        if (scheme) {
-          root.className = root.className.replace(/\bcolor-scheme-\d+\b/g, "").trim();
-          root.classList.add("color-scheme-" + scheme);
-          root.removeAttribute("style");
-        }
-        var pad = window.__MERFY_CHECKOUT_PADDING__;
-        if (pad) {
-          try { pad = typeof pad === "string" ? JSON.parse(pad) : pad; } catch (e) { pad = null; }
-        }
-        if (pad) {
-          var put = function (el, box) {
-            if (!el || !box) return;
-            if (typeof box.top === "number") el.style.paddingTop = box.top + "px";
-            if (typeof box.bottom === "number") el.style.paddingBottom = box.bottom + "px";
-          };
-          put(document.querySelector("[data-checkout-header]") || document.querySelector("header"), pad.header);
-          put(document.querySelector('[data-checkout-column="form"]'), pad.form);
-          put(document.querySelector('[data-checkout-column="summary"]'), pad.summary);
-        }
-      })();
-    </script>
     <main class="flex-1 w-full mfy-checkout-split" style="color: rgb(var(--color-text));">
       <div class="mfy-checkout-pane mfy-checkout-pane--form">
         <div class="mfy-checkout-pane__inner" data-checkout-column="form">

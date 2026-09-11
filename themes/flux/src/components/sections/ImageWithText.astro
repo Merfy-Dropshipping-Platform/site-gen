@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Секция ImageWithText («Изображение с текстом») в манере flux. Секции нет у
 // верстальщика flux (всего 4, MANNER §10) — дизайним в ЕДИНОМ flux-языке: ВСЯ
 // секция на font-roboto-flex (заголовок/текст/кнопка); прежний дрейф на
@@ -206,14 +205,14 @@ const titleId = id ? `${id}-title` : undefined;
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="heading"
 					>
-						<Fragment set:html={inlineFormat(heading)} />
+						{heading}
 					</h2>
 					<div
 						class={textCls + alignCls + italicCls}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="text"
-						set:html={inlineFormat(text)}
+						set:html={text}
 					/>
 				</div>
 				{

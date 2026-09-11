@@ -414,13 +414,7 @@ const rowStockOptions: RadioOption[] = [
 
 			{/* ── Раскладка «side» (родная для vanilla): левый сайдбар фильтров ── */}
 			<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-6" data-catalog-variant="side">
-				{(filterVisible || sortVisible) && (
-					<VanillaCatalogFilterSidebar
-						class="w-full lg:shrink-0"
-						showFilter={showFilter}
-						showSort={showSort}
-					/>
-				)}
+				{filterVisible && <VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />}
 
 				<div class="flex min-w-0 flex-1 flex-col gap-8">
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">

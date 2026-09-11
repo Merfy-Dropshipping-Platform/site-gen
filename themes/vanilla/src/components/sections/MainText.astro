@@ -1,5 +1,4 @@
 ---
-import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
 // pages/about.astro:138-166 (см. themes/vanilla/MANNER.md §10: welcome =
 // тёмное полотно №2 «заголовок + текст + outlined-CTA» = аналог MainText).
@@ -141,7 +140,7 @@ const headingId = id ? `${id}-title` : "welcome-title";
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						<Fragment set:html={inlineFormat(heading)} />
+						{heading}
 					</h2>
 				)
 			}
@@ -151,7 +150,7 @@ const headingId = id ? `${id}-title` : "welcome-title";
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="101"
 				data-puck-subsection-field="text"
-				set:html={inlineFormat(text)}
+				set:html={text}
 			/>
 		</div>
 		{

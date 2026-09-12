@@ -1,8 +1,25 @@
 name: theme-parity
 
+# Пути включают themes/** — живые порты тем лежат именно там, а не только в
+# packages/theme-**; без этого визуальный диф ни разу не запускался на правках
+# секций. И триггер на push в main: работа идёт прямо в main, PR почти не
+# создаётся, а проверка, которая не запускается, ничего не проверяет.
+# Список путей продублирован: YAML-якоря в workflow GitHub Actions не работают.
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'themes/**'
+      - 'packages/theme-**'
+      - 'src/controllers/preview*'
+      - 'src/services/preview*'
+      - 'src/themes/**'
+      - '.github/workflows/theme-parity.yml'
+      - 'scripts/visual-diff-themes.mjs'
+      - 'visual-diff-thresholds.json'
   pull_request:
     paths:
+      - 'themes/**'
       - 'packages/theme-**'
       - 'src/controllers/preview*'
       - 'src/services/preview*'

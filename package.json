@@ -45,7 +45,9 @@
     "conformance:satin:propose-requirements": "tsx scripts/theme-conformance.ts --theme satin --report-dir conformance-results/satin --propose-requirements conformance-results/satin/requirements.proposal.json",
     "conformance:satin": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin",
     "conformance:satin:diagnose": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin --diagnose",
-    "conformance:satin:release": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin --require-zero"
+    "conformance:satin:release": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin --require-zero",
+    "build:theme-sections:all": "for t in rose bloom satin flux vanilla; do node scripts/compile-theme-sections.mjs $t || exit 1; done",
+    "test:section-snapshots": "jest --runInBand src/themes/__tests__/section-html-snapshot.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

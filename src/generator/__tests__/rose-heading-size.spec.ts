@@ -65,12 +65,10 @@ describe("Rose heading sizes", () => {
     );
 
     // top-level `headingSize` читается ПЕРЕД legacy `heading.size`.
-    expect(gallerySource).toContain('p.headingSize ?? p.heading?.size');
+    expect(gallerySource).toContain("p.headingSize ?? p.heading?.size");
     // Заголовок остаётся кликабельной подсекцией с обёрткой размеров.
-    expect(gallerySource).toContain('headWrapCls');
-    expect(gallerySource).toMatch(
-      /data-puck-subsection-field="heading"/s,
-    );
+    expect(gallerySource).toContain("headWrapCls");
+    expect(gallerySource).toMatch(/data-puck-subsection-field="heading"/s);
   });
 
   it("prefers the top-level Collections size and wires compiled heading variables to its wrapper", () => {
@@ -92,11 +90,9 @@ describe("Rose heading sizes", () => {
       "utf8",
     );
 
-    expect(collectionsSource).toContain('p.headingSize');
-    expect(collectionsSource).toContain('headWrapBase');
-    expect(collectionsSource).toMatch(
-      /data-puck-subsection-field="heading"/s,
-    );
+    expect(collectionsSource).toContain("p.headingSize");
+    expect(collectionsSource).toContain("headWrapBase");
+    expect(collectionsSource).toMatch(/data-puck-subsection-field="heading"/s);
     // В выбранной линии размер заголовка Collections идёт через
     // `--size-section-heading` (её читает #collections-title в <style> секции).
     // Запрет на эту переменную был частью другой реализации и здесь неприменим.

@@ -35,7 +35,13 @@ type Theme = (typeof THEMES)[number];
 
 /** Поля ОФОРМЛЕНИЯ. Контент (тексты, картинки, пикеры) сюда не входит: у него
  *  дефолта нет по определению, а `colorScheme` наследуется от :root. */
-const STYLE_TYPES = new Set(["select", "radio", "alignment", "toggle", "slider"]);
+const STYLE_TYPES = new Set([
+  "select",
+  "radio",
+  "alignment",
+  "toggle",
+  "slider",
+]);
 
 /**
  * Дефолты, которые РАСХОДЯТСЯ с фолбэком порта. Все до единого существовали до
@@ -110,12 +116,22 @@ const digest = (s: string | undefined): string =>
     .digest("hex");
 
 function themeBlocks(theme: Theme): string[] | null {
-  const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+  const mf = resolve(
+    SITES_ROOT,
+    "dist",
+    "theme-sections",
+    theme,
+    "manifest.json",
+  );
   if (!existsSync(mf)) return null;
-  return Object.keys(JSON.parse(readFileSync(mf, "utf-8")) as Record<string, string>);
+  return Object.keys(
+    JSON.parse(readFileSync(mf, "utf-8")) as Record<string, string>,
+  );
 }
 
-function readPanel(theme: Theme): Record<string, Record<string, PanelField>> | null {
+function readPanel(
+  theme: Theme,
+): Record<string, Record<string, PanelField>> | null {
   try {
     const raw = execFileSync("node", [PANEL, theme], {
       cwd: SITES_ROOT,

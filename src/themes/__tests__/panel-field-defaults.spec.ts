@@ -107,14 +107,26 @@ const FIELD_EXCEPTIONS: Record<string, FieldException> = {
   // `if (p.headingFont) …` — ПУСТО означает «взять токен темы». Статичный hex
   // или имя шрифта отвязали бы страницу от темы и схемы мерчанта.
   "OrderConfirmation.orderBg": { reason: "пусто = токен темы (--color-bg)" },
-  "OrderConfirmation.summaryBg": { reason: "пусто = токен темы (--color-input-bg)" },
-  "OrderConfirmation.accentColor": { reason: "пусто = токен темы (--color-accent)" },
-  "OrderConfirmation.buttonColor": { reason: "пусто = токен темы (--color-button-bg)" },
-  "OrderConfirmation.errorColor": { reason: "пусто = токен темы (--color-error)" },
+  "OrderConfirmation.summaryBg": {
+    reason: "пусто = токен темы (--color-input-bg)",
+  },
+  "OrderConfirmation.accentColor": {
+    reason: "пусто = токен темы (--color-accent)",
+  },
+  "OrderConfirmation.buttonColor": {
+    reason: "пусто = токен темы (--color-button-bg)",
+  },
+  "OrderConfirmation.errorColor": {
+    reason: "пусто = токен темы (--color-error)",
+  },
   "OrderConfirmation.headingFont": { reason: "пусто = шрифт заголовков темы" },
   "OrderConfirmation.bodyFont": { reason: "пусто = шрифт текста темы" },
-  "OrderConfirmation.headingWeight": { reason: "пусто = насыщенность заголовков темы" },
-  "OrderConfirmation.bodyWeight": { reason: "пусто = насыщенность текста темы" },
+  "OrderConfirmation.headingWeight": {
+    reason: "пусто = насыщенность заголовков темы",
+  },
+  "OrderConfirmation.bodyWeight": {
+    reason: "пусто = насыщенность текста темы",
+  },
   // ── Порты, у которых «не задано» — ОТДЕЛЬНОЕ состояние ────────────────────
   // Ни одно значение списка не даёт тот же HTML, что отсутствие значения:
   // порт рисует четвёртую ветку. Дефолт здесь изменил бы вид витрины, а это

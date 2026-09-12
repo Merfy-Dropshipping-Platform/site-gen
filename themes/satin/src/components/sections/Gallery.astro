@@ -227,6 +227,12 @@ const fitCls = (t: GalleryTile) =>
 		: "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+// Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
+// половину рядом с пустотой.
+const soloTile = galleryTiles.length === 1;
+const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
+// Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
+const heroSizeCls = soloTile ? "aspect-[16/9]" : "aspect-square";
 
 // Подписи плиток — манера карточек satin (PC:48-62 / CC:31-35): имя Arsenal 16
 // 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
@@ -288,7 +294,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		</div>
 		)}
 
-		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+		<div class={`grid grid-cols-1 items-start gap-4 ${gridLayoutCls}`}>
 			{heroTile && (
 				<a
 					href={heroTile.href}
@@ -302,7 +308,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					data-puck-subsection-index={0}
 					data-puck-subsection-field="items"
 				>
-					<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+					<div class={`${heroSizeCls} w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]`}>
 						{heroTile.url && (
 							<img
 								src={heroTile.url}

@@ -156,6 +156,10 @@ const tileImage = (entity: any): string => {
 	if (imgs && imgs[0]) return typeof imgs[0] === "string" ? imgs[0] : (imgs[0]?.url ?? "");
 	return typeof entity?.image === "string" ? entity.image : "";
 };
+// Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
+// половину рядом с пустотой.
+const soloTile = galleryTiles.length === 1;
+const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
 const needsResolve = galleryTiles.some(
 	(t) => (t.kind === "product" || t.kind === "collection") && t.ref,
 );
@@ -252,7 +256,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{sectionText}
 				</p>
 			)}
-			<ul class="mt-10 grid w-full grid-cols-1 gap-4 text-left lg:grid-cols-2" role="list">
+			<ul class={`mt-10 grid w-full grid-cols-1 gap-4 text-left ${gridLayoutCls}`} role="list">
 				{galleryTiles.map((tile, i) => (
 					<li class={mirror && i === 0 ? "lg:order-2" : mirror && i === 1 ? "lg:order-1" : undefined}>
 						<a
@@ -265,7 +269,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="items"
 						>
-							<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+							<div class={`relative ${soloTile ? "aspect-[16/9]" : "aspect-square"} w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]`}>
 								{tile.url && (
 									<img
 										src={tile.url}

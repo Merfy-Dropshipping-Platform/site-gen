@@ -157,6 +157,12 @@ const fitCls = (t: GalleryTile, hover: string) =>
 	t.placeholder && t.kind === "product" ? "object-contain p-[12%]" : `object-cover ${hover}`;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+// Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
+// половину рядом с пустотой.
+const soloTile = galleryTiles.length === 1;
+const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
+// Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
+const heroSizeCls = soloTile ? "aspect-[16/9]" : "aspect-square";
 // Больше трёх плиток: боковая часть перестаёт быть колонкой и становится
 // сеткой — иначе плитки вытягиваются в нитку. Три и меньше рисуются как
 // раньше, поэтому снимки разметки не двигаются.
@@ -208,11 +214,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			></h2>
 		))}
 
-		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-animate data-animate-delay="0.1s">
+		<div class={`grid grid-cols-1 items-start gap-4 ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`group relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
+					class={`group relative block ${heroSizeCls} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}

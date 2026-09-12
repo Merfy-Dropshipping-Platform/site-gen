@@ -148,6 +148,14 @@ const mediaFitCls = (t: GalleryTile) =>
 		: "object-cover object-center transition-transform duration-300 group-hover:scale-110";
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+
+// Одна видимая плитка — одна колонка на всю ширину; высоту задаёт соотношение
+// сторон, потому что брать её от соседней колонки больше не у кого.
+const soloTile = galleryTiles.length === 1;
+const heroSizeCls = soloTile ? "lg:aspect-[16/9]" : "lg:min-h-0 lg:h-full";
+const gridLayoutCls = soloTile
+	? "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8"
+	: galleryGridCls;
 // Больше трёх плиток: боковая часть перестаёт быть колонкой и становится
 // сеткой — иначе плитки вытягиваются в нитку. Три и меньше рисуются как
 // раньше, поэтому снимки разметки не двигаются.
@@ -185,12 +193,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			data-animate
 			data-animate-delay="0.1s"
-			class={galleryGridCls}
+			class={gridLayoutCls}
 		>
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:min-h-0 lg:h-full${heroTileOrderCls}`}
+					class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${heroSizeCls}${heroTileOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}

@@ -167,6 +167,14 @@ const fitCls = (t: GalleryTile, hover: string) =>
 		: `object-cover object-center ${hover}`;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+
+// Одна видимая плитка занимает всю ширину секции и получает собственное
+// соотношение сторон. Иначе она жмётся в свою колонку рядом с пустотой, а на
+// десктопе схлопывается в нулевую высоту: hero берёт высоту от соседней
+// колонки (lg:h-full), а соседа больше нет.
+const soloTile = galleryTiles.length === 1;
+const gridLayoutCls = soloTile ? "lg:grid-cols-1" : gridColsCls;
+const heroSizeCls = soloTile ? "lg:aspect-[16/9]" : "lg:aspect-auto lg:h-full";
 // Больше трёх плиток: боковая часть перестаёт быть колонкой и становится
 // сеткой — иначе плитки вытягиваются в нитку. Три и меньше рисуются как
 // раньше, поэтому снимки разметки не двигаются.
@@ -235,11 +243,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		</div>
 		)}
 
-		<div class={`flex flex-col gap-4 lg:grid ${gridColsCls} lg:gap-4`}>
+		<div class={`flex flex-col gap-4 lg:grid ${gridLayoutCls} lg:gap-4`}>
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`gallery-hero-tile group relative block aspect-square w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:aspect-auto lg:h-full${heroOrderCls}`}
+					class={`gallery-hero-tile group relative block aspect-square w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${heroSizeCls}${heroOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}

@@ -132,9 +132,15 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
   >
     {groups.map((g) => (
       <div class="w-full flex flex-col gap-3" data-variant-group data-variant-key={g.key}>
+        {/* Имя группы и значения — данные мерчанта («Размер», «синий металлик»),
+            а не подписи темы: показываем их в том регистре, в каком он их ввёл.
+            Раньше и лейбл, и <select> несли `uppercase`, и любая строчная запись
+            уезжала в КАПС (баг-репорт владельца 2026-09-12). Чипы того же блока
+            и порт flux капс не ставили — верхний регистр держался на одном пути
+            из трёх. */}
         {showLabel && (
           <label
-            class="[font-family:var(--font-body)] text-[14px] uppercase text-[rgb(var(--color-text))] tracking-wide shrink-0"
+            class="[font-family:var(--font-body)] text-[14px] text-[rgb(var(--color-text))] tracking-wide shrink-0"
             for={`variant-${g.key}`}
           >{g.key}</label>
         )}
@@ -145,7 +151,7 @@ function swatchBorderStyle(opt: VariantOptionView, active: boolean): string {
               id={`variant-${g.key}`}
               data-variant-select
               data-variant-key={g.key}
-              class="w-full h-14 px-3 pr-10 rounded-[6px] bg-[rgb(var(--color-surface,var(--color-text)/0.04))] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] uppercase appearance-none border-0 outline-none cursor-pointer"
+              class="w-full h-14 px-3 pr-10 rounded-[6px] bg-[rgb(var(--color-surface,var(--color-text)/0.04))] [font-family:var(--font-body)] text-[16px] text-[rgb(var(--color-text))] appearance-none border-0 outline-none cursor-pointer"
             >
               {g.options.map((opt) => (
                 <option value={opt.value} disabled={!opt.available}>{opt.value}</option>

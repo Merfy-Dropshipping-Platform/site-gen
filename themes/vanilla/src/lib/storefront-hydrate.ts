@@ -388,8 +388,12 @@ export function findCombination(
 	);
 }
 
+// Значение варианта — данные мерчанта («средний», «синий металлик»), а не
+// подпись темы: регистр оставляем таким, каким его ввели (баг-репорт владельца
+// 2026-09-12). Капс тут был только у vanilla — остальные четыре темы рисуют
+// значения как есть.
 const VARIANT_BTN_BASE =
-	"inline-flex h-10 shrink-0 items-center justify-center px-3 py-2.5 font-vanilla-arsenal text-[14px] font-normal uppercase leading-none outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2";
+	"inline-flex h-10 shrink-0 items-center justify-center px-3 py-2.5 font-vanilla-arsenal text-[14px] font-normal leading-none outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2";
 const VARIANT_BTN_SEL = "border border-solid border-[var(--vanilla-header-bg)] !bg-[var(--vanilla-header-bg)] !text-white hover:opacity-90";
 const VARIANT_BTN_UNSEL =
 	"border border-solid border-black !bg-white !text-black hover:opacity-80";
@@ -413,7 +417,7 @@ export function renderVariantGroupsHtml(
 				})
 				.join("");
 			return `<div class="flex w-full flex-col gap-2" data-pdp-variant-group="${escapeHtml(g.name)}">
-	<span class="font-vanilla-arsenal text-[14px] font-normal uppercase leading-none text-black">${escapeHtml(g.name)}</span>
+	<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-black">${escapeHtml(g.name)}</span>
 	<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="${escapeHtml(g.name)}">${buttons}</div>
 </div>`;
 		})

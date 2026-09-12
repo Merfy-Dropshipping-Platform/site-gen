@@ -227,6 +227,16 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       },
     ],
     padding: { top: 48, bottom: 64 },
+    // Контролы сайдбара обязаны стоять на том, что порт satin рисует БЕЗ
+    // значения (снято рендером: без пропа и с этим значением HTML совпадает).
+    alignment: 'left',
+    buttonStyle: 'primary',
+    containerEnabled: 'false',
+    headingSize: 'medium',
+    rowsPosition: 'left',
+    size: 'medium',
+    // «Ширина» НЕ задаём: без значения порт даёт класс .satin-container, а
+    // список предлагает только max-w-[780/1080/1320] — точного совпадения нет.
   },
   schema: MultiRowsSchema,
   maxInstances: null,

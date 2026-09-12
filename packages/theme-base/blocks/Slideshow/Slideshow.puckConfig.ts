@@ -237,6 +237,11 @@ export const SlideshowPuckConfig: BlockPuckConfig<SlideshowProps> = {
     autoplay: true,
     pagination: 'numbers',
     padding: { top: 80, bottom: 80 },
+    // «Положение изображения» (radio) без значения не подсвечивало НИ ОДНУ
+    // пилюлю, «Размер» показывал «Выберите...». Значения сняты рендером во всех
+    // пяти темах: без пропа ≡ fullscreen / medium.
+    imagePosition: 'fullscreen',
+    size: 'medium',
   },
   schema: SlideshowSchema,
   maxInstances: null,

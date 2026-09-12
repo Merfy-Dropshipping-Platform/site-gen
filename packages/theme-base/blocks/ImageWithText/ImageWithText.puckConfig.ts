@@ -158,6 +158,13 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     button: { text: 'Кнопка', href: '/about' },
     imagePosition: 'left',
     padding: { top: 80, bottom: 80 },
+    // Контролы панели стоят на том, что порт рисует БЕЗ значения (снято
+    // рендером: блок без пропа и блок с этим значением дают одинаковый HTML у
+    // rose/flux/vanilla/bloom; satin переопределяет ImageWithText своим пакетом
+    // и держит свои значения).
+    alignment: 'left',
+    size: 'medium',
+    width: 'large',
   },
   schema: ImageWithTextSchema,
   maxInstances: null,

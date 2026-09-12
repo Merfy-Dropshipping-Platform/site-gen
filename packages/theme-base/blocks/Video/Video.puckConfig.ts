@@ -234,6 +234,9 @@ export const VideoPuckConfig: BlockPuckConfig<VideoProps> = {
     position: 'contained',
     headingSize: 'medium',
     padding: { top: 80, bottom: 80 },
+    // «Размер» без значения показывал «Выберите...». Снято рендером общего
+    // блока и портов flux/vanilla/satin/bloom: без пропа ≡ medium.
+    size: 'medium',
   },
   schema: VideoSchema,
   maxInstances: null,

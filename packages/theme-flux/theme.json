@@ -140,7 +140,8 @@
     },
     "Hero": {
       "size": "large",
-      "position": "center-left"
+      "position": "center-left",
+      "overlay": 0
     },
     "ImageWithText": {
       "colorScheme": "scheme-2",

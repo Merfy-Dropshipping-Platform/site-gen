@@ -114,6 +114,10 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
       },
     ],
     padding: { top: 80, bottom: 80 },
+    // Контролы сайдбара обязаны стоять на том, что порт satin рисует БЕЗ
+    // значения (снято рендером: без пропа и с этим значением HTML совпадает).
+    containerEnabled: 'false',
+    headingSize: 'medium',
   },
   schema: CollapsibleSectionSchema,
   maxInstances: null,

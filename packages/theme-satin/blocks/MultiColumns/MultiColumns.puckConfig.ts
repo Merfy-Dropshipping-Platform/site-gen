@@ -257,6 +257,14 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     ],
     displayColumns: 3,
     padding: { top: 80, bottom: 80 },
+    // Контролы сайдбара обязаны стоять на том, что порт satin рисует БЕЗ
+    // значения (снято рендером: без пропа и с этим значением HTML совпадает).
+    containerEnabled: 'false',
+    headingSize: 'medium',
+    textPosition: 'center',
+    width: 'large',
+    // «Соотношение изображения» НЕ задаём: без значения колонка рисует
+    // НАТИВНУЮ иконку 56×56 манеры satin, а любое значение включает медиа-бокс.
   },
   schema: MultiColumnsSchema,
   maxInstances: null,

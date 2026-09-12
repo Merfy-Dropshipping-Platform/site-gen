@@ -261,6 +261,12 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     rowsPosition: 'left',
     size: 'small',
     width: 'small',
+    // «Выравнивание» и «Стиль кнопки» — контролы панели без значения: в
+    // сайдбаре подсвечивалось 'left'/«Выберите...» вне зависимости от витрины.
+    // Значения сняты рендером (без пропа ≡ с пропом) у rose/flux/vanilla/bloom;
+    // satin держит свои в собственном пакете.
+    alignment: 'left',
+    buttonStyle: 'primary',
     // Figma 1:19335 — плейсхолдер пустого состояния (ряды без своей картинки → landscape-плейсхолдер).
     rows: [
       {

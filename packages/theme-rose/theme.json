@@ -107,7 +107,9 @@
       "textTransform": "none"
     },
     "Hero": {
-      "colorScheme": "scheme-4"
+      "colorScheme": "scheme-4",
+      "alignment": "center",
+      "overlay": 0
     },
     "Collections": {},
     "PopularProducts": {},

@@ -160,6 +160,12 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     button: { text: 'Кнопка', href: '/about' },
     imagePosition: 'left',
     padding: { top: 80, bottom: 80 },
+    // Контролы сайдбара обязаны стоять на том, что порт satin рисует БЕЗ
+    // значения (снято рендером: без пропа и с этим значением HTML совпадает).
+    alignment: 'center',
+    size: 'medium',
+    // «Ширина» НЕ задаём: без значения порт даёт max-w-[1920px] (полотно), а
+    // список предлагает только 780/1080/1320 — точного совпадения нет.
   },
   schema: ImageWithTextSchema,
   maxInstances: null,

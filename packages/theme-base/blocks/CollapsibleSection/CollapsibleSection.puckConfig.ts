@@ -111,6 +111,10 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
     ],
     headingSize: 'medium',
     padding: { top: 80, bottom: 80 },
+    // «Контейнер» выключен: порт читает String(p.containerEnabled ?? 'false')
+    // === 'true'. Тумблер в панели раньше стоял в «Скрыть» без значения —
+    // совпадало случайно; теперь это зафиксировано.
+    containerEnabled: 'false',
   },
   schema: CollapsibleSectionSchema,
   maxInstances: null,

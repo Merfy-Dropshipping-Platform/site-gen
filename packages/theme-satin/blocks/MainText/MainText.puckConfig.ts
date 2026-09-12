@@ -140,6 +140,9 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     text: 'Расскажи подробнее о своем онлайн-магазине в этом блоке',
     alignment: 'center',
     padding: { top: 80, bottom: 80 },
+    // Контролы сайдбара обязаны стоять на том, что порт satin рисует БЕЗ
+    // значения (снято рендером: без пропа и с этим значением HTML совпадает).
+    position: 'center',
   },
   schema: MainTextSchema,
   maxInstances: null,

@@ -157,6 +157,10 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     ],
     columns: 3,
     padding: { top: 40, bottom: 40 },
+    // Контролы сайдбара обязаны стоять на том, что порт satin рисует БЕЗ
+    // значения (снято рендером: без пропа и с этим значением HTML совпадает).
+    headingSize: 'medium',
+    subtitleSize: 'small',
   },
   schema: CollectionsSchema,
   maxInstances: null,

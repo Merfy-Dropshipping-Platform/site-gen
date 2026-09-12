@@ -295,6 +295,23 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     variant: 'centered',
     contentPosition: 'center',
     padding: { top: 0, bottom: 0 },
+    // Контролы панели обязаны СТОЯТЬ на том, что порт рисует без значения,
+    // иначе мерчант правит одно поле, а updateProp материализует чужие
+    // дефолты и меняет вид секции. Значения ниже сняты рендером: блок без
+    // пропа и блок с этим значением дают байт-в-байт одинаковый HTML у
+    // rose/flux/vanilla/bloom (satin переопределяет Hero своим пакетом).
+    // «Размер» = высота секции; без пропа порт берёт large.
+    size: 'large',
+    // «Выравнивание» текста; без пропа rose рисует по центру, остальные —
+    // слева, поэтому rose переопределяет это в своём theme.json.
+    alignment: 'left',
+    // «Контейнер» (подложка под текстом) выключен: порт читает
+    // String(p.container ?? 'false') === 'true'.
+    container: 'false',
+    // ПОЗИЦИЯ и ЗАТЕМНЕНИЕ здесь НЕ задаются: у каждой темы свой фолбэк
+    // (rose bottom-center, flux/satin center-left, vanilla/bloom bottom-left),
+    // а у vanilla отсутствие overlay — это фикс-затемнение bg-black/25, которое
+    // overlay:0 снял бы. Значения живут в theme.json тем.
   },
   schema: HeroSchema,
   maxInstances: null,

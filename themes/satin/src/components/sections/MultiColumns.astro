@@ -291,6 +291,16 @@ const _schemeId =
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 {/* Секция: вертикаль фич §2 (py-10 md:py-20 — литерал Features.astro:30), поля .satin-pad, грид gap-4. */}
@@ -303,7 +313,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 >
 	<div class={`${widthCls} flex flex-col gap-8`}>
 		{
-			heading && (
+			heading && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls}

@@ -204,6 +204,16 @@ if (needsResolve && siteId) {
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -224,7 +234,7 @@ const paddingStyle = p.padding
 		<div
 			class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-center text-center"
 		>
-			{sectionTitle && (
+			{sectionTitle && !isFieldHidden('heading') && (
 				<h2
 					id="gallery-title"
 					class={headingCls}

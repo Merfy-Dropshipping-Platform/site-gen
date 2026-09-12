@@ -160,6 +160,16 @@ const sideTiles = galleryTiles.slice(1);
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -170,7 +180,7 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		{sectionSubtitle ? (
+		{!isFieldHidden('heading') && (sectionSubtitle ? (
 			<div
 				data-animate
 				class="flex flex-col gap-2"
@@ -191,7 +201,7 @@ const paddingStyle = p.padding
 				data-puck-subsection-field="heading"
 				set:html={inlineFormat(sectionTitle)}
 			></h2>
-		)}
+		))}
 
 		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-animate data-animate-delay="0.1s">
 			{heroTile && (

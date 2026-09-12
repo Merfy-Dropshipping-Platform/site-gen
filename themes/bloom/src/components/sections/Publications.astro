@@ -180,6 +180,16 @@ const paddingStyle = p.padding
 	: undefined;
 
 const titleId = id && heading ? `${id}-title` : undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -192,6 +202,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 		{
 			heading && (
 				<div data-animate>
+					{!isFieldHidden('heading') && (
 					<h2
 						id={titleId}
 						class={headingCls}
@@ -200,6 +211,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 						data-puck-subsection-field="heading"
 						set:html={inlineFormat(heading)}
 					></h2>
+					)}
 				</div>
 			)
 		}

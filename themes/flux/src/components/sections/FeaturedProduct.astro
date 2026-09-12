@@ -314,6 +314,16 @@ const paddingStyle = p.padding
 	? `padding-top:${Math.min(Number(p.padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(p.padding.bottom) || 0, 160)}px;`
 	: undefined;
 const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-", "")}`;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -413,7 +423,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 			<div class="flex w-full flex-col gap-10 lg:w-[628px] lg:min-w-0">
 				<!-- Текст -->
 				<div class="flex flex-col gap-2">
-					{displayBrand && (
+					{displayBrand && !isFieldHidden('text') && (
 						<p
 							class={`font-roboto-flex ${textSizeCls} font-light uppercase leading-normal text-[#999999]`}
 							data-puck-subsection-parent={id}
@@ -423,6 +433,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 							{displayBrand}
 						</p>
 					)}
+					{!isFieldHidden('title') && (
 					<h1
 						class={`font-roboto-flex ${titleSizeCls} font-light uppercase leading-normal text-[#000000]`}
 						data-cfg-name
@@ -432,6 +443,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 					>
 						{displayName}
 					</h1>
+					)}
 					<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000] md:text-[20px]" data-cfg-price>
 							{displayPrice}
@@ -495,7 +507,7 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 				)}
 
 				<!-- Описание (аккордеон) -->
-				{hasDescription && (
+				{hasDescription && !isFieldHidden('description') && (
 					<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
 						<button type="button" class="flex min-h-11 w-full items-center justify-between gap-2 text-left" data-cfg-spec-toggle aria-expanded="false">
 							<span class="font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[#000000]">Описание</span>

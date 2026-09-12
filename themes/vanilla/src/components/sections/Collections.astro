@@ -189,6 +189,16 @@ const demoCollections = [{ name: "Коллекция" }, { name: "Коллекц
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -199,6 +209,7 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
+		{!isFieldHidden('heading') && (
 		<div
 			class={headWrapCls}
 			data-animate
@@ -211,6 +222,7 @@ const paddingStyle = p.padding
 			</h2>
 			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
+		)}
 
 		<ul class={gridCls} role="list" data-animate data-animate-delay="0.1s" style={gridStyle}>
 			{usePropCollections ? resolvedCollections.map((c, i) => (

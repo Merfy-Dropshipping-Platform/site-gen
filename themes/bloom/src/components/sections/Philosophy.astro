@@ -67,6 +67,16 @@ const paddingStyle = p.padding
 	: undefined;
 
 const textId = id ? `${id}-text` : "philosophy-text";
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -78,7 +88,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col items-center gap-10 text-center">
 		{
-			heading && (
+			heading && !isFieldHidden('heading') && (
 				<h2
 					data-animate
 					class="w-full max-w-[1320px] font-urbanist text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))]"
@@ -92,7 +102,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 		}
 
 		{
-			text && (
+			text && !isFieldHidden('text') && (
 				<p
 					id={textId}
 					data-animate
@@ -107,7 +117,7 @@ const textId = id ? `${id}-text` : "philosophy-text";
 		}
 
 		{
-			btnText && (
+			btnText && !isFieldHidden('button') && (
 				<a
 					href={btnHref}
 					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95"

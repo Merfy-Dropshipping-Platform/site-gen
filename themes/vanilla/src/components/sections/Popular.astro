@@ -282,6 +282,16 @@ const paddingStyle = p.padding
 // на .vanilla-container). PopularProducts vanilla — БЕЗ контейнер-бокса: контент
 // прямо в .vanilla-container (карточки остаются). Per-element контейнер не
 // применим к товарной сетке (паритет rose Popular: контейнера нет).
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -292,6 +302,7 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
+		{!isFieldHidden('heading') && (
 		<div
 			class="flex max-w-[760px] flex-col gap-2"
 			data-animate
@@ -304,6 +315,7 @@ const paddingStyle = p.padding
 			</h2>
 			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
+		)}
 
 		<ul
 			class={gridCls}
@@ -379,6 +391,7 @@ const paddingStyle = p.padding
 			))}
 		</ul>{viewAllShow && (
 			<div class="flex w-full justify-center">
+				{!isFieldHidden('viewAll') && (
 				<a
 					href={viewAllHref}
 					class={viewAllCls}
@@ -388,6 +401,7 @@ const paddingStyle = p.padding
 				>
 					{viewAllText}
 				</a>
+				)}
 			</div>
 		)}
 	</div>

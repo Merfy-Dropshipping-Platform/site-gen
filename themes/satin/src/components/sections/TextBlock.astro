@@ -98,6 +98,16 @@ const btnCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -109,7 +119,7 @@ const paddingStyle = p.padding
 	<div class="satin-container">
 		<div class={`flex w-full flex-col gap-4${posCls}${alignCls}`}>
 			{
-				heading && (
+				heading && !isFieldHidden('heading') && (
 					<h2
 						class={headingCls + italicCls}
 						data-puck-subsection-parent={id}
@@ -120,6 +130,7 @@ const paddingStyle = p.padding
 					</h2>
 				)
 			}
+			{!isFieldHidden('text') && (
 			<p
 				class={textCls + italicCls}
 				data-puck-subsection-parent={id}
@@ -127,8 +138,9 @@ const paddingStyle = p.padding
 				data-puck-subsection-field="text"
 				set:html={text}
 			/>
+			)}
 			{
-				btnText && (
+				btnText && !isFieldHidden('button') && (
 					<a
 						href={btnHref}
 						class={btnCls}

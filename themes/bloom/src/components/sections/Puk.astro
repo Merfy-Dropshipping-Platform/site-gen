@@ -137,17 +137,29 @@ const resolvedCollections = propCollections.map((c) => {
     image: c.hasOwnImage ? c.image : r.image || c.image,
   };
 });
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section class="puk-section" data-puck-component-id={id} data-block="puk">
   <div class="puk-container">
     <div class="puk-header">
+      {!isFieldHidden('heading') && (
       <h2
         class="puk-title"
         data-puck-subsection-parent={id}
         data-puck-subsection-index="100"
         data-puck-subsection-field="heading"
       >{sectionTitle}</h2>
+      )}
       {sectionSubtitle && <p class="puk-subtitle">{sectionSubtitle}</p>}
     </div>
 

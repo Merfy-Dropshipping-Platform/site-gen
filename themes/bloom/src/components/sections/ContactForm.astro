@@ -87,6 +87,16 @@ const buttonText =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -98,6 +108,7 @@ const paddingStyle = p.padding
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
 		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
+		{!isFieldHidden('heading') && (
 		<div
 			class="flex w-full justify-center text-center"
 			data-puck-subsection-parent={id}
@@ -106,6 +117,7 @@ const paddingStyle = p.padding
 		>
 			<h2 id="contacts-title" class={headingCls} set:html={inlineFormat(placeholderHeading)}></h2>
 		</div>
+		)}
 		<form
 			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"
 			data-contacts-form

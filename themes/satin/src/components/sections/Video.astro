@@ -153,6 +153,16 @@ const _schemeId =
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section class={`${sectionCls}${selfSchemeClass}`} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
@@ -160,6 +170,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 		{
 			showHeading && (
 				<div class={headingWrapCls}>
+					{!isFieldHidden('heading') && (
 					<h2
 						id={titleId}
 						class={headingCls}
@@ -168,6 +179,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 						data-puck-subsection-field="heading"
 						set:html={inlineFormat(headingText)}
 					/>
+					)}
 					{subheadingRaw && (
 						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`}>
 							{subheadingRaw}

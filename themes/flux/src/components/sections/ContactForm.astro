@@ -118,6 +118,16 @@ const textareaCls =
 // h-14, rounded-6, uppercase, Roboto Flex, на всю ширину формы.
 const submitCls =
 	"inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90";
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -128,6 +138,7 @@ const submitCls =
 	<div class={containerCls} style={padStyle}>
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма». Мерчант задал
 		    свой heading → рендерим ЕГО (placeholderHeading); подзаголовок — при наличии. */}
+		{!isFieldHidden('heading') && (
 		<div
 			class="flex w-full flex-col items-center gap-2 text-center"
 			data-puck-subsection-parent={id}
@@ -137,6 +148,7 @@ const submitCls =
 			<h2 id="contacts-title" class={headingCls}>{placeholderHeading}</h2>
 			{subtitleText && <p class={subtitleCls}>{subtitleText}</p>}
 		</div>
+		)}
 
 		<form
 			class="mx-auto flex w-full max-w-[652px] flex-col gap-5"

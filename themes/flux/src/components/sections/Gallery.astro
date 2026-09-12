@@ -197,6 +197,16 @@ const paddingStyle = p.padding
 const containerCls = paddingStyle
 	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80"
 	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80";
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -206,6 +216,7 @@ const containerCls = paddingStyle
 	data-puck-component-id={id}
 >
 	<div class={containerCls} style={paddingStyle}>
+		{!isFieldHidden('heading') && (
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}
@@ -216,6 +227,7 @@ const containerCls = paddingStyle
 			<h2 id="gallery-title" class={headingCls}>{sectionTitle}</h2>
 			{sectionSubtitle && <p class={subtitleCls}>{sectionSubtitle}</p>}
 		</div>
+		)}
 
 		<div class={`flex flex-col gap-4 lg:grid ${gridColsCls} lg:gap-4`}>
 			{heroTile && (

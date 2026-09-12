@@ -196,6 +196,16 @@ const paddingStyle = p.padding
 // colorScheme навешивает обёрткой composeV2Page; фон секции — токен с РОЗОВЫМ
 // литерал-фоллбеком верстальщика (#E38E9F = 227 142 159, МАННЕРА §7).
 const titleId = id && heading ? `${id}-title` : undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -207,7 +217,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 >
 	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-10`}>
 		{
-			heading && (
+			heading && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls}
@@ -277,6 +287,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 		{
 			btnText && (
 				<div class="flex justify-center" data-animate>
+					{!isFieldHidden('buttonText') && (
 					<a
 						href={btnHref}
 						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95"
@@ -286,6 +297,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					>
 						{btnText}
 					</a>
+					)}
 				</div>
 			)
 		}

@@ -249,6 +249,16 @@ if (Array.isArray(resolvedProducts) && resolvedProducts.length > 0) {
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -259,9 +269,11 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+		{!isFieldHidden('heading') && (
 		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
+		)}
 
 		<ul
 			data-animate
@@ -329,6 +341,7 @@ const paddingStyle = p.padding
 			))}
 		</ul>{viewAllShow && (
 			<div class="flex w-full justify-center">
+				{!isFieldHidden('viewAll') && (
 				<a
 					href={viewAllHref}
 					class={viewAllCls}
@@ -338,6 +351,7 @@ const paddingStyle = p.padding
 				>
 					{viewAllText}
 				</a>
+				)}
 			</div>
 		)}
 	</div>

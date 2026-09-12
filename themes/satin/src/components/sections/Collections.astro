@@ -138,6 +138,16 @@ const _schemeId =
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -147,7 +157,7 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	{(sectionTitle || sectionSubtitle) && (
+	{(sectionTitle || sectionSubtitle) && !isFieldHidden('heading') && (
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}

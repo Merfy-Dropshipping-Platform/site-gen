@@ -350,6 +350,16 @@ const captionNameCls = cardCaptionStyle === "uppercase" ? " uppercase" : "";
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === 'string',
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 ---
 
 <section
@@ -360,6 +370,7 @@ const paddingStyle = p.padding
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		{!isFieldHidden('heading') && (
 		<div
 			data-animate
 			class={headWrapCls}
@@ -369,6 +380,7 @@ const paddingStyle = p.padding
 		>
 			<NtSectionHeading titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />
 		</div>
+		)}
 
 		<ul
 			class={gridCls}
@@ -441,6 +453,7 @@ const paddingStyle = p.padding
 					))}
 		</ul>{viewAllShow && (
 			<div class="flex w-full justify-center">
+				{!isFieldHidden('viewAll') && (
 				<a
 					href={viewAllHref}
 					class={viewAllCls}
@@ -450,6 +463,7 @@ const paddingStyle = p.padding
 				>
 					{viewAllText}
 				</a>
+				)}
 			</div>
 		)}
 	</div>

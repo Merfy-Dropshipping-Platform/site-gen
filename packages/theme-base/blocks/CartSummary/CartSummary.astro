@@ -12,6 +12,19 @@ interface Props extends CartSummaryProps {
 
 const { id, padding, colorScheme } = Astro.props as Props;
 
+// Скрытый «глазом» именованный параметр не рендерится вовсе. Список скрытых
+// полей кладёт конструктор (props.hiddenFields), общий для всех тем.
+// cartTotals/cartCheckoutButton — read-only сабсекции (disabledHint), но «глаз»
+// у них в outline РАБОЧИЙ (SortableItem вешает onToggleNamedVisibility на любую
+// запись NAMED_SUBSECTIONS), поэтому порт обязан их пропускать: иначе мерчант
+// прячет «Итого» и видит его на витрине.
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+  ? ((Astro.props as any).hiddenFields as unknown[]).filter(
+      (x): x is string => typeof x === 'string',
+    )
+  : [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : 'padding-top:0px; padding-bottom:80px;';
@@ -35,13 +48,16 @@ const schemeClass =
         Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа.
       </p>
       {/* «Итоговая цена» (Figma 1:20819) — read-only sub-node в конструкторе */}
+      {!isFieldHidden('cartTotals') && (
       <div class="cart-summary-totals" style="display: flex; align-items: center; gap: 15px;">
         <span class="[font-family:var(--font-body)]" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-heading));">Итого</span>
         <span class="[font-family:var(--font-body)]" style="font-size: 20px; line-height: 27px; color: rgb(var(--color-heading));" id="cart-page-total" data-cart-total>0&nbsp;₽</span>
       </div>
+      )}
       {/* «Кнопка оформления заказа» (Figma 1:20830) — read-only sub-node в конструкторе.
           data-astro-reload: форсим полную загрузку /checkout, чтобы inline-скрипты
           checkout (DaData/СДЭК/оплата) стартовали свежими на VT-темах (rose/bloom/vanilla). */}
+      {!isFieldHidden('cartCheckoutButton') && (
       <a
         href="/checkout"
         class="cart-checkout-btn flex items-center justify-center [font-family:var(--font-body)] cursor-pointer transition-colors border-0 no-underline bg-[rgb(var(--color-button-bg))]! text-[rgb(var(--color-button-text))]! hover:bg-[rgb(var(--color-button-bg-hover))]! hover:text-[rgb(var(--color-button-text-hover))]!"
@@ -49,6 +65,7 @@ const schemeClass =
         data-cart-checkout-button
         data-astro-reload
       >Оформить заказ</a>
+      )}
     </div>
   </div>
 </section>

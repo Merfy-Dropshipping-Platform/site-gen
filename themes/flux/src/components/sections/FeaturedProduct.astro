@@ -444,6 +444,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{displayName}
 					</h1>
 					)}
+					{!isFieldHidden('price') && (
 					<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000] md:text-[20px]" data-cfg-price>
 							{displayPrice}
@@ -452,10 +453,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							{displayOldPrice}
 						</span>
 					</div>
+					)}
 				</div>
 
 				<!-- Варианты (НЕ было в pin — добавлено по канон-контракту Product, стиль
 				     переиспользован из установленного PDP-паттерна renderVariantGroupsHtml). -->
+				{!isFieldHidden('variants') && (
 				<div
 					class="flex flex-col gap-4"
 					data-cfg-variants
@@ -467,9 +470,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					hidden={!hasVariants}
 					set:html={variantsHtml}
 				/>
+				)}
 
 				<!-- Счётчик -->
-				{quantityVisible && (
+				{quantityVisible && !isFieldHidden('quantity') && (
 					<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
 						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
 							<NtIcon name="minus" sizeClass="size-4" />
@@ -482,7 +486,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)}
 
 				<!-- Кнопки -->
-				{(showAddToCart || showBuyNow) && (
+				{(showAddToCart || showBuyNow) && !isFieldHidden('buttons') && (
 					<div class="flex flex-col gap-3" data-puck-subsection-parent={id} data-puck-subsection-index="105" data-puck-subsection-field="buttons">
 						{showAddToCart && (
 							<button
@@ -520,6 +524,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)}
 
 				<!-- Поделиться -->
+				{!isFieldHidden('share') && (
 				<button
 					type="button"
 					data-cfg-share
@@ -532,6 +537,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<NtIcon name="share" sizeClass="size-6" />
 					<span>{shareText}</span>
 				</button>
+				)}
 			</div>
 		</div>
 
@@ -567,21 +573,26 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 			<!-- Текст -->
 			<div class="flex flex-col gap-2">
-				{displayBrand && (
+				{displayBrand && !isFieldHidden('text') && (
 					<p class="font-roboto-flex text-[14px] font-light uppercase leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text">
 						{displayBrand}
 					</p>
 				)}
+				{!isFieldHidden('title') && (
 				<h1 class="font-roboto-flex text-[19px] font-light uppercase leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
 					{displayName}
 				</h1>
+				)}
+				{!isFieldHidden('price') && (
 				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000]" data-cfg-price>{displayPrice}</span>
 					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[#999999] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
 				</div>
+				)}
 			</div>
 
 			<!-- Варианты -->
+			{!isFieldHidden('variants') && (
 			<div
 				class="flex flex-col gap-4"
 				data-cfg-variants
@@ -593,9 +604,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				hidden={!hasVariants}
 				set:html={variantsHtml}
 			/>
+			)}
 
 			<!-- Счётчик -->
-			{quantityVisible && (
+			{quantityVisible && !isFieldHidden('quantity') && (
 				<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
 					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
 						<NtIcon name="minus" sizeClass="size-4" />
@@ -608,7 +620,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			<!-- Кнопки -->
-			{(showAddToCart || showBuyNow) && (
+			{(showAddToCart || showBuyNow) && !isFieldHidden('buttons') && (
 				<div class="flex flex-col gap-3" data-puck-subsection-parent={id} data-puck-subsection-index="105" data-puck-subsection-field="buttons">
 					{showAddToCart && (
 						<button
@@ -629,7 +641,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			<!-- Описание (аккордеон) -->
-			{hasDescription && (
+			{hasDescription && !isFieldHidden('description') && (
 				<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
 					<button type="button" class="flex w-full items-center justify-between gap-2 text-left" data-cfg-spec-toggle aria-expanded="false">
 						<span class="font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[#000000]">Описание</span>
@@ -642,6 +654,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			<!-- Поделиться -->
+			{!isFieldHidden('share') && (
 			<button
 				type="button"
 				data-cfg-share
@@ -654,6 +667,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<NtIcon name="share" sizeClass="size-6" />
 				<span>{shareText}</span>
 			</button>
+			)}
 		</div>
 	</div>
 </section>

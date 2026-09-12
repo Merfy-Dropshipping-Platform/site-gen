@@ -63,6 +63,11 @@ type FieldSpec = {
 type BlockSpec = {
   /** theme-base — блок общий и живёт вне sections.map.json (см. рендерер). */
   pkg?: "theme-base";
+  /**
+   * Имя блока для рендера, если ключ реестра — алиас (один блок под двумя
+   * наборами пропсов, например заполненный Hero и пустой).
+   */
+  renderAs?: string;
   props: Record<string, unknown>;
   fields: FieldSpec[];
 };
@@ -111,6 +116,23 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
       {
         field: "buttons",
         probe: ["MK_HERO_BTN1", "MK_HERO_BTN2"],
+        composite: ["primaryButton", "secondaryButton"],
+      },
+    ],
+  },
+  /**
+   * Пустой Hero — тот же блок без единого заполненного параметра. Отдельный
+   * случай, потому что порт рисует дефолт-плейсхолдер: скрытая кнопка
+   * возвращалась на витрину не своим текстом, а заглушкой, и проверка по
+   * значению этого не видела. Маячок здесь — сам узел параметра.
+   */
+  "Hero (пустое состояние)": {
+    renderAs: "Hero",
+    props: { ...base },
+    fields: [
+      {
+        field: "buttons",
+        probe: [marker("primaryButton"), marker("secondaryButton")],
         composite: ["primaryButton", "secondaryButton"],
       },
     ],
@@ -250,9 +272,20 @@ const NO_NAMED_FIELDS: Record<string, string> = {
  *
  * Запись работает в обе стороны: если дыра закрылась, тест ТРЕБУЕТ убрать
  * строку — просроченное исключение не переживёт мерж.
+ *
+ * ЗАЧИСТКА. Ветка та уже в main (3595c8cd «the eye reaches the empty hero and
+ * the mobile product card»), и на смерженном дереве ВСЕ записи ниже протухают —
+ * проверено пробным мержем: 19 падений вида «дыра ещё открыта». После мержа
+ * main этот массив удаляется целиком вместе с `gap`-ветками в тестах; ничего
+ * другого править не нужно.
  */
 const KNOWN_GAPS: { theme: string; block: string; field: string }[] = [
   ...THEMES.map((t) => ({ theme: t, block: "Hero", field: "buttons" })),
+  ...THEMES.map((t) => ({
+    theme: t,
+    block: "Hero (пустое состояние)",
+    field: "buttons",
+  })),
   ...THEMES.map((t) => ({ theme: t, block: "ImageWithText", field: "image" })),
   ...THEMES.map((t) => ({
     theme: t,
@@ -349,7 +382,8 @@ describe.each(THEMES)("скрытие именованного параметр�
   const pairs: { block: string; spec: BlockSpec; f: FieldSpec }[] = [];
   if (built) {
     for (const [block, spec] of Object.entries(NAMED_FIELDS)) {
-      if (spec.pkg !== "theme-base" && !blocks.includes(block)) continue;
+      const rendered = spec.renderAs ?? block;
+      if (spec.pkg !== "theme-base" && !blocks.includes(rendered)) continue;
       for (const f of spec.fields) pairs.push({ block, spec, f });
     }
   }
@@ -370,7 +404,7 @@ describe.each(THEMES)("скрытие именованного параметр�
   const activeFields: Record<string, Set<string>> = {};
   if (themeFields) {
     for (const [block, spec] of Object.entries(NAMED_FIELDS)) {
-      const f = themeFields[block];
+      const f = themeFields[spec.renderAs ?? block];
       if (!f) continue;
       activeFields[block] = new Set(
         spec.fields
@@ -390,14 +424,18 @@ describe.each(THEMES)("скрытие именованного параметр�
     if (!built || pairs.length === 0) return;
     // Один процесс на тему: сначала все пары без скрытия, затем те же со скрытием.
     const shownJobs: Job[] = pairs.map(({ block, spec }) => ({
-      block,
+      block: spec.renderAs ?? block,
       pkg: spec.pkg,
-      props: { ...spec.props, id: `${block}-1` },
+      props: { ...spec.props, id: `${spec.renderAs ?? block}-1` },
     }));
     const hiddenJobs: Job[] = pairs.map(({ block, spec, f }) => ({
-      block,
+      block: spec.renderAs ?? block,
       pkg: spec.pkg,
-      props: { ...spec.props, id: `${block}-1`, hiddenFields: [f.field] },
+      props: {
+        ...spec.props,
+        id: `${spec.renderAs ?? block}-1`,
+        hiddenFields: [f.field],
+      },
     }));
     shown = render(theme, shownJobs);
     hidden = render(theme, hiddenJobs);
@@ -461,5 +499,29 @@ describe.each(THEMES)("скрытие именованного параметр�
         }
       },
     );
+
+    /**
+     * Обратная сторона: скрыть один параметр — не значит снести соседний.
+     * Правка «спрятать кнопку» легко уносит весь контейнер вместе с
+     * заголовком, и на витрине пропадает то, что мерчант не трогал. Проверяем
+     * ВСЕ остальные параметры блока, а не одного соседа.
+     */
+    it(`${block}.${f.field}: скрытие не задевает соседние параметры`, () => {
+      if (!built || f.unprobeable) return;
+      if (!isActive(block, f.field)) return;
+      const before = shown[i]?.html ?? "";
+      const after = hidden[i]?.html ?? "";
+      if (hidden[i]?.missing || hidden[i]?.error) return;
+      const lost = NAMED_FIELDS[block].fields
+        .filter((other) => other.field !== f.field && !other.unprobeable)
+        .filter((other) => isActive(block, other.field))
+        // сосед был виден до скрытия, но пропал после
+        .filter(
+          (other) =>
+            contains(before, other.probe) && !contains(after, other.probe),
+        )
+        .map((other) => other.field);
+      expect(lost).toEqual([]);
+    });
   });
 });

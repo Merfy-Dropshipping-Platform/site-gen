@@ -219,6 +219,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
+	{!isFieldHidden('image') && (
 	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2`}>
 		<div
 			class:list={[
@@ -251,7 +252,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			]}
 		>
 			<div class={`flex max-w-[420px] flex-col gap-5 ${colAlignCls}${bottomPinned ? " h-full" : ""}`}>
-				{text && (
+				{text && !isFieldHidden('text') && (
 					<p
 						class={textCls + italicCls}
 						data-puck-subsection-parent={id}
@@ -270,7 +271,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					/>
 				)}
 				{
-					btnText && (
+					btnText && !isFieldHidden('button') && (
 						<a
 							href={btnHref}
 							class={btnCls + (bottomPinned ? " mt-auto" : "")}
@@ -285,4 +286,5 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</div>
 		</div>
 	</div>
+	)}
 </section>

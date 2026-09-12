@@ -151,6 +151,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2${containerSchemeCls}`}
 		data-animate
 	>
+		{!isFieldHidden('image') && (
 		<div
 			class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}`}
 			data-puck-subsection-parent={id}
@@ -166,6 +167,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 		</div>
+		)}
 
 		<div class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}`}>
 			{!isFieldHidden('heading') && (
@@ -190,6 +192,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				btnText && (
 					<div class={inlineCta ? "mt-2" : "mt-auto"}>
+						{!isFieldHidden('button') && (
 						<a
 							href={btnHref}
 							class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
@@ -199,6 +202,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						>
 							{btnText}
 						</a>
+						)}
 					</div>
 				)
 			}

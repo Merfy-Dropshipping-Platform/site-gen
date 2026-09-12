@@ -23,17 +23,18 @@ const THEMES = ['rose', 'bloom', 'satin', 'flux', 'vanilla'] as const;
 const base = { colorScheme: '1', padding: { top: 40, bottom: 40 } };
 
 /** Секции, у которых параметр «Заголовок» размечен во всех пяти темах. */
-const JOBS = [
+const JOBS: { block: string; props: Record<string, unknown>; field?: string; probe?: string }[] = [
   { block: 'Collections', props: { ...base, id: 'Collections-1', heading: 'Коллекции' } },
   { block: 'Gallery', props: { ...base, id: 'Gallery-1', heading: 'Галерея', items: [{ id: 'i1', type: 'image', url: '', alt: 'Изображение' }] } },
   { block: 'PopularProducts', props: { ...base, id: 'Popular-1', heading: 'Популярное', cards: 4, columns: 4 } },
   { block: 'MultiRows', props: { ...base, id: 'MultiRows-1', heading: 'Строки' } },
   { block: 'MultiColumns', props: { ...base, id: 'MultiColumns-1', heading: 'Колонки' } },
   { block: 'CollapsibleSection', props: { ...base, id: 'Collapsible-1', heading: 'Вопросы' } },
+  { block: 'Hero', props: { ...base, id: 'Hero-1', heading: { text: 'Заголовок' }, primaryButton: { text: 'Купить', link: '/catalog' }, secondaryButton: { text: 'Подробнее', link: '/about' } }, field: 'buttons', probe: 'primaryButton' },
 ];
 
 const FIELD = 'heading';
-const marker = `data-puck-subsection-field="${FIELD}"`;
+const markerOf = (f: string) => `data-puck-subsection-field="${f}"`;
 
 type Rendered = Record<string, string>;
 
@@ -62,7 +63,7 @@ describe.each(THEMES)('скрытие именованного параметр�
     shown = render(theme, JOBS);
     hidden = render(
       theme,
-      JOBS.map((j) => ({ ...j, props: { ...j.props, hiddenFields: [FIELD] } })),
+      JOBS.map((j) => ({ ...j, props: { ...j.props, hiddenFields: [j.field ?? FIELD] } })),
     );
   });
 
@@ -70,13 +71,13 @@ describe.each(THEMES)('скрытие именованного параметр�
     expect(built).toBe(true);
   });
 
-  for (const { block } of JOBS) {
+  for (const { block, field, probe } of JOBS) {
     it(`${block}: параметр виден, пока его не скрыли`, () => {
       if (!built) return;
       const html = shown[block];
       if (html === undefined) return; // блока нет в этой теме
       expect(html).not.toMatch(/^ОШИБКА РЕНДЕРА/);
-      expect(html).toContain(marker);
+      expect(html).toContain(markerOf(probe ?? field ?? FIELD));
     });
 
     it(`${block}: скрытый параметр исчезает из разметки`, () => {
@@ -84,7 +85,7 @@ describe.each(THEMES)('скрытие именованного параметр�
       const html = hidden[block];
       if (html === undefined) return;
       expect(html).not.toMatch(/^ОШИБКА РЕНДЕРА/);
-      expect(html).not.toContain(marker);
+      expect(html).not.toContain(markerOf(probe ?? field ?? FIELD));
     });
   }
 });

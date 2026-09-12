@@ -185,6 +185,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		{/* Контентный грид: ширина widthCls (настройка «Ширина»), 2 колонки на lg.
 		    Ритм неравномерный — зазор колонок gap-6 md:gap-8 lg:gap-10 (манера flux). */}
 		<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`}>
+			{!isFieldHidden('image') && (
 			<div
 				class={`group relative w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
 				data-puck-subsection-parent={id}
@@ -200,6 +201,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					/>
 				)}
 			</div>
+			)}
 
 			{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида). */}
 			<div class={`flex w-full flex-col gap-6 md:gap-8${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
@@ -230,6 +232,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				{
 					btnText && (
 						<div class={(bottomPinned ? "mt-auto" : "mt-2") + alignCls}>
+							{!isFieldHidden('button') && (
 							<a
 								href={btnHref}
 								class={btnCls}
@@ -239,6 +242,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							>
 								{btnText}
 							</a>
+							)}
 						</div>
 					)
 				}

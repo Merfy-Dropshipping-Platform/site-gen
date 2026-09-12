@@ -212,6 +212,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 		</div>
+		{!isFieldHidden('image') && (
 		<div
 			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] lg:min-w-0 lg:flex-1${imageLeft ? " lg:order-1" : ""}`}
 			data-puck-subsection-parent={id}
@@ -228,5 +229,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				class="absolute inset-0 size-full object-cover"
 			/>
 		</div>
+		)}
 	</div>
 </section>

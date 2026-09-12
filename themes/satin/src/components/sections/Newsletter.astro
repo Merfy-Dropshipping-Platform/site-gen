@@ -200,7 +200,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							aria-label="Email"
 							class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))]"
 						/>
-						{buttonText ? (
+						{!isFieldHidden('buttonText') && (buttonText ? (
 							<button type="submit" class={inlineTextBtnCls}>
 								{buttonText}
 							</button>
@@ -212,7 +212,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							>
 								<NtIcon name="arrow-right" sizeClass="size-5" />
 							</button>
-						)}
+						))}
 					</form>
 				) : (
 					<form

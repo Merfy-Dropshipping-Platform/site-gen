@@ -293,6 +293,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							</p>
 						)}
 					</div>
+					{!isFieldHidden('buttons') && (
 					<a
 						href={ctaLink}
 						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
@@ -302,6 +303,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					>
 						{PH_BUTTON}
 					</a>
+					)}
 				</div>
 			</div>
 		</section>
@@ -394,7 +396,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 				</div>
 				{
-					secondaryText ? (
+					!isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls}`}>
 							<a
 								href={ctaLink}
@@ -425,7 +427,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						>
 							{ctaText}
 						</a>
-					)
+					))
 				}
 			</div>
 		</div>

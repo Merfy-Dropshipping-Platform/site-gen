@@ -419,6 +419,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 				</div>
 
+				{!isFieldHidden('buttons') && (
 				<div class={buttonsCls}>
 					<a
 						href={ctaLink}
@@ -443,6 +444,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)
 					}
 				</div>
+				)}
 			</div>
 		</div>
 </section>

@@ -2,10 +2,10 @@
 // Figma 1:19335 — ПУСТОЕ СОСТОЯНИЕ секции «Галерея» (заменяет мок-демо
 // верстальщика). Гейт = наличие выбранных в конструкторе плиток `p.items[]`
 // (товар/коллекция/изображение).
-//   • БЕЗ выбора (useItems=false) → ПЛЕЙСХОЛДЕР по контракту: пустой image-rect
+//   • БЕЗ выбора → ПЛЕЙСХОЛДЕР по типу плитки: пустой image-rect
 //     + карточка-товар (куртка blue + «Товар»/«2 500 ₽») + карточка
 //     «Выбери коллекцию». НЕ длинный мок-копирайт/видео/care-сплит верстальщика.
-//   • С выбором (useItems=true) → промо-шапка + грид плиток в манере §4 с
+//   • С выбором → промо-шапка + грид плиток в манере §4 с
 //     гидрацией данных платформы (data-gallery-product / data-gallery-collection)
 //     — рендер реальных данных и клиентская гидрация НЕ ТРОГАЮТСЯ.
 // Цвета → токены темы (rgb(var(--color-*)) с пиксель-фоллбеком), MANNER.md §7;
@@ -75,6 +75,7 @@ type GalleryTile = {
 	price: string;
 	href: string;
 	ref: string | null;
+	placeholder?: boolean;
 };
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
@@ -114,13 +115,28 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 			ref: null,
 		};
 	});
-// Плитка product/collection без своей картинки = пустой surface-rect (Figma
-// 1:19335); реальную обложку подставит гидрация (data-gallery-product/-collection).
-// Изображение-плитка без url тоже остаётся пустым rect (контракт пустого состояния).
-// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
-// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
-// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже.
-const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
+// Плитки рендерятся ПО ПРОПСАМ, а не по гейту «есть контент / нет контента»: у
+// плитки без выбора свой плейсхолдер по типу (изображение — landscape-gallery,
+// товар — куртка blue с подписью «Товар»/«2 500 ₽», коллекция — пустой бокс с
+// подписью «Выбери коллекцию»). Поэтому удаление и добавление параметра сразу
+// видно и в конструкторе, и на витрине (баг-репорт владельца); при дефолтных
+// трёх элементах картинка та же, что у прежнего пустого состояния (Figma 1:19335).
+// Реальную обложку выбранных товара/коллекции подставит гидрация ниже.
+galleryTiles.forEach((t) => {
+	if (t.url) return;
+	if (t.kind === "image") {
+		t.url = PLACEHOLDER_GALLERY_IMAGE;
+		t.placeholder = true;
+	} else if (t.kind === "product") {
+		t.url = PLACEHOLDER_SWEATER_BLUE;
+		t.placeholder = true;
+	}
+});
+// Куртка-плейсхолдер вписывается в бокс (object-contain), реальное фото — кроп.
+const fitCls = (t: GalleryTile, hover: string) =>
+	t.placeholder && t.kind === "product"
+		? "object-contain p-[15%]"
+		: `object-cover transition-transform duration-500 ease-out ${hover}`;
 
 // SSR-фетч реальных товаров/коллекций выбранных плиток (эталон rose Popular.astro:
 // p.siteId → fetch /api/sites/<id>/storefront-data). Astro-Container превью НЕ
@@ -138,8 +154,9 @@ const tileImage = (entity: any): string => {
 	if (imgs && imgs[0]) return typeof imgs[0] === "string" ? imgs[0] : (imgs[0]?.url ?? "");
 	return typeof entity?.image === "string" ? entity.image : "";
 };
-const needsResolve =
-	useItems && galleryTiles.some((t) => (t.kind === "product" || t.kind === "collection") && t.ref);
+const needsResolve = galleryTiles.some(
+	(t) => (t.kind === "product" || t.kind === "collection") && t.ref,
+);
 if (needsResolve && siteId) {
 	try {
 		const base = (import.meta as any).env?.SITES_INTERNAL_BASE ?? "http://localhost:3114";
@@ -223,111 +240,53 @@ const paddingStyle = p.padding
 					{sectionText}
 				</p>
 			)}
-			{useItems ? (
-				<ul class="mt-10 grid w-full grid-cols-1 gap-4 text-left lg:grid-cols-2" role="list">
-					{galleryTiles.map((tile, i) => (
-						<li class={mirror && i === 0 ? "lg:order-2" : mirror && i === 1 ? "lg:order-1" : undefined}>
-							<a
-								href={tile.href}
-								class="group flex w-full cursor-pointer flex-col gap-3"
-								aria-label={tile.label || tile.alt || "Перейти в каталог"}
-								data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
-								data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index={i}
-								data-puck-subsection-field="items"
-							>
-								<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
-									{tile.url && (
-										<img
-											src={tile.url}
-											alt={tile.alt || tile.label}
-											loading="lazy"
-											class={`absolute inset-0 size-full object-cover transition-transform duration-500 ease-out ${i === 0 ? "group-hover:scale-[1.03]" : "group-hover:scale-[1.05]"}`}
-										/>
+			<ul class="mt-10 grid w-full grid-cols-1 gap-4 text-left lg:grid-cols-2" role="list">
+				{galleryTiles.map((tile, i) => (
+					<li class={mirror && i === 0 ? "lg:order-2" : mirror && i === 1 ? "lg:order-1" : undefined}>
+						<a
+							href={tile.href}
+							class="group flex w-full cursor-pointer flex-col gap-3"
+							aria-label={tile.label || tile.alt || "Перейти в каталог"}
+							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
+							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index={i}
+							data-puck-subsection-field="items"
+						>
+							<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+								{tile.url && (
+									<img
+										src={tile.url}
+										alt={tile.alt || tile.label}
+										loading="lazy"
+										class={`absolute inset-0 size-full ${fitCls(tile, i === 0 ? "group-hover:scale-[1.03]" : "group-hover:scale-[1.05]")}`}
+									/>
+								)}
+							</div>
+							{(tile.label || tile.price) && (
+								<div class="flex flex-col gap-1">
+									{tile.label && (
+										<span
+											class={
+												tile.kind === "collection"
+													? "vanilla-gallery-collection-title font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+													: "vanilla-gallery-product-title font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+											}
+										>
+											{tile.label}
+										</span>
+									)}
+									{tile.price && (
+										<span class="vanilla-gallery-product-price font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
+											{tile.price}
+										</span>
 									)}
 								</div>
-								{(tile.label || tile.price) && (
-									<div class="flex flex-col gap-1">
-										{tile.label && (
-											<span
-												class={
-													tile.kind === "collection"
-														? "vanilla-gallery-collection-title font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
-														: "vanilla-gallery-product-title font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
-												}
-											>
-												{tile.label}
-											</span>
-										)}
-										{tile.price && (
-											<span class="vanilla-gallery-product-price font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
-												{tile.price}
-											</span>
-										)}
-									</div>
-								)}
-							</a>
-						</li>
-					))}
-				</ul>
-			) : (
-				<!-- Figma 1:19335 пустое состояние: пустой image-rect + карточка-товар
-				     (куртка blue / «Товар» / «2 500 ₽») + карточка «Выбери коллекцию».
-				     Плейсхолдер вместо мок-демо верстальщика; реальные плитки рендерит
-				     ветка useItems выше. -->
-				<ul
-					class="mt-10 grid w-full grid-cols-1 gap-4 text-left lg:grid-cols-2"
-					role="list"
-					data-gallery-placeholder
-				>
-					<li>
-						<div class="flex w-full flex-col gap-3">
-							<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
-								<img
-									src={PLACEHOLDER_GALLERY_IMAGE}
-									alt="Галерея"
-									loading="lazy"
-									class="absolute inset-0 size-full object-cover"
-								/>
-							</div>
-						</div>
+							)}
+						</a>
 					</li>
-					<li>
-						<div class="flex w-full flex-col gap-3">
-							<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
-								<img
-									src={PLACEHOLDER_SWEATER_BLUE}
-									alt="Товар"
-									loading="lazy"
-									class="absolute inset-0 size-full object-contain p-[15%]"
-								/>
-							</div>
-							<div class="flex flex-col gap-1">
-								<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))]">
-									Товар
-								</span>
-								<span class="font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
-									2 500 ₽
-								</span>
-							</div>
-						</div>
-					</li>
-					<li>
-						<div class="flex w-full flex-col gap-3">
-							<div
-								class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]"
-								aria-hidden="true"
-							></div>
-							<div class="flex flex-col gap-1">
-								<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,240_240_240))]">
-									Выбери коллекцию
-								</span>
-							</div>
-						</div>
-					</li>
-				</ul>
-			)}
+				))}
+			</ul>
 		</div>
 	</div>
 

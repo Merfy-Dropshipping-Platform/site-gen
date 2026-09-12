@@ -84,6 +84,7 @@ type GalleryTile = {
 	price: string;
 	href: string;
 	ref: string | null;
+	placeholder?: boolean;
 };
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
@@ -132,19 +133,38 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // коллекция ВЫБРАНЫ, скрипт ниже (data-gallery-product / -collection) подменяет
 // src/alt реальной картинкой — поведение «данные выбраны» цело.
 const SWEATER_BLUE = "/placeholders/sweater-blue.svg";
-galleryTiles.forEach((t) => {
-	if (t.url) return;
-	if (t.kind === "product") t.url = SWEATER_BLUE;
-	else if (t.kind === "collection" && t.ref) t.url = SWEATER_BLUE;
-});
 // Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте
 // плитки (image с непустым url, product/collection с выбранным ref). Пустые
 // seed-плитки (url='' / ref=null) → false → рендерится empty-state плейсхолдер
 // ниже. Читаем ref для product/collection (не url): forEach выше присваивает
 // product url=SWEATER_BLUE.
-const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
-const heroTile = useItems ? galleryTiles[0] : undefined;
-const sideTiles = useItems ? galleryTiles.slice(1) : [];
+// Плитки рендерятся ПО ПРОПСАМ, а не по гейту «есть контент / нет контента»:
+// у плитки без выбора свой плейсхолдер по типу — изображение отдаёт дизайн-ассет
+// (/placeholders/landscape-gallery.png), товар — куртку с ценой, коллекция —
+// пустой бокс с подписью. Поэтому удаление и добавление параметра сразу видно
+// и в конструкторе, и на витрине (баг-репорт владельца); при дефолтных трёх
+// элементах (изображение + товар + коллекция) картинка ровно та же, что была
+// у прежнего захардкоженного пустого состояния (Figma 1:19335).
+const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
+galleryTiles.forEach((t) => {
+	if (t.url) return;
+	if (t.kind === "image") {
+		t.url = PLACEHOLDER_GALLERY_IMAGE;
+		t.placeholder = true;
+	} else if (t.kind === "product") {
+		t.url = SWEATER_BLUE;
+		t.placeholder = !t.ref;
+	} else if (t.kind === "collection" && t.ref) {
+		t.url = SWEATER_BLUE;
+	}
+});
+// Куртка-плейсхолдер вписывается в бокс (object-contain), реальное фото — кроп.
+const fitCls = (t: GalleryTile, hover: string) =>
+	t.placeholder && t.kind === "product"
+		? "object-contain object-center p-[15%]"
+		: `object-cover object-center ${hover}`;
+const heroTile = galleryTiles[0];
+const sideTiles = galleryTiles.slice(1);
 
 // Аспекты и ховеры правой колонки — по позициям литерала верстальщика
 // (верифицировано pinned upstream commit + живой https://flux.merfy.ru/, см.
@@ -198,7 +218,7 @@ const containerCls = paddingStyle
 		</div>
 
 		<div class={`flex flex-col gap-4 lg:grid ${gridColsCls} lg:gap-4`}>
-			{heroTile ? (
+			{heroTile && (
 				<a
 					href={heroTile.href}
 					class={`gallery-hero-tile group relative block aspect-square w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:aspect-auto lg:h-full${heroOrderCls}`}
@@ -214,29 +234,13 @@ const containerCls = paddingStyle
 							src={heroTile.url}
 							alt={heroTile.alt}
 							loading="lazy"
-							class="absolute inset-0 size-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+							class={`absolute inset-0 size-full ${fitCls(heroTile, "transition-transform duration-500 ease-out group-hover:scale-[1.02]")}`}
 						/>
 					)}
 				</a>
-			) : (
-				/* Плейсхолдер пустого состояния (Figma 1:19335): большая левая плитка =
-				   дизайн-ассет /placeholders/landscape-gallery.png (картинка показывается
-				   ВСЕГДА, НЕ пустой surface и НЕ мок-фото верстальщика). */
-				<div
-					class={`gallery-hero-tile group relative block aspect-square w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] lg:aspect-auto lg:h-full${heroOrderCls}`}
-					aria-hidden="true"
-				>
-					<img
-						src="/placeholders/landscape-gallery.png"
-						alt=""
-						aria-hidden="true"
-						loading="lazy"
-						class="absolute inset-0 size-full object-cover object-center"
-					/>
-				</div>
 			)}
 
-			{useItems ? sideTiles.length > 0 && (
+			{sideTiles.length > 0 && (
 				<div class={`grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
@@ -257,7 +261,7 @@ const containerCls = paddingStyle
 										src={tile.url}
 										alt={tile.alt || tile.label}
 										loading="lazy"
-										class={`absolute inset-0 size-full max-w-none object-cover object-center ${SIDE_HOVERS[i] ?? SIDE_HOVERS[0]}`}
+										class={`absolute inset-0 size-full max-w-none ${fitCls(tile, SIDE_HOVERS[i] ?? SIDE_HOVERS[0])}`}
 									/>
 								)}
 							</div>
@@ -273,35 +277,6 @@ const containerCls = paddingStyle
 							)}
 						</a>
 					))}
-				</div>
-			) : (
-				/* ПЛЕЙСХОЛДЕР пустого состояния (Figma 1:19335, контракт theme-base
-				   Gallery): карточка-товар (куртка blue + «Товар» / «2 500 ₽») +
-				   карточка-коллекция (пустой image-rect + «Выбери коллекцию») вместо
-				   мок-товаров верстальщика («M Phone 17» / «Смартфоны»). */
-				<div class={`grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4${sideOrderCls}`}>
-					<div class="flex min-w-0 flex-col gap-4" aria-label="Товар">
-						<div class="relative aspect-square w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]">
-							<img
-								src="/placeholders/sweater-blue.svg"
-								alt="Товар"
-								loading="lazy"
-								class="absolute inset-0 size-full object-contain object-center p-[15%]"
-							/>
-						</div>
-						<div class="flex flex-col gap-1">
-							<h3 class={productTitleCls}>Товар</h3>
-							<span class={productPriceCls}>2 500 ₽</span>
-						</div>
-					</div>
-
-					<div class="flex min-w-0 flex-col gap-4" aria-label="Выбери коллекцию">
-						<div
-							class="relative aspect-[429/269] w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]"
-							aria-hidden="true"
-						/>
-						<h3 class={collectionTitleCls}>Выбери коллекцию</h3>
-					</div>
 				</div>
 			)}
 		</div>

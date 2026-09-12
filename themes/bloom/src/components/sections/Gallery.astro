@@ -3,11 +3,11 @@ import { inlineFormat } from "../../lib/rich-text";
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Gallery T13): конструкторная схема
 // theme-base Gallery.puckConfig поверх разметки верстальщика. Тело + канон-
 // дефолты (headingSize/textSize medium, imagePosition left) → пиксель
-// верстальщика. Empty-state (нет выбранных items[]) рендерит ПЛЕЙСХОЛДЕР по
-// контракту Figma 1:19335 (паритет theme-base PopularProducts/Collections):
-// пустой image-rect + карточка-товар (куртка blue + «Товар»/«2 500 ₽») +
-// карточка «Выбери коллекцию» — НЕ мок-демо верстальщика. Данные ВЫБРАНЫ
-// (useItems) → реальный рендер + гидрация по коллекции БЕЗ изменений.
+// верстальщика. Плитка БЕЗ выбора рендерит ПЛЕЙСХОЛДЕР СВОЕГО ТИПА по контракту
+// Figma 1:19335 (паритет theme-base PopularProducts/Collections): изображение —
+// landscape-gallery, товар — куртка blue + «Товар»/«2 500 ₽», коллекция — пустой
+// бокс + «Выбери коллекцию» (НЕ мок-демо верстальщика). Данные ВЫБРАНЫ →
+// реальный рендер + гидрация по коллекции БЕЗ изменений.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Своя colorScheme на корне секции: при hot-render одиночного блока в превью
@@ -90,6 +90,7 @@ type GalleryTile = {
 	price: string;
 	href: string;
 	ref: string | null;
+	placeholder?: boolean;
 };
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
@@ -132,22 +133,28 @@ const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 // Items-path (мерчант ДОБАВИЛ плитки в конструкторе = «данные выбраны»):
 // плитка без url служит SSR-якорем под гидрацию реальной сущности
 // (data-gallery-product/-collection → имя/цена/картинка из products/collections).
-// Этот путь рендера/гидрации НЕ трогаем — контракт пустого состояния касается
-// только no-items ветки (ниже useItems=false), где раньше был мок верстальщика.
+// Этот путь рендера/гидрации НЕ трогаем.
 const TILE_FALLBACKS = ["/images/balaklava.webp", "/images/milk.webp", "/images/trend-1.webp"];
-// Плейсхолдер (Figma 1:19335, эталон rose Gallery): плитка БЕЗ своей картинки =
-// пустая surface-плитка (НЕ мок-фото верстальщика). url остаётся пустым →
-// tile.url-гард рендерит пустую surface; на live гидрация
-// (data-gallery-product/-collection) подставит реальное.
+// Плитки рендерятся ПО ПРОПСАМ, а не по гейту «есть контент / нет контента»: у
+// плитки без выбора свой плейсхолдер по типу. Поэтому удаление и добавление
+// параметра сразу видно и в конструкторе, и на витрине (баг-репорт владельца);
+// при дефолтных трёх элементах картинка та же, что у прежнего захардкоженного
+// пустого состояния (Figma 1:19335).
 galleryTiles.forEach((t) => {
-	if (!t.url) t.url = "";
+	if (t.url) return;
+	if (t.kind === "image") {
+		t.url = PLACEHOLDER_GALLERY_IMAGE;
+		t.placeholder = true;
+	} else if (t.kind === "product") {
+		t.url = PLACEHOLDER_SWEATER_BLUE;
+		t.placeholder = true;
+	}
 });
-// Гейт пустого состояния (Figma 1:19335): true ТОЛЬКО при реальном контенте плитки
-// (image с непустым url, product/collection с выбранным ref). Пустые seed-плитки
-// (url='' / ref=null) → false → рендерится empty-state плейсхолдер ниже.
-const useItems = galleryTiles.some((t) => (t.kind === "image" ? !!t.url : !!t.ref));
-const heroTile = useItems ? galleryTiles[0] : undefined;
-const sideTiles = useItems ? galleryTiles.slice(1) : [];
+// Куртка-плейсхолдер вписывается в бокс (object-contain), реальное фото — кроп.
+const fitCls = (t: GalleryTile, hover: string) =>
+	t.placeholder && t.kind === "product" ? "object-contain p-[12%]" : `object-cover ${hover}`;
+const heroTile = galleryTiles[0];
+const sideTiles = galleryTiles.slice(1);
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -187,7 +194,7 @@ const paddingStyle = p.padding
 		)}
 
 		<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2" data-animate data-animate-delay="0.1s">
-			{heroTile ? (
+			{heroTile && (
 				<a
 					href={heroTile.href}
 					class={`group relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
@@ -203,29 +210,13 @@ const paddingStyle = p.padding
 							src={heroTile.url}
 							alt={heroTile.alt}
 							loading="lazy"
-							class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+							class={`absolute inset-0 size-full ${fitCls(heroTile, "transition-transform duration-500 ease-out group-hover:scale-[1.03]")}`}
 						/>
 					)}
 				</a>
-			) : (
-			/* Плейсхолдер пустого состояния (Figma 1:19335): большая плитка с
-			   дизайн-ассетом landscape-gallery.png (НЕ пустая surface и НЕ мок-картинка
-			   верстальщика), эталон rose/vanilla Gallery. */
-			<a
-				href="/catalog"
-				class={`group relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
-				aria-label="Перейти в каталог"
-			>
-				<img
-					src={PLACEHOLDER_GALLERY_IMAGE}
-					alt="Галерея"
-					loading="lazy"
-					class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-				/>
-			</a>
 			)}
 
-			{useItems ? sideTiles.length > 0 && (
+			{sideTiles.length > 0 && (
 				<div class={`flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
@@ -244,7 +235,7 @@ const paddingStyle = p.padding
 										src={tile.url}
 										alt={tile.alt}
 										loading="lazy"
-										class="absolute inset-0 size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+										class={`absolute inset-0 size-full ${fitCls(tile, "transition-transform duration-500 ease-out group-hover:scale-[1.05]")}`}
 									/>
 								)}
 							</div>
@@ -271,39 +262,6 @@ const paddingStyle = p.padding
 						</a>
 					))}
 				</div>
-			) : (
-			<div class={`flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none${sideOrderCls}`}>
-				<a href="/catalog" class="group block" aria-label="Товар, 2 500 ₽">
-					<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
-						<img
-							src={PLACEHOLDER_SWEATER_BLUE}
-							alt="Товар"
-							loading="lazy"
-							class="absolute inset-0 size-full object-contain p-[12%]"
-						/>
-					</div>
-					<div class="mt-5 flex flex-col gap-1">
-						<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70">
-							Товар
-						</span>
-						<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">
-							2 500 ₽
-						</span>
-					</div>
-				</a>
-
-				<a href="/catalog" class="group block" aria-label="Выбери коллекцию">
-					<div
-						class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]"
-						aria-hidden="true"
-					/>
-					<div class="mt-5 flex flex-col gap-1">
-						<span class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity group-hover:opacity-70">
-							Выбери коллекцию
-						</span>
-					</div>
-				</a>
-			</div>
 			)}
 		</div>
 	</div>

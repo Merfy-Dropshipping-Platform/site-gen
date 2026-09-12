@@ -518,10 +518,6 @@
       "id": "satin.flow.cart.safe-dom.status-open"
     },
     {
-      "fingerprint": "sha256:2d0cddb73b5b955c19428b7f0584ca201525db6d829e4da762ff31b1cb3dd670",
-      "id": "satin.flow.checkout-config.require-auth-live"
-    },
-    {
       "fingerprint": "sha256:1962e4477fed86b6ad2e8d86c76a3eb85924be933ceed2b8a39a652ef6b39fee",
       "id": "satin.flow.checkout-config.require-auth-live.requirement-missing"
     },
@@ -998,10 +994,6 @@
       "id": "satin.flow.wishlist.feature.status-open"
     },
     {
-      "fingerprint": "sha256:1de66c93ebeef40506e04217db8b3108b077dc0e16e814b4137827004c7a581c",
-      "id": "satin.page.page-checkout-result.live-output"
-    },
-    {
       "fingerprint": "sha256:dfb83e9c8c86bcf7a0ddcbc0c98dfc3ba261bd8a9c25229d4e86d0e76f449bad",
       "id": "satin.page.page-checkout-result.live-output.requirement-missing"
     },
@@ -1014,10 +1006,6 @@
       "id": "satin.page.page-checkout-result.live-output.status-open"
     },
     {
-      "fingerprint": "sha256:6f596f52aa20fd78daa6b4af30f5ec1bfbbc3c2224af7b0ead90cd55b63a88dd",
-      "id": "satin.page.page-checkout-result.manifest"
-    },
-    {
       "fingerprint": "sha256:beac6f8010a00c0609568ed4ae1ad6a342a8160bf6ffa7c9026da7283f160be8",
       "id": "satin.page.page-checkout-result.manifest.requirement-missing"
     },
@@ -1028,10 +1016,6 @@
     {
       "fingerprint": "sha256:1dd9ff471916e906ec26943f997b2af48a6659e702332882a683fd14043e1488",
       "id": "satin.page.page-checkout-result.manifest.status-open"
-    },
-    {
-      "fingerprint": "sha256:7a6443ad21dde95926322dfbd2ff71a20dff3066011bd76f78850feb849d8d87",
-      "id": "satin.page.page-checkout-result.seed"
     },
     {
       "fingerprint": "sha256:c43e7ecc59e42bdbb797789f0fdadd7833d0f86c04dc94f53dcc72786b312cf0",
@@ -1390,7 +1374,7 @@
     }
   ],
   "schemaVersion": 1,
-  "sourceDigest": "4254dd5b34470b8065d2146a15f14df27a0c37577f6866452958f06c10fdcff9",
+  "sourceDigest": "8b4e2fde9e485977811a56f3bfd2946c4950e09805a1ce01f4bcbbb4d4971fb5",
   "structuralIssues": [
     {
       "canonicalFacts": {
@@ -3019,25 +3003,6 @@
     },
     {
       "canonicalFacts": {
-        "live": false,
-        "preview": true
-      },
-      "detail": "preview injects the checkout auth config while the live path drops it",
-      "expectedCode": "live-receives-auth-config",
-      "id": "satin.flow.checkout-config.require-auth-live",
-      "observedCode": "live-loses-auth-config",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "src/generator/build.service.ts#/checkout-auth"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
-    },
-    {
-      "canonicalFacts": {
         "requirementLabel": "preview injects the checkout auth config while the live path drops it"
       },
       "detail": "required capability \"satin.flow.checkout-config.require-auth-live\" is not exposed by code/runtime",
@@ -4589,24 +4554,6 @@
     },
     {
       "canonicalFacts": {
-        "liveOutput": false
-      },
-      "detail": "checkout success target is not generated for Satin",
-      "expectedCode": "checkout-result-generated",
-      "id": "satin.page.page-checkout-result.live-output",
-      "observedCode": "checkout-result-not-generated",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "src/generator/build.service.ts#/composeContentPagesIntoDist"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
-    },
-    {
-      "canonicalFacts": {
         "requirementLabel": "checkout success target is not generated for Satin"
       },
       "detail": "required capability \"satin.page.page-checkout-result.live-output\" is not exposed by code/runtime",
@@ -4644,25 +4591,6 @@
     },
     {
       "canonicalFacts": {
-        "inManifest": false,
-        "requiredByRegistry": true
-      },
-      "detail": "checkout-result is required by the registry but absent from the manifest",
-      "expectedCode": "page-in-manifest",
-      "id": "satin.page.page-checkout-result.manifest",
-      "observedCode": "page-absent",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "packages/theme-satin/theme.json#/pages"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
-    },
-    {
-      "canonicalFacts": {
         "requirementLabel": "checkout-result is required by the registry but absent from the manifest"
       },
       "detail": "required capability \"satin.page.page-checkout-result.manifest\" is not exposed by code/runtime",
@@ -4697,24 +4625,6 @@
       ],
       "status": "GAP",
       "theme": "satin"
-    },
-    {
-      "canonicalFacts": {
-        "seedPresent": false
-      },
-      "detail": "checkout-result has no Satin seed",
-      "expectedCode": "page-seed-present",
-      "id": "satin.page.page-checkout-result.seed",
-      "observedCode": "page-seed-absent",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "packages/theme-satin/theme.json#/pages"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
     },
     {
       "canonicalFacts": {

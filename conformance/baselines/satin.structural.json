@@ -648,11 +648,6 @@
       "tier": "structural"
     },
     {
-      "fingerprint": "sha256:2d0cddb73b5b955c19428b7f0584ca201525db6d829e4da762ff31b1cb3dd670",
-      "id": "satin.flow.checkout-config.require-auth-live",
-      "tier": "structural"
-    },
-    {
       "fingerprint": "sha256:1962e4477fed86b6ad2e8d86c76a3eb85924be933ceed2b8a39a652ef6b39fee",
       "id": "satin.flow.checkout-config.require-auth-live.requirement-missing",
       "tier": "structural"
@@ -1248,11 +1243,6 @@
       "tier": "structural"
     },
     {
-      "fingerprint": "sha256:1de66c93ebeef40506e04217db8b3108b077dc0e16e814b4137827004c7a581c",
-      "id": "satin.page.page-checkout-result.live-output",
-      "tier": "structural"
-    },
-    {
       "fingerprint": "sha256:dfb83e9c8c86bcf7a0ddcbc0c98dfc3ba261bd8a9c25229d4e86d0e76f449bad",
       "id": "satin.page.page-checkout-result.live-output.requirement-missing",
       "tier": "structural"
@@ -1268,11 +1258,6 @@
       "tier": "structural"
     },
     {
-      "fingerprint": "sha256:6f596f52aa20fd78daa6b4af30f5ec1bfbbc3c2224af7b0ead90cd55b63a88dd",
-      "id": "satin.page.page-checkout-result.manifest",
-      "tier": "structural"
-    },
-    {
       "fingerprint": "sha256:beac6f8010a00c0609568ed4ae1ad6a342a8160bf6ffa7c9026da7283f160be8",
       "id": "satin.page.page-checkout-result.manifest.requirement-missing",
       "tier": "structural"
@@ -1285,11 +1270,6 @@
     {
       "fingerprint": "sha256:1dd9ff471916e906ec26943f997b2af48a6659e702332882a683fd14043e1488",
       "id": "satin.page.page-checkout-result.manifest.status-open",
-      "tier": "structural"
-    },
-    {
-      "fingerprint": "sha256:7a6443ad21dde95926322dfbd2ff71a20dff3066011bd76f78850feb849d8d87",
-      "id": "satin.page.page-checkout-result.seed",
       "tier": "structural"
     },
     {
@@ -1353,7 +1333,7 @@
       "tier": "structural"
     }
   ],
-  "parentBaselineDigest": null,
+  "parentBaselineDigest": "sha256:e0ba11091ff58ba91abb1e71da3cfaa2a07bcf3ed9d9058ccdbef63e4fb5cf5a",
   "requirements": [
     {
       "fingerprint": "sha256:4f7dcef2bcd12c77f6a43da3cfa64e25e5fbe768bb947abf8427e0a722a9156f",

@@ -1,9 +1,14 @@
 import { z } from 'zod';
 import { TOKEN_REGISTRY, type TokenKey } from '../tokens/registry';
 
+// Второй аргумент refine — ОБЪЕКТ, а не функция. В package.json пакета объявлен
+// zod ^3, а в монорепозитории поднята zod 4 из корня, и подпись функции у этих
+// версий разная: файл дважды за день переписывали туда-сюда — то собирался прод
+// и падал тайпчек, то наоборот. Форма { message } валидна в обеих версиях. Цена
+// — в тексте ошибки нет имени токена; оно того стоит.
 const TokenKeySchema = z.string().refine(
   (k): k is TokenKey => k in TOKEN_REGISTRY,
-  (k) => ({ message: `Unknown token "${k}". Must be in TOKEN_REGISTRY.` }),
+  { message: 'Unknown token. Must be a key of TOKEN_REGISTRY.' },
 );
 
 const TokensMapSchema = z.record(TokenKeySchema, z.string());

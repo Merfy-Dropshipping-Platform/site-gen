@@ -92,27 +92,12 @@ const TABLE: readonly Row[] = [
     observedCode: 'puck-driven-pages-absent',
     ref: 'packages/theme-satin/theme.json#/features',
   },
-  {
-    id: 'satin.page.page-checkout-result.manifest',
-    status: 'GAP',
-    expectedCode: 'page-in-manifest',
-    observedCode: 'page-absent',
-    ref: 'packages/theme-satin/theme.json#/pages',
-  },
-  {
-    id: 'satin.page.page-checkout-result.seed',
-    status: 'GAP',
-    expectedCode: 'page-seed-present',
-    observedCode: 'page-seed-absent',
-    ref: 'packages/theme-satin/theme.json#/pages',
-  },
-  {
-    id: 'satin.page.page-checkout-result.live-output',
-    status: 'GAP',
-    expectedCode: 'checkout-result-generated',
-    observedCode: 'checkout-result-not-generated',
-    ref: 'src/generator/build.service.ts#/composeContentPagesIntoDist',
-  },
+  // Закрыто: страница подтверждения заказа у satin теперь есть в манифесте, у
+  // неё есть сид, она собирается на витрину, и конфиг обязательной авторизации
+  // доезжает до live (spec 103). Четыре строки таблицы — page-checkout-result
+  // manifest/seed/live-output и checkout-config.require-auth-live — удалены,
+  // потому что пайплайн их больше не выдаёт, а тест требует убирать закрытые
+  // пробелы осознанно, а не глушить проверку.
   {
     id: 'satin.flow.auth.demo-routes',
     status: 'GAP',
@@ -140,13 +125,6 @@ const TABLE: readonly Row[] = [
     expectedCode: 'verify-preserves-return',
     observedCode: 'verify-return-lost',
     ref: 'themes/satin/src/pages/verify.astro',
-  },
-  {
-    id: 'satin.flow.checkout-config.require-auth-live',
-    status: 'GAP',
-    expectedCode: 'live-receives-auth-config',
-    observedCode: 'live-loses-auth-config',
-    ref: 'src/generator/build.service.ts#/checkout-auth',
   },
   {
     id: 'satin.flow.checkout-config.scheme-initial-injection',

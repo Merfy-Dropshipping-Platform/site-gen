@@ -66,9 +66,12 @@ describe('Satin runnable-bundle boundary (source adapter + release contract)', (
 });
 
 describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
-  it('sees exactly nine manifest pages and NO Satin checkout-result seed', async () => {
+  // Страница подтверждения заказа появилась в теме позже этих ожиданий
+  // (spec 103): страниц стало десять, сид checkout-result есть. Тест
+  // зафиксировал состояние ДО фичи и с тех пор держал CI красным.
+  it('sees exactly ten manifest pages including the checkout-result seed', async () => {
     const snap = await loadSatin();
-    expect(snap.pageSlugs).toHaveLength(9);
+    expect(snap.pageSlugs).toHaveLength(10);
     expect(snap.pageSlugs).toEqual(
       expect.arrayContaining([
         '/',
@@ -80,12 +83,10 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
         '/cart',
         '/product',
         '/checkout',
+        '/checkout-result',
       ]),
     );
-    // The theme.json seeds have no checkout-result page/source entry (Task 2 of
-    // the release-train remediation adds the shell; not here).
-    expect(snap.hasCheckoutResultPage).toBe(false);
-    expect(snap.pageSlugs).not.toContain('/checkout-result');
+    expect(snap.hasCheckoutResultPage).toBe(true);
   });
 
   it('records the recursive standalone route tree with dynamic segments', async () => {

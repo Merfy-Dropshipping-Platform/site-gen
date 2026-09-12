@@ -35,7 +35,10 @@ describe('platform page registry — checkout-result is a registry route', () =>
   });
 
   it('classifies verbatim vs content routes consistently', () => {
-    expect(isVerbatimRoute('cart')).toBe(true);
+    // page-cart переехал в kind:'content' (корзина собирается Puck-блоками,
+    // page-registry.ts:91) — маршрут перестал быть verbatim. Ожидание осталось
+    // от прежней статической корзины.
+    expect(isVerbatimRoute('cart')).toBe(false);
     expect(isVerbatimRoute('product')).toBe(true);
     expect(isVerbatimRoute('checkout')).toBe(true);
     expect(isVerbatimRoute('about')).toBe(false);
@@ -46,14 +49,14 @@ describe('platform page registry — checkout-result is a registry route', () =>
   });
 });
 
-describe('Satin manifest ↔ registry — no Satin checkout-result seed', () => {
-  it('sees nine manifest pages and no checkout-result seed', async () => {
+describe('Satin manifest ↔ registry — checkout-result seed', () => {
+  // spec 103 завёл странице подтверждения заказа сид и в satin: страниц десять,
+  // hasCheckoutResultPage — true. Прежние ожидания описывали состояние до фичи.
+  it('sees ten manifest pages including the checkout-result seed', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.pageSlugs).toHaveLength(9);
-    expect(snap.hasCheckoutResultPage).toBe(false);
-    // The registry route exists platform-wide, but Satin's manifest has no seed
-    // for it — the two facts are recorded independently.
-    expect(snap.pageSlugs).not.toContain('/checkout-result');
+    expect(snap.pageSlugs).toHaveLength(10);
+    expect(snap.hasCheckoutResultPage).toBe(true);
+    expect(snap.pageSlugs).toContain('/checkout-result');
   });
 });
 

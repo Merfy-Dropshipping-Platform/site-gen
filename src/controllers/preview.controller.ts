@@ -28,7 +28,7 @@ import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
-import { extractPageBlocks } from '../themes/page-blocks';
+import { adaptLegacyProps, extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
 import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES } from '../themes/page-registry';
@@ -602,8 +602,19 @@ export class PreviewController {
       // Astro.props.siteId для server-side fetch товара из storefront-data
       // когда products.json отсутствует (preview path). Без siteId
       // Product.astro рендерил empty placeholder при hot-replace.
+      // Одиночный hot-render получает СЫРЫЕ props из конструктора, тогда как
+      // страница превью и сборка витрины проходят через adaptLegacyProps.
+      // Из-за этого item-уровневый «глаз» здесь не срабатывал: мерчант прятал
+      // элемент галереи, блок перерисовывался — и плитка возвращалась. Та же
+      // причина, по которой ниже футеру дают applyFooterData: у этого пути не
+      // было общей нормализации. publicUrl не передаём — URL этому маршруту
+      // переписывает rewriteRootUrlsToPrefix ниже, поведение ссылок прежнее.
       const propsWithContext = {
-        ...(body.props ?? {}),
+        ...adaptLegacyProps(
+          (body.props ?? {}) as Record<string, unknown>,
+          null,
+          body.blockType,
+        ),
         siteId,
       };
       const loaded = await this.loadRevisionData(siteId);

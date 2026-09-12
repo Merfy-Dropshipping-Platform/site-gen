@@ -49,6 +49,7 @@
     "build:theme-sections:all": "for t in rose bloom satin flux vanilla; do node scripts/compile-theme-sections.mjs $t || exit 1; done",
     "test:section-snapshots": "jest --runInBand src/themes/__tests__/section-html-snapshot.spec.ts",
     "test:hidden-fields": "jest --runInBand src/themes/__tests__/hidden-named-fields.spec.ts",
+    "test:hidden-items": "jest --runInBand src/__tests__/preview-block-hidden-items.spec.ts",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs"
   },
   "dependencies": {

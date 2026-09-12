@@ -25,15 +25,18 @@
  * Почему снимки этого не ловят: они рендерят секции БЕЗ hiddenFields, и
  * «параметр не скрывается» для них выглядит нормой.
  *
- * Требует собранных секций: pnpm build:theme-sections <тема> для всех пяти
- * и pnpm build:blocks (для общих блоков theme-base).
+ * Требует сборки (тот же порядок, что в CI перед этим шагом):
+ *   pnpm build                     — компилированный контроллер puck-config,
+ *                                    по нему считается набор полей ТЕМЫ;
+ *   pnpm build:blocks              — общие блоки theme-base (CartSummary);
+ *   pnpm build:theme-sections:all  — порты секций всех пяти тем.
  */
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
+const PUCK_FIELDS = resolve(__dirname, "puck-config-fields.mjs");
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const THEMES = ["rose", "bloom", "satin", "flux", "vanilla"] as const;
 
@@ -44,6 +47,18 @@ type FieldSpec = {
   field: string;
   /** Уникальный след параметра в разметке. Массив — «любой из» (composite). */
   probe: string | string[];
+  /**
+   * compositeFields из NAMED_SUBSECTIONS: одно имя поля закрывает несколько
+   * полей puckConfig. Конструктор оставляет такой параметр, если в конфиге
+   * ТЕМЫ есть хотя бы одно из них (getNamedSubsections), — повторяем дословно.
+   */
+  composite?: string[];
+  /**
+   * Причина, по которой параметр НЕЛЬЗЯ проверить изолированным рендером
+   * (узел не появляется без внешних данных). Заполнено — пара пропускается, и
+   * причина видна в названии теста, а не молчит.
+   */
+  unprobeable?: string;
 };
 type BlockSpec = {
   /** theme-base — блок общий и живёт вне sections.map.json (см. рендерер). */
@@ -61,9 +76,13 @@ const marker = (f: string) => `data-puck-subsection-field="${f}"`;
  * onToggleNamedVisibility на каждую запись оттуда. Блока нет в реестре —
  * hiddenFields ему не придёт никогда, и правка порта была бы работой вхолостую.
  *
- * Поля, отфильтрованные конструктором по puckConfig темы, сюда не входят:
- * Newsletter.subheading есть в реестре, но в puckConfig его нет, значит
- * getNamedSubsections его отбрасывает и «глаза» у него не бывает.
+ * Поля перечислены ВСЕ, как в реестре конструктора. Отсев делается не здесь, а
+ * по РАБОЧЕМУ puckConfig темы (см. activeFields ниже): у тем бывают
+ * СОБСТВЕННЫЕ конфиги, и satin переопределяет десять блоков, включая Hero,
+ * MainText и ImageWithText. Захардкодить отсев по theme-base значило бы
+ * проверять satin не по его конфигу — ровно та ошибка, из-за которой правка
+ * hiddenInMainPanel в theme-base когда-то починила четыре темы, а satin
+ * остался сломанным.
  */
 const NAMED_FIELDS: Record<string, BlockSpec> = {
   PromoBanner: {
@@ -89,7 +108,11 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
       { field: "heading", probe: "MK_HERO_HEAD" },
       { field: "text", probe: "MK_HERO_TEXT" },
       // composite: одно имя поля — две кнопки в разметке.
-      { field: "buttons", probe: ["MK_HERO_BTN1", "MK_HERO_BTN2"] },
+      {
+        field: "buttons",
+        probe: ["MK_HERO_BTN1", "MK_HERO_BTN2"],
+        composite: ["primaryButton", "secondaryButton"],
+      },
     ],
   },
   MainText: {
@@ -132,6 +155,9 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
     },
     fields: [
       { field: "heading", probe: "MK_NL_HEAD" },
+      // subheading есть в реестре конструктора, но ни в одном puckConfig его
+      // нет — activeFields отсеет его сам, без ручной правки этого списка.
+      { field: "subheading", probe: "MK_NL_DESC" },
       { field: "buttonText", probe: "MK_NL_BTN" },
     ],
   },
@@ -144,14 +170,26 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
   Product: {
     props: { ...base },
     fields: [
-      "text",
-      "title",
-      "price",
-      "variants",
-      "quantity",
-      "buttons",
-      "share",
-    ].map((f) => ({ field: f, probe: marker(f) })),
+      ...[
+        "text",
+        "title",
+        "price",
+        "variants",
+        "quantity",
+        "buttons",
+        "share",
+      ].map((f) => ({ field: f, probe: marker(f) })),
+      {
+        field: "description",
+        probe: marker("description"),
+        // hasDescription требует НАСТОЯЩЕГО товара (realProduct.description), а
+        // изолированный рендер всегда placeholder — узла не будет ни с каким
+        // набором props. В порту поле закрыто в обеих ветках разметки, но
+        // подтвердить это рендером нельзя; проверяется вручную при правке.
+        unprobeable:
+          "узел требует реального товара, на placeholder не рендерится",
+      },
+    ],
   },
   /**
    * CartSummary не лежит в sections.map.json ни одной темы — он общий блок
@@ -268,6 +306,26 @@ function render(theme: string, jobs: Job[]): Row[] {
   return JSON.parse(raw) as Row[];
 }
 
+/**
+ * Поля рабочего puck-config темы (блок → список полей). Дочерний процесс:
+ * компилированный контроллер тянет ESM-модули блоков, jest их не грузит.
+ * null — конфиг недоступен (не собран `pnpm build`); это ловит отдельный тест,
+ * иначе отсев полей молча выключился бы и проверки стали бы пустыми.
+ */
+function runtimePuckFields(theme: string): Record<string, string[]> | null {
+  try {
+    const raw = execFileSync("node", [PUCK_FIELDS, theme], {
+      cwd: SITES_ROOT,
+      encoding: "utf-8",
+      maxBuffer: 32 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return JSON.parse(raw) as Record<string, string[]>;
+  } catch {
+    return null;
+  }
+}
+
 function manifestBlocks(theme: string): string[] | null {
   const mf = resolve(
     SITES_ROOT,
@@ -299,6 +357,35 @@ describe.each(THEMES)("скрытие именованного параметр�
   let shown: Row[] = [];
   let hidden: Row[] = [];
 
+  /**
+   * Поля, у которых «глаз» РЕАЛЬНО есть в этой теме. Повторяем отсев
+   * getNamedSubsections по КОНФИГУ ЭТОЙ ТЕМЫ: конфиг берём у того же
+   * скомпилированного контроллера, который отдаёт его конструктору
+   * (`GET /api/themes/:id/puck-config`), — в нём уже применён resolveBlocks,
+   * а он при `override` в theme.json берёт пакет темы ЦЕЛИКОМ вместо
+   * theme-base. Считать по theme-base значило бы проверять satin (десять своих
+   * блоков, включая Hero/MainText/ImageWithText) чужим набором полей.
+   */
+  const themeFields = runtimePuckFields(theme);
+  const activeFields: Record<string, Set<string>> = {};
+  if (themeFields) {
+    for (const [block, spec] of Object.entries(NAMED_FIELDS)) {
+      const f = themeFields[block];
+      if (!f) continue;
+      activeFields[block] = new Set(
+        spec.fields
+          .filter((s) =>
+            s.composite
+              ? s.composite.some((c) => f.includes(c))
+              : f.includes(s.field),
+          )
+          .map((s) => s.field),
+      );
+    }
+  }
+  const isActive = (block: string, field: string): boolean =>
+    activeFields[block]?.has(field) ?? false;
+
   beforeAll(() => {
     if (!built || pairs.length === 0) return;
     // Один процесс на тему: сначала все пары без скрытия, затем те же со скрытием.
@@ -320,6 +407,12 @@ describe.each(THEMES)("скрытие именованного параметр�
     expect(built).toBe(true);
   });
 
+  it("рабочий puck-config темы прочитан (pnpm build)", () => {
+    // Без конфига отсев полей молчит и «всё зелено» ничего не значит.
+    expect(themeFields).not.toBeNull();
+    expect(Object.keys(activeFields).length).toBeGreaterThan(0);
+  });
+
   it("каждый блок манифеста классифицирован (новая секция не проскочит молча)", () => {
     if (!built) return;
     const unclassified = blocks.filter(
@@ -333,8 +426,13 @@ describe.each(THEMES)("скрытие именованного параметр�
   pairs.forEach(({ block, f }, i) => {
     const gap = isKnownGap(theme, block, f.field);
 
-    it(`${block}.${f.field}: параметр виден, пока его не скрыли`, () => {
-      if (!built) return;
+    it(`${block}.${f.field}: параметр виден, пока его не скрыли${
+      f.unprobeable ? ` — ПРОПУЩЕН: ${f.unprobeable}` : ""
+    }`, () => {
+      if (!built || f.unprobeable) return;
+      // «Глаза» у поля в этой теме нет (её конфиг его не содержит) — проверять
+      // нечего: hiddenFields с таким именем конструктор не пришлёт.
+      if (!isActive(block, f.field)) return;
       const row = shown[i];
       if (row?.missing) return; // блока нет в этой теме
       expect(row?.error ?? null).toBeNull();
@@ -342,15 +440,18 @@ describe.each(THEMES)("скрытие именованного параметр�
     });
 
     it(
-      gap
-        ? `${block}.${f.field}: дыра ещё открыта (см. KNOWN_GAPS — чинится в fix/preview-chrome-reorder)`
-        : `${block}.${f.field}: скрытый параметр исчезает с витрины`,
+      f.unprobeable
+        ? `${block}.${f.field}: скрытие не проверяемо рендером — ${f.unprobeable}`
+        : gap
+          ? `${block}.${f.field}: дыра ещё открыта (см. KNOWN_GAPS — чинится в fix/preview-chrome-reorder)`
+          : `${block}.${f.field}: скрытый параметр исчезает с витрины`,
       () => {
-        if (!built) return;
+        if (!built || f.unprobeable) return;
+        if (!isActive(block, f.field)) return;
         const row = hidden[i];
         if (row?.missing) return;
         expect(row?.error ?? null).toBeNull();
-        if (!contains(shown[i]?.html ?? "", f.probe)) return; // поля нет в этой теме
+        if (!contains(shown[i]?.html ?? "", f.probe)) return; // параметра нет при этих props
         const leaked = contains(row?.html ?? "", f.probe);
         if (gap) {
           // Дыру закрыли — уберите запись из KNOWN_GAPS, иначе она протухнет.

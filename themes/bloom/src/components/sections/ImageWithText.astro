@@ -131,6 +131,14 @@ const paddingStyle = p.padding
 	: undefined;
 
 const titleId = id ? `${id}-title` : undefined;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
@@ -160,21 +168,25 @@ const titleId = id ? `${id}-title` : undefined;
 		</div>
 
 		<div class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}`}>
-			<h2
-				id={titleId}
-				class={headingCls + headingAlignCls + italicCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="heading"
-				set:html={inlineFormat(heading)}
-			></h2>
-			<div
-				class={textCls + italicCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="102"
-				data-puck-subsection-field="text"
-				set:html={inlineFormat(text)}
-			/>
+			{!isFieldHidden('heading') && (
+				<h2
+					id={titleId}
+					class={headingCls + headingAlignCls + italicCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="heading"
+					set:html={inlineFormat(heading)}
+				></h2>
+			)}
+			{!isFieldHidden('text') && (
+				<div
+					class={textCls + italicCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="text"
+					set:html={inlineFormat(text)}
+				/>
+			)}
 			{
 				btnText && (
 					<div class={inlineCta ? "mt-2" : "mt-auto"}>

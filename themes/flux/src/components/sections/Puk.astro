@@ -203,6 +203,14 @@ const containerCls = paddingStyle
 	: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80";
 
 const titleId = id ? `${id}-title` : "cta-title";
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {/* Фон секции — ПОВЕРХНОСТЬ, а не фон страницы: в вёрстке это bg-[#FBFBFB]
@@ -234,22 +242,26 @@ const titleId = id ? `${id}-title` : "cta-title";
 			    bottom-pinned (иначе ломает lg:items-center грида). */}
 			<div class={`flex w-full flex-col items-start gap-10${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
 				<div class="flex flex-col gap-2">
-					<h2
-						id={titleId}
-						class={headingCls + alignCls + italicCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="heading"
-					>
-						{heading}
-					</h2>
-					<p
-						class={textCls + alignCls + italicCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="102"
-						data-puck-subsection-field="text"
-						set:html={text}
-					/>
+					{!isFieldHidden('heading') && (
+						<h2
+							id={titleId}
+							class={headingCls + alignCls + italicCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="heading"
+						>
+							{heading}
+						</h2>
+					)}
+					{!isFieldHidden('text') && (
+						<p
+							class={textCls + alignCls + italicCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="text"
+							set:html={text}
+						/>
+					)}
 				</div>
 
 				{
@@ -261,15 +273,17 @@ const titleId = id ? `${id}-title` : "cta-title";
 								sectionAlignment === "center" ? "!text-center" : sectionAlignment === "right" ? "!text-right" : "",
 							]}
 						>
-							<a
-								href={btnHref}
-								class={btnCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="103"
-								data-puck-subsection-field="button"
-							>
-								{btnText}
-							</a>
+							{!isFieldHidden('button') && (
+								<a
+									href={btnHref}
+									class={btnCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="103"
+									data-puck-subsection-field="button"
+								>
+									{btnText}
+								</a>
+							)}
 						</div>
 					)
 				}

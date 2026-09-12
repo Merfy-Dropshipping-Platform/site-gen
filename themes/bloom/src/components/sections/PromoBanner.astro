@@ -72,6 +72,14 @@ const textCls =
 // «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
 // (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
 // с padding {12,12} выходят за макетную высоту (полоса толще макета). Эталон rose.
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
@@ -85,23 +93,25 @@ const textCls =
 			data-bloom-announcement
 			data-puck-component-id={id}
 		>
-			<p
-				class={textCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="text"
-			>
-				{/* §7 Контракта секции: «Ж»/«К» панели оборачивают значение в <strong>/<em>, Astro экранирует {text} → в полосе появлялся сырой «<EM>…</EM>», да ещё и заглавными из-за uppercase. XSS-safe inlineFormat. */}
-				<span set:html={inlineFormat(text)} />
-				{linkText && (
-					<a
-						href={linkHref}
-						class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
-					>
-						{linkText}
-					</a>
-				)}
-			</p>
+			{!isFieldHidden('text') && (
+				<p
+					class={textCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="text"
+				>
+					{/* §7 Контракта секции: «Ж»/«К» панели оборачивают значение в <strong>/<em>, Astro экранирует {text} → в полосе появлялся сырой «<EM>…</EM>», да ещё и заглавными из-за uppercase. XSS-safe inlineFormat. */}
+					<span set:html={inlineFormat(text)} />
+					{linkText && (
+						<a
+							href={linkHref}
+							class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+						>
+							{linkText}
+						</a>
+					)}
+				</p>
+			)}
 		</div>
 	) : (
 		/* Пустое состояние (Figma 1:19335): дословный плейсхолдер «Добавь текст в
@@ -114,20 +124,22 @@ const textCls =
 			data-bloom-announcement
 			data-puck-component-id={id}
 		>
-			<p
-				class="max-w-full text-center font-inter text-[12px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]"
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="text"
-			>
-				<span class="whitespace-pre-wrap">Добавь текст в объявление.</span>{" "}
-				<a
-					href={linkHref}
-					class="underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+			{!isFieldHidden('text') && (
+				<p
+					class="max-w-full text-center font-inter text-[12px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="text"
 				>
-					{placeholderLinkText}
-				</a>
-			</p>
+					<span class="whitespace-pre-wrap">Добавь текст в объявление.</span>{" "}
+					<a
+						href={linkHref}
+						class="underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+					>
+						{placeholderLinkText}
+					</a>
+				</p>
+			)}
 		</div>
 	)
 }

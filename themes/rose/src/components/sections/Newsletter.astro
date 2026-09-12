@@ -91,6 +91,14 @@ const paddingStyle = p.padding
 	: undefined;
 
 const titleId = id && !hideTitle ? `${id}-title` : undefined;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
@@ -104,23 +112,27 @@ const titleId = id && !hideTitle ? `${id}-title` : undefined;
 			{
 				!hideTitle && (
 					<div class="flex w-full flex-col gap-2">
-						<h2
-							id={titleId}
-							class={headingCls}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="100"
-							data-puck-subsection-field="heading"
-						>
-							{heading}
-						</h2>
-						<p
-							class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="text"
-						>
-							{description}
-						</p>
+						{!isFieldHidden('heading') && (
+							<h2
+								id={titleId}
+								class={headingCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="100"
+								data-puck-subsection-field="heading"
+							>
+								{heading}
+							</h2>
+						)}
+						{!isFieldHidden('text') && (
+							<p
+								class={`font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="text"
+							>
+								{description}
+							</p>
+						)}
 					</div>
 				)
 			}

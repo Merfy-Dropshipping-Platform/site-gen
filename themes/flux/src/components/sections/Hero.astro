@@ -332,6 +332,14 @@ const overlayPadStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 const overlayPadCls = p.padding ? "" : "py-10 md:py-14 lg:py-16 xl:py-20";
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
@@ -361,23 +369,27 @@ const overlayPadCls = p.padding ? "" : "py-10 md:py-14 lg:py-16 xl:py-20";
 			<div class={`relative w-full ${heroHeightCls}`}>
 				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 py-8 text-center md:gap-10 md:px-20 md:py-10 2xl:px-80">
 					<div class="flex max-w-[432px] flex-col items-center gap-2 text-center">
-						<h1
-							id="hero-title"
-							class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="100"
-							data-puck-subsection-field="heading"
-						>
-							{PH_LABEL}
-						</h1>
-						<p
-							class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="text"
-						>
-							{PH_HELPER}
-						</p>
+						{!isFieldHidden('heading') && (
+							<h1
+								id="hero-title"
+								class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="100"
+								data-puck-subsection-field="heading"
+							>
+								{PH_LABEL}
+							</h1>
+						)}
+						{!isFieldHidden('text') && (
+							<p
+								class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="text"
+							>
+								{PH_HELPER}
+							</p>
+						)}
 					</div>
 					<div class="flex flex-wrap justify-center gap-3">
 						<a
@@ -461,30 +473,34 @@ const overlayPadCls = p.padding ? "" : "py-10 md:py-14 lg:py-16 xl:py-20";
 	>
 		<div class={contentCls} data-reveal>
 			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
-				<h1
-					id="hero-title"
-					class={headingCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="heading"
-				>
-					{title}
-				</h1>
-				<p
-					class={subtitleCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
-					data-puck-subsection-field="text"
-				>
-					{String(subtitle)
-						.split("\n")
-						.map((line, i) => (
-							<>
-								{i > 0 && <br />}
-								{line}
-							</>
-						))}
-				</p>
+				{!isFieldHidden('heading') && (
+					<h1
+						id="hero-title"
+						class={headingCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+					>
+						{title}
+					</h1>
+				)}
+				{!isFieldHidden('text') && (
+					<p
+						class={subtitleCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+					>
+						{String(subtitle)
+							.split("\n")
+							.map((line, i) => (
+								<>
+									{i > 0 && <br />}
+									{line}
+								</>
+							))}
+					</p>
+				)}
 			</div>
 
 			<div class={buttonsCls}>

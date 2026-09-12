@@ -66,6 +66,14 @@ const rootCls = `m-0 flex ${sizeCls} w-full shrink-0 items-center justify-center
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
@@ -83,22 +91,24 @@ const paddingStyle = p.padding
 			data-vanilla-announcement
 			data-puck-component-id={id}
 		>
-			<span
-				class={`min-w-0 shrink ${sz.text}`}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="text"
-			>
-				{text}
-				{linkText && (
-					<a
-						href={linkHref}
-						class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
-					>
-						{linkText}
-					</a>
-				)}
-			</span>
+			{!isFieldHidden('text') && (
+				<span
+					class={`min-w-0 shrink ${sz.text}`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="text"
+				>
+					{text}
+					{linkText && (
+						<a
+							href={linkHref}
+							class="ml-1 underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+						>
+							{linkText}
+						</a>
+					)}
+				</span>
+			)}
 		</div>
 	) : (
 		/* Пустое состояние (Figma 1:19335): дословный плейсхолдер «Добавь текст в
@@ -112,20 +122,22 @@ const paddingStyle = p.padding
 			data-vanilla-announcement
 			data-puck-component-id={id}
 		>
-			<span
-				class={`min-w-0 shrink ${sz.text}`}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="100"
-				data-puck-subsection-field="text"
-			>
-				Добавь текст в объявление.{" "}
-				<a
-					href={linkHref}
-					class="underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+			{!isFieldHidden('text') && (
+				<span
+					class={`min-w-0 shrink ${sz.text}`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="text"
 				>
-					{placeholderLinkText}
-				</a>
-			</span>
+					Добавь текст в объявление.{" "}
+					<a
+						href={linkHref}
+						class="underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
+					>
+						{placeholderLinkText}
+					</a>
+				</span>
+			)}
 		</div>
 	)
 }

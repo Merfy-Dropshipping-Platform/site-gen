@@ -232,6 +232,14 @@ const secondaryBtnCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
@@ -263,23 +271,27 @@ const paddingStyle = p.padding
 			>
 				<div class="absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 2xl:px-[300px]">
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center">
-						<h1
-							id="hero-title"
-							class="font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="100"
-							data-puck-subsection-field="heading"
-						>
-							{PH_LABEL}
-						</h1>
-						<p
-							class="font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="text"
-						>
-							{PH_HELPER}
-						</p>
+						{!isFieldHidden('heading') && (
+							<h1
+								id="hero-title"
+								class="font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="100"
+								data-puck-subsection-field="heading"
+							>
+								{PH_LABEL}
+							</h1>
+						)}
+						{!isFieldHidden('text') && (
+							<p
+								class="font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="text"
+							>
+								{PH_HELPER}
+							</p>
+						)}
 					</div>
 					<a
 						href={ctaLink}
@@ -361,21 +373,25 @@ const paddingStyle = p.padding
 		<div class={containerCls}>
 			<div class={`flex w-full max-w-[330px] flex-col ${alignItemsCls} gap-4${boxedCls}`}>
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
-					<h1
-						id="hero-title"
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-						set:html={inlineFormat(title)}
-					></h1>
-					<p
-						class={subtitleCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="text"
-						set:html={inlineFormat(subtitle)}
-					></p>
+					{!isFieldHidden('heading') && (
+						<h1
+							id="hero-title"
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+							set:html={inlineFormat(title)}
+						></h1>
+					)}
+					{!isFieldHidden('text') && (
+						<p
+							class={subtitleCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+							set:html={inlineFormat(subtitle)}
+						></p>
+					)}
 				</div>
 				{
 					secondaryText ? (

@@ -284,6 +284,14 @@ const _schemeId =
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
@@ -312,23 +320,27 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 				<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true"></div>
 				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10">
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-4 text-center md:max-w-[640px]">
-						<h1
-							id="hero-title"
-							class="font-logo text-[26px] font-normal uppercase leading-[1.08] text-white md:text-[32px]"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="100"
-							data-puck-subsection-field="heading"
-						>
-							{PH_LABEL}
-						</h1>
-						<p
-							class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-white/80"
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="text"
-						>
-							{PH_HELPER}
-						</p>
+						{!isFieldHidden('heading') && (
+							<h1
+								id="hero-title"
+								class="font-logo text-[26px] font-normal uppercase leading-[1.08] text-white md:text-[32px]"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="100"
+								data-puck-subsection-field="heading"
+							>
+								{PH_LABEL}
+							</h1>
+						)}
+						{!isFieldHidden('text') && (
+							<p
+								class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-white/80"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="text"
+							>
+								{PH_HELPER}
+							</p>
+						)}
 					</div>
 					<a
 						href={ctaLink}
@@ -353,21 +365,25 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 		<div class={textColCls}>
 			<div class={blockCls}>
 				<div class="flex flex-col gap-4">
-					<p
-						class={subtitleCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="text"
-						set:html={inlineFormat(subtitle)}
-					/>
-					<h1
-						id="hero-title"
-						class={headingCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-						set:html={inlineFormat(title)}
-					/>
+					{!isFieldHidden('text') && (
+						<p
+							class={subtitleCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+							set:html={inlineFormat(subtitle)}
+						/>
+					)}
+					{!isFieldHidden('heading') && (
+						<h1
+							id="hero-title"
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+							set:html={inlineFormat(title)}
+						/>
+					)}
 				</div>
 				{
 					secondaryText ? (

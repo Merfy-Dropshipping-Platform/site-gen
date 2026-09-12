@@ -405,6 +405,14 @@ const secondaryCls =
 	p.buttonStyle === "outlined"
 		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`
 		: `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
@@ -465,25 +473,29 @@ const secondaryCls =
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", carouselLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
 						<div class={carouselLayout.copyWrapCls} aria-live="polite">
-							<h1
-								id="hero-title"
-								data-hero-title
-								class={slides[0].titleCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="100"
-								data-puck-subsection-field="heading"
-							>
-								{slides[0].title}
-							</h1>
-							<p
-								data-hero-subtitle
-								class={slides[0].subtitleCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="101"
-								data-puck-subsection-field="text"
-							>
-								{slides[0].subtitle}
-							</p>
+							{!isFieldHidden('heading') && (
+								<h1
+									id="hero-title"
+									data-hero-title
+									class={slides[0].titleCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="100"
+									data-puck-subsection-field="heading"
+								>
+									{slides[0].title}
+								</h1>
+							)}
+							{!isFieldHidden('text') && (
+								<p
+									data-hero-subtitle
+									class={slides[0].subtitleCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="101"
+									data-puck-subsection-field="text"
+								>
+									{slides[0].subtitle}
+								</p>
+							)}
 							<a
 								data-hero-cta
 								class:list={[ctaCls, !slides[0].ctaText && "hidden"]}
@@ -600,23 +612,27 @@ const secondaryCls =
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", singleLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
 						<div class={`${singleLayout.copyWrapCls}${heroBoxedCls}`}>
-							<h1
-								id="hero-title"
-								class={singleTitleCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="100"
-								data-puck-subsection-field="heading"
-							>
-								{singleTitle}
-							</h1>
-							<p
-								class={singleSubtitleCls}
-								data-puck-subsection-parent={id}
-								data-puck-subsection-index="101"
-								data-puck-subsection-field="text"
-							>
-								{singleSubtitle}
-							</p>
+							{!isFieldHidden('heading') && (
+								<h1
+									id="hero-title"
+									class={singleTitleCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="100"
+									data-puck-subsection-field="heading"
+								>
+									{singleTitle}
+								</h1>
+							)}
+							{!isFieldHidden('text') && (
+								<p
+									class={singleSubtitleCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="101"
+									data-puck-subsection-field="text"
+								>
+									{singleSubtitle}
+								</p>
+							)}
 							{secondaryText ? (
 								<div class="inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3">
 									<a

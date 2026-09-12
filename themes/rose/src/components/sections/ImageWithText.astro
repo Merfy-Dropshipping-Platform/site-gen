@@ -114,6 +114,14 @@ const paddingStyle = p.padding
 	: undefined;
 
 const titleId = id ? `${id}-title` : undefined;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
@@ -134,22 +142,26 @@ const titleId = id ? `${id}-title` : undefined;
 
 		{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида) */}
 		<div class={`flex w-full flex-col gap-6${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
-			<h2
-				id={titleId}
-				class={headingCls + italicCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="heading"
-			>
-				<Fragment set:html={inlineFormat(heading)} />
-			</h2>
-			<div
-				class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="102"
-				data-puck-subsection-field="text"
-				set:html={text}
-			/>
+			{!isFieldHidden('heading') && (
+				<h2
+					id={titleId}
+					class={headingCls + italicCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="heading"
+				>
+					<Fragment set:html={inlineFormat(heading)} />
+				</h2>
+			)}
+			{!isFieldHidden('text') && (
+				<div
+					class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="102"
+					data-puck-subsection-field="text"
+					set:html={text}
+				/>
+			)}
 			{
 				btnText && (
 					<div class={`${bottomPinned ? "mt-auto" : "mt-2"}${headingAlignCls}`}>

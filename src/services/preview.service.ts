@@ -1404,6 +1404,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
     window.__MERFY_LOCAL_PATCH_ENABLED = true;
   }
 
+  // Начертания, которые конструктор пишет разметкой прямо в значение поля
+  // (AITextInput: «Ж» → <strong>, «К» → <em>, вместе → <strong><em>…</em></strong>).
+  // Значение с такой разметкой локальным патчем НЕ трогаем — см. Hero ниже.
+  var FORMAT_TAGS = /<\\/?(?:em|strong|b|i|u|s)>/i;
+
   // Spec 090 — LOCAL_PATCH_REGISTRY[blockType][propName] = (el, oldVal, newVal) => boolean.
   // Patch fn возвращает false → fallback на server fetch.
   var LOCAL_PATCH_REGISTRY = {
@@ -1562,6 +1567,14 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // 091 — Hero local-patch: heading/text text changes БЕЗ outerHTML replace.
     // Это предотвращает re-load <img> при правке заголовка (картинка не «крашится»).
     // Size change → false (fallback на server fetch чтобы CSS класс пересчитался).
+    //
+    // Начертания (жирный/курсив) конструктор пишет РАЗМЕТКОЙ прямо в значение:
+    // '<strong>ТЕКСТ</strong>', '<strong><em>ТЕКСТ</em></strong>'. textContent
+    // показал бы её текстом — мерчант жал «Ж» и видел в превью сырьё
+    // «<strong>ТЕКСТ</strong>» (баг-репорт тестера 2026-09-13). innerHTML здесь
+    // тоже нельзя: превью обязано показывать РОВНО то, что отрендерит витрина, а
+    // экранирование начертаний — забота порта темы (themes/<t>/src/lib/rich-text).
+    // Поэтому форматированное значение отдаём серверному фетчу (return false).
     Hero: {
       heading: function (el, oldVal, newVal) {
         var oldObj = (oldVal && typeof oldVal === 'object') ? oldVal : {};
@@ -1572,6 +1585,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
         // (ловля реестра theme-registry, 2026-08-06). Любой переход
         // default↔явное значение обязан уходить в server fetch.
         if ((oldObj.size || '') !== (newObj.size || '')) return false;
+        // Начертания рендерит сервер — см. комментарий у Hero выше.
+        if (FORMAT_TAGS.test(String(newObj.text == null ? '' : newObj.text))) return false;
         var h1 = el.querySelector('h1[data-puck-subsection-field="heading"]');
         if (!h1) return false;
         h1.textContent = newObj.text || '';
@@ -1582,6 +1597,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
         var newObj = (newVal && typeof newVal === 'object') ? newVal : {};
         // См. heading выше — тот же баг фолбэка size.
         if ((oldObj.size || '') !== (newObj.size || '')) return false;
+        // Начертания рендерит сервер — см. комментарий у Hero выше.
+        if (FORMAT_TAGS.test(String(newObj.content == null ? '' : newObj.content))) return false;
         var p = el.querySelector('p[data-puck-subsection-field="text"]');
         if (!p) return false;
         p.textContent = newObj.content || '';

@@ -327,5 +327,111 @@ describe('PreviewService', () => {
       expect(html).toContain('<style id="__merfy_tokens_css">');
       expect(html).toContain('--radius-button: 8px');
     });
+
+    /**
+     * Жирный/курсив в превью — баг-репорт тестера 2026-09-13.
+     *
+     * Локальный патч Hero писал новое значение через `textContent`, а конструктор
+     * (AITextInput) кладёт в значение начертания разметкой: `<strong>ТЕКСТ</strong>`,
+     * `<strong><em>ТЕКСТ</em></strong>`. `textContent` показывает разметку ТЕКСТОМ —
+     * мерчант жал «Ж» и видел в превью сырьё «<strong>ТЕКСТ</strong>».
+     *
+     * Пруф (rose, прод, Playwright 2026-09-13): в iframe конструктора
+     * `<h1 … data-puck-subsection-field="heading">&lt;strong&gt;МАРКЕР&lt;/strong&gt;</h1>`,
+     * при том что серверный рендер того же блока отдаёт `<strong>МАРКЕР</strong>`.
+     *
+     * Чинить `innerHTML`-ом здесь НЕЛЬЗЯ: превью обязано показывать ровно то, что
+     * отрендерит витрина (у части тем порт пока экранирует начертания). Поэтому
+     * локальный патч обязан отдать форматированное значение серверному фетчу.
+     */
+    describe('локальный патч Hero и начертания', () => {
+      /** Вырезает тело функции `<name>: function (...) { … }` по балансу скобок. */
+      function extractPatchFn(src: string, name: string): string {
+        const heroAt = src.indexOf('Hero: {');
+        expect(heroAt).toBeGreaterThan(-1);
+        const at = src.indexOf(`${name}: function (`, heroAt);
+        expect(at).toBeGreaterThan(-1);
+        const open = src.indexOf('{', src.indexOf(')', at));
+        let depth = 0;
+        for (let i = open; i < src.length; i++) {
+          if (src[i] === '{') depth++;
+          else if (src[i] === '}') {
+            depth--;
+            if (depth === 0) return src.slice(open + 1, i);
+          }
+        }
+        throw new Error(`не нашёл тело ${name}`);
+      }
+
+      async function heroPatch(name: 'heading' | 'text') {
+        const html = await svc.renderPreviewPage({
+          blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+          tokensCss: '',
+          fontHead: '',
+          themeId: 'rose',
+        });
+        // Регэксп начертаний живёт в скоупе агента — берём ЕГО же объявление,
+        // чтобы тест проверял настоящий фильтр, а не свою копию.
+        const formatTags = /var FORMAT_TAGS = [^;]+;/.exec(html);
+        expect(formatTags).not.toBeNull();
+        const body = `${formatTags![0]}\n${extractPatchFn(html, name)}`;
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        return new Function('el', 'oldVal', 'newVal', body) as (
+          el: unknown,
+          oldVal: unknown,
+          newVal: unknown,
+        ) => boolean | undefined;
+      }
+
+      /** Заглушка элемента секции с единственным h1/p внутри. */
+      function fakeSection(tag: 'h1' | 'p') {
+        const node = { textContent: '', innerHTML: '' };
+        return {
+          node,
+          el: {
+            querySelector: (sel: string) => (sel.startsWith(tag) ? node : null),
+          },
+        };
+      }
+
+      it('чистый текст патчится локально (без сетевого фетча)', async () => {
+        const patch = await heroPatch('heading');
+        const { el, node } = fakeSection('h1');
+        expect(patch(el, { text: 'СТАРЫЙ' }, { text: 'НОВЫЙ' })).toBe(true);
+        expect(node.textContent).toBe('НОВЫЙ');
+      });
+
+      it('жирный уходит на серверный рендер, а не в textContent', async () => {
+        const patch = await heroPatch('heading');
+        const { el, node } = fakeSection('h1');
+        expect(patch(el, { text: 'ТЕКСТ' }, { text: '<strong>ТЕКСТ</strong>' })).toBe(false);
+        expect(node.textContent).toBe('');
+      });
+
+      it('жирный + курсив вместе тоже уходят на серверный рендер', async () => {
+        const patch = await heroPatch('heading');
+        const { el, node } = fakeSection('h1');
+        expect(
+          patch(el, { text: '<strong>ТЕКСТ</strong>' }, { text: '<strong><em>ТЕКСТ</em></strong>' }),
+        ).toBe(false);
+        expect(node.textContent).toBe('');
+      });
+
+      it('снятие начертания патчится локально — в DOM остаётся чистый текст', async () => {
+        const patch = await heroPatch('heading');
+        const { el, node } = fakeSection('h1');
+        expect(patch(el, { text: '<em>ТЕКСТ</em>' }, { text: 'ТЕКСТ' })).toBe(true);
+        expect(node.textContent).toBe('ТЕКСТ');
+      });
+
+      it('подзаголовок (text) ведёт себя так же', async () => {
+        const patch = await heroPatch('text');
+        const { el, node } = fakeSection('p');
+        expect(patch(el, { content: 'ТЕКСТ' }, { content: '<em>ТЕКСТ</em>' })).toBe(false);
+        expect(node.textContent).toBe('');
+        expect(patch(el, { content: 'СТАРЫЙ' }, { content: 'НОВЫЙ' })).toBe(true);
+        expect(node.textContent).toBe('НОВЫЙ');
+      });
+    });
   });
 });

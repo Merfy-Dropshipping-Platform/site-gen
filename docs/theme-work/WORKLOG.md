@@ -2687,3 +2687,56 @@ rose тоже 11/13, красные те же:
   среди них rose/vanilla `MultiRows.size|width`, `MultiColumns.width`, bloom `Hero.overlay=40`,
   `PromoBanner.size`, `PopularProducts.cards`, `Header.stickiness`.
   Ещё: `MultiRows.headingSize` НИ НА ЧТО не влияет в rose/flux/vanilla/satin (мёртвая настройка).
+
+## 2026-09-13 — W-0XX — жирный + курсив: вложенная пара тегов доезжает до витрины
+
+### Повод
+
+Баг-репорт тестера: «Баг жирность и курсив. Во всех секциях и параметрах выдаёт
+ошибки. Должны спокойно работать как по отдельности, так и вместе».
+
+### Причина (замер до правки)
+
+Конструктор до `f19bb5f` писал в значение поля максимум ОДНУ обёртку — второе
+начертание затирало первое. После фикса он пишет пару
+`<strong><em>ТЕКСТ</em></strong>`, а `inlineFormat` портов умел снимать ровно
+одну обёртку: внутренний тег уезжал в `escapeHtml`.
+
+Пруф на проде 2026-09-13, `POST /api/sites/<id>/preview/block`, блок Hero:
+
+- rose, `<strong>ТЕКСТ</strong>` → `<strong>ТЕКСТ</strong>` (ок);
+- rose, `<strong><em>ТЕКСТ</em></strong>` → `<strong>&lt;em&gt;ТЕКСТ&lt;/em&gt;</strong>` (сырьё);
+- flux, `<strong>ТЕКСТ</strong>` → `&lt;strong&gt;ТЕКСТ&lt;/strong&gt;` (сырьё уже поодиночке).
+
+### Выполнено
+
+- `themes/{rose,bloom,satin}/src/lib/rich-text.ts`: `inlineFormat` снимает любую
+  вложенность разрешённых тегов без атрибутов (до 4 уровней), содержимое самой
+  внутренней обёртки по-прежнему экранируется.
+- `src/services/preview.service.ts`: локальный патч Hero больше не пишет значение
+  с начертаниями через `textContent` (мерчант видел в превью сырьё сразу по клику
+  «Ж») — форматированное значение уходит серверному рендеру.
+- Тесты: `src/themes/__tests__/rich-text-bold-italic.spec.ts` (45, три порта,
+  включая XSS-кейсы) и блок «локальный патч Hero и начертания» в
+  `src/services/__tests__/preview.service.spec.ts` (5). Оба проверены саботажем.
+- Пруф механизмом (скомпилированные модули порта, `render-theme-sections.mjs`):
+  rose/bloom/satin MainText и MultiColumns отдают `<strong><em>МАРКЕР</em></strong>`;
+  payload `<img src=x onerror=…>` экранируется во всех трёх.
+
+### Открытые хвосты (НЕ чинились)
+
+- **flux и vanilla не имеют `src/lib/rich-text.ts` вообще** — начертания
+  экранируются в 29 (flux) и 23 (vanilla) местах, то есть «во всех секциях»
+  даже поодиночке. Инвентарь — в отчёте сессии.
+- Частичное покрытие у остальных: rose 6 непокрытых полей (в т.ч. Newsletter
+  heading/description), bloom 9, satin 10.
+- `satin` MainText кладёт значение поля в `aria-label` как есть — скринридер
+  читает разметку. Не чинилось.
+
+### Проверки
+
+- `jest src/themes/__tests__/rich-text-bold-italic.spec.ts src/services/__tests__/preview.service.spec.ts` — зелёные.
+- `nest build` — чисто. `tsc -p tsconfig.json` — новых ошибок нет.
+- Падения `resolve-block-scheme.spec.ts` и `flux-v2-home-sections.spec.ts`
+  воспроизводятся на чистом `origin/main` — к правке отношения не имеют.
+- Commit/push/deploy НЕ выполнялись.

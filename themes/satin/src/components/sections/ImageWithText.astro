@@ -203,6 +203,14 @@ const _schemeId =
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
@@ -252,13 +260,15 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 						set:html={inlineFormat(text)}
 					/>
 				)}
-				<h2
-					class={headingCls + italicCls}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="heading"
-					set:html={inlineFormat(heading)}
-				/>
+				{!isFieldHidden('heading') && (
+					<h2
+						class={headingCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="100"
+						data-puck-subsection-field="heading"
+						set:html={inlineFormat(heading)}
+					/>
+				)}
 				{
 					btnText && (
 						<a

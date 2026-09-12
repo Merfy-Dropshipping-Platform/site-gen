@@ -117,6 +117,14 @@ const paddingStyle = p.padding
 // colorScheme навешивает обёрткой composeV2Page; фон секции — токен с
 // фоллбеком родного полотна №2 (#3A4530 = 58 69 48, МАННЕРА §7).
 const headingId = id ? `${id}-title` : "welcome-title";
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
@@ -131,7 +139,7 @@ const headingId = id ? `${id}-title` : "welcome-title";
 	>
 		<div class={`flex w-full flex-col ${alignCls} gap-3`}>
 			{
-				heading && (
+				heading && !isFieldHidden('heading') && (
 					<h2
 						id={headingId}
 						class={headingCls + italicCls}
@@ -144,17 +152,19 @@ const headingId = id ? `${id}-title` : "welcome-title";
 					</h2>
 				)
 			}
-			<p
-				class={textCls + italicCls}
-				data-animate
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="text"
-				set:html={text}
-			/>
+			{!isFieldHidden('text') && (
+				<p
+					class={textCls + italicCls}
+					data-animate
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+					set:html={text}
+				/>
+			)}
 		</div>
 		{
-			btnText && (
+			btnText && !isFieldHidden('button') && (
 				<a
 					href={btnHref}
 					class={btnCls}

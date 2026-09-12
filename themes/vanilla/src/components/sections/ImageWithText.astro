@@ -155,6 +155,14 @@ const paddingStyle = p.padding
 
 // Фон секции — токен с фоллбеком родного полотна №2 (#3A4530, МАННЕРА §7).
 const titleId = id && heading ? `${id}-title` : undefined;
+
+// Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
+// значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
+// конструктор (props.hiddenFields), общий для всех тем.
+const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
+	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
@@ -169,7 +177,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 	>
 		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""}`}>
 			{
-				heading && (
+				heading && !isFieldHidden('heading') && (
 					<h2
 						id={titleId}
 						class={headingCls + alignCls + italicCls}
@@ -181,15 +189,17 @@ const titleId = id && heading ? `${id}-title` : undefined;
 					</h2>
 				)
 			}
-			<div
-				class={textCls + italicCls + alignCls}
-				data-puck-subsection-parent={id}
-				data-puck-subsection-index="101"
-				data-puck-subsection-field="text"
-				set:html={text}
-			/>
+			{!isFieldHidden('text') && (
+				<div
+					class={textCls + italicCls + alignCls}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="101"
+					data-puck-subsection-field="text"
+					set:html={text}
+				/>
+			)}
 			{
-				btnText && (
+				btnText && !isFieldHidden('button') && (
 					<a
 						href={btnHref}
 						class={`${ctaMtCls} ${selfCls} ${btnCls}`}

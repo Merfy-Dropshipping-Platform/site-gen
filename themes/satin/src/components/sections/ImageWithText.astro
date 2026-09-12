@@ -219,8 +219,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	{!isFieldHidden('image') && (
 	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2`}>
+		{!isFieldHidden('image') && (
 		<div
 			class:list={[
 				"relative order-1 aspect-[375/362] overflow-hidden md:aspect-auto",
@@ -243,6 +243,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				) : null
 			}
 		</div>
+		)}
 		<div
 			class:list={[
 				"flex items-center justify-center px-6 py-12 text-center md:py-0",
@@ -286,5 +287,4 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</div>
 		</div>
 	</div>
-	)}
 </section>

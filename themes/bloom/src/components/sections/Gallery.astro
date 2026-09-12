@@ -94,7 +94,9 @@ type GalleryTile = {
 };
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
-	.slice(0, 3)
+	// Потолок 12 (был 3) — синхронно со схемой блока. Режем здесь же, чтобы
+	// кривые данные не разворачивали страницу в бесконечную ленту.
+	.slice(0, 12)
 	.map((it: any): GalleryTile => {
 		if (it.type === "product") {
 			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;
@@ -155,6 +157,9 @@ const fitCls = (t: GalleryTile, hover: string) =>
 	t.placeholder && t.kind === "product" ? "object-contain p-[12%]" : `object-cover ${hover}`;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+// Больше трёх плиток: боковая часть перестаёт быть колонкой и становится
+// сеткой — иначе плитки вытягиваются в нитку. Три и меньше рисуются как
+// раньше, поэтому снимки разметки не двигаются.
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -227,7 +232,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none${sideOrderCls}`}>
+				<div class={sideTiles.length > 2
+						? `grid w-full max-w-[652px] grid-cols-2 gap-5 lg:max-w-none${sideOrderCls}`
+						: `flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}

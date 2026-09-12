@@ -79,7 +79,9 @@ type GalleryTile = {
 };
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
-	.slice(0, 3)
+	// Потолок 12 (был 3) — синхронно со схемой блока. Режем здесь же, чтобы
+	// кривые данные не разворачивали страницу в бесконечную ленту.
+	.slice(0, 12)
 	.map((it: any): GalleryTile => {
 		if (it.type === "product") {
 			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;

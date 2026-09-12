@@ -26,7 +26,10 @@ export const GallerySchema = z.object({
     content: z.string().optional(),
     size: z.enum(['small', 'medium', 'large']).optional(),
   }).optional(),
-  items: z.array(GalleryItemSchema).min(1).max(3),
+  // Потолок 12 вместо прежних 3: мерчант добавляет столько плиток,
+  // сколько нужно, а раскладка переносит лишние в сетку. min(0) —
+  // пустая галерея валидна: секция остаётся со своими текстами.
+  items: z.array(GalleryItemSchema).min(0).max(12),
   layout: z.enum(['grid', 'side-by-side', 'featured']),
   // Pupa parity.
   imagePosition: z.enum(['left', 'right']).optional(),
@@ -93,7 +96,7 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
     // Items — sub-panel array, редактирование через subsection click.
     items: {
       type: 'array',
-      label: 'Элементы (макс 3)',
+      label: 'Элементы (макс 12)',
       hiddenInMainPanel: true,
       arrayFields: {
         type: {
@@ -118,7 +121,7 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
         collectionId: { type: 'collectionPicker', label: 'Выбор коллекции' },
       },
       defaultItemProps: { id: '', type: 'image', url: '', alt: '' },
-      max: 3,
+      max: 12,
     } as any,
     // Hidden — нет в Figma 314-34875.
     layout: { type: 'hidden', label: '' },
@@ -141,5 +144,5 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
   },
   schema: GallerySchema,
   maxInstances: null,
-  constraints: { padding: { min: 0, max: 160, step: 8 }, maxItems: 3 },
+  constraints: { padding: { min: 0, max: 160, step: 8 }, maxItems: 12 },
 };

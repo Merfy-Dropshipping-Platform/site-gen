@@ -129,6 +129,8 @@ jobs:
       # Item-уровневый «глаз»: точечный hot-render блока обязан отбрасывать
       # скрытые элементы так же, как страница превью и сборка витрины.
       - run: pnpm test:hidden-items
+      # Галерея рисует столько плиток, сколько дал мерчант (0…12).
+      - run: pnpm test:gallery-count
       - run: pnpm test:conformance:shared
       - run: pnpm test:conformance:satin
       - run: node --test scripts/__tests__/block-source-layout.test.mjs

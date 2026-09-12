@@ -88,7 +88,9 @@ type GalleryTile = {
 };
 const galleryTiles: GalleryTile[] = (Array.isArray(p.items) ? p.items : [])
 	.filter((x: any) => x && typeof x === "object")
-	.slice(0, 3)
+	// Потолок 12 (был 3) — синхронно со схемой блока. Режем здесь же, чтобы
+	// кривые данные не разворачивали страницу в бесконечную ленту.
+	.slice(0, 12)
 	.map((it: any): GalleryTile => {
 		if (it.type === "product") {
 			const pid = typeof it.productId === "string" && it.productId ? it.productId : null;
@@ -165,6 +167,10 @@ const fitCls = (t: GalleryTile, hover: string) =>
 		: `object-cover object-center ${hover}`;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+// Больше трёх плиток: боковая часть перестаёт быть колонкой и становится
+// сеткой — иначе плитки вытягиваются в нитку. Три и меньше рисуются как
+// раньше, поэтому снимки разметки не двигаются.
+const sideLayoutCls = sideTiles.length > 2 ? "lg:grid lg:grid-cols-2" : "lg:flex lg:flex-col";
 
 // Аспекты и ховеры правой колонки — по позициям литерала верстальщика
 // (верифицировано pinned upstream commit + живой https://flux.merfy.ru/, см.
@@ -253,7 +259,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4${sideOrderCls}`}>
+				<div class={`grid min-w-0 grid-cols-2 gap-4 ${sideLayoutCls} lg:gap-4${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}

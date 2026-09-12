@@ -581,6 +581,19 @@ function coerceGalleryProps(out: Record<string, unknown>): void {
 
   coerceGenericLegacyProps(out);
 
+  // Скрытый «глазом» элемент галереи не попадает ни в превью, ни на витрину —
+  // зеркало item-уровневого hidden у «Списка коллекций» (coerceCollectionsProps).
+  // Без этого «глаз» на параметре не делал НИЧЕГО: плитка продолжала рисоваться,
+  // и мерчант, спрятавший единственный элемент, видел не секцию со своими
+  // текстами, а секцию с плиткой-заглушкой.
+  if (Array.isArray(out.items)) {
+    out.items = out.items.filter(
+      (item) =>
+        !isPlainObject(item) ||
+        (item as Record<string, unknown>).hidden !== true,
+    );
+  }
+
   if (!isHeadingSize(out.headingSize) && isHeadingSize(nestedHeadingSize)) {
     out.headingSize = nestedHeadingSize;
   }

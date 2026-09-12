@@ -696,7 +696,11 @@ const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 					return (
 						'<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="' +
 						escapeHtml(g.name) + '">' +
-						'<span class="font-manrope text-[14px] font-normal uppercase leading-none text-[#000000]">' +
+						// Имя группы вводит мерчант («Размер»), поэтому регистр — его
+						// собственный: капс отсюда убран (баг-репорт владельца
+						// 2026-09-12). Гидрация satin (storefront-hydrate) и ещё три
+						// темы рисовали имя группы без капса и до этого.
+						'<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">' +
 						escapeHtml(g.name) + "</span>" +
 						'<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="' +
 						escapeHtml(g.name) + '">' + buttons + "</div></div>"

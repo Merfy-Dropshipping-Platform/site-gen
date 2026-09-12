@@ -699,11 +699,13 @@ const pdpHeartSvg =
 		}
 
 		// Классы вариант-кнопок в МАНЕРЕ vanilla (1:1 со storefront-hydrate
-		// renderVariantGroupsHtml: острые углы, font-vanilla-arsenal uppercase,
-		// выбран — заливка var(--vanilla-header-bg)/белый текст; невыбран — белый
-		// фон/чёрный border). Core-utility (без arbitrary, чтобы попасть в CSS).
+		// renderVariantGroupsHtml: острые углы, font-vanilla-arsenal, выбран —
+		// заливка var(--vanilla-header-bg)/белый текст; невыбран — белый фон/чёрный
+		// border). Core-utility (без arbitrary, чтобы попасть в CSS).
+		// Капса здесь нет намеренно: в чипе стоит значение мерчанта, и регистр
+		// показываем его собственный (баг-репорт владельца 2026-09-12).
 		var VARIANT_BTN_BASE =
-			"inline-flex h-10 shrink-0 items-center justify-center px-3 py-2.5 font-vanilla-arsenal text-[14px] font-normal uppercase leading-none outline-none transition-opacity";
+			"inline-flex h-10 shrink-0 items-center justify-center px-3 py-2.5 font-vanilla-arsenal text-[14px] font-normal leading-none outline-none transition-opacity";
 		var VARIANT_BTN_SEL =
 			"border border-solid border-[var(--vanilla-header-bg)] !bg-[var(--vanilla-header-bg)] !text-white hover:opacity-90";
 		var VARIANT_BTN_UNSEL =
@@ -724,7 +726,7 @@ const pdpHeartSvg =
 					return (
 						'<div class="flex w-full flex-col gap-2" data-pdp-variant-group="' +
 						escapeHtml(g.name) + '">' +
-						'<span class="font-vanilla-arsenal text-[14px] font-normal uppercase leading-none text-black">' +
+						'<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-black">' +
 						escapeHtml(g.name) + "</span>" +
 						'<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="' +
 						escapeHtml(g.name) + '">' + buttons + "</div></div>"

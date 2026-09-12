@@ -163,12 +163,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						aria-label={placeholder}
 						class="min-w-0 flex-1 bg-transparent font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] placeholder:text-[rgb(var(--color-text,240_240_240))] outline-none"
 					/>
+					{!isFieldHidden('buttonText') && (
 					<button
 						type="submit"
 						class="inline-flex h-9 w-full shrink-0 items-center justify-center bg-[rgb(var(--color-button-2-bg,255_255_255))] px-2 py-2.5 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80 sm:h-8 sm:w-auto"
 					>
 						{buttonText}
 					</button>
+					)}
 				</form>
 			) : (
 				<form
@@ -186,12 +188,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						aria-label={placeholder}
 						class="h-14 w-full border border-white bg-transparent px-4 font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] placeholder:text-[rgb(var(--color-text,240_240_240))] outline-none transition-colors focus-visible:border-white/80"
 					/>
+					{!isFieldHidden('buttonText') && (
 					<button
 						type="submit"
 						class={`inline-flex h-12 min-h-12 items-center justify-center ${selfCls} bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80`}
 					>
 						{buttonText}
 					</button>
+					)}
 				</form>
 			)
 		}

@@ -496,6 +496,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									{slides[0].subtitle}
 								</p>
 							)}
+							{!isFieldHidden('buttons') && (
 							<a
 								data-hero-cta
 								class:list={[ctaCls, !slides[0].ctaText && "hidden"]}
@@ -506,6 +507,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							>
 								{slides[0].ctaText}
 							</a>
+							)}
 						</div>
 					</div>
 				</div>
@@ -633,7 +635,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									{singleSubtitle}
 								</p>
 							)}
-							{secondaryText ? (
+							{!isFieldHidden('buttons') && (secondaryText ? (
 								<div class="inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3">
 									<a
 										class={ctaCls}
@@ -664,7 +666,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								>
 									{singleCtaText}
 								</a>
-							)}
+							))}
 						</div>
 					</div>
 				</div>

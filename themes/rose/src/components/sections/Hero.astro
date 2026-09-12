@@ -319,6 +319,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							</p>
 						)}
 					</div>
+					{!isFieldHidden('buttons') && (
 					<div class="flex w-full flex-col items-center justify-center">
 						<a
 							href={ctaLink}
@@ -330,6 +331,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							{PH_BUTTON}
 						</a>
 					</div>
+					)}
 				</div>
 			</div>
 		</section>
@@ -419,6 +421,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 				</div>
 
+				{!isFieldHidden('buttons') && (
 				<div class={buttonsCls}>
 					<a
 						href={ctaLink}
@@ -443,6 +446,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)
 					}
 				</div>
+				)}
 			</div>
 		</div>
 </section>

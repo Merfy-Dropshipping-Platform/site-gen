@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.14.0",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || exit 0",
     "start": "NODE_ENV=production node dist/src/main.js",
     "start:dev": "nest start --watch",
     "build": "nest build",

@@ -131,6 +131,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`} data-animate>
+		{!isFieldHidden('image') && (
 		<div
 			class={`w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
 			data-puck-subsection-parent={id}
@@ -139,6 +140,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		>
 			{imageUrl && <img src={imageUrl} alt={imageAlt} loading="lazy" class="!h-full !w-full object-cover" />}
 		</div>
+		)}
 
 		{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида) */}
 		<div class={`flex w-full flex-col gap-6${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
@@ -165,6 +167,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				btnText && (
 					<div class={`${bottomPinned ? "mt-auto" : "mt-2"}${headingAlignCls}`}>
+						{!isFieldHidden('button') && (
 						<a
 							href={btnHref}
 							class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
@@ -174,6 +177,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						>
 							{btnText}
 						</a>
+						)}
 					</div>
 				)
 			}

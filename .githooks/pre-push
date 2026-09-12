@@ -1,0 +1,66 @@
+#!/bin/sh
+# Быстрый гейт перед пушем — ≈45 c на прогретом node_modules.
+#
+# Что проверяется:
+#   • секции всех пяти тем собираются                  — pnpm build:theme-sections:all
+#   • разметка 13 секций × 5 тем совпадает со снимками — pnpm test:section-snapshots
+#
+# Что это реально ловит. Снимки рендерят СКОМПИЛИРОВАННЫЕ модули тем из
+# themes/<тема>/sections.map.json — ровно те, что уходят на витрину и в превью.
+# Значит гейт видит регрессии в портах тем (themes/<тема>/src) и в их
+# относительных зависимостях. Правку в packages/theme-base он покажет только
+# там, где порт её действительно тянет. Это не замена CI, а способ поймать
+# «починили одно — сломали три» за полминуты, а не через день у тестера.
+#
+# Чего здесь НЕТ и почему. Конформанс satin в гейт не входит: он отказывается
+# стартовать без полной сборки (pnpm build → build:blocks →
+# build:theme-sections satin → tsx scripts/run-theme-build.ts satin), а это
+# ≈2 минуты — работа CI. Если вы правили отслеживаемые исходники (в общих
+# входах дайджеста лежат в том числе package.json, pnpm-lock.yaml, Dockerfile,
+# scripts/compile-theme-sections.mjs, src/generator/build.service.ts),
+# обновите инвентарь ПОСЛЕ коммита своей правки:
+#     pnpm conformance:satin:refresh
+#
+# Обойти можно: git push --no-verify. Но то же самое упадёт в CI, а прод
+# выкатывается только из зелёного CI — смысла в обходе нет.
+set -e
+
+# Удаление ветки (git push origin :branch) проверять нечего.
+only_deletes=yes
+saw_ref=no
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  saw_ref=yes
+  case "$local_sha" in
+    *[!0]*) only_deletes=no ;;
+  esac
+done
+if [ "$saw_ref" = yes ] && [ "$only_deletes" = yes ]; then
+  exit 0
+fi
+
+if [ ! -d node_modules ]; then
+  echo "⚠ гейт ПРОПУЩЕН: нет node_modules (нужен pnpm install). CI это проверит." >&2
+  exit 0
+fi
+
+echo "→ быстрый гейт перед пушем (≈45 c)"
+
+if ! pnpm run build:theme-sections:all >/dev/null 2>&1; then
+  echo "✗ секции тем не собираются. Подробности:" >&2
+  echo "      pnpm run build:theme-sections:all" >&2
+  exit 1
+fi
+
+if ! pnpm run test:section-snapshots; then
+  cat >&2 <<'MSG'
+
+✗ разметка секций разошлась со снимками.
+  Если изменение НАМЕРЕННОЕ — обновите снимки и посмотрите, что поменялось:
+      pnpm exec jest --runInBand src/themes/__tests__/section-html-snapshot.spec.ts -u
+      git diff src/themes/__tests__/__snapshots__/
+  Если нет — это регрессия, которую вы только что внесли.
+MSG
+  exit 1
+fi
+
+echo "✓ гейт пройден"

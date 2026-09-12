@@ -171,12 +171,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							aria-label="Email"
 							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
 						/>
+						{!isFieldHidden('buttonText') && (
 						<button
 							type="submit"
 							class="flex h-10 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95 md:h-12 md:px-5 md:text-[16px]"
 						>
 							{buttonText}
 						</button>
+						)}
 					</form>
 				) : (
 					<form
@@ -194,12 +196,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							aria-label="Email"
 							class="h-14 w-full rounded-[8px] border border-[#FA5109] bg-white px-4 font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none md:h-16"
 						/>
+						{!isFieldHidden('buttonText') && (
 						<button
 							type="submit"
 							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} rounded-[8px] bg-[#FA5109] px-8 font-roboto-flex text-[14px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]`}
 						>
 							{buttonText}
 						</button>
+						)}
 					</form>
 				)
 			}

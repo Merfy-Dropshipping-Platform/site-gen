@@ -177,9 +177,9 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
     },
     fields: [
       { field: "heading", probe: "MK_NL_HEAD" },
-      // subheading есть в реестре конструктора, но ни в одном puckConfig его
-      // нет — activeFields отсеет его сам, без ручной правки этого списка.
-      { field: "subheading", probe: "MK_NL_DESC" },
+      // «Подзаголовок» убран из дерева конструктора (ghost-параметр: строка в
+      // outline была, поля под ней — нет). Если вернут, запись сюда, а отсев
+      // по конфигу темы решит, в каких темах он живой.
       { field: "buttonText", probe: "MK_NL_BTN" },
     ],
   },
@@ -239,6 +239,14 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   // Ниже — блоки со СПИСКАМИ. У них «глаз» есть, но item-уровневый: скрывается
   // отдельный элемент через item.hidden, и отбрасывает его adaptLegacyProps в
   // src/themes/page-blocks.ts, а не порт темы. Именованных параметров нет.
+  //
+  // До 2026-09-13 тест дёргал у шести блоков ниже hiddenFields:['heading'] и
+  // ждал, что заголовок пропадёт. Проверка держалась сама на себе: в реестре
+  // конструктора этих блоков нет (NAMED_SUBSECTIONS — семь блоков), «глаза» у
+  // их заголовка не бывает, и такого hiddenFields никто никогда не пришлёт.
+  // Снято осознанно: зелёная проверка несуществующей функции — не покрытие, а
+  // ложная уверенность. Появится «глаз» у заголовка списка — запись
+  // переезжает в NAMED_FIELDS, и отсев по конфигу темы подхватит её сам.
   Collections:
     "список: «глаз» у элемента (item.hidden), не у именованного параметра",
   Gallery:
@@ -263,44 +271,6 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   CartSection:
     "нет в NAMED_SUBSECTIONS; «Итого»/«Оформить заказ» живут в CartSummary",
 };
-
-/**
- * Известные дыры, которые чинит ПАРАЛЛЕЛЬНАЯ ветка `fix/preview-chrome-reorder`
- * (она правит Hero/ImageWithText/Newsletter во всех темах и flux/Puk.astro).
- * Трогать те же файлы отсюда — гарантированный конфликт, поэтому дыры
- * зафиксированы списком: CI зелёный, но дыра видна в коде и не забыта.
- *
- * Запись работает в обе стороны: если дыра закрылась, тест ТРЕБУЕТ убрать
- * строку — просроченное исключение не переживёт мерж.
- *
- * ЗАЧИСТКА. Ветка та уже в main (3595c8cd «the eye reaches the empty hero and
- * the mobile product card»), и на смерженном дереве ВСЕ записи ниже протухают —
- * проверено пробным мержем: 19 падений вида «дыра ещё открыта». После мержа
- * main этот массив удаляется целиком вместе с `gap`-ветками в тестах; ничего
- * другого править не нужно.
- */
-const KNOWN_GAPS: { theme: string; block: string; field: string }[] = [
-  ...THEMES.map((t) => ({ theme: t, block: "Hero", field: "buttons" })),
-  ...THEMES.map((t) => ({
-    theme: t,
-    block: "Hero (пустое состояние)",
-    field: "buttons",
-  })),
-  ...THEMES.map((t) => ({ theme: t, block: "ImageWithText", field: "image" })),
-  ...THEMES.map((t) => ({
-    theme: t,
-    block: "Newsletter",
-    field: "buttonText",
-  })),
-  { theme: "satin", block: "ImageWithText", field: "text" },
-  { theme: "rose", block: "ImageWithText", field: "button" },
-  { theme: "bloom", block: "ImageWithText", field: "button" },
-  { theme: "satin", block: "ImageWithText", field: "button" },
-];
-const isKnownGap = (theme: string, block: string, field: string) =>
-  KNOWN_GAPS.some(
-    (g) => g.theme === theme && g.block === block && g.field === field,
-  );
 
 /**
  * Невидимый на витрине текст не считается «параметр виден»: баг владельца —
@@ -462,8 +432,6 @@ describe.each(THEMES)("скрытие именованного параметр�
   });
 
   pairs.forEach(({ block, f }, i) => {
-    const gap = isKnownGap(theme, block, f.field);
-
     it(`${block}.${f.field}: параметр виден, пока его не скрыли${
       f.unprobeable ? ` — ПРОПУЩЕН: ${f.unprobeable}` : ""
     }`, () => {
@@ -480,9 +448,7 @@ describe.each(THEMES)("скрытие именованного параметр�
     it(
       f.unprobeable
         ? `${block}.${f.field}: скрытие не проверяемо рендером — ${f.unprobeable}`
-        : gap
-          ? `${block}.${f.field}: дыра ещё открыта (см. KNOWN_GAPS — чинится в fix/preview-chrome-reorder)`
-          : `${block}.${f.field}: скрытый параметр исчезает с витрины`,
+        : `${block}.${f.field}: скрытый параметр исчезает с витрины`,
       () => {
         if (!built || f.unprobeable) return;
         if (!isActive(block, f.field)) return;
@@ -490,13 +456,7 @@ describe.each(THEMES)("скрытие именованного параметр�
         if (row?.missing) return;
         expect(row?.error ?? null).toBeNull();
         if (!contains(shown[i]?.html ?? "", f.probe)) return; // параметра нет при этих props
-        const leaked = contains(row?.html ?? "", f.probe);
-        if (gap) {
-          // Дыру закрыли — уберите запись из KNOWN_GAPS, иначе она протухнет.
-          expect(leaked).toBe(true);
-        } else {
-          expect(leaked).toBe(false);
-        }
+        expect(contains(row?.html ?? "", f.probe)).toBe(false);
       },
     );
 

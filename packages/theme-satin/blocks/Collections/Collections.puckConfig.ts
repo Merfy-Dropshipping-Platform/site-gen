@@ -113,11 +113,14 @@ export const CollectionsPuckConfig: BlockPuckConfig<CollectionsProps> = {
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
-    // Выбор коллекции в главной панели (мерчант выбирает коллекцию на плитку).
+    // Список коллекций редактируется через дерево слева (sub-panel элемента),
+    // как и элементы галереи: в главной панели секции его нет. У satin свой
+    // puckConfig, поэтому правка theme-base её не покрывала — панель satin
+    // продолжала показывать «Выбор коллекции» в сайдбаре секции.
     collections: {
       type: 'array',
       label: 'Коллекции',
-      hiddenInMainPanel: false,
+      hiddenInMainPanel: true,
       // user #10 / Figma 1:17042 — Коллекция sub-panel показывает ТОЛЬКО
       // "Выбор коллекции" (collectionPicker). heading/description/image —
       // data сохраняется, но не редактируется в sidebar. Сами поля для

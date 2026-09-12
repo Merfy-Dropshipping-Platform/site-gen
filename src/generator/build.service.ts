@@ -252,6 +252,24 @@ async function patchDomainInDist(
  * настроек конструктора, которые статичные страницы тем читают на рантайме
  * (раскладка каталога и т.п.). Идемпотентно по маркеру имени глобала.
  */
+/**
+ * Штамп сборки в корень витрины — /build.json.
+ *
+ * Витрины собираются заранее, и правка кода не видна, пока сайт не
+ * переопубликован. Половина отчётов «не работает» была про старую сборку, а
+ * выяснять это приходилось по внутренностям CSS. Теперь у каждого магазина
+ * есть машиночитаемый ответ на вопрос «из какого кода ты собран и когда».
+ * SOURCE_COMMIT в контейнер кладёт Coolify при сборке образа.
+ */
+export async function writeBuildStamp(
+  distDir: string,
+  stamp: Record<string, unknown>,
+): Promise<void> {
+  const file = path.join(distDir, 'build.json');
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, `${JSON.stringify(stamp, null, 2)}\n`, 'utf-8');
+}
+
 export async function injectGlobalsIntoDist(
   distDir: string,
   globals: Record<string, string>,
@@ -1265,6 +1283,18 @@ export async function runBuildPipeline(
         logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}" into ${themeGlobals} HTML files for site ${params.siteId}`);
       } catch (thErr) {
         logger.warn(`[themes-v2] theme global inject failed: ${(thErr as Error)?.message ?? thErr}`);
+      }
+      // Штамп сборки: из какого коммита sites и когда собрана эта витрина.
+      try {
+        await writeBuildStamp(ctx.distDir, {
+          siteId: params.siteId,
+          theme: bareTheme,
+          builtAt: new Date().toISOString(),
+          sitesCommit: process.env.SOURCE_COMMIT ?? null,
+        });
+        logger.log(`[themes-v2] Wrote build.json for site ${params.siteId}`);
+      } catch (bsErr) {
+        logger.warn(`[themes-v2] build stamp write failed: ${(bsErr as Error)?.message ?? bsErr}`);
       }
       // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — чтобы
       // любая секция (в т.ч. 2+ одинаковых на странице) находила свой корень, а не

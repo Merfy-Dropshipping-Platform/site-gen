@@ -97,7 +97,10 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
       linkText: "MK_PB_LINK",
       linkUrl: "/",
     },
-    fields: [{ field: "text", probe: "MK_PB_TEXT" }],
+    // Маячок — И текст, И хвост-ссылка: панель «Объявление» правит их вместе
+    // (Текст + Размер текста + Ссылка), значит «глаз» обязан убрать оба. satin
+    // снимал только текст и оставлял на полосе висеть голую ссылку.
+    fields: [{ field: "text", probe: ["MK_PB_TEXT", "MK_PB_LINK"] }],
   },
   Hero: {
     props: {
@@ -459,6 +462,32 @@ describe.each(THEMES)("скрытие именованного параметр�
         expect(contains(row?.html ?? "", f.probe)).toBe(false);
       },
     );
+
+    /**
+     * Пустой рендер — НЕ «скрыл». Проба ищет след параметра; строка без единого
+     * узла её тоже проходит, и дыра выглядит зелёной. Так и было у rose
+     * PromoBanner: скрытие «Объявления» уносило корень секции, `/preview/block`
+     * отдавал пустую строку, превью её отбраковывало
+     * (`isValidBlockHtml` → «keep old DOM») и баннер оставался на экране —
+     * мерчант видел это как «глаз в дереве не работает» (баг-репорт владельца
+     * 2026-09-13). Обратный ход ломался так же: показать обратно было нечего,
+     * узла в DOM уже не существовало.
+     *
+     * Контракт: порт вправе спрятать параметр, но обязан оставить корень
+     * секции с `data-puck-component-id` — иначе точечная перерисовка блока
+     * молча откатывается.
+     */
+    it(`${block}.${f.field}: корень секции переживает скрытие (иначе превью не обновится)`, () => {
+      if (!built || f.unprobeable) return;
+      if (!isActive(block, f.field)) return;
+      const before = shown[i]?.html ?? "";
+      const after = hidden[i]?.html ?? "";
+      if (hidden[i]?.missing || hidden[i]?.error) return;
+      const root = `data-puck-component-id="${NAMED_FIELDS[block].renderAs ?? block}-1"`;
+      // Тема не размечает корень этой секции — контракт к ней неприменим.
+      if (!before.includes(root)) return;
+      expect(after).toContain(root);
+    });
 
     /**
      * Обратная сторона: скрыть один параметр — не значит снести соседний.

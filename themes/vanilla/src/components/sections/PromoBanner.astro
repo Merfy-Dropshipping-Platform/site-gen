@@ -79,6 +79,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 {
 	/* data-vanilla-announcement сохранён: JS шапки меряет высоту полосы для
 	   позиционирования бургер-панели (Header.astro headerOffsetBelowPromo). */
+	/* «Глаз» у «Объявления» (единственный именованный параметр секции) снят →
+	   полосы нет вовсе: ни текста, ни ссылки, ни цветного фона. Корень с
+	   data-puck-component-id ОБЯЗАН остаться — пустой ответ /preview/block
+	   отбраковывается isValidBlockHtml («keep old DOM»), и в превью конструктора
+	   баннер оставался на месте (баг-репорт владельца 2026-09-13). Маркер полосы
+	   тоже остаётся: JS шапки меряет её offsetHeight (скрытый узел даёт 0, а
+	   отсутствующий — фолбэк 44/48px и съехавшую бургер-панель).
+	   Отдельный «глаз» всей секции (props.hidden) работает как раньше. */
+	isFieldHidden('text') ? (
+		<div data-vanilla-announcement data-puck-component-id={id} hidden></div>
+	) :
 	hasText ? (
 		/* Текст объявления задан мерчантом → цветная полоса верстальщика дословно
 		   (rootCls/textCls байт-в-байт, поведение не меняется). При заданном link.text

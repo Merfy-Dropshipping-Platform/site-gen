@@ -31,9 +31,9 @@ export const PromoBannerSchema = z.object({
   /**
    * Служебный проп видимости секции (тот же, что ставит «глаз» в outline
    * конструктора): true → секция вырезается из рендера (extractPageBlocks /
-   * page-generator фильтруют `props.hidden === true`). В панели промо-баннера
-   * он выведен тумблером «Скрыть/показать» — по просьбе пользователя рядом с
-   * «Отступами», как у остальных секций.
+   * page-generator фильтруют `props.hidden === true`). Переключается «глазом»
+   * строки секции в левом дереве; отдельного поля в правой панели у него нет
+   * (владелец, 2026-09-13) — как и у остальных секций.
    */
   hidden: z.boolean().optional(),
   // Legacy back-compat fields (hidden from picker UI, read-only fallback in .astro).
@@ -53,17 +53,11 @@ export const PromoBannerPuckConfig = {
   // редактируются через sub-panel «Объявление» при subsection click.
   fields: {
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    // Тумблер показа секции (props.hidden). Первый вариант = «включено», поэтому
-    // «Показать» → hidden:false. Пишет ровно тот проп, что и «глаз» в outline.
-    hidden: {
-      type: 'toggle',
-      label: 'Показ',
-      toggleLabel: 'Скрыть/показать',
-      options: [
-        { label: 'Показать', value: false },
-        { label: 'Скрыть', value: true },
-      ],
-    } as any,
+    // Тумблера «Показ» здесь НЕТ намеренно (владелец, 2026-09-13: «в правом
+    // сайдбаре её быть не должно»). Показ секции переключает «глаз» строки
+    // «Промо-баннер» в левом дереве — он пишет тот же props.hidden, и ни у одной
+    // другой секции дубля в правой панели нет. Сам проп остаётся в схеме ниже:
+    // его читают extractPageBlocks / page-generator.
     // «Отступы» — как у остальных секций (пользователь #17). Высоту полосы
     // задаёт «Размер» (min-h 24/32/40/48), отступы добавляются поверх неё.
     padding: { type: 'padding', label: 'Отступы' } as any,

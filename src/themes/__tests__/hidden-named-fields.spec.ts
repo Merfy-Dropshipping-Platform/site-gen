@@ -23,20 +23,27 @@ const THEMES = ['rose', 'bloom', 'satin', 'flux', 'vanilla'] as const;
 const base = { colorScheme: '1', padding: { top: 40, bottom: 40 } };
 
 /** Секции, у которых параметр «Заголовок» размечен во всех пяти темах. */
-const JOBS: { block: string; props: Record<string, unknown>; field?: string; probe?: string }[] = [
+const JOBS: { block: string; props: Record<string, unknown>; field?: string; probe?: string; name?: string; keep?: string }[] = [
   { block: 'Collections', props: { ...base, id: 'Collections-1', heading: 'Коллекции' } },
   { block: 'Gallery', props: { ...base, id: 'Gallery-1', heading: 'Галерея', items: [{ id: 'i1', type: 'image', url: '', alt: 'Изображение' }] } },
   { block: 'PopularProducts', props: { ...base, id: 'Popular-1', heading: 'Популярное', cards: 4, columns: 4 } },
   { block: 'MultiRows', props: { ...base, id: 'MultiRows-1', heading: 'Строки' } },
   { block: 'MultiColumns', props: { ...base, id: 'MultiColumns-1', heading: 'Колонки' } },
   { block: 'CollapsibleSection', props: { ...base, id: 'Collapsible-1', heading: 'Вопросы' } },
-  { block: 'Hero', props: { ...base, id: 'Hero-1', heading: { text: 'Заголовок' }, primaryButton: { text: 'Купить', link: '/catalog' }, secondaryButton: { text: 'Подробнее', link: '/about' } }, field: 'buttons', probe: 'primaryButton' },
+  { block: 'Hero', props: { ...base, id: 'Hero-1', heading: { text: 'Заголовок' }, primaryButton: { text: 'Купить', link: '/catalog' }, secondaryButton: { text: 'Подробнее', link: '/about' } }, field: 'buttons', probe: 'primaryButton', keep: 'heading' },
+  { block: 'Hero', name: 'Hero (пустое состояние)', props: { ...base, id: 'Hero-2' }, field: 'buttons', probe: 'primaryButton', keep: 'heading' },
+  { block: 'Product', name: 'Product/Название', props: { ...base, id: 'Product-1' }, field: 'title', keep: 'price' },
+  { block: 'Product', name: 'Product/Стоимость', props: { ...base, id: 'Product-1' }, field: 'price', keep: 'title' },
+  { block: 'Product', name: 'Product/Варианты', props: { ...base, id: 'Product-1' }, field: 'variants', keep: 'title' },
+  { block: 'Product', name: 'Product/Количество', props: { ...base, id: 'Product-1' }, field: 'quantity', keep: 'title' },
+  { block: 'Product', name: 'Product/Кнопки', props: { ...base, id: 'Product-1' }, field: 'buttons', keep: 'title' },
+  { block: 'Product', name: 'Product/Поделиться', props: { ...base, id: 'Product-1' }, field: 'share', keep: 'title' },
 ];
 
 const FIELD = 'heading';
 const markerOf = (f: string) => `data-puck-subsection-field="${f}"`;
 
-type Rendered = Record<string, string>;
+type Rendered = Record<string, string | undefined>;
 
 function render(theme: string, jobs: { block: string; props: Record<string, unknown> }[]): Rendered {
   const raw = execFileSync('node', [RENDERER, theme, JSON.stringify(jobs)], {
@@ -45,8 +52,8 @@ function render(theme: string, jobs: { block: string; props: Record<string, unkn
     maxBuffer: 64 * 1024 * 1024,
   });
   const out: Rendered = {};
-  for (const entry of JSON.parse(raw) as { block: string; html?: string; error?: string }[]) {
-    out[entry.block] = entry.error ? `ОШИБКА РЕНДЕРА: ${entry.error}` : (entry.html ?? '');
+  for (const [i, entry] of (JSON.parse(raw) as { block: string; html?: string; error?: string }[]).entries()) {
+    out[i] = entry.error ? `ОШИБКА РЕНДЕРА: ${entry.error}` : entry.html;
   }
   return out;
 }
@@ -71,21 +78,31 @@ describe.each(THEMES)('скрытие именованного параметр�
     expect(built).toBe(true);
   });
 
-  for (const { block, field, probe } of JOBS) {
-    it(`${block}: параметр виден, пока его не скрыли`, () => {
+  for (const [i, { block, field, probe, name, keep }] of JOBS.entries()) {
+    it(`${name ?? block}: параметр виден, пока его не скрыли`, () => {
       if (!built) return;
-      const html = shown[block];
+      const html = shown[i];
       if (html === undefined) return; // блока нет в этой теме
       expect(html).not.toMatch(/^ОШИБКА РЕНДЕРА/);
       expect(html).toContain(markerOf(probe ?? field ?? FIELD));
     });
 
-    it(`${block}: скрытый параметр исчезает из разметки`, () => {
+    it(`${name ?? block}: скрытый параметр исчезает из разметки`, () => {
       if (!built) return;
-      const html = hidden[block];
+      const html = hidden[i];
       if (html === undefined) return;
       expect(html).not.toMatch(/^ОШИБКА РЕНДЕРА/);
       expect(html).not.toContain(markerOf(probe ?? field ?? FIELD));
+    });
+
+    it(`${name ?? block}: скрытие не уносит соседний параметр`, () => {
+      if (!built || !keep) return;
+      const a = shown[i];
+      const b = hidden[i];
+      if (a === undefined || b === undefined) return;
+      expect(a).toContain(markerOf(keep));
+      expect(b).toContain(markerOf(keep));
+      expect(b.length).toBeLessThan(a.length);
     });
   }
 });

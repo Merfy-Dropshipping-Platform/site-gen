@@ -19,6 +19,26 @@
 
 ---
 
+## Все темы — дефолты контролов сайдбара (2026-09-13, ветка `fix/panel-defaults`)
+
+- **Сделано:** поля оформления панели (размер/ширина/выравнивание/тумблеры/radio/слайдер)
+  получили значения, РАВНЫЕ фактическому фолбэку порта (снято рендером, не по комментариям):
+  rose 13, flux 7, vanilla 9, satin 23.
+- **Где лежит:** общее — `packages/theme-base/blocks/*/*.puckConfig.ts`; расхождения —
+  `packages/theme-rose|flux/theme.json` (`blockDefaults.Hero`); satin — в его собственных
+  `packages/theme-satin/blocks/*/*.puckConfig.ts`.
+- **Осознанно пусто:** `colorScheme` (наследует `:root` = схема темы/мерчанта),
+  `Hero.position` у rose/vanilla/satin (конфликт с легаси `contentPosition`),
+  satin `Hero.alignment` / `ImageWithText.width` / `MultiRows.width` /
+  `MultiColumns.imageAspectRatio`, vanilla `Hero.overlay` — у порта «не задано»
+  отдельная ветка, статикой не выражается.
+- **Как проверять:** `pnpm test:panel-defaults` (22 проверки) + снимки 135/135.
+- **Хвост (решает владелец):** 40 ДАВНИХ дефолтов расходятся с портом, перечислены
+  в `KNOWN_DIVERGENT` внутри `src/themes/__tests__/panel-default-is-noop.spec.ts`.
+  Их снятие МЕНЯЕТ вид только что вставленной секции — отдельное решение.
+
+---
+
 ## flux
 
 - **✅ 2026-09-09 — те же баги карточки проверены НА ВСЕХ ПЯТИ ТЕМАХ, найдены две дыры вне flux/bloom/satin.** (1) **vanilla** не имел ни правил карточки, ни чтения hover-токенов; правила карточки к этому моменту добавила соседняя сессия, наведение — я. (2) **rose** имел правила карточки, но **без `!important`** — то есть «Обводка»/«Скругление»/отступ были там так же мертвы, как в bloom/satin, только причина другая: собственные утилиты темы (`rounded-*`, `p-*`) из `@layer utilities` бьют `@layer base`. Плюс rose тоже не читал hover-цвета схемы. Блоков `[data-nt="rose-product-card"]` было два (полные дубли, строки 181 и 1177) — соседняя сессия схлопнула в `23fbe36a`.

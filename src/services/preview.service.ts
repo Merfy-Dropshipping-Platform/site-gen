@@ -4,6 +4,7 @@ import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
 import { buildTokensCss, previewTokensCssWithFonts } from '../themes/tokens-css';
 import { getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
+import { CHROME_REORDER_INLINE } from '../common/chrome-reorder';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 import { resolveBlockProps } from '../render/resolve-props';
 import { getBlockPuckDefaults } from '../render/block-defaults';
@@ -1334,6 +1335,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
     }
     executeScriptsIn(node);
   }
+  // 106-fix: перестановка хрома (вне <main>) — общий исходник с unit-тестом,
+  // см. common/chrome-reorder.ts. Инлайнится текстом: агент живёт в iframe.
+  ${CHROME_REORDER_INLINE}
   // 106 reconcile apply: morph <main> к собранному target-HTML body-секций +
   // CSS-toggle хрома (Header/Footer/PromoBanner вне main) + ack. Вынесено из
   // handler'а — US2-путь применяет асинхронно после fetch новых блоков, US1/US3
@@ -1379,6 +1383,11 @@ const PREVIEW_NAV_AGENT_INLINE = `
       if (rcVisible[raid]) ratop.removeAttribute('data-rc-hidden');
       else ratop.setAttribute('data-rc-hidden', '1');
     }
+    // 106-fix: ...и перестановки тоже. Порядок соседей <main> приводим к
+    // целевому дереву, иначе смена мест промо-баннера и шапки видна лишь
+    // после ручной перезагрузки страницы. Идемпотентно: совпал — no-op.
+    try { __rcOrderChrome(rcTarget, rcMain, document); }
+    catch (rcOrdErr) { console.error('[preview] chrome reorder failed', rcOrdErr); }
     var rcFinal = [];
     var rcKids2 = rcMain.children;
     for (var rfi = 0; rfi < rcKids2.length; rfi++) {

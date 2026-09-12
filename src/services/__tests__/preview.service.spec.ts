@@ -211,6 +211,20 @@ describe('PreviewService', () => {
       expect(html).toContain("rtb.type === 'Header' || rtb.type === 'Footer' || rtb.type === 'PromoBanner'");
     });
 
+    it('106-fix: агент несёт перестановку хрома и зовёт её из __rcApply', async () => {
+      const html = await svc.renderPreviewPage({
+        blocks: [{ type: 'Hero', props: { id: 'Hero-1' } }],
+        tokensCss: '',
+        fontHead: '',
+        themeId: 'rose',
+      });
+      // Общий исходник с unit-тестом (common/chrome-reorder.ts) инлайнится в агент.
+      expect(html).toContain('var __rcOrderChrome =');
+      // ...и реально вызывается после morph, иначе перестановка промо-баннера с
+      // шапкой видна только после ручной перезагрузки страницы.
+      expect(html).toContain('__rcOrderChrome(rcTarget, rcMain, document)');
+    });
+
     it('update-block агент создаёт scheme-обёртку on demand и снимает её симметрично', async () => {
       // Hot-replace: если у блока не было scheme-обёртки, а colorScheme выбран —
       // агент оборачивает HTML в <div class="color-scheme-N" data-block-scheme="N">

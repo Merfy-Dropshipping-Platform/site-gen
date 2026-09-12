@@ -336,3 +336,7 @@ satin — `subscription_not_found`, vanilla и bloom — `open_invoice_pending`,
 Открытое, блокирующее последний шаг цикла: переопубликовать тестовые стенды
 нельзя — PaywallGuard отдаёт 402 на всех тестовых аккаунтах
 (`subscription_not_found`, `open_invoice_pending`, `subscription_canceled`).
+
+Разбор причин этой пачки — `docs/theme-work/BUG-PATTERNS.md`: три вопроса, которые
+дешевле пройти до починки (сколько путей у механизма, кто узнает о молчаливом
+отказе, что будет при 0/1/N элементах).

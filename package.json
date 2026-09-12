@@ -48,6 +48,7 @@
     "conformance:satin:release": "tsx scripts/theme-conformance.ts --theme satin --manifest conformance/baselines/satin.manifest.json --baseline conformance/baselines/satin.structural.json --inventory conformance/inventory/satin.generated.json --report-dir conformance-results/satin --require-zero",
     "build:theme-sections:all": "for t in rose bloom satin flux vanilla; do node scripts/compile-theme-sections.mjs $t || exit 1; done",
     "test:section-snapshots": "jest --runInBand src/themes/__tests__/section-html-snapshot.spec.ts",
+    "test:hidden-fields": "jest --runInBand src/themes/__tests__/hidden-named-fields.spec.ts",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs"
   },
   "dependencies": {

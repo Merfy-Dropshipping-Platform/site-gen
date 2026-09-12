@@ -38,10 +38,10 @@ const heading = headingSet && headingRaw ? headingRaw : isEmptyState ? "Расс
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
-		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		? "font-logo text-[17px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 		: headingSize === "large"
-			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 
 // Канон text: string | { content, size }. Пустое состояние → контрактный
 // поясняющий текст плейсхолдера (НЕ длинная копия верстальщика).
@@ -105,7 +105,7 @@ const btnHref =
 // min-h 48, px-24, Arsenal 16 400 uppercase, hover 0.78; цвета токенами);
 // outlined = светлая контурная .satin-button-light (родная роль satin, §3).
 const btnBase =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 const btnCls =
 	p.buttonStyle === "outlined"
 		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`

@@ -92,7 +92,7 @@
       "size": "medium"
     },
     "Collections": {
-      "cardCaptionStyle": "uppercase",
+      "cardCaptionStyle": "default",
       "gridAspect": "1:1",
       "titleAlignment": "left",
       "heading": "Сейчас в тренде"
@@ -120,7 +120,7 @@
       "width": "large"
     },
     "PopularProducts": {
-      "cardCaptionStyle": "uppercase",
+      "cardCaptionStyle": "default",
       "headingAlignment": "left",
       "heading": "Коллекция товаров"
     },
@@ -142,7 +142,7 @@
       "columns": 3,
       "cards": 12,
       "gridAspect": "1:1",
-      "cardCaptionStyle": "uppercase",
+      "cardCaptionStyle": "default",
       "padding": {
         "top": 80,
         "bottom": 80

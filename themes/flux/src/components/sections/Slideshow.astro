@@ -45,10 +45,10 @@ const rawSlides = hasSlides ? p.slides : PLACEHOLDER_SLIDES;
 // white, Hero.astro:91).
 const slideHeadingCls = (s: string | undefined) =>
 	s === "small"
-		? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
+		? "font-roboto-flex text-[17px] font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
 		: s === "large"
-			? "font-roboto-flex text-[24px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[28px]"
-			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]";
+			? "font-roboto-flex text-[24px] font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[28px]"
+			: "font-roboto-flex text-[20px] font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]";
 // Текст слайда — параллельная лестница Hero-подзаголовка (§9, база-литерал 14/16
 // = Hero large, Hero.astro:101). medium И отсутствие = 14/16; small 12/14, large
 // 16/18. Roboto Flex 300 (font-light), цвет — токен/родной белый.
@@ -198,8 +198,8 @@ const pagination =
 // не используется; чёрная CTA читается и на фото, и на светлой плашке boxed.
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-black transition-colors hover:bg-black/5"
-		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90";
+		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal leading-none text-black transition-colors hover:bg-black/5"
+		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal leading-none text-white transition-opacity hover:opacity-90";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding

@@ -73,10 +73,10 @@ const heading = contentSet("heading", rawHeading) && rawHeading ? rawHeading : P
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
-		? "font-logo text-[18px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
+		? "font-logo text-[18px] font-normal leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
 		: headingSize === "medium"
-			? "font-logo text-[22px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
-			: "font-logo text-[26px] font-normal uppercase leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
+			? "font-logo text-[22px] font-normal leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
+			: "font-logo text-[26px] font-normal leading-[1.1] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
 // Канон alignment (top-level, ВИДИМЫЙ контрол «Выравнивание» — puckConfig:102):
 // секция-уровневое выравнивание (Figma 1:17086, паритет rose) — правит заголовок
 // + текст-кикер + кнопку одной колонкой. Back-compat: старые ревизии хранили
@@ -104,10 +104,10 @@ const text = contentSet("text", rawText) && rawText ? rawText : isPlaceholder ? 
 const textSize = p.textSize ?? p.text?.size;
 const textCls =
 	textSize === "small"
-		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]"
+		? "font-manrope text-[11px] font-light tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]"
 		: textSize === "medium"
-			? "font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
-			: "font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+			? "font-manrope text-[14px] font-light tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
+			: "font-manrope text-[16px] font-light tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
 
 // Канон textStyle (hidden): italic → курсив кикера и заголовка.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
@@ -172,7 +172,7 @@ const btnHref =
 // (метрики .satin-button-md + .satin-button-dark, g:106-126,155-159; цвета
 // токенами); outlined = светлая контурная .satin-button-light (§3).
 const btnBase =
-	"inline-flex min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 const btnCls =
 	p.buttonStyle === "outlined"
 		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`

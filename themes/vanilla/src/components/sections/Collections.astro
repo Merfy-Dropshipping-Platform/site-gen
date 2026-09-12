@@ -87,9 +87,10 @@ const tileAspect =
 		: p.imageView === "wide"
 			? "aspect-[16/9]"
 			: "aspect-[1/1]";
-// Канон cardCaptionStyle: 'uppercase' (canon-default из blockDefaults) и
-// отсутствие = капс-подпись верстальщика; 'default' снимает капс.
-const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
+// Канон cardCaptionStyle: отсутствие = имя коллекции как его ввёл мерчант
+// (имя вводит мерчант — тема его не переписывает); 'uppercase' ставит капс
+// осознанно (капс-подпись верстальщика).
+const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.
 // Иначе — плейсхолдер (DEMO_COLLECTIONS, ниже). SSR рендерит сохранённые поля

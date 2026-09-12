@@ -54,7 +54,7 @@
   font-size: var(--size-section-heading, 20px) !important;
   line-height: 1 !important;
   letter-spacing: normal;
-  text-transform: var(--text-transform-heading, uppercase);
+  text-transform: var(--text-transform-heading, none);
   color: rgb(var(--color-heading, 0 0 0));
 }
 
@@ -200,6 +200,18 @@
   [data-nt="rose-product-card"] > div:last-child > div {
     justify-content: var(--product-card-justify, flex-start) !important;
   }
+}
+
+/* Заголовок секции — текст мерчанта: выводим ровно так, как он ввёл.
+   Порты Collections/Popular/Gallery рендерят заголовок компонентом
+   NtSectionHeading из внешнего пакета design-systems-theme, где `uppercase`
+   вшит в разметку и правкой темы не снимается. Снимаем по id заголовка —
+   тот же id порт уже использует, чтобы задать размер. Селектор по id
+   (1,0,0) и вне слоёв: бьёт утилиту `.uppercase` из @layer utilities. */
+#collections-title,
+#popular-title,
+#gallery-title {
+  text-transform: none;
 }
 
 /* Те же метрики, что .rose-title, без uppercase (посты блога и т.п.) */
@@ -1071,7 +1083,6 @@ input[type="search"]::-webkit-search-results-decoration {
   font-size: 1rem;
   font-weight: 400;
   color: rgb(var(--color-foreground));
-  text-transform: uppercase;
 }
 
 .account-product-card .product-prices {

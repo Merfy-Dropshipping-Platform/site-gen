@@ -88,10 +88,10 @@ const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "hero-animate-1 !text-[14px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
+		? "hero-animate-1 !text-[14px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
 		: headingSize === "medium"
-			? "hero-animate-1 !text-[17px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
-			: "hero-animate-1 !text-[20px] !font-normal !leading-none uppercase tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
+			? "hero-animate-1 !text-[17px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
+			: "hero-animate-1 !text-[20px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
@@ -300,7 +300,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-comfortaa text-[20px] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:text-[28px] md:text-[36px] lg:text-[length:var(--size-hero-heading,40px)]"
+								class="font-comfortaa text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:text-[28px] md:text-[36px] lg:text-[length:var(--size-hero-heading,40px)]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"

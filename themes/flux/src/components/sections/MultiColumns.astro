@@ -47,7 +47,7 @@ const headingSizeCls =
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
+const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image,
 // imageSize, headingSize/textSize per-item, link {text,href} | flat linkText+link).
@@ -209,7 +209,7 @@ const paddingStyle = p.padding
 // hover:opacity-90 (эталон MainText/Hero; кнопка-2 = чёрная в схемах flux, MANNER §7).
 // active:scale в манере flux НЕ используется (§3).
 const btnCls =
-	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-6 font-roboto-flex text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90";
+	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-6 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90";
 
 // Контейнер = flux-носитель темы (Header/Footer/Popular/MainText: mx-auto
 // max-w-[1920px] px-4 md:px-20 2xl:px-80). Вертикаль py-10 md:py-16 (канон); при

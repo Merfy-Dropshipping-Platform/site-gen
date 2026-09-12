@@ -28,7 +28,7 @@ const headingSizeCls =
 		: headingSizeRaw === "large"
 			? "text-[23px] md:text-[29px]"
 			: "text-[19px] md:text-[23px]"; // medium (canon-default) + absent → эталон 19/23
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
+const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 
 // Подзаголовок (subtitle / text / hidden description) — flux font-light, токен
 // color-muted. Рендерим ТОЛЬКО при непустом значении (как rose: нет текста → нет

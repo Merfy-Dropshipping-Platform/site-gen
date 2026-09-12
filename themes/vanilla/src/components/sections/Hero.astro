@@ -223,8 +223,8 @@ const pagination =
 // (токены кнопки-1); outlined = белый контур манеры на тёмном (§3, токены кнопки-2).
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`
-		: `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
+		? `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`
+		: `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9
 // значений) — РАЗМЕЩЕНИЕ контент-блока по сетке 3×3 (Figma 648-55404): вертикаль
@@ -403,8 +403,8 @@ const secondaryHref =
 	"/catalog/textile";
 const secondaryCls =
 	p.buttonStyle === "outlined"
-		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`
-		: `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
+		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`
+		: `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
 
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт

@@ -39,7 +39,7 @@ const headingSizeCls =
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
+const headingCls = `font-urbanist ${headingSizeCls} font-normal leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
 
 // Источники ручных карточек (любая форма конструктора): items / columns /
 // benefits. Карточка считается реальной только если у неё есть непустой
@@ -168,7 +168,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							)
 						)}
 						{c.heading && (
-							<h3 class="font-urbanist text-[20px] font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]" set:html={inlineFormat(c.heading)} />
+							<h3 class="font-urbanist text-[20px] font-light leading-none text-[rgb(var(--color-heading,0_0_0))]" set:html={inlineFormat(c.heading)} />
 						)}
 						{c.text && (
 							<p class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))]" set:html={inlineFormat(c.text)} />

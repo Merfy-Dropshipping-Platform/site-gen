@@ -53,10 +53,10 @@ const heading = headingProvided
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
-		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[17px]"
+		? "font-urbanist text-[15px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[17px]"
 		: headingSize === "large"
-			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
-			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]";
+			? "font-urbanist text-[22px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
+			: "font-urbanist text-[18px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]";
 
 // Канон text: string | { content, size }. Пустое состояние (Figma 1:19335) →
 // плейсхолдер-подсказка контракта, НЕ манифест Philosophy верстальщика.
@@ -73,10 +73,10 @@ const text =
 const textSize = p.text?.size ?? p.textSize;
 const textCls =
 	textSize === "small"
-		? "w-full max-w-[1320px] font-urbanist text-[17px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]"
+		? "w-full max-w-[1320px] font-urbanist text-[17px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]"
 		: textSize === "medium"
-			? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]"
-			: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal uppercase leading-none text-[rgb(var(--color-text,255_255_255))]";
+			? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]"
+			: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]";
 
 // Канон position — позиция контент-колонки; alignment — выравнивание внутри.
 // canon-default обоих = 'center' = литерал верстальщика (всё по центру,

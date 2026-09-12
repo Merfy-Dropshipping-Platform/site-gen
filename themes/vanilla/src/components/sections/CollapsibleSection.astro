@@ -142,7 +142,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								   реального ответа нет, помощь видна сразу (паттерн пустого
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))]">
+									<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal leading-snug text-[rgb(var(--color-text,10_10_10))]">
 										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<svg
 											aria-hidden="true"
@@ -160,7 +160,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal uppercase leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70">
+										<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70">
 											<span class="min-w-0 flex-1 break-words" set:html={s.heading} />
 											<svg
 												aria-hidden="true"

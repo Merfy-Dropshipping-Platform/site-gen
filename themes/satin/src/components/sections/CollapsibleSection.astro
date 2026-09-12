@@ -55,7 +55,7 @@ const headingAlignCls =
 		: headingAlignment === "right"
 			? " text-right"
 			: "";
-const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Лестница §9 «Заголовок-аккордеон» (база-литерал 18/md:20 = medium, Faq.astro:35):
 // small 15/17, large 22/24. Управляется тем же headingSize.
@@ -193,7 +193,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						   сохранена для вида. */
 						<div class={`flex w-full flex-col gap-3 ${itemBoxCls}`}>
 							<div
-								class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+								class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
 							>
 								<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 								<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
@@ -211,7 +211,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						>
 							<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
 								<div
-									class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal uppercase leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+									class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
 								>
 									<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 									<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />

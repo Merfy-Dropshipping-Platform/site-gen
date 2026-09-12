@@ -39,7 +39,7 @@ const headingSizeCls =
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-roboto-flex font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
+const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}${headingAlignCls}`;
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // button {text, href|link}, size/headingSize/textSize per-item). Figma 1:19335 —
@@ -157,7 +157,7 @@ const alignCls =
 // 'white' → outlined (бордер/текст цвета заливки на прозрачном, паттерн PDP:168).
 // active:scale в манере flux НЕ используется (§3).
 const btnBase =
-	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-6 font-roboto-flex text-[16px] font-normal uppercase leading-none transition-opacity hover:opacity-90";
+	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-6 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90";
 const btnCls =
 	p.buttonStyle === "white"
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
@@ -253,7 +253,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
 								{r.heading && (
 									<h3
-										class={`font-roboto-flex ${r.headingCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
+										class={`font-roboto-flex ${r.headingCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
 										set:html={r.heading}
 									/>
 								)}

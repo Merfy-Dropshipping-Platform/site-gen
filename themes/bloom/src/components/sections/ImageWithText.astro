@@ -41,10 +41,10 @@ const text =
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
-		? "font-urbanist text-[15px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
+		? "font-urbanist text-[15px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
 		: headingSize === "large"
-			? "font-urbanist text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
-			: "font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
+			? "font-urbanist text-[22px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[24px]"
+			: "font-urbanist text-[18px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
 // Канон heading.alignment: отсутствие = left (текстовая колонка манеры).
 // Панель шлёт видимое поле «Выравнивание» как `alignment` — читаем его ПЕРВЫМ
 // (паритет rose ImageWithText), иначе контрол мёртв.

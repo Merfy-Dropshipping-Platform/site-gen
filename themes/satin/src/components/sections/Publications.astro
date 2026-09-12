@@ -60,13 +60,13 @@ const headingAlignCls =
 		: headingAlignment === "right"
 			? " text-right"
 			: "";
-const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Лестница §9 «Заголовок карточки журнала» (база-литерал 16 = medium,
 // Journal.astro:50): small 14, large 19. Управляется тем же headingSize.
 const cardTitleSizeCls =
 	headingSize === "small" ? "text-[14px]" : headingSize === "large" ? "text-[19px]" : "text-[16px]";
-const cardTitleCls = `font-logo ${cardTitleSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]`;
+const cardTitleCls = `font-logo ${cardTitleSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]`;
 
 // Канон columnsCount (slider 1-6) приоритетнее hidden columns (1-4); дефолт 3 =
 // sm:grid-cols-3 ЛИТЕРАЛ (Journal.astro:42); иное значение → CSS-var на sm.

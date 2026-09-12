@@ -68,7 +68,7 @@ const headingAlignment =
 	p.headingAlignment ?? (typeof p.heading === "object" ? p.heading?.alignment : undefined);
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button {text, href|link}, size/headingSize/textSize
@@ -141,10 +141,10 @@ const aspectFor = (s: string | undefined) =>
 // (small 14/17, large 19/24; классы расписаны явно ради лестницы и токена).
 const rowHeadingCls = (s: string | undefined) =>
 	s === "small"
-		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		? "font-logo text-[17px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 		: s === "large"
-			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 const rowTextCls = (s: string | undefined) =>
 	s === "small"
 		? "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
@@ -233,7 +233,7 @@ const alignCls =
 // (инверсия на тёмном §3). Метрики .satin-button-md (g:106-126) + токены;
 // mt-auto w-fit — кнопка прижата к низу ряда (литерал).
 const btnBase =
-	"mt-auto inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal uppercase leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"mt-auto inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 const btnCls =
 	p.buttonStyle === "black" || p.buttonStyle === "solid"
 		? `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`

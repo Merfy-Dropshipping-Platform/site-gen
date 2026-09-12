@@ -46,7 +46,7 @@ const headingSizeCls =
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
+const headingCls = `font-urbanist ${headingSizeCls} font-normal leading-none text-[rgb(var(--color-heading,227_142_159))]${headingAlignCls}`;
 
 // Канон rows[] 1-10 (item: heading|title, text|description, imageUrl|image,
 // imagePosition, button {text, href|link}, size per-item, headingSize/textSize).
@@ -257,7 +257,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
 							{r.heading && (
 								<h3
-									class={`font-urbanist ${r.headingCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,227_142_159))]`}
+									class={`font-urbanist ${r.headingCls} font-normal leading-none text-[rgb(var(--color-heading,227_142_159))]`}
 									set:html={inlineFormat(r.heading)}
 								></h3>
 							)}

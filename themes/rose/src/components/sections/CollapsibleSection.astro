@@ -139,7 +139,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								   реального ответа нет, помощь видна сразу (паттерн пустого
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal uppercase leading-snug text-[rgb(var(--color-heading,0_0_0))] sm:text-[16px]">
+									<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] sm:text-[16px]">
 										<span class="min-w-0 flex-1 break-words"><Fragment set:html={inlineFormat(s.heading)} /></span>
 										<svg
 											class="size-4 shrink-0 rotate-180"
@@ -155,7 +155,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal uppercase leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 sm:text-[16px]">
+										<div class="flex w-full items-center justify-between gap-4 font-comfortaa text-[14px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 sm:text-[16px]">
 											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<svg
 												class="size-4 shrink-0 rotate-180 transition-transform duration-200 group-open:rotate-0"

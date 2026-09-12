@@ -140,17 +140,17 @@ const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "font-logo text-[18px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
+		? "font-logo text-[18px] font-normal leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[22px]"
 		: headingSize === "medium"
-			? "font-logo text-[22px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
-			: "font-logo text-[26px] font-normal uppercase leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
+			? "font-logo text-[22px] font-normal leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[27px]"
+			: "font-logo text-[26px] font-normal leading-[1.08] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
-		? "font-manrope text-[11px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+		? "font-manrope text-[11px] font-light tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
 		: textSize === "medium"
-			? "font-manrope text-[14px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
-			: "font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+			? "font-manrope text-[14px] font-light tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-light tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
 // «Размер» → высота фото-половины/текст-колонки (md:h-*). large (дефолт satin) =
 // прежняя h-[680px] байт-в-байт; medium ≈0.82×, small ≈0.64×. Дефолт (p.size не
 // задан) = large. Mobile aspect-[375/362] остаётся неизменным (портретный кадр).
@@ -191,9 +191,9 @@ const ctaSizeCls = {
 // dark = чёрная заливка (кнопка-1: 0_0_0 / 255_255_255), light = контурная (кнопка-2 —
 // родная роль satin: бордер/текст 0_0_0 на прозрачном), радиус rounded-[var(--radius-button,0px)].
 const BTN_DARK =
-	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] font-manrope font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
+	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] font-manrope font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
 const BTN_LIGHT =
-	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent font-manrope font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
+	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent font-manrope font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
 // Канон buttonStyle: solid (canon-default) И отсутствие = dark литерал; outlined = light.
 const primaryBtnCls = p.buttonStyle === "outlined" ? BTN_LIGHT : BTN_DARK;
 // Канон secondaryButton — заливка ПРОТИВОПОЛОЖНА первой (паритет rose secondaryCtaCls):
@@ -323,7 +323,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-logo text-[26px] font-normal uppercase leading-[1.08] text-white md:text-[32px]"
+								class="font-logo text-[26px] font-normal leading-[1.08] text-white md:text-[32px]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -333,7 +333,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{!isFieldHidden('text') && (
 							<p
-								class="font-manrope text-[16px] font-light uppercase tracking-[0.04em] text-white/80"
+								class="font-manrope text-[16px] font-light tracking-[0.04em] text-white/80"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
@@ -345,7 +345,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{!isFieldHidden('buttons') && (
 					<a
 						href={ctaLink}
-						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-white bg-white px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[#111111] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-white bg-white px-6 font-manrope text-[16px] font-normal leading-none text-[#111111] transition-opacity duration-[180ms] hover:opacity-[0.78]"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"

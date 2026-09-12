@@ -340,7 +340,7 @@ export function renderCardHtml(p: RealProduct): string {
 		${wishlistHeartHtml(p.id)}
 	</div>
 	<div class="flex flex-col gap-1.5 md:gap-2">
-		<a href="${href}" class="font-manrope text-[16px] font-normal uppercase leading-tight text-[#000000] hover:opacity-80">${name}</a>
+		<a href="${href}" class="font-manrope text-[16px] font-normal leading-tight text-[#000000] hover:opacity-80">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
 			<span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">${price}</span>
 			${oldPrice}

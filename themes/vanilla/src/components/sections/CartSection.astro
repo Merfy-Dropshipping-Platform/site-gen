@@ -132,7 +132,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">
-								<a href="/products/${line.productId}" class="break-words font-manrope text-[14px] font-normal uppercase leading-normal text-[var(--vanilla-dark)] hover:opacity-80 md:text-[16px]">${line.name}</a>
+								<a href="/products/${line.productId}" class="break-words font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-dark)] hover:opacity-80 md:text-[16px]">${line.name}</a>
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-dark)] md:text-[16px]">${formatCartPrice(line.price * line.quantity)}</span>
 									${oldPriceHtml}

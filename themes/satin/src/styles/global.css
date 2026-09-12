@@ -123,7 +123,6 @@ main {
   font-size: 14px;
   font-weight: 400;
   line-height: 1;
-  text-transform: uppercase;
   transition: opacity 180ms ease, background-color 180ms ease, color 180ms ease;
 }
 
@@ -686,7 +685,6 @@ blockquote {
   font-size: 1rem;
   font-weight: 400;
   color: rgb(var(--color-foreground));
-  text-transform: uppercase;
 }
 
 .account-product-card .product-prices {

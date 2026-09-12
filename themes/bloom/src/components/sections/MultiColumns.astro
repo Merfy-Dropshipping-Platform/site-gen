@@ -58,7 +58,7 @@ const headingAlignCls =
 			: headingAlignment === "left"
 				? " !text-left"
 				: "";
-const headingCls = `w-full font-urbanist ${headingSizeCls} font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
+const headingCls = `w-full font-urbanist ${headingSizeCls} font-normal leading-none text-[rgb(var(--color-heading,255_255_255))]${headingAlignCls}`;
 
 // Канон columns[] ≤10 (item: heading|title, text|description, imageUrl|image —
 // иконка 44×44, headingSize/textSize, link {text,href} | flat linkText+link).
@@ -262,7 +262,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{c.heading && (
 							<h3
-								class={`font-urbanist ${itemHeadingCls(c.headingSize)} font-light uppercase leading-none text-[rgb(var(--color-heading,0_0_0))]`}
+								class={`font-urbanist ${itemHeadingCls(c.headingSize)} font-light leading-none text-[rgb(var(--color-heading,0_0_0))]`}
 								set:html={inlineFormat(c.heading)}
 							/>
 						)}

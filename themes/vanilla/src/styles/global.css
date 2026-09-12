@@ -917,7 +917,6 @@ blockquote {
   font-size: 1rem;
   font-weight: 400;
   color: rgb(var(--color-foreground));
-  text-transform: uppercase;
 }
 
 .account-product-card .product-prices {

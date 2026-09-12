@@ -136,19 +136,19 @@ const headingSize = p.heading?.size;
 // и флаттенила бы леддер у нетронутой темы.
 const headingCls =
 	headingSize === "small"
-		? "font-roboto-flex text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[17px] lg:text-[length:var(--merchant-hero-heading,17px)]"
+		? "font-roboto-flex text-[14px] font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[17px] lg:text-[length:var(--merchant-hero-heading,17px)]"
 		: headingSize === "medium"
-			? "font-roboto-flex text-[17px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px] lg:text-[length:var(--merchant-hero-heading,20px)]"
-			: "font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[24px] lg:text-[length:var(--merchant-hero-heading,24px)]";
+			? "font-roboto-flex text-[17px] font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px] lg:text-[length:var(--merchant-hero-heading,20px)]"
+			: "font-roboto-flex text-[20px] font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[24px] lg:text-[length:var(--merchant-hero-heading,24px)]";
 // Подзаголовок вёрстки (Hero.astro:52): 12→14px, uppercase, #999999.
 // Были 14→16px без uppercase — на ступень крупнее и другим регистром.
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
-		? "font-roboto-flex text-[10px] font-light uppercase leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[11px]"
+		? "font-roboto-flex text-[10px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[11px]"
 		: textSize === "medium"
-			? "font-roboto-flex text-[11px] font-light uppercase leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[12px]"
-			: "font-roboto-flex text-[12px] font-light uppercase leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[14px]";
+			? "font-roboto-flex text-[11px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[12px]"
+			: "font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[14px]";
 // «Размер» → высота полотна. large (дефолт) = вёрстка дословно
 // (flux-theme Hero.astro:26 `h-[380px] w-full sm:h-[480px] lg:aspect-[1920/810] lg:h-auto`):
 // на десктопе высота задаётся ПРОПОРЦИЕЙ кадра, а не фиксированным числом —
@@ -302,8 +302,8 @@ const contentCls = `flex max-w-[520px] flex-col gap-8 lg:gap-10 ${alignItemsCls}
 // кнопка тёмно-синяя как в оригинале.
 const ctaBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
+		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 // Вторая кнопка — согласованная ПАРА с «Стилем кнопки» (паритет rose): solid
 // (дефолт) → primary залитая / secondary контурная; outlined → НАОБОРОТ
 // (primary контурная / secondary залитая). Раньше secondaryBtnCls был
@@ -312,8 +312,8 @@ const ctaBtnCls =
 // (условие ниже).
 const secondaryBtnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light uppercase leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
+		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне
@@ -372,7 +372,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
+								class="font-roboto-flex text-[20px] font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -395,7 +395,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<div class="flex flex-wrap justify-center gap-3">
 						<a
 							href={ctaLink}
-							class="inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-90"
+							class="inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal leading-none text-white transition-opacity hover:opacity-90"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"

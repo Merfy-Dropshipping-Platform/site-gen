@@ -62,18 +62,18 @@ const rawSlides = hasSlides ? p.slides : [PLACEHOLDER_SLIDE];
 // (canon-носитель large, отсутствие = литерал).
 const slideHeadingCls = (s: string | undefined) =>
 	s === "small"
-		? "font-logo text-[18px] font-normal uppercase leading-[1.1] text-white md:text-[22px]"
+		? "font-logo text-[18px] font-normal leading-[1.1] text-white md:text-[22px]"
 		: s === "medium"
-			? "font-logo text-[22px] font-normal uppercase leading-[1.1] text-white md:text-[27px]"
-			: "font-logo text-[26px] font-normal uppercase leading-[1.1] text-white md:text-[32px]";
+			? "font-logo text-[22px] font-normal leading-[1.1] text-white md:text-[27px]"
+			: "font-logo text-[26px] font-normal leading-[1.1] text-white md:text-[32px]";
 // Кикер слайда — литерал about.astro:50 (Arsenal 16 400 uppercase tracking-[0.04em]
 // #999999 → токен muted): лестница §9 small 11 → medium 14 → large 16 = литерал.
 const slideTextCls = (s: string | undefined) =>
 	s === "small"
-		? "font-manrope text-[11px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+		? "font-manrope text-[11px] font-normal tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
 		: s === "medium"
-			? "font-manrope text-[14px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
-			: "font-manrope text-[16px] font-normal uppercase tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
+			? "font-manrope text-[14px] font-normal tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]"
+			: "font-manrope text-[16px] font-normal tracking-[0.04em] text-[rgb(var(--color-muted,153_153_153))]";
 
 // Пустое состояние = ПЛЕЙСХОЛДЕР по контракту: слайд без своего фото рендерит
 // пустой image-rect surface (НЕ кампанию верстальщика /images/4x/*.png). Реальный
@@ -211,7 +211,7 @@ const pagination =
 // .satin-button-md утилитами (паттерн Hero §3).
 const ctaCls =
 	p.buttonStyle === "solid"
-		? "inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+		? "inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
 		: "satin-button satin-button-md text-white";
 // (Пустое состояние теперь несёт дизайн-ассет landscape-slideshow.png → рендерится
 // как обычный фото-слайд: белый текст/контурная белая CTA = ctaCls. Отдельные

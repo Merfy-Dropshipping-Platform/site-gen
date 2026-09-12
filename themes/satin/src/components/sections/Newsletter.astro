@@ -36,7 +36,7 @@ const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? heading
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[12px]" : headingSize === "large" ? "text-[17px]" : "text-[14px]";
-const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+const headingCls = `font-logo ${headingSizeCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
 
 // Канон description (string) + text {content,size} (pupa-дубль). Пустое состояние =
 // ДОСЛОВНЫЙ Figma-плейсхолдер 1:19335 «Узнавайте первыми о новых коллекциях и
@@ -75,13 +75,13 @@ const buttonText =
 		? p.buttonText
 		: "Кнопка";
 const inlineTextBtnCls =
-	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95";
+	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95";
 // Тёмная md-кнопка (роль satin-button-md DARK, g:106-126,155-159) пересобрана
 // utility-классами с токенами: unlayered .satin-button-dark из global.css
 // перебил бы токен-утилиты (background: var(--satin-black)) и сломал смену
 // схемы из конструктора.
 const stackedBtnCls =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Канон formLayout: canon-default 'inline-submit' (совпадает с отсутствием
 // пропа) = форма подвала VERBATIM (контейнер h-10 border muted pl-3 pr-2.5,

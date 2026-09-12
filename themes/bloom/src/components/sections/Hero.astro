@@ -127,10 +127,10 @@ const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal uppercase leading-none !text-white md:text-[14px]"
+		? "hero-animate-1 font-urbanist text-[13px] font-normal leading-none !text-white md:text-[14px]"
 		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal uppercase leading-none !text-white md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal uppercase leading-none !text-white md:text-[20px]";
+			? "hero-animate-1 font-urbanist text-[15px] font-normal leading-none !text-white md:text-[17px]"
+			: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none !text-white md:text-[20px]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
@@ -274,7 +274,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-urbanist text-[18px] font-normal uppercase leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
+								class="font-urbanist text-[18px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"

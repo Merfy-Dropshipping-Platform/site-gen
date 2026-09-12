@@ -30,10 +30,10 @@ const sectionSubtitle =
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		? "font-logo text-[17px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 		: headingSize === "large"
-			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 // Канон subtitleSize: 'small' (canon-default puckConfig) и отсутствие = body-роль
 // манеры (Arsenal 16 light muted, catalog.astro:41); medium ≈1.2× (19),
 // large ≈1.44× (23) — ряд bloom Collections от роли 16.
@@ -74,9 +74,10 @@ const tileAspect =
 		: p.imageView === "wide"
 			? "aspect-[16/9]"
 			: "aspect-[430/564]";
-// Канон cardCaptionStyle: 'uppercase' (canon-default) и отсутствие = родной
-// капс подписи (CC:31-35); 'default' снимает капс.
-const captionCase = p.cardCaptionStyle === "default" ? "" : " uppercase";
+// Канон cardCaptionStyle: отсутствие = имя коллекции как его ввёл мерчант
+// (имя вводит мерчант — тема его не переписывает); 'uppercase' ставит капс
+// осознанно (манера подписи CC:31-35).
+const captionCase = p.cardCaptionStyle === "uppercase" ? " uppercase" : "";
 
 // Канон collections[] (≤10): плитки из merfy.resolved.collectionTiles (пикер
 // или коллекции магазина без general — резолвер секции, не локальный fetch).
@@ -279,7 +280,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					: "";
 				return `<li${liCls}><a href="${href}" class="group flex cursor-pointer flex-col gap-3" aria-label="${name}" data-nt="satin-collection-card">
 			<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]"${cover ? "" : ' aria-hidden="true"'}>${media}</div>
-			<h3 class="satin-collection-name font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))] uppercase">${name}</h3>
+			<h3 class="satin-collection-name font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))] ">${name}</h3>
 		</a></li>`;
 			})
 			.join("");

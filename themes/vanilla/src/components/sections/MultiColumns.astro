@@ -148,8 +148,8 @@ const btnHref =
 // (render-only, читаем существующие данные) — solid-кнопка манеры §3.
 const solidLinks = p.buttonStyle === "solid";
 const colLinkCls = solidLinks
-	? "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-	: "font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))] underline underline-offset-4 transition-opacity hover:opacity-70";
+	? "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+	: "font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))] underline underline-offset-4 transition-opacity hover:opacity-70";
 
 // Шкалы per-item размеров (роль «имя товара» Arsenal 16 uppercase, PC:66;
 // body-роль §9): заголовок колонки 14/16*/19, текст 14/16*/19.
@@ -252,7 +252,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{c.heading && (
 							<h3
-								class={`font-vanilla-arsenal ${itemHeadingCls(c.headingSize)} font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}
+								class={`font-vanilla-arsenal ${itemHeadingCls(c.headingSize)} font-normal leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}
 							>
 								{c.heading}
 							</h3>
@@ -278,7 +278,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{!isFieldHidden('buttonText') && (
 					<a
 						href={btnHref}
-						class="inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,58_69_48))] px-6 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 sm:px-16"
+						class="inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,58_69_48))] px-6 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 sm:px-16"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="buttonText"

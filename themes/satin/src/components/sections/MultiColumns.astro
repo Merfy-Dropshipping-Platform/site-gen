@@ -83,7 +83,7 @@ const headingAlignment =
 	p.headingAlignment ?? (typeof p.heading === "object" ? p.heading?.alignment : undefined);
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
-const headingCls = `font-logo ${headingSizeCls} font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
+const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Плейсхолдер колонки (Figma 1:19335): пустой rect (без иконки-картинки) +
 // «Колонна» + поясняющий текст + per-column ссылка-плейсхолдер «Кнопка»
@@ -240,7 +240,7 @@ const btnHref =
 	(typeof p.link === "string" && p.link ? p.link : undefined) ??
 	"/catalog";
 const btnCls =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 text-[16px] font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Шкалы per-item (лестницы §9): заголовок карточки 18/md:20 — литерал
 // Features.astro:43 (small 15/17, large 22/24 — ряд аккордеона); текст
@@ -248,10 +248,10 @@ const btnCls =
 // (small 14, large 19; классы расписаны явно ради лестницы и токена muted).
 const itemHeadingCls = (s: string | undefined) =>
 	s === "small"
-		? "font-logo text-[15px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[17px]"
+		? "font-logo text-[15px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[17px]"
 		: s === "large"
-			? "font-logo text-[22px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]"
-			: "font-logo text-[18px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]";
+			? "font-logo text-[22px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]"
+			: "font-logo text-[18px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]";
 const itemTextCls = (s: string | undefined) =>
 	s === "small"
 		? "max-w-[560px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]"
@@ -379,7 +379,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{c.link && (
 							<a
 								href={c.link.href}
-								class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal uppercase leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+								class="inline-flex items-center gap-2 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
 							>
 								<span>{c.link.text}</span>
 								<NtIcon name="arrow-right" sizeClass="size-5" />

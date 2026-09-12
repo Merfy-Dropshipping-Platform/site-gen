@@ -36,7 +36,7 @@ const headingSizeCls =
 		: headingSize === "large"
 			? "text-[24px] md:text-[30px]"
 			: "text-[19px] md:text-[23px]";
-const headingCls = `font-roboto-flex ${headingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+const headingCls = `font-roboto-flex ${headingSizeCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
 
 // Канон «Выравнивание» = ЕДИНЫЙ контрол (конструктор пишет position): рулит И
 // позицией блока в контейнере (posCls), И выключкой содержимого внутри
@@ -174,7 +174,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('buttonText') && (
 						<button
 							type="submit"
-							class="flex h-10 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95 md:h-12 md:px-5 md:text-[16px]"
+							class="flex h-10 shrink-0 items-center justify-center rounded-[8px] bg-[#FA5109] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 md:h-12 md:px-5 md:text-[16px]"
 						>
 							{buttonText}
 						</button>
@@ -199,7 +199,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('buttonText') && (
 						<button
 							type="submit"
-							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} rounded-[8px] bg-[#FA5109] px-8 font-roboto-flex text-[14px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]`}
+							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} rounded-[8px] bg-[#FA5109] px-8 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95 md:text-[16px]`}
 						>
 							{buttonText}
 						</button>

@@ -34,10 +34,10 @@ const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : un
 const headingSize = p.headingSize ?? p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		? "font-logo text-[17px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 		: headingSize === "large"
-			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 // Канон textSize: 'small' (canon-default blockDefaults satin) и отсутствие =
 // body-роль манеры (Arsenal 16 light muted); medium ≈1.2× (19), large ≈1.44×
 // (23) — ряд bloom от роли 16.
@@ -177,8 +177,8 @@ const viewAllCls =
 	p.buttonStyle === "link"
 		? "inline-flex w-fit items-center justify-center font-manrope text-[16px] font-normal uppercase leading-none text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 transition-opacity hover:opacity-70"
 		: p.buttonStyle === "secondary"
-			? "satin-button satin-button-md satin-button-light w-fit"
-			: "satin-button satin-button-md satin-button-dark w-fit";
+			? "satin-button satin-button-md satin-button-light w-fit uppercase"
+			: "satin-button satin-button-md satin-button-dark w-fit uppercase";
 
 // Канон collection (collectionPicker, id или slug): носитель — data-collection
 // на гриде; фильтрацию делает гидрация (filterByCollection: productIds коллекции
@@ -319,7 +319,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								</div>
 								<div class="flex flex-1 flex-col gap-1.5 md:gap-2">
-									<span class="font-manrope text-[16px] font-normal uppercase leading-tight text-[rgb(var(--color-text,0_0_0))]">Товар</span>
+									<span class="font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]">Товар</span>
 									<div class="flex flex-wrap items-baseline gap-1.5 md:gap-2">
 										<span class="font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]">2 500 ₽</span>
 									</div>

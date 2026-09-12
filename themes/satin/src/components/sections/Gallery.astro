@@ -76,10 +76,10 @@ const sectionText =
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
-		? "font-logo text-[17px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+		? "font-logo text-[17px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 		: headingSize === "large"
-			? "font-logo text-[24px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-			: "font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
+			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 // Канон textSize: 'medium' (canon-default puckConfig) и отсутствие = body-роль
 // манеры (Arsenal 16 light muted); small 14, large 19 (§9, ряд bloom Gallery).
 const textSize = p.textSize ?? p.text?.size;
@@ -238,7 +238,7 @@ const heroSizeCls = soloTile ? "aspect-[16/9]" : "aspect-square";
 // 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
 // line-through (SSR-пустышка скрыта, открывает гидрация при oldPrice).
 const captionNameCls =
-	"font-manrope text-[16px] font-normal uppercase leading-tight text-[rgb(var(--color-text,0_0_0))]";
+	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
 const captionPriceCls =
 	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
 const captionOldPriceCls =

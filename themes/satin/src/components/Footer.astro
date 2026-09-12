@@ -82,7 +82,7 @@ const NL_TEXT_SIZE: Record<string, string> = {
 };
 const nlHeadingSizeCls = NL_HEADING_SIZE[_nlSize(p.heading?.size)];
 const nlTextSizeCls = NL_TEXT_SIZE[_nlSize(p.text?.size)];
-const nlHeadingCls = `font-logo ${nlHeadingSizeCls} font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
+const nlHeadingCls = `font-logo ${nlHeadingSizeCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`;
 const nlTextCls = `font-manrope ${nlTextSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`;
 
 // Канон «Выравнивание» (contentAlign) left/center/right — паритет rose Footer:

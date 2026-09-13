@@ -5,6 +5,13 @@
  * Renders nothing when content is empty. Themes that hide description
  * entirely (e.g. flux PDP variant) just omit this primitive in Product.astro
  * via `showDescription: false`.
+ *
+ * Цвет тела: приглушённый ТЕКСТ схемы (--color-text/60), а НЕ --color-muted.
+ * Жалоба тестировщика 13.09: описание во всех схемах выходило 153/153/153, а
+ * поля «Приглушённый текст» в редакторе схемы нет вовсе (там Фон, Заголовок,
+ * Текст и две группы кнопок) — мерчант, выкрасивший фон в серый, не мог
+ * исправить слияние ничем. Рядом, в этой же секции, старая цена уже сделана
+ * правильно — `text-[rgb(var(--color-text))]/60`; равняемся на неё.
  */
 interface Props {
   content?: string;
@@ -19,7 +26,7 @@ const trimmed = content.trim();
     <h2 class="[font-family:var(--font-heading)] text-[20px] uppercase tracking-wide text-[rgb(var(--color-heading))] m-0">
       {heading}
     </h2>
-    <p class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-muted))] leading-normal m-0 whitespace-pre-line">
+    <p class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-text))]/60 leading-normal m-0 whitespace-pre-line">
       {trimmed}
     </p>
   </div>

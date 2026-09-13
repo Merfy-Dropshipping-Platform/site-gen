@@ -309,13 +309,16 @@ export function adaptLegacyProps(
       coerceGenericLegacyProps(out);
       coercePublicationsProps(out);
       break;
+    case 'Product':
+      coerceProductProps(out);
+      break;
     case 'Slideshow':
       return normalizeSlideshowProps(out);
     default:
       // Generic fallback for the 15 blocks without a hand-written coercer
       // (Newsletter, MultiColumns, MultiRows,
       // CollapsibleSection, Video,
-      // Product, PromoBanner, CartSection, CheckoutSection, AuthModal,
+      // PromoBanner, CartSection, CheckoutSection, AuthModal,
       // CartDrawer, CheckoutLayout, CheckoutHeader, AccountLayout).
       // Any legacy `{text|content, size|enabled, ...}` envelope that
       // theme-base schemas expect as a flat string gets unwrapped so the
@@ -410,6 +413,90 @@ function foldLegacyContainerToggle(out: Record<string, unknown>): void {
   const enabled = (legacy as Record<string, unknown>).enabled;
   if (typeof enabled !== 'string' && typeof enabled !== 'boolean') return;
   out.containerEnabled = String(enabled);
+}
+
+/**
+ * «Товар»: подписи подпанелей — ОБЪЕКТЫ, а не строки.
+ *
+ * Баг-репорт тестировщика 13.09, пункты T2/T3/T4 (одна болезнь на три жалобы):
+ * мерчант вводит «ПОЛОЖИТЬ В КОРЗИНУ» / «КУПИТЬ В 1 КЛИК» / «РАССКАЗАТЬ ДРУГУ» /
+ * «ПРОВЕРКА ТЕКСТА», значение сохраняется (видно после перезагрузки панели), а
+ * на витрине остаётся дефолт и хэш HTML не сдвигается ни на байт.
+ *
+ * Причина — не в темах. Подпанели «Товара» по схеме (`ProductSchema`) — объекты
+ * (`text {content,size}`, `buttons {addToCart{text}, buyNow{text}}`,
+ * `share {text}`, `description {content,size}`), а секция шла в общий коэрсер,
+ * который схлопывает ЛЮБОЙ конверт `{text|content, size?, enabled?}` в голую
+ * строку, чтобы шаблоны не печатали «[object Object]»:
+ *     { text: { content: 'X', size: 'large' } }  →  { text: 'X' }
+ *     { share: { text: 'Y' } }                   →  { share: 'Y' }
+ *     { buttons: { addToCart: { text: 'Z' } } }  →  { buttons: { addToCart: 'Z' } }
+ * После этого `text?.content` / `share?.text` / `buttons?.addToCart?.text` в
+ * ОБОИХ портах секции (общий theme-base и собственный flux) дают undefined —
+ * порты читают канон-форму, а до них доезжает строка. Вместе с `text.content`
+ * терялся и `text.size` — отсюда «Размер текста» у несуществующего текста.
+ *
+ * Поэтому у «Товара» свой коэрсер: общий прогон остаётся (нумерация схем,
+ * легаси-тоггл контейнера, URL-переписывание уже прошло выше), а конверты
+ * подписей возвращаются в канон-форму. Заодно легаси-ревизии, где подпись
+ * лежала голой строкой, ПОДНИМАЮТСЯ в объект — иначе их пришлось бы вечно
+ * поддерживать в каждой теме отдельно.
+ *
+ * Узость намеренная: трогаются только пять известных конвертов подписей.
+ * Структурные подпанели («Варианты», «Количество», «Стоимость», «Название»)
+ * общий коэрсер и так не портит — у них нет ключей text/content.
+ */
+function coerceProductProps(out: Record<string, unknown>): void {
+  const raw = {
+    text: out.text,
+    description: out.description,
+    share: out.share,
+    badge: out.badge,
+    buttons: out.buttons,
+  };
+  coerceGenericLegacyProps(out);
+  if (raw.text !== undefined) out.text = liftContentPanel(raw.text);
+  if (raw.description !== undefined) {
+    out.description = liftContentPanel(raw.description);
+  }
+  if (raw.share !== undefined) out.share = liftTextPanel(raw.share);
+  if (raw.badge !== undefined) out.badge = liftTextPanel(raw.badge);
+  if (raw.buttons !== undefined) out.buttons = liftButtonsPanel(raw.buttons);
+}
+
+/** `'X'` / `{text:'X'}` → `{content:'X'}`; канон-форму отдаёт как есть. */
+function liftContentPanel(v: unknown): unknown {
+  if (typeof v === 'string') return { content: v };
+  if (!isPlainObject(v)) return v;
+  if (typeof v.content === 'string') return v;
+  if (typeof v.text === 'string') {
+    const { text, ...rest } = v;
+    return { ...rest, content: text };
+  }
+  return v;
+}
+
+/** `'X'` / `{content:'X'}` → `{text:'X'}`; канон-форму отдаёт как есть. */
+function liftTextPanel(v: unknown): unknown {
+  if (typeof v === 'string') return { text: v };
+  if (!isPlainObject(v)) return v;
+  if (typeof v.text === 'string') return v;
+  if (typeof v.content === 'string') {
+    const { content, ...rest } = v;
+    return { ...rest, text: content };
+  }
+  return v;
+}
+
+/** `{addToCart:'X'}` → `{addToCart:{text:'X'}}`; чужие ключи не трогает. */
+function liftButtonsPanel(v: unknown): unknown {
+  if (!isPlainObject(v)) return v;
+  const next: Record<string, unknown> = { ...v };
+  for (const key of ['addToCart', 'buyNow']) {
+    if (v[key] === undefined) continue;
+    next[key] = liftTextPanel(v[key]);
+  }
+  return next;
 }
 
 function coercePublicationsProps(out: Record<string, unknown>): void {

@@ -63,15 +63,16 @@ const cardsRaw =
 // идентичны на live и в превью (Container API).
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 3;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide):
-// canon-default ('square' puckConfig) и отсутствие = медиа карточки
-// верстальщика 430/564 дословно; portrait → 430/500, wide → 16/9
-// (перекрытие медиа-дива карточки — и SSR, и гидрированной renderCardHtml).
+// canon-default ('square' puckConfig) и отсутствие = 1:1 (Квадрат по Figma
+// 648:57355, image 429×429; прежние 430/564 — пропорции макета верстальщика,
+// мерчант их не выбирал); portrait → 430/500, wide → 16/9 (перекрытие
+// медиа-дива карточки — и SSR, и гидрированной renderCardHtml).
 const tileAspectCls =
 	p.imageView === "portrait"
 		? " [&_li>article>div:first-child]:aspect-[430/500]"
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>div:first-child]:aspect-[16/9]"
-			: "";
+			: " [&_li>article>div:first-child]:aspect-square";
 // Моб 1 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
 const gridCls = "grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-3" + tileAspectCls;
 const gridStyle = `--cols:${colsN}`;
@@ -133,6 +134,32 @@ const NEXT_PHOTO_JS = [
 	"if(!li||li.getAttribute('data-np-on')!=='true')return;",
 	"var to=e.relatedTarget;if(to&&li.contains(to))return;",
 	"li.setAttribute('data-np-on','false');swap(li,false);",
+	"});",
+	"})(grids[i]);}",
+	"})();",
+].join("");
+
+// Счётчик количества: делегат кликов −/+ на гриде (как NEXT_PHOTO_JS — слушатель
+// на самом гриде, поэтому переживает подмену innerHTML при гидрации). Правит
+// подпись data-qa-qty и data-quantity кнопки; корзина читает data-quantity.
+const QA_STEPPER_JS = [
+	"(function(){",
+	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-quick-add=\"cart\"]');",
+	"for(var i=0;i<grids.length;i++){(function(g){",
+	"if(g.getAttribute('data-qa-step-bound')==='true')return;",
+	"g.setAttribute('data-qa-step-bound','true');",
+	"g.addEventListener('click',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var inc=t.closest('[data-qa-inc]');var dec=t.closest('[data-qa-dec]');",
+	"if(!inc&&!dec)return;",
+	"var li=t.closest('li');if(!li)return;",
+	"var q=li.querySelector('[data-qa-qty]');var btn=li.querySelector('[data-add-to-cart]');",
+	"if(!q)return;",
+	"var n=parseInt(q.textContent,10)||1;",
+	"n=inc?Math.min(99,n+1):Math.max(1,n-1);",
+	"q.textContent=String(n);",
+	"if(btn)btn.setAttribute('data-quantity',String(n));",
+	"e.preventDefault();",
 	"});",
 	"})(grids[i]);}",
 	"})();",
@@ -328,7 +355,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</li>
 					))
 				: displayProducts.map((product) => (
-						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}><SatinProductCard product={product} /></li>
+						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}><SatinProductCard product={product} quickAdd={quickAddMode} /></li>
 					))}
 		</ul>
 		{viewAllShow && !isFieldHidden('viewAll') && (
@@ -343,7 +370,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</a>
 		)}
 	</div>
-</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
+</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{quickAddMode === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {
@@ -397,7 +424,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						wantNextPhoto && Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
-					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p)}</li>`;
+					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, grid.getAttribute("data-quick-add") || undefined)}</li>`;
 				})
 				.join("");
 			applyQaText(grid);

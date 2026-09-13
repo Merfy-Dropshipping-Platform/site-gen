@@ -54,6 +54,7 @@
  * клиентским скриптом (loadRealProducts, тот же каскад источников, что
  * Popular/FluxProductDetail).
  */
+import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import FluxPicture from "../img/FluxPicture.astro";
 import {
@@ -274,7 +275,13 @@ const quantityVisible = quantityEnabledRaw !== false && quantityEnabledRaw !== "
 const addBtnTextRaw = p.buttons?.addToCart?.text;
 const addBtnText = addBtnTextRaw === undefined ? "Добавить в корзину" : addBtnTextRaw;
 const showAddToCart = String(addBtnText).trim() !== "";
-const buyBtnText = "Купить сейчас";
+// Подпись «Динамической кнопки» редактируется в подпанели «Кнопки»
+// (buttons.buyNow.text, канон theme-base Product.astro). Здесь лейбл был вбит
+// строкой — жалоба тестировщика 13.09: «КУПИТЬ В 1 КЛИК» сохранялся, а на
+// витрине оставалось «Купить сейчас». Пусто = дефолтный лейбл; видимость —
+// отдельный тоггл dynamicButton.
+const buyBtnTextRaw = p.buttons?.buyNow?.text;
+const buyBtnText = String(buyBtnTextRaw ?? "").trim() || "Купить сейчас";
 const dynRaw = p.dynamicButton && typeof p.dynamicButton === "object" ? p.dynamicButton.enabled : p.dynamicButton;
 const showBuyNow = dynRaw !== "false" && dynRaw !== false;
 
@@ -429,9 +436,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="text"
-						>
-							{displayBrand}
-						</p>
+							set:html={inlineFormat(displayBrand)}
+						></p>
 					)}
 					{!isFieldHidden('title') && (
 					<h1
@@ -574,9 +580,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<!-- Текст -->
 			<div class="flex flex-col gap-2">
 				{displayBrand && !isFieldHidden('text') && (
-					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text">
-						{displayBrand}
-					</p>
+					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text" set:html={inlineFormat(displayBrand)}></p>
 				)}
 				{!isFieldHidden('title') && (
 				<h1 class="font-roboto-flex text-[19px] font-light leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">

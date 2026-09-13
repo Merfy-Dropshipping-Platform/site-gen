@@ -300,7 +300,7 @@ function wishlistHeartHtml(id: string): string {
 	);
 }
 
-export function renderCardHtml(p: RealProduct): string {
+export function renderCardHtml(p: RealProduct, quickAdd?: string): string {
 	const href = escapeHtml(productHref(p));
 	const name = escapeHtml(p.name);
 	const image = escapeHtml(productImage(p));
@@ -326,11 +326,17 @@ export function renderCardHtml(p: RealProduct): string {
 	const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
 	const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
 	const cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-80";
+	// «Количество»: счётчик перед кнопкой, зеркало SSR-ветки SatinProductCard —
+	// после подмены innerHTML мерчант обязан видеть то же, что в статике.
+	const stepper =
+		quickAdd === "cart"
+			? `<div class="mt-2 flex h-11 w-full items-center justify-between border border-solid border-[rgb(var(--color-border,229_229_229))] bg-[rgb(var(--color-bg,255_255_255))]" data-qa-stepper><button type="button" data-qa-dec class="flex h-full w-11 shrink-0 items-center justify-center font-manrope text-[18px] leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button><span data-qa-qty class="min-w-[28px] flex-1 text-center font-manrope text-[14px] leading-none text-[rgb(var(--color-text,0_0_0))]">1</span><button type="button" data-qa-inc class="flex h-full w-11 shrink-0 items-center justify-center font-manrope text-[18px] leading-none text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button></div>`
+			: "";
 	const cartBtn = hasVariants
 		? firstCombo
-			? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" class="${cartBtnCls}">В корзину</button>`
+			? `<button type="button" data-add-to-cart data-quantity="1" data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${image}" class="${cartBtnCls}">В корзину</button>`
 			: `<a href="${href}" class="${cartBtnCls}">В корзину</a>`
-		: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${cartBtnCls}">В корзину</button>`;
+		: `<button type="button" data-add-to-cart data-quantity="1" data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="${cartBtnCls}">В корзину</button>`;
 	return `<article class="group flex flex-col gap-3" data-nt="satin-product-card" aria-label="${name}">
 	<div class="relative aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 		<a href="${href}" class="block size-full" aria-label="${name}">
@@ -345,6 +351,7 @@ export function renderCardHtml(p: RealProduct): string {
 			<span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">${price}</span>
 			${oldPrice}
 		</div>
+		${stepper}
 		${cartBtn}
 	</div>
 </article>`;

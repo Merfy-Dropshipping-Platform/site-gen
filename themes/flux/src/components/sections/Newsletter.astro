@@ -61,7 +61,12 @@ const selfCls = position === "center" ? "self-center" : position === "right" ? "
 // small 14, medium/отсутствие = 16, large 18/20.
 // §11 Контракта секции: видимое поле панели «Текст» (text.content) приоритетнее
 // СКРЫТОГО legacy `description` — оно глушило ввод мерчанта. Паритет satin/bloom.
+// `p.text` приходит СТРОКОЙ: adaptLegacyProps разворачивает конверт
+// {content,size} (page-blocks.ts unwrapEnvelopes) ещё до рендера, поэтому
+// ветка `p.text?.content` на живом сайте не срабатывала никогда и «Текст»
+// секции молча показывал дефолт вместо ввода мерчанта.
 const description =
+	(typeof p.text === "string" && p.text.trim() ? p.text : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";

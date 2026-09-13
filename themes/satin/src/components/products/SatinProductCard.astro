@@ -5,10 +5,24 @@ import SatinPicture from "../img/SatinPicture.astro";
 interface Props {
 	product: Product;
 	priority?: boolean;
+	/**
+	 * «Быстрое добавление» секции: 'cart' («Количество») ставит перед кнопкой
+	 * счётчик − N +, остальные режимы оставляют кнопку карточки как есть.
+	 */
+	quickAdd?: "none" | "standard" | "cart";
 }
 
-const { product, priority = false } = Astro.props;
+const { product, priority = false, quickAdd } = Astro.props;
 const href = `/products/${product.id}`;
+const showStepper = quickAdd === "cart";
+// Геометрия счётчика = кнопка карточки satin (h-11, без скругления, бордер
+// вместо заливки), чтобы он читался как её продолжение, а не чужой элемент.
+const qaStepperCls =
+	"flex h-11 w-full shrink-0 items-center justify-between border border-solid border-[rgb(var(--color-border,229_229_229))] bg-[rgb(var(--color-bg,255_255_255))]";
+const qaStepBtnCls =
+	"flex h-full w-11 shrink-0 items-center justify-center font-manrope text-[18px] leading-none text-[rgb(var(--color-text,0_0_0))]";
+const qaQtyCls =
+	"min-w-[28px] flex-1 text-center font-manrope text-[14px] leading-none text-[rgb(var(--color-text,0_0_0))]";
 ---
 
 <article
@@ -82,9 +96,17 @@ const href = `/products/${product.id}`;
 			)}
 		</div>
 	</div>
+	{showStepper && (
+		<div class={qaStepperCls} data-qa-stepper>
+			<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
+			<span data-qa-qty class={qaQtyCls}>1</span>
+			<button type="button" data-qa-inc class={qaStepBtnCls} aria-label="Увеличить">+</button>
+		</div>
+	)}
 	<button
 		type="button"
 		data-add-to-cart
+		data-quantity="1"
 		data-product-id={product.id}
 		data-name={product.name}
 		data-price={product.price}

@@ -278,7 +278,13 @@ const quantityVisible = quantityEnabledRaw !== false && quantityEnabledRaw !== "
 const addBtnTextRaw = p.buttons?.addToCart?.text;
 const addBtnText = addBtnTextRaw === undefined ? "Добавить в корзину" : addBtnTextRaw;
 const showAddToCart = String(addBtnText).trim() !== "";
-const buyBtnText = "Купить сейчас";
+// Подпись «Динамической кнопки» редактируется в подпанели «Кнопки»
+// (buttons.buyNow.text, канон theme-base Product.astro). Здесь лейбл был вбит
+// строкой — жалоба тестировщика 13.09: «КУПИТЬ В 1 КЛИК» сохранялся, а на
+// витрине оставалось «Купить сейчас». Пусто = дефолтный лейбл; видимость —
+// отдельный тоггл dynamicButton.
+const buyBtnTextRaw = p.buttons?.buyNow?.text;
+const buyBtnText = String(buyBtnTextRaw ?? "").trim() || "Купить сейчас";
 const dynRaw = p.dynamicButton && typeof p.dynamicButton === "object" ? p.dynamicButton.enabled : p.dynamicButton;
 const showBuyNow = dynRaw !== "false" && dynRaw !== false;
 

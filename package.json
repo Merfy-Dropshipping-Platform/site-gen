@@ -60,7 +60,8 @@
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",
     "conformance:satin:refresh": "pnpm build:blocks && pnpm build:theme-sections satin && pnpm exec tsx scripts/run-theme-build.ts satin && pnpm conformance:satin:refresh-inventory && pnpm conformance:satin",
     "test:hidden-list-items": "jest --runInBand src/themes/__tests__/hidden-list-items.spec.ts",
-    "test:media-order": "jest --runInBand src/themes/__tests__/product-media-order.spec.ts"
+    "test:media-order": "jest --runInBand src/themes/__tests__/product-media-order.spec.ts",
+    "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

@@ -203,13 +203,10 @@ const TABLE: readonly Row[] = [
     observedCode: 'demo-fallback',
     ref: 'themes/satin/src/pages/blog/index.astro#/data-source',
   },
-  {
-    id: 'satin.flow.cart.drawer-cart-section-source',
-    status: 'GAP',
-    expectedCode: 'resolver-reads-cart-section',
-    observedCode: 'resolver-reads-legacy-cartbody',
-    ref: 'themes/satin/src/scripts/gsap/cart-drawer.ts#/source',
-  },
+  // satin.flow.cart.drawer-cart-section-source ЗАКРЫТ: страница корзины снова
+  // разворачивается в CartBody+CartSummary (баг-репорт 12), то есть цель
+  // миграции совпала с тем, что читает резолвер схемы дровера. Строка убрана из
+  // таблицы вместе со снятием записи из базовой линии (--shrink-baseline).
   {
     id: 'satin.flow.cart.safe-dom',
     status: 'GAP',

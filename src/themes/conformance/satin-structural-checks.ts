@@ -648,8 +648,10 @@ function checkCartAndAccount(
 ): void {
   const s = facts.source;
 
-  // drawer-cart-section-source: resolver inspects legacy CartBody/CartSummary,
-  // not the migrated CartSection.
+  // drawer-cart-section-source: резолвер схемы дровера обязан читать те же типы
+  // блоков, в которые миграция разворачивает страницу корзины. Разъезд =
+  // дровер молча без схемы мерчанта (так и было, пока корзина схлопывалась в
+  // CartSection, а резолвер искал CartBody/CartSummary).
   if (
     s.cartResolverInspectsLegacyTypes.length > 0 &&
     !s.cartResolverInspectsLegacyTypes.includes(s.cartMigratedTarget)

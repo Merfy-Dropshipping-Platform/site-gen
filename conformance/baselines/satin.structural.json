@@ -578,11 +578,6 @@
       "tier": "structural"
     },
     {
-      "fingerprint": "sha256:6899261c71400d6533aba4cb1e0606d20b386303bcfac9edc15b4317647935a5",
-      "id": "satin.flow.cart.drawer-cart-section-source",
-      "tier": "structural"
-    },
-    {
       "fingerprint": "sha256:1d3be4a6e69c41589f2b185094b5abb6e6ed6b2887fad0a57f89bc498bdb7b96",
       "id": "satin.flow.cart.drawer-cart-section-source.requirement-missing",
       "tier": "structural"
@@ -1333,7 +1328,7 @@
       "tier": "structural"
     }
   ],
-  "parentBaselineDigest": "sha256:e0ba11091ff58ba91abb1e71da3cfaa2a07bcf3ed9d9058ccdbef63e4fb5cf5a",
+  "parentBaselineDigest": "sha256:a1e3e2a93cc74bfb605c2a8b47e69a907a210992ba743f6121fdbd09ce953704",
   "requirements": [
     {
       "fingerprint": "sha256:4f7dcef2bcd12c77f6a43da3cfa64e25e5fbe768bb947abf8427e0a722a9156f",

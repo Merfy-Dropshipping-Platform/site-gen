@@ -462,10 +462,6 @@
       "id": "satin.flow.cart.disclaimer-coupling.status-open"
     },
     {
-      "fingerprint": "sha256:6899261c71400d6533aba4cb1e0606d20b386303bcfac9edc15b4317647935a5",
-      "id": "satin.flow.cart.drawer-cart-section-source"
-    },
-    {
       "fingerprint": "sha256:1d3be4a6e69c41589f2b185094b5abb6e6ed6b2887fad0a57f89bc498bdb7b96",
       "id": "satin.flow.cart.drawer-cart-section-source.requirement-missing"
     },
@@ -2828,28 +2824,6 @@
       ],
       "status": "GAP",
       "theme": "satin"
-    },
-    {
-      "canonicalFacts": {
-        "inspects": [
-          "CartBody",
-          "CartSummary"
-        ],
-        "migratedTarget": "CartSection"
-      },
-      "detail": "the cart-drawer scheme resolver inspects legacy CartBody/CartSummary, not the migrated CartSection",
-      "expectedCode": "resolver-reads-cart-section",
-      "id": "satin.flow.cart.drawer-cart-section-source",
-      "observedCode": "resolver-reads-legacy-cartbody",
-      "sources": [
-        {
-          "kind": "code",
-          "ref": "themes/satin/src/scripts/gsap/cart-drawer.ts#/source"
-        }
-      ],
-      "status": "GAP",
-      "theme": "satin",
-      "tier": "structural"
     },
     {
       "canonicalFacts": {

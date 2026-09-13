@@ -7,24 +7,51 @@
  *  - `normal-title` (flux) — title kept as-authored (no transform).
  *
  * Brand line is shown when present (non-empty).
+ *
+ * «Глаз» конструктора: бренд и название — РАЗНЫЕ именованные параметры секции
+ * «Товар» (`text` и `title` в NAMED_SUBSECTIONS). Поэтому у каждого свой узел с
+ * `data-puck-subsection-field` (100 / 101 — те же индексы, что у порта flux) и
+ * свой флаг скрытия. Обёртка `[data-product-info]` сохранена: по ней
+ * инлайн-скрипт Product.astro находит `h1` при гидрации.
  */
 interface Props {
   brand?: string | null;
   title: string;
   variant?: 'uppercase-title' | 'normal-title';
+  /** id секции — для data-puck-subsection-parent (подсветка выбора в превью). */
+  blockId?: string;
+  hideBrand?: boolean;
+  hideTitle?: boolean;
 }
 
-const { brand, title, variant = 'uppercase-title' } = Astro.props as Props;
+const {
+  brand,
+  title,
+  variant = 'uppercase-title',
+  blockId,
+  hideBrand = false,
+  hideTitle = false,
+} = Astro.props as Props;
 const isUpper = variant === 'uppercase-title';
 ---
 <div class="flex flex-col gap-2 w-full" data-product-info>
-  {brand && (
-    <span class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-muted))]">{brand}</span>
+  {brand && !hideBrand && (
+    <span
+      class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-muted))]"
+      data-puck-subsection-parent={blockId}
+      data-puck-subsection-index="100"
+      data-puck-subsection-field="text"
+    >{brand}</span>
   )}
-  <h1
-    class:list={[
-      '[font-family:var(--font-heading)] text-[length:var(--product-title-size,24px)] leading-tight text-[rgb(var(--color-heading))] m-0',
-      isUpper ? 'uppercase tracking-wide' : 'normal-case',
-    ]}
-  >{title}</h1>
+  {!hideTitle && (
+    <h1
+      class:list={[
+        '[font-family:var(--font-heading)] text-[length:var(--product-title-size,24px)] leading-tight text-[rgb(var(--color-heading))] m-0',
+        isUpper ? 'uppercase tracking-wide' : 'normal-case',
+      ]}
+      data-puck-subsection-parent={blockId}
+      data-puck-subsection-index="101"
+      data-puck-subsection-field="title"
+    >{title}</h1>
+  )}
 </div>

@@ -54,7 +54,8 @@
     "test:hidden-items": "jest --runInBand src/__tests__/preview-block-hidden-items.spec.ts",
     "test:gallery-count": "jest --runInBand src/themes/__tests__/gallery-item-count.spec.ts",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",
-    "conformance:satin:refresh": "pnpm build:blocks && pnpm build:theme-sections satin && pnpm exec tsx scripts/run-theme-build.ts satin && pnpm conformance:satin:refresh-inventory && pnpm conformance:satin"
+    "conformance:satin:refresh": "pnpm build:blocks && pnpm build:theme-sections satin && pnpm exec tsx scripts/run-theme-build.ts satin && pnpm conformance:satin:refresh-inventory && pnpm conformance:satin",
+    "test:hidden-list-items": "jest --runInBand src/themes/__tests__/hidden-list-items.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

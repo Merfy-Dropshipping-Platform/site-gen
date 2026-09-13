@@ -245,6 +245,10 @@ export function adaptLegacyProps(
   for (const [k, v] of Object.entries(props)) {
     out[k] = rewriteValueUrls(v, publicUrl);
   }
+  // «Глаз» у ЭЛЕМЕНТА списка — ОБЩИЙ механизм, а не свойство отдельного блока.
+  // Отсев стоит ДО switch: блочные коэрсеры дальше видят уже очищенный массив,
+  // а Slideshow (единственный `return` из switch) не проскакивает мимо.
+  dropHiddenArrayItems(out);
   switch (blockType) {
     case 'Hero':
       coerceHeroProps(out, publicUrl);
@@ -292,6 +296,39 @@ export function adaptLegacyProps(
       break;
   }
   return out;
+}
+
+/**
+ * Отбросить элементы списка, скрытые «глазом» в outline конструктора.
+ *
+ * Конструктор помечает элемент массива `hidden: true` (CustomOutline
+ * `toggleCollectionItemVisibility` → `updateArrayField`): имя array-поля он
+ * берёт из puckConfig блока (`findArrayField`), поэтому механизм один и тот же
+ * для ЛЮБОГО блока со списком — slides, columns, rows, sections, items,
+ * collections и всех будущих.
+ *
+ * До 2026-09-13 отсев был написан руками и только у двух блоков
+ * (`coerceCollectionsProps`, `coerceGalleryProps`). У «Мультирядов»,
+ * «Мультиколонн», «Сворачиваемого раздела» и «Слайд-шоу» его не было вовсе:
+ * мерчант прятал ряд/колонну/слайд, строка в сайдбаре гасла — а на витрине и в
+ * превью элемент оставался. Пер-блочный список никогда не догонит реестр
+ * конструктора (там блок добавляется одной строкой), поэтому отсев здесь —
+ * общий, по форме данных, а не по перечню блоков.
+ *
+ * Правило узкое намеренно: только МАССИВ, только элементы-объекты, только
+ * строгое `hidden === true`. Легаси-ревизии без поля (undefined) и чужие
+ * структуры (padding, image, link) не затрагиваются.
+ */
+function dropHiddenArrayItems(out: Record<string, unknown>): void {
+  for (const [k, v] of Object.entries(out)) {
+    if (!Array.isArray(v)) continue;
+    const kept = v.filter(
+      (item) =>
+        !isPlainObject(item) ||
+        (item as Record<string, unknown>).hidden !== true,
+    );
+    if (kept.length !== v.length) out[k] = kept;
+  }
 }
 
 /**
@@ -581,18 +618,8 @@ function coerceGalleryProps(out: Record<string, unknown>): void {
 
   coerceGenericLegacyProps(out);
 
-  // Скрытый «глазом» элемент галереи не попадает ни в превью, ни на витрину —
-  // зеркало item-уровневого hidden у «Списка коллекций» (coerceCollectionsProps).
-  // Без этого «глаз» на параметре не делал НИЧЕГО: плитка продолжала рисоваться,
-  // и мерчант, спрятавший единственный элемент, видел не секцию со своими
-  // текстами, а секцию с плиткой-заглушкой.
-  if (Array.isArray(out.items)) {
-    out.items = out.items.filter(
-      (item) =>
-        !isPlainObject(item) ||
-        (item as Record<string, unknown>).hidden !== true,
-    );
-  }
+  // Скрытые «глазом» плитки уже отсеяны общим dropHiddenArrayItems (вызов в
+  // adaptLegacyProps до switch) — здесь ничего повторять не надо.
 
   if (!isHeadingSize(out.headingSize) && isHeadingSize(nestedHeadingSize)) {
     out.headingSize = nestedHeadingSize;
@@ -738,7 +765,8 @@ function coerceCollectionsProps(
       .map((item, i) => {
         if (!isPlainObject(item)) return null;
         const raw = item as Record<string, unknown>;
-        if (raw.hidden === true) return null;
+        // hidden === true сюда уже не доходит: общий dropHiddenArrayItems
+        // отсеивает скрытые элементы ЛЮБОГО списка до блочных коэрсеров.
         const heading = String(raw.heading ?? raw.name ?? '');
         const imageSrc = raw.image
           ? rewriteAssetUrl(String(raw.image), publicUrl)

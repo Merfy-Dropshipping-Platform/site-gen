@@ -113,11 +113,37 @@ const schemeClass =
     ? `color-scheme-${colorScheme.replace('scheme-', '')}`
     : '';
 
+/**
+ * «Глаз» у именованного параметра секции: конструктор кладёт имена скрытых
+ * полей в `props.hiddenFields` (CustomOutline `toggleNamedFieldVisibility`),
+ * а не рендерить узел обязан порт. Значение при этом СОХРАНЯЕТСЯ — поэтому
+ * фильтровать надо разметку, а не данные.
+ *
+ * Этот блок общий: его рендерят rose, bloom, satin и vanilla (в их
+ * `sections.map.json` «Товар» не переопределён). До 2026-09-13 поддержки здесь
+ * не было вовсе — «глаз» работал только во flux, у которого свой порт
+ * `FeaturedProduct.astro`. Набор имён — реестр `NAMED_SUBSECTIONS.Product`
+ * конструктора: text | title | price | variants | quantity | buttons |
+ * description | share.
+ */
+const hiddenFields: string[] = Array.isArray(
+  (Astro.props as { hiddenFields?: unknown }).hiddenFields,
+)
+  ? ((Astro.props as { hiddenFields: unknown[] }).hiddenFields.filter(
+      (x): x is string => typeof x === 'string',
+    ) as string[])
+  : [];
+const isFieldHidden = (f: string): boolean => hiddenFields.includes(f);
+
 // — Authored prop fallbacks. —
 const apiBase = 'https://gateway.merfy.ru/api';
 const photoOnLeft = photoPosition !== 'right';
-const priceVisible = priceProp?.show !== 'false' && priceProp?.show !== false;
-const quantityVisible = quantity?.enabled !== 'false' && quantity?.enabled !== false;
+const priceVisible =
+  priceProp?.show !== 'false' && priceProp?.show !== false && !isFieldHidden('price');
+const quantityVisible =
+  quantity?.enabled !== 'false' &&
+  quantity?.enabled !== false &&
+  !isFieldHidden('quantity');
 const textContent = text?.content ?? badge?.text ?? '';
 // Figma 1236-42145 модель кнопок:
 //  • «Основная кнопка» (buttons.addToCart.text) — пусто = скрыть «Добавить в корзину».
@@ -265,15 +291,17 @@ const cartImage = view.gallery.hero?.src ?? '';
 
       {/* Right: info + variants + actions + description + share. */}
       <div class="flex flex-col gap-10 flex-1 min-w-0 w-full">
-        <div
-          class="flex flex-col gap-2 w-full"
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index="100"
-          data-puck-subsection-field="info"
-        >
+        <div class="flex flex-col gap-2 w-full">
+          {/* text (бренд) и title — РАЗНЫЕ строки реестра конструктора
+              (NAMED_SUBSECTIONS.Product), значит и «глаз» у них раздельный.
+              Раньше оба жили под одним узлом field="info" (индекс 100) — из-за
+              этого у «Названия» (индекс 101) вообще не было своего узла. */}
           <ProductInfo
+            blockId={id}
             brand={brandText}
+            hideBrand={isFieldHidden('text')}
             title={view.name || 'Товар'}
+            hideTitle={isFieldHidden('title')}
             variant="uppercase-title"
           />
           {priceVisible && view.price.formatted && (
@@ -293,7 +321,7 @@ const cartImage = view.gallery.hero?.src ?? '';
           )}
         </div>
 
-        {view.hasVariants && view.variantGroups.length > 0 && (
+        {view.hasVariants && view.variantGroups.length > 0 && !isFieldHidden('variants') && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="103"
@@ -317,27 +345,29 @@ const cartImage = view.gallery.hero?.src ?? '';
           </div>
         )}
 
-        <div
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index="105"
-          data-puck-subsection-field="buttons"
-        >
-          <ProductActions
-            addToCartLabel={addBtnText}
-            buyNowLabel={buyBtnText}
-            showAddToCart={showAddToCart}
-            showBuyNow={showBuyNow}
-            size={visual.gallery.variant === 'inline-small' ? 'tall' : 'compact'}
-            productId={cartProductId}
-            productName={view.name || ''}
-            price={cartUnitPrice}
-            oldPrice={cartOldPrice}
-            image={cartImage}
-            variantCombinationId={defaultVariantId}
-          />
-        </div>
+        {!isFieldHidden('buttons') && (
+          <div
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="105"
+            data-puck-subsection-field="buttons"
+          >
+            <ProductActions
+              addToCartLabel={addBtnText}
+              buyNowLabel={buyBtnText}
+              showAddToCart={showAddToCart}
+              showBuyNow={showBuyNow}
+              size={visual.gallery.variant === 'inline-small' ? 'tall' : 'compact'}
+              productId={cartProductId}
+              productName={view.name || ''}
+              price={cartUnitPrice}
+              oldPrice={cartOldPrice}
+              image={cartImage}
+              variantCombinationId={defaultVariantId}
+            />
+          </div>
+        )}
 
-        {visual.showDescription && (view.description || '').trim() && (
+        {visual.showDescription && (view.description || '').trim() && !isFieldHidden('description') && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="106"
@@ -347,13 +377,15 @@ const cartImage = view.gallery.hero?.src ?? '';
           </div>
         )}
 
-        <div
-          data-puck-subsection-parent={id}
-          data-puck-subsection-index="107"
-          data-puck-subsection-field="share"
-        >
-          <ProductShare label={shareText} />
-        </div>
+        {!isFieldHidden('share') && (
+          <div
+            data-puck-subsection-parent={id}
+            data-puck-subsection-index="107"
+            data-puck-subsection-field="share"
+          >
+            <ProductShare label={shareText} />
+          </div>
+        )}
       </div>
     </div>
   </div>

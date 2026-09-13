@@ -59,10 +59,28 @@ type FieldSpec = {
    * причина видна в названии теста, а не молчит.
    */
   unprobeable?: string;
+  /**
+   * Узел появляется только при РЕАЛЬНОМ товаре (цена, варианты, описание из
+   * карточки), а изолированный рендер всегда отдаёт placeholder. Отличается от
+   * `unprobeable` тем, что в портах, где узел всё-таки рисуется, проверка
+   * остаётся боевой: пропускается не пара, а только требование «узел обязан
+   * быть до скрытия».
+   */
+  needsRealProduct?: true;
 };
 type BlockSpec = {
   /** theme-base — блок общий и живёт вне sections.map.json (см. рендерер). */
   pkg?: "theme-base";
+  /**
+   * Блока нет в sections.map.json этой темы — рендерить ОБЩИЙ theme-base.
+   *
+   * Ровно так работает витрина: порт есть только у части тем, остальные
+   * собираются с общим блоком. Без этого поля тест молчал про «Товар» в
+   * четырёх темах из пяти — блок в манифесте только у flux, и пары просто не
+   * появлялись, тогда как у rose/bloom/satin/vanilla «глаз» не работал вовсе
+   * (баг-репорт тестировщика 2026-09-13).
+   */
+  pkgFallback?: "theme-base";
   /**
    * Имя блока для рендера, если ключ реестра — алиас (один блок под двумя
    * наборами пропсов, например заполненный Hero и пустой).
@@ -188,31 +206,44 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
   },
   /**
    * Значения Product приходят из товара, а на изолированном рендере товара нет
-   * (placeholder), поэтому маячок — сам узел параметра. Блок есть только у flux
-   * (sections.map.json: Product → FeaturedProduct.astro), в остальных темах
-   * рендерер вернёт missing и пары просто не появятся.
+   * (placeholder), поэтому маячок — сам узел параметра.
+   *
+   * Собственный порт есть ТОЛЬКО у flux (sections.map.json: Product →
+   * FeaturedProduct.astro). Остальные четыре темы собираются с ОБЩИМ блоком
+   * packages/theme-base/blocks/Product — поэтому `pkgFallback`. Без него тест
+   * смотрел на один flux и держал зелёный свет, пока «глаз» у «Товара» не
+   * работал в rose, bloom, satin и vanilla (баг-репорт тестировщика
+   * 2026-09-13): поддержки hiddenFields в общем блоке не было вовсе.
+   *
+   * text/description заполняем НЕ ради значения, а ради появления узла: бренд
+   * рисуется только при непустом `text.content`, описание — при непустом
+   * `description.content`.
    */
   Product: {
-    props: { ...base },
+    pkgFallback: "theme-base",
+    props: {
+      ...base,
+      text: { content: "MK_PROD_BRAND" },
+      description: { content: "MK_PROD_DESC" },
+      share: { text: "MK_PROD_SHARE" },
+    },
     fields: [
-      ...[
-        "text",
-        "title",
-        "price",
-        "variants",
-        "quantity",
-        "buttons",
-        "share",
-      ].map((f) => ({ field: f, probe: marker(f) })),
+      ...["text", "title", "quantity", "buttons", "share"].map((f) => ({
+        field: f,
+        probe: marker(f),
+      })),
+      // Цена и варианты берутся из карточки товара: на placeholder
+      // view.price.formatted пусто, view.hasVariants=false — узла нет ни при
+      // каком наборе props. Где порт его всё-таки рисует (flux), проверка
+      // остаётся боевой.
+      { field: "price", probe: marker("price"), needsRealProduct: true },
+      { field: "variants", probe: marker("variants"), needsRealProduct: true },
+      // theme-base рисует описание из props.description, flux — только из
+      // realProduct.description. Поэтому «узел обязан быть» не требуем.
       {
         field: "description",
         probe: marker("description"),
-        // hasDescription требует НАСТОЯЩЕГО товара (realProduct.description), а
-        // изолированный рендер всегда placeholder — узла не будет ни с каким
-        // набором props. В порту поле закрыто в обеих ветках разметки, но
-        // подтвердить это рендером нельзя; проверяется вручную при правке.
-        unprobeable:
-          "узел требует реального товара, на placeholder не рендерится",
+        needsRealProduct: true,
       },
     ],
   },
@@ -243,6 +274,13 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   // отдельный элемент через item.hidden, и отбрасывает его adaptLegacyProps в
   // src/themes/page-blocks.ts, а не порт темы. Именованных параметров нет.
   //
+  // ⚠️ «Именованных параметров нет» НЕ значит «проверять нечего»: у этих блоков
+  // свой, второй механизм «глаза», и именно он был сломан у «Мультирядов»,
+  // «Мультиколонн», «Сворачиваемого раздела» и «Слайд-шоу» (баг-репорт
+  // тестировщика 2026-09-13). Их сторожит ОТДЕЛЬНЫЙ гард
+  // `hidden-list-items.spec.ts` — запись здесь лишь говорит, что у блока нет
+  // ИМЕНОВАННЫХ параметров, и отправляет к соседнему тесту.
+  //
   // До 2026-09-13 тест дёргал у шести блоков ниже hiddenFields:['heading'] и
   // ждал, что заголовок пропадёт. Проверка держалась сама на себе: в реестре
   // конструктора этих блоков нет (NAMED_SUBSECTIONS — семь блоков), «глаза» у
@@ -251,20 +289,23 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   // ложная уверенность. Появится «глаз» у заголовка списка — запись
   // переезжает в NAMED_FIELDS, и отсев по конфигу темы подхватит её сам.
   Collections:
-    "список: «глаз» у элемента (item.hidden), не у именованного параметра",
+    "список: «глаз» у элемента (item.hidden) — см. hidden-list-items.spec.ts",
   Gallery:
-    "список: «глаз» у элемента (item.hidden), не у именованного параметра",
+    "список: «глаз» у элемента (item.hidden) — см. hidden-list-items.spec.ts",
   MultiRows:
-    "список: «глаз» у элемента (item.hidden), не у именованного параметра",
+    "список: «глаз» у элемента (item.hidden) — см. hidden-list-items.spec.ts",
   MultiColumns:
-    "список: «глаз» у элемента (item.hidden), не у именованного параметра",
+    "список: «глаз» у элемента (item.hidden) — см. hidden-list-items.spec.ts",
   CollapsibleSection:
-    "список: «глаз» у элемента (item.hidden), не у именованного параметра",
+    "список: «глаз» у элемента (item.hidden) — см. hidden-list-items.spec.ts",
   Slideshow:
-    "список слайдов: «глаз» у элемента (item.hidden), не у именованного параметра",
+    "список слайдов: «глаз» у элемента (item.hidden) — см. hidden-list-items.spec.ts",
   // Ниже — блоков просто нет в NAMED_SUBSECTIONS конструктора: в outline у них
   // нет ни одной строки-параметра с «глазом».
-  Header: "нет в NAMED_SUBSECTIONS: параметров с «глазом» не показывает",
+  // Header: именованных параметров нет, но список ссылок меню — есть
+  // (navigationLinks), и «глаз» у пункта меню сторожит hidden-list-items.spec.ts.
+  Header:
+    "нет в NAMED_SUBSECTIONS; список пунктов меню — см. hidden-list-items.spec.ts",
   Footer: "нет в NAMED_SUBSECTIONS: параметров с «глазом» не показывает",
   ContactForm: "нет в NAMED_SUBSECTIONS: параметров с «глазом» не показывает",
   PopularProducts:
@@ -356,7 +397,16 @@ describe.each(THEMES)("скрытие именованного параметр�
   if (built) {
     for (const [block, spec] of Object.entries(NAMED_FIELDS)) {
       const rendered = spec.renderAs ?? block;
-      if (spec.pkg !== "theme-base" && !blocks.includes(rendered)) continue;
+      // Блок проверяется, если он есть в манифесте темы (свой порт), либо это
+      // общий theme-base-блок (pkg), либо тема собирается с общим блоком
+      // вместо собственного порта (pkgFallback).
+      if (
+        spec.pkg !== "theme-base" &&
+        !spec.pkgFallback &&
+        !blocks.includes(rendered)
+      ) {
+        continue;
+      }
       for (const f of spec.fields) pairs.push({ block, spec, f });
     }
   }
@@ -396,14 +446,20 @@ describe.each(THEMES)("скрытие именованного параметр�
   beforeAll(() => {
     if (!built || pairs.length === 0) return;
     // Один процесс на тему: сначала все пары без скрытия, затем те же со скрытием.
+    // Какой модуль рендерить: порт темы (есть в манифесте) или общий блок.
+    const pkgOf = (
+      spec: BlockSpec,
+      rendered: string,
+    ): "theme-base" | undefined =>
+      spec.pkg ?? (blocks.includes(rendered) ? undefined : spec.pkgFallback);
     const shownJobs: Job[] = pairs.map(({ block, spec }) => ({
       block: spec.renderAs ?? block,
-      pkg: spec.pkg,
+      pkg: pkgOf(spec, spec.renderAs ?? block),
       props: { ...spec.props, id: `${spec.renderAs ?? block}-1` },
     }));
     const hiddenJobs: Job[] = pairs.map(({ block, spec, f }) => ({
       block: spec.renderAs ?? block,
-      pkg: spec.pkg,
+      pkg: pkgOf(spec, spec.renderAs ?? block),
       props: {
         ...spec.props,
         id: `${spec.renderAs ?? block}-1`,
@@ -445,6 +501,9 @@ describe.each(THEMES)("скрытие именованного параметр�
       const row = shown[i];
       if (row?.missing) return; // блока нет в этой теме
       expect(row?.error ?? null).toBeNull();
+      // Параметр живёт данными карточки товара — на placeholder узла может не
+      // быть. Там, где порт его рисует, требование остаётся жёстким.
+      if (f.needsRealProduct && !contains(row?.html ?? "", f.probe)) return;
       expect(contains(row?.html ?? "", f.probe)).toBe(true);
     });
 

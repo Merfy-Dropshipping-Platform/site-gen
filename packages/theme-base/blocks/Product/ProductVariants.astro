@@ -15,6 +15,7 @@
  * (JS-остров не перетирает их заливку, см. Product.astro hydration).
  */
 import type { VariantGroupView, VariantOptionView } from '../Product.types';
+import { resolveVariantColor } from './variantColor';
 
 interface Props {
   groups: VariantGroupView[];
@@ -65,32 +66,13 @@ const shapeRadius =
       ? 'rounded-none'
       : 'rounded-[var(--radius-button)]';
 
-// Карта известных имён цветов → hex. Совпадает с PopularProducts COLOR_HEX.
-const COLOR_HEX: Record<string, string> = {
-  'чёрный': '#000', 'черный': '#000', 'black': '#000',
-  'белый': '#fff', 'white': '#fff',
-  'серебро': '#c0c0c0', 'серебряный': '#c0c0c0', 'silver': '#c0c0c0',
-  'серый': '#888', 'gray': '#888', 'grey': '#888',
-  'красный': '#e00', 'red': '#e00',
-  'синий': '#33396d', 'blue': '#33396d',
-  'зелёный': '#3eb489', 'зеленый': '#3eb489', 'green': '#3eb489',
-  'жёлтый': '#f6dc58', 'желтый': '#f6dc58', 'yellow': '#f6dc58',
-  'коричневый': '#8b4513', 'brown': '#8b4513',
-  'оранжевый': '#ff7f0e', 'orange': '#ff7f0e',
-  'розовый': '#ff69b4', 'pink': '#ff69b4',
-  'фиолетовый': '#7b3fa0', 'purple': '#7b3fa0',
-  'бежевый': '#f5f0e1', 'beige': '#f5f0e1',
-  'голубой': '#5bc0de', 'cyan': '#5bc0de',
-};
-
-// Резолв значения опции в CSS-цвет: явный hex/rgb/hsl ИЛИ известное имя.
+// Имя цвета → заливка свотча. Живёт отдельным модулем (variantColor.ts), потому
+// что чинит КЛАСС имён: составные/дефисные («светло-голубой»), регистр, ё/е,
+// лишние пробелы, падежи. Раньше здесь была точная карта имя→hex, и любое
+// составное имя пролетало мимо → опция рисовалась текст-кнопкой, к которой
+// «Круг/Квадрат» неприменимы (баг тестировщика 2026-09-13, п.6).
 function resolveColor(value: string): string | null {
-  const raw = (value ?? '').trim();
-  if (!raw) return null;
-  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw)) return raw;
-  if (/^(rgb|rgba|hsl|hsla)\(/i.test(raw)) return raw;
-  const named = COLOR_HEX[raw.toLowerCase()];
-  return named ?? null;
+  return resolveVariantColor(value);
 }
 
 // Текст-чип по mode: «Нет»(button) = текст-КНОПКА по ширине контента (h-12 px-4

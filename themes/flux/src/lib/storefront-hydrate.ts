@@ -486,11 +486,145 @@ const COLOR_NAME_HEX: Record<string, string> = {
 };
 
 /**
- * Преобразует значение/подсказку цвета в `#RRGGBB`. Приоритет: hex-подсказка
- * (swatchHex) → hex прямо в значении → имя цвета по таблице. Не распознали —
- * null (свотч пропускается, как требует задача «не hex → пропусти/маппинг»).
+ * Модификаторы светлоты составного имени: основа слова → сдвиг (+ к белому,
+ * − к чёрному). «Ярко»/«матовый» узнаём, но тон не двигаем.
  */
-function colorToHex(
+const COLOR_MODIFIER_SHIFT: Record<string, number> = {
+  светл: 0.35,
+  бледн: 0.3,
+  нежн: 0.3,
+  пастельн: 0.3,
+  light: 0.35,
+  pale: 0.3,
+  soft: 0.3,
+  темн: -0.35,
+  глубок: -0.3,
+  dark: -0.35,
+  deep: -0.3,
+  ярк: 0,
+  насыщенн: 0,
+  матов: 0,
+  глянцев: 0,
+  металлик: 0,
+  bright: 0,
+  neon: 0,
+  неон: 0,
+};
+
+/** Окончания прилагательных — снимаются при сравнении основ. Длинные раньше. */
+const ADJECTIVE_ENDINGS = [
+  "ыми", "ими", "ого", "его", "ому", "ему",
+  "ый", "ий", "ой", "ая", "яя", "ое", "ее", "ые", "ие",
+  "ым", "им", "ых", "их", "ую", "юю",
+  "о", "е",
+];
+
+/** Регистр, ё/е, дефисы и тире, повторные пробелы — к одному виду. */
+export function normalizeColorName(raw?: string | null): string {
+  return String(raw ?? "")
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[-_/\\‐-―−]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Основа слова: снимаем окончание прилагательного, если остаётся ≥3 букв. */
+function colorStem(word: string): string {
+  if (word.length < 4) return word;
+  for (const end of ADJECTIVE_ENDINGS) {
+    if (word.length - end.length >= 3 && word.endsWith(end)) {
+      return word.slice(0, word.length - end.length);
+    }
+  }
+  return word;
+}
+
+/**
+ * Таблицы поиска строятся ЛЕНИВО и только здесь: этот модуль инлайнится в
+ * hoisted-скрипт КАЖДОЙ секции flux, и константы уровня модуля (IIFE) esbuild
+ * снести не может — они уезжали в бандлы Gallery/Collections/PopularProducts,
+ * которым цвета не нужны (ловится снимками секций). Ленивая сборка внутри
+ * функции тришейкается вместе с самой функцией.
+ */
+let colorTablesCache: {
+  exact: Record<string, string>;
+  stems: Map<string, string>;
+} | null = null;
+
+function colorTables(): { exact: Record<string, string>; stems: Map<string, string> } {
+  if (colorTablesCache) return colorTablesCache;
+  const exact: Record<string, string> = {};
+  const stems = new Map<string, string>();
+  for (const [name, hex] of Object.entries(COLOR_NAME_HEX)) {
+    const normalized = normalizeColorName(name);
+    exact[normalized] = hex;
+    const s = colorStem(normalized);
+    if (!stems.has(s)) stems.set(s, hex);
+  }
+  colorTablesCache = { exact, stems };
+  return colorTablesCache;
+}
+
+/** Слово → цвет: точное имя, затем основа, затем общий префикс основ (≥4). */
+function lookupColorWord(word: string): string | null {
+  if (!word) return null;
+  const { exact, stems } = colorTables();
+  const direct = exact[word];
+  if (direct) return direct;
+  const s = colorStem(word);
+  const byStem = stems.get(s);
+  if (byStem) return byStem;
+  if (s.length >= 4) {
+    for (const [key, hex] of stems) {
+      if (key.length >= 4 && (key.startsWith(s) || s.startsWith(key))) return hex;
+    }
+  }
+  return null;
+}
+
+function lookupColorModifier(word: string): number | undefined {
+  const s = colorStem(word);
+  if (Object.prototype.hasOwnProperty.call(COLOR_MODIFIER_SHIFT, s)) {
+    return COLOR_MODIFIER_SHIFT[s];
+  }
+  return Object.prototype.hasOwnProperty.call(COLOR_MODIFIER_SHIFT, word)
+    ? COLOR_MODIFIER_SHIFT[word]
+    : undefined;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h.slice(0, 6);
+  const n = parseInt(full, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Смешение двух цветов: t=0 — первый, t=1 — второй. */
+function mixHex(a: string, b: string, t: number): string {
+  const x = hexToRgb(a);
+  const y = hexToRgb(b);
+  const c = x.map((v, i) => Math.round(v + (y[i] - v) * t));
+  return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Преобразует значение/подсказку цвета в `#RRGGBB`. Приоритет: hex-подсказка
+ * (swatchHex) → hex прямо в значении → имя цвета.
+ *
+ * Имя разбирается как КЛАСС, а не точным совпадением со словарём (баг
+ * тестировщика 2026-09-13, п.6: «Светло-голубой» единственный из девяти
+ * образцов оставался текст-кнопкой, потому что в словаре его нет): регистр,
+ * ё/е, дефис/тире, лишние пробелы нормализуются; у составного имени базовый
+ * цвет ищется с КОНЦА («светло-голубой» = голубой), слова перед ним — либо
+ * модификатор светлоты, либо второй цвет («сине-зелёный» = смесь); основа
+ * слова сравнивается без окончания прилагательного («голубая» → «голубой»).
+ * Не распознали — null (свотч пропускается, размеры остаются текстом).
+ *
+ * Тот же алгоритм во втором порте секции —
+ * packages/theme-base/blocks/Product/variantColor.ts (палитра своя).
+ */
+export function colorToHex(
   value?: string | null,
   hint?: string | null,
 ): string | null {
@@ -498,7 +632,38 @@ function colorToHex(
   if (HEX_RE.test(h)) return h;
   const v = (value ?? "").trim();
   if (HEX_RE.test(v)) return v;
-  return COLOR_NAME_HEX[v.toLowerCase()] ?? null;
+
+  const normalized = normalizeColorName(v);
+  if (!normalized) return null;
+  const exact = colorTables().exact[normalized];
+  if (exact) return exact;
+
+  const words = normalized.split(" ");
+  let baseIdx = -1;
+  let color: string | null = null;
+  for (let i = words.length - 1; i >= 0; i--) {
+    const hit = lookupColorWord(words[i]);
+    if (hit) {
+      color = hit;
+      baseIdx = i;
+      break;
+    }
+  }
+  if (!color) return null;
+
+  let shift = 0;
+  for (let i = 0; i < baseIdx; i++) {
+    const mod = lookupColorModifier(words[i]);
+    if (mod !== undefined) {
+      shift += mod;
+      continue;
+    }
+    const second = lookupColorWord(words[i]);
+    if (second) color = mixHex(color, second, 0.5);
+  }
+  if (shift > 0) color = mixHex(color, "#FFFFFF", Math.min(shift, 0.75));
+  if (shift < 0) color = mixHex(color, "#000000", Math.min(-shift, 0.75));
+  return color;
 }
 
 /**

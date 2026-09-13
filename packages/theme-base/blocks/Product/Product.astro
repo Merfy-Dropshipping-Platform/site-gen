@@ -762,38 +762,98 @@ const cartImage = view.gallery.hero?.src ?? '';
     //                 за курсором по площади фото.
     //   - 'click' — lightbox popup: фото на полный экран + лента thumbs.
     //   - 'none'  — поведение отключено.
+    //
+    // Проводка вынесена в именованную функцию: её сторожит
+    // src/themes/__tests__/product-zoom-wiring.spec.ts. Раньше зум висел на
+    // `heroEl` ([data-product-hero]), а в макете «2 колонки» — он по умолчанию —
+    // героя НЕТ ВОВСЕ: фото разложены плитками сетки. Поэтому настройка доезжала
+    // до разметки, но обработчиков не появлялось ни в одном из трёх режимов
+    // (баг тестировщика 2026-09-13, п.1: onclick=null, курсор default).
     const zoomMode = root.getAttribute('data-zoom-mode') || 'hover';
 
-    if (heroEl && heroImg && zoomMode === 'hover') {
-      heroImg.style.transition = 'transform 0.2s ease, transform-origin 0.05s linear';
-      heroEl.style.cursor = 'zoom-in';
-      heroEl.addEventListener('mouseenter', function () {
-        heroImg.style.transform = 'scale(2)';
-      });
-      heroEl.addEventListener('mousemove', function (e) {
-        const rect = heroEl.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        heroImg.style.transformOrigin = x + '% ' + y + '%';
-      });
-      heroEl.addEventListener('mouseleave', function () {
-        heroImg.style.transform = '';
-        heroImg.style.transformOrigin = '';
-      });
+    /**
+     * Оживляет КАЖДЫЙ кадр галереи по режиму «Увеличения».
+     * Кадр — самостоятельное фото: герой макетов Сложенный/Карусель/
+     * Миниатюрный либо плитка сетки «2 колонки». Миниатюры-переключатели
+     * ([data-product-thumb]) кадрами не являются: их клик меняет фото героя.
+     * Возвращает число оживлённых кадров.
+     */
+    function wireGalleryZoom(galleryRoot, mode, openLightbox) {
+      if (!galleryRoot) return 0;
+      const candidates = galleryRoot.querySelectorAll('[data-product-hero], [data-media-index]');
+      const frames = [];
+      for (let i = 0; i < candidates.length; i++) {
+        if (!candidates[i].hasAttribute('data-product-thumb')) frames.push(candidates[i]);
+      }
+      let wired = 0;
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        const img = frame.querySelector('img');
+        if (!img) continue;
+        const already = frame.getAttribute('data-zoom-wired');
+
+        if (mode !== 'hover' && mode !== 'click') {
+          // «Нет» — поведение выключено. Метку снимаем: по ней замолкают уже
+          // навешенные обработчики (анонимные, снять их нечем), курсор и
+          // масштаб возвращаем к исходным.
+          if (already !== null) {
+            frame.removeAttribute('data-zoom-wired');
+            frame.style.cursor = '';
+            img.style.transform = '';
+            img.style.transformOrigin = '';
+          }
+          continue;
+        }
+
+        // Метка режима переживает hot-replace конструктора и смену значения:
+        // второй раз слушателей не вешаем, обработчики прошлого режима сами
+        // выходят по несовпадению метки.
+        frame.setAttribute('data-zoom-wired', mode);
+        wired++;
+        if (already === mode) continue;
+        frame.style.cursor = 'zoom-in';
+
+        if (mode === 'hover') {
+          img.style.transition = 'transform 0.2s ease, transform-origin 0.05s linear';
+          frame.addEventListener('mouseenter', function () {
+            if (frame.getAttribute('data-zoom-wired') !== 'hover') return;
+            img.style.transform = 'scale(2)';
+          });
+          frame.addEventListener('mousemove', function (e) {
+            if (frame.getAttribute('data-zoom-wired') !== 'hover') return;
+            const rect = frame.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            img.style.transformOrigin = x + '% ' + y + '%';
+          });
+          frame.addEventListener('mouseleave', function () {
+            if (frame.getAttribute('data-zoom-wired') !== 'hover') return;
+            img.style.transform = '';
+            img.style.transformOrigin = '';
+          });
+        } else {
+          frame.addEventListener('click', function () {
+            if (frame.getAttribute('data-zoom-wired') !== 'click') return;
+            openLightbox(
+              frame.getAttribute('data-media-src') ||
+              frame.getAttribute('data-image') ||
+              img.getAttribute('src') ||
+              '',
+            );
+          });
+        }
+      }
+      return wired;
     }
 
-    if (heroEl && heroImg && zoomMode === 'click') {
-      heroEl.style.cursor = 'zoom-in';
-      heroEl.addEventListener('click', function () {
-        openLightbox();
-      });
-    }
+    wireGalleryZoom(galleryEl, zoomMode, function (startSrc) { openLightbox(startSrc); });
 
     // Lightbox: full-screen popup с большим фото + thumb-полосой.
     // Создаётся лениво при первом click (zoomMode='click').
-    function openLightbox() {
+    function openLightbox(startSrc) {
       // Все медиа галереи В ПОРЯДКЕ СЛЕДОВАНИЯ УЗЛОВ по стабильному источнику
-      // (`data-media-src` не мутирует), открываем на том, что сейчас в герое.
+      // (`data-media-src` не мутирует), открываем на КЛИКНУТОМ кадре: в «2
+      // колонках» кликают не по герою, а по конкретной плитке сетки.
       const urls = [];
       (galleryEl.querySelectorAll('[data-media-src]') || []).forEach(function (el) {
         const src = el.getAttribute('data-media-src');
@@ -803,7 +863,8 @@ const cartImage = view.gallery.hero?.src ?? '';
       if (heroSrcNow && urls.indexOf(heroSrcNow) === -1) urls.unshift(heroSrcNow);
       if (urls.length === 0) return;
 
-      let activeIdx = Math.max(0, urls.indexOf(heroSrcNow || ''));
+      const openAt = startSrc || heroSrcNow || '';
+      let activeIdx = Math.max(0, urls.indexOf(openAt));
 
       const overlay = document.createElement('div');
       overlay.setAttribute('data-product-lightbox', '');

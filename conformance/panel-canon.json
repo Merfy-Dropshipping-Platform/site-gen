@@ -1647,7 +1647,7 @@
             "visibility": "panel",
             "options": [
               "primary=Основная",
-              "secondary=Вторичная"
+              "secondary=Дополнительная"
             ]
           },
           "alignment": {
@@ -4786,7 +4786,7 @@
             "visibility": "panel",
             "options": [
               "primary=Основная",
-              "secondary=Вторичная"
+              "secondary=Дополнительная"
             ]
           },
           "alignment": {
@@ -11069,7 +11069,7 @@
             "visibility": "panel",
             "options": [
               "primary=Основная",
-              "secondary=Вторичная"
+              "secondary=Дополнительная"
             ]
           },
           "alignment": {
@@ -14208,7 +14208,7 @@
             "visibility": "panel",
             "options": [
               "primary=Основная",
-              "secondary=Вторичная"
+              "secondary=Дополнительная"
             ]
           },
           "alignment": {

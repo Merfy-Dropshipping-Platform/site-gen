@@ -6,6 +6,15 @@ export const CheckoutHeaderClasses = {
   // Spec 109 — sticky к верху (как основная шапка). Обёртка схемы на checkout
   // должна быть display:contents (Layout header="checkout"), иначе containing-block
   // голодает и sticky не работает.
+  //
+  // ⚠️ НА СТРАНИЦЕ ЧЕКАУТА эти три свойства ПЕРЕКРЫТЫ (2026-09-13, эталон
+  // владельца: шапки над колонками нет). Шапка переехала ВНУТРЬ левой колонки
+  // (CheckoutSplit, слот `header`), и общая split-таблица стилей
+  // (packages/theme-base/blocks/CheckoutLayout/checkout-split.ts) снимает
+  // `sticky`, `z-50` и фон, а палитру берёт у колонки. Классы здесь оставлены
+  // как есть: блок рендерится ещё и в одиночку (снимки секций, превью блока),
+  // и там полоса — по-прежнему верная разметка. Правки поведения на чекауте
+  // делаются в split-таблице, а не тут.
   root: 'sticky top-0 z-50 w-full bg-[rgb(var(--color-bg))]',
   container: 'mx-auto max-w-[var(--container-max-width)] px-4 md:px-8 py-6 flex items-center justify-between',
   // Logo per Figma — Comfortaa display font; theme `--font-heading` остаётся fallback.

@@ -27,6 +27,16 @@
  *   [data-checkout-column="form"|"summary"] — внутренний контент колонки.
  *       Имя сохранено: по нему липнет сводка (баг 17) и его же ищет
  *       `closest()` в инлайн-скрипте высоты (баг 18-Б).
+ *   [data-checkout-slot="header"] внутри колонки формы — ШАПКА ОФОРМЛЕНИЯ.
+ *       Эталон владельца: шапки НАД колонками нет, логотип стоит внутри левой
+ *       колонки, поэтому правая идёт поверхностью от самого верха окна.
+ *       Замер «до» (собранные витрины, Chromium, 1440×900, 2026-09-13): полоса
+ *       шапки 0..134.39 (rose) / 0..132 (vanilla, flux, satin, bloom) над
+ *       ОБЕИМИ колонками — белая полоса над цветной сводкой, её владелец и
+ *       обвёл. Сборка подменяет эту шапку мерчантской по регулярке
+ *       (chrome-assembler.injectChromeIntoHtml), а регулярка ищет `<header
+ *       data-checkout-slot="header">` где угодно в документе — поэтому переезд
+ *       внутрь колонки ей безразличен.
  */
 
 /** Ширины и отступы — Figma 1:19998 (rose 1920: form 446, summary 556). */
@@ -45,6 +55,48 @@ export const CHECKOUT_SPLIT_CSS = `
    data-атрибутам, поэтому и правило здесь, рядом с поверхностью колонки. */
 [data-checkout-pane] [data-checkout-promo-remove] { color: rgb(var(--color-muted, 153 153 153)); background: transparent; }
 [data-checkout-pane] [data-checkout-promo-remove]:hover { color: rgb(var(--color-text, 0 0 0)); }
+/* ── Шапка оформления ВНУТРИ колонки формы ────────────────────────────────
+   Раньше она шла полосой во всю ширину НАД обеими колонками, и над цветной
+   сводкой оставалась белая полоса (замер: 132-134px, все пять тем). Внутри
+   колонки шапка обязана вести себя как её первый блок, а не как полоса:
+     • не липнуть — иначе логотип висит над полями формы (и над липкой сводкой
+       напротив); липкость остаётся ТОЛЬКО у сводки (баги 17/18-Б);
+     • не держать свой контейнер — у шапки это "mx-auto max-w-[…] px-4 md:px-8",
+       из-за него логотип уезжал бы внутрь ещё на 16-32px и не совпадал бы с
+       левым краем формы под ним (просьба владельца: «в тех же отступах»);
+     • размеры логотипа (--size-checkout-brand*) раньше задавала обёртка в
+       Layout темы — теперь они здесь, одной копией на пять тем.
+     • не красить свою поверхность и не брать свою палитру — см. ниже.
+   ПАЛИТРА ШАПКИ = ПАЛИТРА КОЛОНКИ. Пока шапка была отдельной полосой во всю
+   ширину, своя «Цветовая схема» имела смысл. Внутри колонки — нет: замер
+   (rose, 1440×900, колонка формы scheme-4, шапка scheme-2 из сида rose) дал
+   белый прямоугольник 298..692 × 0..134 поверх чёрной колонки — то самое
+   «пятно», от которого ушли в прошлом круге, только этажом ниже. Поэтому фон
+   шапки прозрачный, а цвет логотипа и иконки берётся из переменной, ВЫЧИСЛЕННОЙ
+   НА КОЛОНКЕ (--checkout-pane-heading): значение var() подставляется в момент
+   объявления, то есть на колонке, и собственный класс схемы шапки на него уже
+   не влияет. Так логотип читается на любой поверхности.
+   ПОСЛЕДСТВИЕ, ЧЕСТНО: контрол «Цветовая схема» у секции «Шапка оформления»
+   на странице чекаута больше ничего не меняет. Из панели он НЕ убран (состав
+   параметров — канон), но его выбор перекрывается палитрой колонки. */
+[data-checkout-pane] { --checkout-pane-heading: var(--color-heading, 0 0 0); }
+[data-checkout-pane] [data-checkout-slot="header"] {
+  position: static; width: 100%; z-index: auto; background: transparent;
+  color: rgb(var(--checkout-pane-heading));
+  --size-checkout-brand: 24px; --size-checkout-brand-image: 32px;
+}
+[data-checkout-pane] [data-checkout-slot="header"] a,
+[data-checkout-pane] [data-checkout-slot="header"] svg {
+  color: rgb(var(--checkout-pane-heading));
+}
+[data-checkout-pane] [data-checkout-slot="header"] > div {
+  margin-left: 0; margin-right: 0; max-width: none; padding-left: 0; padding-right: 0;
+}
+/* Верхний отступ колонки задавала сама колонка (64px десктоп / 32px мобилка) —
+   он существовал, чтобы форма не липла к полосе шапки. Шапка теперь ВНУТРИ, и
+   верхний отступ даёт она сама (её параметр «Отступы»), иначе они сложились бы
+   и логотип уехал бы на 112px от верха. */
+.mfy-checkout-pane__inner--brand { padding-top: 0; }
 @media (min-width: 1024px) {
   .mfy-checkout-split { flex-direction: row; align-items: stretch; }
   .mfy-checkout-pane { width: 50%; display: flex; }
@@ -52,6 +104,12 @@ export const CHECKOUT_SPLIT_CSS = `
   [data-checkout-pane="summary"] { justify-content: flex-start; }
   [data-checkout-pane="form"] .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
   [data-checkout-pane="summary"] .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
+  /* Тот же ноль, что и на мобилке, но повторён ВНУТРИ медиазапроса: строка выше
+     задаёт padding СОКРАЩЁННО и с большей специфичностью (0,2,0 против 0,1,0),
+     поэтому базовое правило --brand она перекрывала. Замер после первой правки:
+     на 1440 логотип стоял на 112px от верха (64 колонки + 24 + 24 шапки) вместо
+     48 — колонка добавляла свой отступ поверх отступа шапки. */
+  [data-checkout-pane="form"] .mfy-checkout-pane__inner--brand { padding-top: 0; }
   /* Баг-репорт 17: сводка едет вместе с формой. Стояла в самом верху растянутой
      колонки — первый оборот колеса уводил её за кромку, и правая половина экрана
      превращалась в пустое неподвижное полотно. \`align-self\` обязателен:
@@ -69,13 +127,22 @@ export const CHECKOUT_SPLIT_CSS = `
  * Та же разметка строкой — для превью конструктора, где блоки уже отрендерены
  * в HTML (`preview.service.wrapCheckoutGrid`). Классы схемы сюда не вшиваются:
  * их вешает общая доводка чекаута, одна и для витрины, и для превью.
+ *
+ * `headerHtml` — шапка оформления. Пусто → колонка без шапки (страховка для
+ * старых ревизий без блока «Шапка оформления»): разметка тогда ровно прежняя.
  */
-export function checkoutSplitMarkup(formHtml: string, summaryHtml: string): string {
+export function checkoutSplitMarkup(
+  formHtml: string,
+  summaryHtml: string,
+  headerHtml = '',
+): string {
+  const brand = headerHtml ? ' mfy-checkout-pane__inner--brand' : '';
   return (
     `<style>${CHECKOUT_SPLIT_CSS}</style>` +
     '<div class="mfy-checkout-split">' +
     '<div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-pane="form">' +
-    '<div class="mfy-checkout-pane__inner" data-checkout-column="form" style="min-width:0">' +
+    `<div class="mfy-checkout-pane__inner${brand}" data-checkout-column="form" style="min-width:0">` +
+    headerHtml +
     formHtml +
     '</div></div>' +
     '<div class="mfy-checkout-pane mfy-checkout-pane--summary" data-checkout-pane="summary">' +

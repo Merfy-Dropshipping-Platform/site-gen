@@ -21,7 +21,9 @@
 import Layout from "../layouts/Layout.astro";
 import CheckoutForm from "../../../../packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro";
 import CheckoutSummary from "../../../../packages/theme-base/blocks/CheckoutSummary/CheckoutSummary.astro";
+import { SITE_TITLE } from "../consts";
 import CheckoutSplit from "../../../../packages/theme-base/blocks/CheckoutLayout/CheckoutSplit.astro";
+import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
 
 // Pilot defaults. In production build.service.ts string-patches shopId and
 // injects DADATA_API_KEY; here we hardcode the apiUrl and leave shopId/dadataToken
@@ -41,6 +43,22 @@ const dadataToken = "";
           (замер прода 2026-09-13). Разметка и стили — общие с остальными
           темами и с превью (packages/theme-base/.../CheckoutSplit.astro). */}
       <CheckoutSplit>
+        {/* Логотип — ВНУТРИ левой колонки (эталон владельца). Пропсы те же,
+            что раньше отдавал Layout: сборка витрины всё равно подменяет эту
+            шапку мерчантской по регулярке `<header data-checkout-slot="header">`
+            (chrome-assembler.injectChromeIntoHtml), а регулярке безразлично,
+            в каком месте документа она лежит. */}
+        <CheckoutHeader
+          slot="header"
+          siteTitle={SITE_TITLE}
+          logoMode="text"
+          logoImage={null}
+          rightIcon="cart"
+          accountLink="/account"
+          backLink="/cart"
+          cartLink="/cart"
+          padding={{ top: 24, bottom: 24 }}
+        />
         <CheckoutForm slot="form" />
         <CheckoutSummary slot="summary" />
       </CheckoutSplit>

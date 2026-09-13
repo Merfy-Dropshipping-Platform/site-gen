@@ -785,17 +785,27 @@ export class PreviewService {
         // Walk blocks: всё ДО CheckoutForm — sequential, CheckoutForm +
         // CheckoutSummary — в 2-col grid, всё ПОСЛЕ CheckoutSummary —
         // sequential (Footer).
+        //
+        // «Шапка оформления» из общего потока ИЗЪЯТА и уходит слотом внутрь
+        // колонки формы — как на витрине. Раньше она выкладывалась отдельной
+        // частью ПЕРЕД сеткой, то есть полосой во всю ширину над обеими
+        // колонками, и над цветной колонкой сводки висела белая полоса
+        // (замер собранных витрин, 1440×900: 132-134px у всех пяти тем).
         const parts: string[] = [];
+        let headerHtml = '';
         let formHtml = '';
         let summaryHtml = '';
         for (const { type, wrapped } of renderedBlocks) {
-          if (type === 'CheckoutForm') {
+          if (type === 'CheckoutHeader') {
+            headerHtml = wrapped;
+          } else if (type === 'CheckoutForm') {
             formHtml = wrapped;
           } else if (type === 'CheckoutSummary') {
             summaryHtml = wrapped;
           } else if (formHtml && summaryHtml) {
             // After grid pair found — push grid then continue with this block
-            parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml));
+            parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml, headerHtml));
+            headerHtml = '';
             formHtml = '';
             summaryHtml = '';
             parts.push(wrapped);
@@ -804,11 +814,13 @@ export class PreviewService {
           }
         }
         if (formHtml && summaryHtml) {
-          parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml));
+          parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml, headerHtml));
         } else if (formHtml) {
-          parts.push(formHtml);
+          parts.push(headerHtml + formHtml);
         } else if (summaryHtml) {
-          parts.push(summaryHtml);
+          parts.push(headerHtml + summaryHtml);
+        } else if (headerHtml) {
+          parts.push(headerHtml);
         }
         bodyHtml = parts.join('\n');
       } else {
@@ -878,9 +890,18 @@ export class PreviewService {
    * сводки вообще не имела поверхности и обрывалась на 1079px из 1280 (замер
    * прода 2026-09-13, п.4 третьего круга). Копия одна —
    * packages/theme-base/blocks/CheckoutLayout/checkout-split.ts.
+   *
+   * `headerHtml` — «Шапка оформления». Уходит ВНУТРЬ колонки формы (эталон
+   * владельца), а не полосой над колонками: иначе правая колонка начинается не
+   * от верха окна и над ней остаётся белая полоса. Пусто → колонка без шапки
+   * (старые ревизии без блока), разметка тогда ровно прежняя.
    */
-  private wrapCheckoutGrid(formHtml: string, summaryHtml: string): string {
-    return checkoutSplitMarkup(formHtml, summaryHtml);
+  private wrapCheckoutGrid(
+    formHtml: string,
+    summaryHtml: string,
+    headerHtml = '',
+  ): string {
+    return checkoutSplitMarkup(formHtml, summaryHtml, headerHtml);
   }
 
   /**

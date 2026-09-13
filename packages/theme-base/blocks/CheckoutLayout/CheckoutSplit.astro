@@ -6,13 +6,24 @@
  * Тема отдаёт содержимое слотами; поверхность, ширины, липкость и цвета —
  * здесь, одинаковые для всех. Цветовую схему на колонку вешает сборка
  * (chrome-assembler), поэтому в шаблоне её нет.
+ *
+ * Слот `header` — шапка оформления (логотип). По эталону владельца она стоит
+ * ВНУТРИ левой колонки, а не полосой над обеими: иначе над цветной колонкой
+ * сводки остаётся белая полоса (замер «до»: 132-134px у всех пяти тем).
+ * Слот не обязателен: без него разметка ровно прежняя.
  */
 import { CHECKOUT_SPLIT_CSS } from './checkout-split';
+
+const hasBrand = Astro.slots.has('header');
 ---
 
 <div class="mfy-checkout-split">
   <div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-pane="form">
-    <div class="mfy-checkout-pane__inner" data-checkout-column="form">
+    <div
+      class:list={['mfy-checkout-pane__inner', hasBrand && 'mfy-checkout-pane__inner--brand']}
+      data-checkout-column="form"
+    >
+      <slot name="header" />
       <slot name="form" />
     </div>
   </div>

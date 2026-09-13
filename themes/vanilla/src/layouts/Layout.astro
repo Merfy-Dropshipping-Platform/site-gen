@@ -1,7 +1,6 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
-import CheckoutHeader from "../../../../packages/theme-base/blocks/CheckoutHeader/CheckoutHeader.astro";
 import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
@@ -30,11 +29,16 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		{header !== "checkout" && <ViewTransitions />}
 	</head>
 	<body class="vanilla-page antialiased">
-		{header === "checkout" ? (
-			<div class="color-scheme-2" style="--size-checkout-brand:24px;--size-checkout-brand-image:32px;">
-				<CheckoutHeader siteTitle={SITE_TITLE} logoMode="text" logoImage={null} rightIcon="cart" accountLink="/account" backLink="/cart" cartLink="/cart" padding={{ top: 24, bottom: 24 }} />
-			</div>
-		) : (
+		{/* Шапки оформления НАД колонками больше нет (эталон владельца,
+		    Shopify-подобный чекаут): логотип переехал ВНУТРЬ левой колонки —
+		    страница checkout.astro отдаёт его в слот `header` общего
+		    CheckoutSplit. Иначе над цветной колонкой сводки остаётся белая
+		    полоса: замер собранной витрины (Chromium, 1440×900, 2026-09-13) дал
+		    шапку 0..134.39 у rose и 0..132 у vanilla/flux/satin/bloom, а обе
+		    колонки начинались только с этой отметки. Жёсткая обёртка
+		    `color-scheme-2` вокруг шапки тоже снята: внутри колонки она
+		    перебивала бы схему колонки, и логотип не попадал бы в палитру. */}
+		{header !== "checkout" && (
 			<Header />
 		)}
 		<main>

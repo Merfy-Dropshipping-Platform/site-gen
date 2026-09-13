@@ -59,7 +59,12 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   Publications: staticComponent("Publications", "Publications.astro"),
   Page: staticComponent("Page", "Page.astro"),
   Product: staticComponent("Product", "Product.astro"),
+  // Корзина = две секции (spec 110, баг-репорт 12): «Корзина» (тело) и
+  // «Промежуточный итог» (сводка). CartSection остаётся легаси-алиасом для
+  // ревизий, которые ещё не прошли migrateCartPage.
   CartSection: staticComponent("CartSection", "CartSection.astro"),
+  CartBody: staticComponent("CartBody", "CartBody.astro"),
+  CartSummary: staticComponent("CartSummary", "CartSummary.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),
   // Catalog block — родной каталог верстальщика satin как package-блок
   // (packages/theme-satin/blocks/Catalog/Catalog.astro), порт по образцу rose.

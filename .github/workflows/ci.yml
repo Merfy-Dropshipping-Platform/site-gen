@@ -170,6 +170,17 @@ jobs:
       - run: pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/preview-cart-contract.spec.ts
+      # Чекаут и корзина, баг-репорт 12/16/17. Сторожат три расстыковки, каждая
+      # из которых жила при зелёном CI:
+      #   - превью конструктора отдавало чекаут без мерчантской шапки и без схем
+      #     секций (их применяла ТОЛЬКО live-сборка);
+      #   - `migrateCartPage` стирала «Промежуточный итог», который сеют темы;
+      #   - сводка чекаута стояла в верху колонки и уезжала с первым скроллом.
+      - run: >-
+          pnpm exec jest --runInBand
+          src/themes/__tests__/checkout-chrome-parity.spec.ts
+          src/themes/__tests__/checkout-summary-sticky.spec.ts
+          src/utils/__tests__/revision-migrations-cart.test.ts
       - run: pnpm conformance:satin
       - run: pnpm check:css-layers
       - run: pnpm validate:page-seeds

@@ -1,0 +1,110 @@
+---
+// Секция «Промежуточный итог» (V2-порт flux) — примечание о налогах/доставке,
+// строка «Итого» и кнопка «Оформить заказ». Разделена из монолита CartSection.astro
+// (spec 110, Figma 1:20818) по баг-репорту 12: у сводки свои «Цветовая схема» и
+// «Отступы», и в дереве конструктора она отдельная строка.
+//
+// Под-узлы «Итоговая цена» (cartTotals) и «Кнопка оформления заказа»
+// (cartCheckoutButton) — read-only строки дерева (NAMED_SUBSECTIONS.CartSummary,
+// disabledHint). Редактировать их нечем, но «глаз» у них РАБОЧИЙ, поэтому порт
+// обязан пропускать props.hiddenFields — иначе мерчант прячет «Итого», а витрина
+// его показывает.
+//
+// Логика не менялась: тот же getCart()/flux:cart:updated и тот же мост
+// checkout → cartStore, что в теле корзины (делегат клика живёт в CartBody.astro
+// и ловит кнопку отсюда — она на той же странице).
+
+interface Props {
+	id?: string;
+	padding?: { top: number; bottom: number };
+	colorScheme?: number | string;
+	hiddenFields?: unknown;
+}
+const { id, padding, colorScheme } = Astro.props as Props;
+
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === "string",
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
+// Отступы из конструктора (px, 0..160). Дефолт сводки: сверху 0 (зазор даёт
+// тело корзины), снизу — нижний отступ прежнего монолита.
+const padStyle = padding
+	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
+	: undefined;
+const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
+---
+
+<section
+	data-puck-component-id={id}
+	data-block="cart-summary"
+	data-cart-summary
+	class:list={[
+		"w-full bg-white",
+		schemeClass,
+		padStyle ? "" : "pb-[80px] md:pb-[120px]",
+	]}
+	style={padStyle}
+>
+	<div class="mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80">
+		<div class="flex w-full max-w-[343px] flex-col gap-6 pt-1">
+			<div class="flex flex-col gap-4">
+				<p class="max-w-[269px] font-roboto-flex text-[14px] font-light leading-normal text-[#cccccc]">
+					Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
+				</p>
+				{!isFieldHidden("cartTotals") && (
+					<div class="cart-summary-totals flex items-center gap-3">
+						<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">Итого</span>
+						<span data-cart-page-total class="font-roboto-flex text-[20px] font-light leading-normal text-black">0 ₽</span>
+					</div>
+				)}
+			</div>
+			{!isFieldHidden("cartCheckoutButton") && (
+				<button
+					type="button"
+					data-action="checkout"
+					class="cart-checkout-btn inline-flex h-[56px] w-full items-center justify-center rounded-[6px] bg-[#FA5109] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
+				>
+					Оформить заказ
+				</button>
+			)}
+		</div>
+	</div>
+</section>
+
+<script>
+	import { getCart, getCartTotal, formatCartPrice } from "../../lib/cart";
+
+	// В превью конструктора (iframe) сводку показываем ВСЕГДА — иначе мерчант не
+	// видит секцию, которую настраивает (корзина в превью пустая). На витрине при
+	// пустой корзине прячем, как было в монолите (сводка жила внутри
+	// data-cart-page-filled).
+	const inPreview = (() => {
+		try {
+			return window.self !== window.top;
+		} catch {
+			return true;
+		}
+	})();
+
+	const render = () => {
+		// Узлы перезапрашиваем каждый раз: idiomorph в превью мог пересоздать DOM
+		// секции после смены настроек.
+		const sectionEl = document.querySelector<HTMLElement>("[data-cart-summary]");
+		if (!sectionEl) return;
+		const totalEl = sectionEl.querySelector<HTMLElement>("[data-cart-page-total]");
+		const lines = getCart();
+		if (lines.length === 0 && !inPreview) {
+			sectionEl.classList.add("hidden");
+			return;
+		}
+		sectionEl.classList.remove("hidden");
+		if (totalEl) totalEl.textContent = formatCartPrice(getCartTotal(lines));
+	};
+
+	render();
+	document.addEventListener("astro:page-load", render);
+	window.addEventListener("flux:cart:updated", render);
+</script>

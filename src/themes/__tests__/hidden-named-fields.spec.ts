@@ -248,14 +248,16 @@ const NAMED_FIELDS: Record<string, BlockSpec> = {
     ],
   },
   /**
-   * CartSummary не лежит в sections.map.json ни одной темы — он общий блок
-   * theme-base, но стоит в packages/theme-<тема>/pages/cart.json всех пяти тем
-   * с собственным puck-id, то есть конструктор его адресует и «глаз» у
-   * cartTotals/cartCheckoutButton рабочий (disabledHint гасит редактирование,
-   * но не видимость). Рендерим общий модуль — он один на все темы.
+   * CartSummary («Промежуточный итог») — вторая секция страницы корзины
+   * (баг-репорт 12, восстановлен spec 110). Порт есть у всех пяти тем
+   * (sections.map.json), общий theme-base-блок остаётся фоллбэком для тем без
+   * порта — поэтому `pkgFallback`, а не `pkg`: проверяем то, что реально уходит
+   * на витрину этой темы. «Глаз» у cartTotals/cartCheckoutButton рабочий
+   * (disabledHint гасит редактирование, но не видимость), значит порт обязан
+   * пропускать hiddenFields.
    */
   CartSummary: {
-    pkg: "theme-base",
+    pkgFallback: "theme-base",
     props: { colorScheme: "scheme-2", padding: { top: 0, bottom: 80 } },
     fields: [
       { field: "cartTotals", probe: "cart-summary-totals" },
@@ -313,6 +315,11 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   Publications: "нет в NAMED_SUBSECTIONS: параметров с «глазом» не показывает",
   Video: "нет в NAMED_SUBSECTIONS: параметров с «глазом» не показывает",
   CartSection:
+    "нет в NAMED_SUBSECTIONS; «Итого»/«Оформить заказ» живут в CartSummary",
+  // «Корзина» (тело: пустое состояние + список товаров). Именованных параметров
+  // нет — «Итоговая цена»/«Кнопка оформления заказа» это под-узлы соседней
+  // секции «Промежуточный итог» (NAMED_SUBSECTIONS.CartSummary).
+  CartBody:
     "нет в NAMED_SUBSECTIONS; «Итого»/«Оформить заказ» живут в CartSummary",
 };
 

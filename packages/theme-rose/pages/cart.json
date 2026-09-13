@@ -24,26 +24,18 @@
         "id": "CartBody-1",
         "padding": {
           "top": 80,
-          "bottom": 80
+          "bottom": 24
         }
       }
     },
     {
       "type": "CartSummary",
       "props": {
-        "id": "CartSummary-1"
-      }
-    },
-    {
-      "type": "CartTotals",
-      "props": {
-        "id": "CartTotals-1"
-      }
-    },
-    {
-      "type": "CartCheckoutButton",
-      "props": {
-        "id": "CartCheckoutButton-1"
+        "id": "CartSummary-1",
+        "padding": {
+          "top": 0,
+          "bottom": 80
+        }
       }
     },
     {

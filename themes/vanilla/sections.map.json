@@ -16,5 +16,7 @@
   "Slideshow": "src/components/sections/Slideshow.astro",
   "Publications": "src/components/sections/Publications.astro",
   "Video": "src/components/sections/Video.astro",
-  "CartSection": "src/components/sections/CartSection.astro"
+  "CartSection": "src/components/sections/CartSection.astro",
+  "CartBody": "src/components/sections/CartBody.astro",
+  "CartSummary": "src/components/sections/CartSummary.astro"
 }

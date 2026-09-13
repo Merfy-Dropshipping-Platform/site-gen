@@ -241,9 +241,9 @@ describe('loadThemeSourceSnapshot(satin) — real validateBlock debt (ratcheted,
 });
 
 describe('loadThemeSourceSnapshot(satin) — generator registry & sections map', () => {
-  it('records twenty-two generator entries (distinct from manifest/sections-map)', async () => {
+  it('records twenty-four generator entries (distinct from manifest/sections-map)', async () => {
     const snap = await loadSatin();
-    expect(snap.registry).toHaveLength(22);
+    expect(snap.registry).toHaveLength(24);
     expect(snap.registry).toHaveLength(Object.keys(satinRegistry).length);
     // Catalog is a package block routed through src/components (assemble path).
     const catalog = snap.registry.find((r) => r.name === 'Catalog');
@@ -251,9 +251,9 @@ describe('loadThemeSourceSnapshot(satin) — generator registry & sections map',
     expect(catalog!.importPath).toBe('../components/Catalog.astro');
   });
 
-  it('records eighteen sections-map entries, each proved by its OWN Satin renderer', async () => {
+  it('records twenty sections-map entries, each proved by its OWN Satin renderer', async () => {
     const snap = await loadSatin();
-    expect(snap.sectionsMap).toHaveLength(18);
+    expect(snap.sectionsMap).toHaveLength(20);
     // Each mapped block resolves to a Satin-owned compiled section module and is
     // reachable ONLY through that exact module (a base renderer cannot mask it).
     for (const rec of snap.sectionsMap) {
@@ -263,9 +263,11 @@ describe('loadThemeSourceSnapshot(satin) — generator registry & sections map',
       expect(rec.mappedRendererReachable).toBe(true);
       expect(rec.sourceExists).toBe(true);
     }
-    // The exact 18 canonical keys.
+    // The exact 20 canonical keys.
     expect(snap.sectionsMap.map((r) => r.name).sort()).toEqual([
+      'CartBody',
       'CartSection',
+      'CartSummary',
       'CollapsibleSection',
       'Collections',
       'ContactForm',

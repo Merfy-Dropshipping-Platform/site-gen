@@ -62,7 +62,12 @@ export const bloomRegistry: Record<string, ComponentRegistryEntry> = {
   Publications: packageComponent("Publications", "Publications"),
   Page: packageComponent("Page", "Page"),
   Product: packageComponent("Product", "Product"),
+  // Корзина = две секции (spec 110, баг-репорт 12): «Корзина» (тело) и
+  // «Промежуточный итог» (сводка). CartSection остаётся легаси-алиасом для
+  // ревизий, которые ещё не прошли migrateCartPage.
   CartSection: packageComponent("CartSection", "CartSection"),
+  CartBody: packageComponent("CartBody", "CartBody"),
+  CartSummary: packageComponent("CartSummary", "CartSummary"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),
   OrderConfirmation: packageComponent("OrderConfirmation", "OrderConfirmation"),
   Catalog: packageComponent("Catalog", "Catalog"),

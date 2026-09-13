@@ -11,8 +11,20 @@ interface Props {
 	id?: string;
 	padding?: { top: number; bottom: number };
 	colorScheme?: number | string;
+	hiddenFields?: unknown;
 }
 const { id, padding, colorScheme } = Astro.props as Props;
+
+// Под-узлы «Итоговая цена» (cartTotals) и «Кнопка оформления заказа»
+// (cartCheckoutButton) редактировать нечем (disabledHint), но «глаз» у них в
+// outline РАБОЧИЙ — порт обязан пропускать props.hiddenFields, иначе мерчант
+// прячет «Итого», а витрина его показывает (гард hidden-named-fields.spec.ts).
+const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
+	? ((Astro.props as any).hiddenFields as unknown[]).filter(
+			(x): x is string => typeof x === "string",
+		)
+	: [];
+const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 // Отступы из конструктора (px, 0..160). Дефолт «Промежуточный итог»: сверху 0, снизу 80.
 const pad = padding ?? { top: 0, bottom: 80 };
@@ -38,17 +50,21 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		<p class="max-w-md text-right font-manrope text-[12px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] sm:text-[13px] md:text-[14px]">
 			Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
 		</p>
-		<div class="flex w-full flex-wrap items-baseline justify-end gap-x-3 gap-y-1 sm:gap-x-4">
+		{!isFieldHidden("cartTotals") && (
+		<div class="cart-summary-totals flex w-full flex-wrap items-baseline justify-end gap-x-3 gap-y-1 sm:gap-x-4">
 			<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[16px] md:text-[18px]">Итого</span>
 			<span data-cart-summary-total class="font-manrope text-[18px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] sm:text-[20px] md:text-[24px]">0 ₽</span>
 		</div>
+		)}
+		{!isFieldHidden("cartCheckoutButton") && (
 		<button
 			type="button"
 			data-action="checkout"
-			class="inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:w-auto sm:min-w-[200px] sm:text-[16px]"
+			class="cart-checkout-btn inline-flex h-12 w-full max-w-[320px] items-center justify-center rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[14px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95 sm:w-auto sm:min-w-[200px] sm:text-[16px]"
 		>
 			Оформить заказ
 		</button>
+		)}
 	</div>
 </section>
 

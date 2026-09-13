@@ -187,6 +187,18 @@ const JOBS: { block: string; props: Record<string, unknown> }[] = [
       cards: 2,
     },
   },
+  // Корзина = две секции (баг-репорт 12, spec 110): «Корзина» (тело со списком
+  // товаров) и «Промежуточный итог» (сводка с «Итого» и «Оформить заказ»).
+  // Раньше на странице стоял монолит CartSection, и снимков у пары не было —
+  // порт каждой темы разрезан заново, снимок держит его форму.
+  {
+    block: "CartBody",
+    props: { ...base, id: "CartBody-1", padding: { top: 80, bottom: 24 } },
+  },
+  {
+    block: "CartSummary",
+    props: { ...base, id: "CartSummary-1", padding: { top: 0, bottom: 80 } },
+  },
 ];
 
 /**

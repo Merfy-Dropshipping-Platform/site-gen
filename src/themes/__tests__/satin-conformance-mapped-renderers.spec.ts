@@ -4,12 +4,12 @@
  * A mapped block is proved reachable ONLY by importing the EXACT Satin renderer
  * the compiled section manifest names for it. A passing base renderer can never
  * mask a mapped-renderer failure. This suite proves that:
- *   - every one of the 18 sections-map keys resolves to a Satin-owned compiled
+ *   - every one of the 20 sections-map keys resolves to a Satin-owned compiled
  *     section module (`dist/theme-sections/satin/themes_satin_src_components_*`),
  *     never a theme-base module;
  *   - the exact compiled module imports with a real `default` export;
  *   - the section manifest and the standalone sections.map.json share the same
- *     18 canonical keys (a wrong-target / `{}` manifest would be a failure).
+ *     20 canonical keys (a wrong-target / `{}` manifest would be a failure).
  *
  * Requires the four-step build (build → build:blocks →
  * build:theme-sections satin → run-theme-build satin).
@@ -28,12 +28,12 @@ function readJson(rel: string): Record<string, string> {
 }
 
 describe('Satin sections manifest ↔ source map key parity', () => {
-  it('the compiled manifest has the same 18 canonical keys as the source map', () => {
+  it('the compiled manifest has the same 20 canonical keys as the source map', () => {
     const sourceMap = readJson('themes/satin/sections.map.json');
     const manifest = readJson('dist/theme-sections/satin/manifest.json');
     const sourceKeys = Object.keys(sourceMap).sort();
     const manifestKeys = Object.keys(manifest).sort();
-    expect(sourceKeys).toHaveLength(18);
+    expect(sourceKeys).toHaveLength(20);
     expect(manifestKeys).toEqual(sourceKeys);
     // A `{}` manifest (build failure / wrong target) would be a structural
     // failure — never allowed as a fallback.
@@ -44,7 +44,7 @@ describe('Satin sections manifest ↔ source map key parity', () => {
 describe('Satin mapped renderers resolve to Satin-owned compiled modules', () => {
   it('every mapped section resolves to a Satin section module, not theme-base', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.sectionsMap).toHaveLength(18);
+    expect(snap.sectionsMap).toHaveLength(20);
     for (const rec of snap.sectionsMap) {
       // The mapped compiled module is Satin-owned; theme-base cannot mask it.
       expect(rec.compiledModule).not.toBeNull();
@@ -77,7 +77,7 @@ describe('Satin mapped renderers resolve to Satin-owned compiled modules', () =>
 });
 
 describe('Satin generator renderers vs sections-map (kept distinct)', () => {
-  it('the 22 generator renderers are reachable and are a superset of the 18 sections', async () => {
+  it('the 24 generator renderers are reachable and are a superset of the 20 sections', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
     const sectionKeys = new Set(snap.sectionsMap.map((r) => r.name));
     const generatorNames = new Set(snap.registry.map((r) => r.name));
@@ -86,8 +86,8 @@ describe('Satin generator renderers vs sections-map (kept distinct)', () => {
     for (const key of sectionKeys) {
       expect(generatorNames.has(key)).toBe(true);
     }
-    expect(snap.registry.length).toBe(22);
-    expect(snap.sectionsMap.length).toBe(18);
+    expect(snap.registry.length).toBe(24);
+    expect(snap.sectionsMap.length).toBe(20);
     // Generator-only entries (not in the sections map) still resolve compiled.
     const generatorOnly = [...generatorNames].filter((n) => !sectionKeys.has(n)).sort();
     expect(generatorOnly).toEqual(

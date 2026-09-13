@@ -3243,3 +3243,60 @@ bloom `10df1c3a…`, satin `57ac2ede…`, vanilla `11e0c5a9…`:
 - `src/__tests__/figmaSectionContract.test.tsx` в конструкторе красный ДО правки
   (17/18, мок `puckConfigResolver` не отдаёт `getCachedPuckConfigThemeId`); его
   проверка «пикер пишет id категории» теперь описывает старый контракт.
+## 2026-09-13 — корзина и чекаут по пяти темам (баг-репорт 12/15/16/17), ветка `fix/checkout-4bugs`
+
+### Замер «до» (прод, аккаунт QA, пять сайтов по теме + витрина)
+
+- **12.** `page-cart` = `[Header, CartSection, Footer]` у ВСЕХ пяти QA-сайтов
+  (GET `/sites/:id/revisions/:rev` через gateway). В дереве конструктора одна строка
+  «Корзина»; «Промежуточный итог» отсутствует и в «Добавить секцию» не предлагается.
+- **15.** На вкладке «Оформление заказа» у «Оформление заказа» и «Сводка заказа» есть
+  и «Удалить секцию», и «Скрыть секцию» (у Шапки/Подвала — только «Скрыть»).
+- **16.** Превью чекаута: шапка без `<img>` (текстовый бренд темы) даже когда логотип
+  загружен в «Настройки темы»; `data-block="checkout-form"/"checkout-summary"` без
+  класса схемы. На витрине те же секции несут `color-scheme-2`.
+- **17.** `[data-checkout-column="summary"]` = `position: static` и на витрине, и в
+  превью пяти тем: при scrollY=463 сводка и форма обе на y=-283 — правая половина
+  экрана пустует, пока покупатель заполняет форму.
+
+### Сделано
+
+- `migrateCartPage` разворачивает монолит в `CartBody` + `CartSummary`, перенося схему
+  и отступы; легаси `CartTotals`/`CartCheckoutButton` убираются (они под-узлы сводки);
+  кросс-селл мерчанта рядом с корзиной сохраняется.
+- Порты `CartBody.astro` / `CartSummary.astro` у пяти тем + записи в
+  `sections.map.json` и реестрах генератора; `CartSection.astro` — легаси-алиас.
+  Порты пропускают `props.hiddenFields` (у rose это не соблюдалось).
+- Сиды `packages/theme-<t>/pages/cart.json` приведены к паре с явными отступами.
+- `injectCheckoutChromeIntoHtml` + `patchCheckoutBlockScheme` + `checkoutBlockScheme`
+  переехали в `chrome-assembler`; live (`unifyChromeInDist`) и превью
+  (`preview.controller`) зовут одну функцию.
+- `position: sticky` у колонки сводки чекаута (≥1024px) в пяти `checkout.astro` и в
+  зеркале `preview.service.wrapCheckoutGrid`.
+- Конструктор (репозиторий `constructor`, ветка main, НЕ закоммичено): `SectionRow`
+  получил `isHideable`, блок «Тема» на чекауте идёт с `isDeletable={!isCheckoutPage}`
+  и `isHideable={!isCheckoutPage}`.
+
+### Проверки
+
+- Снимки секций 135 → **155** (добавлены CartBody/CartSummary по пяти темам, 10 новых
+  снимков), `hidden-fields` 495/495, `hidden-list-items` 196/196, `panel-defaults` 22/22,
+  `hidden-items` 3/3, `gallery-count` 45/45, `rich-text` 87/87,
+  `conformance:shared` 199+100, `conformance:satin` 84/84, `pnpm conformance:satin`
+  зелёный (инвентарь обновлён, закрытый GAP снят `--shrink-baseline`),
+  `check:css-layers`, `validate:page-seeds` — OK.
+- Новые гарды в CI: `checkout-chrome-parity` (6), `checkout-summary-sticky` (21),
+  `revision-migrations-cart` (19).
+- Полный `pnpm exec jest`: 57 падающих тестов — ровно столько же на чистом
+  `origin/main` в этом окружении (замер через `git stash`), к правке отношения не имеют.
+- Браузер: корзина всех пяти тем на собранных темах (пара секций, 2 позиции,
+  «Итого 31 970 ₽»); чекаут flux — сводка остаётся на y=24 при scrollY=493;
+  конструктор (локальный стенд) — на чекауте у секций «Тема» остался только грип.
+
+### Осталось
+
+- Правки конструктора НЕ закоммичены (общее дерево, параллельные агенты) — файлы
+  `src/components/editor/SortableItem.tsx`, `src/components/editor/CustomOutline.tsx`,
+  тест `src/__tests__/checkout-section-actions.test.tsx`.
+- Ветка `fix/checkout-4bugs` собрана от `ffc9c786`; `origin/main` за время работы ушёл
+  вперёд — перед вливанием нужен rebase и повторный `conformance:satin`.

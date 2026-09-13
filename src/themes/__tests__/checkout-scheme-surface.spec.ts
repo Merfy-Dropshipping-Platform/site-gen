@@ -240,3 +240,24 @@ describe('правовая полоса чекаута — своя схема',
     expect(checkoutFooterScheme(pagesData)).toBe('scheme-1');
   });
 });
+
+// ── 6. Вспомогательные элементы колонки берут цвет из схемы ────────────────
+
+describe('в колонке нет элементов с браузерным цветом', () => {
+  const css = read(SPLIT_CSS);
+
+  it('кнопка снятия промокода красится токеном схемы', () => {
+    // <button> не наследует color (UA buttontext) — на тёмной поверхности
+    // кнопка «Убрать ×» оставалась чёрной во всех пяти темах
+    expect(css).toMatch(
+      /\[data-checkout-pane\]\s*\[data-checkout-promo-remove\][^}]*color:\s*rgb\(var\(--color-/,
+    );
+  });
+
+  it('правило живёт рядом с поверхностью, а не в теме', () => {
+    for (const theme of THEMES) {
+      const page = read(`themes/${theme}/src/pages/checkout.astro`);
+      expect(page).not.toContain('data-checkout-promo-remove');
+    }
+  });
+});

@@ -36,6 +36,15 @@ export const CHECKOUT_SPLIT_CSS = `
 .mfy-checkout-pane__inner { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
 [data-checkout-pane="form"] { background: rgb(var(--color-bg, 255 255 255)); }
 [data-checkout-pane="summary"] { background: rgb(var(--color-surface, 245 245 245)); }
+/* Критерий владельца: «текст и вспомогательные элементы берут цвета из той же
+   схемы». Наследование покрывает почти всё, но <button> по умолчанию берёт цвет
+   у браузера (buttontext), а не у родителя: кнопка «Убрать ×» у промокода
+   оставалась ЧЁРНОЙ на любой схеме — на тёмной поверхности её просто не видно
+   (замер по пяти темам, 2026-09-13). Класс в блоке есть, но собранный CSS темы
+   arbitrary-классы theme-base не печатает — чекаут красится правилами по
+   data-атрибутам, поэтому и правило здесь, рядом с поверхностью колонки. */
+[data-checkout-pane] [data-checkout-promo-remove] { color: rgb(var(--color-muted, 153 153 153)); background: transparent; }
+[data-checkout-pane] [data-checkout-promo-remove]:hover { color: rgb(var(--color-text, 0 0 0)); }
 @media (min-width: 1024px) {
   .mfy-checkout-split { flex-direction: row; align-items: stretch; }
   .mfy-checkout-pane { width: 50%; display: flex; }

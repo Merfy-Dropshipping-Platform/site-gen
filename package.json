@@ -53,6 +53,9 @@
     "test:panel-defaults": "jest --runInBand src/themes/__tests__/panel-field-defaults.spec.ts src/themes/__tests__/panel-default-is-noop.spec.ts",
     "test:hidden-items": "jest --runInBand src/__tests__/preview-block-hidden-items.spec.ts",
     "test:gallery-count": "jest --runInBand src/themes/__tests__/gallery-item-count.spec.ts",
+    "test:promo-banner-panel": "jest --runInBand src/themes/__tests__/promo-banner-panel.spec.ts",
+    "test:panel-canon": "jest --runInBand src/themes/__tests__/panel-canon.spec.ts",
+    "panel-canon:refresh": "node src/themes/__tests__/panel-canon.mjs --out conformance/panel-canon.json",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",
     "conformance:satin:refresh": "pnpm build:blocks && pnpm build:theme-sections satin && pnpm exec tsx scripts/run-theme-build.ts satin && pnpm conformance:satin:refresh-inventory && pnpm conformance:satin",
     "test:hidden-list-items": "jest --runInBand src/themes/__tests__/hidden-list-items.spec.ts"

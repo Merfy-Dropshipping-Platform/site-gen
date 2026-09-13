@@ -22,7 +22,14 @@ describe('Gallery block', () => {
     expect(GalleryPuckConfig.defaults.items.length).toBe(3);
   });
 
-  it('GallerySchema parses items of all three types + rejects >3 items', () => {
+  it('панель разрешает ровно три плитки', () => {
+    // Канон галереи — три плитки (владелец, 2026-09-13). Потолок стоит в
+    // ПАНЕЛИ, а не в схеме: см. соседнюю проверку разбора.
+    expect((GalleryPuckConfig.fields.items as { max?: number }).max).toBe(3);
+    expect(GalleryPuckConfig.constraints?.maxItems).toBe(3);
+  });
+
+  it('GallerySchema parses items of all three types + принимает больше трёх', () => {
     const ok = GallerySchema.safeParse({
       heading: 'Test',
       items: [
@@ -36,7 +43,13 @@ describe('Gallery block', () => {
     });
     expect(ok.success).toBe(true);
 
-    const tooMany = GallerySchema.safeParse({
+    // Четыре плитки схема ПРИНИМАЕТ намеренно. `safeParse` — не ограничитель,
+    // а приговор: жёсткий `.max(3)` отбраковал бы целиком ревизию мерчанта,
+    // успевшего добавить лишние плитки за сутки с поднятым потолком
+    // (c46a9d9e, 2026-09-12 → снято), и секция умерла бы вместо того, чтобы
+    // нарисовать три. Обрезка — дело порта (`items.slice(0, 3)`), потолок
+    // добавления — дело панели (`fields.items.max`, проверка выше).
+    const beyondCanon = GallerySchema.safeParse({
       items: [
         { type: 'image', id: 'i1', url: '', alt: '' },
         { type: 'image', id: 'i2', url: '', alt: '' },
@@ -47,7 +60,7 @@ describe('Gallery block', () => {
       colorScheme: 1,
       padding: { top: 0, bottom: 0 },
     });
-    expect(tooMany.success).toBe(false);
+    expect(beyondCanon.success).toBe(true);
   });
 
   it('GalleryTokens lists --radius-media', () => {

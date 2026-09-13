@@ -26,10 +26,15 @@ export const GallerySchema = z.object({
     content: z.string().optional(),
     size: z.enum(['small', 'medium', 'large']).optional(),
   }).optional(),
-  // Потолок 12 вместо прежних 3: мерчант добавляет столько плиток,
-  // сколько нужно, а раскладка переносит лишние в сетку. min(0) —
-  // пустая галерея валидна: секция остаётся со своими текстами.
-  items: z.array(GalleryItemSchema).min(0).max(12),
+  // Потолок ЗДЕСЬ НЕ СТОИТ намеренно. Канон галереи — три плитки, но живёт он
+  // там, где действует: в панели (`fields.items.max`, конструктор не даёт
+  // добавить четвёртую) и в портах (`items.slice(0, 3)`, рисуются первые три).
+  // Схема остаётся принимающей, потому что `safeParse` — не ограничитель, а
+  // приговор: жёсткий `.max(3)` отбраковал бы ЦЕЛИКОМ ревизию мерчанта,
+  // успевшего добавить лишние плитки за сутки с поднятым потолком (c46a9d9e,
+  // 2026-09-12 → снято), и секция умерла бы вместо того, чтобы нарисовать три.
+  // min(0) — пустая галерея валидна: секция остаётся со своими текстами.
+  items: z.array(GalleryItemSchema).min(0),
   layout: z.enum(['grid', 'side-by-side', 'featured']),
   // Pupa parity.
   imagePosition: z.enum(['left', 'right']).optional(),
@@ -96,7 +101,7 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
     // Items — sub-panel array, редактирование через subsection click.
     items: {
       type: 'array',
-      label: 'Элементы (макс 12)',
+      label: 'Элементы (макс 3)',
       hiddenInMainPanel: true,
       arrayFields: {
         type: {
@@ -121,7 +126,9 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
         collectionId: { type: 'collectionPicker', label: 'Выбор коллекции' },
       },
       defaultItemProps: { id: '', type: 'image', url: '', alt: '' },
-      max: 12,
+      // Канон: три плитки. Владелец, 2026-09-13 — «в галерее сделал так, что
+      // можно добавлять больше фоток, хотя такого не должно быть».
+      max: 3,
     } as any,
     // Hidden — нет в Figma 314-34875.
     layout: { type: 'hidden', label: '' },
@@ -150,5 +157,5 @@ export const GalleryPuckConfig: BlockPuckConfig<GalleryProps> = {
   },
   schema: GallerySchema,
   maxInstances: null,
-  constraints: { padding: { min: 0, max: 160, step: 8 }, maxItems: 12 },
+  constraints: { padding: { min: 0, max: 160, step: 8 }, maxItems: 3 },
 };

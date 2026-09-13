@@ -2558,6 +2558,10 @@ async function stageFetchData(
             compareAtPrice: v.compareAtPrice ? formatPrice(v.compareAtPrice) : undefined,
             available: v.available !== false,
             quantity: v.quantity ?? 0,
+            // «Продавать когда закончился»: PDP-гейт (Product.astro isActiveAvailable)
+            // и rose-каталог читают флаг с варианта; без него 0-сток-вариант
+            // в статике блокировался до live-рефреша /store/products.
+            allowBackorder: v.allowBackorder === true,
             options: v.options || {},
           }))
         : [],

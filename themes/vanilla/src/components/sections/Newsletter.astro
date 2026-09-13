@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla, группа misc): новая канон-секция Newsletter в манере vanilla
 // (см. themes/vanilla/MANNER.md §8; эталон процесса — themes/bloom Newsletter).
 // Схема полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -130,7 +131,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="heading"
 						>
-							{heading}
+							<Fragment set:html={inlineFormat(heading)} />
 						</h2>
 					)}
 					{!isFieldHidden('text') && (
@@ -139,7 +140,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"
-							set:html={description}
+							set:html={inlineFormat(description)}
 						/>
 					)}
 				</div>
@@ -219,9 +220,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</span>
 					{
 						agreeLink ? (
-							<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
+							<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70"><Fragment set:html={inlineFormat(agreeText)} /></a>
 						) : (
-							<span>{agreeText}</span>
+							<span><Fragment set:html={inlineFormat(agreeText)} /></span>
 						)
 					}
 				</label>

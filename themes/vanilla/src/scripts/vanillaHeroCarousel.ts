@@ -58,8 +58,11 @@ export function bindVanillaHeroCarousel(root: HTMLElement) {
 			}
 		});
 
-		titleEl.textContent = copy.title;
-		subEl.textContent = copy.subtitle;
+		// Копия слайда приходит из data-slides-json уже пропущенной через
+		// inlineFormat (обёртки «Ж»/«К» сняты, остальное экранировано), поэтому
+		// начертания ставим разметкой, а не сырым текстом.
+		titleEl.innerHTML = copy.title;
+		subEl.innerHTML = copy.subtitle;
 		ctaEl.textContent = copy.ctaText;
 		ctaEl.setAttribute("href", copy.ctaHref);
 		// Канон-лестницы (Фаза B): per-slide heading.size/text.size приходят готовыми

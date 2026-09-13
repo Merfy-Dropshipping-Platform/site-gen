@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import VanillaPicture from "../img/VanillaPicture.astro";
 import { V_IMG } from "../../data/imageAssets";
 
@@ -194,8 +195,10 @@ if (slides[0]) {
 // JSON для скрипта: копия + классы лестниц (смена слайда переключает и размер).
 const slidesJson = JSON.stringify(
 	slides.map(({ title, subtitle, ctaText, ctaHref, titleCls, subtitleCls }) => ({
-		title,
-		subtitle,
+		// Скрипт карусели кладёт копию через innerHTML — в JSON уходит уже
+		// обезвреженное начертание («Ж»/«К»), а не сырое значение мерчанта.
+		title: inlineFormat(title),
+		subtitle: inlineFormat(subtitle),
 		ctaText,
 		ctaHref,
 		titleCls,
@@ -482,7 +485,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									data-puck-subsection-index="100"
 									data-puck-subsection-field="heading"
 								>
-									{slides[0].title}
+									<Fragment set:html={inlineFormat(slides[0].title)} />
 								</h1>
 							)}
 							{!isFieldHidden('text') && (
@@ -493,7 +496,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									data-puck-subsection-index="101"
 									data-puck-subsection-field="text"
 								>
-									{slides[0].subtitle}
+									<Fragment set:html={inlineFormat(slides[0].subtitle)} />
 								</p>
 							)}
 							{!isFieldHidden('buttons') && (
@@ -622,7 +625,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									data-puck-subsection-index="100"
 									data-puck-subsection-field="heading"
 								>
-									{singleTitle}
+									<Fragment set:html={inlineFormat(singleTitle)} />
 								</h1>
 							)}
 							{!isFieldHidden('text') && (
@@ -632,7 +635,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									data-puck-subsection-index="101"
 									data-puck-subsection-field="text"
 								>
-									{singleSubtitle}
+									<Fragment set:html={inlineFormat(singleSubtitle)} />
 								</p>
 							)}
 							{!isFieldHidden('buttons') && (secondaryText ? (

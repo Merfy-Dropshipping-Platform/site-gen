@@ -2962,3 +2962,62 @@ bloom читал top-level первым — потому и работал.
 `NamedFocusedPanel.tsx`. Обработчика не имела; замер кликом: 0 изменений DOM/сети/
 состояния, 0 ошибок. Контроль — живое меню в шапке СЕКЦИИ (`SectionHeader`) на клик
 открывает popover (menus 0→2, `aria-expanded`→true) — его и `ItemActionsMenu` не трогали.
+## 2026-09-13 — W-flux-vanilla-richtext — «Ж»/«К» во flux и vanilla: механизм и покрытие
+
+### Цель
+
+Добить хвост баг-репорта тестировщика «жирность и курсив во всех секциях и параметрах
+выдаёт ошибки»: rose/bloom/satin закрыты коммитом `54823834`, у flux и vanilla хелпера
+`inlineFormat` НЕ БЫЛО ВООБЩЕ — Astro экранировал `{value}`, и мерчант видел на витрине
+и в превью сырьё «<strong>ТЕКСТ</strong>».
+
+### Выполнено
+
+- `themes/flux/src/lib/rich-text.ts` и `themes/vanilla/src/lib/rich-text.ts` — копии
+  rose-хелпера. Тело всех ПЯТИ копий побайтово одинаково (отличается только
+  комментарий-шапка с именем темы); на это заведён отдельный тест.
+- Проведён по 40 местам рендера (flux 21, vanilla 19): заголовки, тексты, подписи,
+  подзаголовки слайдов, элементы списков, текст согласия рассылки, шапка подписки в
+  подвале. Форма правки — `<Fragment set:html={inlineFormat(x)} />` вместо `{x}`
+  (одна строка на место, как в rose).
+- Заодно обезврежены места, где порты уже клали значение мерчанта в `set:html` СЫРЫМ
+  (flux/vanilla MainText.text, ImageWithText.text, MultiRows.rows[], MultiColumns.columns[],
+  CollapsibleSection — дыра stored-XSS в адрес покупателей мерчанта; поведение не
+  меняется, начертания как рисовались, так и рисуются).
+- **Второй путь у vanilla:** карусель героя/слайд-шоу рендерит только слайд 0, а копию
+  остальных подменяет скрипт. `vanillaHeroCarousel.ts` клал `copy.title` в
+  `textContent` — при смене слайда начертание опять превращалось в сырой тег. Теперь в
+  `data-slides-json` уходит уже обезвреженная разметка, скрипт ставит её `innerHTML`.
+- **Атрибуты:** у flux Hero значение заголовка уходило в `alt=` фонового фото
+  (`alt="<strong>ГЕРОЙ</strong>"`). В атрибут теперь идёт ЧИСТЫЙ текст (`titleAlt`).
+- `src/themes/__tests__/rich-text-bold-italic.spec.ts` расширен с 3 портов до 5
+  (45 → 87 проверок): + равенство тел копий, + саботаж-блок (наивная реализация без
+  экранирования обязана падать на `<img onerror>`).
+- Тест добавлен в CI (`.github/workflows/ci.yml`): он лежал в репозитории с `54823834`,
+  но ни одна джоба его не запускала — то есть не сторожил ничего.
+
+### Проверки
+
+- Пруф рендером теми же скомпилированными модулями, что уходят на витрину и в превью
+  (`render-theme-sections.mjs`, 16 блоков × 2 темы, значения с начертаниями): сырых
+  тегов было 2–8 на блок, стало 0 везде; начертания живут разметкой.
+- XSS: `<strong><em>ЗЛО</em></strong><img src=x onerror=alert(1)>` → в разобранном DOM
+  0 тегов `<img>`, 0 `<script>`, 0 `on*`-атрибутов; payload виден инертным текстом.
+- Снимки секций 135/135 — разошлись РОВНО 3 снимка и осмысленно: flux/vanilla MainText
+  (фикстура `<strong><em>Заголовок</em></strong>` — было экранирование, стала разметка)
+  и vanilla Slideshow (инлайн-скрипт: `textContent` → `innerHTML`). Обновлены.
+- `hidden-fields` 495/495, `hidden-list-items` 196/196, `panel-defaults` 22/22,
+  `hidden-items`, `gallery-count`, `conformance:shared` 100/100,
+  `conformance:satin` 84/84, `pnpm conformance:satin` зелёный БЕЗ рефреша инвентаря
+  (правки не входят ни в `SATIN_THEME_DIGEST_INPUTS`, ни в `SHARED_DIGEST_INPUTS`),
+  `check:css-layers`, `validate:page-seeds`, `run-theme-build flux|vanilla` — OK.
+
+### Осталось
+
+- `agreementText` (текст согласия рассылки) экранируется у rose/bloom/satin — тот же
+  баг, но в трёх других темах.
+- `alt=`/`aria-label=` с размеченным значением: satin `MainText`/`TextBlock`
+  (`aria-label={heading || undefined}`) — скринридер читает теги.
+- Блок `Catalog` (`categoryTitle`/`categorySubtitle`) экранирует начертания во ВСЕХ
+  пяти темах: `packages/theme-base/blocks/Catalog/Catalog.astro` и per-theme порты.
+- Верхний заголовок `CollapsibleSection` у rose стоит на СЫРОМ `set:html={heading}`.

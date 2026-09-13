@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // ОЖИВЛЕНИЕ: канон-схема ContactForm (flux). Секция рендерит форму обратной связи
 // в чистой манере flux (Roboto Flex везде, поля rounded-8 с surface-бордером,
 // чёрная CTA, фокус #FA5109 — стиль как Footer newsletter / Header search / Hero CTA).
@@ -145,8 +146,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="contacts-title" class={headingCls}>{placeholderHeading}</h2>
-			{subtitleText && <p class={subtitleCls}>{subtitleText}</p>}
+			<h2 id="contacts-title" class={headingCls}><Fragment set:html={inlineFormat(placeholderHeading)} /></h2>
+			{subtitleText && <p class={subtitleCls}><Fragment set:html={inlineFormat(subtitleText)} /></p>}
 		</div>
 		)}
 

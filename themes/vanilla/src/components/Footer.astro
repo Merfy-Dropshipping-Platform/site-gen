@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../lib/rich-text";
 import VanilaFooterLogo from "../icons/VanilaFooterLogo.astro";
 import SocialTelegramWhite from "../icons/SocialTelegramWhite.astro";
 import SocialVkWhite from "../icons/SocialVkWhite.astro";
@@ -234,10 +235,10 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="newsletter"
 						>
-							{newsletterHeading}
+							<Fragment set:html={inlineFormat(newsletterHeading)} />
 						</h2>
 						<p class={`m-0 w-full font-vanilla-arsenal ${newsletterTextSizeCls} font-normal italic leading-none text-[var(--vanilla-hero-subtle)]`}>
-							{newsletterDescription}
+							<Fragment set:html={inlineFormat(newsletterDescription)} />
 						</p>
 					</div>
 

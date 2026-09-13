@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import FluxPicture from "../img/FluxPicture.astro";
 import { SITE_TITLE } from "../../consts";
 
@@ -32,6 +33,9 @@ const title =
 	nonEmpty(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
 	nonEmpty(p.title) ??
 	REF_TITLE;
+// alt= уходит в АТРИБУТ: там нужен чистый текст. Начертания «Ж»/«К» (<strong>/<em>
+// вокруг всего значения) скринридер прочитал бы как «меньше strong больше».
+const titleAlt = String(title).replace(/<\/?(?:em|strong|b|i|u|s)>/g, "");
 const subtitle =
 	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
 	nonEmpty(p.subtitle) ??
@@ -423,7 +427,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<div class="absolute inset-0 z-0 grid grid-cols-1 overflow-hidden md:grid-cols-2">
 					<FluxPicture
 						src={backgroundImage}
-						alt={title}
+						alt={titleAlt}
 						loading="eager"
 						fetchpriority="high"
 						class="size-full object-cover object-center"
@@ -439,7 +443,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			) : backgroundImage ? (
 				<FluxPicture
 					src={backgroundImage}
-					alt={title}
+					alt={titleAlt}
 					loading="eager"
 					fetchpriority="high"
 					class={singleImageCropCls}
@@ -483,7 +487,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="heading"
 					>
-						{title}
+						<Fragment set:html={inlineFormat(title)} />
 					</h1>
 				)}
 				{!isFieldHidden('text') && (
@@ -493,14 +497,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="text"
 					>
-						{String(subtitle)
-							.split("\n")
-							.map((line, i) => (
-								<>
-									{i > 0 && <br />}
-									{line}
-								</>
-							))}
+						{/* «Ж»/«К» оборачивают ВСЁ значение — форматируем целиком, переносы строк по-прежнему дают <br>. */}
+						<Fragment set:html={inlineFormat(subtitle).replace(/\n/g, "<br>")} />
 					</p>
 				)}
 			</div>

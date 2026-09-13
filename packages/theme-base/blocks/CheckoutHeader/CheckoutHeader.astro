@@ -1,6 +1,7 @@
 ---
 import type { CheckoutHeaderProps } from './CheckoutHeader.puckConfig';
 import { CheckoutHeaderClasses as C } from './CheckoutHeader.classes';
+import { schemeClassOf } from '../../runtime/color-scheme';
 
 interface Props extends CheckoutHeaderProps {
   id?: string;
@@ -24,10 +25,10 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 // Цветовая схема узла «Header» (Figma 1:19998). Зеркало CheckoutForm/Summary:
 // классы color-scheme-N несут --color-* → шапка перекрашивается под выбранную
 // схему. На live эти пропсы приходят через unifyChromeInDist (page-checkout).
-const schemeClass =
-  typeof colorScheme === 'string' && colorScheme
-    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
-    : '';
+// Схема приходит строкой "scheme-2", голой "1" ИЛИ числом (живая нормализация
+// ревизии). Прежняя сверка `typeof === 'string'` роняла два вида из трёх —
+// см. runtime/color-scheme.ts и п.4 третьего круга.
+const schemeClass = schemeClassOf(colorScheme);
 ---
 <header
   class:list={[C.root, schemeClass]}

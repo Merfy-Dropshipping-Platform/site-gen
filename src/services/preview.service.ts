@@ -8,6 +8,7 @@ import { CHROME_REORDER_INLINE } from '../common/chrome-reorder';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 import { resolveBlockProps } from '../render/resolve-props';
 import { getBlockPuckDefaults } from '../render/block-defaults';
+import { checkoutSplitMarkup } from '../../packages/theme-base/blocks/CheckoutLayout/checkout-split';
 import type { RenderContext } from '../render/create-render-context';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
@@ -870,37 +871,16 @@ export class PreviewService {
   }
 
   /**
-   * Wrap CheckoutForm + CheckoutSummary в split-checkout layout per Figma 1:19998.
-   * Форма на белом (--color-bg), сводка на тонированной панели (--color-surface),
-   * панель уходит до правого края, контент сходится к центру.
+   * Две колонки чекаута в превью — ТА ЖЕ разметка и тот же CSS, что на витрине.
    *
-   * ВАЖНО: разметка `.mfy-checkout-*` + CSS — ЗЕРКАЛО live `themes/rose/src/pages/
-   * checkout.astro`. Любая правка здесь дублируется там (live ↔ превью паритет).
+   * Раньше здесь лежала копия `.mfy-checkout-*` с пометкой «правки дублировать
+   * в checkout.astro тем». Дублировали не всегда: у vanilla/satin/flux колонка
+   * сводки вообще не имела поверхности и обрывалась на 1079px из 1280 (замер
+   * прода 2026-09-13, п.4 третьего круга). Копия одна —
+   * packages/theme-base/blocks/CheckoutLayout/checkout-split.ts.
    */
   private wrapCheckoutGrid(formHtml: string, summaryHtml: string): string {
-    // Inline <style> — Tailwind preview-pipeline не сканирует src/services/*.ts,
-    // поэтому собственный CSS-блок (а не Tailwind-классы). Префикс mfy-checkout-*
-    // исключает коллизии в глобальном namespace.
-    const css = `
-      .mfy-checkout-split { display: flex; flex-direction: column; width: 100%; background: rgb(var(--color-bg)); }
-      .mfy-checkout-pane { width: 100%; box-sizing: border-box; }
-      .mfy-checkout-pane__inner { width: 100%; max-width: 540px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
-      .mfy-checkout-pane--summary { background: rgb(var(--color-surface)); }
-      @media (min-width: 1024px) {
-        .mfy-checkout-split { flex-direction: row; align-items: stretch; }
-        .mfy-checkout-pane { width: 50%; display: flex; }
-        .mfy-checkout-pane--form { justify-content: flex-end; }
-        .mfy-checkout-pane--summary { justify-content: flex-start; }
-        .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
-        .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
-        /* Баг-репорт 17: сводка едет вместе с формой (зеркало checkout.astro пяти тем).
-           Баг-репорт 18-Б: колонку НЕ режем max-height'ом — он оставлял хвост
-           длинного заказа за кромкой, и прокрутка страницы до него не доставала.
-           Отступ считает общий скрипт блока «Сводка заказа» (минус = липнет низом). */
-        [data-checkout-column="summary"] { position: sticky; top: var(--checkout-summary-top, 24px); align-self: start; }
-      }
-    `;
-    return `<style>${css}</style><div class="mfy-checkout-split"><div class="mfy-checkout-pane mfy-checkout-pane--form"><div class="mfy-checkout-pane__inner" data-checkout-column="form" style="min-width:0">${formHtml}</div></div><div class="mfy-checkout-pane mfy-checkout-pane--summary"><div class="mfy-checkout-pane__inner" data-checkout-column="summary" style="min-width:0">${summaryHtml}</div></div></div>`;
+    return checkoutSplitMarkup(formHtml, summaryHtml);
   }
 
   /**

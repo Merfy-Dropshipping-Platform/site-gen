@@ -23,6 +23,8 @@
  * → --color-heading чёрный фон, --color-bg белый текст). Разметка зеркалит
  * bottom-strip из Footer.astro тем.
  */
+import { schemeClassOf } from '../../runtime/color-scheme';
+
 interface LegalLink {
   label?: string;
   href?: string;
@@ -31,12 +33,19 @@ interface LegalLink {
 interface Props {
   /** Название магазина (Layout прокидывает SITE_TITLE, build.service патчит). */
   siteTitle?: string;
+  /** «Цветовая схема» секции «Подвал» страницы чекаута ("scheme-N" | N). */
+  colorScheme?: unknown;
   /** Полная замена строки копирайта (если задана). */
   text?: string;
   /** Правовые страницы магазина: оферта, политики возврата/доставки/данных. */
   links?: LegalLink[];
 }
-const { siteTitle = "", text, links = [] } = Astro.props as Props;
+const { siteTitle = "", text, links = [], colorScheme } = Astro.props as Props;
+// Схема секции «Подвал» страницы чекаута. Полоса красится токенами схемы
+// (`--color-heading` фон / `--color-bg` текст), поэтому класс нужен НА КОРНЕ:
+// без него полоса брала палитру страницы и контрол «Цветовая схема» в панели
+// не делал ничего (п.4 третьего круга).
+const schemeClass = schemeClassOf(colorScheme);
 const year = new Date().getFullYear();
 const copyright =
   text && text.trim()
@@ -48,7 +57,7 @@ const legalLinks = (Array.isArray(links) ? links : []).filter(
 );
 ---
 
-<footer class="w-full" data-checkout-footer-strip>
+<footer class:list={["w-full", schemeClass]} data-checkout-footer-strip>
   <div
     class="flex w-full flex-col items-center justify-center gap-3 bg-[rgb(var(--color-heading,0_0_0))] px-4 py-5"
   >

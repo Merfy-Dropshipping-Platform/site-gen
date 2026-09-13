@@ -21,6 +21,7 @@
 import Layout from "../layouts/Layout.astro";
 import CheckoutForm from "../../../../packages/theme-base/blocks/CheckoutForm/CheckoutForm.astro";
 import CheckoutSummary from "../../../../packages/theme-base/blocks/CheckoutSummary/CheckoutSummary.astro";
+import CheckoutSplit from "../../../../packages/theme-base/blocks/CheckoutLayout/CheckoutSplit.astro";
 
 // Pilot defaults. In production build.service.ts string-patches shopId and
 // injects DADATA_API_KEY; here we hardcode the apiUrl and leave shopId/dadataToken
@@ -33,15 +34,16 @@ const dadataToken = "";
   {/* Figma 1:13398 — checkout is always the light scheme regardless of theme default. */}
   <div class="color-scheme-2">
     <main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">
-      {/* Figma 1:19998 — form col 434px, summary col 589px, gap ~56px. */}
-      <div class="mx-auto max-w-[1280px] px-4 lg:px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-[434px_589px] xl:gap-x-[56px] gap-y-8">
-        <div data-checkout-column="form" class="min-w-0">
-          <CheckoutForm />
-        </div>
-        <div data-checkout-column="summary" class="min-w-0">
-          <CheckoutSummary />
-        </div>
-      </div>
+      {/* Эталон владельца (п.4, третий круг): схема красит КОЛОНКУ целиком —
+          сплошной цвет до низа окна и до правого края, текст из той же схемы.
+          Центрированная сетка `max-w-[1280px]` это не умела: колонка сводки
+          обрывалась на 1079px из 1280 и справа оставалась полоса фона страницы
+          (замер прода 2026-09-13). Разметка и стили — общие с остальными
+          темами и с превью (packages/theme-base/.../CheckoutSplit.astro). */}
+      <CheckoutSplit>
+        <CheckoutForm slot="form" />
+        <CheckoutSummary slot="summary" />
+      </CheckoutSplit>
     </main>
   </div>
 
@@ -67,15 +69,8 @@ const dadataToken = "";
 
       До 1024px колонки идут одна под другой — там липкость не нужна и вредна.
       Зеркало: `preview.service.ts → wrapCheckoutGrid` (правки дублировать). */}
-  <style is:global>
-    @media (min-width: 1024px) {
-      [data-checkout-column="summary"] {
-        position: sticky;
-        top: var(--checkout-summary-top, 24px);
-        align-self: start;
-      }
-    }
-  </style>
+  {/* Липкость сводки переехала в общий CheckoutSplit — одна копия на пять тем
+      и на превью (была шестью, и три темы отставали). */}
 
   {/* --- Live checkout plumbing (checkout page only) --- */}
   {/* Config injection (templates pattern). build.service.ts patches shopId +

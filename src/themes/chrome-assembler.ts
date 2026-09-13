@@ -158,7 +158,14 @@ export async function assembleChrome(
       renderChromeBlock(
         renderBlock,
         'CheckoutFooterStrip',
-        { siteTitle: checkoutProps['siteTitle'], links: legalLinks },
+        {
+          siteTitle: checkoutProps['siteTitle'],
+          links: legalLinks,
+          // «Цветовая схема» секции «Подвал» страницы чекаута. Контрол в панели
+          // есть, а полоса красилась токенами страницы — выбор не делал ничего
+          // (п.4 третьего круга: «очень плохо работают цветовые схемы»).
+          colorScheme: checkoutFooterScheme(pagesData),
+        },
         theme,
         isPreview,
       ),
@@ -326,10 +333,57 @@ export function patchCheckoutBlockScheme(
   block: 'checkout-form' | 'checkout-summary',
   scheme: unknown,
 ): string {
-  if (typeof scheme !== 'string' || !scheme) return html;
-  const cls = `color-scheme-${scheme.replace('scheme-', '')}`;
+  const id = schemeIdOf(scheme);
+  if (!id) return html;
+  const cls = `color-scheme-${id}`;
   const re = new RegExp(
     `(<section\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-block="${block}")`,
+  );
+  return html.replace(re, (m, p1: string, classes: string, p3: string) =>
+    classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
+  );
+}
+
+/**
+ * Значение «Цветовой схемы» → суффикс класса `.color-scheme-N`.
+ *
+ * Одно значение приезжает тремя видами: панель конструктора шлёт "scheme-2"
+ * ИЛИ голую "1" (разные контролы), а живая нормализация ревизии
+ * (`coerceGenericLegacyProps`) переводит это в ЧИСЛО. Сверка `typeof === 'string'`
+ * молча роняла два вида из трёх: мерчант выбирал схему у «Сводки заказа», а
+ * класс с секции ИСЧЕЗАЛ (замер прода 2026-09-13, все пять тем). Зеркало
+ * `schemeIdOf` из `themes/<t>/src/lib/color-scheme.ts`.
+ */
+function schemeIdOf(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'string' && value) return value.replace(/^scheme-/, '');
+  return '';
+}
+
+/**
+ * Цветовая схема секции → на КОЛОНКУ чекаута.
+ *
+ * Эталон владельца (п.4 третьего круга): схема применяется к колонке целиком
+ * как к поверхности — сплошной цвет до низа окна и до правого края, текст из
+ * той же схемы. До этого класс садился только на `<section>` внутри колонки, а
+ * секция сводки ПРОЗРАЧНА (тонирует колонка) — выбор схемы не менял ничего, а
+ * у формы красил «пятно» под контентом вместо колонки (bloom: розовый
+ * прямоугольник на белой странице, замер прода 2026-09-13).
+ *
+ * Колонку ищем по `data-checkout-pane` — общий контракт разметки
+ * (packages/theme-base/blocks/CheckoutLayout/checkout-split.ts), один на пять
+ * тем и на превью. Идемпотентно: класс не дублируется.
+ */
+export function patchCheckoutColumnScheme(
+  html: string,
+  pane: 'form' | 'summary',
+  scheme: unknown,
+): string {
+  const id = schemeIdOf(scheme);
+  if (!id) return html;
+  const cls = `color-scheme-${id}`;
+  const re = new RegExp(
+    `(<div\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-checkout-pane="${pane}")`,
   );
   return html.replace(re, (m, p1: string, classes: string, p3: string) =>
     classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
@@ -412,6 +466,9 @@ export function injectCheckoutChromeIntoHtml(
     : html;
   out = patchCheckoutBlockScheme(out, 'checkout-form', blocks.form?.scheme);
   out = patchCheckoutBlockScheme(out, 'checkout-summary', blocks.summary?.scheme);
+  // Схема красит КОЛОНКУ (эталон п.4), а не только секцию внутри неё.
+  out = patchCheckoutColumnScheme(out, 'form', blocks.form?.scheme);
+  out = patchCheckoutColumnScheme(out, 'summary', blocks.summary?.scheme);
   out = patchCheckoutBlockId(out, 'checkout-form', blocks.form?.id);
   out = patchCheckoutBlockId(out, 'checkout-summary', blocks.summary?.id);
   if (chrome.footerHtml) out = replaceCheckoutFooterStrip(out, chrome.footerHtml);
@@ -447,6 +504,25 @@ export function checkoutBlockIdentity(
     findBlockProps(pagesData['checkout'], blockType) ??
     {}) as Record<string, unknown>;
   return { id: props['id'], scheme: props['colorScheme'] };
+}
+
+/**
+ * «Цветовая схема» секции «Подвал» страницы чекаута. Ключ страницы разнится по
+ * возрасту сайта (`page-checkout` / `checkout`), поэтому смотрим оба — как и
+ * `checkoutBlockIdentity`. Нет своей секции (старый сид) → схема подвала
+ * главной, чтобы полоса не выпадала из палитры магазина.
+ */
+export function checkoutFooterScheme(
+  pagesData: Record<string, unknown>,
+): unknown {
+  const own =
+    findBlockProps(pagesData['page-checkout'], 'Footer') ??
+    findBlockProps(pagesData['checkout'], 'Footer');
+  const props = (own ?? findBlockProps(pagesData['home'], 'Footer') ?? {}) as Record<
+    string,
+    unknown
+  >;
+  return props['colorScheme'];
 }
 
 /** «Цветовая схема» секции чекаута из ревизии (узкая обёртка над identity). */

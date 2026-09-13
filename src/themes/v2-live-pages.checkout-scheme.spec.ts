@@ -38,7 +38,23 @@ describe('patchCheckoutBlockScheme', () => {
   it('no-op при пустой/undefined схеме', () => {
     expect(patchCheckoutBlockScheme(formSection, 'checkout-form', undefined)).toEqual(formSection);
     expect(patchCheckoutBlockScheme(formSection, 'checkout-form', '')).toEqual(formSection);
-    expect(patchCheckoutBlockScheme(formSection, 'checkout-form', 123 as unknown)).toEqual(formSection);
+    expect(patchCheckoutBlockScheme(formSection, 'checkout-form', {} as unknown)).toEqual(formSection);
+  });
+
+  /**
+   * Тут стояло `123 → no-op`, и это описывало БАГ, а не правило: живая
+   * нормализация ревизии (`coerceGenericLegacyProps`) отдаёт схему ЧИСЛОМ, и
+   * молчаливый no-op означал «мерчант выбрал схему, а ничего не изменилось»
+   * (п.4 третьего круга, замер прода 2026-09-13 на пяти темах).
+   */
+  it('число — валидная схема: ревизия нормализуется в число', () => {
+    const out = patchCheckoutBlockScheme(formSection, 'checkout-form', 3);
+    expect(out).toContain('color-scheme-3');
+  });
+
+  it('голая строка «3» (то, что шлёт панель) — тоже схема', () => {
+    const out = patchCheckoutBlockScheme(formSection, 'checkout-form', '3');
+    expect(out).toContain('color-scheme-3');
   });
 
   it('no-op если секции такого блока нет в html', () => {

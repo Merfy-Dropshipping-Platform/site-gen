@@ -291,6 +291,25 @@ jobs:
           src/themes/__tests__/checkout-footer-legal.spec.ts
           src/themes/__tests__/checkout-block-identity.spec.ts
           src/utils/__tests__/revision-migrations-cart.test.ts
+      # Третий круг тестировщика (те же пункты в третий раз). Каждый гард стоит
+      # на том слое, где замер прода показал разрыв, а не там, где удобно:
+      #   п.1 — тоггл «Контейнер» у «Сворачиваемого раздела» писал ЛЕГАСИ-ключ
+      #     `container.enabled`, а порт читал канон `containerEnabled` (дефолт
+      #     "false") → контейнер в рендере выключен всегда, класс схемы не
+      #     печатался НИКОГДА. Фикстуры теста — дословный payload с прода;
+      #   п.2 — параметры шапки прошлый круг выровнял, а НАБОР СЕКЦИЙ группы
+      #     «Шапка» — нет: промо-баннер лежал на части страниц (rose 5 из 11,
+      #     flux/bloom только на главной). Гард стоит и на миграции, и на сидах;
+      #   п.4 — «очень плохо работают цветовые схемы» на чекауте: схема красила
+      #     прозрачную секцию (или пятно под формой), а не КОЛОНКУ; у
+      #     vanilla/satin/flux поверхности не было вовсе — колонка обрывалась на
+      #     1079px из 1280. Плюс класс схемы пропадал на числовом значении.
+      - run: >-
+          pnpm exec jest --runInBand
+          src/themes/__tests__/checkout-and-container-round3.spec.ts
+          src/themes/__tests__/checkout-scheme-surface.spec.ts
+          src/themes/__tests__/header-group-seeds.spec.ts
+          src/utils/__tests__/header-group-round3.test.ts
       - run: pnpm conformance:satin
       - run: pnpm check:css-layers
       - run: pnpm validate:page-seeds

@@ -31,8 +31,19 @@ import { join } from 'path';
 const THEMES = ['rose', 'vanilla', 'bloom', 'satin', 'flux'] as const;
 const ROOT = join(__dirname, '..', '..', '..');
 const SUMMARY_BLOCK = 'packages/theme-base/blocks/CheckoutSummary/CheckoutSummary.astro';
+/**
+ * П.4 третьего круга: split-раскладка чекаута (разметка + CSS) переехала из
+ * шести копий (пять страниц тем + `wrapCheckoutGrid`) в ОДИН общий источник.
+ * Копий больше нет, поэтому правила липкости проверяем там, а у тем —
+ * что они пользуются общим компонентом и своей копии не завели.
+ */
+const SPLIT = 'packages/theme-base/blocks/CheckoutLayout/checkout-split.ts';
 
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
+
+/** Стили колонок, действующие на странице темы: общий split + сама страница. */
+const styleSourceFor = (theme: string) =>
+  read(SPLIT) + '\n' + read(`themes/${theme}/src/pages/checkout.astro`);
 
 /** Правило `[data-checkout-column="summary"] { … }` из исходника страницы. */
 function summaryRule(css: string): string {
@@ -41,10 +52,16 @@ function summaryRule(css: string): string {
 
 describe('сводка чекаута едет вместе с формой (баг 17)', () => {
   describe.each(THEMES)('тема %s', (theme) => {
-    const src = () => read(`themes/${theme}/src/pages/checkout.astro`);
+    const src = () => styleSourceFor(theme);
 
     it('колонка сводки помечена для липкости', () => {
       expect(src()).toContain('data-checkout-column="summary"');
+    });
+
+    it('страница берёт общую split-колонку, своей копии стилей нет', () => {
+      const page = read(`themes/${theme}/src/pages/checkout.astro`);
+      expect(page).toContain('CheckoutSplit');
+      expect(page).not.toMatch(/\[data-checkout-column=["']summary["']\][\s\S]{0,200}position:\s*sticky/);
     });
 
     it('на десктопе сводка липкая', () => {
@@ -67,25 +84,20 @@ describe('сводка чекаута едет вместе с формой (б�
     });
   });
 
-  it('превью конструктора — то же правило (зеркало wrapCheckoutGrid)', () => {
+  it('превью конструктора — ТА ЖЕ разметка, не копия', () => {
     const preview = read('src/services/preview.service.ts');
     const grid = preview.slice(preview.indexOf('wrapCheckoutGrid'));
-    expect(grid).toMatch(/\[data-checkout-column=["']summary["']\][\s\S]{0,500}position:\s*sticky/);
+    expect(grid).toContain('checkoutSplitMarkup');
+    expect(read(SPLIT)).toMatch(/\[data-checkout-column=["']summary["']\][\s\S]{0,500}position:\s*sticky/);
   });
 });
 
 describe('длинный заказ виден до последней позиции (баг 18-Б)', () => {
   const sources: Array<[string, () => string]> = [
     ...THEMES.map(
-      (t) => [`тема ${t}`, () => read(`themes/${t}/src/pages/checkout.astro`)] as [string, () => string],
+      (t) => [`тема ${t}`, () => styleSourceFor(t)] as [string, () => string],
     ),
-    [
-      'превью конструктора',
-      () => {
-        const preview = read('src/services/preview.service.ts');
-        return preview.slice(preview.indexOf('wrapCheckoutGrid'));
-      },
-    ],
+    ['превью конструктора', () => read(SPLIT)],
   ];
 
   it.each(sources)('%s: колонку сводки не режут собственным скроллом', (_name, get) => {

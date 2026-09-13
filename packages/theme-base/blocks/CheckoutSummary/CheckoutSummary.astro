@@ -5,6 +5,7 @@
 // без изменений.
 import type { CheckoutSummaryProps } from './CheckoutSummary.puckConfig';
 import { CheckoutSummaryClasses as C } from './CheckoutSummary.classes';
+import { schemeClassOf } from '../../runtime/color-scheme';
 
 import CheckoutOrderSummary from '../CheckoutOrderSummary/CheckoutOrderSummary.astro';
 import CheckoutTotals from '../CheckoutTotals/CheckoutTotals.astro';
@@ -19,10 +20,10 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
-const schemeClass =
-  typeof colorScheme === 'string' && colorScheme
-    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
-    : '';
+// Схема приходит строкой "scheme-2", голой "1" ИЛИ числом (живая нормализация
+// ревизии). Прежняя сверка `typeof === 'string'` роняла два вида из трёх —
+// см. runtime/color-scheme.ts и п.4 третьего круга.
+const schemeClass = schemeClassOf(colorScheme);
 ---
 <section
   class:list={[C.root, schemeClass]}

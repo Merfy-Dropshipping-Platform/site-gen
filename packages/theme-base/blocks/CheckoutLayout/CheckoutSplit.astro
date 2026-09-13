@@ -1,0 +1,26 @@
+---
+/**
+ * Две колонки чекаута: форма и сводка. Общий компонент для пяти тем —
+ * см. `checkout-split.ts` (там же контракт data-атрибутов и история п.4).
+ *
+ * Тема отдаёт содержимое слотами; поверхность, ширины, липкость и цвета —
+ * здесь, одинаковые для всех. Цветовую схему на колонку вешает сборка
+ * (chrome-assembler), поэтому в шаблоне её нет.
+ */
+import { CHECKOUT_SPLIT_CSS } from './checkout-split';
+---
+
+<div class="mfy-checkout-split">
+  <div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-pane="form">
+    <div class="mfy-checkout-pane__inner" data-checkout-column="form">
+      <slot name="form" />
+    </div>
+  </div>
+  <div class="mfy-checkout-pane mfy-checkout-pane--summary" data-checkout-pane="summary">
+    <div class="mfy-checkout-pane__inner" data-checkout-column="summary">
+      <slot name="summary" />
+    </div>
+  </div>
+</div>
+
+<style is:global set:html={CHECKOUT_SPLIT_CSS}></style>

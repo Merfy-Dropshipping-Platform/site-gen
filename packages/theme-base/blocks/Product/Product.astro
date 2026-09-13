@@ -416,7 +416,7 @@ const cartImage = view.gallery.hero?.src ?? '';
 
     const heroEl = root.querySelector('[data-product-hero]');
     const heroImg = root.querySelector('[data-product-hero-image]');
-    const thumbsEl = root.querySelector('[data-product-thumbs]');
+    const galleryEl = root.querySelector('[data-product-gallery]') || root;
     const titleEl = root.querySelector('[data-product-info] h1');
     const priceCur = root.querySelector('[data-product-price-current]');
     const priceOld = root.querySelector('[data-product-price-old]');
@@ -608,23 +608,39 @@ const cartImage = view.gallery.hero?.src ?? '';
       refreshPriceFromVariant();
     }
 
-    // Клик по миниатюре → SWAP hero ↔ миниатюра: кликнутое фото встаёт в hero,
-    // а СТАРОЕ hero-фото — на место кликнутой миниатюры (обмен), чтобы первое
-    // фото не пропадало из галереи. Раньше был copy (thumb→hero) → старое hero
-    // нигде не оставалось и исчезало («основной пропадает»).
-    if (thumbsEl) {
-      thumbsEl.addEventListener('click', function (ev) {
-        const btn = ev.target && ev.target.closest('[data-product-thumb]');
+    /**
+     * Клик по миниатюре → меняется ТОЛЬКО фото, которое показывает герой.
+     * Позиция каждого медиафайла в секции неизменна.
+     *
+     * Было (баг тестировщика 2026-09-13 п.3): свап hero ↔ миниатюра. Он
+     * появился как лекарство от «главное фото пропадает» (лента шла из
+     * gallery.thumbs = всё КРОМЕ главного, и copy не оставлял главному места).
+     * Лечил одно, ломал другое: файлы менялись местами при каждом клике.
+     * Теперь лента рисуется из ПОЛНОГО списка (ProductGallery.astro), поэтому
+     * главному фото есть куда деваться и свап не нужен.
+     *
+     * Источник плитки — `data-media-src`, скрипт его НЕ переписывает: порядок
+     * не может «уехать» даже при серии переключений. Гард —
+     * src/themes/__tests__/product-media-order.spec.ts (он же сторожит
+     * одноимённую функцию во флаксовом порте FeaturedProduct.astro).
+     */
+    function wireGalleryMediaSwitch(galleryRoot, getHero) {
+      if (!galleryRoot) return;
+      galleryRoot.addEventListener('click', function (ev) {
+        const btn = ev.target && ev.target.closest && ev.target.closest('[data-product-thumb]');
         if (!btn) return;
-        const img = btn.querySelector('img');
-        if (!img || !heroImg || img === heroImg) return;
-        const heroSrc = heroImg.getAttribute('src') || '';
-        const thumbSrc = img.getAttribute('src') || '';
-        if (!thumbSrc) return;
-        heroImg.setAttribute('src', thumbSrc);
-        img.setAttribute('src', heroSrc); // старое hero-фото → слот миниатюры
+        const src = btn.getAttribute('data-media-src');
+        const target = getHero();
+        if (!src || !target) return;
+        target.setAttribute('src', src);
+        const alt = btn.getAttribute('data-media-alt');
+        if (alt) target.setAttribute('alt', alt);
+        galleryRoot.querySelectorAll('[data-product-thumb]').forEach(function (t) {
+          t.setAttribute('aria-current', t === btn ? 'true' : 'false');
+        });
       });
     }
+    wireGalleryMediaSwitch(galleryEl, function () { return heroImg; });
 
     // Variant chip select. Active chip uses primaryButton tokens; inactive
     // uses secondaryButton tokens. Both are scheme-driven via CSS vars.
@@ -776,19 +792,18 @@ const cartImage = view.gallery.hero?.src ?? '';
     // Lightbox: full-screen popup с большим фото + thumb-полосой.
     // Создаётся лениво при первом click (zoomMode='click').
     function openLightbox() {
-      // Собираем все URL фотографий (hero + thumbs).
+      // Все медиа галереи В ПОРЯДКЕ СЛЕДОВАНИЯ УЗЛОВ по стабильному источнику
+      // (`data-media-src` не мутирует), открываем на том, что сейчас в герое.
       const urls = [];
-      if (heroImg && heroImg.getAttribute('src')) {
-        urls.push(heroImg.getAttribute('src'));
-      }
-      const thumbImgs = root.querySelectorAll('[data-product-thumb] img');
-      thumbImgs.forEach(function (img) {
-        const src = img.getAttribute('src');
+      (galleryEl.querySelectorAll('[data-media-src]') || []).forEach(function (el) {
+        const src = el.getAttribute('data-media-src');
         if (src && urls.indexOf(src) === -1) urls.push(src);
       });
+      const heroSrcNow = heroImg && heroImg.getAttribute('src');
+      if (heroSrcNow && urls.indexOf(heroSrcNow) === -1) urls.unshift(heroSrcNow);
       if (urls.length === 0) return;
 
-      let activeIdx = 0;
+      let activeIdx = Math.max(0, urls.indexOf(heroSrcNow || ''));
 
       const overlay = document.createElement('div');
       overlay.setAttribute('data-product-lightbox', '');
@@ -821,7 +836,7 @@ const cartImage = view.gallery.hero?.src ?? '';
         'object-fit:contain', 'display:block',
         'border-radius:8px',
       ].join(';');
-      mainImg.src = urls[0];
+      mainImg.src = urls[activeIdx];
       overlay.appendChild(mainImg);
 
       const strip = document.createElement('div');
@@ -836,7 +851,7 @@ const cartImage = view.gallery.hero?.src ?? '';
         btn.setAttribute('type', 'button');
         btn.style.cssText = [
           'width:80px', 'height:80px', 'flex-shrink:0',
-          'border:2px solid ' + (idx === 0 ? '#fff' : 'transparent'),
+          'border:2px solid ' + (idx === activeIdx ? '#fff' : 'transparent'),
           'border-radius:6px', 'overflow:hidden',
           'cursor:pointer', 'padding:0', 'background:transparent',
           'transition:border-color 0.15s',

@@ -18,6 +18,17 @@
  * Герой (`data-product-hero`) — всегда div, не <a href="/product…">.
  * Иначе zoomMode=click в конструкторе перехватывает preview-nav-agent
  * и уводит на page-product. См. Product.puckConfig zoomMode.
+ *
+ * МОДЕЛЬ МЕДИА (баг тестировщика 2026-09-13 п.3). Лента миниатюр во ВСЕХ
+ * макетах рисуется из ПОЛНОГО списка фото (`allImages`), включая главное:
+ * позиция файла в секции фиксирована, клик меняет только то, какое фото
+ * показывает герой. Раньше лента шла из `gallery.thumbs` (все КРОМЕ главного),
+ * поэтому «не потерять главное фото» умели единственным способом — свапом
+ * hero ↔ миниатюра, и файлы менялись местами.
+ *
+ * Контракт плитки: `data-media-index` (позиция, неизменна),
+ * `data-media-src` / `data-media-alt` (источник, скрипт его НЕ переписывает),
+ * `aria-current` (какая плитка сейчас в герое).
  */
 import type { GalleryView } from '../Product.types';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
@@ -62,7 +73,7 @@ const allImages = gallery.hero
       <div class:list={['relative overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))] shrink-0 order-1 lg:order-2 w-full lg:w-[var(--product-main-image-size,552px)]', heroRadius]}
            style="aspect-ratio:1/1;" data-product-hero>
         {gallery.hero ? (
-          <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
+          <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image data-media-src={gallery.hero.src}/>
         ) : (
           <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
             <div class="flex flex-col items-center gap-2 text-[rgb(var(--color-muted))]">
@@ -79,7 +90,7 @@ const allImages = gallery.hero
         )}
       </div>
       {/* Thumbs — на mobile горизонтальная лента под main, на lg вертикальная сбоку. */}
-      {gallery.thumbs.length > 0 && (
+      {allImages.length > 1 && (
         <div class="flex flex-row lg:flex-col items-center gap-2 shrink-0 order-2 lg:order-1 w-full lg:w-auto"
              data-product-thumbs data-thumbs-axis="responsive">
           <button type="button" aria-label="Назад" class="shrink-0 h-6 w-6 flex items-center justify-center text-[rgb(var(--color-text))]" data-thumbs-prev>
@@ -87,11 +98,12 @@ const allImages = gallery.hero
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lg:hidden block"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto flex-1 lg:flex-none lg:max-h-[var(--product-main-image-size,552px)]">
-            {gallery.thumbs.map((thumb, idx) => (
-              <button type="button" data-product-thumb data-thumb-idx={idx + 1} aria-label={`Изображение ${idx + 2}`}
+            {allImages.map((media, idx) => (
+              <button type="button" data-product-thumb data-media-index={idx} data-media-src={media.src} data-media-alt={media.alt}
+                aria-current={idx === 0 ? 'true' : 'false'} aria-label={`Изображение ${idx + 1}`}
                 class:list={['relative overflow-hidden p-0 border-0 bg-transparent cursor-pointer shrink-0', thumbRadius,
                   'w-[var(--product-thumb-size,88px)] h-[var(--product-thumb-size,88px)]']}>
-                <img src={thumb.src} alt={thumb.alt} loading="lazy" class="w-full h-full object-cover block"/>
+                <img src={media.src} alt={media.alt} loading="lazy" class="w-full h-full object-cover block"/>
               </button>
             ))}
           </div>
@@ -110,7 +122,7 @@ const allImages = gallery.hero
       <div class:list={['relative w-full overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))]', heroRadius]}
            style="aspect-ratio:1/1;" data-product-hero>
         {gallery.hero ? (
-          <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
+          <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image data-media-src={gallery.hero.src}/>
         ) : (
           <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
             <div class="flex flex-col items-center gap-2 text-[rgb(var(--color-muted))]">
@@ -127,17 +139,18 @@ const allImages = gallery.hero
         )}
       </div>
       {/* Thumbs row (horizontal) с chevron-left/right */}
-      {gallery.thumbs.length > 0 && (
+      {allImages.length > 1 && (
         <div class="flex items-center gap-2 w-full">
           <button type="button" aria-label="Назад" class="shrink-0 h-6 w-6 flex items-center justify-center text-[rgb(var(--color-text))]" data-thumbs-prev>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
           <div class="flex gap-2 overflow-x-auto flex-1" data-product-thumbs data-thumbs-axis="horizontal">
-            {gallery.thumbs.map((thumb, idx) => (
-              <button type="button" data-product-thumb data-thumb-idx={idx + 1} aria-label={`Изображение ${idx + 2}`}
+            {allImages.map((media, idx) => (
+              <button type="button" data-product-thumb data-media-index={idx} data-media-src={media.src} data-media-alt={media.alt}
+                aria-current={idx === 0 ? 'true' : 'false'} aria-label={`Изображение ${idx + 1}`}
                 class:list={['relative overflow-hidden p-0 border-0 bg-transparent cursor-pointer shrink-0', thumbRadius]}
                 style="width:calc(var(--product-thumb-size,88px) * 1.55); aspect-ratio:1/1;">
-                <img src={thumb.src} alt={thumb.alt} loading="lazy" class="w-full h-full object-cover block"/>
+                <img src={media.src} alt={media.alt} loading="lazy" class="w-full h-full object-cover block"/>
               </button>
             ))}
           </div>
@@ -165,11 +178,10 @@ const allImages = gallery.hero
       {allImages.map((img, idx) => (
         <div class:list={['relative overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))]', heroRadius]}
              style="aspect-ratio:1/1;"
-             data-product-thumb={idx === 0 ? undefined : ''}
-             data-thumb-idx={idx === 0 ? undefined : idx}>
+             data-media-index={idx} data-media-src={img.src}>
           {idx === 0 ? (
             <>
-              <img src={img.src} alt={img.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
+              <img src={img.src} alt={img.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image data-media-src={img.src}/>
               {showDiscountBadge && hasDiscount && (
                 <div class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]"
                      style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));">{badgeText}</div>
@@ -189,7 +201,7 @@ const allImages = gallery.hero
       <div class:list={['relative w-full overflow-hidden bg-[rgb(var(--color-surface,var(--color-text)/0.05))]', heroRadius]}
            style="aspect-ratio:1/1;" data-product-hero>
         {gallery.hero ? (
-          <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image/>
+          <img src={gallery.hero.src} alt={gallery.hero.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image data-media-src={gallery.hero.src}/>
         ) : (
           <div class="absolute inset-0 flex items-center justify-center text-[rgb(var(--color-accent))]">
             <div class="flex flex-col items-center gap-2 text-[rgb(var(--color-muted))]">
@@ -206,13 +218,14 @@ const allImages = gallery.hero
         )}
       </div>
       {/* Thumbs grid 2 cols below */}
-      {gallery.thumbs.length > 0 && (
+      {allImages.length > 1 && (
         <div class="grid grid-cols-2 gap-3 w-full" data-product-thumbs data-thumbs-axis="grid">
-          {gallery.thumbs.map((thumb, idx) => (
-            <button type="button" data-product-thumb data-thumb-idx={idx + 1} aria-label={`Изображение ${idx + 2}`}
+          {allImages.map((media, idx) => (
+            <button type="button" data-product-thumb data-media-index={idx} data-media-src={media.src} data-media-alt={media.alt}
+              aria-current={idx === 0 ? 'true' : 'false'} aria-label={`Изображение ${idx + 1}`}
               class:list={['relative overflow-hidden p-0 border-0 bg-transparent cursor-pointer', thumbRadius]}
               style="aspect-ratio:1/1;">
-              <img src={thumb.src} alt={thumb.alt} loading="lazy" class="absolute inset-0 w-full h-full object-cover block"/>
+              <img src={media.src} alt={media.alt} loading="lazy" class="absolute inset-0 w-full h-full object-cover block"/>
             </button>
           ))}
         </div>

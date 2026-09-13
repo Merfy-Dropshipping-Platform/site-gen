@@ -368,11 +368,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<div class={galleryColCls}>
 				{isTwoCols ? (
 					/* two-columns: все фото равной сеткой, главного нет. Первому
-					   оставляем data-cfg-main — live-скрипт свапа null-безопасен,
-					   но так смена товара обновляет и эту раскладку. */
+					   оставляем data-cfg-main — так смена товара обновляет и эту
+					   раскладку. Плитки НЕ помечаем data-cfg-thumb: переключать
+					   тут нечего (все кадры уже на экране), а раньше клик по ним
+					   гонял свап и файлы меняли места. */
 					<div class="grid w-full grid-cols-2 gap-4">
 						{galleryImages.map((img, i) => (
-							<div data-cfg-hero={i === 0 ? "" : undefined} data-cfg-thumb={i === 0 ? undefined : ""} data-image={i === 0 ? undefined : img} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+							<div data-cfg-hero={i === 0 ? "" : undefined} data-media-index={i} data-image={img} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
 								{i === 0 ? (
 									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="eager" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 								) : (
@@ -401,7 +403,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										i === 0 ? "border border-solid border-[#1e2952]/50" : "",
 									]}
 									data-cfg-thumb
+									data-media-index={i}
 									data-image={img}
+									aria-current={i === 0 ? "true" : "false"}
 									aria-label="Показать изображение"
 								>
 									<FluxPicture src={img} alt={displayName} width="120" height="120" loading="eager" class="h-full w-full object-cover" />
@@ -699,14 +703,53 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		if (el.tagName === "IMG") return el as HTMLImageElement;
 		return el.querySelector("img");
 	}
+	/**
+	 * Клик по миниатюре → меняется ТОЛЬКО фото, которое показывает герой.
+	 * Позиция каждого медиафайла в ленте неизменна.
+	 *
+	 * Было (баг тестировщика 2026-09-13 п.3): свап hero ↔ миниатюра плюс
+	 * перезапись `data-image` у плитки. Лента flux и так содержит главное фото
+	 * (`thumbs = galleryImages.slice(0, 5)`), поэтому свап не спасал ничего —
+	 * он только раскидывал файлы по чужим слотам и плодил дубль главного кадра.
+	 *
+	 * `data-image` — стабильный источник плитки, скрипт его НЕ переписывает.
+	 * Зеркалит одноимённую функцию общего блока
+	 * packages/theme-base/blocks/Product/Product.astro; гард на оба порта —
+	 * src/themes/__tests__/product-media-order.spec.ts.
+	 */
+	function wireGalleryMediaSwitch(
+		galleryRoot: HTMLElement,
+		getHero: () => HTMLImageElement | null,
+	): void {
+		if (!galleryRoot) return;
+		const thumbs = galleryRoot.querySelectorAll<HTMLElement>("[data-cfg-thumb]");
+		thumbs.forEach((thumb) => {
+			thumb.addEventListener("click", (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				const src = thumb.getAttribute("data-image");
+				const hero = getHero();
+				if (!src || !hero) return;
+				hero.setAttribute("src", src);
+				galleryRoot.querySelectorAll<HTMLElement>("[data-cfg-thumb]").forEach((t) => {
+					const isActive = t === thumb;
+					t.setAttribute("aria-current", isActive ? "true" : "false");
+					if (isActive) t.classList.add("border", "border-solid", "border-[#1e2952]/50");
+					else t.classList.remove("border", "border-solid", "border-[#1e2952]/50");
+				});
+			});
+		});
+	}
+
 	function collectGalleryUrls(cfg: HTMLElement, hero: HTMLImageElement | null): string[] {
 		const urls: string[] = [];
 		const add = (s: string) => {
 			if (s && urls.indexOf(s) === -1) urls.push(s);
 		};
 		if (hero) add(hero.currentSrc || hero.src || hero.getAttribute("src") || "");
-		cfg.querySelectorAll<HTMLImageElement>("[data-cfg-thumb] img").forEach((im) => {
-			add(im.currentSrc || im.src || im.getAttribute("src") || "");
+		cfg.querySelectorAll<HTMLElement>("[data-cfg-thumb]").forEach((t) => {
+			const im = t.querySelector<HTMLImageElement>("img");
+			add(t.getAttribute("data-image") || im?.currentSrc || im?.src || im?.getAttribute("src") || "");
 		});
 		return urls;
 	}
@@ -991,23 +1034,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			}
 			if (combos.length || liveProduct) applyCombo();
 
-			// Миниатюра → обмен с героем (как Rose Product.astro), не copy и не переход.
-			cfg.querySelectorAll<HTMLElement>("[data-cfg-thumb]").forEach((thumb) => {
-				thumb.addEventListener("click", (e) => {
-					e.preventDefault();
-					e.stopPropagation();
-					const hero = resolveHeroImg(mainImg);
-					const thumbImg = thumb.querySelector("img") || (thumb.tagName === "IMG" ? (thumb as HTMLImageElement) : null);
-					const thumbSrc = thumb.getAttribute("data-image") || thumbImg?.getAttribute("src") || "";
-					if (!hero || !thumbSrc) return;
-					const heroSrc = hero.getAttribute("src") || "";
-					hero.setAttribute("src", thumbSrc);
-					if (thumbImg) thumbImg.setAttribute("src", heroSrc);
-					thumb.setAttribute("data-image", heroSrc);
-					cfg.querySelectorAll("[data-cfg-thumb]").forEach((t) => t.classList.remove("border", "border-solid", "border-[#1e2952]/50"));
-					thumb.classList.add("border", "border-solid", "border-[#1e2952]/50");
-				});
-			});
+			wireGalleryMediaSwitch(cfg, () => resolveHeroImg(mainImg));
 
 			// Стрелка ленты миниатюр (шаг = миниатюра 120px + gap 12px).
 			const track = cfg.querySelector<HTMLElement>("[data-cfg-thumbs-track]");

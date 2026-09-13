@@ -229,5 +229,18 @@ const dadataToken = "";
 			max-width: 556px;
 			padding: 64px 40px 64px 48px;
 		}
+		/* Баг-репорт 17: сводка едет вместе с формой. Стояла в самом верху
+		   растянутой колонки — первый оборот колеса уводил её за кромку, и правая
+		   половина экрана превращалась в пустое неподвижное полотно. `align-self`
+		   обязателен: растянутой на всю высоту колонке прилипать негде.
+		   `max-height` + свой скролл — страховка для длинного заказа. */
+		[data-checkout-column="summary"] {
+			position: sticky;
+			top: 24px;
+			align-self: start;
+			max-height: calc(100vh - 48px);
+			overflow-y: auto;
+			overscroll-behavior: contain;
+		}
 	}
 </style>

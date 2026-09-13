@@ -54,6 +54,7 @@
  * клиентским скриптом (loadRealProducts, тот же каскад источников, что
  * Popular/FluxProductDetail).
  */
+import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import FluxPicture from "../img/FluxPicture.astro";
 import {
@@ -110,20 +111,16 @@ const MAIN_IMAGE_PX = { small: 520, medium: 652, large: 760 } as const;
 const THUMB_PX = { small: 96, medium: 120, large: 144 } as const;
 const sizeVarsStyle = `--product-main-image-size:${MAIN_IMAGE_PX[productSize]}px;--product-thumb-size:${THUMB_PX[productSize]}px;`;
 
-// — Увеличение (canon "zoomMode": click/hover/none). ПРОВЕРЕНО построчно против
-//   пинового источника (fetched e29b70920ffe4469744386b51b9c8ee0fcf68bd0,
-//   src/components/products/ProductConfigurator.astro) И против установленного
-//   flux-паттерна PDP (FluxProductDetail.astro, оба места читались целиком для
-//   review Task 5 Finding 2): НИ ОДНО из двух не содержит НИКАКОГО
-//   zoom-механизма — ни hover-scale CSS/transform, ни click-to-expand lightbox.
-//   Пиновый скрипт galereи даёт только thumb-swap/thumbs-track-scroll/mobile
-//   carousel — zoom отсутствует как класс фичи во всей теме flux, не только в
-//   этой секции. Изобретать lightbox/hover-zoom с нуля здесь означало бы
-//   дописывать поведение, которого нет в пине — прямое нарушение принципа
-//   файла «разметка/поведение 1:1 из пина, меняются только данные». Поэтому
-//   zoomMode — ЛЕГИТИМНЫЙ no-op: значение читается и прокидывается на корень
-//   секции (`data-zoom-mode`) для будущей проводки, но интерактивность не
-//   включает. Задокументировано здесь + в фикс-репорте (не «молча мёртвое»).
+// — Увеличение (canon "zoomMode": click/hover/none). В пиновом источнике
+//   (ProductConfigurator.astro верстальщиков) и в PDP-паттерне
+//   FluxProductDetail.astro zoom-механизма нет как класса — поэтому долгое
+//   время значение только прокидывалось на корень секции «для будущей
+//   проводки». Тестировщик (2026-09-13, п.1) поймал это как мёртвую настройку:
+//   атрибут меняется, читать его некому. Теперь проводка есть и переиспользует
+//   ровно то, что уже лежало в файле: hover-зум внутри рамки и
+//   openProductLightbox (полноэкранный просмотр, портированный 1:1 с
+//   theme-base) — ничего нового не изобретается, разметка не трогается.
+//   См. wireGalleryZoom ниже и гард product-zoom-wiring.spec.ts.
 const zoomModeRaw = typeof p.zoomMode === "string" ? p.zoomMode : "";
 const zoomMode: "click" | "hover" | "none" =
 	zoomModeRaw === "click" || zoomModeRaw === "none" ? zoomModeRaw : "hover";
@@ -278,7 +275,13 @@ const quantityVisible = quantityEnabledRaw !== false && quantityEnabledRaw !== "
 const addBtnTextRaw = p.buttons?.addToCart?.text;
 const addBtnText = addBtnTextRaw === undefined ? "Добавить в корзину" : addBtnTextRaw;
 const showAddToCart = String(addBtnText).trim() !== "";
-const buyBtnText = "Купить сейчас";
+// Подпись «Динамической кнопки» редактируется в подпанели «Кнопки»
+// (buttons.buyNow.text, канон theme-base Product.astro). Здесь лейбл был вбит
+// строкой — жалоба тестировщика 13.09: «КУПИТЬ В 1 КЛИК» сохранялся, а на
+// витрине оставалось «Купить сейчас». Пусто = дефолтный лейбл; видимость —
+// отдельный тоггл dynamicButton.
+const buyBtnTextRaw = p.buttons?.buyNow?.text;
+const buyBtnText = String(buyBtnTextRaw ?? "").trim() || "Купить сейчас";
 const dynRaw = p.dynamicButton && typeof p.dynamicButton === "object" ? p.dynamicButton.enabled : p.dynamicButton;
 const showBuyNow = dynRaw !== "false" && dynRaw !== false;
 
@@ -433,9 +436,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="text"
-						>
-							{displayBrand}
-						</p>
+							set:html={inlineFormat(displayBrand)}
+						></p>
 					)}
 					{!isFieldHidden('title') && (
 					<h1
@@ -578,9 +580,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<!-- Текст -->
 			<div class="flex flex-col gap-2">
 				{displayBrand && !isFieldHidden('text') && (
-					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text">
-						{displayBrand}
-					</p>
+					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text" set:html={inlineFormat(displayBrand)}></p>
 				)}
 				{!isFieldHidden('title') && (
 				<h1 class="font-roboto-flex text-[19px] font-light leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
@@ -747,11 +747,98 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			if (s && urls.indexOf(s) === -1) urls.push(s);
 		};
 		if (hero) add(hero.currentSrc || hero.src || hero.getAttribute("src") || "");
-		cfg.querySelectorAll<HTMLElement>("[data-cfg-thumb]").forEach((t) => {
+		// Лента миниатюр (Сложенный/Карусель/Миниатюрный) И плитки сетки «2
+		// колонки» — там ленты нет, фото лежат плитками [data-media-index].
+		cfg.querySelectorAll<HTMLElement>("[data-cfg-thumb], [data-media-index]").forEach((t) => {
 			const im = t.querySelector<HTMLImageElement>("img");
 			add(t.getAttribute("data-image") || im?.currentSrc || im?.src || im?.getAttribute("src") || "");
 		});
 		return urls;
+	}
+
+	/**
+	 * Оживляет КАЖДЫЙ кадр галереи по режиму «Увеличения» (canon zoomMode).
+	 * Кадр — самостоятельное фото: герой [data-cfg-hero] либо плитка сетки «2
+	 * колонки» [data-media-index]. Миниатюры-переключатели [data-cfg-thumb]
+	 * кадрами не являются: их клик меняет фото героя. Возвращает число
+	 * оживлённых кадров.
+	 *
+	 * Зеркалит одноимённую функцию общего блока
+	 * packages/theme-base/blocks/Product/Product.astro; гард на оба порта —
+	 * src/themes/__tests__/product-zoom-wiring.spec.ts.
+	 */
+	function wireGalleryZoom(
+		galleryRoot: HTMLElement,
+		mode: string,
+		openLightbox: (startSrc: string) => void,
+	): number {
+		if (!galleryRoot) return 0;
+		const candidates = galleryRoot.querySelectorAll<HTMLElement>(
+			"[data-cfg-hero], [data-media-index]",
+		);
+		const frames: HTMLElement[] = [];
+		for (let i = 0; i < candidates.length; i++) {
+			if (!candidates[i].hasAttribute("data-cfg-thumb")) frames.push(candidates[i]);
+		}
+		let wired = 0;
+		for (let i = 0; i < frames.length; i++) {
+			const frame = frames[i];
+			const img = frame.querySelector<HTMLElement>("img");
+			if (!img) continue;
+			const already = frame.getAttribute("data-zoom-wired");
+
+			if (mode !== "hover" && mode !== "click") {
+				// «Нет» — поведение выключено. Метку снимаем: по ней замолкают уже
+				// навешенные обработчики (анонимные, снять их нечем), курсор и
+				// масштаб возвращаем к исходным.
+				if (already !== null) {
+					frame.removeAttribute("data-zoom-wired");
+					frame.style.cursor = "";
+					img.style.transform = "";
+					img.style.transformOrigin = "";
+				}
+				continue;
+			}
+
+			// Метка режима переживает hot-replace конструктора и смену значения:
+			// второй раз слушателей не вешаем, обработчики прошлого режима сами
+			// выходят по несовпадению метки.
+			frame.setAttribute("data-zoom-wired", mode);
+			wired++;
+			if (already === mode) continue;
+			frame.style.cursor = "zoom-in";
+
+			if (mode === "hover") {
+				img.style.transition = "transform 0.2s ease, transform-origin 0.05s linear";
+				frame.addEventListener("mouseenter", function () {
+					if (frame.getAttribute("data-zoom-wired") !== "hover") return;
+					img.style.transform = "scale(2)";
+				});
+				frame.addEventListener("mousemove", function (e: any) {
+					if (frame.getAttribute("data-zoom-wired") !== "hover") return;
+					const rect = frame.getBoundingClientRect();
+					const x = ((e.clientX - rect.left) / rect.width) * 100;
+					const y = ((e.clientY - rect.top) / rect.height) * 100;
+					img.style.transformOrigin = x + "% " + y + "%";
+				});
+				frame.addEventListener("mouseleave", function () {
+					if (frame.getAttribute("data-zoom-wired") !== "hover") return;
+					img.style.transform = "";
+					img.style.transformOrigin = "";
+				});
+			} else {
+				frame.addEventListener("click", function () {
+					if (frame.getAttribute("data-zoom-wired") !== "click") return;
+					openLightbox(
+						frame.getAttribute("data-media-src") ||
+							frame.getAttribute("data-image") ||
+							img.getAttribute("src") ||
+							"",
+					);
+				});
+			}
+		}
+		return wired;
 	}
 
 	// Lightbox: полноэкранный попап с большим фото + лентой миниатюр. Портирован
@@ -1123,33 +1210,16 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				}
 			});
 
-			// Увеличение — hover/click, см. константу zoomMode выше.
-			const heroImgEl = resolveHeroImg(mainImg);
-			const heroEl =
-				(heroImgEl && heroImgEl.closest<HTMLElement>("[data-cfg-hero]")) ||
-				cfg.querySelector<HTMLElement>("[data-cfg-hero]");
-			if (heroEl && heroImgEl && heroEl.getAttribute("data-zoom-wired") !== zoomMode) {
-				heroEl.setAttribute("data-zoom-wired", zoomMode);
-				// Как Rose в сетке 2 колонки: клик по кадру меняет главное фото
-				// (миниатюры ниже). Наведение = зум внутри рамки. Нажатие ≠ оверлей.
-				heroEl.style.cursor = zoomMode === "hover" ? "zoom-in" : "";
-				if (zoomMode === "hover") {
-					heroImgEl.style.transition = "transform 0.2s ease, transform-origin 0.05s linear";
-					heroEl.addEventListener("mouseenter", () => {
-						heroImgEl.style.transform = "scale(2)";
-					});
-					heroEl.addEventListener("mousemove", (e) => {
-						const rect = heroEl.getBoundingClientRect();
-						const x = ((e.clientX - rect.left) / rect.width) * 100;
-						const y = ((e.clientY - rect.top) / rect.height) * 100;
-						heroImgEl.style.transformOrigin = `${x}% ${y}%`;
-					});
-					heroEl.addEventListener("mouseleave", () => {
-						heroImgEl.style.transform = "";
-						heroImgEl.style.transformOrigin = "";
-					});
-				}
-			}
+			// Увеличение — «Нет»/«Наведение»/«Нажатие», см. константу zoomMode выше.
+			// «Нажатие» открывает уже имевшийся в файле полноэкранный просмотр
+			// (openProductLightbox) — раньше он лежал мёртвым кодом, его никто не
+			// вызывал, и настройка «Нажатие» не делала ничего (баг тестировщика
+			// 2026-09-13, п.1).
+			wireGalleryZoom(cfg, zoomMode, (startSrc: string) => {
+				const urls = collectGalleryUrls(cfg, resolveHeroImg(mainImg));
+				const idx = urls.indexOf(startSrc);
+				openProductLightbox(urls, idx < 0 ? 0 : idx);
+			});
 		}
 	}
 

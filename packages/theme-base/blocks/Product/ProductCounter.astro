@@ -6,8 +6,14 @@
  *  - `inline` (rose) — minus/value/plus, no fill, icons size-6, gap-3
  *  - `pill` (flux) — same controls inside a filled rounded pill, gap-2 p-2
  *
- * Colour: следует основной кнопке scheme (--color-button-bg/text). User-spec:
- * Кнопка количество зависит от настроек основной кнопки.
+ * Colour:
+ *  - `pill` — заливка основной кнопки (--color-button-bg) + её текст: контраст
+ *    задан самой парой токенов, читаемость гарантирована.
+ *  - `inline` — заливки нет, значит цифра и стрелки обязаны краситься ТЕКСТОМ
+ *    схемы (--color-text), как цена рядом. До 13.09 здесь стоял
+ *    --color-button-bg: в схеме 3 тестировщика (фон секции #71C0FF, фон кнопки
+ *    #5AF810) на голубом фоне печаталась салатовая цифра. В схеме 1 совпадение
+ *    было случайным (белая кнопка на чёрном фоне), поэтому баг долго не видели.
  */
 interface Props {
   variant?: 'inline' | 'pill';
@@ -20,7 +26,7 @@ const isPill = variant === 'pill';
 <div
   class:list={[
     'inline-flex items-center [font-family:var(--font-body)]',
-    isPill ? 'gap-2 p-2 rounded-[var(--radius-button)]' : 'text-[rgb(var(--color-button-bg))] gap-3',
+    isPill ? 'gap-2 p-2 rounded-[var(--radius-button)]' : 'text-[rgb(var(--color-text))] gap-3',
   ]}
   style={isPill
     ? 'background:rgb(var(--color-button-bg)); color:rgb(var(--color-button-text));'

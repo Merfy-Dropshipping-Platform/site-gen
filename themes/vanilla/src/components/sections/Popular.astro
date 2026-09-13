@@ -129,6 +129,18 @@ const quickAddText =
 	(quickAddMode === "cart" ? "В КОРЗИНУ" : "В корзину");
 const QA_BTN_CLS =
 	"mt-3 inline-flex h-12 min-h-12 w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+// «Быстрое добавление → Количество» ('cart'): ПЕРЕД кнопкой встаёт счётчик
+// − N + (паритет flux/bloom, где он уже работает). Кнопка несёт data-quantity,
+// счётчик его правит, делегат корзины (`Number(addBtn.dataset.quantity ?? "1")`)
+// добавляет выбранное количество. До правки «Количество» и «Стандарт» давали
+// одну и ту же кнопку, и режим ничем не отличался.
+const showStepper = quickAddMode === "cart";
+const QA_STEP_CLS =
+	"mt-3 flex h-12 min-h-12 w-full items-center justify-between border border-solid border-[rgb(var(--color-button-bg,58_69_48))] bg-[rgb(var(--color-bg,255_255_255))]";
+const QA_STEP_BTN_CLS =
+	"flex h-full w-12 shrink-0 items-center justify-center font-vanilla-arsenal text-lg leading-none text-[rgb(var(--color-text,0_0_0))]";
+const QA_QTY_CLS =
+	"min-w-[28px] flex-1 text-center font-vanilla-arsenal text-base leading-none text-[rgb(var(--color-text,0_0_0))]";
 
 // Канон buttonStyle link/primary/secondary — стиль добавленной кнопки.
 // primary/отсутствие = solid-манера дословно; secondary = контур в тонах
@@ -175,6 +187,31 @@ const NEXT_PHOTO_JS = [
 	"if(!li||li.getAttribute('data-np-on')!=='true')return;",
 	"var to=e.relatedTarget;if(to&&li.contains(to))return;",
 	"li.setAttribute('data-np-on','false');swap(li,false);",
+	"});",
+	"})(grids[i]);}",
+	"})();",
+].join("");
+
+// Счётчик количества: делегат кликов −/+ на гриде (как NEXT_PHOTO_JS — слушатель
+// на самом гриде, поэтому переживает подмену innerHTML при гидрации).
+const QA_STEPPER_JS = [
+	"(function(){",
+	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-quick-add=\"cart\"]');",
+	"for(var i=0;i<grids.length;i++){(function(g){",
+	"if(g.getAttribute('data-qa-step-bound')==='true')return;",
+	"g.setAttribute('data-qa-step-bound','true');",
+	"g.addEventListener('click',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var inc=t.closest('[data-qa-inc]');var dec=t.closest('[data-qa-dec]');",
+	"if(!inc&&!dec)return;",
+	"var li=t.closest('li');if(!li)return;",
+	"var q=li.querySelector('[data-qa-qty]');var btn=li.querySelector('[data-add-to-cart]');",
+	"if(!q)return;",
+	"var n=parseInt(q.textContent,10)||1;",
+	"n=inc?Math.min(99,n+1):Math.max(1,n-1);",
+	"q.textContent=String(n);",
+	"if(btn)btn.setAttribute('data-quantity',String(n));",
+	"e.preventDefault();",
 	"});",
 	"})(grids[i]);}",
 	"})();",
@@ -333,6 +370,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-quick-add={quickAddMode}
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-qa-cls={quickAddMode ? QA_BTN_CLS : undefined}
+			data-qa-step-cls={showStepper ? QA_STEP_CLS : undefined}
+			data-qa-step-btn-cls={showStepper ? QA_STEP_BTN_CLS : undefined}
+			data-qa-qty-cls={showStepper ? QA_QTY_CLS : undefined}
 			data-btn-style={btnStyle}
 		>
 			{/* SSR-цель (Figma 1:19335): коллекция ВЫБРАНА → реальные товары (фетч в
@@ -342,6 +382,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{realProducts.length > 0 ? realProducts.map((product) => (
 				<li data-product-id={product.id}>
 					<VanillaProductCard product={product} />
+					{showStepper && (
+						<div class={QA_STEP_CLS} data-qa-stepper>
+							<button type="button" data-qa-dec class={QA_STEP_BTN_CLS} aria-label="Уменьшить">−</button>
+							<span data-qa-qty class={QA_QTY_CLS}>1</span>
+							<button type="button" data-qa-inc class={QA_STEP_BTN_CLS} aria-label="Увеличить">+</button>
+						</div>
+					)}
 					{quickAddMode && (
 						<button
 							type="button"
@@ -351,6 +398,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-price={product.price}
 							data-old-price={product.oldPrice}
 							data-image={product.image}
+							data-quantity="1"
 							class={QA_BTN_CLS}
 						>
 							{quickAddText}
@@ -406,7 +454,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</div>
 		)}
 	</div>
-</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
+</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{showStepper && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {
@@ -482,11 +530,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					const qa = wantQuickAdd
 						? hasVariants
 							? firstCombo
-								? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(prod))}" class="${qaCls}">В корзину</button>`
+								? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(prod))}" data-quantity="1" class="${qaCls}">В корзину</button>`
 								: `<a href="${escapeHtml(productHref(prod))}" class="${qaCls}">В корзину</a>`
-							: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(prod.price))}" data-image="${escapeHtml(productImage(prod))}" class="${qaCls}">В корзину</button>`
+							: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(prod.id)}" data-name="${escapeHtml(prod.name)}" data-price="${escapeHtml(formatPrice(prod.price))}" data-image="${escapeHtml(productImage(prod))}" data-quantity="1" class="${qaCls}">В корзину</button>`
 						: "";
-					return `<li data-product-id="${escapeHtml(prod.id)}"${img2}>${renderCardHtml(prod)}${qa}</li>`;
+					// Счётчик зеркалит SSR-ветку: после подмены innerHTML «Количество»
+					// обязано остаться на месте, а не исчезнуть вместе с карточкой.
+					const qaStep =
+						grid.getAttribute("data-quick-add") === "cart"
+							? `<div class="${grid.getAttribute("data-qa-step-cls") || ""}" data-qa-stepper><button type="button" data-qa-dec class="${grid.getAttribute("data-qa-step-btn-cls") || ""}" aria-label="Уменьшить">−</button><span data-qa-qty class="${grid.getAttribute("data-qa-qty-cls") || ""}">1</span><button type="button" data-qa-inc class="${grid.getAttribute("data-qa-step-btn-cls") || ""}" aria-label="Увеличить">+</button></div>`
+							: "";
+					return `<li data-product-id="${escapeHtml(prod.id)}"${img2}>${renderCardHtml(prod)}${qaStep}${qa}</li>`;
 				})
 				.join("");
 			applyQaText(grid);

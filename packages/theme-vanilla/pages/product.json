@@ -1,6 +1,14 @@
 {
   "content": [
-    { "type": "Header", "props": { "id": "Header-product" } },
+    { "type": "Header", "props": {
+        "id": "Header-product",
+        "navigationLinks": [
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Доставка", "href": "/delivery" },
+          { "label": "Контакты", "href": "/contacts" }
+        ]
+      } },
     { "type": "Product", "props": { "id": "Product-1" } },
     {
       "type": "PopularProducts",

@@ -75,6 +75,12 @@ const SNAP_SYSTEM_PAGE_ROUTES: Record<string, string> = {
   'page-product': 'product',
   'page-checkout': 'checkout',
   'page-checkout-result': 'checkout-result',
+  // Добавлено осознанно (пункт 14 тестировщика): «Профиль» — личный кабинет
+  // покупателя. Страница витрины существовала и раньше
+  // (`themes/<t>/src/pages/account/profile.astro`, live отдаёт 200), но не была
+  // заведена как страница конструктора — в верхнем меню её не было. Тело
+  // страницы остаётся verbatim; в конструкторе редактируются шапка и подвал.
+  'page-profile': 'account/profile',
 };
 
 describe('page-registry parity-snapshot', () => {
@@ -149,8 +155,10 @@ describe('page-registry parity-snapshot', () => {
       expect(getRouteMap()).toEqual(SNAP_SYSTEM_PAGE_ROUTES);
     });
 
-    it('покрывает все 9 системных страниц', () => {
-      expect(Object.keys(getRouteMap())).toHaveLength(9);
+    it('покрывает все системные страницы снимка (9 прежних + «Профиль»)', () => {
+      expect(Object.keys(getRouteMap()).sort()).toEqual(
+        Object.keys(SNAP_SYSTEM_PAGE_ROUTES).sort(),
+      );
     });
 
     it('getSystemPageRoute возвращает тот же route для каждого id', () => {

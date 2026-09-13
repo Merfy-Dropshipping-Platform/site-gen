@@ -9,11 +9,27 @@
         "logoPosition": "center-absolute",
         "stickiness": "scroll-up",
         "colorScheme": "scheme-2",
-        "padding": { "top": 0, "bottom": 0 },
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
-          { "label": "КОЛЛЕКЦИИ", "href": "/catalog" },
-          { "label": "ИСТОРИЯ", "href": "/about" },
-          { "label": "КОНТАКТЫ", "href": "/contacts" }
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
         ],
         "menuColorScheme": "scheme-2",
         "menuType": "dropdown",

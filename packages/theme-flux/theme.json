@@ -400,6 +400,13 @@
       "slug": "/checkout-result",
       "role": "system",
       "contentFile": "pages/checkout-result.json"
+    },
+    {
+      "id": "page-profile",
+      "name": "Профиль",
+      "slug": "/account/profile",
+      "role": "system",
+      "contentFile": "pages/profile.json"
     }
   ],
   "defaultScheme": "scheme-2",

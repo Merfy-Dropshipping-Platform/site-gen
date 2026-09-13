@@ -46,9 +46,17 @@ const paddingStyle = safePadding ? `padding-top:${safePadding.top}px; padding-bo
 const schemeClass = colorScheme ? `color-scheme-${String(colorScheme).replace('scheme-', '')}` : '';
 // Figma constructor sidebar 314:34540 — отдельная схема для блока «Меню».
 // Если merchant не выбрал — наследуем основную схему (нет дополнительного wrapper).
-const menuColorScheme = (Astro.props as Record<string, unknown>).menuColorScheme as string | undefined;
-const menuSchemeClass = menuColorScheme && menuColorScheme !== colorScheme
-  ? `color-scheme-${String(menuColorScheme).replace('scheme-', '')}`
+// Схему платформа отдаёт строкой ("scheme-1") ИЛИ числом (1) — нормализатор
+// `page-blocks` приводит к числу только `colorScheme`. Сравнение сырых значений
+// давало «1 !== "scheme-1"» и вешало лишнюю обёртку схемы на <nav> на части
+// страниц (замер flux 2026-09-13: главная без класса, остальные с ним).
+// Сравниваем НОРМАЛИЗОВАННЫЕ значения — канон из satin (Header.astro:103).
+const _schemeKey = (v: unknown): string =>
+  v === undefined || v === null || v === '' ? '' : String(v).replace('scheme-', '');
+const menuColorScheme = (Astro.props as Record<string, unknown>).menuColorScheme;
+const _menuKey = _schemeKey(menuColorScheme);
+const menuSchemeClass = _menuKey && _menuKey !== _schemeKey(colorScheme)
+  ? `color-scheme-${_menuKey}`
   : '';
 // center-left теперь рендерится как top-left (1-row) — на уровне DOM
 // различий нет, по эталону rose.merfy.ru.

@@ -5,13 +5,15 @@
       "props": {
         "id": "Header-about",
         "siteTitle": "Bloom",
-        "logo": "/logo.svg",
+        "logo": "",
         "logoPosition": "top-center",
+        "stickiness": "scroll-up",
+        "colorScheme": "scheme-3",
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
-          {
-            "label": "Главная",
-            "href": "/"
-          },
           {
             "label": "Каталог",
             "href": "/catalog"
@@ -21,10 +23,16 @@
             "href": "/about"
           },
           {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
             "label": "Контакты",
             "href": "/contacts"
           }
         ],
+        "menuColorScheme": "scheme-3",
+        "menuType": "dropdown",
         "actionButtons": {
           "showSearch": "true",
           "showCart": "true",

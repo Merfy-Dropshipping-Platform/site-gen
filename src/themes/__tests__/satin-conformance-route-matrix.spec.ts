@@ -52,11 +52,13 @@ describe('platform page registry — checkout-result is a registry route', () =>
 describe('Satin manifest ↔ registry — checkout-result seed', () => {
   // spec 103 завёл странице подтверждения заказа сид и в satin: страниц десять,
   // hasCheckoutResultPage — true. Прежние ожидания описывали состояние до фичи.
-  it('sees ten manifest pages including the checkout-result seed', async () => {
+  // Одиннадцатая страница — «Профиль» (`/account/profile`, пункт 14).
+  it('sees eleven manifest pages including checkout-result and profile', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.pageSlugs).toHaveLength(10);
+    expect(snap.pageSlugs).toHaveLength(11);
     expect(snap.hasCheckoutResultPage).toBe(true);
     expect(snap.pageSlugs).toContain('/checkout-result');
+    expect(snap.pageSlugs).toContain('/account/profile');
   });
 });
 

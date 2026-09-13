@@ -91,6 +91,15 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
   { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
   // ── Verbatim системные страницы (есть id в SYSTEM_PAGE_ROUTES) ──────────
   { id: 'page-product', route: 'product', kind: 'verbatim', chrome: 'full' },
+  // Личный кабинет покупателя, «Основные данные» (пункт 14 тестировщика).
+  // Тело страницы — порт темы `themes/<t>/src/pages/account/profile.astro`
+  // (verbatim: первый сегмент `account` уже в VERBATIM_PREFIXES, поэтому
+  // множество verbatim-первосегментов не меняется). Puck-блоков у страницы нет,
+  // редактируемы только шапка и подвал — они доезжают инъекцией хрома
+  // (`injectChromeIntoHtml`), что подтверждено замером превью vanilla QA.
+  // На сборке страница пропускается как STATIC_TEMPLATE_PAGES ('account/profile'
+  // уже в списке build.service) — генератор astro-страниц её не трогает.
+  { id: 'page-profile', route: 'account/profile', kind: 'verbatim', chrome: 'full' },
   {
     id: 'page-checkout',
     route: 'checkout',
@@ -154,7 +163,13 @@ export const VERBATIM_PREFIXES: ReadonlySet<string> = new Set([
   'auth',
   'blog',
   'legal',
-  'account',
+  // 'account' переехал в PAGE_REGISTRY (page-profile, route 'account/profile'):
+  // у страницы появился пункт в конструкторе, а значит и запись с id. Первый
+  // сегмент всё тот же 'account', поэтому isVerbatimRoute('account'),
+  // ('account/orders'), ('account/order') отвечают как прежде — множество
+  // VERBATIM_FIRST_SEGMENTS не изменилось. Ровно так же устроен 'product':
+  // сама страница — запись реестра, а 'products' остаётся в плоском списке.
+  // Инвариант «плоский список не пересекается с записями реестра» сохранён.
   'design-system',
   'puck-editor',
 ]);

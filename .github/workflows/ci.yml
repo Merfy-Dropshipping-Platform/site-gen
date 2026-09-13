@@ -152,6 +152,16 @@ jobs:
       # сырым тегом, и при этом не пропустить чужой HTML мерчанта. Тест лежал в
       # репозитории с 54823834, но в CI не гонялся — значит не сторожил ничего.
       - run: pnpm exec jest --runInBand src/themes/__tests__/rich-text-bold-italic.spec.ts
+      # Шапка на всех страницах = шапка главной (жалоба тестировщика №13).
+      # Блок Header лежит копией в каждой странице ревизии и в каждом сиде темы;
+      # без этих проверок копии снова разъедутся: замер 2026-09-13 дал у vanilla
+      # пять разных шапок на восьми страницах, у satin и bloom — по четыре.
+      # Проверки: (1) миграция ревизии сводит шапку к главной, (2) досеянная
+      # страница получает её же, (3) сиды всех пяти тем совпадают с home.json,
+      # (4) «Цветовая схема меню» рендерится одинаково от числа и от строки,
+      # (5) страница «Профиль» заведена штатным механизмом (жалоба №14).
+      - run: pnpm exec jest --runInBand src/utils/__tests__/revision-migrations-header-unify.test.ts src/themes/__tests__/page-blocks-header-unify.spec.ts src/themes/__tests__/page-seed-header-parity.spec.ts src/utils/__tests__/revision-migrations-profile.test.ts
+      - run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-scheme-notation.spec.ts
       - run: pnpm test:conformance:shared
       - run: pnpm test:conformance:satin
       - run: node --test scripts/__tests__/block-source-layout.test.mjs

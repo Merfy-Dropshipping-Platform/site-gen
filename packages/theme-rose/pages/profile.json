@@ -1,0 +1,42 @@
+{
+  "content": [
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-profile",
+        "navigationLinks": [
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-profile"
+      }
+    }
+  ],
+  "root": {
+    "props": {
+      "meta": {
+        "title": "Основные данные"
+      }
+    }
+  },
+  "zones": {}
+}

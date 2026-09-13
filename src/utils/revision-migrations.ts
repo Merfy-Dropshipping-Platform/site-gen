@@ -63,6 +63,88 @@ function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Blo
 }
 
 /**
+ * Шапка на ВСЕХ страницах = шапка ГЛАВНОЙ (пункт 13 тестировщика: «на всех
+ * страницах блок Шапка совпадает и остаётся таким же, как например на главной»).
+ *
+ * Почему это нужно как отдельный проход, а не «поправить сид»: блок `Header`
+ * хранится КОПИЕЙ в `pagesData[<страница>].content`, и источников копии четыре —
+ * сиды тем (`packages/theme-<t>/pages/<id>.json`), `ensureChrome` и
+ * `migrateContentPages`, фолбэк конструктора и lazy-seed резолвера. Пока у
+ * каждой копии своя судьба, расхождение неизбежно. Этот проход делает главную единственным источником
+ * правды на ЧИТАЮЩЕМ пути (getRevision → сайдбар конструктора, preview, build),
+ * поэтому все четыре источника сходятся в одну шапку.
+ *
+ * Правила:
+ *  - props берутся с главной ЦЕЛИКОМ (replace, не merge) → набор параметров на
+ *    странице не может быть ни шире, ни уже, чем на главной;
+ *  - собственный `id` блока сохраняется — Puck ломается на дубликатах id;
+ *  - `CheckoutHeader` не трогается: это ДРУГОЙ компонент (минимальная шапка
+ *    чекаута по Figma 1:13563), у него свой набор полей by design;
+ *  - если шапка главной вырождена (только `id`) — проход выключается целиком.
+ *    Такой шапки не бывает у живого мерчанта: это артефакт старого сида
+ *    (`pages/about.json` = `Header{id}`) и дрейфа `syncSharedSections`.
+ *    Раскатать её значит стереть логотип и название магазина на всех
+ *    остальных страницах (наблюдалось на demo-rose 71f9b323…).
+ *
+ * Идемпотентна: повторный прогон даёт тот же объект (порядок ключей фиксирован
+ * `{...canon, id}`), неизменённые страницы возвращаются по прежней ссылке.
+ */
+function headerHasSettings(block: Block | undefined): boolean {
+  if (!block) return false;
+  return Object.keys(block.props ?? {}).some((k) => k !== 'id');
+}
+
+function samePropsShallow(
+  a: Record<string, unknown> | undefined,
+  b: Record<string, unknown>,
+): boolean {
+  const ak = Object.keys(a ?? {});
+  const bk = Object.keys(b);
+  if (ak.length !== bk.length) return false;
+  return bk.every(
+    (k) => JSON.stringify((a ?? {})[k] ?? null) === JSON.stringify(b[k] ?? null),
+  );
+}
+
+export function unifyHeaderWithHome(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  const home = pagesData['home'] as PageData | undefined;
+  const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
+  const source = homeContent.find((b) => b?.type === 'Header');
+  if (!headerHasSettings(source)) return pagesData;
+
+  const canon: Record<string, unknown> = { ...(source!.props ?? {}) };
+  delete canon.id;
+
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    if (pageId === 'home') continue;
+    // Служебные ключи pagesData (напр. `_vanillaHomeMigrationVersion`: number)
+    // НЕ страницы — пропускаем, сохраняя значение как есть.
+    const content = (page as PageData | undefined)?.content;
+    if (!Array.isArray(content)) continue;
+
+    let touched = false;
+    const next = content.map((b) => {
+      if (b?.type !== 'Header') return b;
+      const ownId = b.props?.id;
+      const props: Record<string, unknown> =
+        ownId === undefined ? { ...canon } : { ...canon, id: ownId };
+      if (samePropsShallow(b.props, props)) return b;
+      touched = true;
+      return { ...b, props };
+    });
+    if (touched) {
+      out[pageId] = { ...(page as PageData), content: next };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Cart page = Puck-managed ОДНОЙ секцией CartSection (вся ванильная логика корзины:
  * пусто/наполнено/итог/«Оформить»/cart-store). Мерчант может добавлять вокруг другие
  * секции, как на главной. Заменяет прежний 081-layout (CartBody/CartSummary/CartTotals/
@@ -1627,6 +1709,72 @@ function backfillVideoSizeSplit(pagesData: Record<string, unknown>): Record<stri
   return changed ? out : pagesData;
 }
 
+/**
+ * Пункт 14: страница «Профиль» (личный кабинет покупателя, «Основные данные»).
+ *
+ * Страница витрины существовала и раньше — `themes/<t>/src/pages/account/
+ * profile.astro` во всех пяти темах, live отдаёт 200, превью конструктора по
+ * `?page=account/profile` тоже. Не было только записи страницы, поэтому пункта
+ * в верхнем меню конструктора не появлялось. Манифест темы её теперь объявляет,
+ * но `runMigrations` домерживает страницы манифеста лишь при подъёме ревизии с
+ * 1.0 → 2.0; у всех живых сайтов ревизия уже 2.0, поэтому запись добавляем
+ * здесь — тем же приёмом, что `seedCheckoutResultPage`.
+ *
+ * Содержимое — РОВНО [Header, Footer]. Тело страницы verbatim (приходит из
+ * собранной темы), Puck-блоков у него нет; шапка и подвал доезжают инъекцией
+ * хрома и потому реально настраиваются. Класть сюда секцию «Страница» нельзя:
+ * её правки не отразились бы ни в превью, ни на витрине — это мёртвая настройка.
+ *
+ * Идемпотентна: страница с уже существующей записью/контентом не трогается.
+ */
+function seedProfilePage(out: Record<string, unknown>): Record<string, unknown> {
+  // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
+  // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
+  // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
+  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+  const pagesData = out.pagesData as Record<string, unknown>;
+  const pages = Array.isArray(out.pages)
+    ? (out.pages as Array<{ id?: string; slug?: string }>)
+    : [];
+  const hasContent = !!pagesData['page-profile'];
+  const hasMeta = pages.some(
+    (p) =>
+      p?.id === 'page-profile' ||
+      (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'account/profile',
+  );
+  if (hasContent && hasMeta) return out;
+
+  const ts = Date.now();
+  const chrome = getHomeChrome(pagesData);
+  const newPagesData = hasContent
+    ? pagesData
+    : {
+        ...pagesData,
+        'page-profile': {
+          // Свои id — Puck ломается на дубликатах между страницами.
+          content: [
+            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: `Header-profile-${ts}` } },
+            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-profile-${ts}` } },
+          ],
+          root: { props: { meta: { title: 'Основные данные' } } },
+          zones: {},
+        } as PageData,
+      };
+  const newPages = hasMeta
+    ? pages
+    : [
+        ...pages,
+        {
+          id: 'page-profile',
+          name: 'Профиль',
+          slug: '/account/profile',
+          role: 'system',
+          contentFile: 'pages/profile.json',
+        },
+      ];
+  return { ...out, pages: newPages, pagesData: newPagesData };
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -1681,8 +1829,19 @@ export function migrateRevisionData(
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
   // (touches pages[] + pagesData), поэтому после pagesData-сидеров.
-  if (themeId === 'rose' || themeId === 'flux') {
-    return seedCheckoutResultPage(out);
+  const withCheckoutResult =
+    themeId === 'rose' || themeId === 'flux' ? seedCheckoutResultPage(out) : out;
+
+  // Пункт 14: «Профиль» — для всех тем (страница витрины есть у всех пяти).
+  const withProfile = seedProfilePage(withCheckoutResult);
+
+  // Пункт 13 — шапка = шапка главной. САМОЙ ПОСЛЕДНЕЙ: все сидеры выше уже
+  // создали свои страницы (catalog/product/cart/checkout/collection/
+  // checkout-result), значит унификация накрывает и их тоже.
+  if (withProfile.pagesData && typeof withProfile.pagesData === 'object') {
+    withProfile.pagesData = unifyHeaderWithHome(
+      withProfile.pagesData as Record<string, unknown>,
+    );
   }
-  return out;
+  return withProfile;
 }

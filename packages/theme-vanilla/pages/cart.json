@@ -1,6 +1,14 @@
 {
   "content": [
-    { "type": "Header", "props": { "id": "Header-cart" } },
+    { "type": "Header", "props": {
+        "id": "Header-cart",
+        "navigationLinks": [
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Доставка", "href": "/delivery" },
+          { "label": "Контакты", "href": "/contacts" }
+        ]
+      } },
     { "type": "CartBody", "props": { "id": "CartBody-1" } },
     { "type": "CartSummary", "props": { "id": "CartSummary-1" } },
     { "type": "CartTotals", "props": { "id": "CartTotals-1" } },

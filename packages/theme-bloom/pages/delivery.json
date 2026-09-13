@@ -5,8 +5,14 @@
       "props": {
         "id": "Header-delivery",
         "siteTitle": "Bloom",
-        "logo": "/logo.svg",
+        "logo": "",
         "logoPosition": "top-center",
+        "stickiness": "scroll-up",
+        "colorScheme": "scheme-3",
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        },
         "navigationLinks": [
           {
             "label": "Каталог",
@@ -25,6 +31,8 @@
             "href": "/contacts"
           }
         ],
+        "menuColorScheme": "scheme-3",
+        "menuType": "dropdown",
         "actionButtons": {
           "showSearch": "true",
           "showCart": "true",

@@ -69,9 +69,12 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
   // Страница подтверждения заказа появилась в теме позже этих ожиданий
   // (spec 103): страниц стало десять, сид checkout-result есть. Тест
   // зафиксировал состояние ДО фичи и с тех пор держал CI красным.
-  it('sees exactly ten manifest pages including the checkout-result seed', async () => {
+  // Одиннадцатая — «Профиль» (`/account/profile`, пункт 14 тестировщика):
+  // страница витрины существовала и раньше, теперь у неё есть запись в
+  // манифесте, чтобы в конструкторе появился пункт меню.
+  it('sees exactly eleven manifest pages including checkout-result and profile', async () => {
     const snap = await loadSatin();
-    expect(snap.pageSlugs).toHaveLength(10);
+    expect(snap.pageSlugs).toHaveLength(11);
     expect(snap.pageSlugs).toEqual(
       expect.arrayContaining([
         '/',
@@ -84,6 +87,7 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
         '/product',
         '/checkout',
         '/checkout-result',
+        '/account/profile',
       ]),
     );
     expect(snap.hasCheckoutResultPage).toBe(true);

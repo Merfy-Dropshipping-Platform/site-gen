@@ -3,12 +3,12 @@
     {
       "type": "Header",
       "props": {
-        "id": "Header-about",
-        "siteTitle": "Satin",
+        "id": "Header-profile",
+        "siteTitle": "Bloom",
         "logo": "",
-        "logoPosition": "center-absolute",
+        "logoPosition": "top-center",
         "stickiness": "scroll-up",
-        "colorScheme": "scheme-2",
+        "colorScheme": "scheme-3",
         "padding": {
           "top": 0,
           "bottom": 0
@@ -31,7 +31,7 @@
             "href": "/contacts"
           }
         ],
-        "menuColorScheme": "scheme-2",
+        "menuColorScheme": "scheme-3",
         "menuType": "dropdown",
         "actionButtons": {
           "showSearch": "true",
@@ -41,25 +41,14 @@
       }
     },
     {
-      "type": "Page",
-      "props": {
-        "id": "Page-about",
-        "heading": "О нас",
-        "content": "<p>Базовый гардероб, к которому хочется возвращаться: спокойные цвета, честные материалы и крой, который не подводит.</p>",
-        "headingSize": "large",
-        "colorScheme": "scheme-1",
-        "padding": {
-          "top": 80,
-          "bottom": 80
-        }
-      }
-    },
-    {
       "type": "Footer",
       "props": {
-        "id": "Footer-about",
+        "id": "Footer-profile",
         "newsletter": {
-          "enabled": "false"
+          "enabled": "true",
+          "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+          "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+          "placeholder": "E-mail"
         },
         "colorScheme": "scheme-3",
         "copyrightColorScheme": "scheme-1",
@@ -68,42 +57,42 @@
           "bottom": 40
         },
         "navigationColumn": {
-          "title": "МАГАЗИН",
+          "title": "Навигация",
           "links": [
             {
-              "label": "Коллекции",
+              "label": "Каталог",
               "href": "/catalog"
             },
             {
-              "label": "Новые поступления",
-              "href": "/catalog"
-            },
-            {
-              "label": "О бренде",
+              "label": "О нас",
               "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
             }
           ]
         },
         "informationColumn": {
-          "title": "ИНФОРМАЦИЯ",
+          "title": "Информация",
           "links": [
             {
               "label": "Доставка",
-              "href": "/delivery"
+              "href": "#"
             },
             {
               "label": "Возврат",
-              "href": "/returns"
+              "href": "#"
             },
             {
-              "label": "Оплата",
-              "href": "/payment"
+              "label": "Условия",
+              "href": "#"
             }
           ]
         },
         "socialColumn": {
-          "title": "СВЯЗЬ",
-          "email": "hello@satin.example",
+          "title": "Контакты",
+          "email": "info@example.ru",
           "socialLinks": [
             {
               "platform": "VK",
@@ -116,7 +105,7 @@
           ]
         },
         "copyright": {
-          "companyName": "Satin",
+          "companyName": "Bloom",
           "showYear": "true",
           "poweredBy": "Powered by Merfy"
         }
@@ -125,7 +114,9 @@
   ],
   "root": {
     "props": {
-      "title": "О нас"
+      "meta": {
+        "title": "Основные данные"
+      }
     }
   },
   "zones": {}

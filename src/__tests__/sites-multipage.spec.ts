@@ -1,7 +1,10 @@
 import { getPageResolver } from '../themes/page-resolver-instance';
 
 // Канонический системный набор страниц rose (theme.json `pages[]`).
-// Spec 103 добавил `page-checkout-result` (thank-you). Держим список в синхроне
+// Spec 103 добавил `page-checkout-result` (thank-you). Пункт 14 тестировщика
+// добавил `page-profile` (личный кабинет покупателя, `/account/profile`) —
+// страница витрины существовала и раньше, но записи в манифесте не имела,
+// поэтому в верхнем меню конструктора её не было. Держим список в синхроне
 // с манифестом — стэйл-счётчик ловит рассинхрон.
 const ROSE_SYSTEM_PAGE_IDS = [
   'home',
@@ -14,6 +17,7 @@ const ROSE_SYSTEM_PAGE_IDS = [
   'page-product',
   'page-checkout',
   'page-checkout-result',
+  'page-profile',
 ];
 
 describe('sites multipage integration', () => {

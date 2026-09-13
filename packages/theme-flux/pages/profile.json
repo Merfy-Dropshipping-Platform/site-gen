@@ -3,7 +3,7 @@
     {
       "type": "Header",
       "props": {
-        "id": "Header-contacts",
+        "id": "Header-profile",
         "siteTitle": "Flux",
         "logo": "",
         "logoPosition": "top-left",
@@ -43,44 +43,85 @@
         }
       }
     },
-    { "type": "ContactForm", "props": { "id": "ContactForm-1", "colorScheme": "scheme-2" } },
     {
       "type": "Footer",
       "props": {
-        "id": "Footer-contacts",
+        "id": "Footer-profile",
         "colorScheme": "scheme-2",
         "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
-        "newsletter": { "enabled": "false" },
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
+        "newsletter": {
+          "enabled": "true"
+        },
         "navigationColumn": {
           "title": "Навигация",
           "links": [
-            { "label": "Каталог", "href": "/catalog" },
-            { "label": "О нас", "href": "/about" },
-            { "label": "Контакты", "href": "/contacts" }
+            {
+              "label": "Каталог",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
           ]
         },
         "informationColumn": {
           "title": "Информация",
           "links": [
-            { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/return" },
-            { "label": "Условия обслуживания", "href": "/legal/terms" },
-            { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
+            {
+              "label": "Политика доставки",
+              "href": "/legal/delivery"
+            },
+            {
+              "label": "Политика возврата",
+              "href": "/legal/return"
+            },
+            {
+              "label": "Условия обслуживания",
+              "href": "/legal/terms"
+            },
+            {
+              "label": "Политика конфиденциальности",
+              "href": "/legal/privacy"
+            }
           ]
         },
         "socialColumn": {
           "title": "Социальные сети",
           "email": "flux@example.ru",
           "socialLinks": [
-            { "platform": "telegram", "href": "#" },
-            { "platform": "vk", "href": "#" }
+            {
+              "platform": "telegram",
+              "href": "#"
+            },
+            {
+              "platform": "vk",
+              "href": "#"
+            }
           ]
         },
-        "copyright": { "companyName": "Flux", "showYear": "true", "poweredBy": "Powered by Merfy" }
+        "copyright": {
+          "companyName": "Flux",
+          "showYear": "true",
+          "poweredBy": "Powered by Merfy"
+        }
       }
     }
   ],
-  "root": { "props": { "title": "Контакты" } },
+  "root": {
+    "props": {
+      "meta": {
+        "title": "Основные данные"
+      }
+    }
+  },
   "zones": {}
 }

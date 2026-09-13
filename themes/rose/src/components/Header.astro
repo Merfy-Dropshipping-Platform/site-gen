@@ -124,7 +124,14 @@ const megaLinkCls = "";
 
 // Канон menuColorScheme: опциональная отдельная цветовая схема для десктопного <nav>.
 // При задании — добавляем класс color-scheme-<X> к обёртке <nav>.
-const menuColorScheme = typeof p.menuColorScheme === "string" ? p.menuColorScheme : "";
+// Схему платформа отдаёт строкой ("scheme-1") ИЛИ числом (1): нормализатор
+// `page-blocks` приводит к числу только `colorScheme`, а `menuColorScheme`
+// доезжает как есть. Проверка «только строка» молча не срабатывала на числе —
+// и один и тот же магазин получал <nav> со схемой на внутренних страницах и без
+// неё на главной (замер flux 2026-09-13). Канон взят из satin (Header.astro:103).
+const _menuSchemeStr = (v: unknown): string =>
+	typeof v === "number" ? String(v) : typeof v === "string" ? v : "";
+const menuColorScheme = _menuSchemeStr(p.menuColorScheme);
 const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replace("scheme-", "")}` : "";
 
 // Базовый класс десктоп-ссылки nav (общий для всех раскладок). Для mega — uppercase.

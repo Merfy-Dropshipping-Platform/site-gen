@@ -3,7 +3,7 @@
     {
       "type": "Header",
       "props": {
-        "id": "Header-product",
+        "id": "Header-profile",
         "siteTitle": "Satin",
         "logo": "",
         "logoPosition": "center-absolute",
@@ -40,44 +40,65 @@
         }
       }
     },
-    { "type": "Product", "props": { "id": "Product-1" } },
-    {
-      "type": "PopularProducts",
-      "props": {
-        "id": "PopularProducts-product",
-        "heading": { "text": "Вам также может понравиться", "size": "small" }
-      }
-    },
     {
       "type": "Footer",
       "props": {
-        "id": "Footer-product",
-        "newsletter": { "enabled": "false" },
+        "id": "Footer-profile",
+        "newsletter": {
+          "enabled": "false"
+        },
         "colorScheme": "scheme-3",
         "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
         "navigationColumn": {
           "title": "МАГАЗИН",
           "links": [
-            { "label": "Коллекции", "href": "/catalog" },
-            { "label": "Новые поступления", "href": "/catalog" },
-            { "label": "О бренде", "href": "/about" }
+            {
+              "label": "Коллекции",
+              "href": "/catalog"
+            },
+            {
+              "label": "Новые поступления",
+              "href": "/catalog"
+            },
+            {
+              "label": "О бренде",
+              "href": "/about"
+            }
           ]
         },
         "informationColumn": {
           "title": "ИНФОРМАЦИЯ",
           "links": [
-            { "label": "Доставка", "href": "/delivery" },
-            { "label": "Возврат", "href": "/returns" },
-            { "label": "Оплата", "href": "/payment" }
+            {
+              "label": "Доставка",
+              "href": "/delivery"
+            },
+            {
+              "label": "Возврат",
+              "href": "/returns"
+            },
+            {
+              "label": "Оплата",
+              "href": "/payment"
+            }
           ]
         },
         "socialColumn": {
           "title": "СВЯЗЬ",
           "email": "hello@satin.example",
           "socialLinks": [
-            { "platform": "VK", "href": "#" },
-            { "platform": "Telegram", "href": "#" }
+            {
+              "platform": "VK",
+              "href": "#"
+            },
+            {
+              "platform": "Telegram",
+              "href": "#"
+            }
           ]
         },
         "copyright": {
@@ -88,6 +109,12 @@
       }
     }
   ],
-  "root": { "props": { "title": "Товар" } },
+  "root": {
+    "props": {
+      "meta": {
+        "title": "Основные данные"
+      }
+    }
+  },
   "zones": {}
 }

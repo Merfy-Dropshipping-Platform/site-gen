@@ -349,6 +349,13 @@
       "slug": "/checkout",
       "role": "system",
       "contentFile": "pages/checkout.json"
+    },
+    {
+      "id": "page-profile",
+      "name": "Профиль",
+      "slug": "/account/profile",
+      "role": "system",
+      "contentFile": "pages/profile.json"
     }
   ]
 }

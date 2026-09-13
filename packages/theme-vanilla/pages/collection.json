@@ -1,6 +1,14 @@
 {
   "content": [
-    { "type": "Header", "props": { "id": "Header-collection" } },
+    { "type": "Header", "props": {
+        "id": "Header-collection",
+        "navigationLinks": [
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Доставка", "href": "/delivery" },
+          { "label": "Контакты", "href": "/contacts" }
+        ]
+      } },
     {
       "type": "Catalog",
       "props": {

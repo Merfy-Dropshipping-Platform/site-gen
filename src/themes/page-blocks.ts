@@ -3,6 +3,7 @@ import { getThemeManifest } from './theme-manifest-loader';
 import { applyPageBinding } from '../render/page-transclude';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
+import { unifyHeaderWithHome } from '../utils/revision-migrations';
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.
@@ -71,7 +72,17 @@ export async function extractPageBlocks(
                 ? (raw as { content: unknown[] }).content
                 : null;
           if (!blocks) continue;
-          pageData = { content: blocks };
+          // Пункт 13: сид темы несёт СВОЮ шапку (дефолтное название/меню/схему).
+          // Прогоняем досеянную страницу через тот же канон, что и миграция
+          // ревизии, — иначе «О нас»/«Контакты»/«Доставка» показывают шапку
+          // файла темы, а главная — шапку мерчанта. Ключ `__lazy` временный:
+          // unifyHeaderWithHome работает над картой страниц, а home берёт из
+          // самой ревизии, поэтому подкладываем её рядом.
+          const unified = unifyHeaderWithHome({
+            home: (data.pagesData as Record<string, unknown> | undefined)?.['home'],
+            __lazy: { content: blocks },
+          }) as Record<string, { content?: unknown[] } | undefined>;
+          pageData = { content: unified.__lazy?.content ?? blocks };
           break;
         } catch {
           // Try next candidate (page- prefix variant)

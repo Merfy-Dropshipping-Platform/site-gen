@@ -9,7 +9,13 @@
     {
       "type": "Header",
       "props": {
-        "id": "Header-1"
+        "id": "Header-1",
+        "navigationLinks": [
+          { "label": "Каталог", "href": "/catalog" },
+          { "label": "О нас", "href": "/about" },
+          { "label": "Доставка", "href": "/delivery" },
+          { "label": "Контакты", "href": "/contacts" }
+        ]
       }
     },
     {

@@ -2094,7 +2094,7 @@
         "label": "Публикации",
         "fields": {
           "publicationType": {
-            "type": "pagePicker",
+            "type": "publicationPicker",
             "label": "Выбор публикации",
             "visibility": "panel"
           },
@@ -5221,7 +5221,7 @@
         "label": "Публикации",
         "fields": {
           "publicationType": {
-            "type": "pagePicker",
+            "type": "publicationPicker",
             "label": "Выбор публикации",
             "visibility": "panel"
           },
@@ -8353,7 +8353,7 @@
         "label": "Публикации",
         "fields": {
           "publicationType": {
-            "type": "pagePicker",
+            "type": "publicationPicker",
             "label": "Выбор публикации",
             "visibility": "panel"
           },
@@ -11480,7 +11480,7 @@
         "label": "Публикации",
         "fields": {
           "publicationType": {
-            "type": "pagePicker",
+            "type": "publicationPicker",
             "label": "Выбор публикации",
             "visibility": "panel"
           },
@@ -14607,7 +14607,7 @@
         "label": "Публикации",
         "fields": {
           "publicationType": {
-            "type": "pagePicker",
+            "type": "publicationPicker",
             "label": "Выбор публикации",
             "visibility": "panel"
           },

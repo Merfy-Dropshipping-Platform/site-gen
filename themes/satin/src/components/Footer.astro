@@ -427,14 +427,18 @@ const linkClassSm =
 		</div>
 	</div>
 
+	{/* п.9 тестировщика (2026-09-13): полоса копирайта обязана жить по ТОЙ ЖЕ
+	    схеме, что и вся секция. Тело подвала satin стоит на --color-surface, а
+	    полоса стояла на --color-bg — при любой схеме, где surface ≠ background,
+	    низ подвала красился отдельным цветом. */}
 	{bottomStripVisible && (
 		<div
-			class="w-full bg-[rgb(var(--color-bg,0_0_0))] py-4"
+			class="w-full bg-[rgb(var(--color-surface,245_245_245))] py-4"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"
 		>
-			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]">{stripText}</p>
+			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">{stripText}</p>
 		</div>
 	)}
 </footer>

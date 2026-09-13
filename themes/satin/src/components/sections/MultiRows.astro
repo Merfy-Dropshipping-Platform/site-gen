@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { schemeIdOf } from "../../lib/color-scheme";
 // Фаза B (satin, группа content): канон-секция MultiRows — адаптация
 // src/components/sections/CollectionRows.astro (тело КОПИЕЙ; оригинал не
 // тронут — index.astro:26 и about.astro:62 его используют, включая
@@ -250,12 +251,20 @@ const btnCls =
 // (245_245_245 + p-6, БЕЗ радиуса) на КАЖДЫЙ ряд (per-element, эталон bloom
 // MultiColumns), НЕ один общий. ВЫКЛ — ряды голо на фоне секции, без бокса/схемы.
 const containerEnabled = String(p.containerEnabled ?? "false") === "true";
-// Канон Nikita: класс схемы контейнера — на ОБЁРТКЕ РЯДОВ (<ul>), НЕ на внешнем
-// div, и ТОЛЬКО при включённом контейнере (при ВЫКЛ работает основная схема секции).
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
+// Схема КОНТЕЙНЕРА (п.2 тестировщика 2026-09-13). «Контейнер» мультирядов — это
+// ВСЯ половина ряда напротив медиа, поэтому класс висит на текстовой колонке, а
+// не на обёртке рядов: там он красил заодно и подложку картинки. Схема НЕ
+// гейтится тогглом «Контейнер» — это независимые контролы (в панели satin поле
+// `containerColorScheme` скрыто, но рендер обязан честно отработать значение из
+// ревизии). Значение принимаем и строкой, и числом — см. lib/color-scheme.ts.
+const containerSchemeId = schemeIdOf(p.containerColorScheme);
+// Один класс схемы только переопределяет CSS-переменные. Чтобы мерчант увидел
+// цвет, на том же узле нужны фон/текст, читающие их; h-full + justify-center
+// растягивают контейнер на высоту ряда, отступ — манера контейнера темы (§4:
+// p-6 без радиуса, те же, что у rowBoxCls ниже).
+const containerSchemeCls = containerSchemeId
+	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center p-6`
+	: "";
 // Per-element подложка ряда (satin §4: surface 245_245_245 + p-6, БЕЗ радиуса) при ВКЛ.
 const rowBoxCls = containerEnabled ? "bg-[rgb(var(--color-surface,245_245_245))] p-6" : "";
 
@@ -314,7 +323,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)
 		}
 		{/* Ряды: внешний gap-12 md:gap-20, ряд grid items-stretch gap-8 md:grid-cols-2 md:gap-10 (литерал CollectionRows.astro:50-52). */}
-		<div class={`flex flex-col gap-12 md:gap-20${containerSchemeCls}`}>
+		<div class="flex flex-col gap-12 md:gap-20">
 			{
 				rows.map((row, i) => (
 					<div
@@ -356,7 +365,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								))}
 						</div>
-						<div class:list={[`flex flex-col gap-5${alignCls}`, row.right && "md:order-1"]}>
+						<div class:list={[`flex flex-col gap-5${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
 							{row.heading && <h3 class={row.headingCls} set:html={inlineFormat(row.heading)} />}
 							{row.paragraphs.length > 0 && (
 								<div class="flex flex-col gap-3">

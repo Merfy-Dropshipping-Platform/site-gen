@@ -1,6 +1,7 @@
 ---
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { schemeIdOf } from "../lib/color-scheme";
 import { SITE_TITLE } from "../consts";
 import {
 	roseFooterHeadingStyle,
@@ -170,10 +171,11 @@ const footerContainerCls = pad
 // одиночного блока в превью конструктора (без scheme-обёртки композитора) берёт :root
 // = тёмный BASE_DEFAULT → ЧЁРНЫЙ футер. На live обёртка композитора даёт ту же схему —
 // дубль безвреден. Пустой проп → :root (как раньше).
-const footerSchemeClass =
-	typeof p.colorScheme === "string" && p.colorScheme
-		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
-		: "";
+// п.9 тестировщика (2026-09-13): на ЖИВОМ пути класс не печатался — живая
+// нормализация ревизии отдаёт схему ЧИСЛОМ ("scheme-3" → 3), а здесь стояла
+// сверка `typeof === "string"`. См. lib/color-scheme.ts.
+const footerSchemeId = schemeIdOf(p.colorScheme);
+const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : "";
 ---
 
 <footer class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", footerSchemeClass]} data-puck-component-id={id}>
@@ -345,14 +347,19 @@ const footerSchemeClass =
 		</div>
 	</div>
 
+	{/* п.9/п.10 тестировщика (2026-09-13): полоса копирайта обязана жить по ТОЙ ЖЕ
+	    схеме, что и вся секция. Раньше фон брался из --color-heading, то есть
+	    инвертировался: у любой тёмной схемы heading светлый (merchant-сид
+	    scheme-1: bg #000000, heading #FFFFFF) — и внизу КАЖДОЙ страницы магазина
+	    появлялась белая полоса. */}
 	{bottomStripVisible && (
 		<div
-			class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] px-4"
+			class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-bg,255_255_255))] px-4"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="993"
 			data-puck-subsection-field="copyright"
 		>
-			<p class="text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))]">
+			<p class="text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">
 				{stripText}
 			</p>
 		</div>

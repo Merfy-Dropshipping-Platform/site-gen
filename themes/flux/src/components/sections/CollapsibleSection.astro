@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { schemeIdOf } from "../../lib/color-scheme";
 // Секция CollapsibleSection («Сворачиваемый раздел» / аккордеон-FAQ) в манере
 // flux. Донора у верстальщика flux НЕТ (секций всего 4, MANNER §10) — потому
 // дизайним в ЕДИНОМ flux-языке (эталон процесса — MainText.astro): ВСЯ секция
@@ -84,10 +85,12 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "false") === "true";
 // Канон Nikita: класс схемы контейнера вешаем ТОЛЬКО при включённом контейнере.
 // При ВЫКЛ контейнеров нет → работает основная (секционная) цв. схема.
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
+// п.5 тестировщика (2026-09-13): схема контейнера не применялась НИ В ОДНОЙ из
+// пяти тем. Гейт по тогглу «Контейнер» верный (контрол в панели есть), ломалось
+// само значение: живая нормализация ревизии отдаёт схему ЧИСЛОМ ("scheme-4" → 4),
+// а здесь стояла сверка `typeof === "string"`. См. lib/color-scheme.ts.
+const containerSchemeId = containerEnabled ? schemeIdOf(p.containerColorScheme) : "";
+const containerSchemeCls = containerSchemeId ? ` color-scheme-${containerSchemeId}` : "";
 // Класс схемы — на обёртке списка <ul> (красит боксы вопросов), БЕЗ бокса/паддинга.
 const listWrapCls = containerSchemeCls.trim();
 // При ВКЛ контейнере боксы вопросов отделяются зазором; при ВЫКЛ — сплошной

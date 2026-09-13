@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { schemeIdOf } from "../../lib/color-scheme";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 
 // Фаза B (satin, группа misc): канон-секция CollapsibleSection — адаптация
@@ -111,10 +112,12 @@ const containerEnabled = String(p.containerEnabled ?? p.container?.enabled ?? "f
 // Канон Nikita: класс схемы контейнера — на ОБЁРТКЕ СПИСКА (<ul>), НЕ на
 // заголовке/внешнем div, и ТОЛЬКО при включённом контейнере (при ВЫКЛ работает
 // основная секционная цв. схема).
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
+// п.5 тестировщика (2026-09-13): схема контейнера не применялась НИ В ОДНОЙ из
+// пяти тем. Гейт по тогглу «Контейнер» верный (контрол в панели есть), ломалось
+// само значение: живая нормализация ревизии отдаёт схему ЧИСЛОМ ("scheme-4" → 4),
+// а здесь стояла сверка `typeof === "string"`. См. lib/color-scheme.ts.
+const containerSchemeId = containerEnabled ? schemeIdOf(p.containerColorScheme) : "";
+const containerSchemeCls = containerSchemeId ? ` color-scheme-${containerSchemeId}` : "";
 // Обёртка списка (<ul>): БЕЗ бокса — только класс схемы + структура. ВКЛ → gap
 // между box-вопросами (divider не нужен — каждый вопрос в своём боксе); ВЫКЛ →
 // текущий голый divide-y список.

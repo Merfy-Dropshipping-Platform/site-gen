@@ -2,6 +2,7 @@
 import { inlineFormat } from "../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { schemeIdOf } from "../lib/color-scheme";
 import { SITE_TITLE } from "../consts";
 
 // Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
@@ -205,10 +206,11 @@ const socialAlignCls = contentAlign === "center" ? "md:items-center" : "md:items
 // Rose Footer.astro: своя colorScheme на <footer>, иначе hot-render одиночного блока в
 // превью конструктора (без scheme-обёртки композитора) берёт :root = тёмный дефолт →
 // чёрный футер. На live обёртка композитора даёт ту же схему — дубль безвреден.
-const footerSchemeClass =
-	typeof p.colorScheme === "string" && p.colorScheme
-		? `color-scheme-${String(p.colorScheme).replace("scheme-", "")}`
-		: "";
+// п.9 тестировщика (2026-09-13): на ЖИВОМ пути класс не печатался — живая
+// нормализация ревизии отдаёт схему ЧИСЛОМ ("scheme-3" → 3), а здесь стояла
+// сверка `typeof === "string"`. См. lib/color-scheme.ts.
+const footerSchemeId = schemeIdOf(p.colorScheme);
+const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : "";
 ---
 
 {/* Подвал в вёрстке стоит на bg-[#fbfbfb] — поверхность, а не фон страницы.
@@ -376,16 +378,22 @@ const footerSchemeClass =
 		</section>
 	</div>
 
-	<!-- Copyright — чёрная полоса (Inter, фикс-роль Figma flux) -->
+	<!-- Copyright — полоса Powered by (Inter, фикс-роль Figma flux) -->
+	{/* п.9/п.10 тестировщика (2026-09-13): полоса копирайта обязана жить по ТОЙ ЖЕ
+	    схеме, что и вся секция (тело подвала flux стоит на --color-surface —
+	    полоса берёт ТОТ ЖЕ токен). Раньше фон брался из --color-heading, то есть
+	    инвертировался: у любой тёмной схемы heading светлый (merchant-сид
+	    scheme-1: bg #000000, heading #FFFFFF) — и внизу КАЖДОЙ страницы магазина
+	    появлялась белая полоса. */}
 	{bottomStripVisible && (
 		<div
-			class="flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] md:h-[100px]"
+			class="flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-surface,251_251_251))] md:h-[100px]"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"
 		>
 			<p
-				class="px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-bg,255_255_255))] md:text-[20px]"
+				class="px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]"
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="993"
 				data-puck-subsection-field="copyright"

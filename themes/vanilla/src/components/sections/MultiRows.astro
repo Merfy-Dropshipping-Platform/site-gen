@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { schemeIdOf } from "../../lib/color-scheme";
 // Фаза B (vanilla): новая канон-секция MultiRows в манере vanilla (см.
 // themes/vanilla/MANNER.md §10: секции нет у верстальщика — ряды «текст +
 // медиа» по паттерну care-бэнда Gallery.astro:82-123 / about-сплита, с
@@ -170,12 +171,21 @@ const btnCls =
 // СПИСКА (<ul>), внешний div с заголовком без бокса/схемы. ВЫКЛ — без бокса/
 // схемы (работает основная секционная схема). Canon-default отсутствует → false.
 const containerEnabled = String(p.containerEnabled ?? "false") === "true";
-// Канон Nikita: класс схемы контейнера — ТОЛЬКО при ВКЛ, на <ul> (обёртка рядов),
-// НЕ на внешнем div/заголовке.
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
+// Схема КОНТЕЙНЕРА (п.2 тестировщика 2026-09-13). «Контейнер» мультирядов — это
+// ВСЯ половина ряда напротив медиа, поэтому класс висит на текстовой колонке, а
+// не на <ul>: на <ul> он красил заодно и подложку картинки.
+// Тоггла «Контейнер» в панели мультирядов НЕТ (`containerEnabled` — hidden-поле,
+// см. MultiRows.puckConfig.ts), поэтому схема им НЕ гейтится: иначе видимый
+// контрол «Цветовая схема контейнера» не делал бы ничего. Значение принимаем и
+// строкой, и числом — см. lib/color-scheme.ts.
+const containerSchemeId = schemeIdOf(p.containerColorScheme);
+// Один класс схемы только переопределяет CSS-переменные. Чтобы мерчант увидел
+// цвет, на том же узле нужны фон/текст, читающие их; h-full + justify-center
+// растягивают контейнер на высоту ряда, радиус/отступ — манера контейнера темы
+// (те же, что у rowBoxCls ниже).
+const containerSchemeCls = containerSchemeId
+	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,238_238_238))] text-[rgb(var(--color-text,38_49_28))] h-full justify-center rounded-[var(--radius-card,0px)] p-6 md:p-10`
+	: "";
 // per-item: surface-бокс на КАЖДЫЙ ряд при ВКЛ; ВЫКЛ — голый ряд.
 const rowBoxCls = containerEnabled
 	? " rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-surface,236_235_231))] p-6 md:p-10"
@@ -222,7 +232,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</h2>
 			)
 		}
-		<ul class={`flex w-full flex-col gap-10${containerSchemeCls}`} role="list">
+		<ul class="flex w-full flex-col gap-10" role="list">
 			{
 				rows.map((r, i) => (
 					<li
@@ -246,7 +256,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								/>
 							)}
 						</div>
-						<div class={`flex w-full flex-col ${alignCls} lg:self-center${r.right ? " lg:order-1" : ""}`}>
+						<div class={`flex w-full flex-col ${alignCls} lg:self-center${r.right ? " lg:order-1" : ""}${containerSchemeCls}`}>
 							{r.heading && (
 								<h3
 									class={`font-vanilla-bitter ${r.headingCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}

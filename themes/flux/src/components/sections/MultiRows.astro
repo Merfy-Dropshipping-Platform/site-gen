@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { schemeIdOf } from "../../lib/color-scheme";
 // Канон-секция MultiRows («Мультиряды») в ЧИСТОМ стиле flux. Секции нет у
 // верстальщика (MANNER §10) — ряды «изображение + текст» с чередованием стороны
 // медиа по индексу. ЕДИНЫЙ flux-язык: ВСЯ секция — font-roboto-flex
@@ -175,12 +176,21 @@ const containerEnabled = String(p.containerEnabled ?? "false") === "true";
 const cardSurfaceCls = containerEnabled
 	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-10"
 	: "";
-// Класс схемы контейнера — ТОЛЬКО при включённом контейнере, на ОБЁРТКЕ СПИСКА
-// (<ul>); внешний контент без бокса/схемы. ВЫКЛ → основная секционная схема.
-const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
-		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
-		: "";
+// Схема КОНТЕЙНЕРА (п.2 тестировщика 2026-09-13). «Контейнер» мультирядов — это
+// ВСЯ половина ряда напротив медиа, поэтому класс висит на текстовой колонке, а
+// не на <ul>: на <ul> он красил заодно и подложку картинки.
+// Тоггла «Контейнер» в панели мультирядов НЕТ (`containerEnabled` — hidden-поле,
+// см. MultiRows.puckConfig.ts), поэтому схема им НЕ гейтится: иначе видимый
+// контрол «Цветовая схема контейнера» не делал бы ничего. Значение принимаем и
+// строкой, и числом — см. lib/color-scheme.ts.
+const containerSchemeId = schemeIdOf(p.containerColorScheme);
+// Один класс схемы только переопределяет CSS-переменные. Чтобы мерчант увидел
+// цвет, на том же узле нужны фон/текст, читающие их; h-full + justify-center
+// растягивают контейнер на высоту ряда, радиус/отступ — манера контейнера темы
+// (те же, что у cardSurfaceCls выше).
+const containerSchemeCls = containerSchemeId
+	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,12px)] p-6 md:p-10`
+	: "";
 
 // Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
 // (паттерн MainText): тогда py-классы контейнера снимаются (нет двойного отступа).
@@ -233,7 +243,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</h2>
 				)
 			}
-			<ul class={`flex w-full flex-col gap-12 md:gap-16${containerSchemeCls}`} role="list">
+			<ul class="flex w-full flex-col gap-12 md:gap-16" role="list">
 				{
 					rows.map((r, i) => (
 						<li
@@ -255,7 +265,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								)}
 							</div>
-							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}`}>
+							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls}`}>
 								{r.heading && (
 									<h3
 										class={`font-roboto-flex ${r.headingCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}

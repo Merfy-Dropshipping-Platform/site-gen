@@ -69,6 +69,14 @@ export const HeaderClasses = {
   // pointer-events:none — не ловит hover-overlay конструктора, клик
   // проходит на родительский <a class={logoLink}>.
   logoImg: 'pointer-events-none h-[var(--size-logo-width,24px)] w-auto max-w-[var(--size-logo-max-width,160px)] object-contain',
+  // Логотип не загружен → НАЗВАНИЕ МАГАЗИНА текстом (пункт 11 пачки
+  // тестировщика 13.09: «если нет файла — вставляется из настроек админки
+  // название магазина»). Размер текста ведёт тот же слайдер «Размер»
+  // (--size-logo-width), что и высоту картинки, — так замена картинки на текст
+  // не ломает высоту шапки. pointer-events-none — по той же причине, что у
+  // logoImg: клик уходит на родительский <a class={logoLink}>.
+  logoText:
+    'pointer-events-none whitespace-nowrap [font-family:var(--font-heading)] text-[length:var(--size-logo-width,24px)] leading-none text-[rgb(var(--color-heading))]',
   logo:
     'max-w-[var(--size-logo-width)] h-auto [font-family:var(--font-heading)] text-xl text-[rgb(var(--color-heading))]',
   navMenu: 'hidden md:flex items-center gap-4 lg:gap-8 xl:gap-12',

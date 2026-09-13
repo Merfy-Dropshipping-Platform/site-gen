@@ -1488,6 +1488,63 @@ function normalizePromoBannerPadding(
 }
 
 /**
+ * Newsletter: платформенная подсказка «Твой email» → «Email».
+ *
+ * Пункт 6 пачки тестировщика (13.09): «В секции Подписка на рассылку текст в
+ * инпуте изменить на просто "Email"». Дефолт блока уже изменён
+ * (theme-base/blocks/Newsletter/Newsletter.puckConfig.ts), но у существующих
+ * магазинов строка лежит В РЕВИЗИИ: панель материализует дефолты в props при
+ * любой правке соседнего поля, и без переноса владелец увидел бы прежний текст.
+ *
+ * Переносится ТОЛЬКО точная платформенная строка — свой текст мерчанта
+ * («Ваша почта», «E-mail для скидок») не трогаем. Идемпотентна: после переноса
+ * значение уже «Email» и повторный прогон — no-op.
+ */
+const NEWSLETTER_LEGACY_PLACEHOLDER = 'Твой email';
+const NEWSLETTER_PLACEHOLDER = 'Email';
+
+function renameNewsletterPlaceholder(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (!b || b.type !== 'Newsletter' || !b.props) return block;
+      const props = { ...b.props };
+      let blockChanged = false;
+      if (props.placeholder === NEWSLETTER_LEGACY_PLACEHOLDER) {
+        props.placeholder = NEWSLETTER_PLACEHOLDER;
+        blockChanged = true;
+      }
+      // Легаси-форма: те же поля лежали вложенными в props.form
+      // (Newsletter.astro принимает обе формы, см. `form?.placeholder`).
+      const form = props.form as Record<string, unknown> | undefined;
+      if (
+        form &&
+        typeof form === 'object' &&
+        form.placeholder === NEWSLETTER_LEGACY_PLACEHOLDER
+      ) {
+        props.form = { ...form, placeholder: NEWSLETTER_PLACEHOLDER };
+        blockChanged = true;
+      }
+      if (!blockChanged) return block;
+      pageChanged = true;
+      return { ...b, props };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Strip "designer demo" content from decorative image sections.
  *
  * theme.json `blockDefaults` seeded Hero/MultiRows/ImageWithText/Gallery/
@@ -1880,6 +1937,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = normalizePromoBannerPadding(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = renameNewsletterPlaceholder(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);

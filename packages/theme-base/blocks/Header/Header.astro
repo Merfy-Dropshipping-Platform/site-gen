@@ -84,6 +84,13 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 // мерчант загружает свой светлый вариант.
 // pointer-events:none на img — не ловит hover-overlay конструктора,
 // клик проходит на родительский <a class={logoLink}>.
+//
+// Файла нет (`logo` пустой — это и дефолт блока, `defaultProps.logo = ''`) →
+// рисуем НАЗВАНИЕ МАГАЗИНА текстом (пункт 11 пачки тестировщика 13.09).
+// Раньше здесь стоял безусловный <img src={logo}>: пустое значение давало
+// `<img src="">`, то есть битую картинку вместо названия. siteTitle в шапку
+// кладёт конструктор из настроек админки (site.name).
+const hasLogo = typeof logo === 'string' && logo.trim().length > 0;
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (
@@ -118,7 +125,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['top-left']}>
             <a href="/" class={C.logoLink}>
-              <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} />
+              {hasLogo ? <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
 
@@ -170,7 +177,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['center-absolute']}>
             <a href="/" class={C.logoLink}>
-              <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} />
+              {hasLogo ? <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
 
@@ -212,7 +219,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['top-center']}>
             <a href="/" class={C.logoLink}>
-              <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} />
+              {hasLogo ? <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
 
@@ -273,7 +280,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 
           <div class={C.logoWrap['top-right']}>
             <a href="/" class={C.logoLink}>
-              <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} />
+              {hasLogo ? <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
             </a>
           </div>
         </>
@@ -289,7 +296,7 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
           </button>
 
           <a href="/" class={C.logoLink}>
-            <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} />
+            {hasLogo ? <img src={logo} alt={siteTitle} width="160" height="36" style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" class={C.logoImg} /> : <span class={C.logoText}>{siteTitle}</span>}
           </a>
 
           {!isTwoTier && (

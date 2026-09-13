@@ -119,7 +119,11 @@ export const NewsletterPuckConfig: BlockPuckConfig<NewsletterProps> = {
   defaults: {
     heading: 'Подпишись на новости',
     description: 'Узнавай о новинках и акциях первым',
-    placeholder: 'Твой email',
+    // Пункт 6 пачки тестировщика (13.09): «текст в инпуте изменить на просто
+    // "Email"». Дефолт материализуется в props при любой правке соседнего поля
+    // (CustomFieldsPanel.updateProp), поэтому у уже созданных магазинов строку
+    // переносит миграция ревизий (src/utils/revision-migrations.ts).
+    placeholder: 'Email',
     buttonText: 'Подписаться',
     formLayout: 'stacked',
     agreement: 'false',

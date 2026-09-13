@@ -405,6 +405,38 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
       : null;
   const rootColorRules = defaultScheme ? schemeVarsInRoot(defaultScheme) : '';
 
+  // «Настройки темы» → «Карточки товара» → «Цветовая схема» (пункт 4 пачки
+  // тестировщика 13.09: «под всеми параметрами добавить выбор цветовой схемы,
+  // как в сайдбарах»). Схема применяется к КАРТОЧКЕ ТОВАРА по всему магазину —
+  // селектор `[data-nt$="-product-card"]` есть у всех пяти тем и в SSR, и в
+  // клиентских дорисовках (storefront-hydrate, wishlist).
+  //
+  // Почему правило переобъявляет `--product-card-bg`: в `:root` он объявлен как
+  // `rgb(var(--color-surface))`, а var() внутри кастомного свойства
+  // подставляется НА ТОМ элементе, где свойство объявлено. То есть карточка
+  // унаследовала бы подложку активной схемы САЙТА, а не выбранной. Объявление
+  // на самой карточке подставляет её собственный `--color-surface`.
+  //
+  // Нет выбора (или выбрана несуществующая схема) → правила нет вовсе, то есть
+  // у существующих магазинов ничего не меняется.
+  const productCardSchemeId =
+    typeof s.productCardScheme === 'string' && s.productCardScheme
+      ? schemeClassId(s.productCardScheme)
+      : '';
+  const productCardScheme = productCardSchemeId
+    ? (schemes.find(
+        (sc) =>
+          isPlainObject(sc) &&
+          schemeClassId(String((sc as { id?: unknown }).id ?? '')) === productCardSchemeId,
+      ) as Record<string, unknown> | undefined)
+    : undefined;
+  const productCardSchemeVars = productCardScheme ? schemeToVars(productCardScheme) : '';
+  const productCardSchemeRule = productCardSchemeVars
+    ? `[data-nt$="-product-card"] {${productCardSchemeVars} --product-card-bg: ${
+        cardStyled ? 'rgb(var(--color-surface,245 245 245))' : 'transparent'
+      };}`
+    : '';
+
   // Избранное (wishlist) вкл/выкл — глобальный тумблер из ThemeSettingsPanel
   // («Настройки темы» → «Избранное»). Когда выключено, скрываем весь wishlist UI
   // во ВСЕХ темах одним правилом (зеркалит live+preview, т.к. эта функция —
@@ -482,6 +514,7 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     rootRules,
     rootColorRules,
     schemeRules,
+    productCardSchemeRule,
     wishlistHideRule,
     stickyFooterRule,
     sectionGapRule,

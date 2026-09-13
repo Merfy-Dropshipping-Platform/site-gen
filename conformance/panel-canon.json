@@ -1222,29 +1222,41 @@
             "visibility": "panel",
             "max": 5,
             "itemFields": {
-              "imageUrl": {
-                "type": "hidden",
-                "label": "",
-                "visibility": "off"
-              },
               "image": {
                 "type": "image",
                 "label": "Изображение",
                 "visibility": "panel"
               },
+              "imageUrl": {
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
+              },
+              "overlay": {
+                "type": "slider",
+                "label": "Затемнение",
+                "visibility": "panel",
+                "max": 100,
+                "min": 0
+              },
+              "contentHeader": {
+                "type": "section-header",
+                "label": "Содержание",
+                "visibility": "panel"
+              },
               "heading": {
                 "type": "object",
-                "label": "Заголовок",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
-                    "type": "text",
-                    "label": "Текст",
+                    "type": "aiText",
+                    "label": "Заголовок",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер заголовка",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -1256,17 +1268,17 @@
               },
               "text": {
                 "type": "object",
-                "label": "Текст",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "content": {
-                    "type": "textarea",
-                    "label": "Содержание",
+                    "type": "aiText",
+                    "label": "Текст",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер текста",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -1278,12 +1290,12 @@
               },
               "button": {
                 "type": "object",
-                "label": "Кнопка",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
                     "type": "text",
-                    "label": "Текст",
+                    "label": "Кнопка",
                     "visibility": "panel"
                   },
                   "link": {
@@ -1294,7 +1306,7 @@
                 }
               },
               "container": {
-                "type": "radio",
+                "type": "toggle",
                 "label": "Контейнер",
                 "visibility": "panel",
                 "options": [
@@ -4349,29 +4361,41 @@
             "visibility": "panel",
             "max": 5,
             "itemFields": {
-              "imageUrl": {
-                "type": "hidden",
-                "label": "",
-                "visibility": "off"
-              },
               "image": {
                 "type": "image",
                 "label": "Изображение",
                 "visibility": "panel"
               },
+              "imageUrl": {
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
+              },
+              "overlay": {
+                "type": "slider",
+                "label": "Затемнение",
+                "visibility": "panel",
+                "max": 100,
+                "min": 0
+              },
+              "contentHeader": {
+                "type": "section-header",
+                "label": "Содержание",
+                "visibility": "panel"
+              },
               "heading": {
                 "type": "object",
-                "label": "Заголовок",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
-                    "type": "text",
-                    "label": "Текст",
+                    "type": "aiText",
+                    "label": "Заголовок",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер заголовка",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -4383,17 +4407,17 @@
               },
               "text": {
                 "type": "object",
-                "label": "Текст",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "content": {
-                    "type": "textarea",
-                    "label": "Содержание",
+                    "type": "aiText",
+                    "label": "Текст",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер текста",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -4405,12 +4429,12 @@
               },
               "button": {
                 "type": "object",
-                "label": "Кнопка",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
                     "type": "text",
-                    "label": "Текст",
+                    "label": "Кнопка",
                     "visibility": "panel"
                   },
                   "link": {
@@ -4421,7 +4445,7 @@
                 }
               },
               "container": {
-                "type": "radio",
+                "type": "toggle",
                 "label": "Контейнер",
                 "visibility": "panel",
                 "options": [
@@ -7476,29 +7500,41 @@
             "visibility": "panel",
             "max": 5,
             "itemFields": {
-              "imageUrl": {
-                "type": "hidden",
-                "label": "",
-                "visibility": "off"
-              },
               "image": {
                 "type": "image",
                 "label": "Изображение",
                 "visibility": "panel"
               },
+              "imageUrl": {
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
+              },
+              "overlay": {
+                "type": "slider",
+                "label": "Затемнение",
+                "visibility": "panel",
+                "max": 100,
+                "min": 0
+              },
+              "contentHeader": {
+                "type": "section-header",
+                "label": "Содержание",
+                "visibility": "panel"
+              },
               "heading": {
                 "type": "object",
-                "label": "Заголовок",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
-                    "type": "text",
-                    "label": "Текст",
+                    "type": "aiText",
+                    "label": "Заголовок",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер заголовка",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -7510,17 +7546,17 @@
               },
               "text": {
                 "type": "object",
-                "label": "Текст",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "content": {
-                    "type": "textarea",
-                    "label": "Содержание",
+                    "type": "aiText",
+                    "label": "Текст",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер текста",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -7532,12 +7568,12 @@
               },
               "button": {
                 "type": "object",
-                "label": "Кнопка",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
                     "type": "text",
-                    "label": "Текст",
+                    "label": "Кнопка",
                     "visibility": "panel"
                   },
                   "link": {
@@ -7548,7 +7584,7 @@
                 }
               },
               "container": {
-                "type": "radio",
+                "type": "toggle",
                 "label": "Контейнер",
                 "visibility": "panel",
                 "options": [
@@ -10608,29 +10644,41 @@
             "visibility": "panel",
             "max": 5,
             "itemFields": {
-              "imageUrl": {
-                "type": "hidden",
-                "label": "",
-                "visibility": "off"
-              },
               "image": {
                 "type": "image",
                 "label": "Изображение",
                 "visibility": "panel"
               },
+              "imageUrl": {
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
+              },
+              "overlay": {
+                "type": "slider",
+                "label": "Затемнение",
+                "visibility": "panel",
+                "max": 100,
+                "min": 0
+              },
+              "contentHeader": {
+                "type": "section-header",
+                "label": "Содержание",
+                "visibility": "panel"
+              },
               "heading": {
                 "type": "object",
-                "label": "Заголовок",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
-                    "type": "text",
-                    "label": "Текст",
+                    "type": "aiText",
+                    "label": "Заголовок",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер заголовка",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -10642,17 +10690,17 @@
               },
               "text": {
                 "type": "object",
-                "label": "Текст",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "content": {
-                    "type": "textarea",
-                    "label": "Содержание",
+                    "type": "aiText",
+                    "label": "Текст",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер текста",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -10664,12 +10712,12 @@
               },
               "button": {
                 "type": "object",
-                "label": "Кнопка",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
                     "type": "text",
-                    "label": "Текст",
+                    "label": "Кнопка",
                     "visibility": "panel"
                   },
                   "link": {
@@ -10680,7 +10728,7 @@
                 }
               },
               "container": {
-                "type": "radio",
+                "type": "toggle",
                 "label": "Контейнер",
                 "visibility": "panel",
                 "options": [
@@ -13735,29 +13783,41 @@
             "visibility": "panel",
             "max": 5,
             "itemFields": {
-              "imageUrl": {
-                "type": "hidden",
-                "label": "",
-                "visibility": "off"
-              },
               "image": {
                 "type": "image",
                 "label": "Изображение",
                 "visibility": "panel"
               },
+              "imageUrl": {
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
+              },
+              "overlay": {
+                "type": "slider",
+                "label": "Затемнение",
+                "visibility": "panel",
+                "max": 100,
+                "min": 0
+              },
+              "contentHeader": {
+                "type": "section-header",
+                "label": "Содержание",
+                "visibility": "panel"
+              },
               "heading": {
                 "type": "object",
-                "label": "Заголовок",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
-                    "type": "text",
-                    "label": "Текст",
+                    "type": "aiText",
+                    "label": "Заголовок",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер заголовка",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -13769,17 +13829,17 @@
               },
               "text": {
                 "type": "object",
-                "label": "Текст",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "content": {
-                    "type": "textarea",
-                    "label": "Содержание",
+                    "type": "aiText",
+                    "label": "Текст",
                     "visibility": "panel"
                   },
                   "size": {
-                    "type": "radio",
-                    "label": "Размер",
+                    "type": "select",
+                    "label": "Размер текста",
                     "visibility": "panel",
                     "options": [
                       "small=Маленький",
@@ -13791,12 +13851,12 @@
               },
               "button": {
                 "type": "object",
-                "label": "Кнопка",
+                "label": "",
                 "visibility": "panel",
                 "objectFields": {
                   "text": {
                     "type": "text",
-                    "label": "Текст",
+                    "label": "Кнопка",
                     "visibility": "panel"
                   },
                   "link": {
@@ -13807,7 +13867,7 @@
                 }
               },
               "container": {
-                "type": "radio",
+                "type": "toggle",
                 "label": "Контейнер",
                 "visibility": "panel",
                 "options": [

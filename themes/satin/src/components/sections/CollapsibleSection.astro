@@ -222,7 +222,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								</div>
 							</summary>
 							<div class="overflow-hidden" data-faq-answer>
-								<div class="satin-copy mt-3 max-w-[1100px]" set:html={s.content} />
+								<div class="satin-copy mt-3 max-w-[1100px]" set:html={inlineFormat(s.content)} />
 							</div>
 						</details>
 					),

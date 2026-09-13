@@ -181,9 +181,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					/>
 					)}
 					{subheadingRaw && (
-						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`}>
-							{subheadingRaw}
-						</p>
+						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`} set:html={inlineFormat(subheadingRaw)}></p>
 					)}
 				</div>
 			)

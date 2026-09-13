@@ -30,8 +30,17 @@ const isRose = variant === "rose";
     id={titleId}
     class:list={[
  "text-center font-comfortaa font-normal text-[#000000]",
+      // `!` на кегле — НЕ косметика. Порты Collections/Gallery/Popular держат
+      // размер заголовка ID-правилом в своём <style> (`#collections-title`,
+      // `#gallery-title`), а оно БЕССЛОЙНОЕ: по CSS Cascade 5 важное правило из
+      // неявного последнего слоя проигрывает важной утилите из @layer utilities.
+      // Именно на этом порядке собрана их лестница размеров. Уберёшь «!» —
+      // управление кеглем незаметно переедет на ID-правило, и дефолтный
+      // заголовок галереи поедет с ровных 20px на clamp(14px,3.8vw,20px).
+      // Размеру Контактов это не мешает: у них #contacts-title лежит в
+      // @layer base, а для важных правил более РАННИЙ слой сильнее.
       isRose
-        ? "text-[20px] !leading-none tracking-normal"
+        ? "!text-[20px] !leading-none tracking-normal"
         : "text-xl md:text-2xl lg:text-[32px] leading-[1.115]",
     ]}
     set:html={inlineFormat(title)}

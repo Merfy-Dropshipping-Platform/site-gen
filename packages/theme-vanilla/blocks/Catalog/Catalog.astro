@@ -21,6 +21,10 @@
 // компилится в live build (generatePuckCatalogPage импортит блок, но ESM-script не
 // попадает в bundle → 404 на проде). Поэтому весь клиент инлайн телами (без import).
 // У vanilla НЕТ фильтра по цвету (в отличие от rose) — секции «Цвет» нет.
+// Заголовок/подзаголовок каталога мерчант вводит кнопками «Ж»/«К» — Astro
+// экранирует {value}, и начертание печаталось сырыми тегами в тексте
+// (баг-репорт тестера 2026-09-13, K4). Рендерим через XSS-safe inlineFormat.
+import { inlineFormat } from "./rich-text";
 import VanillaCatalogFilterSidebar from "./VanillaCatalogFilterSidebar.astro";
 import {
 	CATALOG_PRICE_ROW,
@@ -309,9 +313,10 @@ const rowStockOptions: RadioOption[] = [
 				<h1
 					id="catalog-title"
 					class="font-vanilla-bitter text-[20px] font-normal italic uppercase leading-none tracking-normal text-black"
-				>{title}</h1>
+					set:html={inlineFormat(title)}
+				></h1>
 				{subtitleVisible && (
-					<p class="font-vanilla-arsenal text-base font-normal leading-none text-[#444444]">{subtitleText}</p>
+					<p class="font-vanilla-arsenal text-base font-normal leading-none text-[#444444]" set:html={inlineFormat(subtitleText)}></p>
 				)}
 			</header>
 

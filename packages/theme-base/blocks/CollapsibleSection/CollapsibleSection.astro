@@ -78,7 +78,7 @@ const allItems: any[] = (Array.isArray(raw.items) && (raw.items as any[]).length
             data-puck-subsection-field={Array.isArray(raw.items) ? 'items' : 'sections'}
           >
             <summary class={C.summary}><Fragment set:html={sanitizeInline(itemTitle)} /></summary>
-            <div class={C.content} set:html={item.content} />
+            <div class={C.content} set:html={sanitizeInline(item.content)} />
           </details>
         );
       })}

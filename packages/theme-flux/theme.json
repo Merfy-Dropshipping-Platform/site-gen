@@ -45,6 +45,9 @@
     "--product-card-padding": "12px"
   },
   "blockDefaults": {
+    "Publications": {
+      "headingSize": "large"
+    },
     "Footer": {
       "variant": "3-col",
       "newsletter": {
@@ -91,6 +94,8 @@
     },
     "Header": {
       "variant": "two-tier",
+      "logoPosition": "top-left",
+      "stickiness": "always",
       "promoBar": {
         "enabled": true,
         "text": "Бесплатная доставка на весь ассортимент до 30.06.2026.",
@@ -126,6 +131,7 @@
       }
     },
     "Product": {
+      "layout": "stacked",
       "visualConfig": {
         "gallery": {
           "variant": "inline-small",

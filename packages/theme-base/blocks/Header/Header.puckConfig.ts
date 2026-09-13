@@ -141,7 +141,12 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     siteTitle: 'Мой магазин',
     logo: '',
     logoPosition: 'top-left',
-    stickiness: 'scroll-up',
+    // Замер рендером живой цепочки (adaptLegacyProps → blockDefaults →
+    // resolveBlockProps): у портов rose/vanilla/satin/bloom отсутствие пропа
+    // даёт НЕзакреплённую шапку. 'scroll-up' здесь означало «мерчант правит
+    // логотип — шапка становится липкой», чего он не просил. У flux фолбэк
+    // свой ('always') — он объявлен в packages/theme-flux/theme.json.
+    stickiness: 'none',
     menuType: 'dropdown',
     navigationLinks: [
       { label: 'Магазин', href: '/catalog' },

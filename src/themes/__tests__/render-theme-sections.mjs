@@ -17,8 +17,18 @@
  * пяти тем с собственным puck-id). Без этой ветки такие блоки выпадали из
  * любой проверки: в манифесте темы их нет, значит «missing», значит тест молчал.
  *
- * job.pipeline === true — прогнать props через РАБОЧУЮ нормализацию рантайма
- * (adaptLegacyProps → resolveBlockProps) перед рендером, как это делает
+ * job.live === true — прогнать props через ПОЛНУЮ живую цепочку рантайма:
+ * adaptLegacyProps → deepMergeBlockProps(theme.json blockDefaults) →
+ * resolveBlockProps(resolveDefaults). Ровно её проходит витрина
+ * (v2-live-pages: extractPageBlocks → PreviewService.renderBlock) и точечный
+ * hot-render конструктора (POST /preview/block). Нужен проверкам «дефолт
+ * панели = то, что видит мерчант»: без нормализации и blockDefaults рендер
+ * показывает состояние, которого на живом сайте не бывает (page-blocks
+ * доставляет PopularProducts.cards/columns, а theme.json — Header.logoPosition
+ * и десяток других), и проверка ловит расхождения, которых в проде нет.
+ *
+ * job.pipeline === true — УРЕЗАННАЯ цепочка (adaptLegacyProps →
+ * resolveBlockProps без blockDefaults) перед рендером, как это делает
  * preview.service. Нужен проверкам item-уровневого «глаза»: скрытые элементы
  * отбрасывает именно adaptLegacyProps, а satin Collections читает плитки из
  * `__merfy.resolved`, который собирает resolveBlockProps. Модули берём
@@ -55,8 +65,9 @@ async function main() {
 
   // Нормализация рантайма — поднимаем один раз и только если её просят.
   let pipeline = null;
+  let livePipeline = null;
   let pipelineError = null;
-  if (jobs.some((j) => j.pipeline)) {
+  if (jobs.some((j) => j.pipeline || j.live)) {
     try {
       const req = createRequire(import.meta.url);
       const { adaptLegacyProps } = req(resolve(SITES_ROOT, 'dist', 'src', 'themes', 'page-blocks.js'));
@@ -76,13 +87,42 @@ async function main() {
           },
         };
       };
+      // ПОЛНАЯ живая цепочка. Все три звена — те же скомпилированные модули,
+      // что исполняет сервис: своей копии merge/нормализации тест не держит.
+      const { deepMergeBlockProps } = req(resolve(SITES_ROOT, 'dist', 'src', 'services', 'preview.service.js'));
+      const { getThemeManifest } = req(resolve(SITES_ROOT, 'dist', 'src', 'themes', 'theme-manifest-loader.js'));
+      const { getBlockPuckDefaults } = req(resolve(SITES_ROOT, 'dist', 'src', 'render', 'block-defaults.js'));
+      const { normalizeSlideshowProps } = req(resolve(SITES_ROOT, 'dist', 'src', 'generator', 'legacy-prop-normalizer.js'));
+      const themeDefaults = getThemeManifest(theme)?.blockDefaults ?? {};
+      livePipeline = async (block, raw) => {
+        // 1. Нормализация ревизии — extractPageBlocks / POST /preview/block.
+        const adapted = adaptLegacyProps(raw, null, block);
+        // 2. blockDefaults темы ПОД props мерчанта — PreviewService.renderBlock.
+        const bd = themeDefaults[block] ?? {};
+        let merged = deepMergeBlockProps(bd, adapted);
+        if (block === 'Slideshow') merged = normalizeSlideshowProps(merged);
+        // 3. resolve-props с теми же resolveDefaults, что renderBlock.
+        const puckDefaults = await getBlockPuckDefaults(theme, block);
+        const resolveDefaults = deepMergeBlockProps(puckDefaults, bd);
+        const r = resolveBlockProps(block, merged, EMPTY_CATALOG, resolveDefaults);
+        return {
+          ...r.props,
+          siteId: 'test-site',
+          __merfy: {
+            siteId: 'test-site',
+            themeId: theme,
+            catalog: EMPTY_CATALOG,
+            ...r.merfy,
+          },
+        };
+      };
     } catch (err) {
       pipelineError = String(err?.message ?? err).slice(0, 300);
     }
   }
 
   const out = [];
-  for (const { block, props, pkg, pipeline: usePipeline } of jobs) {
+  for (const { block, props, pkg, pipeline: usePipeline, live: useLive } of jobs) {
     let modPath = null;
     if (pkg === 'theme-base') {
       const entry = themeBaseEntry(block);
@@ -95,13 +135,17 @@ async function main() {
       out.push({ block, missing: true });
       continue;
     }
-    if (usePipeline && !pipeline) {
+    if ((usePipeline && !pipeline) || (useLive && !livePipeline)) {
       out.push({ block, pipelineError: pipelineError ?? 'нет dist/src (pnpm build)' });
       continue;
     }
     try {
       const mod = await import(modPath);
-      const finalProps = usePipeline ? pipeline(block, props) : props;
+      const finalProps = useLive
+        ? await livePipeline(block, props)
+        : usePipeline
+          ? pipeline(block, props)
+          : props;
       out.push({ block, html: await container.renderToString(mod.default, { props: finalProps }) });
     } catch (err) {
       out.push({ block, error: String(err?.message ?? err).slice(0, 300) });

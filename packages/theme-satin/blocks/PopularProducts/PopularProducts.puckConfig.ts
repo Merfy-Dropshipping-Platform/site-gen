@@ -210,11 +210,20 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     headingSize: 'medium',
     text: { content: '', size: 'small' },
     textSize: 'small',
-    imageView: 'portrait',
+    // Замер рендером живой цепочки: порт satin без пропа рисует медиа карточки
+    // верстальщика 430/564 — это ветка 'square'. 'portrait' (430/500) панель
+    // записывала при любой правке соседнего поля, и плитки «вытягивались».
+    imageView: 'square',
     buttonStyle: 'primary',
     nextPhotoOnHover: false,
-    quickAddMode: 'cart',
-    cards: 3,
+    // Замер рендером: без пропа карточка несёт СВОЮ чёрную CTA — это ветка
+    // 'none'. 'cart' переименовывал кнопку и включал степпер.
+    quickAddMode: 'none',
+    // Замер рендером живой цепочки: число карточек ставит page-blocks
+    // (`coercePopularProductsProps`: нет числа → cards=4), а не порт и не
+    // theme.json. Прежняя тройка (здесь и в blockDefaults) на витрине не
+    // применялась ни разу — панель показывала 3, магазин рисовал 4.
+    cards: 4,
     columns: 3,
     productCard: {
       columns: 3,

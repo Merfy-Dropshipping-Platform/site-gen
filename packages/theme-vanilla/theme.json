@@ -61,6 +61,9 @@
     "--gallery-heading-font-size": "16px"
   },
   "blockDefaults": {
+    "ContactForm": {
+      "headingSize": "large"
+    },
     "PromoBanner": {
       "size": "large",
       "textTransform": "none",
@@ -94,6 +97,7 @@
     },
     "Collections": {
       "cardCaptionStyle": "default",
+      "columns": 2,
       "gridAspect": "1:1",
       "titleAlignment": "left"
     },
@@ -111,6 +115,7 @@
     },
     "PopularProducts": {
       "swatchOverlay": true,
+      "headingSize": "medium",
       "cardCaptionStyle": "default",
       "headingAlignment": "left"
     },

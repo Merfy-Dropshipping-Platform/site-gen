@@ -263,7 +263,8 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
     // Слева/Справа задаёт сторону ПЕРВОГО ряда. Дефолт 'left' (ряд 0 слева).
     rowsPosition: 'left',
     size: 'small',
-    width: 'small',
+    // Замер рендером: дефолтная ветка ширины у портов — 'large'.
+    width: 'large',
     // «Выравнивание» и «Стиль кнопки» — контролы панели без значения: в
     // сайдбаре подсвечивалось 'left'/«Выберите...» вне зависимости от витрины.
     // Значения сняты рендером (без пропа ≡ с пропом) у rose/flux/vanilla/bloom;

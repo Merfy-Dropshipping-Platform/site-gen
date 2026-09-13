@@ -15,6 +15,22 @@
  * превью (dist/theme-sections/<тема>), а defaultProps берутся у того же
  * контроллера, который отдаёт конфиг конструктору.
  *
+ * ОБА рендера идут ЖИВОЙ цепочкой (`live: true` у рендерера): adaptLegacyProps
+ * → deepMergeBlockProps(theme.json blockDefaults) → resolveBlockProps. Это не
+ * украшение: «нет значения в ревизии» НЕ равно «нет значения у порта». Между
+ * ревизией и портом стоят два звена, которые сами доставляют значение, и оба
+ * работают одинаково на витрине (v2-live-pages → renderBlock) и в точечном
+ * hot-render конструктора (POST /preview/block):
+ *   1. page-blocks (adaptLegacyProps) — например, `coercePopularProductsProps`
+ *      жёстко ставит cards=4/columns=4, когда числа нет;
+ *   2. theme.json `blockDefaults` — например, rose Header.logoPosition,
+ *      bloom Hero.overlay/position, satin PopularProducts.
+ * Сырой рендер модуля мимо этих звеньев показывает состояние, которого на
+ * живом сайте не существует. Пока проверка меряла его, в KNOWN_DIVERGENT
+ * копились «расхождения», которых у мерчанта нет, — а «починка» такой записи
+ * (сдвинуть дефолт панели под сырой фолбэк порта) РЕАЛЬНО меняла бы витрину,
+ * то есть ровно тот вред, ради которого проверку и писали.
+ *
  * Почему снимки секций этого не ловят: они рендерят фиксированный набор пропсов
  * и вообще не знают про defaultProps — «дефолт разошёлся с портом» для них
  * выглядит нормой.
@@ -44,71 +60,28 @@ const STYLE_TYPES = new Set([
 ]);
 
 /**
- * Дефолты, которые РАСХОДЯТСЯ с фолбэком порта. Все до единого существовали до
- * правки «дефолты панели» (замер на origin/main 9164e966 дал ровно этот список,
- * имя в имя). Каждая запись — живой баг: мерчант правит соседнее поле, а секция
- * меняет вид. Снимать их — отдельная работа: она МЕНЯЕТ вид только что
- * вставленной секции, и решение принимает владелец.
+ * Дефолты, которые РАСХОДЯТСЯ с фолбэком порта на ЖИВОЙ цепочке.
  *
  * Новая запись здесь НЕ появляется сама: добавили дефолт — либо он совпал с
  * портом, либо тест красный. Именно это и сторожим.
  */
 const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
-  rose: [
-    "Header.logoPosition",
-    "Header.stickiness",
-    "MultiColumns.width",
-    "MultiRows.width",
-    "PopularProducts.buttonStyle",
-    "PopularProducts.cards",
-    "PromoBanner.size",
-  ],
-  flux: [
-    "Header.logoPosition",
-    "Header.stickiness",
-    "Hero.position",
-    "MultiColumns.width",
-    "PopularProducts.buttonStyle",
-    "PopularProducts.cards",
-    "Product.layout",
-    "Publications.headingSize",
-    "PromoBanner.size",
-  ],
-  vanilla: [
-    "Collections.columns",
-    "ContactForm.headingSize",
-    "Header.stickiness",
-    "MultiColumns.width",
-    "MultiRows.width",
-    "PopularProducts.buttonStyle",
-    "PopularProducts.cards",
-    "PopularProducts.columns",
-    "PopularProducts.headingSize",
-  ],
-  satin: [
-    "Header.logoPosition",
-    "Header.stickiness",
-    "PopularProducts.cards",
-    "PopularProducts.imageView",
-    "PopularProducts.quickAddMode",
-    "PromoBanner.size",
-  ],
-  bloom: [
-    "Header.logoPosition",
-    "Header.stickiness",
-    "Hero.overlay",
-    "Hero.position",
-    "PopularProducts.buttonStyle",
-    "PopularProducts.cards",
-    "PopularProducts.columns",
-    "PopularProducts.quickAddMode",
-    "PromoBanner.size",
-  ],
+  rose: [],
+  flux: [],
+  vanilla: [],
+  satin: [],
+  bloom: [],
 };
 
 type PanelField = { type: string | null; hasDefault: boolean; value: unknown };
-type Job = { block: string; props: Record<string, unknown> };
-type Row = { block: string; html?: string; missing?: boolean; error?: string };
+type Job = { block: string; props: Record<string, unknown>; live: true };
+type Row = {
+  block: string;
+  html?: string;
+  missing?: boolean;
+  error?: string;
+  pipelineError?: string;
+};
 
 const digest = (s: string | undefined): string =>
   createHash("sha1")
@@ -167,8 +140,8 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
         const without = { ...full };
         delete without[name];
         pairs.push({ block, field: name });
-        jobs.push({ block, props: full });
-        jobs.push({ block, props: without });
+        jobs.push({ block, props: full, live: true });
+        jobs.push({ block, props: without, live: true });
       }
     }
   }
@@ -197,6 +170,13 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
       const without = rows[i * 2 + 1];
       if (withDef?.missing || without?.missing) return;
       if (withDef?.error || without?.error) return;
+      // Живая цепочка не поднялась (нет dist/src) — молчать нельзя.
+      if (withDef?.pipelineError || without?.pipelineError) {
+        divergent.push(
+          `${block}.${field} (живая цепочка не поднялась: ${withDef?.pipelineError ?? without?.pipelineError})`,
+        );
+        return;
+      }
       if (digest(withDef?.html) !== digest(without?.html)) {
         divergent.push(`${block}.${field}`);
       }

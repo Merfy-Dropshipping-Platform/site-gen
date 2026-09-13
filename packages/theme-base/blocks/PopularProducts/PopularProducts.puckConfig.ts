@@ -198,10 +198,16 @@ export const PopularProductsPuckConfig: BlockPuckConfig<PopularProductsProps> = 
     text: '',
     textSize: 'small',
     imageView: 'square',
-    buttonStyle: 'link',
+    // Замер рендером: у всех пяти портов дефолтная ветка кнопки карточки —
+    // 'primary' (заливка верстальщика). 'link' превращал кнопки в текстовые
+    // ссылки при первой же правке соседнего поля.
+    buttonStyle: 'primary',
     nextPhotoOnHover: false,
     quickAddMode: 'none',
-    cards: 6,
+    // Замер рендером живой цепочки: число карточек приходит НЕ из порта, а из
+    // page-blocks (`coercePopularProductsProps`: нет числа → cards=4), поэтому
+    // на витрине всегда 4. Панель показывала 6 — и записывала 6 при правке.
+    cards: 4,
     columns: 4,
     padding: { top: 80, bottom: 80 },
     quickAdd: false,

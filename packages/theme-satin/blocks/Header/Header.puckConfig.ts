@@ -141,7 +141,11 @@ export const HeaderPuckConfig: BlockPuckConfig<HeaderProps> = {
     siteTitle: 'Satin Store',
     logo: '',
     logoPosition: 'top-left',
-    stickiness: 'scroll-up',
+    // Замер рендером живой цепочки: порт satin без пропа рисует НЕзакреплённую
+    // шапку — это ветка 'none'. 'scroll-up' делал шапку липкой при первой же
+    // правке соседнего поля (сиды satin свою 'scroll-up' задают явно, она
+    // остаётся). Зеркало theme-base Header.puckConfig.
+    stickiness: 'none',
     menuType: 'dropdown',
     navigationLinks: [
       { label: 'Главная', href: '/' },

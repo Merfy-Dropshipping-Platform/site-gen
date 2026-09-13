@@ -659,10 +659,17 @@ function coerceImageWithTextProps(
     out.button = { text: String(b.text ?? ''), href };
   }
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
-  // photoPosition: "left"|"right" → imagePosition
-  if (!out.imagePosition) {
-    const pp = typeof out.photoPosition === 'string' ? out.photoPosition : '';
-    out.imagePosition = pp === 'right' ? 'right' : 'left';
+  // photoPosition: "left"|"right" → imagePosition (ТОЛЬКО перенос legacy-поля).
+  // Раньше ветка else ставила 'left' всем подряд — и это затирало сторону,
+  // которую тема уже объявила. Замер рендером: собственный фолбэк порта у
+  // vanilla и bloom — СПРАВА (и ровно это написано у них в theme.json
+  // blockDefaults), у rose/flux/satin — слева. Принудительный 'left' доезжал до
+  // рендера раньше blockDefaults (merge идёт ПОСЛЕ нормализации), поэтому на
+  // витрине vanilla/bloom картинка уезжала влево, а панель показывала «справа».
+  // Нет legacy-поля — не трогаем: сторону выберет theme.json, а если и там
+  // пусто — дефолтная ветка самого порта.
+  if (!out.imagePosition && typeof out.photoPosition === 'string') {
+    out.imagePosition = out.photoPosition === 'right' ? 'right' : 'left';
   }
   // padding: absent → undefined lets blockDefaults win.
 }

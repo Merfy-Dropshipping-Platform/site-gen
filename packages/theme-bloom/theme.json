@@ -121,6 +121,7 @@
     },
     "PopularProducts": {
       "cardCaptionStyle": "default",
+      "quickAddMode": "standard",
       "headingAlignment": "left",
       "heading": "Коллекция товаров"
     },
@@ -170,7 +171,8 @@
       "heading": "Галерея"
     },
     "MultiColumns": {
-      "heading": "Мультиколонны"
+      "heading": "Мультиколонны",
+      "width": "large"
     },
     "MultiRows": {
       "heading": "Мультиряды",

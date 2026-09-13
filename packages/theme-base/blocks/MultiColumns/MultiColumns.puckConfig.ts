@@ -304,8 +304,9 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     ],
     displayColumns: 3,
     headingSize: 'medium',
-    // Канон соседних секций (Collections/Gallery/MultiRows) = 1320px контейнер.
-    width: 'large',
+    // Замер рендером: дефолтная ветка ширины у rose/flux/vanilla — 'medium'.
+    // satin/bloom держат 'large' у себя (theme.json blockDefaults).
+    width: 'medium',
     imageAspectRatio: 'square',
     textPosition: 'left',
     containerEnabled: 'false',

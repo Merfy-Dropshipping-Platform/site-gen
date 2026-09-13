@@ -100,7 +100,9 @@ export const PromoBannerPuckConfig = {
   defaults: {
     text: 'Бесплатная доставка от 3000 ₽',
     link: { text: 'Подробнее', href: '/delivery' },
-    size: 'medium',
+    // Замер рендером: дефолтная ветка высоты плашки у всех портов — 'large'.
+    // bloom/vanilla объявляют свой размер в theme.json blockDefaults.
+    size: 'large',
     padding: { top: 0, bottom: 0 },
     hidden: false,
   },

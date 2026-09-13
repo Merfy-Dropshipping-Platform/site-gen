@@ -3177,3 +3177,69 @@ bloom `10df1c3a…`, satin `57ac2ede…`, vanilla `11e0c5a9…`:
 - `scripts/__tests__/flux-section-source-contract.test.mjs` красный на 9 проверках —
   все про `Gallery.astro` и карточку `storefront-hydrate`, к секции «Товар»
   отношения не имеют; в CI этот файл не запускается.
+---
+
+## 2026-09-13 — «Публикации» и «Страница» берут данные магазина (ветка `fix/live-data`)
+
+Баги тестировщика #7 (Публикации — моканые данные, оживить при выборе публикации)
+и #8 (Страница — моканые данные, брать страницы из админки).
+
+### Замер «до» (прод, `POST /preview/block`, auth-free)
+
+- rose `71f9b323-…`, flux `8df3b745-…` → «Новая коллекция весна 2025 / 15 марта 2025 /
+  Как ухаживать за изделиями / История бренда…» — записей с такими заголовками в
+  админке нет.
+- vanilla `6c107f35-…` → три карточки «Колонна» + текст Мультиколонн.
+- Секция «Страница» с `pageId: "page-about"` на всех трёх сайтах вернула СВОИ props
+  («ЗАГЛУШКА СЕКЦИИ»), выбор страницы не влиял ни на что.
+
+### Где жили заглушки
+
+| Файл | Что было |
+| --- | --- |
+| `packages/theme-base/blocks/Publications/Publications.astro` | `DEMO_ARTICLES` — 4 статьи с датами (её рендерит rose: в `dist/theme-sections/rose/manifest.json` Publications нет) |
+| `themes/flux/src/components/sections/Publications.astro` | `PLACEHOLDER_ARTICLES` |
+| `themes/bloom/src/components/sections/Publications.astro` | `PLACEHOLDER_ARTICLES` |
+| `themes/satin/src/components/sections/Publications.astro` | `PLACEHOLDER_ARTICLES` + «Кнопка» |
+| `themes/vanilla/src/components/sections/Publications.astro` | «Колонна» + текст Мультиколонн |
+| `constructor/src/components/fields/PublicationPicker.tsx` | три захардкоженные категории вместо публикаций магазина |
+
+### Механизм живых данных (тот же, что у товаров и коллекций)
+
+`publications` (БД sites) → `fetchPublications` → `catalog.publications` →
+`applySectionPolicy` → `__merfy.resolved.publications` → блок. Заполняют источник
+`PreviewController.loadPublications` (превью и hot-render) и `ctx.publications`
+(сборка, `merfyFromBuild`). Для «Страницы» — новый `src/render/page-transclude.ts`,
+его зовут `extractPageBlocks` (превью-страница + витрина v2) и
+`POST /preview/block`; сборка вместо старой policy-only ветки зовёт тот же резолвер.
+
+### Пустое состояние
+
+Нейтральная карточка «Публикация» (как «Товар»/«Коллекция» у соседних секций), без
+даты и анонса. Привязанная «Страница» без контента или удалённая → пусто.
+
+### Прогоны
+
+- `test:section-snapshots` 135/135 — 4 снимка обновлены осмысленно (ушли выдуманные
+  статьи и «Колонна», пришла «Публикация»).
+- `test:hidden-fields` 495/495, `test:hidden-list-items` 196/196,
+  `test:panel-defaults` 22/22 (в список content-типов добавлен `publicationPicker`).
+- `conformance:satin` зелёный; инвентарь обновлён отдельным коммитом (менялся порт satin).
+- Новые: `publications-resolve` 11, `page-transclude` 11, `publications-live-data` 35,
+  `publications-no-invented-records` 13, `page-blocks-page-binding` 7,
+  конструкторский `PublicationPicker` 7.
+- Саботаж: вернуть выдуманную запись / игнорировать `__merfy.resolved` / дать
+  заглушке протечь в привязанную страницу / захардкодить список пикера — все четыре
+  ловятся тестами.
+
+### Хвосты
+
+- Маршрута страницы публикации у v2-тем нет; карточки ссылаются на
+  `/publication/<slug>` (единственное число), а сборка пишет `/publications/<slug>`.
+  Клик по карточке ведёт в 404 в обоих вариантах — отдельная задача.
+- Админская «Страницы магазина» (`frontend/MerfyFrontend/src/components/OnShopPagesPage/
+  ShopPagesContent.tsx`) держит список в локальном стейте `INITIAL_PAGES`, с бэкендом
+  не связана.
+- `src/__tests__/figmaSectionContract.test.tsx` в конструкторе красный ДО правки
+  (17/18, мок `puckConfigResolver` не отдаёт `getCachedPuckConfigThemeId`); его
+  проверка «пикер пишет id категории» теперь описывает старый контракт.

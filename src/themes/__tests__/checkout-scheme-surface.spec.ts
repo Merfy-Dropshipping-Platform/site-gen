@@ -1,26 +1,34 @@
 /**
- * П.4 третьего круга: «Во вкладке Оформление заказа очень плохо работают
- * цветовые схемы».
+ * П.4 третьего круга («очень плохо работают цветовые схемы») + УТОЧНЕНИЕ
+ * владельца после него, которое отменяет половину прошлого эталона:
  *
- * Эталон владельца (Shopify-подобный чекаут): схема применяется к КОЛОНКЕ
- * целиком как к поверхности, а не к блокам внутри неё. Правая колонка — сплошной
- * цвет от верха до низа окна и до правого края экрана; текст и цифры на ней
- * берут цвет текста из той же схемы. То же для левой колонки, если мерчант
- * задал схему форме.
+ *   «Левая часть от нас. Там только меняется цвет кнопки и юр инфа цвет.
+ *    Всё остальное наше. А правая часть как в скрине».
  *
- * Замер «до» (прод, превью конструктора, 1280px, 2026-09-13):
- *   rose  — колонка красится `.mfy-checkout-pane--summary`, но цветом ЖЁСТКО
- *           зашитой `color-scheme-2`, а не выбранной у «Сводки заказа»;
- *   bloom — то же, плюс палитра вбита литералами в разметку страницы;
- *   vanilla/satin/flux — поверхности НЕТ вовсе: колонка обрывается на 1079px
- *           из 1280 (полоса справа), фон только у общего `<main>`;
- *   все пять — выбор схемы у «Сводки заказа» СНИМАЕТ класс `color-scheme-N`
- *           (панель шлёт "1", живая нормализация отдаёт число, блок сверял
- *           `typeof === 'string'`).
+ * Значит:
+ *   ПРАВАЯ колонка — поверхность, покрашенная схемой «Сводки заказа»: сплошной
+ *     цвет от верха до низа окна и до правого края, текст из той же схемы.
+ *     Это прошлый круг, он в силе и НЕ трогается.
+ *   ЛЕВАЯ колонка — фон ТЕМЫ (палитра страницы чекаута). Из схемы «Оформления
+ *     заказа» она берёт РОВНО один элемент — кнопку оформления. Второй
+ *     «схемный» элемент низа — правовая полоса, у неё своя схема (секция
+ *     «Подвал» страницы чекаута).
  *
- * Проверяем ровно эталон: класс схемы едет на КОЛОНКУ, колонка красится
- * токенами схемы, тянется на всю высоту и до края, и всё это одинаково у пяти
- * тем и в превью.
+ * Замер снятия заливки — собранные витрины пяти тем, Chromium, 1440×900 и
+ * 390×844, корзина 1/3/30, 13-14.09. Колонка формы 0..720:
+ *                 ДО (схема формы красила)               ПОСЛЕ (любая схема)
+ *   rose      scheme-3 245,240,235 / scheme-4 0,0,0       255,255,255
+ *   flux      scheme-3 250,250,250 / scheme-1 0,0,0       255,255,255
+ *   satin     scheme-3 245,245,245 / scheme-4 8,2,0       255,255,255
+ *   bloom     scheme-3 255,255,255 / scheme-1 207,122,139 255,255,255
+ *   vanilla   scheme-3 238,238,238 / scheme-4 255,255,255 58,69,48
+ * «ПОСЛЕ» = значение при НЕ выбранной схеме, то есть картина до cb182717.
+ * Правая колонка в обоих замерах одинакова; кнопка и правовая полоса цвета
+ * схемы не потеряли.
+ *
+ * Проверяем ровно это: схема сводки — на колонке; схема формы — на кнопке, и
+ * ни на колонке, ни на секции формы; полоса красится своей схемой; разметка и
+ * стили одни на пять тем и на превью.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -31,6 +39,7 @@ import {
   injectCheckoutChromeIntoHtml,
   patchCheckoutColumnScheme,
 } from '../chrome-assembler';
+import { PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE } from '../../services/preview.service';
 
 const SITES_ROOT = join(__dirname, '..', '..', '..');
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
@@ -79,13 +88,57 @@ describe('блоки чекаута печатают класс схемы на 
   });
 });
 
+// ── 1б. У формы схема садится на КНОПКУ, а не на корень секции ─────────────
+//
+// Уточнение владельца: «левая часть от нас… только цвет кнопки». Корень формы
+// несёт `bg-[rgb(var(--color-bg))]` — класс схемы на нём заливал бы всю форму
+// «пятном» (это и был замер «до»: 0..720 `rgb(0,0,0)` на scheme-1). Корень
+// «Кнопки оплаты» — `w-full`, он не красит ничего, поэтому схема на нём меняет
+// ровно цвет кнопки (`--color-button-bg`/`--color-button-text`).
+
+const tagOf = (html: string, block: string) =>
+  new RegExp(`<section\\b[^>]*\\bdata-block="${block}"[^>]*>`).exec(html)?.[0] ?? '';
+
+describe('схема «Оформления заказа» красит кнопку, а не форму', () => {
+  it.each([['scheme-3'], [3], ['3']])('%p → класс на секции кнопки', (value) => {
+    const html = renderBaseBlock('CheckoutForm', { id: 'CheckoutForm-1', colorScheme: value });
+    expect(tagOf(html, 'checkout-submit')).toContain('color-scheme-3');
+  });
+
+  it('корень формы остаётся БЕЗ класса схемы (иначе — пятно под контентом)', () => {
+    const html = renderBaseBlock('CheckoutForm', {
+      id: 'CheckoutForm-1',
+      colorScheme: 'scheme-3',
+    });
+    expect(tagOf(html, 'checkout-form')).not.toMatch(/color-scheme-\d/);
+  });
+
+  it('САБОТАЖ: схемы нет — нет и класса на кнопке', () => {
+    const html = renderBaseBlock('CheckoutForm', { id: 'CheckoutForm-1' });
+    expect(tagOf(html, 'checkout-submit')).not.toMatch(/color-scheme-\d/);
+  });
+
+  it('корень кнопки ничего не красит: ни фона, ни цвета текста', () => {
+    const classes = read('packages/theme-base/blocks/CheckoutSubmit/CheckoutSubmit.classes.ts');
+    expect(classes).toMatch(/root:\s*'w-full'/);
+  });
+
+  it('кнопка берёт цвет токенами схемы — тем же, чем в обычных секциях', () => {
+    const classes = read('packages/theme-base/blocks/CheckoutSubmit/CheckoutSubmit.classes.ts');
+    expect(classes).toContain('--color-button-bg');
+    expect(classes).toContain('--color-button-text');
+  });
+});
+
 // ── 2. Схема едет на КОЛОНКУ, а не только на секцию ────────────────────────
 
 const PANE_HTML = `<!doctype html><html><body>
 <div class="mfy-checkout-split">
   <div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-pane="form">
     <div class="mfy-checkout-pane__inner" data-checkout-column="form">
-      <section class="relative w-full" data-block="checkout-form">форма</section>
+      <section class="relative w-full" data-block="checkout-form">форма
+        <section class="w-full" data-block="checkout-submit">кнопка</section>
+      </section>
     </div>
   </div>
   <div class="mfy-checkout-pane mfy-checkout-pane--summary" data-checkout-pane="summary">
@@ -98,8 +151,10 @@ const PANE_HTML = `<!doctype html><html><body>
 
 const paneTag = (html: string, pane: string) =>
   new RegExp(`<div\\b[^>]*data-checkout-pane="${pane}"[^>]*>`).exec(html)?.[0] ?? '';
+const sectionTag = (html: string, block: string) =>
+  new RegExp(`<section\\b[^>]*\\bdata-block="${block}"[^>]*>`).exec(html)?.[0] ?? '';
 
-describe('класс схемы — на колонке', () => {
+describe('класс схемы сводки — на правой колонке', () => {
   it('строка "scheme-3" красит колонку сводки', () => {
     const out = patchCheckoutColumnScheme(PANE_HTML, 'summary', 'scheme-3');
     expect(paneTag(out, 'summary')).toContain('color-scheme-3');
@@ -117,27 +172,55 @@ describe('класс схемы — на колонке', () => {
     expect(twice).toBe(once);
     expect((twice.match(/color-scheme-3/g) ?? []).length).toBe(1);
   });
+});
 
-  it('колонки независимы: форма своей схемой, сводка своей', () => {
-    let out = patchCheckoutColumnScheme(PANE_HTML, 'form', 'scheme-1');
-    out = patchCheckoutColumnScheme(out, 'summary', 'scheme-4');
-    expect(paneTag(out, 'form')).toContain('color-scheme-1');
+/**
+ * САМОЕ ВАЖНОЕ МЕСТО ЭТОГО ФАЙЛА.
+ *
+ * Прошлый круг красил схемой ОБЕ колонки; уточнение владельца это отменило:
+ * «левая часть от нас… только цвет кнопки и юр инфа цвет». Гард сторожит ровно
+ * границу — левая колонка и секция формы БЕЗ класса схемы, кнопка С классом,
+ * правая колонка как была.
+ */
+describe('общая доводка чекаута: левая колонка — наша, кнопка — схемы', () => {
+  const out = injectCheckoutChromeIntoHtml(
+    PANE_HTML,
+    { headerHtml: null, footerHtml: null },
+    { form: { scheme: 'scheme-1' }, summary: { scheme: 4 } },
+  );
+
+  it('правая колонка красится схемой «Сводки заказа»', () => {
     expect(paneTag(out, 'summary')).toContain('color-scheme-4');
   });
 
-  it('общая доводка чекаута тоже красит колонки', () => {
-    const out = injectCheckoutChromeIntoHtml(
-      PANE_HTML,
+  it('ЛЕВАЯ колонка схемой НЕ красится', () => {
+    expect(paneTag(out, 'form')).not.toMatch(/color-scheme-\d/);
+  });
+
+  it('секция формы тоже без класса схемы (иначе пятно под контентом)', () => {
+    expect(sectionTag(out, 'checkout-form')).not.toMatch(/color-scheme-\d/);
+  });
+
+  it('схема формы доезжает до кнопки оформления', () => {
+    expect(sectionTag(out, 'checkout-submit')).toContain('color-scheme-1');
+  });
+
+  it('идемпотентно: повторная доводка ничего не дублирует', () => {
+    const twice = injectCheckoutChromeIntoHtml(
+      out,
       { headerHtml: null, footerHtml: null },
       { form: { scheme: 'scheme-1' }, summary: { scheme: 4 } },
     );
-    expect(paneTag(out, 'form')).toContain('color-scheme-1');
-    expect(paneTag(out, 'summary')).toContain('color-scheme-4');
+    expect(twice).toBe(out);
   });
 
-  it('САБОТАЖ: без схемы колонка остаётся без класса', () => {
-    const out = patchCheckoutColumnScheme(PANE_HTML, 'summary', undefined);
-    expect(paneTag(out, 'summary')).not.toMatch(/color-scheme-\d/);
+  it('САБОТАЖ: схем нет — ни один класс не появляется', () => {
+    const bare = injectCheckoutChromeIntoHtml(
+      PANE_HTML,
+      { headerHtml: null, footerHtml: null },
+      {},
+    );
+    expect(bare).not.toMatch(/color-scheme-\d/);
   });
 });
 
@@ -166,7 +249,10 @@ describe('общая split-колонка: поверхность по этал�
     expect(css).toMatch(/\[data-checkout-pane="summary"\][^}]*background:\s*rgb\(var\(--color-surface/);
   });
 
-  it('колонка формы красится фоном своей схемы', () => {
+  it('колонка формы держит фон ПАЛИТРЫ СТРАНИЦЫ (класса схемы на ней нет)', () => {
+    // Токен тот же (--color-bg), но приходит он от обёртки страницы чекаута —
+    // это фон темы, ровно как до cb182717. Гард против возврата заливки живёт
+    // выше, в «общая доводка чекаута».
     expect(css).toMatch(/\[data-checkout-pane="form"\][^}]*background:\s*rgb\(var\(--color-bg/);
   });
 
@@ -198,6 +284,54 @@ describe('превью конструктора = витрина', () => {
     const grid = preview.slice(preview.indexOf('wrapCheckoutGrid'));
     expect(grid).toContain('checkoutSplitMarkup');
     expect(grid).not.toContain('.mfy-checkout-pane--summary { background');
+  });
+
+  /**
+   * Живая правка схемы в конструкторе (`update-block`) обязана давать то же,
+   * что перезагрузка: правую колонку красим, левую — нет. Исполняем РОВНО ту
+   * строку, что уходит в кадр, а не её копию.
+   */
+  describe('агент превью красит только правую колонку', () => {
+    const applyCheckoutColumnScheme = new Function(
+      `${PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE}; return applyCheckoutColumnScheme;`,
+    )() as (el: unknown, schemeId: string) => unknown;
+
+    const paneStub = (kind: 'form' | 'summary', className: string) => {
+      const pane = {
+        className,
+        getAttribute: (name: string) => (name === 'data-checkout-pane' ? kind : null),
+      };
+      return { pane, el: { closest: () => pane } };
+    };
+
+    it('сводка: класс схемы садится на колонку', () => {
+      const { pane, el } = paneStub('summary', 'mfy-checkout-pane');
+      applyCheckoutColumnScheme(el, '4');
+      expect(pane.className).toContain('color-scheme-4');
+    });
+
+    it('сводка: схему сняли — класс снят', () => {
+      const { pane, el } = paneStub('summary', 'mfy-checkout-pane color-scheme-4');
+      applyCheckoutColumnScheme(el, '');
+      expect(pane.className).not.toMatch(/color-scheme-\d/);
+    });
+
+    it('форма: класс схемы НЕ появляется', () => {
+      const { pane, el } = paneStub('form', 'mfy-checkout-pane');
+      applyCheckoutColumnScheme(el, '4');
+      expect(pane.className).not.toMatch(/color-scheme-\d/);
+    });
+
+    it('форма: старый класс из прежней ревизии СНИМАЕТСЯ', () => {
+      const { pane, el } = paneStub('form', 'mfy-checkout-pane color-scheme-2');
+      applyCheckoutColumnScheme(el, '4');
+      expect(pane.className).not.toMatch(/color-scheme-\d/);
+      expect(pane.className).toContain('mfy-checkout-pane');
+    });
+
+    it('вне колонок чекаута агент не вмешивается', () => {
+      expect(applyCheckoutColumnScheme({ closest: () => null }, '4')).toBeNull();
+    });
   });
 });
 

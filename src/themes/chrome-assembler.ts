@@ -313,16 +313,22 @@ function replaceLastFooter(html: string, target: string): string {
 }
 
 /**
- * Figma 1:19998 — применить «Цветовую схему» узла checkout (CheckoutForm /
- * CheckoutSummary) к verbatim-разметке чекаута. `checkout.astro` темы рендерит
- * эти блоки БЕЗ пропсов мерчанта → их `<section data-block="checkout-*">`
- * приходит без класса схемы (наследует общий `color-scheme-2`). Дописываем
- * `color-scheme-N` в class секции — секция сама красит bg/text из `--color-*`
- * (CheckoutForm/Summary.classes несут `bg-[rgb(var(--color-bg))]`), значит
- * форма и сводка перекрашиваются независимо.
+ * Figma 1:19998 — применить «Цветовую схему» узла checkout к verbatim-разметке.
+ * `checkout.astro` темы рендерит мега-блоки БЕЗ пропсов мерчанта → их
+ * `<section data-block="checkout-*">` приходит без класса схемы (наследует
+ * палитру страницы). Дописываем `color-scheme-N` в class нужной секции.
+ *
+ * Цели сейчас ДВЕ, и они не симметричны:
+ *   `checkout-summary` — сводка (секция прозрачна, поверхность даёт колонка);
+ *   `checkout-submit`  — «Кнопка оплаты» внутри формы. Именно она, а НЕ
+ *                        `checkout-form`: уточнение владельца «левая часть от
+ *                        нас, там только меняется цвет кнопки и юр инфа цвет».
+ *                        Корень формы несёт `bg-[rgb(var(--color-bg))]`, и
+ *                        класс на нём красил бы «пятно» под всей формой; корень
+ *                        кнопки — `w-full`, он не красит ничего.
  *
  * Идемпотентно: класс не дублируется. `class` идёт ДО `data-block` (порядок
- * атрибутов в CheckoutForm/Summary.astro).
+ * атрибутов в CheckoutForm/Summary/Submit.astro).
  *
  * Переехало из `v2-live-pages.ts` (там осталась ре-экспортная ссылка): функция
  * нужна ОБОИМ путям — live-сборке и превью конструктора, а `v2-live-pages`
@@ -330,7 +336,7 @@ function replaceLastFooter(html: string, target: string): string {
  */
 export function patchCheckoutBlockScheme(
   html: string,
-  block: 'checkout-form' | 'checkout-summary',
+  block: 'checkout-form' | 'checkout-summary' | 'checkout-submit',
   scheme: unknown,
 ): string {
   const id = schemeIdOf(scheme);
@@ -366,9 +372,15 @@ function schemeIdOf(value: unknown): string {
  * Эталон владельца (п.4 третьего круга): схема применяется к колонке целиком
  * как к поверхности — сплошной цвет до низа окна и до правого края, текст из
  * той же схемы. До этого класс садился только на `<section>` внутри колонки, а
- * секция сводки ПРОЗРАЧНА (тонирует колонка) — выбор схемы не менял ничего, а
- * у формы красил «пятно» под контентом вместо колонки (bloom: розовый
- * прямоугольник на белой странице, замер прода 2026-09-13).
+ * секция сводки ПРОЗРАЧНА (тонирует колонка) — выбор схемы не менял ничего.
+ *
+ * ТОЛЬКО для `summary`. Левую колонку (`form`) сюда больше не отдают:
+ * уточнение владельца после третьего круга — «левая часть от нас… всё
+ * остальное наше», её поверхность держит тема. Замер «до» (собранные витрины,
+ * пять тем, Chromium, 1440×900, 13-14.09): колонка формы 0..720 заливалась
+ * 0,0,0 (rose scheme-4, flux scheme-1), 8,2,0 (satin scheme-4), 207,122,139
+ * (bloom scheme-1) — ровно это и снято. Параметр `pane` оставлен: контракт
+ * разметки общий, а сужать сигнатуру ради одного вызова — прятать намерение.
  *
  * Колонку ищем по `data-checkout-pane` — общий контракт разметки
  * (packages/theme-base/blocks/CheckoutLayout/checkout-split.ts), один на пять
@@ -464,11 +476,21 @@ export function injectCheckoutChromeIntoHtml(
   let out = chrome.headerHtml
     ? injectChromeIntoHtml(html, { headerHtml: chrome.headerHtml, footerHtml: null })
     : html;
-  out = patchCheckoutBlockScheme(out, 'checkout-form', blocks.form?.scheme);
+  // «Цветовая схема» СВОДКИ красит правую КОЛОНКУ целиком (эталон владельца:
+  // сплошной цвет до низа окна и до правого края). Класс на секции сводки
+  // остаётся — секция прозрачна, вреда нет, а цифры внутри берут из неё
+  // --color-*.
   out = patchCheckoutBlockScheme(out, 'checkout-summary', blocks.summary?.scheme);
-  // Схема красит КОЛОНКУ (эталон п.4), а не только секцию внутри неё.
-  out = patchCheckoutColumnScheme(out, 'form', blocks.form?.scheme);
   out = patchCheckoutColumnScheme(out, 'summary', blocks.summary?.scheme);
+  // «Цветовая схема» ФОРМЫ красит ровно ОДИН элемент левой колонки — кнопку
+  // оформления. Уточнение владельца (после третьего круга): «левая часть от
+  // нас. Там только меняется цвет кнопки и юр инфа цвет. Всё остальное наше».
+  // Поэтому ни колонку (`patchCheckoutColumnScheme(…, 'form')`), ни секцию
+  // формы (`checkout-form` — её корень несёт `bg-[rgb(var(--color-bg))]` и
+  // покрасился бы «пятном») мы схемой больше не трогаем: их фон = фон темы.
+  // Второй элемент, правовая полоса, красится своей схемой — секции «Подвал»
+  // страницы чекаута (`checkoutFooterScheme` → CheckoutFooterStrip).
+  out = patchCheckoutBlockScheme(out, 'checkout-submit', blocks.form?.scheme);
   out = patchCheckoutBlockId(out, 'checkout-form', blocks.form?.id);
   out = patchCheckoutBlockId(out, 'checkout-summary', blocks.summary?.id);
   if (chrome.footerHtml) out = replaceCheckoutFooterStrip(out, chrome.footerHtml);

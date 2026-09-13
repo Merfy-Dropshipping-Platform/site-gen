@@ -11,7 +11,6 @@
 // migrateCheckoutPage из 080 phase 6).
 import type { CheckoutFormProps } from './CheckoutForm.puckConfig';
 import { CheckoutFormClasses as C } from './CheckoutForm.classes';
-import { schemeClassOf } from '../../runtime/color-scheme';
 
 import CheckoutContactForm from '../CheckoutContactForm/CheckoutContactForm.astro';
 import CheckoutDeliveryForm from '../CheckoutDeliveryForm/CheckoutDeliveryForm.astro';
@@ -30,13 +29,26 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
-// Схема приходит строкой "scheme-2", голой "1" ИЛИ числом (живая нормализация
-// ревизии). Прежняя сверка `typeof === 'string'` роняла два вида из трёх —
-// см. runtime/color-scheme.ts и п.4 третьего круга.
-const schemeClass = schemeClassOf(colorScheme);
+// «Цветовая схема» этой секции НЕ красит левую колонку и НЕ красит саму
+// секцию. Уточнение владельца после третьего круга: «левая часть от нас, там
+// только меняется цвет кнопки и юр инфа цвет; всё остальное наше». Поэтому
+// класс схемы едет ВНИЗ, на «Кнопку оплаты» (CheckoutSubmit) — единственный
+// элемент формы, который владелец отдал схеме; правовую полосу внизу красит
+// её собственная схема (секция «Подвал» страницы чекаута, CheckoutFooterStrip).
+//
+// Корень секции остаётся на палитре страницы (`C.root` несёт
+// `bg-[rgb(var(--color-bg))]`): без класса схемы это фон ТЕМЫ — ровно то, что
+// было до cb182717. Класс на корне красил бы «пятно» под всей формой: замер
+// собранных витрин (пять тем, Chromium, 1440×900, 13-14.09) — колонка формы
+// 0..720 заливалась 0,0,0 (rose scheme-4, flux scheme-1), 8,2,0 (satin
+// scheme-4), 207,122,139 (bloom scheme-1).
+//
+// Значение приходит строкой "scheme-2", голой "1" ИЛИ числом (живая
+// нормализация ревизии) — нормализует `schemeClassOf` уже в CheckoutSubmit,
+// которому это значение и передаётся ниже.
 ---
 <section
-  class:list={[C.root, schemeClass]}
+  class={C.root}
   data-puck-component-id={id}
   data-block="checkout-form"
   style={paddingStyle}
@@ -102,8 +114,18 @@ const schemeClass = schemeClassOf(colorScheme);
     padding={{ top: 0, bottom: 0 }}
   />
 
+  {/*
+    Единственный получатель «Цветовой схемы» формы (см. шапку файла). Корень
+    «Кнопки оплаты» ничего не красит (`w-full`), поэтому класс схемы на нём
+    меняет ровно цвет кнопки: она берёт `--color-button-bg`/`--color-button-text`
+    — тот же механизм, что у кнопки в любой обычной секции витрины.
+    На live-витрине тема рендерит мега-блок БЕЗ пропсов, и тот же класс сюда
+    дописывает сборка (chrome-assembler.patchCheckoutBlockScheme, цель
+    `checkout-submit`). Пути совпадают по построению.
+  */}
   <CheckoutSubmit
     id="checkout-submit"
+    colorScheme={colorScheme}
     buttonText="Оплатить {total}"
     buttonStyle="fill"
     loadingText="Обработка платежа…"

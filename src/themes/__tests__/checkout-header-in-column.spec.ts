@@ -262,14 +262,18 @@ describe('мерчантская шапка садится на место пр�
     expect(headerIsInFormColumn(out)).toBe(true);
   });
 
-  it('схемы колонок применяются одновременно с подменой шапки', () => {
+  // Уточнение владельца после третьего круга: красится только ПРАВАЯ колонка,
+  // левая остаётся на палитре темы («Левая часть от нас… всё остальное наше»).
+  // Здесь это важно ещё и потому, что шапка теперь ВНУТРИ левой колонки:
+  // залитая колонка перекрашивала бы и логотип.
+  it('схема сводки применяется одновременно с подменой шапки, левая колонка чистая', () => {
     const out = injectCheckoutChromeIntoHtml(
       checkoutSplitMarkup(FORM, SUMMARY, HEADER),
       { headerHtml: MERCHANT, footerHtml: null },
       { form: { scheme: 'scheme-1' }, summary: { scheme: 4 } },
     );
-    expect(/<div\b[^>]*data-checkout-pane="form"/.exec(out)![0]).toContain(
-      'color-scheme-1',
+    expect(/<div\b[^>]*data-checkout-pane="form"/.exec(out)![0]).not.toMatch(
+      /color-scheme-\d/,
     );
     expect(/<div\b[^>]*data-checkout-pane="summary"/.exec(out)![0]).toContain(
       'color-scheme-4',

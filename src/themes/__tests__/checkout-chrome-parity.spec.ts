@@ -22,10 +22,15 @@ const read = (rel: string) => readFileSync(join(SITES_ROOT, rel), 'utf8');
  * чтобы превью и live не разъехались снова.
  */
 describe('injectCheckoutChromeIntoHtml — общий чекаут-хром превью и live', () => {
+  // Разметка зеркалит собранную витрину: «Кнопка оплаты» — ВЛОЖЕННАЯ секция
+  // формы (CheckoutForm.astro рендерит CheckoutSubmit внутри себя), и класс
+  // схемы формы едет именно на неё.
   const THEME_BLOB =
     '<html><body>' +
     '<header class="sticky top-0" data-checkout-slot="header">ТЕМА-ДЕФОЛТ</header>' +
-    '<section class="relative w-full bg-[rgb(var(--color-bg))] flex flex-col gap-7" data-block="checkout-form">FORM</section>' +
+    '<section class="relative w-full bg-[rgb(var(--color-bg))] flex flex-col gap-7" data-block="checkout-form">FORM' +
+    '<section class="w-full" data-block="checkout-submit">ОПЛАТИТЬ</section>' +
+    '</section>' +
     '<section class="relative w-full flex flex-col gap-6" data-block="checkout-summary">SUM</section>' +
     '<footer data-nt="rose-footer">ПОДВАЛ ТЕМЫ</footer>' +
     '</body></html>';
@@ -45,13 +50,28 @@ describe('injectCheckoutChromeIntoHtml — общий чекаут-хром пр
     expect(out).not.toContain('ТЕМА-ДЕФОЛТ');
   });
 
-  it('дописывает цветовые схемы формы и сводки независимо друг от друга', () => {
+  // Уточнение владельца после третьего круга: «Левая часть от нас. Там только
+  // меняется цвет кнопки и юр инфа цвет. Всё остальное наше. А правая часть как
+  // в скрине». Поэтому схема «Оформления заказа» доезжает до КНОПКИ, а не до
+  // корня формы: на корне (`bg-[rgb(var(--color-bg))]`) она красила бы всю
+  // левую колонку.
+  it('схема сводки — на сводке, схема формы — на кнопке, независимо', () => {
     const out = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(merchantHeader), {
       form: { scheme: 'scheme-3' },
       summary: { scheme: 'scheme-5' },
     });
-    expect(out).toContain('gap-7 color-scheme-3" data-block="checkout-form"');
     expect(out).toContain('gap-6 color-scheme-5" data-block="checkout-summary"');
+    expect(out).toContain('class="w-full color-scheme-3" data-block="checkout-submit"');
+    expect(out).toContain('gap-7" data-block="checkout-form"');
+  });
+
+  it('САБОТАЖ: корень формы класс схемы НЕ получает', () => {
+    const out = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(merchantHeader), {
+      form: { scheme: 'scheme-3' },
+      summary: { scheme: 'scheme-5' },
+    });
+    const formTag = /<section\b[^>]*\bdata-block="checkout-form"[^>]*>/.exec(out)?.[0] ?? '';
+    expect(formTag).not.toMatch(/color-scheme-\d/);
   });
 
   it('не трогает обычный подвал темы (у чекаута своя правовая полоса)', () => {
@@ -80,7 +100,7 @@ describe('injectCheckoutChromeIntoHtml — общий чекаут-хром пр
       form: { scheme: 'scheme-4' },
     });
     expect(out).toContain('ТЕМА-ДЕФОЛТ');
-    expect(out).toContain('gap-7 color-scheme-4" data-block="checkout-form"');
+    expect(out).toContain('class="w-full color-scheme-4" data-block="checkout-submit"');
   });
 
   it('patchCheckoutBlockScheme экспортируется из chrome-assembler (общий модуль)', () => {

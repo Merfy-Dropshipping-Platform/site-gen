@@ -1,15 +1,36 @@
 ---
 import type { CheckoutSubmitProps } from './CheckoutSubmit.puckConfig';
 import { CheckoutSubmitClasses as C } from './CheckoutSubmit.classes';
+import { schemeClassOf } from '../../runtime/color-scheme';
 
-interface Props extends CheckoutSubmitProps { id?: string; }
-const { id, buttonText, buttonStyle, loadingText, successRedirectUrl, padding } = Astro.props as Props;
+interface Props extends CheckoutSubmitProps {
+  id?: string;
+  /**
+   * «Цветовая схема» секции «Оформление заказа» (CheckoutForm) — НЕ свой
+   * контрол панели: в `CheckoutSubmit.puckConfig` такого поля нет и не
+   * появляется (состав параметров — канон). Прокидывает родитель.
+   *
+   * Уточнение владельца (после третьего круга): «левая часть от нас, там
+   * только меняется цвет кнопки и юр инфа цвет». То есть схема формы больше НЕ
+   * поверхность левой колонки, а ровно два элемента — эта кнопка и правовая
+   * полоса. Класс схемы садится на корень «Кнопки оплаты», потому что корень
+   * ничего не красит (`w-full`), а кнопка внутри и так берёт цвет
+   * `--color-button-bg/--color-button-text` — тем же механизмом, каким кнопка
+   * берёт цвет в любой обычной секции витрины (обёртка `color-scheme-N` над
+   * секцией → токены кнопки из схемы). Новый механизм не вводится.
+   */
+  colorScheme?: unknown;
+}
+const { id, buttonText, buttonStyle, loadingText, successRedirectUrl, padding, colorScheme } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 const cls = buttonStyle === 'outline' ? C.buttonOutline : buttonStyle === 'gradient' ? C.buttonGradient : C.buttonFill;
 const initialLabel = buttonText.replace('{total}', '—');
+// Схема приходит строкой "scheme-2", голой "1" ИЛИ числом (живая нормализация
+// ревизии) — см. runtime/color-scheme.ts.
+const schemeClass = schemeClassOf(colorScheme);
 ---
 <section
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-block="checkout-submit"
   style={paddingStyle}

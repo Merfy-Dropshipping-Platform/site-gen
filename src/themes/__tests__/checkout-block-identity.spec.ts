@@ -37,7 +37,12 @@ const read = (rel: string) => readFileSync(join(SITES_ROOT, rel), 'utf8');
 const BLOB =
   '<html><body>' +
   '<header class="sticky top-0" data-checkout-slot="header">ШАПКА</header>' +
-  '<section class="relative w-full flex flex-col gap-7" data-block="checkout-form">FORM</section>' +
+  '<section class="relative w-full flex flex-col gap-7" data-block="checkout-form">FORM' +
+  // «Кнопка оплаты» — вложенная секция формы (CheckoutForm.astro). Схема
+  // «Оформления заказа» едет на неё, а не на корень формы: см.
+  // checkout-chrome-parity.spec и уточнение владельца о левой колонке.
+  '<section class="w-full" data-block="checkout-submit">ОПЛАТИТЬ</section>' +
+  '</section>' +
   '<section class="relative w-full flex flex-col gap-6" data-block="checkout-summary">SUM</section>' +
   '</body></html>';
 
@@ -51,8 +56,9 @@ describe('секции чекаута несут id блока — иначе п
     });
     expect(out).toContain('data-puck-component-id="CheckoutForm-1"');
     expect(out).toContain('data-puck-component-id="CheckoutSummary-1"');
-    // Схема из фикса 16 продолжает работать.
-    expect(out).toContain('gap-7 color-scheme-4"');
+    // Схема из фикса 16 продолжает работать — по своим адресам: сводка на
+    // сводке, форма на кнопке (левая колонка схемой не красится).
+    expect(out).toContain('class="w-full color-scheme-4"');
     expect(out).toContain('gap-6 color-scheme-5"');
   });
 

@@ -96,6 +96,49 @@ jobs:
       - name: Run build
         run: pnpm run build
 
+      # Ниже — проверки, которые лежали в репозитории и не гонялись НИ ОДНОЙ
+      # джобой (аудит 13.09). Джоба build-and-test до этого не запускала ни
+      # одного теста вообще: поднимала Postgres, катала миграции, собирала — и
+      # всё. Сюда положены только те группы, которым не нужны артефакты тем:
+      # они считаются по исходникам, идут секунды и на origin/main зелёные.
+
+      # Миграции ревизий переписывают данные мерчанта при КАЖДОМ чтении: цена
+      # ошибки — молча испорченная страница у живого магазина. Три файла из
+      # этой папки уже сторожила джоба satin, остальные одиннадцать — нет.
+      # 14 файлов, 116 проверок, ~4 c.
+      - name: Тесты миграций ревизий
+        run: pnpm exec jest --runInBand src/utils/__tests__/
+
+      # Контракт тем: схема манифеста, реестр токенов, резолвер страниц,
+      # конформанс-движок. Джоба satin гоняла отсюда только conformance-*
+      # (9 сьютов из 40). 39 сьютов, 418 проверок, ~3 c.
+      #
+      # cli-validate.test.ts СОЗНАТЕЛЬНО оставлен вне этого шага и остаётся
+      # красным: он ловит настоящую поломку — packages/theme-bloom/theme.json
+      # объявляет токен `--product-card-padding`, которого нет в TOKEN_REGISTRY,
+      # и CLI падает на нём раньше, чем доходит до проверяемого сообщения.
+      # Чинить надо манифест, а не тест; до тех пор вешать на джобу вечно
+      # красный шаг нельзя — такую джобу перестают читать.
+      - name: Тесты пакета theme-contract
+        working-directory: packages/theme-contract
+        # cli-validate исключён осознанно: он ловит НАСТОЯЩУЮ поломку — токен
+        # --product-card-padding не зарегистрирован в TOKEN_REGISTRY, из-за чего
+        # CLI падает на манифестах flux (16 расхождений), rose (22), satin и
+        # bloom (по 1). Пока токен не заведён, шаг был бы вечно красным, а
+        # вечно красную джобу перестают читать. Починка — в плане, P3.
+        run: >-
+          pnpm exec jest --config jest.config.ts --runInBand
+          --testPathIgnorePatterns 'cli-validate'
+          --testPathIgnorePatterns "/node_modules/" "/__tests__/fixtures/"
+          "__tests__/cli-validate.test.ts"
+
+      # Манифест vanilla — единственный из пяти, который проходит
+      # ThemeManifestSchema (у flux 16 расхождений, у rose 22, у satin и bloom
+      # по одному). Замок ставим на то, что уже чисто, чтобы не уехало и оно.
+      - name: Тесты манифеста темы vanilla
+        working-directory: packages/theme-vanilla
+        run: pnpm exec jest --config jest.config.ts --runInBand
+
   satin-structural-conformance:
     runs-on: ubuntu-latest
     steps:
@@ -170,6 +213,34 @@ jobs:
       - run: pnpm test:conformance:satin
       - run: node --test scripts/__tests__/block-source-layout.test.mjs
       - run: node --test scripts/__tests__/workspace-docker-layout.test.mjs
+      # Остальные node:test-проверки из scripts/__tests__. Раннер у них
+      # встроенный (node --test), конфига им не нужно — и ровно поэтому их
+      # никто не подхватывал: в CI руками были вписаны только две строки выше.
+      # 16 файлов, 647 проверок, ~11 c. Зелёные на origin/main.
+      #
+      # Вне списка сознательно оставлен flux-header-reference-contract.test.mjs:
+      # он красный и ловит настоящее расхождение (Header главной flux уехал на
+      # scheme-2 ревертом d6d9b1ca, а blockDefaults.PromoBanner.colorScheme
+      # перебивает фирменный navy). Это правка тем, не теста.
+      - name: Контракты исходников и утилит сборки (node:test)
+        run: >-
+          node --test
+          scripts/__tests__/catalog-block-aspects.test.mjs
+          scripts/__tests__/ci-theme-conformance-layout.test.mjs
+          scripts/__tests__/compute-ranges.test.mjs
+          scripts/__tests__/flux-home-contract.test.mjs
+          scripts/__tests__/flux-section-source-contract.test.mjs
+          scripts/__tests__/github-source.test.mjs
+          scripts/__tests__/index-ts.test.mjs
+          scripts/__tests__/migrate-block-to-tokens.test.mjs
+          scripts/__tests__/registry.test.mjs
+          scripts/__tests__/rewrite-base-classes.test.mjs
+          scripts/__tests__/scheme-color-filter.test.mjs
+          scripts/__tests__/snapshot-container.test.mjs
+          scripts/__tests__/structural-dimension-filter.test.mjs
+          scripts/__tests__/transform-utilities.test.mjs
+          scripts/__tests__/utility-classify.test.mjs
+          scripts/__tests__/validate-token-completeness.test.mjs
       - run: pnpm exec jest --runInBand src/generator/__tests__/pnpm-invocation.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts

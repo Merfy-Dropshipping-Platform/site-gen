@@ -735,11 +735,16 @@ test('storefront-hydrate.ts (themes/flux/src/lib/storefront-hydrate.ts): renderC
   const content = await readFileOrNull(absPath);
   assert.ok(content !== null, 'ожидался файл storefront-hydrate.ts');
 
+  // Сторожим СВОЙСТВО (вторым параметром идёт необязательный ctaLabel: string),
+  // а не весь список параметров. Прежняя редакция закрывала скобку сразу после
+  // ctaLabel — и покраснела от появления третьего параметра `qaMode?: string`,
+  // хотя контракт подписи не нарушен. Пришпиливать хвост списка нельзя: тест
+  // начинает падать на каждом расширении сигнатуры и перестаёт читаться.
   await t.test('renderCardHtml(p, ctaLabel?) — экспортируемая сигнатура несёт необязательный ctaLabel', () => {
     assert.match(
       content,
-      /export\s+function\s+renderCardHtml\(p:\s*RealProduct,\s*ctaLabel\?:\s*string\)/,
-      'ожидалась сигнатура renderCardHtml(p: RealProduct, ctaLabel?: string) — паритет ' +
+      /export\s+function\s+renderCardHtml\(p:\s*RealProduct,\s*ctaLabel\?:\s*string\s*[,)]/,
+      'ожидалась сигнатура renderCardHtml(p: RealProduct, ctaLabel?: string, …) — паритет ' +
         'с FluxProductCard.astro ctaLabel prop (Task 6, Step 2/3)',
     );
   });
@@ -747,8 +752,8 @@ test('storefront-hydrate.ts (themes/flux/src/lib/storefront-hydrate.ts): renderC
   await t.test('cardButtonHtml(p, ctaLabel?) — приватный хелпер прокидывает ctaLabel в разметку кнопки', () => {
     assert.match(
       content,
-      /function\s+cardButtonHtml\(p:\s*RealProduct,\s*ctaLabel\?:\s*string\)/,
-      'ожидалась сигнатура cardButtonHtml(p: RealProduct, ctaLabel?: string)',
+      /function\s+cardButtonHtml\(p:\s*RealProduct,\s*ctaLabel\?:\s*string\s*[,)]/,
+      'ожидалась сигнатура cardButtonHtml(p: RealProduct, ctaLabel?: string, …)',
     );
   });
 
@@ -926,7 +931,11 @@ test('Gallery (src/components/sections/Gallery.astro): upstream tile geometry (a
   });
 
   await t.test('grid/side gap: gap-4 (16px) — upstream литерал на всех уровнях сетки', () => {
-    assert.match(content, /flex flex-col gap-4 lg:grid \$\{gridColsCls\} lg:gap-4/, 'ожидался gap-4/lg:gap-4 на корневой сетке');
+    // Имя переменной с треками не пришпиливаем: она стала `gridLayoutCls`,
+    // когда добавили ветку одиночной плитки (`soloTile`). Сторожим сами
+    // зазоры — gap-4 на мобайле и lg:gap-4 на десктопе, — а не то, как
+    // называется подставляемая константа.
+    assert.match(content, /flex flex-col gap-4 lg:grid \$\{\w+\} lg:gap-4/, 'ожидался gap-4/lg:gap-4 на корневой сетке');
     assert.match(
       content,
       /grid min-w-0 grid-cols-2 gap-4 lg:flex lg:flex-col lg:gap-4/,
@@ -935,15 +944,33 @@ test('Gallery (src/components/sections/Gallery.astro): upstream tile geometry (a
   });
 
   await t.test('hero tile: aspect-square (мобайл) / lg:aspect-auto lg:h-full (десктоп) + rounded radius-media + object-center + hover scale-[1.02] duration-500 ease-out', () => {
+    // `lg:aspect-auto lg:h-full` переехало из литерала класса в константу
+    // `heroSizeCls` (ветка «плиток больше одной»); окно в 80 символов стало
+    // мимо. Проверяем обе половины геометрии по отдельности — само свойство
+    // на месте, менялась только форма записи.
     assert.match(
       content,
-      /aspect-square w-full min-w-0 overflow-hidden rounded-\[var\(--radius-media,8px\)\][\s\S]{0,80}?lg:aspect-auto lg:h-full/,
-      'ожидалась геометрия hero-плитки (aspect-square/lg:h-full/radius-media)',
+      /aspect-square w-full min-w-0 overflow-hidden rounded-\[var\(--radius-media,8px\)\]/,
+      'ожидалась геометрия hero-плитки (aspect-square + radius-media)',
     );
     assert.match(
       content,
-      /object-cover object-center transition-transform duration-500 ease-out group-hover:scale-\[1\.02\]/,
-      'ожидался object-center + hover scale-[1.02] duration-500 ease-out на hero-изображении (upstream FluxPicture класс)',
+      /lg:aspect-auto lg:h-full/,
+      'ожидалось десктопное поведение hero-плитки (lg:aspect-auto lg:h-full)',
+    );
+    // Обрезка и ховер разъехались по разным местам: `object-cover
+    // object-center` собирает хелпер `fitCls`, а класс ховера приходит в него
+    // аргументом на hero-плитке. Одной непрерывной строки в исходнике больше
+    // нет — проверяем обе части по отдельности.
+    assert.match(
+      content,
+      /object-cover object-center/,
+      'ожидался object-center на hero-изображении (upstream FluxPicture класс)',
+    );
+    assert.match(
+      content,
+      /transition-transform duration-500 ease-out group-hover:scale-\[1\.02\]/,
+      'ожидался hover scale-[1.02] duration-500 ease-out на hero-изображении',
     );
     assert.doesNotMatch(content, /object-left/, 'НЕ ожидался object-left — upstream литерал object-center (регрессия 01f80631)');
   });
@@ -976,9 +1003,12 @@ test('Gallery (src/components/sections/Gallery.astro): upstream tile geometry (a
   });
 
   await t.test('порядок плиток: hero (index 0) первая, боковые (product-позиция, затем collection-позиция) — без mirror совпадает с DOM-порядком, при mirror — только CSS order, не DOM', () => {
+    // Тернарник заменили на `&&` — DOM-порядок от этого не поменялся.
+    // Сторожим факт «hero рендерится условно и до боковой колонки», а не
+    // выбранный автором оператор.
     assert.match(
       content,
-      /heroTile \? \(/,
+      /heroTile\s*(?:&&|\?)\s*\(/,
       'ожидался heroTile первым в DOM (up-front условный рендер до боковой колонки)',
     );
     assert.match(content, /const heroOrderCls = mirror \? " lg:order-2" : "";/, 'ожидался CSS order (не DOM reorder) для зеркалирования');

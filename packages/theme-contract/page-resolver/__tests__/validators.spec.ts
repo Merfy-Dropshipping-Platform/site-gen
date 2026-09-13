@@ -101,9 +101,25 @@ describe('rose theme manifest validation', () => {
     expect(() => validateManifest(roseManifestRaw)).not.toThrow();
   });
 
-  it('has 8 system pages', () => {
+  // Было «has 8 system pages» — голое число. Страниц стало 11 (контентные
+  // страницы + профиль), и проверка молча ехала красной: файл не гонялся ни
+  // одной джобой. Число заменено составом: если страница пропадёт или
+  // появится, тест назовёт ЕЁ, а не попросит подправить цифру.
+  it('состав системных страниц rose зафиксирован', () => {
     const m = roseManifestRaw as any;
-    expect(m.pages).toHaveLength(8);
+    expect(m.pages.map((p: any) => p.id)).toEqual([
+      'home',
+      'page-about',
+      'page-delivery',
+      'page-contacts',
+      'page-catalog',
+      'page-collection',
+      'page-cart',
+      'page-product',
+      'page-checkout',
+      'page-checkout-result',
+      'page-profile',
+    ]);
     expect(m.pages.every((p: any) => p.role === 'system')).toBe(true);
   });
 

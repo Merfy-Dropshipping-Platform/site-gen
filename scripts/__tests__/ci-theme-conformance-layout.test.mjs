@@ -140,12 +140,28 @@ function loadWorkflow(relPath) {
       continue;
     }
 
-    // Ordered `run:` scalars inside `steps:`. Handles `- run: <cmd>` and a
-    // `run: <cmd>` continuation line of a `- name:`/`- uses:` step. Only
-    // single-line run scalars appear in this workflow's conformance jobs.
-    const runMatch = line.match(/^\s*-?\s*run:\s*(.+)$/);
+    // Ordered `run:` scalars inside `steps:`. Handles `- run: <cmd>`, a
+    // `run: <cmd>` continuation line of a `- name:`/`- uses:` step, и блочные
+    // скаляры `run: >-` / `run: |`, которыми записывают длинные команды.
+    // Раньше блочный скаляр попадал в список как команда ">-", и весь гард
+    // разъезжался на первом же многострочном шаге.
+    const runMatch = line.match(/^(\s*)-?\s*run:\s*(.+)$/);
     if (runMatch) {
-      jobs[currentJob].runs.push(runMatch[1].trim());
+      const value = runMatch[2].trim();
+      if (value === '>-' || value === '>' || value === '|' || value === '|-') {
+        const baseIndent = indentOf(line);
+        const parts = [];
+        let j = i + 1;
+        for (; j < lines.length; j++) {
+          if (lines[j] === '') continue;
+          if (indentOf(lines[j]) <= baseIndent) break;
+          parts.push(lines[j].trim());
+        }
+        jobs[currentJob].runs.push(parts.join(' '));
+        i = j - 1;
+      } else {
+        jobs[currentJob].runs.push(value);
+      }
     }
   }
 
@@ -160,15 +176,32 @@ function runCommands(job) {
 test('adds an isolated Satin gate wired into deploy (Bloom job absent in this lineage)', () => {
   const workflow = loadWorkflow('.github/workflows/ci.yml');
 
-  // The Satin gate exists and runs EXACTLY the ordered command list.
+  // The Satin gate exists and keeps the required commands in this order.
+  //
+  // Раньше здесь стояло точное равенство со списком `expectedSatinCommands`.
+  // Из-за него гард краснел на КАЖДОМ добавлении проверки в джобу — а проверки
+  // в неё добавляют постоянно, это её назначение. В итоге файл выкинули из CI,
+  // и он перестал сторожить хоть что-нибудь (замер 13.09: в джобе 14 шагов,
+  // которых нет в списке). Поэтому сверяем не полное равенство, а ПОДПОСЛЕДО-
+  // ВАТЕЛЬНОСТЬ: все обязательные команды на месте и идут в заданном порядке
+  // (сборка перед конформансом), а новые шаги между ними разрешены.
   assert.ok(
     workflow.jobs['satin-structural-conformance'],
     'satin-structural-conformance job must exist',
   );
-  assert.deepEqual(
-    runCommands(workflow.jobs['satin-structural-conformance']),
-    expectedSatinCommands,
-  );
+  const actualSatinCommands = runCommands(workflow.jobs['satin-structural-conformance']);
+  let cursor = 0;
+  for (const required of expectedSatinCommands) {
+    const at = actualSatinCommands.indexOf(required, cursor);
+    assert.notEqual(
+      at,
+      -1,
+      `в джобе satin-structural-conformance нет обязательного шага "${required}" ` +
+        'после уже найденных — либо он пропал, либо уехал вверх по списку. ' +
+        `Фактический список: ${JSON.stringify(actualSatinCommands, null, 2)}`,
+    );
+    cursor = at + 1;
+  }
 
   // Adaptation for this Satin-independent lineage: no Bloom CI job was landed
   // here, so the byte-for-byte `bloom-structural-commands.json` fixture is

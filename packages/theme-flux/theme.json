@@ -19,7 +19,7 @@
     "--radius-card": "12px",
     "--radius-media": "8px",
     "--radius-field": "4px",
-    "--size-hero-heading": "72px",
+    "--size-hero-heading": "24px",
     "--size-hero-button-h": "48px",
     "--size-section-heading": "24px",
     "--size-nav-link": "16px",

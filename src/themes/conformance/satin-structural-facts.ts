@@ -407,8 +407,9 @@ function loadSourceFacts(): SatinSourceFacts {
     /getEntry|merchant|fetch\(/.test(blogDetailCode);
 
   // --- cart ---------------------------------------------------------------
-  // drawer-cart-section-source: the resolver (cart-drawer-contract.ts) inspects
-  // legacy CartBody/CartSummary block types.
+  // drawer-cart-section-source: сверяем, ЧТО читает резолвер схемы дровера
+  // (cart-drawer-contract.ts) с тем, во что миграция превращает страницу
+  // корзины. Разъезд этих двух = дровер молча без схемы мерчанта.
   const resolverCode =
     readSource('src/themes/cart-drawer-contract.ts') ?? '';
   const cartResolverInspectsLegacyTypes: string[] = [];
@@ -416,7 +417,14 @@ function loadSourceFacts(): SatinSourceFacts {
     cartResolverInspectsLegacyTypes.push('CartBody');
   if (/CartSummary/.test(resolverCode))
     cartResolverInspectsLegacyTypes.push('CartSummary');
-  const cartMigratedTarget = 'CartSection';
+  // Цель миграции читаем из самой миграции, а не из константы: захардкоженный
+  // 'CartSection' пережил разворот корзины обратно в CartBody+CartSummary
+  // (баг-репорт 12) и оставил ложный GAP «резолвер читает легаси».
+  const cartMigrationCode =
+    readSource('src/utils/revision-migrations.ts') ?? '';
+  const cartMigratedTarget = /type:\s*'CartBody'/.test(cartMigrationCode)
+    ? 'CartBody'
+    : 'CartSection';
 
   // cart safe-dom: the cart line render interpolates line.name into innerHTML
   // WITHOUT an allowlisted sanitizer/text adapter dominating it.

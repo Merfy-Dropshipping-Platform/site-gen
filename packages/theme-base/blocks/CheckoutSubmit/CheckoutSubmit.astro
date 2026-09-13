@@ -2,6 +2,7 @@
 import type { CheckoutSubmitProps } from './CheckoutSubmit.puckConfig';
 import { CheckoutSubmitClasses as C } from './CheckoutSubmit.classes';
 import { schemeClassOf } from '../../runtime/color-scheme';
+import { CHECKOUT_BUTTON_CONTRAST_SOURCE } from '../../runtime/checkout-button-contrast';
 
 interface Props extends CheckoutSubmitProps {
   id?: string;
@@ -385,5 +386,80 @@ const schemeClass = schemeClassOf(colorScheme);
     });
 
     refresh();
+  })();
+</script>
+
+{/*
+  ВНИМАНИЕ: эти два скрипта обязаны идти ПОСЛЕ основного. DOM-тесты блока
+  (packages/theme-base/__tests__/checkout-submit-*.dom.test.ts) достают из
+  .astro ПЕРВЫЙ <script> и исполняют его в jsdom как логику сабмита —
+  вставка выше уводила их на расчёт контраста, и 10 проверок падали на
+  ровном месте.
+*/}
+{/*
+  Кнопка «как у Shopify»: заметна на фоне колонки в любой теме и любой схеме.
+  Исходник расчёта — общий с гардом (runtime/checkout-button-contrast.ts), он
+  же объясняет пороги и порядок ролей. Здесь только применение.
+*/}
+<script is:inline set:html={CHECKOUT_BUTTON_CONTRAST_SOURCE}></script>
+<script is:inline define:vars={{ blockId: id }}>
+  (function () {
+    // Spec 102 — свой корень через общий примитив. Хелпер инжектится на
+    // деплое и в превью; если его почему-то нет, расчёт контраста НЕ должен
+    // быть тем, обо что падает страница оплаты — отсюда проверка типа.
+    var section = (typeof window.__merfyRoot === 'function' ? window.__merfyRoot(blockId) : null)
+      || document.querySelector('[data-block="checkout-submit"]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
+    if (!section || typeof window.__merfyCheckoutButtonColors !== 'function') return;
+
+    var OVERRIDES = ['--color-button-bg', '--color-button-text', '--color-button-bg-hover', '--color-button-text-hover'];
+
+    function apply() {
+      // СНАЧАЛА снимаем свой прошлый результат. Иначе второй проход прочитал бы
+      // как «цвет схемы» плашку, которую сам же и записал: расчёт замкнулся бы
+      // на себя (замер: rose scheme-4 отдавал source='button-bg' вместо 'bg').
+      for (var k = 0; k < OVERRIDES.length; k++) section.style.removeProperty(OVERRIDES[k]);
+      var cs = getComputedStyle(section);
+      var role = function (name) { return cs.getPropertyValue(name).trim(); };
+      // Фон колонки читаем ФАКТИЧЕСКИЙ: его задаёт тема (<body>/global.css
+      // порта), а не tokens.css — посчитать его в сборке нельзя, не угадывая.
+      // Идём вверх по предкам до первого непрозрачного фона: у самой колонки
+      // он есть всегда, но на превью-фрагменте блока предка может не быть.
+      var el = section;
+      var columnBg = '';
+      while (el && el !== document.documentElement) {
+        var bg = getComputedStyle(el).backgroundColor;
+        if (bg && bg !== 'transparent' && !/rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(bg)) { columnBg = bg; break; }
+        el = el.parentElement;
+      }
+      var m = /(-?\d+)[,\s]+(-?\d+)[,\s]+(-?\d+)/.exec(columnBg || '');
+      var column = m ? m[1] + ' ' + m[2] + ' ' + m[3] : '255 255 255';
+
+      var out = window.__merfyCheckoutButtonColors({
+        buttonBg: role('--color-button-bg'),
+        buttonText: role('--color-button-text'),
+        accent: role('--color-accent'),
+        heading: role('--color-heading'),
+        bg: role('--color-bg'),
+        text: role('--color-text'),
+        button2Bg: role('--color-button-2-bg')
+      }, column);
+
+      // Кладём в ТОКЕНЫ, а не в inline-style кнопки: классы блока читают
+      // --color-button-bg/-text и их hover-варианты, поэтому при наведении
+      // кнопка не вернётся к невидимому цвету. Никаких новых переменных.
+      var plate = out.plate.join(' ');
+      var label = out.label.join(' ');
+      section.style.setProperty('--color-button-bg', plate);
+      section.style.setProperty('--color-button-text', label);
+      section.style.setProperty('--color-button-bg-hover', plate);
+      section.style.setProperty('--color-button-text-hover', label);
+      section.setAttribute('data-checkout-submit-contrast', out.source + (out.shaded ? '+shade' : ''));
+    }
+
+    apply();
+    // Схему мерчант крутит в конструкторе без перезагрузки: превью подменяет
+    // секцию целиком и заново исполняет её скрипты, поэтому отдельной подписки
+    // не нужно. Пересчёт на смену темы через tokens.css ловим одним кадром.
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(apply);
   })();
 </script>

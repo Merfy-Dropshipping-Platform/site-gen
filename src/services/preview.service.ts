@@ -1068,6 +1068,36 @@ async function loadThemeCss(themeId: string | null): Promise<string> {
  * Позиции совпадают с прежними: 'start' — верх секции к верху кадра,
  * 'center' — центр элемента к центру кадра.
  */
+/**
+ * Живая правка «Цветовой схемы» на чекауте: класс едет на КОЛОНКУ.
+ *
+ * Первичный рендер вешает схему секции на `[data-checkout-pane]`
+ * (chrome-assembler.patchCheckoutColumnScheme) — по эталону владельца колонка
+ * красится целиком, а секция сводки прозрачна. Горячая замена секции про это
+ * не знала: у мега-блоков чекаута нет scheme-обёртки, и общая ветка агента
+ * создавала её САМА — внутри колонки появлялся цветной прямоугольник под
+ * контентом, то самое «пятно», от которого ушли. Плюс сама колонка оставалась
+ * в старой схеме до перезагрузки, и превью расходилось с витриной.
+ *
+ * Поэтому: секция внутри колонки чекаута — меняем класс у колонки и вставляем
+ * разметку как есть, без обёртки. Схема снята → снимаем класс.
+ */
+export const PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE = `
+function applyCheckoutColumnScheme(el, schemeId) {
+  if (!el || typeof el.closest !== 'function') return null;
+  var pane = el.closest('[data-checkout-pane]');
+  if (!pane) return null;
+  var next = [];
+  var classes = String(pane.className || '').split(/\\s+/);
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i] && !/^color-scheme-\\d+$/.test(classes[i])) next.push(classes[i]);
+  }
+  if (schemeId) next.push('color-scheme-' + schemeId);
+  pane.className = next.join(' ');
+  return pane;
+}
+`;
+
 export const PREVIEW_SELF_SCROLL_SOURCE = `
 function scrollSelfTo(el, mode) {
   if (!el || typeof el.getBoundingClientRect !== 'function') return;
@@ -1231,6 +1261,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
   }
 
   ${PREVIEW_SELF_SCROLL_SOURCE}
+  ${PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE}
 
   // Labels (filled by parent in 'init' / 'set-labels').
   var componentLabels = {};
@@ -2265,6 +2296,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
             } else if (typeof rawScheme === 'number') {
               newSchemeId = String(rawScheme);
             }
+          }
+          // Чекаут: схема живёт на КОЛОНКЕ (эталон п.4). Обёртку вокруг
+          // секции не создаём — иначе вместо колонки красится пятно под
+          // контентом, и превью расходится с витриной после перезагрузки.
+          var checkoutPane = applyCheckoutColumnScheme(el, newSchemeId);
+          if (checkoutPane) {
+            el.outerHTML = html;
+            var replaced = document.querySelector('[data-puck-component-id="' + blockId + '"]');
+            if (replaced) executeScriptsIn(replaced.parentElement || replaced);
+            LAST_PROPS[blockId] = newProps;
+            LAST_TYPES[blockId] = blockType;
+            return;
           }
           if (hasSchemeWrapper) {
             // Sync wrapper class to current newProps.colorScheme (cleaned through

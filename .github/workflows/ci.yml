@@ -310,6 +310,7 @@ jobs:
           src/themes/__tests__/checkout-scheme-surface.spec.ts
           src/themes/__tests__/header-group-seeds.spec.ts
           src/utils/__tests__/header-group-round3.test.ts
+          src/services/__tests__/preview-checkout-column-scheme.spec.ts
       - run: pnpm conformance:satin
       - run: pnpm check:css-layers
       - run: pnpm validate:page-seeds

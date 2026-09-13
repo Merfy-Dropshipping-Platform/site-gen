@@ -83,6 +83,93 @@ const findBlockProps = (
 };
 
 /**
+ * Пропсы «Шапки оформления» — ОДИН строитель на все пути рендера.
+ *
+ * Баг владельца (14.09): «при изменении цветовой схемы шапки во вкладке
+ * Оформление заказа сбрасывается логотип». Замер (два пути рендера на одной
+ * ревизии, 14.09): первичный рендер страницы отдаёт `<img src=логотип>`, а
+ * точечный hot-render (`POST /preview/block`, дёргается на ЛЮБУЮ правку поля
+ * панели) — текст `siteTitle`, и притом дефолтный «Мой магазин». Обе разметки
+ * несут один `data-puck-component-id`, поэтому агент превью честно подменял
+ * шапку «облысевшей» версией.
+ *
+ * Данные при этом целы: логотип живёт в `home.Header.props.logo` (build кладёт
+ * туда branding.logoUrl), а у блока «Шапка оформления» поля логотипа в панели
+ * НЕТ вовсе — `logoMode`/`logoImage`/`siteTitle` скрыты с дефолтами
+ * 'text'/null/«Мой магазин» (CheckoutHeader.puckConfig). Терялось В РЕНДЕРЕ:
+ * первичный путь обогащал пропсы ревизией, точечный — нет.
+ *
+ * Поэтому сбор пропсов вынесен сюда, и оба пути зовут его (а не свою копию):
+ * иначе следующее поле разъедется так же. Под тем же риском были ТРИ поля —
+ * `logoImage`, `logoMode`, `siteTitle`.
+ *
+ * @param pagesData  pagesData ревизии (источник логотипа и названия магазина).
+ * @param ownProps   пропсы блока «как сейчас в панели». Есть → побеждают
+ *                   сохранённую ревизию (живая правка обязана быть видна).
+ *                   Нет → берём блок из ревизии, как делал первичный рендер.
+ */
+export function buildCheckoutHeaderProps(
+  pagesData: Record<string, unknown>,
+  ownProps?: Record<string, unknown> | null,
+): Record<string, unknown> {
+  // Источник пропсов — точная копия unifyChromeInDist:434-452.
+  const homeHeaderProps = findBlockProps(pagesData['home'], 'Header') ?? {};
+  const props: Record<string, unknown> = {
+    siteTitle: 'Мой магазин',
+    logoMode: 'text',
+    rightIcon: 'cart',
+    accountLink: '/account',
+    backLink: '/cart',
+    cartLink: '/cart',
+    padding: { top: 24, bottom: 24 },
+    ...(ownProps ??
+      findBlockProps(pagesData['page-checkout'], 'CheckoutHeader') ??
+      findBlockProps(pagesData['checkout'], 'CheckoutHeader') ??
+      {}),
+  };
+  if (
+    typeof homeHeaderProps['siteTitle'] === 'string' &&
+    homeHeaderProps['siteTitle']
+  ) {
+    props['siteTitle'] = homeHeaderProps['siteTitle'];
+  }
+  // Лого чекаута = лого темы. Build кладёт branding.logoUrl в Header.props.logo
+  // (home), а CheckoutHeader.astro рендерит logoMode==='image' && logoImage —
+  // маппим сюда, а не в неиспользуемое поле `logo` (иначе logoMode остаётся
+  // 'text' → рендерится siteTitle). Всегда зеркалим шапку home.
+  if (typeof homeHeaderProps['logo'] === 'string' && homeHeaderProps['logo']) {
+    props['logoMode'] = 'image';
+    props['logoImage'] = homeHeaderProps['logo'];
+  }
+  return props;
+}
+
+/**
+ * Обогащение пропсов блока ХРОМА для точечного hot-render (`/preview/block`).
+ *
+ * Класс бага, а не одно поле: страница превью собирает хром через
+ * `assembleChrome` (пропсы блока + данные ревизии), а точечный рендер получал
+ * СЫРЫЕ пропсы панели — и всё, чего в панели нет, пропадало до перезагрузки.
+ * Ровно так же в этом контроллере уже лечили «Подвал» (applyFooterData) и
+ * «Страницу» (applyPageBinding) — поштучно. Здесь — общая точка входа: новый
+ * блок хрома добавляется одной веткой, а не ещё одним `if` в контроллере.
+ *
+ * @returns обогащённые пропсы либо null — блок не из хрома, трогать нечего
+ *          (контроллер тогда не делает ничего, поведение обычных секций
+ *          остаётся прежним).
+ */
+export function enrichChromeBlockProps(
+  blockType: string,
+  pagesData: Record<string, unknown>,
+  rawProps: Record<string, unknown>,
+): Record<string, unknown> | null {
+  if (blockType === 'CheckoutHeader') {
+    return buildCheckoutHeaderProps(pagesData, rawProps);
+  }
+  return null;
+}
+
+/**
  * Собирает хром из блоков ревизии с пропсами мерчанта. Пропсы и их источники
  * идентичны нынешнему unifyChromeInDist:434-452 (поведение не меняется; меняется
  * только то, что это теперь общий путь и для превью).
@@ -103,37 +190,7 @@ export async function assembleChrome(
   if (chrome === 'none') return { headerHtml: null, footerHtml: null };
 
   if (chrome === 'checkout') {
-    // Источник пропсов — точная копия unifyChromeInDist:434-452.
-    const homeHeaderProps = findBlockProps(pagesData['home'], 'Header') ?? {};
-    const checkoutProps: Record<string, unknown> = {
-      siteTitle: 'Мой магазин',
-      logoMode: 'text',
-      rightIcon: 'cart',
-      accountLink: '/account',
-      backLink: '/cart',
-      cartLink: '/cart',
-      padding: { top: 24, bottom: 24 },
-      ...(findBlockProps(pagesData['page-checkout'], 'CheckoutHeader') ??
-        findBlockProps(pagesData['checkout'], 'CheckoutHeader') ??
-        {}),
-    };
-    if (
-      typeof homeHeaderProps['siteTitle'] === 'string' &&
-      homeHeaderProps['siteTitle']
-    ) {
-      checkoutProps['siteTitle'] = homeHeaderProps['siteTitle'];
-    }
-    // Лого чекаута = лого темы. Build кладёт branding.logoUrl в Header.props.logo
-    // (home), а CheckoutHeader.astro рендерит logoMode==='image' && logoImage —
-    // маппим сюда, а не в неиспользуемое поле `logo` (иначе logoMode остаётся
-    // 'text' → рендерится siteTitle). Всегда зеркалим шапку home.
-    if (
-      typeof homeHeaderProps['logo'] === 'string' &&
-      homeHeaderProps['logo']
-    ) {
-      checkoutProps['logoMode'] = 'image';
-      checkoutProps['logoImage'] = homeHeaderProps['logo'];
-    }
+    const checkoutProps = buildCheckoutHeaderProps(pagesData);
     // Подвал чекаута — ПРАВОВОЙ, а не маркетинговый (баг-репорт 18-А: «убрать
     // подвал, где идёт "Powered by merfy"; ожидаемый результат — юридическая
     // информация, ссылки»). Ссылки берём там же, где их берёт обычный подвал:

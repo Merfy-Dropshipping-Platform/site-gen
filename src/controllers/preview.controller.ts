@@ -37,6 +37,7 @@ import {
   injectChromeIntoHtml,
   injectCheckoutChromeIntoHtml,
   checkoutBlockIdentity,
+  enrichChromeBlockProps,
 } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
@@ -694,6 +695,23 @@ export class PreviewController {
           .send('<!-- render error: site has no themeId -->');
         return;
       }
+      // Блоки ХРОМА: точечный рендер обязан обогатить пропсы ревизией ровно
+      // так же, как это делает первичный рендер страницы (assembleChrome).
+      // Баг владельца (14.09): «при изменении цветовой схемы шапки во вкладке
+      // Оформление заказа сбрасывается логотип». Логотип живёт в
+      // `home.Header.props.logo`, в панели «Шапки оформления» такого поля нет —
+      // сырые пропсы приходили с `logoMode:'text'`, и hot-replace подменял
+      // шапку с логотипом на шапку с дефолтным текстом «Мой магазин».
+      // Данные ревизии при этом целы: терялось только в рендере.
+      // Общая функция, а не ещё один `if` с полями: под тем же риском были три
+      // поля сразу (logoImage, logoMode, siteTitle).
+      const chromeEnriched = enrichChromeBlockProps(
+        body.blockType,
+        ((loaded.data as { pagesData?: Record<string, unknown> } | null)
+          ?.pagesData) ?? {},
+        propsWithContext,
+      );
+      if (chromeEnriched) Object.assign(propsWithContext, chromeEnriched);
       // Секция «Страница» с привязкой (`pageId`): заголовок/текст берём у
       // ВЫБРАННОЙ страницы магазина (или политики) — ровно как на витрине.
       // Без этого точечный hot-render показывал старый контент секции, и пикер

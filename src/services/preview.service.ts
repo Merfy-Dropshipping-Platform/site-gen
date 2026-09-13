@@ -1063,6 +1063,55 @@ async function loadThemeCss(themeId: string | null): Promise<string> {
 }
 
 /**
+ * Источник `scrollSelfTo` для инлайн-агента превью. Вынесен отдельным
+ * экспортом, чтобы гард-тест исполнял РОВНО тот код, который уходит в кадр,
+ * а не его копию: копия разъезжается с оригиналом молча.
+ *
+ * Доскролл превью к выбранной секции — ТОЛЬКО внутри кадра.
+ *
+ * Жалоба тестировщика 2026-09-13: «при нажатии на Подвал появляется белая
+ * полоса, которая сопровождается по всему магазину». Замер в Chromium
+ * (customize.merfy.ru, vanilla): клик по «Подвалу» оставлял прокрутку кадра
+ * на месте (scrollY 4637 до и после), но коробка канваса конструктора
+ * `.bg-white.shadow-lg` уезжала с scrollTop 0 → 321, и сам <iframe> сдвигался
+ * с top 89 на -232. Внизу открывался её собственный БЕЛЫЙ фон.
+ *
+ * Причина — `scrollIntoView`: по спецификации он прокручивает ВСЮ цепочку
+ * предков, включая документ конструктора за границей кадра. Коробка канваса —
+ * scroll-контейнер высотой 845px с потомком 1166px (`transform: scale` не
+ * ужимает layout-бокс), то есть невидимый запас прокрутки ровно 321px. Подвал
+ * — последняя секция: внутренний документ уже в самом низу, остаток
+ * добирался прокруткой предка, и коробку уводило до упора. scrollTop сам не
+ * возвращается, поэтому полоса оставалась на всех страницах превью.
+ *
+ * `window.scrollTo` прокручивает только свой документ и предков не трогает.
+ * Позиции совпадают с прежними: 'start' — верх секции к верху кадра,
+ * 'center' — центр элемента к центру кадра.
+ */
+export const PREVIEW_SELF_SCROLL_SOURCE = `
+function scrollSelfTo(el, mode) {
+  if (!el || typeof el.getBoundingClientRect !== 'function') return;
+  var rect = el.getBoundingClientRect();
+  var current = window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0;
+  var viewport = window.innerHeight || 0;
+  var top = rect.top + current;
+  if (mode === 'center') top -= Math.max(0, (viewport - rect.height) / 2);
+  var docHeight = Math.max(
+    (document.documentElement && document.documentElement.scrollHeight) || 0,
+    (document.body && document.body.scrollHeight) || 0,
+  );
+  var max = Math.max(0, docHeight - viewport);
+  if (top < 0) top = 0;
+  if (top > max) top = max;
+  try {
+    window.scrollTo({ top: top, left: window.pageXOffset || 0, behavior: 'smooth' });
+  } catch (e) {
+    window.scrollTo(window.pageXOffset || 0, top);
+  }
+}
+`;
+
+/**
  * Inline postMessage bridge for the constructor iframe. Sent as part of the
  * preview HTML instead of a separate `/runtime/preview-nav-agent.js` file —
  * (a) one fewer asset endpoint to wire through the gateway, (b) lives with
@@ -1200,6 +1249,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
     var els = document.querySelectorAll('[' + attr + ']');
     for (var i = 0; i < els.length; i++) els[i].removeAttribute(attr);
   }
+
+  ${PREVIEW_SELF_SCROLL_SOURCE}
 
   // Labels (filled by parent in 'init' / 'set-labels').
   var componentLabels = {};
@@ -2089,8 +2140,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
           sectionEl.setAttribute('data-puck-section-selected', 'true');
           selectedSectionEl = sectionEl;
           // Клик по СЕКЦИИ в left outline → доскролл превью к ней. Только если не
-          // выбрана вложенная подсекция (её точечный scrollIntoView ниже).
-          if (!subParent) sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // выбрана вложенная подсекция (её точечный доскролл ниже).
+          if (!subParent) scrollSelfTo(sectionEl, 'start');
         }
       }
       if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {
@@ -2103,7 +2154,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         }
         if (subEl) {
           subEl.setAttribute('data-puck-subsection-selected', 'true');
-          subEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          scrollSelfTo(subEl, 'center');
           selectedSubsectionEl = subEl;
         }
       }

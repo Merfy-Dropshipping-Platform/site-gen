@@ -29,7 +29,11 @@ const id = p.id;
 // 'medium' (canon-default) и отсутствие = база; small ступень ниже, large выше.
 const heading =
 	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "Мультиряды";
-const headingSize = p.heading?.size ?? p.headingSize;
+// Панель пишет размер в top-level `headingSize` (select), `heading` = aiText-строка.
+// Читаем top-level ПЕРВЫМ — иначе легаси-объект heading.size из старых ревизий
+// перебивает выбор мерчанта и настройка выглядит мёртвой. Тот же механизм, что
+// у Collections.headingSize во всех темах и у MultiRows в bloom.
+const headingSize = p.headingSize ?? p.heading?.size;
 const headingSizeCls =
 	headingSize === "small"
 		? "text-[16px] md:text-[19px]"

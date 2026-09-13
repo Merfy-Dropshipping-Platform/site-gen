@@ -383,6 +383,33 @@ function coerceGenericLegacyProps(out: Record<string, unknown>): void {
   if (typeof out.copyrightColorScheme === 'string') {
     out.copyrightColorScheme = coerceSchemeNumber(out.copyrightColorScheme);
   }
+  foldLegacyContainerToggle(out);
+}
+
+/**
+ * Тоггл «Контейнер» → канон-ключ `containerEnabled`.
+ *
+ * Третий круг тестировщика: «Сворачиваемый раздел: не применяется цветовая
+ * схема контейнера». Замер живого payload (POST /preview/block, прод,
+ * 2026-09-13) объяснил почему: панель конструктора пишет тоггл в ЛЕГАСИ-конверт
+ * `container: { enabled: "true" }`, а канон-ключ остаётся дефолтным —
+ * `containerEnabled: "false"`. Порты читают `containerEnabled ??
+ * container?.enabled`, `??` не проваливается мимо существующего "false", и
+ * контейнер в рендере ВСЕГДА выключен. Класс схемы контейнера печатается
+ * только при включённом контейнере — значит не печатается никогда.
+ *
+ * Схлопываем два источника в один ещё до порта: конверт-объект — это последнее
+ * слово мерчанта (другого способа тронуть тоггл у него нет), поэтому он
+ * побеждает. Сам `container` не удаляем: у Hero/Slideshow это ДРУГОЙ пропс —
+ * строка "true"/"false", и трогать её нельзя. Отсюда узкое условие: только
+ * объект, только ключ `enabled`.
+ */
+function foldLegacyContainerToggle(out: Record<string, unknown>): void {
+  const legacy = out.container;
+  if (!isPlainObject(legacy)) return;
+  const enabled = (legacy as Record<string, unknown>).enabled;
+  if (typeof enabled !== 'string' && typeof enabled !== 'boolean') return;
+  out.containerEnabled = String(enabled);
 }
 
 function coercePublicationsProps(out: Record<string, unknown>): void {

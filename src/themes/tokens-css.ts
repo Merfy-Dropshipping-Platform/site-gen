@@ -437,6 +437,72 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
       };}`
     : '';
 
+  // «Настройки темы» → «Корзина» → «Цветовая схема» (владелец, 13.09: «добавить
+  // цветовую схему сайдбара при настройке "сайдбар" и придать ей живость, то
+  // есть применение»). Правило красит КОРЕНЬ дровера, а панель внутри читает
+  // --color-* по наследованию — теми самыми правилами, что уже лежат в
+  // global.css каждой темы ([data-nt="cart-drawer"] [data-cart-panel] и т.д.).
+  //
+  // Селектор снят замером по собранным дистам: корней два —
+  // `data-nt="cart-drawer"` (rose/flux/bloom/satin) и
+  // `data-nt="vanilla-cart-drawer"`. Суффиксный селектор ловит оба, ровно как
+  // [data-nt$="-product-card"] у карточки товара.
+  //
+  // Зачем CSS, когда есть оконный глобал __MERFY_CART_DRAWER_SCHEME__. Глобал
+  // читают Layout.astro четырёх тем; у rose такого читателя НЕТ вовсе, а в
+  // превью конструктора глобалы не инжектятся ни одной теме. tokens.css —
+  // единственный канал, общий и для пяти тем, и для превью, и для витрины.
+  //
+  // Нет выбора (или схемы с таким id не существует) → правила нет вовсе: у
+  // существующих магазинов дровер остаётся ровно прежним.
+  const cartDrawerSchemeId =
+    typeof s.cartDrawerScheme === 'string' && s.cartDrawerScheme
+      ? schemeClassId(s.cartDrawerScheme)
+      : '';
+  const cartDrawerScheme = cartDrawerSchemeId
+    ? (schemes.find(
+        (sc) =>
+          isPlainObject(sc) &&
+          schemeClassId(String((sc as { id?: unknown }).id ?? '')) === cartDrawerSchemeId,
+      ) as Record<string, unknown> | undefined)
+    : undefined;
+  const cartDrawerSchemeVars = cartDrawerScheme ? schemeToVars(cartDrawerScheme) : '';
+  // Одних переменных МАЛО — это показал браузерный замер, а не рассуждение.
+  // Панель дровера приходит из дизайн-пакета с утилитой `bg-white`, а правила
+  // портов, которые красят её токенами схемы, лежат в `@layer base`. Утилиты у
+  // Tailwind — слой `utilities`, он старше base, поэтому правила портов
+  // проигрывают ВСЕГДА: замер дал белую панель даже с классом `.color-scheme-3`
+  // на корне. То есть схема дровера не работала ни у rose, ни у flux, ни у
+  // bloom, ни у satin — «мёртвая настройка» ровно в том смысле, про который
+  // говорил владелец.
+  //
+  // tokens.css — БЕЗ слоя, поэтому бьёт и утилиты. Объявления ниже дословно
+  // повторяют блок портов (themes/<t>/src/styles/global.css), включая набор
+  // селекторов, — расхождение роняет cart-drawer-scheme.spec.ts.
+  // `border-radius` сознательно не трогаем: скругление кнопки — отдельная
+  // настройка темы, к схеме отношения не имеет.
+  //
+  // Правило появляется ТОЛЬКО при выбранной схеме: магазины, где её не
+  // выбирали, не меняются ни на пиксель.
+  /** Корень дровера в любой из пяти тем (см. замер по дистам выше). */
+  const DRAWER = '[data-nt$="cart-drawer"]';
+  const cartDrawerPaintRule = cartDrawerSchemeVars
+    ? [
+        `${DRAWER} [data-cart-panel]{background-color:rgb(var(--color-bg));color:rgb(var(--color-text))}`,
+        `${DRAWER} [data-cart-panel] h2{color:rgb(var(--color-heading))}`,
+        `${DRAWER} [data-cart-panel] > div > button[data-cart-close]{color:rgb(var(--color-muted))}`,
+        `${DRAWER} [data-cart-empty] p{color:rgb(var(--color-muted))}`,
+        `${DRAWER} [data-cart-empty] p a{color:rgb(var(--color-text))}`,
+        `${DRAWER} [data-cart-summary] > div{color:rgb(var(--color-text))}`,
+        `${DRAWER} [data-cart-empty] > a,${DRAWER} [data-cart-summary] > a{background-color:rgb(var(--color-button-bg));color:rgb(var(--color-button-text))}`,
+      ].join('')
+    : '';
+  const cartDrawerSchemeRule = cartDrawerSchemeVars
+    ? `${DRAWER} {${cartDrawerSchemeVars}${
+        themeId === 'vanilla' ? VANILLA_CART_DRAWER_ALIASES : ''
+      }}${cartDrawerPaintRule}`
+    : '';
+
   // Избранное (wishlist) вкл/выкл — глобальный тумблер из ThemeSettingsPanel
   // («Настройки темы» → «Избранное»). Когда выключено, скрываем весь wishlist UI
   // во ВСЕХ темах одним правилом (зеркалит live+preview, т.к. эта функция —
@@ -515,6 +581,7 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     rootColorRules,
     schemeRules,
     productCardSchemeRule,
+    cartDrawerSchemeRule,
     wishlistHideRule,
     stickyFooterRule,
     sectionGapRule,
@@ -565,6 +632,27 @@ function merchantFirst(
   if (merchantSet) return merchantValue;
   return themeDefault ?? hardcoded;
 }
+
+/**
+ * Алиасы дровера vanilla. Её панель читает НЕ --color-*, а собственные
+ * --vanilla-*; порт переназначает их сам
+ * (themes/vanilla/src/styles/global.css), но ТОЛЬКО при классе
+ * `.color-scheme-N`, который вешает JS из оконного глобала. В превью
+ * конструктора глобалов нет, поэтому те же алиасы обязано выдавать tokens.css —
+ * иначе «живость» настройки у vanilla была бы только на витрине.
+ *
+ * Объявления совпадают с портом дословно; расхождение роняет
+ * cart-drawer-scheme.spec.ts («алиасы дровера vanilla совпадают с портом»).
+ */
+const VANILLA_CART_DRAWER_ALIASES = [
+  '--vanilla-surface: rgb(var(--color-bg));',
+  '--vanilla-dark: rgb(var(--color-heading));',
+  '--vanilla-muted: rgb(var(--color-muted));',
+  '--vanilla-header-bg: rgb(var(--color-button-bg, var(--color-heading)));',
+  '--vanilla-line: rgb(var(--color-muted) / 0.3);',
+]
+  .map((d) => ` ${d}`)
+  .join('');
 
 function schemeClassId(id: string): string {
   return id.replace(/^scheme-/, '');

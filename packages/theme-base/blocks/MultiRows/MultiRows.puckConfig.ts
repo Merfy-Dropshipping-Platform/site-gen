@@ -176,7 +176,12 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
       label: 'Выбор кнопки',
       options: [
         { label: 'Основная', value: 'primary' },
-        { label: 'Вторичная', value: 'secondary' },
+        // Владелец, 13.09 (дословно): «В мультирядах изменить название кнопки
+        // с "Вторичной" на "Дополнительную", в пункте "Стиль кнопки"».
+        // Подпись, не значение: `secondary` остаётся — ревизии мерчантов и
+        // resolveMultiRowsButtonStyle читают именно его. Та же подпись уже
+        // стоит у PopularProducts — теперь секции говорят одним словом.
+        { label: 'Дополнительная', value: 'secondary' },
       ],
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },

@@ -7,8 +7,10 @@
  * Both `PreviewController` and `BuildService` must consume this neutral export
  * so preview and live stay byte-for-byte identical.
  *
- * Contract (F-052):
- *   - scheme: first valid `scheme-\d+` from page-cart CartBody, else CartSummary
+ * Contract (F-052, расширен 13.09 по просьбе владельца):
+ *   - scheme: настройка темы `cartDrawerScheme` («Настройки темы» → «Корзина» →
+ *     «Цветовая схема» при виде корзины «Сайдбар»); если её нет — первый
+ *     валидный `scheme-\d+` из page-cart CartBody, иначе CartSummary
  *   - a valid scheme adds the COUPLED pair SCHEME + fixed DISCLAIMER
  *   - TITLE/CHECKOUT/EMPTY are added INDEPENDENTLY only for non-empty trimmed
  *     theme-setting strings (cartDrawerTitle / cartDrawerCheckoutText /
@@ -30,6 +32,7 @@ interface CartDrawerRevisionShape {
     { content?: Array<{ type?: string; props?: { colorScheme?: unknown } }> }
   >;
   themeSettings?: {
+    cartDrawerScheme?: unknown;
     cartDrawerTitle?: unknown;
     cartDrawerCheckoutText?: unknown;
     cartDrawerEmptyText?: unknown;
@@ -49,15 +52,25 @@ export function resolveCartDrawerGlobals(
   try {
     const rev = data as CartDrawerRevisionShape | null;
     const cartContent = rev?.pagesData?.["page-cart"]?.content;
+    const validScheme = (v: unknown): string | undefined =>
+      typeof v === "string" && /^scheme-\d+$/.test(v) ? v : undefined;
     const findScheme = (t: string): string | undefined => {
       const blk = Array.isArray(cartContent)
         ? cartContent.find((b) => b?.type === t)
         : undefined;
-      const s = blk?.props?.colorScheme;
-      return typeof s === "string" && /^scheme-\d+$/.test(s) ? s : undefined;
+      return validScheme(blk?.props?.colorScheme);
     };
-    const scheme = findScheme("CartBody") ?? findScheme("CartSummary");
     const ts = rev?.themeSettings;
+    // Настройка темы — ИСТОЧНИК; блоки корзины остаются запасным вариантом.
+    // Владелец 13.09 просил схему сайдбара именно в «Настройках темы» → там
+    // мерчант её и ищет. Порядок (а не замена) выбран сознательно: пока
+    // страница корзины была схлопнута в один блок, схема до дровера не
+    // доезжала вовсе; магазины, где она выбрана в CartBody/CartSummary, после
+    // этой правки продолжают работать ровно как раньше.
+    const scheme =
+      validScheme(ts?.cartDrawerScheme) ??
+      findScheme("CartBody") ??
+      findScheme("CartSummary");
     const trim = (v: unknown): string | undefined =>
       typeof v === "string" && v.trim() ? v.trim() : undefined;
     if (scheme) {

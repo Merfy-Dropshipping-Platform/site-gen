@@ -173,6 +173,19 @@ jobs:
       - run: pnpm exec jest --runInBand src/generator/__tests__/pnpm-invocation.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts
+      # Цветовая схема сайдбара корзины (просьба владельца 13.09). Сторожит не
+      # «поле появилось», а ЖИВОСТЬ: настройка обязана быть источником схемы для
+      # дровера и красить его во всех пяти темах. Замер в Chromium показал, что
+      # до правки дровер не перекрашивался нигде, кроме vanilla, — правила
+      # портов лежат в @layer base и проигрывают утилите `bg-white` из
+      # дизайн-пакета. Поэтому тест отдельно проверяет, что покраска идёт БЕЗ
+      # слоя и повторяет набор частей, объявленный портами.
+      - run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-scheme.spec.ts
+      # Подпись опции «Дополнительная» в «Мультирядах» (просьба владельца 13.09)
+      # — по всем пяти темам, плюс запрет на возврат слова «Вторичная» в любую
+      # панель любой темы. Канон-гард ловит состав, но не бережёт от того, что
+      # старую подпись вернут соседней секцией.
+      - run: pnpm exec jest --runInBand src/themes/__tests__/multirows-button-label.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/preview-cart-contract.spec.ts
       # Чекаут и корзина, баг-репорт 12/16/17. Сторожат три расстыковки, каждая
       # из которых жила при зелёном CI:

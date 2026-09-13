@@ -4,6 +4,11 @@
 // Phone format: для phoneFormat="ru" — маска +7 (XXX) XXX-XX-XX.
 import type { CheckoutContactFormProps } from './CheckoutContactForm.puckConfig';
 import { CheckoutContactFormClasses as C } from './CheckoutContactForm.classes';
+// Поле панели «URL авторизации» — значение мерчанта в атрибуте ссылки. Astro
+// экранирует атрибут, но схему не проверяет: `javascript:alert(1)` остаётся
+// кликабельной хранимой XSS в адрес покупателя. Общий allow-list схем —
+// тот же, что у санитайзера разметки (runtime/rich-text.ts).
+import { safeHref } from '../../runtime/rich-text';
 
 interface Props extends CheckoutContactFormProps { id?: string; }
 const {
@@ -29,7 +34,7 @@ const paddingStyle = padding
 >
   <h2 class={C.heading}>
     <span>{heading}</span>
-    {showAuthLink && <a href={authLinkHref} class={C.authLink}>{authLinkText}</a>}
+    {showAuthLink && <a href={safeHref(authLinkHref)} class={C.authLink}>{authLinkText}</a>}
   </h2>
   <div class={C.fields}>
     <div class={C.field} data-checkout-field="email">

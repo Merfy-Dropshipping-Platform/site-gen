@@ -24,6 +24,9 @@
  * bottom-strip из Footer.astro тем.
  */
 import { schemeClassOf } from '../../runtime/color-scheme';
+// Правовые ссылки приходят из реестра политик магазина, но в атрибут уходят
+// как есть — закрываем тем же общим списком схем, что и прочие ссылки чекаута.
+import { safeHref } from '../../runtime/rich-text';
 
 interface LegalLink {
   label?: string;
@@ -69,7 +72,7 @@ const legalLinks = (Array.isArray(links) ? links : []).filter(
       >
         {legalLinks.map((link) => (
           <a
-            href={link.href}
+            href={safeHref(link.href)}
             class="text-center text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))] underline underline-offset-4"
           >{link.label}</a>
         ))}

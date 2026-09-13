@@ -336,6 +336,23 @@ jobs:
       # не одно поле: под тем же риском были logoImage, logoMode и siteTitle.
       # Рендерит скомпилированный блок → нужен pnpm build:blocks выше по джобу.
       - run: pnpm exec jest --runInBand src/themes/__tests__/checkout-header-hot-render.spec.ts
+      # Хранимая XSS в «Условиях» чекаута (найдено 14.09). Настройка мерчанта
+      # «Текст (поддерживает [текст](url))» уходила в set:html голой склейкой
+      # `<a href="${url}">${label}</a>` — без санитайзера. Вектора:
+      # [x](javascript:alert(1)), [x](data:text/html,…), [x](" onmouseover="…),
+      # и просто <img src=x onerror=…> в тексте. Бьёт по ПОКУПАТЕЛЮ на шаге
+      # оплаты, а не по мерчанту. Закрыто общим allow-list `sanitize-html`
+      # (theme-base/runtime/rich-text: sanitizeInlineWithLinks + safeHref) —
+      # тем же механизмом, что sanitizeInline и Page.sanitize, не третьим.
+      # Гард закрывает КЛАСС: тот же прогон проверяет остальные ссылочные стоки
+      # чекаута (authLinkHref контактов, ссылки шапки, правовые ссылки подвала).
+      # Саботаж-проверка: вернули склейку — 7 проверок краснеют (проверено).
+      # ВНИМАНИЕ: функции гоняются по dist/astro-blocks → нужен pnpm build:blocks
+      # выше по джобу (он там есть). Напрямую import не годится: sanitize-html
+      # тянет ESM-only htmlparser2, на котором jest этого сервиса падает —
+      # по той же причине НЕ запускается packages/theme-base/blocks/Page/
+      # __tests__/Page.sanitize.test.ts (мёртвый гард, отдельная задача).
+      - run: pnpm exec jest --runInBand src/themes/__tests__/checkout-terms-xss.spec.ts
       - run: pnpm conformance:satin
       - run: pnpm check:css-layers
       - run: pnpm validate:page-seeds

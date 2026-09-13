@@ -2,6 +2,10 @@
 import type { CheckoutHeaderProps } from './CheckoutHeader.puckConfig';
 import { CheckoutHeaderClasses as C } from './CheckoutHeader.classes';
 import { schemeClassOf } from '../../runtime/color-scheme';
+// Ссылки шапки лежат в ревизии (в панели скрыты) — но в атрибут они попадают
+// как есть, поэтому схему сверяем тем же общим списком, что и остальные
+// ссылочные стоки чекаута.
+import { safeHref } from '../../runtime/rich-text';
 
 interface Props extends CheckoutHeaderProps {
   id?: string;
@@ -45,17 +49,17 @@ const schemeClass = schemeClassOf(colorScheme);
       )}
     </a>
     {rightIcon === 'cart' && (
-      <a href={cartLink} class={C.iconRight} aria-label="Корзина">
+      <a href={safeHref(cartLink)} class={C.iconRight} aria-label="Корзина">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14l-1.5 11a2 2 0 0 1-2 1.8h-7A2 2 0 0 1 6.5 18L5 7z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>
       </a>
     )}
     {rightIcon === 'account' && (
-      <a href={accountLink} class={C.iconRight} aria-label="Личный кабинет">
+      <a href={safeHref(accountLink)} class={C.iconRight} aria-label="Личный кабинет">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
       </a>
     )}
     {rightIcon === 'back' && (
-      <a href={backLink} class={C.iconRight} aria-label="Назад">
+      <a href={safeHref(backLink)} class={C.iconRight} aria-label="Назад">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
       </a>
     )}

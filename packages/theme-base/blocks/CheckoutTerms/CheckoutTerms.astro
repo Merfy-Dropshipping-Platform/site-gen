@@ -1,14 +1,42 @@
 ---
 import type { CheckoutTermsProps } from './CheckoutTerms.puckConfig';
 import { CheckoutTermsClasses as C } from './CheckoutTerms.classes';
+import { sanitizeInlineWithLinks } from '../../runtime/rich-text';
 
 interface Props extends CheckoutTermsProps { id?: string; }
 const { id, text, padding } = Astro.props as Props;
 const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;` : '';
 
-const html = text.replace(
-  /\[([^\]]+)\]\(([^)]+)\)/g,
-  (_match, label, url) => `<a href="${url}" class="${C.link}">${label}</a>`,
+/**
+ * ХРАНИМАЯ XSS (найдено 14.09). Раньше здесь стояла голая склейка:
+ *   text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) =>
+ *     `<a href="${url}" class="${C.link}">${label}</a>`)
+ * и результат уходил в `set:html` КАК ЕСТЬ. Ни URL, ни подпись, ни остальной
+ * текст санитайзера не проходили, а настройка «Текст (поддерживает [текст](url))»
+ * — обычное поле панели. То есть `[купить](javascript:alert(1))` давал
+ * кликабельный javascript-URL, `[x](" onmouseover="…)` — обработчик на ссылке,
+ * а `<img src=x onerror=…>` в тексте исполнялся вообще без ссылки. Бьёт по
+ * ПОКУПАТЕЛЮ на шаге оплаты.
+ *
+ * Теперь разметка проходит общий allow-list `sanitize-html` — тот же механизм,
+ * что у `sanitizeInline` (заголовки секций) и `Page.sanitize` (блок «Страница»),
+ * а не третий свой. Схемы ссылок: http/https/mailto/tel + относительные;
+ * `javascript:`/`data:`/`vbscript:` вырезаются. Класс ссылки ставит РЕНДЕР
+ * (передаём `C.link`), а не разметка мерчанта.
+ *
+ * Экранирование кавычек при склейке оставлено намеренно: без него URL с `"`
+ * рвёт атрибут ещё ДО санитайзера, и ссылка молча теряет хвост.
+ * Тест: src/themes/__tests__/checkout-terms-xss.spec.ts.
+ */
+const attrEscape = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const html = sanitizeInlineWithLinks(
+  (text ?? '').replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    (_match, label, url) => `<a href="${attrEscape(url)}">${label}</a>`,
+  ),
+  C.link,
 );
 ---
 <section

@@ -106,6 +106,20 @@ function samePropsShallow(
   );
 }
 
+/**
+ * Группа «Шапка» в левой колонке конструктора = промо-баннер + шапка. Третий
+ * круг тестировщика: «на всех страницах блок Шапка отличается, как набором
+ * СЕКЦИЙ и параметров». Параметры прошлый проход уже выровнял, а набор секций —
+ * нет: у rose промо-баннер лежал на 5 страницах из 11, у flux и bloom — только
+ * на главной, и мерчант видел в сайдбаре то две строки, то одну.
+ *
+ * Порядок внутри массива — как на главной (промо НАД шапкой).
+ */
+const HEADER_GROUP_TYPES = ['PromoBanner', 'Header'] as const;
+
+const isHeaderGroup = (type: unknown): boolean =>
+  (HEADER_GROUP_TYPES as readonly string[]).includes(String(type));
+
 export function unifyHeaderWithHome(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -114,8 +128,8 @@ export function unifyHeaderWithHome(
   const source = homeContent.find((b) => b?.type === 'Header');
   if (!headerHasSettings(source)) return pagesData;
 
-  const canon: Record<string, unknown> = { ...(source!.props ?? {}) };
-  delete canon.id;
+  // Эталонная группа: блоки группы «Шапка» в порядке главной.
+  const homeGroup = homeContent.filter((b) => isHeaderGroup(b?.type));
 
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
@@ -125,23 +139,44 @@ export function unifyHeaderWithHome(
     // НЕ страницы — пропускаем, сохраняя значение как есть.
     const content = (page as PageData | undefined)?.content;
     if (!Array.isArray(content)) continue;
+    // Страница со своим хромом (чекаут: `CheckoutHeader`) — другой компонент
+    // by design, группу главной туда не переносим.
+    if (!content.some((b) => b?.type === 'Header')) continue;
 
-    let touched = false;
-    const next = content.map((b) => {
-      if (b?.type !== 'Header') return b;
-      const ownId = b.props?.id;
-      const props: Record<string, unknown> =
-        ownId === undefined ? { ...canon } : { ...canon, id: ownId };
-      if (samePropsShallow(b.props, props)) return b;
-      touched = true;
+    // id блока держим ЗА СТРАНИЦЕЙ: Puck ломается на дубликатах, а превью и
+    // конструктор ищут секцию по `props.id`. Был свой блок такого типа —
+    // сохраняем его id; не было — детерминированный `<Тип>-<страница>`
+    // (идемпотентность: повторный прогон даёт тот же id).
+    const ownIds = new Map<string, unknown>();
+    for (const b of content) {
+      if (isHeaderGroup(b?.type) && b?.props?.id !== undefined) {
+        if (!ownIds.has(String(b.type))) ownIds.set(String(b.type), b.props.id);
+      }
+    }
+    const rest = content.filter((b) => !isHeaderGroup(b?.type));
+    const group = homeGroup.map((b) => {
+      const props: Record<string, unknown> = { ...(b.props ?? {}) };
+      const ownId = ownIds.get(String(b.type));
+      props.id = ownId !== undefined ? ownId : `${String(b.type)}-${pageId}`;
       return { ...b, props };
     });
-    if (touched) {
+    const next = [...group, ...rest];
+
+    if (!sameContentShallow(content, next)) {
       out[pageId] = { ...(page as PageData), content: next };
       changed = true;
     }
   }
   return changed ? out : pagesData;
+}
+
+/** Поблочное сравнение: тип + props (для идемпотентности прохода). */
+function sameContentShallow(a: Block[], b: Block[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every(
+    (blk, i) =>
+      blk?.type === b[i]?.type && samePropsShallow(blk?.props, b[i]?.props ?? {}),
+  );
 }
 
 /**

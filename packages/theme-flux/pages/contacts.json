@@ -1,6 +1,19 @@
 {
   "content": [
     {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-contacts",
+        "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+        "link": {
+          "text": "Смотреть больше",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase"
+      }
+    },
+    {
       "type": "Header",
       "props": {
         "id": "Header-contacts",

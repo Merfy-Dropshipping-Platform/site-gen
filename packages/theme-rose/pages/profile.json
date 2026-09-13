@@ -1,6 +1,12 @@
 {
   "content": [
     {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-profile"
+      }
+    },
+    {
       "type": "Header",
       "props": {
         "id": "Header-profile",

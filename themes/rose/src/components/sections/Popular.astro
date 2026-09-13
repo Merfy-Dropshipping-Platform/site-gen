@@ -79,18 +79,28 @@ const headWrapCls = `flex w-full justify-center${headingSizeCls}${textSizeCls}`;
 // генерации Tailwind arbitrary-класса grid-cols-[...].
 const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round(p.columns))) : 4;
 // Канон imageView square/portrait/wide (+legacy alias adaptive→wide): 'square'
-// (canon-default) и отсутствие = литерал верстальщика 318/444 байт-в-байт;
+// (canon-default) и отсутствие = 1:1 (Квадрат по Figma 648:57355, image 429×429;
+// прежние 318/444 — пропорции файла верстальщика, мерчант их не выбирал);
 // portrait → 430/500 (канонный портрет), wide → 16/9.
-const tileAspectCls =
+//
+// Пропорция прокидывается КАЖДОЙ карточке inline-стилем в трёх путях сразу
+// (RoseProductCard aspectRatio / плейсхолдер / гидрация renderCardHtml).
+// Прежний override `[&_li>article>a]` был МЁРТВ по двум причинам разом:
+// реальная разметка карточки — `li>article>div>a` (<a> обёрнут в <div> под
+// overlay-сердце избранного), поэтому прямой потомок `article>a` не
+// существовал; а на самом <a> висел inline `aspect-ratio:318/444`, который
+// бьёт любой класс независимо от селектора. Настройка «Вид изображения»
+// молча не применялась ни в одном из трёх значений.
+const cardAspectRatio =
 	p.imageView === "portrait"
-		? " [&_li>article>a]:aspect-[430/500]"
+		? "430/500"
 		: p.imageView === "wide" || p.imageView === "adaptive"
-			? " [&_li>article>a]:aspect-[16/9]"
-			: "";
+			? "16/9"
+			: "1/1";
 // Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
 // по --cols. Гэпы оставляем как у верстальщика.
 const gridCls =
-	"grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5" + tileAspectCls;
+	"grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart): кнопка
@@ -114,6 +124,21 @@ const quickAddCls =
 		: p.buttonStyle === "link"
 			? "mt-3 inline-flex h-10 w-full items-center justify-center px-4 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 opacity-0 transition-opacity hover:opacity-70 focus-visible:opacity-100 group-hover:opacity-100"
 			: "mt-3 inline-flex h-10 w-full items-center justify-center rounded-[var(--radius-button,6px)] !border-0 !bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,255_255_255))] opacity-0 transition-opacity hover:opacity-90 focus-visible:opacity-100 group-hover:opacity-100";
+
+// «Быстрое добавление → Количество» (quickAddMode='cart'): ПЕРЕД кнопкой встаёт
+// счётчик − N + (паритет flux/bloom, где он уже работает). Кнопка несёт
+// data-quantity, счётчик его правит, а делегат корзины (nt-cart:
+// `Number(addBtn.dataset.quantity ?? "1")`) добавляет выбранное количество.
+// «Стандарт» ('standard') остаётся одиночной кнопкой и рендерится как прежде:
+// до правки оба режима давали ОДНУ И ТУ ЖЕ кнопку, и «Количество» ничем не
+// отличалось от «Стандарта».
+const showStepper = quickAddMode === "cart";
+const qaStepperCls =
+	"mt-3 inline-flex h-10 w-full items-center justify-between rounded-[var(--radius-button,6px)] border border-solid border-[rgb(var(--color-border,240_240_240))] opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100";
+const qaStepBtnCls =
+	"flex h-full w-10 shrink-0 items-center justify-center font-manrope text-[18px] leading-none text-[rgb(var(--color-text,0_0_0))]";
+const qaQtyCls =
+	"min-w-[28px] flex-1 text-center font-manrope text-[14px] leading-none text-[rgb(var(--color-text,0_0_0))]";
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
 // товара при наведении. Носитель данных: data-image-2 на <li> (demo — gallery[1]
@@ -152,6 +177,33 @@ const NEXT_PHOTO_JS = [
 	"if(!li||li.getAttribute('data-np-on')!=='true')return;",
 	"var to=e.relatedTarget;if(to&&li.contains(to))return;",
 	"li.setAttribute('data-np-on','false');swap(li,false);",
+	"});",
+	"})(grids[i]);}",
+	"})();",
+].join("");
+
+// Счётчик количества: делегат кликов −/+ на гриде (как NEXT_PHOTO_JS — слушатель
+// на самом гриде, поэтому переживает подмену innerHTML при гидрации). Правит
+// подпись data-qa-qty и data-quantity кнопки; дальше делегат корзины добавит
+// выбранное количество.
+const QA_STEPPER_JS = [
+	"(function(){",
+	"var grids=document.querySelectorAll('[data-nt=\"popular-grid\"][data-quick-add=\"cart\"]');",
+	"for(var i=0;i<grids.length;i++){(function(g){",
+	"if(g.getAttribute('data-qa-step-bound')==='true')return;",
+	"g.setAttribute('data-qa-step-bound','true');",
+	"g.addEventListener('click',function(e){",
+	"var t=e.target;if(!t||!t.closest)return;",
+	"var inc=t.closest('[data-qa-inc]');var dec=t.closest('[data-qa-dec]');",
+	"if(!inc&&!dec)return;",
+	"var li=t.closest('li');if(!li)return;",
+	"var q=li.querySelector('[data-qa-qty]');var btn=li.querySelector('[data-add-to-cart]');",
+	"if(!q)return;",
+	"var n=parseInt(q.textContent,10)||1;",
+	"n=inc?Math.min(99,n+1):Math.max(1,n-1);",
+	"q.textContent=String(n);",
+	"if(btn)btn.setAttribute('data-quantity',String(n));",
+	"e.preventDefault();",
 	"});",
 	"})(grids[i]);}",
 	"})();",
@@ -282,6 +334,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			role="list"
 			data-nt="popular-grid"
 			data-cols={String(colsN)}
+			data-card-aspect={cardAspectRatio}
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -289,6 +342,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-quick-add={quickAddMode}
 			data-qa-text={quickAddMode ? quickAddText : undefined}
 			data-qa-class={quickAddMode ? quickAddCls : undefined}
+			data-qa-step-class={showStepper ? qaStepperCls : undefined}
+			data-qa-step-btn-class={showStepper ? qaStepBtnCls : undefined}
+			data-qa-qty-class={showStepper ? qaQtyCls : undefined}
 		>
 			{/* SSR-цель (Figma 1:19335): коллекция ВЫБРАНА → реальные товары (фетч в
 			    frontmatter, работает и в превью-Container); НЕ выбрана/пусто →
@@ -296,7 +352,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    live освежает данные. */}
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
 				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
-					<RoseProductCard product={product} />{quickAddMode && (
+					<RoseProductCard product={product} aspectRatio={cardAspectRatio} />{showStepper && (
+						<div class={qaStepperCls} data-qa-stepper>
+							<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
+							<span data-qa-qty class={qaQtyCls}>1</span>
+							<button type="button" data-qa-inc class={qaStepBtnCls} aria-label="Увеличить">+</button>
+						</div>
+					)}{quickAddMode && (
 						<button
 							type="button"
 							data-add-to-cart
@@ -305,6 +367,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-price={product.price}
 							data-old-price={product.oldPrice}
 							data-image={product.image}
+							data-quantity="1"
 							class={quickAddCls}
 						>
 							{quickAddText}
@@ -318,7 +381,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				   реальный товар (add-to-cart недоступен, как в theme-base DEMO). */
 				<li>
 					<article class="flex w-full flex-col gap-5" aria-label={card.name}>
-						<div class="relative block aspect-[318/444] w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]">
+						<div class="relative block w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]" style={`aspect-ratio:${cardAspectRatio}`}>
 							<img
 								src={card.image}
 								alt={card.name}
@@ -355,7 +418,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</div>
 		)}
 	</div>
-</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}
+</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{showStepper && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {
@@ -394,7 +457,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const quickAdd = grid.getAttribute("data-quick-add");
 			const qaText = grid.getAttribute("data-qa-text") || "В корзину";
 			const qaClass = grid.getAttribute("data-qa-class") || "";
+			const qaStepperCls = grid.getAttribute("data-qa-step-class") || "";
+			const qaStepBtnCls = grid.getAttribute("data-qa-step-btn-class") || "";
+			const qaQtyCls = grid.getAttribute("data-qa-qty-class") || "";
 			const wantNextPhoto = grid.hasAttribute("data-next-photo");
+			// «Вид изображения» переживает подмену innerHTML: носитель — атрибут грида.
+			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
 			const items = matched.slice(0, limit);
 			grid.innerHTML = items
 				.map((p) => {
@@ -420,11 +488,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						const qaBtn = quickAdd
 							? hasVariants
 								? firstCombo
-									? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
+									? `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(firstCombo.price))}" data-variant-combination-id="${escapeHtml(String(firstCombo.id))}"${comboColor ? ` data-variant-color="${escapeHtml(comboColor)}"` : ""}${comboSize ? ` data-variant-size="${escapeHtml(comboSize)}"` : ""} data-image="${escapeHtml(productImage(p))}" data-quantity="1" class="${qaClass}">${escapeHtml(qaText)}</button>`
 									: `<a href="${escapeHtml(productHref(p))}" class="${qaClass}">${escapeHtml(qaText)}</a>`
-								: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"${p.oldPrice || p.compareAtPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice || p.compareAtPrice))}"` : ""} data-image="${escapeHtml(productImage(p))}" class="${qaClass}">${escapeHtml(qaText)}</button>`
+								: `<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.name)}" data-price="${escapeHtml(String(p.price))}"${p.oldPrice || p.compareAtPrice ? ` data-old-price="${escapeHtml(String(p.oldPrice || p.compareAtPrice))}"` : ""} data-image="${escapeHtml(productImage(p))}" data-quantity="1" class="${qaClass}">${escapeHtml(qaText)}</button>`
 							: "";
-					return `<li data-product-id="${escapeHtml(p.id)}"${liClass}${img2}>${renderCardHtml(p)}${qaBtn}</li>`;
+					// Разметка счётчика зеркалит SSR-ветку выше: после подмены innerHTML
+					// мерчант обязан видеть то же, что в статике, иначе «Количество»
+					// работает до гидрации и пропадает после неё.
+					const qaStepper =
+						quickAdd === "cart"
+							? `<div class="${qaStepperCls}" data-qa-stepper><button type="button" data-qa-dec class="${qaStepBtnCls}" aria-label="Уменьшить">−</button><span data-qa-qty class="${qaQtyCls}">1</span><button type="button" data-qa-inc class="${qaStepBtnCls}" aria-label="Увеличить">+</button></div>`
+							: "";
+					return `<li data-product-id="${escapeHtml(p.id)}"${liClass}${img2}>${renderCardHtml(p, cardAspect)}${qaStepper}${qaBtn}</li>`;
 				})
 				.join("");
 		}

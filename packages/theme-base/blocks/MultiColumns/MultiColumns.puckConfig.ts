@@ -310,7 +310,13 @@ export const MultiColumnsPuckConfig: BlockPuckConfig<MultiColumnsProps> = {
     imageAspectRatio: 'square',
     textPosition: 'left',
     containerEnabled: 'false',
-    padding: { top: 80, bottom: 80 },
+    // 80/80 снят: инлайн-стиль отступа ПЕРЕБИВАЕТ классную лесенку порта
+    // (замер рендером: с пропом `style="padding-top:80px"`, без пропа —
+    // стиля нет и работают классы темы: rose 56→140px, vanilla 80→112,
+    // flux 40→64, satin 32→56, bloom 80→120). Дефолт панели не «подсказка»:
+    // updateProp вписывает его в секцию при ЛЮБОЙ правке, поэтому все пять
+    // тем сплющивало в одинаковые 80/80. Отсутствие значения = ритм темы;
+    // panel-field-defaults держит для `padding` явное исключение с причиной.
   },
   schema: MultiColumnsAuthoringSchema,
   maxInstances: null,

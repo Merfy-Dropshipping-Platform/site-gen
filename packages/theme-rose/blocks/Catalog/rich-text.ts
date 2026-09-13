@@ -1,10 +1,10 @@
 // XSS-safe inline rich-text для заголовков/подзаголовков блока «Каталог» темы
-// bloom (пакет). Тело ОБЯЗАНО совпадать с themes/*/src/lib/rich-text.ts —
+// rose (пакет). Тело ОБЯЗАНО совпадать с themes/*/src/lib/rich-text.ts —
 // сторож: src/themes/__tests__/rich-text-bold-italic.spec.ts («все копии
 // inlineFormat в репозитории»).
 //
-// ⚠️ ЗАЧЕМ ОТДЕЛЬНЫЙ ФАЙЛ. Блок «Каталог» живёт в packages/theme-bloom/blocks,
-// а не в themes/bloom/src, и импортировать ../../lib/rich-text оттуда нельзя:
+// ⚠️ ЗАЧЕМ ОТДЕЛЬНЫЙ ФАЙЛ. Блок «Каталог» живёт в packages/theme-rose/blocks,
+// а не в themes/rose/src, и импортировать ../../lib/rich-text оттуда нельзя:
 // компилятор секций (scripts/compile-astro-blocks.mjs) переписывает только
 // ../../runtime/* и ../<Блок>/<Блок>.astro, любой другой относительный путь
 // уезжает наружу пакета и в dist не резолвится.

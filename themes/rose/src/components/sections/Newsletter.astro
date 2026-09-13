@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 // Фаза 3 (T17): новая канон-секция Newsletter в манере rose (см. themes/rose/MANNER.md).
 // Схема полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
 // Дизайн = блок подписки подвала верстальщика (Footer.astro:132-176, перенесён
@@ -33,7 +34,12 @@ const headingCls = `rose-title${headingSizeCls}`;
 // предложениях.» (дефолт-текст верстальщика «Узнавай о новинках и акциях первым»
 // заменён на Figma-текст). Манера = подзаголовок подписки подвала (Manrope 16 muted).
 // Мерчант задал description/text → рендерим ЕГО (?? лишь при пустых данных).
+// `p.text` приходит СТРОКОЙ: adaptLegacyProps разворачивает конверт
+// {content,size} (page-blocks.ts unwrapEnvelopes) ещё до рендера, поэтому
+// ветка `p.text?.content` на живом сайте не срабатывала никогда и «Текст»
+// секции молча показывал дефолт вместо ввода мерчанта.
 const description =
+	(typeof p.text === "string" && p.text.trim() ? p.text : undefined) ??
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
 	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
@@ -119,9 +125,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
-							>
-								{heading}
-							</h2>
+								set:html={inlineFormat(heading)}
+							></h2>
 						)}
 						{!isFieldHidden('text') && (
 							<p
@@ -129,9 +134,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
-							>
-								{description}
-							</p>
+								set:html={inlineFormat(description)}
+							></p>
 						)}
 					</div>
 				)

@@ -23,6 +23,10 @@ import { parseCatalogUrlParams, type CatalogUrlState } from './url-params';
 import { resolveCatalogScope } from './auto-scope';
 import { paginateProducts, getPageNumbers, totalPages } from './pagination';
 import { getSweaterAsset } from '../../runtime/placeholders';
+// Заголовок/подзаголовок каталога мерчант вводит кнопками «Ж»/«К» — Astro
+// экранирует {value}, и начертание печаталось сырыми тегами в тексте
+// (баг-репорт тестера 2026-09-13, K4). Рендерим через XSS-safe sanitizeInline.
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends CatalogProps {
   id?: string;
@@ -238,25 +242,27 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     <div style="margin-bottom: 24px;">
       <h1
         style="font-size: var(--size-catalog-title, clamp(20px, 3vw, 36px)); font-weight: var(--weight-catalog-title, 400); text-transform: uppercase; line-height: 1.1; color: rgb(var(--color-heading)); margin: 0; font-family: var(--font-heading);"
-      >{(() => {
-        if (typeof categoryTitle === 'string' && categoryTitle.trim()) return categoryTitle;
-        if (categoryTitle && typeof categoryTitle === 'object') {
-          const t = (categoryTitle as { text?: string }).text;
-          if (typeof t === 'string' && t.trim()) return t;
-        }
-        return 'КАТАЛОГ';
-      })()}</h1>
+        set:html={sanitizeInline((() => {
+          if (typeof categoryTitle === 'string' && categoryTitle.trim()) return categoryTitle;
+          if (categoryTitle && typeof categoryTitle === 'object') {
+            const t = (categoryTitle as { text?: string }).text;
+            if (typeof t === 'string' && t.trim()) return t;
+          }
+          return 'КАТАЛОГ';
+        })())}
+      ></h1>
       {subtitleVisible && (
         <p
           style={`font-size: var(--size-catalog-subtitle, clamp(14px, 1.5vw, 20px)); font-weight: 400; line-height: 1.4; color: rgb(var(${categorySubtitleColor === 'accent' ? '--color-accent' : '--color-muted'})); margin-top: 4px; font-family: var(--font-body);`}
-        >{(() => {
-          if (typeof categorySubtitle === 'string' && categorySubtitle.trim()) return categorySubtitle;
-          if (categorySubtitle && typeof categorySubtitle === 'object') {
-            const t = (categorySubtitle as { text?: string }).text;
-            if (typeof t === 'string' && t.trim()) return t;
-          }
-          return 'Здесь начинается персональный стиль';
-        })()}</p>
+          set:html={sanitizeInline((() => {
+            if (typeof categorySubtitle === 'string' && categorySubtitle.trim()) return categorySubtitle;
+            if (categorySubtitle && typeof categorySubtitle === 'object') {
+              const t = (categorySubtitle as { text?: string }).text;
+              if (typeof t === 'string' && t.trim()) return t;
+            }
+            return 'Здесь начинается персональный стиль';
+          })())}
+        ></p>
       )}
     </div>
 

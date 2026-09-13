@@ -14,6 +14,11 @@
  * свой флаг скрытия. Обёртка `[data-product-info]` сохранена: по ней
  * инлайн-скрипт Product.astro находит `h1` при гидрации.
  */
+// Брендлайн — это поле мерчанта «Текст» (Product.text): кнопки «Ж»/«К» пишут
+// туда <strong>/<em>, а Astro экранирует {brand} → начертание печаталось
+// сырыми тегами (баг-репорт тестера 2026-09-13, K4).
+import { sanitizeInline } from '../../runtime/rich-text';
+
 interface Props {
   brand?: string | null;
   title: string;
@@ -41,7 +46,8 @@ const isUpper = variant === 'uppercase-title';
       data-puck-subsection-parent={blockId}
       data-puck-subsection-index="100"
       data-puck-subsection-field="text"
-    >{brand}</span>
+      set:html={sanitizeInline(brand)}
+    ></span>
   )}
   {!hideTitle && (
     <h1

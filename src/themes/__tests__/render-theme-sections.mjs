@@ -17,6 +17,15 @@
  * пяти тем с собственным puck-id). Без этой ветки такие блоки выпадали из
  * любой проверки: в манифесте темы их нет, значит «missing», значит тест молчал.
  *
+ * job.cascade === true — искать модуль ТОЙ ЖЕ лестницей, что и витрина:
+ * dist/theme-sections/<тема>/manifest.json → dist/astro-blocks/theme-<тема>__… →
+ * dist/astro-blocks/theme-base__… (defaultComponentResolver в
+ * src/services/preview.service.ts). Без неё блок, которого нет в манифесте темы,
+ * получал `missing` и выпадал из проверки — а на живом сайте он РИСУЕТСЯ общим
+ * портом или собственным пакетом темы (Catalog лежит в packages/theme-<t>/blocks,
+ * Publications/Video/Product у rose приходят из theme-base). Ровно так класс
+ * «поле не подключено» и прятался: тест молчал там, где мерчант видел сырьё.
+ *
  * job.live === true — прогнать props через ПОЛНУЮ живую цепочку рантайма:
  * adaptLegacyProps → deepMergeBlockProps(theme.json blockDefaults) →
  * resolveBlockProps(resolveDefaults). Ровно её проходит витрина
@@ -67,6 +76,29 @@ async function main() {
       }
     }
     return baseBlocks.find((b) => b.pkg === 'theme-base' && b.blockName === block);
+  };
+  /**
+   * Лестница витрины: порт темы → пакет темы → theme-base. Повторяет
+   * defaultComponentResolver построчно, включая имя артефакта
+   * `<pkg>__<block>__<block>.mjs`.
+   */
+  const cascadeEntry = (block) => {
+    const flat = manifest[block];
+    if (flat) return resolve(dist, flat);
+    if (!baseBlocks) {
+      try {
+        baseBlocks = JSON.parse(readFileSync(resolve(blocksDir, 'manifest.json'), 'utf-8')).blocks ?? [];
+      } catch {
+        baseBlocks = [];
+      }
+    }
+    for (const pkg of [`theme-${theme}`, 'theme-base']) {
+      const name = `${pkg}__${block}__${block}.mjs`;
+      if (baseBlocks.some((b) => b.pkg === pkg && b.outputName === name)) {
+        return resolve(blocksDir, name);
+      }
+    }
+    return null;
   };
 
   // Нормализация рантайма — поднимаем один раз и только если её просят.
@@ -131,11 +163,13 @@ async function main() {
   }
 
   const out = [];
-  for (const { block, props, pkg, pipeline: usePipeline, live: useLive, catalog: rawCatalog } of jobs) {
+  for (const { block, props, pkg, cascade, pipeline: usePipeline, live: useLive, catalog: rawCatalog } of jobs) {
     let modPath = null;
     if (pkg === 'theme-base') {
       const entry = themeBaseEntry(block);
       if (entry) modPath = resolve(blocksDir, entry.outputName);
+    } else if (cascade) {
+      modPath = cascadeEntry(block);
     } else {
       const flat = manifest[block];
       if (flat) modPath = resolve(dist, flat);

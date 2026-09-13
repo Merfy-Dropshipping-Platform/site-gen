@@ -144,7 +144,14 @@ const quantityVisible =
   quantity?.enabled !== 'false' &&
   quantity?.enabled !== false &&
   !isFieldHidden('quantity');
-const textContent = text?.content ?? badge?.text ?? '';
+// `text` приходит СТРОКОЙ: adaptLegacyProps разворачивает конверт
+// {content,size} (page-blocks.ts unwrapEnvelopes) ещё до рендера, поэтому
+// ветка `text?.content` на живом сайте не срабатывала никогда и «Текст»
+// секции «Товар» молча пропадал (паритет с портом flux FeaturedProduct).
+const textContent =
+  (typeof text === 'string' ? text : (text as { content?: string } | undefined)?.content) ??
+  badge?.text ??
+  '';
 // Figma 1236-42145 модель кнопок:
 //  • «Основная кнопка» (buttons.addToCart.text) — пусто = скрыть «Добавить в корзину».
 //  • «Динамическая кнопка» (dynamicButton toggle) — видимость express-кнопки

@@ -17,6 +17,10 @@
 // Все импорты — siblings (./), без bare-NPM и ../../ (компилятор превью их не
 // резолвит). Корневой <section> несёт data-puck-component-id для выделяемости
 // и data-catalog-page для маркер-валидации билда (build.service validateBuildOutput).
+// Заголовок/подзаголовок каталога мерчант вводит кнопками «Ж»/«К» — Astro
+// экранирует {value}, и начертание печаталось сырыми тегами в тексте
+// (баг-репорт тестера 2026-09-13, K4). Рендерим через XSS-safe inlineFormat.
+import { inlineFormat } from "./rich-text";
 import FluxProductCard from "./FluxProductCard.astro";
 import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
@@ -281,11 +285,12 @@ const skeletons = Array.from({ length: skeletonCount });
       <header class="flex flex-col gap-2">
         <h1
           id="catalog-title"
-          data-default-title={title}
+          data-default-title={inlineFormat(title)}
           class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-text,0_0_0))] md:text-[32px] lg:text-[36px]"
-        >{title}</h1>
+          set:html={inlineFormat(title)}
+        ></h1>
         {subtitleVisible && (
-          <p data-nt="catalog-subtitle" data-default-subtitle={subtitleText} class={`max-w-2xl font-manrope text-[16px] font-light leading-[1.366] md:text-[18px] lg:text-[20px] ${subtitleColorCls}`}>{subtitleText}</p>
+          <p data-nt="catalog-subtitle" data-default-subtitle={inlineFormat(subtitleText)} class={`max-w-2xl font-manrope text-[16px] font-light leading-[1.366] md:text-[18px] lg:text-[20px] ${subtitleColorCls}`} set:html={inlineFormat(subtitleText)}></p>
         )}
       </header>
 
@@ -1362,7 +1367,11 @@ const skeletons = Array.from({ length: skeletonCount });
     const h = document.getElementById("catalog-title");
     if (h) {
       const fallback = h.getAttribute("data-default-title") || "Каталог";
-      h.textContent = col && col.name ? col.name : fallback;
+      // Имя коллекции — чужие данные, ставим текстом. Запасной заголовок уже
+      // прошёл inlineFormat на сборке (санитайз выполнен), поэтому ставим
+      // разметкой: иначе «Ж»/«К» мерчанта снова печатались бы тегами.
+      if (col && col.name) h.textContent = col.name;
+      else h.innerHTML = fallback;
     }
   }
 

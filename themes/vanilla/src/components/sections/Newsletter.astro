@@ -34,7 +34,12 @@ const headingCls = `m-0 font-vanilla-bitter ${headingSizeCls} font-normal italic
 // description/text → рендерим ЕГО (?? лишь при пустых данных). Рендер через
 // set:html — поле может содержать <br />. Роль FN:21: Arsenal italic 14 lg:16,
 // #F0F0F0 → токен text, фоллбек 240_240_240.
+// `p.text` приходит СТРОКОЙ: adaptLegacyProps разворачивает конверт
+// {content,size} (page-blocks.ts unwrapEnvelopes) ещё до рендера, поэтому
+// ветка `p.text?.content` на живом сайте не срабатывала никогда и «Текст»
+// секции молча показывал дефолт вместо ввода мерчанта.
 const description =
+	(typeof p.text === "string" && p.text.trim() ? p.text : undefined) ??
 	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
 	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
 	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";

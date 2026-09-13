@@ -15,8 +15,11 @@ const MultiRowItemSchema = z.object({
   hidden: z.boolean().optional(),
   // Pupa parity per-row.
   image: z.string().optional(),
-  // 'inherit' — ряд берёт «Высоту» секции; это дефолт нового ряда, иначе
-  // собственный размер ряда молча перебивал общую настройку секции.
+  // 'inherit' («Как в секции») снят из панели решением владельца 2026-09-13 и
+  // больше не записывается: новые ряды несут явный размер, старые переносит
+  // `materializeMultiRowsItemSize`. В схеме значение ОСТАВЛЕНО — ревизия могла
+  // не пройти миграцию (импорт, откат, прямая правка), и разбор не должен
+  // падать; рендер и так трактует его как «высоту» секции.
   size: z.enum(['inherit', 'small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   title: z.string().optional(),
@@ -196,7 +199,6 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
           type: 'select',
           label: 'Размер',
           options: [
-            { label: 'Как в секции', value: 'inherit' },
             { label: 'Маленький', value: 'small' },
             { label: 'Средний', value: 'medium' },
             { label: 'Большой', value: 'large' },
@@ -244,10 +246,11 @@ export const MultiRowsPuckConfig: BlockPuckConfig<MultiRowsProps> = {
         image: '',
         title: '',
         description: '',
-        // Figma 1:33349 — дропдауны не пустые. У «Размера» дефолт «Как в секции»:
-        // с жёстким 'small' общая настройка «Высота» у секции была мертва —
-        // каждый ряд нёс собственный размер и перебивал её.
-        size: 'inherit',
+        // Figma 1:33349 — дропдауны не пустые. Решение владельца 2026-09-13
+        // сняло «Как в секции»: ряд получает размер как везде, явным значением.
+        // 'small' совпадает с дефолтом «Высоты» секции (`defaults.size`), то
+        // есть новый ряд выглядит ровно так же, как раньше при наследовании.
+        size: 'small',
         headingSize: 'small',
         textSize: 'small',
         button: { text: 'Подробнее', link: '/catalog' },

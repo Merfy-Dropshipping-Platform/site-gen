@@ -1177,16 +1177,39 @@ function normalizeFooterContacts(
 }
 
 /**
- * Мультиряды: снять размер ряда, доставшийся от дефолта нового ряда.
+ * Мультиряды: перенести «Как в секции» в тот размер, который ряд и так рисовал.
  *
- * Каждый добавленный ряд получал собственный `size: 'small'`, и он перебивал
- * общую настройку секции «Высота» — мерчант крутил её, а ряды не менялись.
- * Теперь дефолт ряда — «Как в секции» (`inherit`), а у существующих ревизий
- * значение сида снимаем: ТОЛЬКО когда оно одинаковое `small` у ВСЕХ рядов
- * блока (признак дефолта, а не осознанного выбора). Ряды с разными размерами
- * не трогаем — там мерчант настраивал каждый ряд сам.
+ * Решение владельца 2026-09-13: «Убрать из пункта Размер сектор „Как в секции"
+ * во всех темах. Придавать размеры заголовку как везде». Опция снята из панели
+ * (`MultiRows.puckConfig.ts`), и сохранённое `size: 'inherit'` осталось бы
+ * значением, которого в списке нет: селект показал бы пустоту, а
+ * `CustomFieldsPanel.updateProp` домержил бы дефолт при правке СОСЕДНЕГО поля
+ * и молча сменил размер ряда на витрине.
+ *
+ * Переносим в тот же размер, что рисует порт, — иначе у мерчанта изменится вид.
+ * `MultiRows.astro` берёт `aspectKey(row.size, sectionSize)`, где
+ * `sectionSize = props.size === 'small' || 'large' ? props.size : 'medium'`.
+ * Проверено реальным рендером rose (dist/theme-sections): секция small/medium/
+ * large + ряд «Как в секции» дают ровно ту же разметку, что ряд small/medium/
+ * large; секция без размера — medium.
+ *
+ * Ряд БЕЗ значения не трогаем: отсутствие — законное состояние, порт сам возьмёт
+ * секционный фолбэк, а дописывание материализовало бы в данные невыбранное.
+ *
+ * Здесь была ОБРАТНАЯ миграция: она переписывала сохранённый одинаковый `small`
+ * в «Как в секции», чтобы оживить общую «Высоту» секции. После решения
+ * владельца она заводила бы в данные снятое значение, поэтому убрана.
+ *
+ * Идемпотентна: после прогона снятого значения в данных не остаётся.
  */
-function relaxMultiRowsItemSize(
+
+/** Фолбэк ряда = «высота» секции ровно по правилу MultiRows.astro. */
+function multiRowsSectionSize(props: Record<string, unknown>): string {
+  const raw = props.size;
+  return raw === 'small' || raw === 'large' ? raw : 'medium';
+}
+
+function materializeMultiRowsItemSize(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
   let changed = false;
@@ -1200,15 +1223,13 @@ function relaxMultiRowsItemSize(
       if (b?.type !== 'MultiRows' || !b.props) return block;
       const rows = b.props.rows;
       if (!Array.isArray(rows) || rows.length === 0) return block;
-      const allSmall = rows.every(
-        (r) => r && typeof r === 'object' && (r as { size?: unknown }).size === 'small',
+      const stale = (r: unknown) =>
+        !!r && typeof r === 'object' && (r as { size?: unknown }).size === 'inherit';
+      if (!rows.some(stale)) return block;
+      const fallback = multiRowsSectionSize(b.props);
+      const nextRows = rows.map((r) =>
+        stale(r) ? { ...(r as Record<string, unknown>), size: fallback } : r,
       );
-      if (!allSmall) return block;
-      const nextRows = rows.map((r) => {
-        const row = { ...(r as Record<string, unknown>) };
-        row.size = 'inherit';
-        return row;
-      });
       pageChanged = true;
       return { ...b, props: { ...b.props, rows: nextRows } };
     });
@@ -1644,7 +1665,7 @@ export function migrateRevisionData(
     out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
-    out.pagesData = relaxMultiRowsItemSize(out.pagesData as Record<string, unknown>);
+    out.pagesData = materializeMultiRowsItemSize(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);

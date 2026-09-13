@@ -69,6 +69,18 @@ export interface PuckConfigJson {
    * ревизии нет merchant-схем. Для legacy themeId без манифеста — пустой массив.
    */
   colorSchemes?: Array<Record<string, unknown>>;
+  /**
+   * Схема темы, активная по умолчанию (theme.json `defaultScheme`), по id.
+   * Нужна панели, чтобы у блока БЕЗ собственного `colorScheme` селектор
+   * показывал ту же схему, что рисует витрина. Витрина берёт её в
+   * `tokens-css.ts`: выбор мерчанта (`themeSettings.defaultSchemeIndex`,
+   * авторитетен только при непустых merchant-схемах) → `defaultScheme` темы →
+   * первая. Пока API это поле не отдавал, конструктору неоткуда было узнать
+   * про заявленный темой дефолт, и он жёстко писал «Схема 1»: у flux
+   * (`defaultScheme: "scheme-2"`) панель расходилась с магазином.
+   * `null` — тема дефолт не заявляла (тогда активна первая схема).
+   */
+  defaultScheme?: string | null;
 }
 
 /**
@@ -114,6 +126,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blockPlaceholders: (liveManifest('rose', roseManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('rose', roseManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('rose', roseManifestJsonRaw).colorSchemes ?? [],
+      defaultScheme: liveManifest('rose', roseManifestJsonRaw).defaultScheme,
     };
   }
   if (themeId === 'vanilla') {
@@ -127,6 +140,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blockPlaceholders: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('vanilla', vanillaManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('vanilla', vanillaManifestJsonRaw).colorSchemes ?? [],
+      defaultScheme: liveManifest('vanilla', vanillaManifestJsonRaw).defaultScheme,
     };
   }
   if (themeId === 'bloom') {
@@ -140,6 +154,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blockPlaceholders: (liveManifest('bloom', bloomManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('bloom', bloomManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('bloom', bloomManifestJsonRaw).colorSchemes ?? [],
+      defaultScheme: liveManifest('bloom', bloomManifestJsonRaw).defaultScheme,
     };
   }
   if (themeId === 'satin') {
@@ -153,6 +168,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blockPlaceholders: (liveManifest('satin', satinManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('satin', satinManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('satin', satinManifestJsonRaw).colorSchemes ?? [],
+      defaultScheme: liveManifest('satin', satinManifestJsonRaw).defaultScheme,
     };
   }
   if (themeId === 'flux') {
@@ -166,6 +182,7 @@ function getThemeManifest(themeId: string): ThemeConfigForResolver {
       blockPlaceholders: (liveManifest('flux', fluxManifestJsonRaw) as any).blockPlaceholders ?? {},
       defaults: (liveManifest('flux', fluxManifestJsonRaw) as any).defaults ?? {},
       colorSchemes: liveManifest('flux', fluxManifestJsonRaw).colorSchemes ?? [],
+      defaultScheme: liveManifest('flux', fluxManifestJsonRaw).defaultScheme,
     };
   }
   return DEFAULT_THEME_CONFIG;
@@ -355,11 +372,24 @@ export class ThemePuckConfigController {
       themeSchemeToMerchantShape,
     );
 
+    // Активная по умолчанию схема темы — по id. Отдаём ТОЛЬКО то, что реально
+    // заявлено в theme.json, и только если такая схема в палитре есть: иначе
+    // панель показала бы несуществующий дефолт. Ничего не выдумываем — нет
+    // заявления, значит null, и панель покажет первую схему (как и витрина).
+    const declaredScheme =
+      (themeManifest as { defaultScheme?: unknown } | undefined)?.defaultScheme;
+    const defaultScheme =
+      typeof declaredScheme === 'string' &&
+      themeColorSchemes.some((s) => String(s.id ?? '') === declaredScheme)
+        ? declaredScheme
+        : null;
+
     return {
       components,
       categories: puckConfig.categories ?? {},
       defaults: themeDefaults,
       colorSchemes: themeColorSchemes,
+      defaultScheme,
     };
   }
 }

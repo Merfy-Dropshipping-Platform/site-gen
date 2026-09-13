@@ -47,6 +47,15 @@ export interface ThemeConfigForResolver {
     name: string;
     tokens: Record<string, string>;
   }>;
+  /**
+   * Схема, активная по умолчанию (theme.json `defaultScheme`), — по id, а не
+   * по позиции в массиве. Передаётся в /api/themes/:id/puck-config →
+   * конструктор показывает в селекторе ФАКТИЧЕСКУЮ схему темы у блока без
+   * собственного `colorScheme`. Без этого поля панель подставляла первую
+   * схему, пока витрина (`tokens-css.ts` → `:root`) красила заявленной темой:
+   * у flux заявлена `scheme-2` — панель писала «Схема 1».
+   */
+  defaultScheme?: string;
 }
 
 export function resolveBlocks(

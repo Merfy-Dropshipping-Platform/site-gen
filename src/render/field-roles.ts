@@ -5,6 +5,10 @@ const CATALOG_KEYS = new Set([
   "collectionid",
   "productid",
   "datasource",
+  // «Выбор публикации» — такая же ссылка на сущность магазина, как productId
+  // и collectionId: это НЕ текст мерчанта, и правило «пусто = заглушка» для
+  // контент-полей к нему неприменимо.
+  "publicationtype",
 ]);
 const CONTENT_KEYS = new Set([
   "heading",

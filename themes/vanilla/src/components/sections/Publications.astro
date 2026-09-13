@@ -4,15 +4,11 @@ import { inlineFormat } from "../../lib/rich-text";
 // (см. themes/vanilla/MANNER.md §2/§4/§9/§11; эталон — themes/bloom Publications,
 // rose-эталона нет). Схема полей = packages/theme-base/blocks/Publications/
 // Publications.puckConfig.ts.
-// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (колонки: пустой image-rect surface + «Колонна» + нейтральный текст),
-// а НЕ мок-демо верстальщика (статьи про уют/плед + /images/vanilla-product-N.webp).
-// Когда у магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications
-// → fallback publications.json) — рендерим их без изменений (Shopify-модель, как
-// theme-base PopularProducts/Collections/MultiColumns: пустое = заглушка, данные =
-// реальный контент). Платформенный резолв по publicationType остаётся
-// data-атрибутом на гриде. Обложки реальных публикаций — прямой <img> (пути
-// работают и в превью Container API).
+// ДАННЫЕ — только магазина (таблица publications, её ведёт админка). Платформа
+// отдаёт уже отобранный список через __merfy.resolved.publications; пусто =
+// нейтральная болванка «Публикация», выдуманных записей нет. Платформенный
+// резолв по publicationType остаётся data-атрибутом на гриде. Обложки реальных
+// публикаций — прямой <img> (пути работают и в превью Container API).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -59,11 +55,13 @@ const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "fa
 const publicationType =
 	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
 
-// Реальные публикации: SSR fetch storefront-data (gateway → sites-service) с
-// fallback на build-time publications.json (паттерн canonical theme-base
-// Publications.astro + порт bloom). siteId инжектит build pipeline / preview
-// controller. publications.json в теме vanilla может отсутствовать — import
-// в try/catch (тогда realPublications остаётся пустым → плейсхолдер).
+// Реальные публикации — ЕДИНСТВЕННЫЙ источник секции. Платформа резолвит их
+// тем же путём, что товары «Коллекции товаров» и плитки «Списка коллекций»:
+// catalog.publications → applySectionPolicy → __merfy.resolved.publications.
+// Массив (даже ПУСТОЙ) авторитетен: выбор мерчанта в панели уже применён,
+// секция ничего не досочиняет. Нет платформенного контекста (легаси-сборка
+// Astro из scaffold) — SSR-фетч storefront-эндпойнта + build-time
+// publications.json (в теме vanilla файла может не быть → try/catch).
 type RawPublication = {
 	id: string;
 	title?: string;
@@ -72,30 +70,36 @@ type RawPublication = {
 	coverImageUrl?: string | null;
 	publishedAt?: string | null;
 };
+const merfy = p.__merfy as { resolved?: { publications?: RawPublication[] | null } } | undefined;
+const platformPublications = Array.isArray(merfy?.resolved?.publications)
+	? (merfy.resolved.publications as RawPublication[])
+	: null;
 const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
-let realPublications: RawPublication[] = [];
-if (siteIdFromRoot) {
+let realPublications: RawPublication[] = platformPublications ?? [];
+if (!platformPublications) {
+	if (siteIdFromRoot) {
+		try {
+			const internalBase =
+				(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+				"http://localhost:3114";
+			const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+			if (res && res.ok) {
+				const data = (await res.json()) as { publications?: RawPublication[] };
+				realPublications = data.publications ?? [];
+			}
+		} catch {
+			/* swallow */
+		}
+	}
 	try {
-		const internalBase =
-			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
-			"http://localhost:3114";
-		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
-		if (res && res.ok) {
-			const data = (await res.json()) as { publications?: RawPublication[] };
-			realPublications = data.publications ?? [];
+		if (realPublications.length === 0) {
+			const pubData = await import("../data/publications.json");
+			realPublications = ((pubData as { default?: RawPublication[] }).default ??
+				(pubData as unknown as RawPublication[])) as RawPublication[];
 		}
 	} catch {
-		/* swallow */
+		/* swallow — publications.json отсутствует */
 	}
-}
-try {
-	if (realPublications.length === 0) {
-		const pubData = await import("../data/publications.json");
-		realPublications = ((pubData as { default?: RawPublication[] }).default ??
-			(pubData as unknown as RawPublication[])) as RawPublication[];
-	}
-} catch {
-	/* swallow — publications.json отсутствует */
 }
 
 function formatPubDate(iso: string | null | undefined): string {
@@ -109,20 +113,16 @@ function formatPubDate(iso: string | null | undefined): string {
 	}
 }
 
-// Гейт пустого состояния (Shopify-модель, паритет theme-base/blocks/Publications
-// + порт bloom): есть реальные публикации → рендерим их без изменений; нет —
-// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (тип «Publications»): колонки = пустой
-// image-rect surface + «Колонна» + ДОСЛОВНЫЙ хелпер-текст «Сочетай текст, чтобы
-// подчеркнуть плюсы товара или коллекции.», а НЕ мок-демо верстальщика (статьи
-// про уют/плед + /images/vanilla-product-N.webp) и не вольная текст-болванка.
-const hasRealPublications = realPublications.length > 0;
-const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
-// Дизайн-ассет фото колонки публикаций (Figma 1:19335) — раздаётся на каждой
-// теме как /placeholders/publication-card.png. Контракт картиночных секций:
-// фото показывается ВСЕГДА (НЕ пустой surface-rect, НЕ мок верстальщика).
+// Пустое состояние: НИКАКИХ выдуманных записей. Раньше карточки подписывались
+// «Колонна» + хелпер-текст Мультиколонн — мерчант видел в «Публикациях» чужую
+// секцию. Нейтральная болванка ровно как у соседей («Товар» / «Коллекция») →
+// здесь «Публикация», без даты и анонса. Фото колонки — дизайн-ассет
+// /placeholders/publication-card.png (контракт картиночных секций Figma
+// 1:19335: картинка показывается ВСЕГДА, НЕ пустой surface-rect).
+const PLACEHOLDER_TITLE = "Публикация";
 const PLACEHOLDER_PUB_IMAGE = "/placeholders/publication-card.png";
 type PubItem = { title: string; date: string; excerpt: string; image: string; slug?: string; isPlaceholder: boolean };
-const items: PubItem[] = hasRealPublications
+const items: PubItem[] = realPublications.length > 0
 	? realPublications.slice(0, cards).map((pub) => ({
 			title: pub.title ?? "",
 			date: formatPubDate(pub.publishedAt),
@@ -132,9 +132,9 @@ const items: PubItem[] = hasRealPublications
 			isPlaceholder: false,
 		}))
 	: Array.from({ length: cards }, () => ({
-			title: "Колонна",
+			title: PLACEHOLDER_TITLE,
 			date: "",
-			excerpt: PLACEHOLDER_TEXT,
+			excerpt: "",
 			image: PLACEHOLDER_PUB_IMAGE,
 			isPlaceholder: true,
 		}));

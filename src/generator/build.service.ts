@@ -35,6 +35,7 @@ import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type Fet
 import { escapeHtml, patchPdpMetaTags, patchCollectionMetaTags } from "./seo-meta";
 import { migrateRevisionData } from "../utils/revision-migrations";
 import { applyFooterData } from "../utils/footer-data";
+import { applyPageBinding } from "../render/page-transclude";
 import {
   buildScaffold,
   type ScaffoldConfig,
@@ -391,6 +392,13 @@ export interface BuildContext {
   settings?: { requireCustomerAuth?: boolean };
   /** Название магазина (site.name) — для name/short_name в web-manifest. */
   siteName?: string;
+  /**
+   * Публикации магазина (таблица `publications`), уже загруженные на стадии
+   * FETCH_DATA. Нужны рендеру секции «Публикации» (v2-live-pages →
+   * PreviewService.renderBlock → __merfy.catalog.publications): без них
+   * витрина показывала бы заглушку при непустой админке.
+   */
+  publications?: Array<Record<string, unknown>>;
 }
 
 /**
@@ -2259,32 +2267,35 @@ async function stageGenerate(
       logger.log(`[generate] Added ${policyPagesCount} policy page(s)`);
     }
 
-    // Инжект платформенного контента политики в блоки «Страница» (Page),
-    // привязанные через pageId (свободно размещённые на любой странице). Живой
-    // контент — пересобирается из site_policy при каждой сборке. Spec 101.
-    const policyByType = new Map(policies.map((p) => [p.type, p] as const));
+    // Инжект живого контента в блоки «Страница» (Page), привязанные через
+    // `pageId` (пикер «Выбор страницы»; секция может стоять на любой странице).
+    //
+    // До 2026-09-13 здесь понимались ТОЛЬКО политики (refund/privacy/tos/
+    // shipping), тогда как пикер отдаёт id страниц конструктора (`page-about`,
+    // `page-custom-…`). Выбор страницы не давал ничего: секция оставалась со
+    // своим старым текстом (баг тестировщика #8). Теперь резолв один и тот же
+    // и для превью, и для витрины — render/page-transclude.
     let boundPageBlocks = 0;
     for (const pg of pages) {
       const cont = (pg.data as { content?: unknown })?.content;
       if (!Array.isArray(cont)) continue;
       for (const block of cont as any[]) {
         if (block?.type !== "Page") continue;
-        const pid =
-          typeof block.props?.pageId === "string" ? block.props.pageId : "";
-        const pol = pid ? policyByType.get(pid) : undefined;
-        if (pol?.content && pol.content.trim()) {
-          block.props = {
-            ...block.props,
-            heading: POLICY_TITLE_MAP[pol.type] ?? pol.type,
-            content: policyTextToHtml(pol.content),
-          };
+        const props = (block.props ?? {}) as Record<string, unknown>;
+        if (typeof props.pageId !== "string" || !props.pageId.trim()) continue;
+        const bound = applyPageBinding(props, {
+          revision: ctx.revisionData,
+          policies,
+        });
+        if (bound !== props) {
+          block.props = bound;
           boundPageBlocks++;
         }
       }
     }
     if (boundPageBlocks > 0) {
       logger.log(
-        `[generate] Injected policy content into ${boundPageBlocks} «Страница» block(s)`,
+        `[generate] Bound ${boundPageBlocks} «Страница» block(s) to their source page/policy`,
       );
     }
 
@@ -2699,6 +2710,10 @@ async function stageFetchData(
   const publicationsPath = path.join(ctx.workingDir, "src", "data", "publications.json");
   await fs.mkdir(path.dirname(publicationsPath), { recursive: true });
   await fs.writeFile(publicationsPath, JSON.stringify(astroPublications, null, 2), "utf8");
+
+  // Тот же список — рендеру секций (v2-темы рендерят «Публикации» через
+  // renderBlock, а не через src/data/publications.json темы).
+  ctx.publications = publicationsData as unknown as Array<Record<string, unknown>>;
 
   logger.log(
     `[fetch_data] ${products.length} products, ${ctx.storeData.collections.length} collections, ${Object.keys(collectionProductsMap).length} collection-product mappings, ${publicationsData.length} publications`,

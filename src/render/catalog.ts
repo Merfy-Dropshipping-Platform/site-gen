@@ -22,6 +22,8 @@ export type CatalogPublication = {
   id: string;
   title: string;
   slug: string;
+  /** news | blog | articles — категория из админки (publications.category). */
+  category: string;
   excerpt: string;
   coverImageUrl: string | null;
   publishedAt: string | null;
@@ -123,13 +125,26 @@ export function normalizeCatalog(raw: {
 
   const publications: CatalogPublication[] = pubsIn.map((item) => {
     const x = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+    // Обложка приходит из разных источников под разными именами: админка и
+    // storefront-эндпойнт дают coverImageUrl, build-time publications.json —
+    // ещё и image/href. Берём первое непустое, иначе карточка «теряла» фото.
+    const cover =
+      (typeof x.coverImageUrl === "string" && x.coverImageUrl) ||
+      (typeof x.image === "string" && x.image) ||
+      null;
     return {
       id: str(x.id),
       title: str(x.title),
       slug: str(x.slug),
+      category: str(x.category),
       excerpt: str(x.excerpt),
-      coverImageUrl: typeof x.coverImageUrl === "string" ? x.coverImageUrl : null,
-      publishedAt: typeof x.publishedAt === "string" ? x.publishedAt : null,
+      coverImageUrl: cover,
+      publishedAt:
+        typeof x.publishedAt === "string"
+          ? x.publishedAt
+          : x.publishedAt instanceof Date
+            ? x.publishedAt.toISOString()
+            : null,
     };
   });
 

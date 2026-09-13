@@ -51,12 +51,23 @@ export async function createRenderContext(input: {
   tenantId: string | null;
   themeSettings: unknown;
   productClient: ClientProxy;
+  /**
+   * Публикации магазина (таблица `publications` сервиса sites). Товары и
+   * коллекции живут в product-сервисе и тянутся по RMQ, публикации — локальные,
+   * поэтому их загружает вызывающий (контроллер превью / сборка) и передаёт
+   * сюда. Без них секция «Публикации» не знает данных магазина и рисует
+   * заглушку — но НЕ выдумывает записи.
+   */
+  publications?: unknown[] | null;
 }): Promise<RenderContext | { error: "NO_THEME" }> {
   if (!input.themeId) return { error: "NO_THEME" };
-  const catalog =
+  const base =
     input.tenantId
       ? await loadCatalog(input.productClient, input.tenantId, input.siteId)
       : EMPTY_CATALOG;
+  const catalog: Catalog = input.publications?.length
+    ? { ...base, publications: normalizeCatalog({ publications: input.publications }).publications }
+    : base;
   return {
     siteId: input.siteId,
     themeId: input.themeId,

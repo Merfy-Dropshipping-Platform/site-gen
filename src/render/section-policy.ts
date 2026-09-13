@@ -1,4 +1,4 @@
-import type { Catalog, CatalogProduct } from "./catalog";
+import type { Catalog, CatalogProduct, CatalogPublication } from "./catalog";
 import { isPlaceholderImage, isUnsetContent } from "./empty-state";
 import type { FieldState } from "./field-roles";
 
@@ -14,14 +14,82 @@ export function applySectionPolicy(
   props: Record<string, unknown>,
   catalog: Catalog,
   fields: Record<string, FieldState>,
-): { popularProducts: CatalogProduct[] | null; collectionTiles: CollectionTile[] | null } {
+): {
+  popularProducts: CatalogProduct[] | null;
+  collectionTiles: CollectionTile[] | null;
+  publications: CatalogPublication[] | null;
+} {
   const popular =
     blockName === "Popular" || blockName === "PopularProducts"
       ? resolvePopular(props, catalog)
       : null;
   const collectionTiles =
     blockName === "Collections" ? resolveCollections(props, catalog, fields) : null;
-  return { popularProducts: popular, collectionTiles };
+  const publications =
+    blockName === "Publications" ? resolvePublications(props, catalog) : null;
+  return { popularProducts: popular, collectionTiles, publications };
+}
+
+/** Синонимы категорий публикаций (совпадают с Publications.puckConfig). */
+const PUBLICATION_CATEGORY_ALIASES: Record<string, string> = {
+  news: "news",
+  "новости": "news",
+  blog: "blog",
+  "блог": "blog",
+  articles: "articles",
+  "статьи": "articles",
+};
+
+/**
+ * Ссылка на публикацию из панели: строка (id / slug / категория) либо легаси-
+ * конверт pagePicker `{ href, text }` — до 2026-09-13 поле «Выбор публикации»
+ * рендерилось пикером СТРАНИЦ и писало объект. Объект осмысленного выбора не
+ * несёт (в нём маршрут страницы, не публикация) — трактуем как «не выбрано».
+ */
+function publicationRef(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  return "";
+}
+
+/**
+ * Публикации секции «Публикации» — тем же путём, что товары у PopularProducts
+ * и плитки у Collections: единственный источник данных — каталог магазина
+ * (админка). Ничего не выдумываем: нет публикаций → пустой список, и блок
+ * рисует свою заглушку.
+ *
+ * Выбор в панели (`publicationType`):
+ *   ''/'all'            → все публикации магазина;
+ *   id или slug         → РОВНО эта публикация («оживить при выборе»);
+ *   news|blog|articles  → фильтр по категории (легаси-значения пикера);
+ *   выбранной больше нет → пусто (а не «первая попавшаяся»).
+ */
+function resolvePublications(
+  props: Record<string, unknown>,
+  catalog: Catalog,
+): CatalogPublication[] {
+  const all = Array.isArray(catalog.publications) ? catalog.publications : [];
+  const ref = publicationRef(props.publicationType ?? props.categoryFilter);
+  const cardsRaw =
+    typeof props.cardsCount === "number"
+      ? props.cardsCount
+      : typeof props.cards === "number"
+        ? props.cards
+        : 3;
+  const cards = Math.max(1, Math.min(24, Math.round(cardsRaw) || 3));
+
+  if (!ref || ref.toLowerCase() === "all") return all.slice(0, cards);
+
+  const exact = all.find((p) => p.id === ref || p.slug === ref);
+  if (exact) return [exact];
+
+  const category = PUBLICATION_CATEGORY_ALIASES[ref.toLowerCase()];
+  if (category) {
+    return all.filter((p) => p.category === category).slice(0, cards);
+  }
+
+  // Непонятная ссылка (удалённая публикация, мусор из старой ревизии) —
+  // ПУСТО. Показать «что-нибудь» здесь значит соврать мерчанту.
+  return [];
 }
 
 function resolvePopular(

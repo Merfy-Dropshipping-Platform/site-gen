@@ -8,19 +8,16 @@ import SatinPicture from "../img/SatinPicture.astro";
 // index.astro:32 его использует). Схема полей = packages/theme-base/blocks/
 // Publications/Publications.puckConfig.ts; манера — themes/satin/MANNER.md
 // (эталон процесса — bloom Publications).
-// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (3 колонки: пустой image-rect + «Колонна» + нейтральный текст), НЕ
-// мок-демо верстальщика (Journal-болванки про коллекции + /images/4x/journal-*.png).
-// Когда у магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications
-// → fallback publications.json, либо legacy flat-проп p.posts) — рендерим их без
-// изменений (Shopify-модель, как theme-base PopularProducts/Collections: пустое =
-// заглушка, данные = реальный контент). Платформенный резолв по publicationType
-// остаётся data-атрибутом на гриде.
+// ДАННЫЕ — только магазина (таблица publications, её ведёт админка). Платформа
+// отдаёт уже отобранный список через __merfy.resolved.publications; пусто =
+// нейтральная болванка «Публикация» с дизайн-ассетом
+// /placeholders/publication-card.png, выдуманных записей нет. Платформенный
+// резолв по publicationType остаётся data-атрибутом на гриде.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const merfy = p.__merfy as {
 	fields?: Record<string, { set?: boolean }>;
-	catalog?: {
+	resolved?: {
 		publications?: Array<{
 			id?: string;
 			title?: string;
@@ -28,7 +25,7 @@ const merfy = p.__merfy as {
 			excerpt?: string;
 			coverImageUrl?: string | null;
 			publishedAt?: string | null;
-		}>;
+		}> | null;
 	};
 } | undefined;
 function contentSet(keys: string | string[], raw: unknown): boolean {
@@ -93,27 +90,20 @@ const cards = Math.max(1, Math.min(12, Math.round(cardsRaw) || 3));
 // (строже `=== "true"` прятало бы дату при legacy-truthy значениях ревизии).
 const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "false";
 
-// Заглушки публикаций: состав тот же, что у bloom и flux (эталон theme-base
-// Publications). Константы в satin не было вовсе — секция падала на рендере с
-// «PLACEHOLDER_ARTICLES is not defined», то есть «Публикации» в этой теме не
-// открывались ни на витрине, ни в превью.
-const PLACEHOLDER_ARTICLES = [
-	{ date: "15 марта 2025", title: "Новая коллекция весна 2025", excerpt: "Рассказываем о вдохновении и ключевых силуэтах новой коллекции." },
-	{ date: "28 февраля 2025", title: "Как ухаживать за изделиями", excerpt: "Простые правила, чтобы ваши вещи служили долгие годы." },
-	{ date: "10 февраля 2025", title: "История бренда: от идеи до магазина", excerpt: "Путь от первой вещи, сделанной вручную, до собственной коллекции." },
-	{ date: "25 января 2025", title: "Тренды сезона 2025", excerpt: "Обзор ключевых трендов — от цветов до фактур." },
-];
-
 // Канон publicationType (pagePicker) — носитель платформенного резолва
 // публикаций: data-атрибут на гриде (паттерн bloom).
 const publicationType =
 	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
 
-// Реальные публикации: SSR fetch storefront publications (gateway → sites-
-// service) c fallback на build-time publications.json (паттерн canonical
-// theme-base / bloom Publications). siteId инжектит build pipeline / preview
-// controller. Legacy flat-проп Journal posts[] {title,image,date,excerpt,href}
-// — высший приоритет (back-compat для ревизий, где данные пришли так).
+// Реальные публикации — ЕДИНСТВЕННЫЙ источник секции. Платформа резолвит их
+// тем же путём, что товары «Коллекции товаров» и плитки «Списка коллекций»:
+// catalog.publications → applySectionPolicy → __merfy.resolved.publications.
+// Массив (даже ПУСТОЙ) авторитетен: выбор мерчанта в панели уже применён,
+// секция ничего не досочиняет. Нет платформенного контекста (легаси-сборка
+// Astro из scaffold) — SSR-фетч storefront-эндпойнта + build-time
+// publications.json: тот же список, другой транспорт. Legacy flat-проп Journal
+// posts[] {title,image,date,excerpt,href} — высший приоритет (back-compat для
+// ревизий, где данные пришли так).
 type RawPublication = {
 	id: string;
 	title?: string;
@@ -123,16 +113,13 @@ type RawPublication = {
 	publishedAt?: string | null;
 };
 const legacyPosts = Array.isArray(p.posts) && p.posts.length ? p.posts : undefined;
+const platformPublications = Array.isArray(merfy?.resolved?.publications)
+	? (merfy.resolved.publications as RawPublication[])
+	: null;
 const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
-let realPublications: RawPublication[] = [];
-if (!legacyPosts) {
-	// 1) резолв платформы (если наполнен), 2) SSR fetch отдельного эндпоинта
-	// публикаций, 3) build-time publications.json. Ветка (2) — паритет bloom:
-	// публикации ВЫНЕСЕНЫ из storefront-data в /api/sites/:id/publications
-	// (storefront-data.controller), поэтому merfy.catalog.publications в превью
-	// приходит пустым, и без запроса секция никогда не видела реальных записей.
-	realPublications = Array.isArray(merfy?.catalog?.publications) ? merfy.catalog.publications : [];
-	if (realPublications.length === 0 && siteIdFromRoot) {
+let realPublications: RawPublication[] = platformPublications ?? [];
+if (!legacyPosts && !platformPublications) {
+	if (siteIdFromRoot) {
 		try {
 			const internalBase =
 				(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
@@ -168,23 +155,15 @@ function formatPubDate(iso: string | null | undefined): string {
 	}
 }
 
-// Гейт пустого состояния (Shopify-модель): есть реальные публикации (legacy
-// posts[] / SSR fetch / publications.json) → рендерим их; нет — ДОСЛОВНЫЙ
-// ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 для типа «Публикации»: 3 колонки =
-// пустой image-rect (surface) + «Колонна» + «Сочетай текст, чтобы подчеркнуть
-// плюсы товара или коллекции.» + стрелка-кнопка «Кнопка». НЕ мок-демо
-// верстальщика. Текст/лейблы — дословно как rose/satin MultiColumns.astro
-// (контракт Publications требует стрелки/кнопки в колоннах, как MultiColumns).
-const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
-// Контракт картиночных секций (правило 2): фолбэк-картинка колонки пустого
-// состояния = дизайн-ассет publication-card.png (/placeholders/publication-card.png,
-// раздаётся на каждой теме) — картинка показывается ВСЕГДА, НЕ пустой surface-rect.
-// Эталон theme-base Publications.astro (PLACEHOLDER_ASSETS.publicationCard).
+// Пустое состояние: НИКАКИХ выдуманных записей. Раньше карточки подписывались
+// четырьмя несуществующими статьями с выдуманными датами (плюс хелпер-текст
+// Мультиколонн) — мерчант видел в «Публикациях» контент, которого в админке
+// нет. Нейтральная болванка ровно как у соседей («Товар» / «Коллекция») →
+// здесь «Публикация», без даты и анонса. Картинка колонки — дизайн-ассет
+// /placeholders/publication-card.png (контракт картиночных секций Figma
+// 1:19335: фото показывается ВСЕГДА, НЕ пустой surface-rect).
+const PLACEHOLDER_TITLE = "Публикация";
 const PLACEHOLDER_IMAGE = "/placeholders/publication-card.png";
-// Per-column ссылка-плейсхолдер «Кнопка» (Figma 1:19335 — стрелка/кнопка в
-// КАЖДОЙ колонке, дословно как satin MultiColumns.astro PLACEHOLDER_COLUMN);
-// рендер ниже тем же CTA «Перейти»-механизмом колонки (arrow-right size-5).
-const PLACEHOLDER_LINK = { text: "Кнопка", href: "/catalog" };
 type PubItem = {
 	title: string;
 	date: string;
@@ -212,16 +191,11 @@ const items: PubItem[] = legacyPosts
 				href: pub.slug ? `/publication/${pub.slug}` : undefined,
 				isPlaceholder: false,
 			}))
-		: Array.from({ length: cards }, (_, i) => ({
-				// Заглушка ПУБЛИКАЦИЙ, а не колонок: раньше сюда подставлялись
-				// «Колонна» и текст Мультиколонн — мерчант видел чужую секцию.
-				// Состав дат/заголовков — по эталону theme-base Publications.
-				title: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].title,
-				date: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].date,
-				excerpt: PLACEHOLDER_TEXT,
+		: Array.from({ length: cards }, () => ({
+				title: PLACEHOLDER_TITLE,
+				date: "",
+				excerpt: "",
 				image: PLACEHOLDER_IMAGE,
-				href: PLACEHOLDER_LINK.href,
-				linkText: PLACEHOLDER_LINK.text,
 				isPlaceholder: true,
 			}));
 

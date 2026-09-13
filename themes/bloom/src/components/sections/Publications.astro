@@ -4,14 +4,11 @@ import { inlineFormat } from "../../lib/rich-text";
 // (см. themes/bloom/MANNER.md §4/§9/§11; rose-эталона НЕТ — в карте rose 15
 // позиций без Publications). Схема полей = packages/theme-base/blocks/
 // Publications/Publications.puckConfig.ts.
-// ПУСТОЕ СОСТОЯНИЕ (нет реальных публикаций) = ПЛЕЙСХОЛДЕР по контракту Figma
-// 1:19335 (3 колонки: пустой image-rect + «Колонна» + «Сочетай текст…» + кнопка), НЕ
-// мок-демо верстальщика (статьи про уход + /images/trend-*.webp). Когда у
-// магазина есть реальные публикации (SSR fetch /api/sites/<id>/publications →
-// fallback publications.json) — рендерим их без изменений (Shopify-модель, как
-// theme-base PopularProducts/Collections/MultiColumns: пустое = заглушка,
-// данные = реальный контент). Платформенный резолв по publicationType остаётся
-// data-атрибутом на гриде.
+// ДАННЫЕ — только магазина (таблица publications, её ведёт админка). Платформа
+// отдаёт уже отобранный список через __merfy.resolved.publications; пусто =
+// нейтральная болванка «Публикация» с дизайн-ассетом
+// /placeholders/publication-card.png, выдуманных записей нет. Платформенный
+// резолв по publicationType остаётся data-атрибутом на гриде.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -83,9 +80,13 @@ const showDate = String(p.showDateTime ?? p.dateTime?.enabled ?? "true") !== "fa
 const publicationType =
 	typeof p.publicationType === "string" && p.publicationType ? p.publicationType : undefined;
 
-// Реальные публикации: SSR fetch storefront-data (gateway → sites-service) c
-// fallback на build-time publications.json (паттерн canonical theme-base
-// Publications.astro). siteId инжектит build pipeline / preview controller.
+// Реальные публикации — ЕДИНСТВЕННЫЙ источник секции. Платформа резолвит их
+// тем же путём, что товары «Коллекции товаров» и плитки «Списка коллекций»:
+// catalog.publications → applySectionPolicy → __merfy.resolved.publications.
+// Массив (даже ПУСТОЙ) авторитетен: выбор мерчанта в панели уже применён,
+// секция ничего не досочиняет. Нет платформенного контекста (легаси-сборка
+// Astro из scaffold) — SSR-фетч storefront-эндпойнта + build-time
+// publications.json: тот же список, другой транспорт.
 type RawPublication = {
 	id: string;
 	title?: string;
@@ -94,30 +95,36 @@ type RawPublication = {
 	coverImageUrl?: string | null;
 	publishedAt?: string | null;
 };
+const merfy = p.__merfy as { resolved?: { publications?: RawPublication[] | null } } | undefined;
+const platformPublications = Array.isArray(merfy?.resolved?.publications)
+	? (merfy.resolved.publications as RawPublication[])
+	: null;
 const siteIdFromRoot = typeof p.siteId === "string" ? p.siteId : "";
-let realPublications: RawPublication[] = [];
-if (siteIdFromRoot) {
+let realPublications: RawPublication[] = platformPublications ?? [];
+if (!platformPublications) {
+	if (siteIdFromRoot) {
+		try {
+			const internalBase =
+				(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
+				"http://localhost:3114";
+			const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
+			if (res && res.ok) {
+				const data = (await res.json()) as { publications?: RawPublication[] };
+				realPublications = data.publications ?? [];
+			}
+		} catch {
+			/* swallow */
+		}
+	}
 	try {
-		const internalBase =
-			(import.meta as unknown as { env?: { SITES_INTERNAL_BASE?: string } }).env?.SITES_INTERNAL_BASE ??
-			"http://localhost:3114";
-		const res = await fetch(`${internalBase}/api/sites/${siteIdFromRoot}/publications`).catch(() => null);
-		if (res && res.ok) {
-			const data = (await res.json()) as { publications?: RawPublication[] };
-			realPublications = data.publications ?? [];
+		if (realPublications.length === 0) {
+			const pubData = await import("../data/publications.json");
+			realPublications = ((pubData as { default?: RawPublication[] }).default ??
+				(pubData as unknown as RawPublication[])) as RawPublication[];
 		}
 	} catch {
-		/* swallow */
+		/* swallow — publications.json отсутствует */
 	}
-}
-try {
-	if (realPublications.length === 0) {
-		const pubData = await import("../data/publications.json");
-		realPublications = ((pubData as { default?: RawPublication[] }).default ??
-			(pubData as unknown as RawPublication[])) as RawPublication[];
-	}
-} catch {
-	/* swallow — publications.json отсутствует */
 }
 
 function formatPubDate(iso: string | null | undefined): string {
@@ -131,25 +138,16 @@ function formatPubDate(iso: string | null | undefined): string {
 	}
 }
 
-// Гейт пустого состояния (Shopify-модель): есть реальные публикации → рендерим
-// их; нет — ПЛЕЙСХОЛДЕР по контракту Figma 1:19335 (3 карточки публикаций:
-// дизайн-ассет + заголовок + дата + анонс), НЕ мок-демо верстальщика.
-const hasRealPublications = realPublications.length > 0;
-// Figma-плейсхолдер (контракт типа «Publications» 1:19335): карточка = дизайн-ассет
-// /placeholders/publication-card.png (раздаётся на каждой теме из
-// packages/theme-base/public/placeholders, copyPublic). Фото показывается ВСЕГДА
-// (НЕ пустой image-rect, контракт картиночных секций).
-// Подписи — ПУБЛИКАЦИОННЫЕ: раньше карточки подписывались «Колонна» и текстом
-// Мультиколонн, мерчант видел в «Публикациях» чужую секцию. Состав (заголовок /
-// дата / анонс) — по эталону theme-base Publications и порту flux, тексты
-// совпадают между темами.
+// Пустое состояние: НИКАКИХ выдуманных записей. До 2026-09-13 здесь лежали
+// четыре несуществующие статьи с выдуманными заголовками и датами — мерчант
+// видел в «Публикациях» контент, которого в админке нет. Нейтральная
+// карточка-болванка ровно как у соседей («Товар» / «Коллекция») → здесь
+// «Публикация», без даты и анонса. Фото карточки — дизайн-ассет
+// /placeholders/publication-card.png (раздаётся из packages/theme-base,
+// copyPublic): по контракту картиночных секций Figma 1:19335 картинка
+// показывается ВСЕГДА, НЕ пустой image-rect.
 const PLACEHOLDER_IMAGE = "/placeholders/publication-card.png";
-const PLACEHOLDER_ARTICLES = [
-	{ date: "15 марта 2025", title: "Новая коллекция весна 2025", excerpt: "Рассказываем о вдохновении и ключевых силуэтах новой коллекции." },
-	{ date: "28 февраля 2025", title: "Как ухаживать за изделиями", excerpt: "Простые правила, чтобы ваши вещи служили долгие годы." },
-	{ date: "10 февраля 2025", title: "История бренда: от идеи до магазина", excerpt: "Путь от первой вещи, сделанной вручную, до собственной коллекции." },
-	{ date: "25 января 2025", title: "Тренды сезона 2025", excerpt: "Обзор ключевых трендов — от цветов до фактур." },
-];
+const PLACEHOLDER_TITLE = "Публикация";
 type PubItem = {
 	title: string;
 	date: string;
@@ -158,7 +156,7 @@ type PubItem = {
 	excerpt?: string;
 	isPlaceholder: boolean;
 };
-const items: PubItem[] = hasRealPublications
+const items: PubItem[] = realPublications.length > 0
 	? realPublications.slice(0, cards).map((pub) => ({
 			title: pub.title ?? "",
 			date: formatPubDate(pub.publishedAt),
@@ -166,11 +164,11 @@ const items: PubItem[] = hasRealPublications
 			slug: pub.slug,
 			isPlaceholder: false,
 		}))
-	: Array.from({ length: cards }, (_, i) => ({
-			title: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].title,
-			date: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].date,
+	: Array.from({ length: cards }, () => ({
+			title: PLACEHOLDER_TITLE,
+			date: "",
 			image: PLACEHOLDER_IMAGE,
-			excerpt: PLACEHOLDER_ARTICLES[i % PLACEHOLDER_ARTICLES.length].excerpt,
+			excerpt: "",
 			isPlaceholder: true,
 		}));
 

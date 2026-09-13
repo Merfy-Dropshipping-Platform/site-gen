@@ -640,6 +640,10 @@ describe('PreviewController.getPreview — page-aware route resolution', () => {
       undefined,
       expect.anything(),
       expect.anything(),
+      // 9-й аргумент — политики магазина для секции «Страница» (см.
+      // render/page-transclude): превью обязано резолвить привязку теми же
+      // данными, что и сборка витрины.
+      expect.anything(),
     );
     expect(tryLoad).not.toHaveBeenCalled();
     expect(res._headers['X-Preview-Mode']).toBe('v2-sections');

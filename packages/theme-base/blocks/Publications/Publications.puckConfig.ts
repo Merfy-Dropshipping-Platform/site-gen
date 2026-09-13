@@ -81,7 +81,10 @@ export const PublicationsPuckConfig: BlockPuckConfig<PublicationsProps> = {
   // Содержание (header) / Заголовок (aiText) / Размер заголовка /
   // Колонки (slider) / Дата и время (toggle) / Цветовая схема / Отступы.
   fields: {
-    publicationType: { type: 'pagePicker', label: 'Выбор публикации' } as any,
+    // Пикер публикаций магазина (не страниц!). Тип был `pagePicker` — тот
+    // предлагает СТРАНИЦЫ сайта и пишет объект `{ href, text }`, из которого
+    // публикацию не выбрать в принципе. Имя поля и подпись не менялись.
+    publicationType: { type: 'publicationPicker', label: 'Выбор публикации' } as any,
     cardsCount: { type: 'slider', label: 'Карточки', min: 1, max: 4, step: 1 },
     ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {

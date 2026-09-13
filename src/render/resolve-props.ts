@@ -1,4 +1,4 @@
-import type { Catalog, CatalogProduct } from "./catalog";
+import type { Catalog, CatalogProduct, CatalogPublication } from "./catalog";
 import { isBlankContent, isPlaceholderImage } from "./empty-state";
 import { inferFieldRole, type FieldState } from "./field-roles";
 import { applySectionPolicy } from "./section-policy";
@@ -13,6 +13,12 @@ export type ResolvedMerfy = {
       image: string;
       href: string;
     }> | null;
+    /**
+     * Публикации магазина для секции «Публикации» (null — блок не публикации).
+     * Пустой массив = у магазина публикаций нет / выбранной больше нет; блок
+     * рисует заглушку и НЕ выдумывает записи.
+     */
+    publications: CatalogPublication[] | null;
   };
 };
 

@@ -27,6 +27,12 @@
  * доставляет PopularProducts.cards/columns, а theme.json — Header.logoPosition
  * и десяток других), и проверка ловит расхождения, которых в проде нет.
  *
+ * job.catalog — сырой каталог магазина ({products,collections,publications}) для
+ * цепочек pipeline/live вместо EMPTY_CATALOG. Нужен проверкам «секция берёт
+ * данные магазина, а не выдумывает»: товары/коллекции/публикации доезжают до
+ * блока через __merfy (resolve-props → applySectionPolicy), и без каталога
+ * такую проверку не сделать.
+ *
  * job.pipeline === true — УРЕЗАННАЯ цепочка (adaptLegacyProps →
  * resolveBlockProps без blockDefaults) перед рендером, как это делает
  * preview.service. Нужен проверкам item-уровневого «глаза»: скрытые элементы
@@ -72,17 +78,19 @@ async function main() {
       const req = createRequire(import.meta.url);
       const { adaptLegacyProps } = req(resolve(SITES_ROOT, 'dist', 'src', 'themes', 'page-blocks.js'));
       const { resolveBlockProps } = req(resolve(SITES_ROOT, 'dist', 'src', 'render', 'resolve-props.js'));
-      const { EMPTY_CATALOG } = req(resolve(SITES_ROOT, 'dist', 'src', 'render', 'catalog.js'));
-      pipeline = (block, raw) => {
+      const { EMPTY_CATALOG, normalizeCatalog } = req(resolve(SITES_ROOT, 'dist', 'src', 'render', 'catalog.js'));
+      const catalogOf = (raw) => (raw ? normalizeCatalog(raw) : EMPTY_CATALOG);
+      pipeline = (block, raw, rawCatalog) => {
+        const catalog = catalogOf(rawCatalog);
         const adapted = adaptLegacyProps(raw, null, block);
-        const r = resolveBlockProps(block, adapted, EMPTY_CATALOG, {});
+        const r = resolveBlockProps(block, adapted, catalog, {});
         return {
           ...r.props,
           siteId: 'test-site',
           __merfy: {
             siteId: 'test-site',
             themeId: theme,
-            catalog: EMPTY_CATALOG,
+            catalog,
             ...r.merfy,
           },
         };
@@ -94,7 +102,8 @@ async function main() {
       const { getBlockPuckDefaults } = req(resolve(SITES_ROOT, 'dist', 'src', 'render', 'block-defaults.js'));
       const { normalizeSlideshowProps } = req(resolve(SITES_ROOT, 'dist', 'src', 'generator', 'legacy-prop-normalizer.js'));
       const themeDefaults = getThemeManifest(theme)?.blockDefaults ?? {};
-      livePipeline = async (block, raw) => {
+      livePipeline = async (block, raw, rawCatalog) => {
+        const catalog = catalogOf(rawCatalog);
         // 1. Нормализация ревизии — extractPageBlocks / POST /preview/block.
         const adapted = adaptLegacyProps(raw, null, block);
         // 2. blockDefaults темы ПОД props мерчанта — PreviewService.renderBlock.
@@ -104,14 +113,14 @@ async function main() {
         // 3. resolve-props с теми же resolveDefaults, что renderBlock.
         const puckDefaults = await getBlockPuckDefaults(theme, block);
         const resolveDefaults = deepMergeBlockProps(puckDefaults, bd);
-        const r = resolveBlockProps(block, merged, EMPTY_CATALOG, resolveDefaults);
+        const r = resolveBlockProps(block, merged, catalog, resolveDefaults);
         return {
           ...r.props,
           siteId: 'test-site',
           __merfy: {
             siteId: 'test-site',
             themeId: theme,
-            catalog: EMPTY_CATALOG,
+            catalog,
             ...r.merfy,
           },
         };
@@ -122,7 +131,7 @@ async function main() {
   }
 
   const out = [];
-  for (const { block, props, pkg, pipeline: usePipeline, live: useLive } of jobs) {
+  for (const { block, props, pkg, pipeline: usePipeline, live: useLive, catalog: rawCatalog } of jobs) {
     let modPath = null;
     if (pkg === 'theme-base') {
       const entry = themeBaseEntry(block);
@@ -142,9 +151,9 @@ async function main() {
     try {
       const mod = await import(modPath);
       const finalProps = useLive
-        ? await livePipeline(block, props)
+        ? await livePipeline(block, props, rawCatalog)
         : usePipeline
-          ? pipeline(block, props)
+          ? pipeline(block, props, rawCatalog)
           : props;
       out.push({ block, html: await container.renderToString(mod.default, { props: finalProps }) });
     } catch (err) {

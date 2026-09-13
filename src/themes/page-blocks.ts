@@ -1,5 +1,6 @@
 import type { Logger } from '@nestjs/common';
 import { getThemeManifest } from './theme-manifest-loader';
+import { applyPageBinding } from '../render/page-transclude';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 
@@ -24,6 +25,12 @@ export async function extractPageBlocks(
   productIdOverride?: string,
   logger?: Logger,
   collectionContext?: { name?: string; description?: string; image?: string },
+  /**
+   * Политики магазина (site_policy) для секции «Страница», привязанной к
+   * политике. `undefined` = не передали → привязку к политике не трогаем
+   * (её подставляет build.service до рендера). См. render/page-transclude.
+   */
+  policies?: Array<{ type?: unknown; content?: unknown }> | null,
 ): Promise<Array<{ type: string; props: Record<string, unknown> }> | null> {
   const pagesData = (data.pagesData ?? {}) as Record<string, unknown>;
   // Resolve page key with fallback variants. Constructor sends page-product,
@@ -148,12 +155,22 @@ export async function extractPageBlocks(
       }
       // Подстановка плейсхолдеров коллекции в строковые props (рекурсивно,
       // включая arrayFields) — только на странице page-collection.
-      const finalProps = isCollectionPage
+      let finalProps = isCollectionPage
         ? (substituteCollectionVars(props, collectionContext) as Record<
             string,
             unknown
           >)
         : props;
+      // Секция «Страница» с привязкой (`pageId` из пикера «Выбор страницы»):
+      // заголовок и текст берутся у ВЫБРАННОЙ страницы магазина, а не из
+      // собственных props секции. Один резолвер на превью и витрину.
+      if (b.type === 'Page') {
+        finalProps = applyPageBinding(finalProps, {
+          revision: data,
+          policies,
+          selfPageId: page,
+        });
+      }
       // Catalog на странице коллекции: заголовок/подзаголовок из самой коллекции
       // (collection.name / .description), если мерчант не задал свои в секции.
       // Иначе Catalog падает на хардкод «КАТАЛОГ». Зеркало dynamic-pages-generator.

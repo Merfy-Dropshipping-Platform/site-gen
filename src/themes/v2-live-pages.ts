@@ -23,7 +23,12 @@ function merfyFromBuild(ctx: BuildContext, theme: string): RenderContext {
   return {
     siteId: ctx.siteId,
     themeId: theme,
-    catalog: catalogFromStoreData(ctx.storeData ?? { products: [], collections: [] }),
+    // Публикации кладёт стадия FETCH_DATA (ctx.publications). Без них секция
+    // «Публикации» на витрине не видела бы данных админки.
+    catalog: catalogFromStoreData(
+      ctx.storeData ?? { products: [], collections: [] },
+      ctx.publications ?? [],
+    ),
     themeSettings: (ctx.revisionData as { themeSettings?: unknown })?.themeSettings ?? {},
   };
 }

@@ -37,6 +37,8 @@ import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
 import { createRenderContext, type RenderContext } from '../render/create-render-context';
+import { applyPageBinding } from '../render/page-transclude';
+import { fetchPublications } from '../generator/data-fetcher';
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
@@ -183,6 +185,7 @@ export class PreviewController {
         tenantId: loaded.tenantId,
         themeSettings: (loaded.data as { themeSettings?: unknown })?.themeSettings,
         productClient: this.productClient,
+        publications: await this.loadPublications(siteId, loaded.tenantId),
       });
       if (!('error' in ctx)) merfy = ctx;
     }
@@ -301,6 +304,7 @@ export class PreviewController {
           productIdOverride,
           this.logger,
           collectionContext,
+          await this.loadPolicies(siteId),
         );
         if (v2Blocks && v2Blocks.length > 0) {
           const pageTitle =
@@ -528,6 +532,8 @@ export class PreviewController {
       siteId,
       productIdOverride,
       this.logger,
+      undefined,
+      await this.loadPolicies(siteId),
     );
     if (!blocks) {
       res
@@ -609,7 +615,7 @@ export class PreviewController {
       // причина, по которой ниже футеру дают applyFooterData: у этого пути не
       // было общей нормализации. publicUrl не передаём — URL этому маршруту
       // переписывает rewriteRootUrlsToPrefix ниже, поведение ссылок прежнее.
-      const propsWithContext = {
+      const propsWithContext: Record<string, unknown> = {
         ...adaptLegacyProps(
           (body.props ?? {}) as Record<string, unknown>,
           null,
@@ -629,6 +635,18 @@ export class PreviewController {
           .type('text/html')
           .send('<!-- render error: site has no themeId -->');
         return;
+      }
+      // Секция «Страница» с привязкой (`pageId`): заголовок/текст берём у
+      // ВЫБРАННОЙ страницы магазина (или политики) — ровно как на витрине.
+      // Без этого точечный hot-render показывал старый контент секции, и пикер
+      // «Выбор страницы» выглядел мёртвым (баг тестировщика #8).
+      if (body.blockType === 'Page') {
+        const bound = applyPageBinding(propsWithContext, {
+          revision: loaded.data,
+          policies: await this.loadPolicies(siteId),
+        });
+        propsWithContext.heading = bound.heading;
+        propsWithContext.content = bound.content;
       }
       // Footer hot-render: обогатить props данными из БД (политики → informationColumn,
       // контакты → phone/email/contactFields, платёжки → paymentEnabled) тем же
@@ -653,6 +671,7 @@ export class PreviewController {
         tenantId: loaded.tenantId,
         themeSettings: (loaded.data as { themeSettings?: unknown })?.themeSettings,
         productClient: this.productClient,
+        publications: await this.loadPublications(siteId, loaded.tenantId),
       });
       if ('error' in ctx) {
         res
@@ -801,6 +820,62 @@ export class PreviewController {
       revisionId: site.currentRevisionId,
       footerFp,
     };
+  }
+
+  /**
+   * Публикации магазина (таблица sites-сервиса) для секции «Публикации».
+   * Тем же запросом, что и сборка витрины (`fetchPublications`), — превью и
+   * live обязаны показывать один и тот же список. Ошибка/пусто → [], блок
+   * покажет заглушку и НЕ выдумает записи.
+   *
+   * Кэш на 30 секунд общий с каталогом (TTL в create-render-context): правка
+   * любого поля в панели дёргает POST /preview/block, и ходить в БД на каждый
+   * символ нельзя.
+   */
+  private static pubCache = new Map<string, { t: number; p: Promise<unknown[]> }>();
+  private async loadPublications(
+    siteId: string,
+    tenantId: string | null,
+  ): Promise<unknown[]> {
+    if (!tenantId) return [];
+    const key = `${siteId}:${tenantId}`;
+    const hit = PreviewController.pubCache.get(key);
+    if (hit && Date.now() - hit.t < 30_000) return hit.p;
+    const p = fetchPublications(this.db, schema, siteId, tenantId).catch(
+      (err: unknown) => {
+        this.logger.warn(
+          `[preview] publications fetch failed site=${siteId}: ${(err as Error)?.message ?? err}`,
+        );
+        return [] as unknown[];
+      },
+    ) as Promise<unknown[]>;
+    PreviewController.pubCache.set(key, { t: Date.now(), p });
+    return p;
+  }
+
+  /**
+   * Политики магазина (site_policy) — источник текста для секции «Страница»,
+   * привязанной к политике (pageId = refund/privacy/tos/shipping). Те же
+   * данные, что подставляет сборка витрины.
+   */
+  private async loadPolicies(
+    siteId: string,
+  ): Promise<Array<{ type: string; content: string }>> {
+    try {
+      const rows = await this.db
+        .select({
+          type: schema.sitePolicy.type,
+          content: schema.sitePolicy.content,
+        })
+        .from(schema.sitePolicy)
+        .where(eq(schema.sitePolicy.siteId, siteId));
+      return rows.map((r) => ({ type: String(r.type), content: r.content ?? '' }));
+    } catch (err: unknown) {
+      this.logger.warn(
+        `[preview] policies fetch failed site=${siteId}: ${(err as Error)?.message ?? err}`,
+      );
+      return [];
+    }
   }
 
   private tokensCssFromSettings(

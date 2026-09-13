@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../lib/rich-text";
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
 import { schemeIdOf } from "../lib/color-scheme";
@@ -191,15 +192,12 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="100"
 						data-puck-subsection-field="newsletter"
-					>
-						{newsletterHeadingText}
-					</h2>
+						set:html={inlineFormat(newsletterHeadingText)}
+					></h2>
 					<p class:list={[
 						"font-manrope font-normal !leading-none tracking-normal text-[rgb(var(--color-muted,153_153_153))]",
 						newsletterTextSizeCls,
-					]}>
-						{newsletterText}
-					</p>
+					]} set:html={inlineFormat(newsletterText)}></p>
 				</div>
 
 				<form

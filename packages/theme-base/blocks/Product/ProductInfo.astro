@@ -6,7 +6,10 @@
  *  - `uppercase-title` (rose, default) — title rendered UPPERCASE.
  *  - `normal-title` (flux) — title kept as-authored (no transform).
  *
- * Brand line is shown when present (non-empty).
+ * Brand line is shown when present (non-empty). Красится приглушённым ТЕКСТОМ
+ * схемы (--color-text/60), как старая цена и описание: до 13.09 здесь стоял
+ * --color-muted, которого нет в редакторе схемы. Строка эта — параметр «Текст»
+ * подпанели (T4): пока он не доезжал до порта, серый никто не замечал.
  *
  * «Глаз» конструктора: бренд и название — РАЗНЫЕ именованные параметры секции
  * «Товар» (`text` и `title` в NAMED_SUBSECTIONS). Поэтому у каждого свой узел с
@@ -14,6 +17,11 @@
  * свой флаг скрытия. Обёртка `[data-product-info]` сохранена: по ней
  * инлайн-скрипт Product.astro находит `h1` при гидрации.
  */
+// Брендлайн — это поле мерчанта «Текст» (Product.text): кнопки «Ж»/«К» пишут
+// туда <strong>/<em>, а Astro экранирует {brand} → начертание печаталось
+// сырыми тегами (баг-репорт тестера 2026-09-13, K4).
+import { sanitizeInline } from '../../runtime/rich-text';
+
 interface Props {
   brand?: string | null;
   title: string;
@@ -37,11 +45,12 @@ const isUpper = variant === 'uppercase-title';
 <div class="flex flex-col gap-2 w-full" data-product-info>
   {brand && !hideBrand && (
     <span
-      class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-muted))]"
+      class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-text))]/60"
       data-puck-subsection-parent={blockId}
       data-puck-subsection-index="100"
       data-puck-subsection-field="text"
-    >{brand}</span>
+      set:html={sanitizeInline(brand)}
+    ></span>
   )}
   {!hideTitle && (
     <h1

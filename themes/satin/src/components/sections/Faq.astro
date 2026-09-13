@@ -1,4 +1,5 @@
 ---
+import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 
 interface FaqItem {
@@ -83,7 +84,7 @@ const titleId = id && heading ? `${id}-title` : undefined;
 				<h2
 					id={titleId}
 					class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
-					set:html={heading}
+					set:html={inlineFormat(heading)}
 				/>
 			)
 		}

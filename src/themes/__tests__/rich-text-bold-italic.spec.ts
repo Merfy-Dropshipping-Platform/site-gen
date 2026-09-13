@@ -18,7 +18,7 @@
  * адрес его покупателей не исполняется).
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { inlineFormat as rose } from '../../../themes/rose/src/lib/rich-text';
@@ -127,27 +127,82 @@ describe.each(PORTS)('%s — inlineFormat', (_name, inlineFormat) => {
 });
 
 /**
- * Копии хелпера в пяти темах должны быть идентичны телом (отличается только
- * комментарий-шапка с именем темы). Иначе XSS-правка в одной теме молча минует
- * остальные — ровно тот класс багов, из-за которого тестер видит фичу «на одном
- * пути из трёх».
+ * Копии хелпера должны быть идентичны телом (отличается только комментарий-
+ * шапка). Иначе XSS-правка в одной копии молча минует остальные — ровно тот
+ * класс багов, из-за которого тестер видит фичу «на одном пути из трёх».
+ *
+ * ⚠️ Копий БОЛЬШЕ ПЯТИ. Кроме `themes/<t>/src/lib/rich-text.ts` свою копию
+ * держит блок «Каталог» каждого пакета темы (`packages/theme-<t>/blocks/
+ * Catalog/rich-text.ts`): импортировать `../../lib/rich-text` оттуда нельзя —
+ * компилятор секций переписывает только `../../runtime/*`, а сборщик витрины
+ * кладёт файлы блока плоско в `<scaffold>/src/components/`.
+ *
+ * 13.09 выяснилось, что копии bloom и satin ОТСТАЛИ: они снимали РОВНО ОДНУ
+ * обёртку, и «жирный + курсив вместе» печатал в заголовке каталога сырьё
+ * «<em>ТЕКСТ</em>» внутри жирного. Тот же откат, что чинили в `f19bb5f`, —
+ * просто в копиях, которых не сторожил никто, потому что список копий был
+ * прибит гвоздями к пяти темам. Поэтому копии теперь ИЩУТСЯ, а не
+ * перечисляются: новая копия попадает под сторож сама.
  */
-describe('копии inlineFormat по темам', () => {
-  const THEMES = ['rose', 'bloom', 'satin', 'flux', 'vanilla'] as const;
+describe('копии inlineFormat по репозиторию', () => {
+  const SRC_ROOT = resolve(__dirname, '..', '..', '..');
+  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', 'e2e', 'conformance-results']);
 
-  it('тело хелпера побайтово одинаково во всех пяти темах', () => {
-    // Шапка-комментарий заканчивается строкой с описанием тестов; тело — всё,
-    // что начиная с первого объявления.
-    const bodies = THEMES.map((t) => {
-      const src = readFileSync(
-        resolve(__dirname, '..', '..', '..', 'themes', t, 'src', 'lib', 'rich-text.ts'),
-        'utf-8',
+  /** Все файлы `rich-text.ts`, экспортирующие `inlineFormat`. */
+  function findCopies(dir: string, acc: string[] = []): string[] {
+    for (const entry of readdirSync(dir)) {
+      if (SKIP_DIRS.has(entry)) continue;
+      const full = resolve(dir, entry);
+      if (statSync(full).isDirectory()) {
+        findCopies(full, acc);
+      } else if (entry === 'rich-text.ts') {
+        if (readFileSync(full, 'utf-8').includes('export function inlineFormat')) acc.push(full);
+      }
+    }
+    return acc;
+  }
+
+  const copies = [
+    ...findCopies(resolve(SRC_ROOT, 'themes')),
+    ...findCopies(resolve(SRC_ROOT, 'packages')),
+  ].sort();
+
+  /** Тело = всё начиная с первого объявления; выше только комментарий-шапка. */
+  const bodyOf = (file: string) => {
+    const src = readFileSync(file, 'utf-8');
+    const start = src.indexOf('/** Начертания');
+    expect(start).toBeGreaterThan(-1);
+    return src.slice(start);
+  };
+
+  it('копий найдено не меньше, чем тем (сторож самого поиска)', () => {
+    // Пять тем + пять блоков «Каталог». Меньше — значит поиск сломался и
+    // сравнивать нечего, а тест бы «прошёл».
+    expect(copies.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('тело хелпера побайтово одинаково во ВСЕХ копиях', () => {
+    // Эталон — БОЛЬШИНСТВО, а не первая по алфавиту копия: иначе одна отставшая
+    // копия объявляет «разъехавшимися» все остальные, и в отчёте не видно, что
+    // чинить. Ровно этим отличаются устаревшие копии от новой правки.
+    const bodies = new Map<string, string[]>();
+    for (const f of copies) {
+      const b = bodyOf(f);
+      bodies.set(b, [...(bodies.get(b) ?? []), f]);
+    }
+    const [, majority] = [...bodies.entries()].sort((a, b) => b[1].length - a[1].length)[0];
+    const drift = copies
+      .filter((f) => !majority.includes(f))
+      .map((f) => f.slice(SRC_ROOT.length + 1));
+    expect(drift).toEqual([]);
+  });
+
+  it('копия блока «Каталог» есть у каждой из пяти тем', () => {
+    for (const t of ['rose', 'bloom', 'satin', 'flux', 'vanilla']) {
+      expect(copies).toContain(
+        resolve(SRC_ROOT, 'packages', `theme-${t}`, 'blocks', 'Catalog', 'rich-text.ts'),
       );
-      const start = src.indexOf('/** Начертания');
-      expect(start).toBeGreaterThan(-1);
-      return src.slice(start);
-    });
-    for (const body of bodies) expect(body).toBe(bodies[0]);
+    }
   });
 });
 

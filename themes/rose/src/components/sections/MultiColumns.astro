@@ -249,7 +249,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{c.text && (
 							<div
 								class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${itemTextCls(c.textSize)}`}
-								set:html={c.text}
+								set:html={inlineFormat(c.text)}
 							/>
 						)}
 						{c.link && (

@@ -1,5 +1,10 @@
 ---
-import NtSectionHeading from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtSectionHeading.astro";
+// Локальная замена внешнего NtSectionHeading: тот рендерит {title}/{subtitle}
+// экранированно, и начертание из конструктора («Ж»/«К») печаталось сырыми
+// тегами в тексте заголовка (баг-репорт тестера 2026-09-13, K4). Разметка
+// и классы 1:1, кроме `uppercase` — его тема и так снимала правилом
+// #collections-title,#popular-title,#gallery-title{text-transform:none}.
+import NtSectionHeading from "../ui/RoseSectionHeading.astro";
 import RoseProductCard from "../products/RoseProductCard.astro";
 
 // ОЖИВЛЕНИЕ: конструкторная схема PopularProducts (heading/subtitle union). Тело + данные verbatim.

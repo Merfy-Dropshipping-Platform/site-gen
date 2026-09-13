@@ -47,35 +47,37 @@ describe('injectCheckoutChromeIntoHtml — общий чекаут-хром пр
 
   it('дописывает цветовые схемы формы и сводки независимо друг от друга', () => {
     const out = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(merchantHeader), {
-      form: 'scheme-3',
-      summary: 'scheme-5',
+      form: { scheme: 'scheme-3' },
+      summary: { scheme: 'scheme-5' },
     });
     expect(out).toContain('gap-7 color-scheme-3" data-block="checkout-form"');
     expect(out).toContain('gap-6 color-scheme-5" data-block="checkout-summary"');
   });
 
-  it('не трогает подвал темы (у чекаута свой хром без Footer)', () => {
+  it('не трогает обычный подвал темы (у чекаута своя правовая полоса)', () => {
+    // Подменяется ТОЛЬКО <footer data-checkout-footer-strip>; полный подвал
+    // магазина (data-nt) на чекауте не рендерится и трогать его нечем.
     const out = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(merchantHeader), {
-      form: 'scheme-2',
+      form: { scheme: 'scheme-2' },
     });
     expect(out).toContain('ПОДВАЛ ТЕМЫ');
   });
 
   it('идемпотентна: повторный прогон ничего не меняет', () => {
     const once = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(merchantHeader), {
-      form: 'scheme-3',
-      summary: 'scheme-5',
+      form: { scheme: 'scheme-3' },
+      summary: { scheme: 'scheme-5' },
     });
     const twice = injectCheckoutChromeIntoHtml(once, chrome(merchantHeader), {
-      form: 'scheme-3',
-      summary: 'scheme-5',
+      form: { scheme: 'scheme-3' },
+      summary: { scheme: 'scheme-5' },
     });
     expect(twice).toEqual(once);
   });
 
   it('пустой рендер шапки → блоб остаётся со своей шапкой, схемы всё равно применяются', () => {
     const out = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(null), {
-      form: 'scheme-4',
+      form: { scheme: 'scheme-4' },
     });
     expect(out).toContain('ТЕМА-ДЕФОЛТ');
     expect(out).toContain('gap-7 color-scheme-4" data-block="checkout-form"');
@@ -101,8 +103,8 @@ describe('оба пути реально зовут общую функцию', 
     // Внутри ветки: сборка чекаут-хрома + общая доводка со схемами секций.
     expect(branch).toContain("chrome: 'checkout'");
     expect(branch).toContain('injectCheckoutChromeIntoHtml');
-    expect(branch).toContain("checkoutBlockScheme(pagesData, 'CheckoutForm')");
-    expect(branch).toContain("checkoutBlockScheme(pagesData, 'CheckoutSummary')");
+    expect(branch).toContain("checkoutBlockIdentity(pagesData, 'CheckoutForm')");
+    expect(branch).toContain("checkoutBlockIdentity(pagesData, 'CheckoutSummary')");
   });
 
   it('live-сборка идёт через ту же функцию, а не через свою копию', () => {

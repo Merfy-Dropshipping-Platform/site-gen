@@ -1,43 +1,71 @@
 ---
 /**
- * CheckoutFooterStrip — общая секция «чёрная полоса копирайта» для страницы
- * оформления заказа.
+ * CheckoutFooterStrip — правовой подвал страницы оформления заказа.
  *
  * Контекст (spec 109, checkout chrome): live-checkout — verbatim порт-страница
  * с chrome='checkout' (CheckoutHeader, БЕЗ секции Footer), поэтому полный футер
  * (рассылка/меню/копирайт) на checkout не рендерится. Эта секция возвращает
- * ТОЛЬКО нижнюю чёрную полосу копирайта — «чистый» checkout без рассылки/меню,
- * но с легальной строкой. Подключается в checkout-ветке Layout каждой темы
- * (как общий CheckoutHeader).
+ * нижнюю полосу: правовые ссылки магазина + строку копирайта. Подключается в
+ * checkout-ветке Layout каждой темы (как общий CheckoutHeader).
+ *
+ * Баг-репорт 18-А: «Во вкладке Оформление заказа убрать подвал, где идёт
+ * "Powered by merfy". Ожидаемый результат: подвал на этой странице — это
+ * юридическая информация, ссылки». До этого полоса несла ровно одну строку —
+ * «© 2026 … Все права защищены. Powered by Merfy» (Figma 1:13399, узел так и
+ * назывался), и покупатель на шаге оплаты не мог открыть ни оферту, ни
+ * политику возврата.
+ *
+ * Ссылки НЕ выдумываются: `links` приходят из реестра политик магазина
+ * (site_policy → `Footer.props.informationColumn.links`, см. applyFooterData),
+ * тем же каналом, что и в обычном подвале. Политика не заполнена — ссылки нет.
  *
  * Цвета — из активной color-scheme через токены (checkout = scheme-2, светлая
  * → --color-heading чёрный фон, --color-bg белый текст). Разметка зеркалит
  * bottom-strip из Footer.astro тем.
- *
- * Текст 1:1 с дефолтом Footer.astro:
- *   «© {год} {siteTitle} Theme Все права защищены. Powered by Merfy».
- *
- * NB (стопгап): не читает merchant-override копирайта из ревизии — это прилетит,
- * когда checkout перейдёт на section-рендер (унификация checkout-хрома, 109).
  */
+interface LegalLink {
+  label?: string;
+  href?: string;
+}
+
 interface Props {
   /** Название магазина (Layout прокидывает SITE_TITLE, build.service патчит). */
   siteTitle?: string;
   /** Полная замена строки копирайта (если задана). */
   text?: string;
+  /** Правовые страницы магазина: оферта, политики возврата/доставки/данных. */
+  links?: LegalLink[];
 }
-const { siteTitle = "", text } = Astro.props;
+const { siteTitle = "", text, links = [] } = Astro.props as Props;
 const year = new Date().getFullYear();
 const copyright =
   text && text.trim()
     ? text
-    : `© ${year} ${siteTitle ? `${siteTitle} Theme ` : ""}Все права защищены. Powered by Merfy`;
+    : `© ${year}${siteTitle ? ` ${siteTitle}` : ""}. Все права защищены.`;
+const legalLinks = (Array.isArray(links) ? links : []).filter(
+  (l): l is Required<LegalLink> =>
+    Boolean(l && typeof l.label === "string" && l.label.trim() && typeof l.href === "string" && l.href.trim()),
+);
 ---
 
 <footer class="w-full" data-checkout-footer-strip>
   <div
-    class="flex h-16 w-full items-center justify-center bg-[rgb(var(--color-heading,0_0_0))] px-4"
+    class="flex w-full flex-col items-center justify-center gap-3 bg-[rgb(var(--color-heading,0_0_0))] px-4 py-5"
   >
+    {legalLinks.length > 0 && (
+      <nav
+        class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+        data-checkout-legal-links
+        aria-label="Правовая информация"
+      >
+        {legalLinks.map((link) => (
+          <a
+            href={link.href}
+            class="text-center text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))] underline underline-offset-4"
+          >{link.label}</a>
+        ))}
+      </nav>
+    )}
     <p
       class="text-center text-[14px] font-normal leading-none text-[rgb(var(--color-bg,255_255_255))]"
     >

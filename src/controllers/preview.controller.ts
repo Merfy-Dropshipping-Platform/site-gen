@@ -36,7 +36,7 @@ import {
   assembleChrome,
   injectChromeIntoHtml,
   injectCheckoutChromeIntoHtml,
-  checkoutBlockScheme,
+  checkoutBlockIdentity,
 } from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
@@ -501,11 +501,16 @@ export class PreviewController {
               headerHtml: chrome.headerHtml
                 ? rewriteRootUrlsToPrefix(chrome.headerHtml, chromePrefix)
                 : null,
-              footerHtml: null,
+              // Правовой подвал чекаута (баг-репорт 18-А). Ссылки политик в нём
+              // тоже корневые (`/legal/<slug>`) — уводим под /__theme/<тема>,
+              // как шапку, иначе клик уносит из превью.
+              footerHtml: chrome.footerHtml
+                ? rewriteRootUrlsToPrefix(chrome.footerHtml, chromePrefix)
+                : null,
             },
             {
-              form: checkoutBlockScheme(pagesData, 'CheckoutForm'),
-              summary: checkoutBlockScheme(pagesData, 'CheckoutSummary'),
+              form: checkoutBlockIdentity(pagesData, 'CheckoutForm'),
+              summary: checkoutBlockIdentity(pagesData, 'CheckoutSummary'),
             },
           );
         } catch (chromeErr) {

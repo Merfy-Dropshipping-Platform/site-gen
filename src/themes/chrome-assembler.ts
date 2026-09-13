@@ -33,7 +33,11 @@ export type RenderBlockFn = (input: {
 export interface AssembledChrome {
   /** renderBlock('Header'|'CheckoutHeader', props) | null (пусто → не подменять). */
   headerHtml: string | null;
-  /** renderBlock('Footer', props) | null (пусто → не подменять). */
+  /**
+   * renderBlock('Footer'|'CheckoutFooterStrip', props) | null (пусто → не
+   * подменять). У чекаута это правовая полоса (`CheckoutFooterStrip`), у
+   * остальных страниц — обычный подвал магазина.
+   */
   footerHtml: string | null;
 }
 
@@ -130,15 +134,36 @@ export async function assembleChrome(
       checkoutProps['logoMode'] = 'image';
       checkoutProps['logoImage'] = homeHeaderProps['logo'];
     }
-    const headerHtml = await renderChromeBlock(
-      renderBlock,
-      'CheckoutHeader',
-      checkoutProps,
-      theme,
-      isPreview,
-    );
-    // Checkout без обычного footer (как unifyChromeInDist — footer не трогает).
-    return { headerHtml, footerHtml: null };
+    // Подвал чекаута — ПРАВОВОЙ, а не маркетинговый (баг-репорт 18-А: «убрать
+    // подвал, где идёт "Powered by merfy"; ожидаемый результат — юридическая
+    // информация, ссылки»). Ссылки берём там же, где их берёт обычный подвал:
+    // `applyFooterData` кладёт заполненные политики магазина (site_policy:
+    // refund/privacy/tos/shipping) в `Footer.props.informationColumn.links`
+    // ревизии — и в сборке витрины, и в превью конструктора. Значит чекаут
+    // ничего не выдумывает, не ходит в БД отдельно и не может разойтись с
+    // подвалом остальных страниц.
+    const homeFooterProps = findBlockProps(pagesData['home'], 'Footer') ?? {};
+    const infoColumn = homeFooterProps['informationColumn'] as
+      | { links?: unknown }
+      | undefined;
+    const legalLinks = Array.isArray(infoColumn?.links) ? infoColumn.links : [];
+    const [headerHtml, footerHtml] = await Promise.all([
+      renderChromeBlock(
+        renderBlock,
+        'CheckoutHeader',
+        checkoutProps,
+        theme,
+        isPreview,
+      ),
+      renderChromeBlock(
+        renderBlock,
+        'CheckoutFooterStrip',
+        { siteTitle: checkoutProps['siteTitle'], links: legalLinks },
+        theme,
+        isPreview,
+      ),
+    ]);
+    return { headerHtml, footerHtml };
   }
 
   // chrome === 'full'
@@ -311,12 +336,56 @@ export function patchCheckoutBlockScheme(
   );
 }
 
-/** Схемы секций чекаута из ревизии (props.colorScheme блоков page-checkout). */
+/**
+ * Баг-репорт 18-В: «Во вкладке Оформление заказа не применяются цветовые схемы
+ * к секциям» — повтор 16 по ДРУГОЙ причине.
+ *
+ * Фикс 16 чинил ПЕРВИЧНЫЙ рендер страницы (класс схемы на секции — он есть,
+ * замер прода это подтверждает). Но мерчант крутит настройку без перезагрузки:
+ * конструктор шлёт `update-block`, а агент превью ищет секцию строго по
+ * `[data-puck-component-id="<id>"]` и этот же атрибут требует от ответа
+ * `/preview/block` (`isValidBlockHtml`). Темы рисуют verbatim-чекаут как
+ * `<CheckoutForm />` БЕЗ пропсов, поэтому id на мега-блоках не было ни в
+ * превью, ни на витрине → `el === null` → «keep old DOM», и правка молча не
+ * доезжала (замер 2026-09-13: 5 тем из 5, схема не менялась).
+ *
+ * Ставим id из ревизии тем же общим кодом, что и схему. Идемпотентно; чужой id
+ * (если тема когда-нибудь начнёт проставлять свой) не подменяем.
+ */
+export function patchCheckoutBlockId(
+  html: string,
+  block: 'checkout-form' | 'checkout-summary',
+  id: unknown,
+): string {
+  if (typeof id !== 'string' || !id) return html;
+  const re = new RegExp(`<section\\b[^>]*\\bdata-block="${block}"`);
+  const m = re.exec(html);
+  if (!m) return html;
+  if (/\bdata-puck-component-id=/.test(m[0])) return html;
+  const patched = m[0].replace(
+    `data-block="${block}"`,
+    `data-puck-component-id="${escapeAttr(id)}" data-block="${block}"`,
+  );
+  return html.slice(0, m.index) + patched + html.slice(m.index + m[0].length);
+}
+
+const escapeAttr = (v: string): string =>
+  v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+/** Что берём из ревизии для секции чекаута: её id и «Цветовая схема». */
+export interface CheckoutBlockIdentity {
+  /** props.id блока — по нему конструктор находит секцию в превью. */
+  id?: unknown;
+  /** props.colorScheme блока — «Цветовая схема». */
+  scheme?: unknown;
+}
+
+/** Секции чекаута из ревизии (блоки страницы page-checkout). */
 export interface CheckoutBlockSchemes {
-  /** CheckoutForm.props.colorScheme — «Оформление заказа». */
-  form?: unknown;
-  /** CheckoutSummary.props.colorScheme — «Сводка заказа». */
-  summary?: unknown;
+  /** CheckoutForm — «Оформление заказа». */
+  form?: CheckoutBlockIdentity;
+  /** CheckoutSummary — «Сводка заказа». */
+  summary?: CheckoutBlockIdentity;
 }
 
 /**
@@ -329,38 +398,61 @@ export interface CheckoutBlockSchemes {
  * подтягивался, а цветовые схемы секций ничего не меняли. Теперь оба пути
  * зовут эту функцию, и превью = live по построению.
  *
- * Подвал не трогаем: у чекаута свой хром (`assembleChrome` отдаёт
- * `footerHtml: null`), тема рисует собственный подвал страницы.
- * Идемпотентна.
+ * Обычный подвал страницы не трогаем — у чекаута свой, правовая полоса
+ * `CheckoutFooterStrip` (баг-репорт 18-А), и подменяем именно её, а не
+ * последний `<footer>` документа. Идемпотентна.
  */
 export function injectCheckoutChromeIntoHtml(
   html: string,
   chrome: AssembledChrome,
-  schemes: CheckoutBlockSchemes = {},
+  blocks: CheckoutBlockSchemes = {},
 ): string {
   let out = chrome.headerHtml
     ? injectChromeIntoHtml(html, { headerHtml: chrome.headerHtml, footerHtml: null })
     : html;
-  out = patchCheckoutBlockScheme(out, 'checkout-form', schemes.form);
-  out = patchCheckoutBlockScheme(out, 'checkout-summary', schemes.summary);
+  out = patchCheckoutBlockScheme(out, 'checkout-form', blocks.form?.scheme);
+  out = patchCheckoutBlockScheme(out, 'checkout-summary', blocks.summary?.scheme);
+  out = patchCheckoutBlockId(out, 'checkout-form', blocks.form?.id);
+  out = patchCheckoutBlockId(out, 'checkout-summary', blocks.summary?.id);
+  if (chrome.footerHtml) out = replaceCheckoutFooterStrip(out, chrome.footerHtml);
   return out;
 }
 
 /**
- * «Цветовая схема» секции чекаута из ревизии. Ключ страницы в pagesData
- * разнится по возрасту сайта (`page-checkout` у конструктора, `checkout` у
- * легаси-витрины) — смотрим оба, как это делал `unifyChromeInDist`.
- *
- * Общая для live и превью: иначе вкладка «Оформление заказа» читала бы схему
- * не оттуда, откуда сборка (баг-репорт 16).
+ * Подмена правовой полосы чекаута (`<footer data-checkout-footer-strip>`).
+ * Обёртку схемы вокруг неё (темы кладут `<div class="color-scheme-2">`) не
+ * трогаем. Идемпотентно: совпало с целевым — no-op.
  */
+function replaceCheckoutFooterStrip(html: string, target: string): string {
+  const re = /<footer\b[^>]*\bdata-checkout-footer-strip[^>]*>[\s\S]*?<\/footer>/i;
+  const m = re.exec(html);
+  if (!m) return html;
+  if (m[0] === target) return html;
+  return html.slice(0, m.index) + target + html.slice(m.index + m[0].length);
+}
+
+/**
+ * Секция чекаута из ревизии: её id и «Цветовая схема». Ключ страницы в
+ * pagesData разнится по возрасту сайта (`page-checkout` у конструктора,
+ * `checkout` у легаси-витрины) — смотрим оба, как это делал `unifyChromeInDist`.
+ *
+ * Общая для live и превью: иначе вкладка «Оформление заказа» читала бы схему и
+ * id не оттуда, откуда сборка (баг-репорты 16 и 18-В).
+ */
+export function checkoutBlockIdentity(
+  pagesData: Record<string, unknown>,
+  blockType: 'CheckoutForm' | 'CheckoutSummary',
+): CheckoutBlockIdentity {
+  const props = (findBlockProps(pagesData['page-checkout'], blockType) ??
+    findBlockProps(pagesData['checkout'], blockType) ??
+    {}) as Record<string, unknown>;
+  return { id: props['id'], scheme: props['colorScheme'] };
+}
+
+/** «Цветовая схема» секции чекаута из ревизии (узкая обёртка над identity). */
 export function checkoutBlockScheme(
   pagesData: Record<string, unknown>,
   blockType: 'CheckoutForm' | 'CheckoutSummary',
 ): unknown {
-  const props =
-    findBlockProps(pagesData['page-checkout'], blockType) ??
-    findBlockProps(pagesData['checkout'], blockType) ??
-    {};
-  return (props as Record<string, unknown>)['colorScheme'];
+  return checkoutBlockIdentity(pagesData, blockType).scheme;
 }

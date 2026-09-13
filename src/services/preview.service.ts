@@ -893,8 +893,11 @@ export class PreviewService {
         .mfy-checkout-pane--summary { justify-content: flex-start; }
         .mfy-checkout-pane--form .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
         .mfy-checkout-pane--summary .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
-        /* Баг-репорт 17: сводка едет вместе с формой (зеркало checkout.astro пяти тем). */
-        [data-checkout-column="summary"] { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; overscroll-behavior: contain; }
+        /* Баг-репорт 17: сводка едет вместе с формой (зеркало checkout.astro пяти тем).
+           Баг-репорт 18-Б: колонку НЕ режем max-height'ом — он оставлял хвост
+           длинного заказа за кромкой, и прокрутка страницы до него не доставала.
+           Отступ считает общий скрипт блока «Сводка заказа» (минус = липнет низом). */
+        [data-checkout-column="summary"] { position: sticky; top: var(--checkout-summary-top, 24px); align-self: start; }
       }
     `;
     return `<style>${css}</style><div class="mfy-checkout-split"><div class="mfy-checkout-pane mfy-checkout-pane--form"><div class="mfy-checkout-pane__inner" data-checkout-column="form" style="min-width:0">${formHtml}</div></div><div class="mfy-checkout-pane mfy-checkout-pane--summary"><div class="mfy-checkout-pane__inner" data-checkout-column="summary" style="min-width:0">${summaryHtml}</div></div></div>`;

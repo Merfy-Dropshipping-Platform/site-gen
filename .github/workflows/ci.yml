@@ -193,10 +193,23 @@ jobs:
       #     секций (их применяла ТОЛЬКО live-сборка);
       #   - `migrateCartPage` стирала «Промежуточный итог», который сеют темы;
       #   - сводка чекаута стояла в верху колонки и уезжала с первым скроллом.
+      # Плюс баг-репорт 18, три пункта тестировщика по чекауту:
+      #   18-А — подвал чекаута был маркетинговой полосой «Powered by Merfy»
+      #     (у flux подвала не было вовсе), а должен быть правовым: ссылки на
+      #     политики магазина из того же реестра, что и обычный подвал;
+      #   18-Б — липкую сводку резал `max-height` + свой скролл: на 30 позициях
+      #     прокрутка страницы доставала только до 9-10 из них;
+      #   18-В — правка «Цветовой схемы» секций чекаута не доезжала до превью:
+      #     у мега-блоков не было `data-puck-component-id`, и `update-block`
+      #     конструктора не находил секцию («keep old DOM»).
+      # Гард подвала рендерит СКОМПИЛИРОВАННЫЙ блок → нужен pnpm build:blocks
+      # выше по джобу (он там есть).
       - run: >-
           pnpm exec jest --runInBand
           src/themes/__tests__/checkout-chrome-parity.spec.ts
           src/themes/__tests__/checkout-summary-sticky.spec.ts
+          src/themes/__tests__/checkout-footer-legal.spec.ts
+          src/themes/__tests__/checkout-block-identity.spec.ts
           src/utils/__tests__/revision-migrations-cart.test.ts
       - run: pnpm conformance:satin
       - run: pnpm check:css-layers

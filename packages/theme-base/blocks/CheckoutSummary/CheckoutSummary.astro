@@ -58,3 +58,59 @@ const schemeClass =
     padding={{ top: 0, bottom: 0 }}
   />
 </section>
+
+{/*
+  Баг-репорт 18-Б: «Правая часть чекаута не до конца скролится. Ожидаемый:
+  прокручивается вместе с левой при скролле, позиции в чекауте видны даже в
+  самом низу».
+
+  Липкую сводку (баг 17) страховали `max-height: calc(100vh - 48px)` +
+  собственный скролл — и эта страховка её РЕЗАЛА: на 30 позициях за кромкой
+  колонки оставалось +2420…+2548px, прокрутка СТРАНИЦЫ до них не доставала
+  (замер 2026-09-13, пять витрин: видно 9-10 позиций из 30), а свою полосу
+  прокрутки внутри колонки покупатель не ищет — он крутит страницу.
+
+  Здесь считается единственное, чего не умеет CSS: высота сводки относительно
+  экрана. Помещается — прежние `top: 24px` (липнет верхом). Не помещается —
+  `top` уходит в МИНУС, и sticky начинает липнуть НИЗОМ: колонка едет вместе со
+  страницей, пока не покажет последнюю позицию и итог. Ничего не обрезается ни
+  в коротком заказе, ни в длинном.
+
+  Скрипт живёт в общем блоке (один на пять тем и на превью конструктора), а не
+  шестью копиями в страницах тем. Колонку ищем через `closest` от своей секции
+  (Spec 102), отметка `data-checkout-summary-fit` держит идемпотентность при
+  hot-replace конструктора.
+*/}
+<script is:inline data-checkout-summary-fit-script define:vars={{ blockId: id }}>
+  (function () {
+    var section = window.__merfyRoot ? window.__merfyRoot(blockId) : null;
+    if (!section) section = document.querySelector('[data-block="checkout-summary"]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
+    if (!section || !section.closest) return;
+    var col = section.closest('[data-checkout-column="summary"]');
+    if (!col) return;
+    if (col.hasAttribute('data-checkout-summary-fit')) return;
+    col.setAttribute('data-checkout-summary-fit', '1');
+
+    var GAP = 24;
+    function fit() {
+      var h = col.getBoundingClientRect().height;
+      var vh = window.innerHeight || 0;
+      if (!h || !vh) return;
+      // Помещается целиком (с отступами сверху и снизу) → как раньше.
+      // Не помещается → отрицательный top: низ сводки останавливается в GAP от
+      // нижней кромки, а до этого колонка едет со страницей.
+      var top = h + GAP * 2 <= vh ? GAP : Math.round(vh - GAP - h);
+      col.style.setProperty('--checkout-summary-top', top + 'px');
+    }
+
+    fit();
+    // Список позиций приезжает из корзины ПОСЛЕ первого кадра, промокод/доставка
+    // меняют высоту дальше — пересчитываем на каждое изменение размера.
+    if (typeof window.ResizeObserver === 'function') {
+      new window.ResizeObserver(fit).observe(col);
+    }
+    window.addEventListener('resize', fit);
+    document.addEventListener('cart:updated', fit);
+    document.addEventListener('astro:page-load', fit);
+  })();
+</script>

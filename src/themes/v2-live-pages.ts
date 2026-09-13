@@ -11,7 +11,7 @@ import {
   injectChromeIntoHtml,
   injectCheckoutChromeIntoHtml,
   patchCheckoutBlockScheme,
-  checkoutBlockScheme,
+  checkoutBlockIdentity,
 } from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
@@ -578,59 +578,36 @@ export async function unifyChromeInDist(
 ): Promise<{ checkout: number }> {
   let checkout = 0;
 
-  // CheckoutHeader: рендерим с брендом мерчанта (из шапки home), CSS-классы
-  // совпадают с нативным рендером темы → стили на месте.
+  // Хром чекаута (шапка с брендом мерчанта + правовая полоса подвала) собирает
+  // ОБЩАЯ `assembleChrome` — та же, что зовёт превью конструктора. Раньше здесь
+  // лежала своя копия сборки пропсов CheckoutHeader: она уже разъезжалась с
+  // превью (баг-репорт 16), и с ней подвал чекаута пришлось бы чинить дважды.
   const pagesData =
     (ctx.revisionData as { pagesData?: Record<string, unknown> } | null)?.pagesData ?? {};
-  const homeHeaderProps = findBlockProps(pagesData['home'], 'Header') ?? {};
-  const checkoutProps: Record<string, unknown> = {
-    siteTitle: 'Мой магазин',
-    logoMode: 'text',
-    rightIcon: 'cart',
-    accountLink: '/account',
-    backLink: '/cart',
-    cartLink: '/cart',
-    padding: { top: 24, bottom: 24 },
-    ...(findBlockProps(pagesData['page-checkout'], 'CheckoutHeader') ??
-      findBlockProps(pagesData['checkout'], 'CheckoutHeader') ??
-      {}),
-  };
-  if (typeof homeHeaderProps['siteTitle'] === 'string' && homeHeaderProps['siteTitle']) {
-    checkoutProps['siteTitle'] = homeHeaderProps['siteTitle'];
-  }
-  // Лого чекаута = лого темы (Header.props.logo home = branding.logoUrl).
-  // CheckoutHeader рендерит logoMode==='image' && logoImage — маппим сюда, а не в
-  // мёртвое поле `logo` (иначе logoMode='text' → рендерится текст siteTitle).
-  // Всегда зеркалим шапку home.
-  if (typeof homeHeaderProps['logo'] === 'string' && homeHeaderProps['logo']) {
-    checkoutProps['logoMode'] = 'image';
-    checkoutProps['logoImage'] = homeHeaderProps['logo'];
-  }
-  let checkoutHeader: string | null = null;
-  try {
-    const html = await getRenderer().renderBlock({
-      blockName: 'CheckoutHeader',
-      props: checkoutProps,
-      themeId: theme,
-      isPreview: false,
-      merfy: merfyFromBuild(ctx, theme),
-    });
-    checkoutHeader = html && html.trim() ? html.trim() : null;
-  } catch (err) {
-    logger.warn(`[v2-chrome] CheckoutHeader render failed: ${(err as Error)?.message ?? err}`);
-  }
-  if (!checkoutHeader) {
+  const buildMerfy = merfyFromBuild(ctx, theme);
+  const chrome = await assembleChrome({
+    pagesData,
+    theme,
+    chrome: 'checkout',
+    renderBlock: (input) => getRenderer().renderBlock({ ...input, merfy: buildMerfy }),
+    isPreview: false,
+  });
+  if (!chrome.headerHtml) {
     logger.warn('[v2-chrome] CheckoutHeader render empty — checkout keeps theme header');
+  }
+  if (!chrome.footerHtml) {
+    logger.warn('[v2-chrome] CheckoutFooterStrip render empty — checkout keeps theme strip');
   }
 
   // Figma 1:19998 — независимые «Цветовые схемы» узлов «Оформление заказа»
-  // (CheckoutForm) и «Сводка заказа» (CheckoutSummary). Verbatim-dist рендерит
-  // их без пропсов мерчанта → схему дописываем в class секций (см.
-  // patchCheckoutBlockScheme).
-  // Тот же ридер, что и превью конструктора (chrome-assembler) — чтобы схему
+  // (CheckoutForm) и «Сводка заказа» (CheckoutSummary). Плюс id блоков из
+  // ревизии: без них конструктор не находит секцию при правке настройки
+  // (баг-репорт 18-В). Verbatim-dist рендерит мега-блоки без пропсов мерчанта →
+  // и то и другое дописывается в разметку секций.
+  // Тот же ридер, что и превью конструктора (chrome-assembler) — чтобы данные
   // брали из одного места и вкладка «Оформление заказа» совпадала с витриной.
-  const formScheme = checkoutBlockScheme(pagesData, 'CheckoutForm');
-  const summaryScheme = checkoutBlockScheme(pagesData, 'CheckoutSummary');
+  const formBlock = checkoutBlockIdentity(pagesData, 'CheckoutForm');
+  const summaryBlock = checkoutBlockIdentity(pagesData, 'CheckoutSummary');
 
   for (const file of await listIndexHtmlFiles(ctx.distDir)) {
     const route = distRoute(ctx.distDir, file);
@@ -645,15 +622,15 @@ export async function unifyChromeInDist(
       //    checkoutProps через page-checkout). Тема рендерит CheckoutHeader
       //    (data-checkout-slot) внутри своей token-обёртки — её подменяем;
       //    fallback на data-nt до раскатки theme-edit.
-      // 2) Цветовая схема «Оформление заказа» / «Сводка заказа» (независимо).
-      // Обе правки — ОДНА общая функция с превью конструктора
+      // 2) Цветовая схема и id «Оформление заказа» / «Сводка заказа».
+      // 3) Правовая полоса подвала вместо «Powered by Merfy» (баг 18-А).
+      // Все правки — ОДНА общая функция с превью конструктора
       // (`injectCheckoutChromeIntoHtml`), чтобы вкладка «Оформление заказа» не
-      // расходилась с витриной по логотипу и схемам (баг-репорт 16).
-      next = injectCheckoutChromeIntoHtml(
-        next,
-        { headerHtml: checkoutHeader, footerHtml: null },
-        { form: formScheme, summary: summaryScheme },
-      );
+      // расходилась с витриной (баг-репорты 16, 18-А, 18-В).
+      next = injectCheckoutChromeIntoHtml(next, chrome, {
+        form: formBlock,
+        summary: summaryBlock,
+      });
       if (next !== html) {
         await fs.writeFile(file, next, 'utf8');
         checkout++;

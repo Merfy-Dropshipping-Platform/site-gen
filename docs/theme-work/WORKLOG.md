@@ -2740,3 +2740,41 @@ rose тоже 11/13, красные те же:
 - Падения `resolve-block-scheme.spec.ts` и `flux-v2-home-sections.spec.ts`
   воспроизводятся на чистом `origin/main` — к правке отношения не имеют.
 - Commit/push/deploy НЕ выполнялись.
+## 2026-09-13 — промо-баннер: подпись ссылки и регистр (vanilla, satin, bloom)
+
+- Баг тестировщика: «Не изменяется ссылка, всегда стоит "подробнее". Ожидаемый
+  результат: меняется в зависимости от выбранной страницы или введённого названия
+  в инпуте». Порты тем ни при чём — замер рендером (`render-theme-sections.mjs`,
+  пять тем, семь наборов пропсов) показал, что `link.text` читается верно всеми
+  пятью: «Читать правила» → «Читать правила», «Контакты» + `/contacts` → ровно они.
+- Рвалось в конструкторе, в двух местах:
+  `CustomFieldsPanel.tsx` (подпанель «Объявление») писала только `href`
+  (`{...currentProps.link, href: val.href}`), выбрасывая подпись из пикера;
+  `PagePicker.handlePageClick` при выборе СТРАНИЦЫ тащил старую подпись
+  (`text: normalizedValue?.text`), хотя соседние ветки того же пикера (товар,
+  коллекция) уже писали имя выбранной сущности. Итог — вечное «Подробнее»
+  (дефолт блока `PromoBanner.puckConfig.defaults.link.text`).
+- Регистр (просьба владельца «не делать прописные капсом нигде», дефолт —
+  «как введено»): у vanilla/satin/bloom капс приходил ДВАЖДЫ — из
+  `theme.json → blockDefaults.PromoBanner.textTransform: "uppercase"` и из
+  фолбэка порта (отсутствие пропа = капс). Оба сняты; форма условия теперь
+  единая на пять тем — капс ТОЛЬКО при явном `textTransform === "uppercase"`.
+  Явный выбор мерчанта «Заглавными» работает у всех пяти (проверено рендером).
+- Снимки: 135/135 зелёные после осознанного обновления трёх — диф ровно в одно
+  слово `uppercase` у bloom/satin/vanilla PromoBanner, больше ничего не поехало.
+  `hidden-fields` 367/367, `panel-defaults` 22/22. Новый сторож:
+  `src/themes/__tests__/promo-banner-link-case.spec.ts` (45 проверок, пять тем) —
+  подпись ссылки, адрес, дефолтный регистр и живость «Заглавными»; проверен
+  саботажем на порту bloom и на `theme.json` vanilla.
+- `conformance:satin` краснеет «tracked inventory is stale» — тронут вход дайджеста
+  (`themes/satin/.../PromoBanner.astro`, `packages/theme-satin/theme.json`).
+  На исходных файлах прогон зелёный (сверен `sourceDigest`), рефреш инструмент
+  делает только на чистом дереве → `pnpm conformance:satin:refresh` ОТДЕЛЬНЫМ
+  коммитом после коммита правки.
+- Найдено попутно, НЕ чинилось (решает владелец): `packages/theme-flux/pages/home.json`
+  сеет `textTransform: "uppercase"` прямо в сид главной; `src/generator/templates/
+  defaults/vanilla.json` держит текст полосы КАПСОМ как литерал; в
+  `theme-base/blocks/PromoBanner/PromoBanner.classes.ts` у `container` зашит
+  `uppercase` (на живой путь пяти тем не попадает — резолвер берёт порт темы).
+  Ещё: при пустой подписи темы расходятся — rose/flux подставляют «Перейти»,
+  satin делает ссылкой всю полосу, bloom/vanilla не рисуют ссылку вовсе.

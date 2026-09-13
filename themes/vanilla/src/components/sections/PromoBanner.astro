@@ -50,9 +50,13 @@ const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 const sizeCls = sz.mh;
 
-// Канон textTransform: 'uppercase' (canon-default из blockDefaults) И отсутствие =
-// литерал верстальщика uppercase; явный 'none' снимает капс.
-const caseCls = p.textTransform === "none" ? "" : " uppercase";
+// Канон textTransform: капс ТОЛЬКО по явному выбору мерчанта «Заглавными».
+// Дефолт — «как введено» (владелец 2026-09-13: «не делать прописные капсом
+// нигде», текст полосы выводим ровно так, как его ввели в параметре
+// «Объявление»). Раньше отсутствие пропа означало капс-литерал верстальщика,
+// и снять его было нечем: blockDefaults темы тоже подставляли 'uppercase'.
+// Форма условия — та же, что у rose/flux (единая на пять тем).
+const caseCls = p.textTransform === "uppercase" ? " uppercase" : "";
 
 // Полоса верстальщика дословно: Arsenal, центр; цвета — токены с пиксель-фоллбеком
 // родных литералов (§7): полоса #26311C → 38 49 28, текст white. Шрифт (sz.text)

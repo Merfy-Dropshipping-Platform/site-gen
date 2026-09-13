@@ -63,7 +63,7 @@
   "blockDefaults": {
     "PromoBanner": {
       "size": "large",
-      "textTransform": "uppercase",
+      "textTransform": "none",
       "colorScheme": "scheme-1"
     },
     "Header": {

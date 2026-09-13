@@ -61,13 +61,16 @@ const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,227_142_159))] py-2 text-center`;
 
-// Канон textTransform: 'uppercase' (canon-default из blockDefaults) И отсутствие =
-// литерал верстальщика uppercase; явный 'none' снимает капс. Размер шрифта (sz.text)
-// от «Размер текста».
+// Канон textTransform: капс ТОЛЬКО по явному выбору мерчанта «Заглавными».
+// Дефолт — «как введено» (владелец 2026-09-13: «не делать прописные капсом
+// нигде»). Раньше отсутствие пропа означало капс-литерал верстальщика, и снять
+// его было нечем: blockDefaults темы тоже подставляли 'uppercase'. Форма условия —
+// та же, что у rose/flux (единая на пять тем). Размер шрифта (sz.text) от
+// «Размер текста».
 const textCls =
-	p.textTransform === "none"
-		? `font-inter ${sz.text} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`
-		: `font-inter ${sz.text} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`;
+	p.textTransform === "uppercase"
+		? `font-inter ${sz.text} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`
+		: `font-inter ${sz.text} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`;
 
 // «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
 // (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры

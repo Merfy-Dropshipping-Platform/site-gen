@@ -41,7 +41,7 @@
   "blockDefaults": {
     "PromoBanner": {
       "size": "thin",
-      "textTransform": "uppercase",
+      "textTransform": "none",
       "colorScheme": "scheme-1"
     },
     "Header": {

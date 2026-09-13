@@ -85,7 +85,7 @@
       }
     },
     "PromoBanner": {
-      "textTransform": "uppercase"
+      "textTransform": "none"
     }
   },
   "colorSchemes": [

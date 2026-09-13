@@ -6,7 +6,13 @@ import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
 import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES } from './page-registry';
-import { assembleChrome, injectChromeIntoHtml } from './chrome-assembler';
+import {
+  assembleChrome,
+  injectChromeIntoHtml,
+  injectCheckoutChromeIntoHtml,
+  patchCheckoutBlockScheme,
+  checkoutBlockScheme,
+} from './chrome-assembler';
 // import type → стирается при компиляции, цикла на module-init не создаёт.
 import type { BuildContext } from '../generator/build.service';
 import { catalogFromStoreData, type RenderContext } from '../render/create-render-context';
@@ -458,29 +464,12 @@ const findBlockProps = (
 };
 
 /**
- * Figma 1:19998 — применить «Цветовую схему» узла checkout (CheckoutForm /
- * CheckoutSummary) к verbatim-дисту. checkout.astro рендерит блоки БЕЗ пропсов
- * мерчанта → их `<section data-block="checkout-*">` без класса схемы (наследует
- * общий color-scheme-2). Дописываем `color-scheme-N` в class секции — секция
- * сама красит bg/text из `--color-*` (CheckoutForm/Summary.classes несут
- * `bg-[rgb(var(--color-bg))]`), значит независимая перекраска формы и сводки.
- * Идемпотентно: класс не дублируется. `class` идёт ДО `data-block` (порядок
- * атрибутов в CheckoutForm/Summary.astro).
+ * Ре-экспорт: реализация переехала в `chrome-assembler` (self-contained модуль
+ * без build-зависимостей) — её зовёт и превью конструктора, и live-сборка, чтобы
+ * чекаут в конструкторе не расходился с витриной (баг-репорт 16). Здесь ссылка
+ * сохранена ради существующих импортов `from './v2-live-pages'`.
  */
-export function patchCheckoutBlockScheme(
-  html: string,
-  block: 'checkout-form' | 'checkout-summary',
-  scheme: unknown,
-): string {
-  if (typeof scheme !== 'string' || !scheme) return html;
-  const cls = `color-scheme-${scheme.replace('scheme-', '')}`;
-  const re = new RegExp(
-    `(<section\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-block="${block}")`,
-  );
-  return html.replace(re, (m, p1: string, classes: string, p3: string) =>
-    classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
-  );
-}
+export { patchCheckoutBlockScheme };
 
 /**
  * Spec 109 — sticky-хедер на verbatim-страницах (корзина).
@@ -638,16 +627,10 @@ export async function unifyChromeInDist(
   // (CheckoutForm) и «Сводка заказа» (CheckoutSummary). Verbatim-dist рендерит
   // их без пропсов мерчанта → схему дописываем в class секций (см.
   // patchCheckoutBlockScheme).
-  const formScheme = (
-    findBlockProps(pagesData['page-checkout'], 'CheckoutForm') ??
-    findBlockProps(pagesData['checkout'], 'CheckoutForm') ??
-    {}
-  )['colorScheme'];
-  const summaryScheme = (
-    findBlockProps(pagesData['page-checkout'], 'CheckoutSummary') ??
-    findBlockProps(pagesData['checkout'], 'CheckoutSummary') ??
-    {}
-  )['colorScheme'];
+  // Тот же ридер, что и превью конструктора (chrome-assembler) — чтобы схему
+  // брали из одного места и вкладка «Оформление заказа» совпадала с витриной.
+  const formScheme = checkoutBlockScheme(pagesData, 'CheckoutForm');
+  const summaryScheme = checkoutBlockScheme(pagesData, 'CheckoutSummary');
 
   for (const file of await listIndexHtmlFiles(ctx.distDir)) {
     const route = distRoute(ctx.distDir, file);
@@ -662,19 +645,15 @@ export async function unifyChromeInDist(
       //    checkoutProps через page-checkout). Тема рендерит CheckoutHeader
       //    (data-checkout-slot) внутри своей token-обёртки — её подменяем;
       //    fallback на data-nt до раскатки theme-edit.
-      if (checkoutHeader) {
-        const re = HEADER_CHECKOUT_RE.test(next)
-          ? HEADER_CHECKOUT_RE
-          : HEADER_NT_RE.test(next)
-            ? HEADER_NT_RE
-            : null;
-        if (re && re.exec(next)?.[0] !== checkoutHeader) {
-          next = next.replace(re, () => checkoutHeader as string);
-        }
-      }
       // 2) Цветовая схема «Оформление заказа» / «Сводка заказа» (независимо).
-      next = patchCheckoutBlockScheme(next, 'checkout-form', formScheme);
-      next = patchCheckoutBlockScheme(next, 'checkout-summary', summaryScheme);
+      // Обе правки — ОДНА общая функция с превью конструктора
+      // (`injectCheckoutChromeIntoHtml`), чтобы вкладка «Оформление заказа» не
+      // расходилась с витриной по логотипу и схемам (баг-репорт 16).
+      next = injectCheckoutChromeIntoHtml(
+        next,
+        { headerHtml: checkoutHeader, footerHtml: null },
+        { form: formScheme, summary: summaryScheme },
+      );
       if (next !== html) {
         await fs.writeFile(file, next, 'utf8');
         checkout++;

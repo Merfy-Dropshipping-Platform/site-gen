@@ -279,3 +279,88 @@ function replaceLastFooter(html: string, target: string): string {
   if (current === target) return html;
   return html.slice(0, openIdx) + target + html.slice(end);
 }
+
+/**
+ * Figma 1:19998 — применить «Цветовую схему» узла checkout (CheckoutForm /
+ * CheckoutSummary) к verbatim-разметке чекаута. `checkout.astro` темы рендерит
+ * эти блоки БЕЗ пропсов мерчанта → их `<section data-block="checkout-*">`
+ * приходит без класса схемы (наследует общий `color-scheme-2`). Дописываем
+ * `color-scheme-N` в class секции — секция сама красит bg/text из `--color-*`
+ * (CheckoutForm/Summary.classes несут `bg-[rgb(var(--color-bg))]`), значит
+ * форма и сводка перекрашиваются независимо.
+ *
+ * Идемпотентно: класс не дублируется. `class` идёт ДО `data-block` (порядок
+ * атрибутов в CheckoutForm/Summary.astro).
+ *
+ * Переехало из `v2-live-pages.ts` (там осталась ре-экспортная ссылка): функция
+ * нужна ОБОИМ путям — live-сборке и превью конструктора, а `v2-live-pages`
+ * тянет build-зависимости и в превью-контроллер не импортируется.
+ */
+export function patchCheckoutBlockScheme(
+  html: string,
+  block: 'checkout-form' | 'checkout-summary',
+  scheme: unknown,
+): string {
+  if (typeof scheme !== 'string' || !scheme) return html;
+  const cls = `color-scheme-${scheme.replace('scheme-', '')}`;
+  const re = new RegExp(
+    `(<section\\b[^>]*\\bclass=")([^"]*)("[^>]*\\bdata-block="${block}")`,
+  );
+  return html.replace(re, (m, p1: string, classes: string, p3: string) =>
+    classes.split(/\s+/).includes(cls) ? m : `${p1}${classes} ${cls}${p3}`,
+  );
+}
+
+/** Схемы секций чекаута из ревизии (props.colorScheme блоков page-checkout). */
+export interface CheckoutBlockSchemes {
+  /** CheckoutForm.props.colorScheme — «Оформление заказа». */
+  form?: unknown;
+  /** CheckoutSummary.props.colorScheme — «Сводка заказа». */
+  summary?: unknown;
+}
+
+/**
+ * Единая доводка verbatim-чекаута: мерчантская шапка + независимые цветовые
+ * схемы «Оформление заказа» / «Сводка заказа».
+ *
+ * Баг-репорт 16: этот набор правок делала ТОЛЬКО live-сборка
+ * (`unifyChromeInDist`), а превью конструктора отдавало блоб темы как есть —
+ * поэтому во вкладке «Оформление заказа» логотип из настроек темы не
+ * подтягивался, а цветовые схемы секций ничего не меняли. Теперь оба пути
+ * зовут эту функцию, и превью = live по построению.
+ *
+ * Подвал не трогаем: у чекаута свой хром (`assembleChrome` отдаёт
+ * `footerHtml: null`), тема рисует собственный подвал страницы.
+ * Идемпотентна.
+ */
+export function injectCheckoutChromeIntoHtml(
+  html: string,
+  chrome: AssembledChrome,
+  schemes: CheckoutBlockSchemes = {},
+): string {
+  let out = chrome.headerHtml
+    ? injectChromeIntoHtml(html, { headerHtml: chrome.headerHtml, footerHtml: null })
+    : html;
+  out = patchCheckoutBlockScheme(out, 'checkout-form', schemes.form);
+  out = patchCheckoutBlockScheme(out, 'checkout-summary', schemes.summary);
+  return out;
+}
+
+/**
+ * «Цветовая схема» секции чекаута из ревизии. Ключ страницы в pagesData
+ * разнится по возрасту сайта (`page-checkout` у конструктора, `checkout` у
+ * легаси-витрины) — смотрим оба, как это делал `unifyChromeInDist`.
+ *
+ * Общая для live и превью: иначе вкладка «Оформление заказа» читала бы схему
+ * не оттуда, откуда сборка (баг-репорт 16).
+ */
+export function checkoutBlockScheme(
+  pagesData: Record<string, unknown>,
+  blockType: 'CheckoutForm' | 'CheckoutSummary',
+): unknown {
+  const props =
+    findBlockProps(pagesData['page-checkout'], blockType) ??
+    findBlockProps(pagesData['checkout'], blockType) ??
+    {};
+  return (props as Record<string, unknown>)['colorScheme'];
+}

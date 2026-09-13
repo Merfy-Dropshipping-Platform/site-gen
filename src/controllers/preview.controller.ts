@@ -32,7 +32,12 @@ import { adaptLegacyProps, extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
 import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES } from '../themes/page-registry';
-import { assembleChrome, injectChromeIntoHtml } from '../themes/chrome-assembler';
+import {
+  assembleChrome,
+  injectChromeIntoHtml,
+  injectCheckoutChromeIntoHtml,
+  checkoutBlockScheme,
+} from '../themes/chrome-assembler';
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
@@ -458,6 +463,54 @@ export class PreviewController {
         } catch (chromeErr) {
           this.logger.warn(
             `[preview] chrome assemble/inject failed for site=${siteId} route=${route || '(root)'} — serving blob chrome as-is: ${(chromeErr as Error)?.message ?? chromeErr}`,
+          );
+        }
+      } else if (getChromeKind(route) === 'checkout') {
+        // Баг-репорт 16 («во вкладке Оформление заказа не применяются цветовые
+        // схемы + не подтягивается логотип из настроек темы»).
+        //
+        // Раньше checkout осознанно ПРОПУСКАЛИ: его шапку/схемы правит
+        // build-сторона (`unifyChromeInDist`). Но она работает только по
+        // live-дисту — в превью конструктора блоб темы отдавался как есть:
+        // дефолтная шапка темы (текст вместо логотипа мерчанта) и секции
+        // «Оформление заказа»/«Сводка заказа» без класса схемы. Мерчант менял
+        // настройки и не видел НИЧЕГО.
+        //
+        // Зовём ту же пару функций, что и live (assembleChrome(chrome:'checkout')
+        // + injectCheckoutChromeIntoHtml) → превью = витрина по построению.
+        // Изолировано: любой сбой → блоб как был (превью не падает).
+        try {
+          const pagesData =
+            ((loaded.data as { pagesData?: Record<string, unknown> } | null)
+              ?.pagesData) ?? {};
+          const chrome = await assembleChrome({
+            pagesData,
+            theme: loaded.themeId ?? 'base',
+            chrome: 'checkout',
+            renderBlock: (input) => this.preview.renderBlock({ ...input, merfy }),
+            isPreview: true,
+          });
+          // Ссылки/иконки мерчантской шапки идут от корня (`/`, `/cart`) — в
+          // превью-iframe (origin gateway) их надо увести под /__theme/<тема>,
+          // иначе клик по логотипу уводит из превью, а иконки 404 (как в ветке
+          // 'full' выше).
+          const chromePrefix = `/__theme/${PreviewService.bareThemeKey(loaded.themeId ?? 'base')}`;
+          chromedHtml = injectCheckoutChromeIntoHtml(
+            builtThemeHtml,
+            {
+              headerHtml: chrome.headerHtml
+                ? rewriteRootUrlsToPrefix(chrome.headerHtml, chromePrefix)
+                : null,
+              footerHtml: null,
+            },
+            {
+              form: checkoutBlockScheme(pagesData, 'CheckoutForm'),
+              summary: checkoutBlockScheme(pagesData, 'CheckoutSummary'),
+            },
+          );
+        } catch (chromeErr) {
+          this.logger.warn(
+            `[preview] checkout chrome assemble/inject failed for site=${siteId} — serving blob as-is: ${(chromeErr as Error)?.message ?? chromeErr}`,
           );
         }
       }

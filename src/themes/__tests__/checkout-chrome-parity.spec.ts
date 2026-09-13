@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   injectCheckoutChromeIntoHtml,
   patchCheckoutBlockScheme,
   type AssembledChrome,
 } from '../chrome-assembler';
+
+const SITES_ROOT = join(__dirname, '..', '..', '..');
+const read = (rel: string) => readFileSync(join(SITES_ROOT, rel), 'utf8');
 
 /**
  * Баг-репорт 16: «Во вкладке Оформление заказа не применяются цветовые схемы к
@@ -78,5 +83,34 @@ describe('injectCheckoutChromeIntoHtml — общий чекаут-хром пр
 
   it('patchCheckoutBlockScheme экспортируется из chrome-assembler (общий модуль)', () => {
     expect(typeof patchCheckoutBlockScheme).toBe('function');
+  });
+});
+
+/**
+ * Одной чистой функции мало: баг 16 был не в ней, а в ТОМ, ЧТО ЕЁ НЕ ЗВАЛИ.
+ * Саботаж «вырезать ветку чекаута из preview.controller» чистый гард не ловит —
+ * поэтому отдельно сторожим проводку обоих путей.
+ */
+describe('оба пути реально зовут общую функцию', () => {
+  it('превью конструктора доводит чекаут (ветка getChromeKind === checkout)', () => {
+    const src = read('src/controllers/preview.controller.ts');
+    expect(src).toMatch(/getChromeKind\(route\)\s*===\s*['"]checkout['"]/);
+    const branch = src.slice(
+      src.search(/getChromeKind\(route\)\s*===\s*['"]checkout['"]/),
+    );
+    // Внутри ветки: сборка чекаут-хрома + общая доводка со схемами секций.
+    expect(branch).toContain("chrome: 'checkout'");
+    expect(branch).toContain('injectCheckoutChromeIntoHtml');
+    expect(branch).toContain("checkoutBlockScheme(pagesData, 'CheckoutForm')");
+    expect(branch).toContain("checkoutBlockScheme(pagesData, 'CheckoutSummary')");
+  });
+
+  it('live-сборка идёт через ту же функцию, а не через свою копию', () => {
+    const src = read('src/themes/v2-live-pages.ts');
+    expect(src).toContain('injectCheckoutChromeIntoHtml');
+    // Своей подмены <header> в unifyChromeInDist больше нет — иначе пути снова
+    // разъедутся при первой же правке одной из копий.
+    const unify = src.slice(src.indexOf('export async function unifyChromeInDist'));
+    expect(unify).not.toMatch(/next\.replace\(re,\s*\(\)\s*=>\s*checkoutHeader/);
   });
 });

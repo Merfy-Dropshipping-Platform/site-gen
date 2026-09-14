@@ -20,7 +20,7 @@ export const AuthModalPuckConfig: BlockPuckConfig<AuthModalProps> = {
     mode: { type: 'radio', label: 'Режим' },
     siteTitle: { type: 'text', label: 'Название магазина' },
     showSocialLogin: { type: 'switch', label: 'Вход через соцсети' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     mode: 'closed',

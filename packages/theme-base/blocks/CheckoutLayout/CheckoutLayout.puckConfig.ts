@@ -31,7 +31,7 @@ export const CheckoutLayoutPuckConfig: BlockPuckConfig<CheckoutLayoutProps> = {
     summaryColumnWidth: { type: 'number', label: 'Ширина сводки (px, desktop)' },
     gap: { type: 'number', label: 'Промежуток между колонками (px)' },
     breakpoint: { type: 'number', label: 'Брейкпоинт mobile→desktop (px)' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     summaryPosition: 'right',

@@ -74,7 +74,6 @@ const {
   padding,
   cards,
   productCard,
-  containerColorScheme,
 } = Astro.props as Props;
 
 // Кол-во товаров на «страницу» пагинации: из настройки «Карточки» (cards, 2–24).
@@ -160,11 +159,10 @@ const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto 
 // (эталон theme-base). Раньше порт настройку не читал вовсе — контрол был мёртв.
 const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple";
 
-// (7) Отдельная схема ВНУТРЕННЕГО контейнера каталога (эталон theme-base).
-const containerSchemeClass =
-  typeof containerColorScheme === "string" && containerColorScheme
-    ? `color-scheme-${containerColorScheme.replace("scheme-", "")}`
-    : "";
+// (7) Отдельной схемы ВНУТРЕННЕГО контейнера каталога больше нет: тестировщик
+//     14.09 (санкционировано владельцем) — «цветовая схема одна для всей
+//     секции». Проп containerColorScheme остаётся в Props ради старых ревизий,
+//     но в разметку не попадает: контейнер наследует схему секции.
 
 // SSR demo-грид (родные товары satin). Гарантирует, что грид рендерится в initial
 // HTML и в превью (Container API), и на live до гидрации. На published-сайте
@@ -234,12 +232,11 @@ const skeletons = Array.from({ length: skeletonCount });
   {/* Фон секции и все цвета зоны фильтров — из токенов цветовых схем конструктора
       (rgb(var(--color-*))) с фоллбеками к прежним хардкодам satin. */}
   <div class="satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))]">
-    {/* (7) Цветовая схема контейнера: класс color-scheme-N на satin-container
-        (эталон theme-base). unset → класс не добавляется, контейнер наследует
-        схему секции (прозрачный фон, родной satin-вид). */}
+    {/* (7) Контейнер каталога схемы не имеет: секция красится ОДНОЙ схемой
+        (тестировщик 14.09, санкционировано владельцем). Wrapper прозрачный и
+        наследует схему секции — заливку держит подложка выше. */}
     <div
-      class:list={["satin-container flex flex-col gap-8", containerSchemeClass]}
-      style={containerSchemeClass ? "background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-text,0 0 0));" : undefined}
+      class="satin-container flex flex-col gap-8"
     >
       <header class="flex flex-col gap-2">
         {/* §7 Контракта секции: «Ж»/«К» панели оборачивают текст в <strong>/<em>,

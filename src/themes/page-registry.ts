@@ -89,6 +89,23 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
   // приходит из packages/theme-rose/pages/cart.json через lazy-seed (без
   // миграции ревизий существующих сайтов). Шелл — cart.astro (Layout).
   { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
+  // page-wishlist — composable (kind:content), зеркало page-cart: тело страницы
+  // «Избранное» = секция WishlistSection, мерчант добавляет вокруг другие секции.
+  // Дефолт [WishlistSection] приходит из packages/theme-<t>/pages/wishlist.json
+  // через lazy-seed, существующим ревизиям страницу досевает seedWishlistPage
+  // (revision-migrations.ts). Шелл — wishlist.astro (Layout) во всех пяти темах.
+  //
+  // requireOwnShell:true — пересаживаем ТОЛЬКО поверх собственного шелла диста.
+  // Без флага тема без своей /wishlist получила бы home-шелл, и страница
+  // «Избранное» на витрине выглядела бы главной. Тема без шелла (luna) просто
+  // пропускается, как collections/preview.
+  {
+    id: 'page-wishlist',
+    route: 'wishlist',
+    kind: 'content',
+    chrome: 'full',
+    requireOwnShell: true,
+  },
   // ── Verbatim системные страницы (есть id в SYSTEM_PAGE_ROUTES) ──────────
   { id: 'page-product', route: 'product', kind: 'verbatim', chrome: 'full' },
   // Личный кабинет покупателя, «Основные данные» (пункт 14 тестировщика).

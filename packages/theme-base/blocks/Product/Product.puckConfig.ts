@@ -64,7 +64,7 @@ export const ProductSchema = z.object({
       showDiscountBadge: z.boolean().optional(),
     }).optional(),
     variantsType: z.enum(['chips', 'dropdown']).optional(),
-    counter: z.object({ variant: z.enum(['inline', 'pill']).optional() }).optional(),
+    counter: z.object({ variant: z.enum(['inline', 'boxed', 'split']).optional() }).optional(),
     showDescription: z.boolean().optional(),
   }).optional(),
   padding: z.object({

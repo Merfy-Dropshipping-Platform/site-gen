@@ -1082,3 +1082,77 @@ export function renderVariantSelectsHtml(
     })
     .join("");
 }
+
+/**
+ * HTML-разметка групп вариантов как ЗАКРЫТЫХ СПИСКОВ с образцами — сочетание
+ * «Стиль: Список» + «Вариации: Круг/Квадрат».
+ *
+ * Зачем отдельно от `renderVariantSelectsHtml`: нативный `<option>` не умеет
+ * показать образец, поэтому при «Списке» форма мерчанта пропадала вместе с
+ * самими образцами — оставалась голая выпадашка (баг тестировщика 2026-09-14).
+ * Паритет theme-base `ProductVariants.astro` (ветка isListShaped): свёрнуто —
+ * выбранное значение (у цвета со свотчем), по нажатию раскрывается список всех
+ * значений; у не-цветовой группы (размер) образца нет — только строки-текст,
+ * ровно как в чипах.
+ *
+ * Размеры/радиусы — INLINE: строки этого файла не входят в Tailwind-скан
+ * превью-шелла, и утилиты вроде `h-6` дают там 0×0 (тот же приём, что в
+ * `renderVariantGroupsHtml`).
+ */
+export function renderVariantListHtml(
+  groups: VariantGroup[],
+  selected: Record<string, string>,
+  // «Вариации» (variants.shape): 'circle' | 'square'. Пусто/none сюда не
+  // приходит — это выпадашка (renderVariantSelectsHtml).
+  shape: string = "",
+): string {
+  const radius = shape === "circle" ? "border-radius:9999px;" : "border-radius:0;";
+  // Маркер `data-variant-swatch-fill` — общий с theme-base контракт «это пятно
+  // цвета»: по нему образец находят и гидрация, и проверки. Без него замер
+  // цеплялся за белый фон свёрнутой строки и «подтверждал» форму, которой нет.
+  const swatch = (value: string, size: number, marker: string): string => {
+    const hex = colorToHex(value);
+    if (!hex) return "";
+    return `<span ${marker} style="display:block;flex:0 0 auto;width:${size}px;height:${size}px;background:${hex};${radius}border:1px solid rgba(0,0,0,0.15);"></span>`;
+  };
+  return groups
+    .map((g) => {
+      const current = selected[g.name] ?? g.values[0] ?? "";
+      const items = g.values
+        .map((v) => {
+          const isSel = current === v;
+          const mark = swatch(v, 24, "data-variant-swatch-fill");
+          return `<li style="width:100%;list-style:none;"><button type="button" class="font-manrope text-[14px] font-normal leading-normal" role="option" aria-selected="${isSel}" data-variant-value="${escapeHtml(v)}"${mark ? " data-variant-swatch" : ""} style="display:flex;align-items:center;gap:12px;width:100%;padding:8px;text-align:left;border:0;border-radius:4px;cursor:pointer;background:${isSel ? "rgba(0,0,0,0.06)" : "transparent"};color:#000000;">${mark}<span style="flex:1 1 auto;">${escapeHtml(v)}</span></button></li>`;
+        })
+        .join("");
+      const currentMark = swatch(current, 24, "data-variant-dd-swatch-fill");
+      const control = `<details data-variant-dd data-variant-key="${escapeHtml(g.name)}" style="position:relative;width:100%;"><summary class="font-manrope text-[14px] font-normal leading-normal" style="display:flex;align-items:center;gap:12px;width:100%;height:40px;padding:0 12px;border:1px solid #000000;border-radius:6px;background:#ffffff;color:#000000;cursor:pointer;list-style:none;">${currentMark}<span style="flex:1 1 auto;text-align:left;" data-variant-dd-label>${escapeHtml(current)}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:20px;height:20px;flex:0 0 auto;"><polyline points="6 9 12 15 18 9"/></svg></summary><ul role="listbox" style="position:absolute;left:0;right:0;top:100%;z-index:20;display:flex;flex-direction:column;gap:4px;margin:4px 0 0;padding:4px;list-style:none;border:1px solid rgba(0,0,0,0.12);border-radius:6px;background:#ffffff;box-shadow:0 8px 24px rgba(0,0,0,0.12);">${items}</ul></details>`;
+      return renderVariantGroupWrapper(g.name, control);
+    })
+    .join("");
+}
+
+/**
+ * ЕДИНАЯ развилка «Стиль» × «Вариации» для секции «Товар» темы flux.
+ *
+ * Порт рисует варианты ДВАЖДЫ — серверным рендером во фронтматтере и живым
+ * рефрешем в инлайн-скрипте (после выбора значения блок перерисовывается
+ * целиком). Пока развилка была продублирована в обоих местах, правка одной
+ * ветки оставляла вторую со старым поведением. Держим её здесь одну.
+ *
+ *   Кнопка            → чипы/образцы в ряд;
+ *   Список + форма    → закрытый список с образцами;
+ *   Список без формы  → выпадашка (канон «Вариации: Нет»).
+ */
+export function renderVariantsHtml(
+  groups: VariantGroup[],
+  selected: Record<string, string>,
+  displayStyle: string,
+  shape: string,
+): string {
+  if (displayStyle !== "list") return renderVariantGroupsHtml(groups, selected, shape);
+  const shaped = shape === "circle" || shape === "square";
+  return shaped
+    ? renderVariantListHtml(groups, selected, shape)
+    : renderVariantSelectsHtml(groups, selected);
+}

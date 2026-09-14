@@ -3845,3 +3845,53 @@ rose + миграции; (3) вшил `counter` в сид satin при выкл�
   flux — `false`. Сид побеждает, значит описание на странице товара flux сейчас
   показывается вопреки теме. Снимать не стал: это видимое изменение, которого
   никто не просил, и рядом идёт работа по описанию.
+
+## 2026-09-14 — W-B6 — страницы аккаунта получили свои секции (ветка `fix/b6-account-pages`)
+
+### Цель
+
+Задача тестировщика 14.09: у страниц «Заказы» и «Личный кабинет» должна быть
+своя секция, в сайдбаре ровно один параметр («Цветовая схема»), кнопка
+добавления секций на этих страницах — залочена.
+
+### Выполнено
+
+- Блоки `theme-base/blocks/{AccountSection,OrdersSection}` (label «Личный
+  кабинет» / «Заказы»), в каждом РОВНО одно поле `colorScheme`, `maxInstances:1`.
+- Порты по пяти темам: `themes/<t>/src/components/sections/{AccountSection,OrdersSection}.astro`.
+  Тело перенесено из `src/pages/account/{profile,orders}.astro` дословно;
+  module-`<script>` с импортами заменён на `is:inline` + глобал
+  `window.__<theme>Auth` (его ставит `initAuthUI()` из Layout) — как у
+  `WishlistSection`. Страницы витрины стали шеллами.
+- `page-orders` (`/account/orders`) заведена в `PAGE_REGISTRY`, манифестах пяти
+  тем и сидах; `seedAccountPageSections` досевает страницу и обе секции живым
+  ревизиям (идемпотентно по наличию блока — скрытую секцию не дублирует).
+- Рендер: гейт `ACCOUNT_SECTION_THEMES` в `composeContentPagesIntoDist` и
+  `preview.controller` (зеркало `CART_UNIFIED_THEMES`), страницы остаются
+  verbatim-записями ради `/account` и `/account/order`.
+- Конструктор: подписи, `DYNAMIC_COMPONENTS`, `NON_DELETABLE`,
+  `STRUCTURAL_PAGE_IDS/_SLUGS`, «Заказы» → страница внутри вкладки «Профиль»,
+  лок кнопки через существующий `showAddButton`.
+
+### Проверки
+
+- `pnpm test:account-sections` 122 ✓ · `test:panel-canon` 198 ✓ ·
+  `test:wishlist-section` 51 ✓ · `test:section-snapshots` 155 ✓ ·
+  `test:hidden-fields` 495 ✓ · `test:hidden-list-items` 196 ✓ ·
+  `test:panel-defaults` 22 ✓ · `src/utils/__tests__/` 135 ✓ ·
+  `test:conformance:satin` 84 ✓ · `test:conformance:shared` 100 ✓ ·
+  `pnpm conformance:satin` ✓ (инвентарь переснят отдельным коммитом).
+- Конструктор (vitest) — 335 ✓, включая новый `account-sections-page-scope`.
+- Саботаж: второй параметр у `OrdersSection` → `panel-canon` краснеет по всем
+  пяти темам («padding: ПОЯВИЛОСЬ поле»); снятие страниц из
+  `SECTION_LOCKED_PAGE_*` → падает проверка лока (2 кнопки вместо 1). Оба
+  саботажа откачены.
+- Живой конструктор `localhost:3200`, четыре темы (flux, rose, satin, bloom):
+  в группе «Тема» одна секция, кнопки «Добавить секцию» нет, правая панель —
+  `["<Секция>", "Цветовая схема", "Схема 2"]`. Для vanilla локального сайта
+  нет — её панель проверена ответом `/api/themes/vanilla/puck-config`
+  и рендером порта.
+
+### Статус записей
+
+- Код VERIFIED тестами/рендером/конструктором, НЕ задеплоен и НЕ запушен.

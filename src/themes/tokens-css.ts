@@ -744,7 +744,15 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   // muted text variants — Figma 905-19049 flux electronics.
   const accent = hexToRgbTriple(scheme.accent);
   if (accent) parts.push(`--color-accent: ${accent}`);
-  const muted = hexToRgbTriple(scheme.muted);
+  // Приглушённый текст — это ТЕКСТ схемы, разбавленный её фоном, а не отдельный
+  // фиксированный серый. Раньше `--color-muted` приезжал готовым из theme.json
+  // (у всех схем `153 153 153`), поэтому подзаголовки секций, описания и телефон
+  // оставались серыми, какой бы цвет текста мерчант ни выбрал, — а поля для
+  // самого muted в редакторе схемы нет и не планируется (состав настроек канон).
+  // Жалоба тестировщика 14.09: «во всех секциях вместо используемого цвета для
+  // текста применяется Серый». Считаем сами: 60 % текста + 40 % фона — та же
+  // пропорция, которой уже приглушены описание и старая цена в секции «Товар».
+  const muted = mixRgbTriples(text, bg, 0.6) ?? hexToRgbTriple(scheme.muted);
   if (muted) parts.push(`--color-muted: ${muted}`);
   const primaryBg = hexToRgbTriple(primary.background);
   const primaryText = hexToRgbTriple(primary.text);
@@ -776,6 +784,25 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (secondaryTextHover) parts.push(`--color-button-2-text-hover: ${secondaryTextHover}`);
 
   return parts.length > 0 ? ' ' + parts.join('; ') + ';' : '';
+}
+
+/**
+ * Смешать две RGB-тройки («R G B») в пропорции `ratio` (доля первой).
+ * Возвращает null, если любая из троек не разобралась, — вызывающий код тогда
+ * падает на прежнее значение и ничего не ломает.
+ */
+function mixRgbTriples(
+  a: string | null,
+  b: string | null,
+  ratio: number,
+): string | null {
+  if (!a || !b) return null;
+  const pa = a.trim().split(/\s+/).map(Number);
+  const pb = b.trim().split(/\s+/).map(Number);
+  if (pa.length !== 3 || pb.length !== 3) return null;
+  if ([...pa, ...pb].some((n) => !Number.isFinite(n))) return null;
+  const mix = pa.map((v, i) => Math.round(v * ratio + pb[i] * (1 - ratio)));
+  return mix.join(' ');
 }
 
 function hexToRgbTriple(v: unknown): string | null {

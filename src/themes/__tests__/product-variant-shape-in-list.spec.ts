@@ -34,6 +34,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { renderVariantsHtml } from "../../../themes/flux/src/lib/storefront-hydrate";
+
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 const STUB = resolve(__dirname, "storefront-variants-stub.mjs");
@@ -44,7 +46,6 @@ const SHAPES = ["circle", "square", "none"] as const;
 
 type Theme = (typeof THEMES)[number];
 type Style = (typeof STYLES)[number];
-type Shape = (typeof SHAPES)[number];
 
 // ───────────────────────── рендер ─────────────────────────
 
@@ -82,7 +83,13 @@ function renderTheme(theme: Theme): Record<string, string> {
   }
   const raw = execFileSync(
     "node",
-    ["--import", pathToFileURL(STUB).href, RENDERER, theme, JSON.stringify(jobs)],
+    [
+      "--import",
+      pathToFileURL(STUB).href,
+      RENDERER,
+      theme,
+      JSON.stringify(jobs),
+    ],
     { encoding: "utf-8", maxBuffer: 64 * 1024 * 1024, cwd: SITES_ROOT },
   );
   const parsed = JSON.parse(raw) as RenderResult[];
@@ -104,7 +111,10 @@ function renderTheme(theme: Theme): Record<string, string> {
 
 /** Радиусы утилит темы — из собранного CSS, а не из имени класса. */
 function themeRadiusMap(theme: Theme): Map<string, string> {
-  const css = readFileSync(resolve(SITES_ROOT, `dist/theme-css/${theme}.css`), "utf-8");
+  const css = readFileSync(
+    resolve(SITES_ROOT, `dist/theme-css/${theme}.css`),
+    "utf-8",
+  );
   const map = new Map<string, string>();
   const re = /\.((?:rounded|mfy)[\w-]*)\s*(?:,[^{]*)?\{([^}]*)\}/g;
   let m: RegExpExecArray | null;
@@ -116,7 +126,9 @@ function themeRadiusMap(theme: Theme): Map<string, string> {
 }
 
 /** «Круглый», «острый» или «скруглённый прямоугольник» — по значению радиуса. */
-function classifyRadius(value: string | null): "circle" | "square" | "rounded" | null {
+function classifyRadius(
+  value: string | null,
+): "circle" | "square" | "rounded" | null {
   if (value == null) return null;
   const v = value.trim().toLowerCase();
   if (/^0(px|rem|%)?$/.test(v)) return "square";
@@ -156,7 +168,10 @@ interface Swatch {
  * попадают. Нет пятна → форма к значениям не применена вовсе (ровно то, что
  * видел тестировщик в «Списке»).
  */
-function firstSwatch(rawHtml: string, radii: Map<string, string>): Swatch | null {
+function firstSwatch(
+  rawHtml: string,
+  radii: Map<string, string>,
+): Swatch | null {
   const html = stripScripts(rawHtml);
   const tagRe = /<(span|button|i|div)\b([^>]*)>/gi;
   let m: RegExpExecArray | null;
@@ -164,14 +179,22 @@ function firstSwatch(rawHtml: string, radii: Map<string, string>): Swatch | null
     const attrs = m[2];
     const style = /style="([^"]*)"/.exec(attrs)?.[1] ?? "";
     if (!/background\s*:\s*#/i.test(style)) continue;
-    const inlineRadius = /border-radius\s*:\s*([^;"]+)/.exec(style)?.[1] ?? null;
+    const inlineRadius =
+      /border-radius\s*:\s*([^;"]+)/.exec(style)?.[1] ?? null;
     if (inlineRadius) {
-      return { shape: classifyRadius(inlineRadius), via: "inline", radius: inlineRadius };
+      return {
+        shape: classifyRadius(inlineRadius),
+        via: "inline",
+        radius: inlineRadius,
+      };
     }
-    const classes = (/class="([^"]*)"/.exec(attrs)?.[1] ?? "").split(/\s+/).filter(Boolean);
+    const classes = (/class="([^"]*)"/.exec(attrs)?.[1] ?? "")
+      .split(/\s+/)
+      .filter(Boolean);
     for (const cls of classes) {
       const value = radii.get(cls);
-      if (value) return { shape: classifyRadius(value), via: "class", radius: value };
+      if (value)
+        return { shape: classifyRadius(value), via: "class", radius: value };
     }
     return { shape: null, via: null, radius: null };
   }
@@ -180,13 +203,15 @@ function firstSwatch(rawHtml: string, radii: Map<string, string>): Swatch | null
 
 /** Сколько выпадашек-`<select>` в разметке вариантов. */
 function selectCount(html: string): number {
-  return (stripScripts(html).match(/<select\b[^>]*data-variant-select/g) ?? []).length;
+  return (stripScripts(html).match(/<select\b[^>]*data-variant-select/g) ?? [])
+    .length;
 }
 
 // ───────────────────────── прогон ─────────────────────────
 
 const missingBuild = THEMES.filter(
-  (t) => !existsSync(resolve(SITES_ROOT, `dist/theme-sections/${t}/manifest.json`)),
+  (t) =>
+    !existsSync(resolve(SITES_ROOT, `dist/theme-sections/${t}/manifest.json`)),
 );
 
 const rendered = {} as Record<Theme, Record<string, string>>;
@@ -233,19 +258,30 @@ describe("Секция «Товар»: форма образца вариаци�
       // <select>, мерчант всё равно видел бы выпадашку без образцов.
       for (const shape of ["circle", "square"] as const) {
         const html = rendered[theme][`list/${shape}`];
-        expect({ shape, selects: selectCount(html) }).toEqual({ shape, selects: 0 });
+        expect({ shape, selects: selectCount(html) }).toEqual({
+          shape,
+          selects: 0,
+        });
       }
     });
 
     it("«Стиль» и «Вариации» независимы: форма одинакова в обоих стилях", () => {
       for (const shape of ["circle", "square"] as const) {
-        const asButton = firstSwatch(rendered[theme][`button/${shape}`], radii[theme]);
-        const asList = firstSwatch(rendered[theme][`list/${shape}`], radii[theme]);
-        expect({ shape, button: asButton?.shape, list: asList?.shape }).toEqual({
-          shape,
-          button: shape,
-          list: shape,
-        });
+        const asButton = firstSwatch(
+          rendered[theme][`button/${shape}`],
+          radii[theme],
+        );
+        const asList = firstSwatch(
+          rendered[theme][`list/${shape}`],
+          radii[theme],
+        );
+        expect({ shape, button: asButton?.shape, list: asList?.shape }).toEqual(
+          {
+            shape,
+            button: shape,
+            list: shape,
+          },
+        );
       }
     });
   });
@@ -305,26 +341,21 @@ describe("flux: одна развилка на серверный рендер �
   // после каждого выбора. Развилка у обоих ОДНА (`renderVariantsHtml`), иначе
   // форма держалась бы только до первого клика. Проверяем саму развилку: это и
   // есть код живого рефреша.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { renderVariantsHtml } = require("../../../themes/flux/src/lib/storefront-hydrate") as {
-    renderVariantsHtml: (
-      groups: { name: string; values: string[] }[],
-      selected: Record<string, string>,
-      displayStyle: string,
-      shape: string,
-    ) => string;
-  };
+
   const groups = [
     { name: "Цвет", values: ["Красный", "Светло-голубой"] },
     { name: "Размер", values: ["M", "L"] },
   ];
   const selected = { Цвет: "Красный", Размер: "M" };
 
-  it.each(["circle", "square"] as const)("Список + «%s» — образцы, не выпадашка", (shape) => {
-    const html = renderVariantsHtml(groups, selected, "list", shape);
-    expect(selectCount(html)).toBe(0);
-    expect(firstSwatch(html, radii.flux)?.shape).toBe(shape);
-  });
+  it.each(["circle", "square"] as const)(
+    "Список + «%s» — образцы, не выпадашка",
+    (shape) => {
+      const html = renderVariantsHtml(groups, selected, "list", shape);
+      expect(selectCount(html)).toBe(0);
+      expect(firstSwatch(html, radii.flux)?.shape).toBe(shape);
+    },
+  );
 
   it("Список + «Нет» — выпадашка (канон)", () => {
     const html = renderVariantsHtml(groups, selected, "list", "none");
@@ -332,9 +363,15 @@ describe("flux: одна развилка на серверный рендер �
     expect(firstSwatch(html, radii.flux)).toBeNull();
   });
 
-  it.each(["circle", "square"] as const)("Кнопка + «%s» — та же форма", (shape) => {
-    expect(firstSwatch(renderVariantsHtml(groups, selected, "button", shape), radii.flux)?.shape).toBe(
-      shape,
-    );
-  });
+  it.each(["circle", "square"] as const)(
+    "Кнопка + «%s» — та же форма",
+    (shape) => {
+      expect(
+        firstSwatch(
+          renderVariantsHtml(groups, selected, "button", shape),
+          radii.flux,
+        )?.shape,
+      ).toBe(shape);
+    },
+  );
 });

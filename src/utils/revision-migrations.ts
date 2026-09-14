@@ -1939,6 +1939,82 @@ function seedProfilePage(out: Record<string, unknown>): Record<string, unknown> 
   return { ...out, pages: newPages, pagesData: newPagesData };
 }
 
+/**
+ * Страница «Избранное» (`/wishlist`) — тестировщик 14.09: «Для страницы
+ * Избранное в блоке Тема создать исключительно там секцию Избранное».
+ *
+ * Страница витрины существовала и раньше (`themes/<t>/src/pages/wishlist.astro`
+ * во всех пяти темах, live отдаёт 200), но записи страницы у ревизии не было —
+ * значит не было ни пункта в меню конструктора, ни возможности настроить её
+ * секции. Манифест темы её теперь объявляет, но `runMigrations` домерживает
+ * страницы манифеста только при подъёме ревизии 1.0 → 2.0; у живых сайтов
+ * ревизия уже 2.0, поэтому запись досеваем здесь — тем же приёмом, что
+ * `seedProfilePage`.
+ *
+ * Содержимое — [Header, WishlistSection, Footer]: тело страницы это ОДНА
+ * секция «Избранное» (порт темы), вокруг мерчант добавляет свои секции, как на
+ * главной. Шапка и подвал берутся у главной (getHomeChrome), собственные id —
+ * Puck ломается на дубликатах между страницами.
+ *
+ * Идемпотентна: страница с уже существующей записью И контентом не трогается,
+ * поэтому правки мерчанта (схема, отступы, добавленные секции) переживают
+ * любой повторный прогон.
+ */
+function seedWishlistPage(out: Record<string, unknown>): Record<string, unknown> {
+  // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
+  // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
+  // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
+  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+  const pagesData = out.pagesData as Record<string, unknown>;
+  const pages = Array.isArray(out.pages)
+    ? (out.pages as Array<{ id?: string; slug?: string }>)
+    : [];
+  const hasContent = !!pagesData['page-wishlist'];
+  const hasMeta = pages.some(
+    (p) =>
+      p?.id === 'page-wishlist' ||
+      (p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'wishlist',
+  );
+  if (hasContent && hasMeta) return out;
+
+  const ts = Date.now();
+  const chrome = getHomeChrome(pagesData);
+  const newPagesData = hasContent
+    ? pagesData
+    : {
+        ...pagesData,
+        'page-wishlist': {
+          content: [
+            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: `Header-wishlist-${ts}` } },
+            {
+              type: 'WishlistSection',
+              props: {
+                id: `WishlistSection-${ts}`,
+                colorScheme: 2,
+                padding: { top: 80, bottom: 80 },
+              },
+            },
+            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-wishlist-${ts}` } },
+          ],
+          root: { props: { title: 'Избранное' } },
+          zones: {},
+        } as PageData,
+      };
+  const newPages = hasMeta
+    ? pages
+    : [
+        ...pages,
+        {
+          id: 'page-wishlist',
+          name: 'Избранное',
+          slug: '/wishlist',
+          role: 'system',
+          contentFile: 'pages/wishlist.json',
+        },
+      ];
+  return { ...out, pages: newPages, pagesData: newPagesData };
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -2002,13 +2078,16 @@ export function migrateRevisionData(
   // Пункт 14: «Профиль» — для всех тем (страница витрины есть у всех пяти).
   const withProfile = seedProfilePage(withCheckoutResult);
 
+  // «Избранное» — для всех тем (порт секции и шелл страницы есть у всех пяти).
+  const withWishlist = seedWishlistPage(withProfile);
+
   // Пункт 13 — шапка = шапка главной. САМОЙ ПОСЛЕДНЕЙ: все сидеры выше уже
   // создали свои страницы (catalog/product/cart/checkout/collection/
   // checkout-result), значит унификация накрывает и их тоже.
-  if (withProfile.pagesData && typeof withProfile.pagesData === 'object') {
-    withProfile.pagesData = unifyHeaderWithHome(
-      withProfile.pagesData as Record<string, unknown>,
+  if (withWishlist.pagesData && typeof withWishlist.pagesData === 'object') {
+    withWishlist.pagesData = unifyHeaderWithHome(
+      withWishlist.pagesData as Record<string, unknown>,
     );
   }
-  return withProfile;
+  return withWishlist;
 }

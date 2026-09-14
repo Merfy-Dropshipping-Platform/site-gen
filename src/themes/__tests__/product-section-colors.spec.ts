@@ -137,7 +137,14 @@ function resolveColor(
       `${forRegExp(cssSelectorOf(cls))}\\s*\\{([^}]*)\\}`,
     ).exec(themeCss);
     if (!rule) continue;
-    const decl = /color:\s*rgb\(var\((--[a-z0-9-]+)\)[^)]*\)/i.exec(rule[1]);
+    // Граница объявления обязательна: без неё `border-color: rgb(var(--color-border))`
+    // сходит за `color:` (подстрока), и цветом ТЕКСТА объявляется цвет РАМКИ.
+    // Поймано 14.09, когда у счётчика rose/bloom/satin появилась плашка своей
+    // темы: тест падал «токен --color-border не объявлен у схемы 3», хотя текст
+    // красился правильным --color-text.
+    const decl = /(?:^|[;{\s])color:\s*rgb\(var\((--[a-z0-9-]+)\)[^)]*\)/i.exec(
+      rule[1],
+    );
     if (!decl) continue;
     const token = decl[1];
     const scheme = /\.color-scheme-3\s*\{([^}]*)\}/.exec(tokensCss)?.[1] ?? "";
@@ -176,16 +183,29 @@ describe.each(THEMES)("«Товар» / %s: цвета внутри схемы",
     expect(color.rgb).not.toBe(BUTTON_RGB);
   });
 
-  it("T5 стрелки «−»/«+» наследуют цвет счётчика", () => {
-    // В разметке у кнопок стоит `text-current`: собственного цвета у них нет,
-    // значит достаточно одного источника — обёртки счётчика.
+  it("T5 стрелки «−»/«+» не красятся ФОНОМ кнопки", () => {
+    // Проверяется цвет ТЕКСТА стрелок, а не подстрока в атрибуте. У vanilla
+    // силуэт счётчика — две залитые плашки (её собственное решение, см.
+    // VanillaProductDetail.astro), поэтому в классе кнопки законно стоит
+    // `bg-[rgb(var(--color-button-bg))]`, а глиф красится парным
+    // `--color-button-text`. Подстроковая проверка «в кнопке нет
+    // --color-button-bg» на этом силуэте красная, хотя цвет стрелки верный.
     const html = renderLive(theme);
     const arrows = /<button[^>]*data-counter-action="decrement"[^>]*>/.exec(
       html,
     )?.[0];
     expect(arrows).toBeDefined();
-    expect(arrows).toContain("text-current");
-    expect(arrows).not.toContain("--color-button-bg");
+    const classes = (/class="([^"]*)"/.exec(arrows ?? "")?.[1] ?? "")
+      .split(/\s+/)
+      .filter(Boolean);
+    if (classes.includes("text-current")) {
+      // Собственного цвета нет — источник один, обёртка счётчика (rose/bloom/satin).
+      expect(arrows).not.toContain("text-[rgb(var(--color-button-bg))]");
+      return;
+    }
+    const color = resolveColor(themeCssOf(theme), tokens, classes);
+    expect(color.token).not.toBe("--color-button-bg");
+    expect(color.rgb).not.toBe(BUTTON_RGB);
   });
 
   it("T7 описание приглушается от ТЕКСТА прозрачностью, как старая цена", () => {

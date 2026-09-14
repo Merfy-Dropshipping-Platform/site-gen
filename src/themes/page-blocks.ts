@@ -4,6 +4,7 @@ import { applyPageBinding } from '../render/page-transclude';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 import { unifyHeaderWithHome } from '../utils/revision-migrations';
+import { isBodyBlockOnPage } from './page-registry';
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.
@@ -133,6 +134,29 @@ export async function extractPageBlocks(
       (b) =>
         (b.props as { hidden?: unknown } | undefined)?.hidden !== true,
     )
+    // Хром витрины на чужой странице — не тело. У чекаута
+    // (`getChromeKindByPageId(page) === 'checkout'`) подвал/шапку магазина
+    // рисует сборка хрома: `CheckoutHeader` и правовая полоса
+    // `CheckoutFooterStrip`, — а НЕ секции страницы.
+    //
+    // Баг тестировщика 14.09 (повтор 18-А): «во вкладке Оформление заказа
+    // убрать подвал, где идёт Powered by merfy» — на скриншоте внизу чекаута
+    // полный подвал витрины (колонки «Навигация»/«Информация», телефон,
+    // иконки платёжных систем). Прошлый круг лечил РЕНДЕР (подмена последнего
+    // <footer> правовой полосой в `injectChromeIntoHtml`), а причина осталась:
+    // `migrateCheckoutPage` ДОПИСЫВАЕТ в страницу чекаута блок `Footer` —
+    // копию подвала главной вместе с его id. Замер на main (jest, 14.09):
+    // extractPageBlocks(ревизия,'page-checkout') → [CheckoutHeader,
+    // CheckoutForm, CheckoutSummary, **Footer**]. Любой путь, который идёт по
+    // блокам, а не через хром, рисовал подвал витрины — в проде это фолбэк
+    // превью (шелла `theme-preview/<тема>/checkout/index.html` нет → блоб-путь
+    // отдаёт null → страница собирается из блоков). Поэтому фильтр стоит здесь,
+    // в ОБЩЕЙ точке, а не ещё одним `if` в контроллере.
+    //
+    // Блок остаётся в ревизии: на нём держится узел «Подвал» в дереве
+    // конструктора и выбор «Цветовой схемы» полосы (`checkoutFooterScheme`
+    // читает ревизию напрямую) — состав панели не меняется.
+    .filter((b) => isBodyBlockOnPage(page, b.type))
     .map((b) => {
       const props = adaptLegacyProps(
         (b.props ?? {}) as Record<string, unknown>,

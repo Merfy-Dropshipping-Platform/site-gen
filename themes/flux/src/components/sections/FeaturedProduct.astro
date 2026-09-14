@@ -37,11 +37,16 @@
  *     (`data-add-to-cart` → глобальный делегат `initCartUI` из
  *     `lib/cart.ts` → `lib/nt-cart-flux.ts`, подключён в Layout.astro — сам
  *     клик обрабатывать не нужно).
- *   - GSAP-анимация аккордеона (upstream) заменена на простой class-toggle:
- *     ни одна другая секция flux не импортирует gsap напрямую в компонент
- *     (только `lib/animations.ts` — глобальный `[data-reveal]` scroll-reveal,
- *     который эта секция получает бесплатно через тот же атрибут на
- *     контейнере, без импорта).
+ *   - аккордеон описания (upstream: GSAP, затем простой class-toggle) СНЯТ:
+ *     жалоба тестировщика 14.09 02:07 — «в секции товар везде убрать слово
+ *     ОПИСАНИЕ, это только название секции, все данные тянутся с админки».
+ *     Подпись аккордеона и была этим словом; без неё кнопка-раскрывашка ведёт
+ *     в никуда, поэтому текст товара печатается открытым — как в общем порте
+ *     theme-base. Напомним: у flux описание и так скрыто дефолтом темы
+ *     (`packages/theme-flux/theme.json` → blockDefaults.Product.visualConfig
+ *      .showDescription = false), эта ветка разметки на витрине спит.
+ *     Scroll-reveal `[data-reveal]` секция по-прежнему получает бесплатно от
+ *     глобального `lib/animations.ts`, без импорта gsap.
  *   - "uid" проп ProductConfigurator (никогда не читался скриптом по
  *     значению, только как маркер-селектор) убран как мёртвый — заменён на
  *     обычные boolean data-атрибуты.
@@ -60,8 +65,7 @@ import FluxPicture from "../img/FluxPicture.astro";
 import {
 	deriveVariantGroups,
 	findCombination,
-	renderVariantGroupsHtml,
-	renderVariantSelectsHtml,
+	renderVariantsHtml,
 	formatPrice,
 	productHref,
 	resolveComboPricing,
@@ -202,10 +206,14 @@ const activeCombo = hasVariants ? findCombination(combos, selectedOptions) : nul
 const variantsDisplayStyle = p.variants?.displayStyle === "list" ? "list" : "button";
 const variantsShapeRaw = typeof p.variants?.shape === "string" ? p.variants.shape : "";
 const variantsShape = variantsShapeRaw === "circle" || variantsShapeRaw === "square" ? variantsShapeRaw : "";
+// «Стиль» и «Вариации» НЕЗАВИСИМЫ. Раньше ветка «Списка» звала выпадашку, у
+// которой в сигнатуре формы нет вовсе, — и «Круг/Квадрат» пропадал вместе с
+// образцами (баг тестировщика 2026-09-14). Список + форма = закрытый список с
+// образцами (паритет theme-base ProductVariants, ветка isListShaped); голая
+// выпадашка остаётся только там, где формы нет («Вариации: Нет»). Развилка
+// одна на оба пути порта (этот серверный рендер и живой рефреш в скрипте).
 const variantsHtml = hasVariants
-	? variantsDisplayStyle === "list"
-		? renderVariantSelectsHtml(variantGroups, selectedOptions)
-		: renderVariantGroupsHtml(variantGroups, selectedOptions, variantsShape)
+	? renderVariantsHtml(variantGroups, selectedOptions, variantsDisplayStyle, variantsShape)
 	: "";
 
 function pickOpt(opts: Record<string, string> | undefined, keys: string[]): string {
@@ -516,14 +524,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				)}
 
-				<!-- Описание (аккордеон) -->
+				<!-- Описание (текст товара из админки, без служебной подписи) -->
 				{hasDescription && !isFieldHidden('description') && (
 					<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
-						<button type="button" class="flex min-h-11 w-full items-center justify-between gap-2 text-left" data-cfg-spec-toggle aria-expanded="false">
-							<span class="font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[#000000]">Описание</span>
-							<NtIcon name="plus" sizeClass="size-6" />
-						</button>
-						<div class="hidden pt-2" data-cfg-spec-body>
+						<div data-cfg-spec-body>
 							<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]">{description}</p>
 						</div>
 					</div>
@@ -644,14 +648,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</div>
 			)}
 
-			<!-- Описание (аккордеон) -->
+			<!-- Описание (текст товара из админки, без служебной подписи) -->
 			{hasDescription && !isFieldHidden('description') && (
 				<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
-					<button type="button" class="flex w-full items-center justify-between gap-2 text-left" data-cfg-spec-toggle aria-expanded="false">
-						<span class="font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[#000000]">Описание</span>
-						<NtIcon name="plus" sizeClass="size-6" />
-					</button>
-					<div class="hidden pt-2" data-cfg-spec-body>
+					<div data-cfg-spec-body>
 						<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999]">{description}</p>
 					</div>
 				</div>
@@ -689,8 +689,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		formatPrice,
 		deriveVariantGroups,
 		findCombination,
-		renderVariantGroupsHtml,
-		renderVariantSelectsHtml,
+		renderVariantsHtml,
 		resolveComboPricing,
 	} from "../../lib/storefront-hydrate";
 
@@ -1091,8 +1090,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			// переключался на дефолт.
 			const isListStyle = variantsWrap?.getAttribute("data-variants-style") === "list";
 			const wrapShape = variantsWrap?.getAttribute("data-variants-shape") ?? "";
+			// Развилка ОДНА на оба пути (SSR-фронтматтер и этот живой рефреш) —
+			// `renderVariantsHtml` из storefront-hydrate: раньше она была
+			// продублирована, и правка одной ветки оставляла вторую со старым
+			// поведением — так форма и терялась после первого же клика.
 			const renderVariants = (gs: { name: string; values: string[] }[], sel: Record<string, string>) =>
-				isListStyle ? renderVariantSelectsHtml(gs, sel) : renderVariantGroupsHtml(gs, sel, wrapShape);
+				renderVariantsHtml(gs, sel, isListStyle ? "list" : "button", wrapShape);
 
 			if (variantsWrap && groups.length) {
 				variantsWrap.hidden = false;
@@ -1171,21 +1174,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				}
 			});
 
-			// Аккордеон описания — простой class-toggle (без gsap: ни одна другая
-			// секция flux не импортирует gsap напрямую в компонент).
-			cfg.querySelectorAll<HTMLElement>("[data-cfg-spec]").forEach((spec) => {
-				const toggle = spec.querySelector<HTMLButtonElement>("[data-cfg-spec-toggle]");
-				const body = spec.querySelector<HTMLElement>("[data-cfg-spec-body]");
-				const icon = toggle?.querySelector<HTMLImageElement>("img");
-				if (!toggle || !body) return;
-				toggle.addEventListener("click", () => {
-					const wasOpen = toggle.getAttribute("aria-expanded") === "true";
-					const open = !wasOpen;
-					toggle.setAttribute("aria-expanded", open ? "true" : "false");
-					body.classList.toggle("hidden", !open);
-					if (icon) icon.src = icon.src.replace(/\/(plus|minus)\.svg/, open ? "/minus.svg" : "/plus.svg");
-				});
-			});
+			// Аккордеона описания больше нет: служебная подпись «Описание» с витрины
+			// убрана (жалоба тестировщика 14.09), а сворачивать без подписи нечего —
+			// текст товара из админки печатается открытым. Прежний class-toggle снят
+			// как мёртвый: единственным его триггером был [data-cfg-spec-toggle].
 
 			// Поделиться: clipboard/navigator.share + временная подпись.
 			const shareBtn = cfg.querySelector<HTMLButtonElement>("[data-cfg-share]");

@@ -89,6 +89,23 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
   // приходит из packages/theme-rose/pages/cart.json через lazy-seed (без
   // миграции ревизий существующих сайтов). Шелл — cart.astro (Layout).
   { id: 'page-cart', route: 'cart', kind: 'content', chrome: 'full' },
+  // page-wishlist — composable (kind:content), зеркало page-cart: тело страницы
+  // «Избранное» = секция WishlistSection, мерчант добавляет вокруг другие секции.
+  // Дефолт [WishlistSection] приходит из packages/theme-<t>/pages/wishlist.json
+  // через lazy-seed, существующим ревизиям страницу досевает seedWishlistPage
+  // (revision-migrations.ts). Шелл — wishlist.astro (Layout) во всех пяти темах.
+  //
+  // requireOwnShell:true — пересаживаем ТОЛЬКО поверх собственного шелла диста.
+  // Без флага тема без своей /wishlist получила бы home-шелл, и страница
+  // «Избранное» на витрине выглядела бы главной. Тема без шелла (luna) просто
+  // пропускается, как collections/preview.
+  {
+    id: 'page-wishlist',
+    route: 'wishlist',
+    kind: 'content',
+    chrome: 'full',
+    requireOwnShell: true,
+  },
   // ── Verbatim системные страницы (есть id в SYSTEM_PAGE_ROUTES) ──────────
   { id: 'page-product', route: 'product', kind: 'verbatim', chrome: 'full' },
   // Личный кабинет покупателя, «Основные данные» (пункт 14 тестировщика).
@@ -244,4 +261,50 @@ export function getChromeKind(route: string): ChromeKind {
   if (route.split('/')[0] === 'checkout') return 'checkout';
   if (route === '') return 'none';
   return 'full';
+}
+
+/**
+ * Тип хрома по ID страницы ревизии (а не по маршруту).
+ *
+ * Зачем отдельная проекция: рендер по БЛОКАМ (`extractPageBlocks`) оперирует
+ * ключом `pagesData` — `page-checkout` у конструктора, `checkout` у старых
+ * витринных ревизий, — и маршрута в этот момент не знает. Раньше знание «у
+ * чекаута особый хром» жило только в маршрутной ветке, поэтому блочные пути
+ * рисовали на чекауте подвал витрины (баг тестировщика 14.09, повтор 18-А).
+ *
+ * Неизвестная страница → 'full' (как `getChromeKind` для неизвестного
+ * маршрута): новая кастомная страница мерчанта ведёт себя как контентная.
+ */
+export function getChromeKindByPageId(pageId: string): ChromeKind {
+  const bare = pageId.replace(/^page-/, '');
+  const entry = PAGE_REGISTRY.find(
+    (e) => e.id === pageId || e.id === `page-${bare}` || e.id === bare,
+  );
+  return entry ? entry.chrome : 'full';
+}
+
+/**
+ * Блоки ХРОМА витрины: шапка магазина, подвал магазина, промо-полоса. На
+ * странице их рисует не тело, а сборка хрома (`assembleChrome`) — поэтому на
+ * странице с чужим хромом (чекаут) они не являются секциями тела.
+ * Тот же набор, что агент превью считает хромом при reconcile (spec 106).
+ */
+export const STOREFRONT_CHROME_BLOCKS: ReadonlySet<string> = new Set([
+  'Header',
+  'Footer',
+  'PromoBanner',
+]);
+
+/**
+ * Рисуется ли блок `blockType` в ТЕЛЕ страницы `pageId`.
+ *
+ * Правило одно и живёт здесь: у страницы с хромом `checkout` подвал/шапка
+ * витрины телом не являются — их место занимают `CheckoutHeader` и правовая
+ * полоса `CheckoutFooterStrip`. Блок при этом остаётся в ревизии: на нём
+ * держится узел «Подвал» в дереве конструктора и выбор его «Цветовой схемы»
+ * (`checkoutFooterScheme`), поэтому состав панели не меняется.
+ */
+export function isBodyBlockOnPage(pageId: string, blockType: string): boolean {
+  if (getChromeKindByPageId(pageId) !== 'checkout') return true;
+  return !STOREFRONT_CHROME_BLOCKS.has(blockType);
 }

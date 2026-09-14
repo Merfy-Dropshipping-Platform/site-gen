@@ -1,0 +1,8 @@
+export const WishlistSectionClasses = {
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  container: 'mx-auto max-w-[var(--container-max-width)] px-4',
+  heading:
+    '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] text-[rgb(var(--color-heading))] mb-8',
+  empty:
+    '[font-family:var(--font-heading)] text-[rgb(var(--color-text))] opacity-70 py-12 text-center',
+} as const;

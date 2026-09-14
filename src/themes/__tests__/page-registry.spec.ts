@@ -81,6 +81,10 @@ const SNAP_SYSTEM_PAGE_ROUTES: Record<string, string> = {
   // заведена как страница конструктора — в верхнем меню её не было. Тело
   // страницы остаётся verbatim; в конструкторе редактируются шапка и подвал.
   'page-profile': 'account/profile',
+  // Добавлено осознанно (тестировщик 14.09): «Избранное» — у страницы витрины
+  // появилась запись и собственная секция, значит превью обязано резолвить её
+  // по id, как остальные системные страницы.
+  'page-wishlist': 'wishlist',
 };
 
 describe('page-registry parity-snapshot', () => {
@@ -137,9 +141,12 @@ describe('page-registry parity-snapshot', () => {
       ]);
     });
 
-    it('requireOwnShell=true только у catalog и collection', () => {
+    // page-wishlist («Избранное», 14.09) тоже пересаживается ТОЛЬКО поверх своего
+    // шелла: без wishlist/index.html страница обязана пропускаться, а не
+    // подменяться главной.
+    it('requireOwnShell=true только у catalog, collection и wishlist', () => {
       const own = getContentPages().filter((p) => p.requireOwnShell === true).map((p) => p.key);
-      expect(own.sort()).toEqual(['page-catalog', 'page-collection']);
+      expect(own.sort()).toEqual(['page-catalog', 'page-collection', 'page-wishlist']);
     });
 
     it('collectionContext={} только у page-collection', () => {
@@ -155,7 +162,7 @@ describe('page-registry parity-snapshot', () => {
       expect(getRouteMap()).toEqual(SNAP_SYSTEM_PAGE_ROUTES);
     });
 
-    it('покрывает все системные страницы снимка (9 прежних + «Профиль»)', () => {
+    it('покрывает все системные страницы снимка (9 прежних + «Профиль» + «Избранное»)', () => {
       expect(Object.keys(getRouteMap()).sort()).toEqual(
         Object.keys(SNAP_SYSTEM_PAGE_ROUTES).sort(),
       );

@@ -178,25 +178,44 @@ const shareText = share?.text ?? 'Поделиться';
 const fallbackDescription = description?.content ?? '';
 
 // — Variant display controls (variants sub-panel: «Стиль» + «Вариации»). —
-//   displayStyle: button (опции чипами/свотчами) / list (выпадающий <select>).
-//   shape: circle / square (форма свотча) / none (прямоугольная текст-кнопка).
+//   displayStyle: button (опции чипами/свотчами) / list (лейбл + список).
+//   shape: circle / square (форма образца) / none (прямоугольная текст-кнопка).
 const vDisplayStyle = (variantsProp?.displayStyle ?? '') as string;
 const vStyle = (variantsProp?.style ?? '') as string;
 const vShape = (variantsProp?.shape ?? '') as string;
-// Figma 1:21431 — новая 2-польная модель: displayStyle(button/list) + shape(circle/square/none).
-// Back-compat: старые ревизии держат merged `style`(button/circle/square/list) без displayStyle.
-const variantsMode: 'button' | 'circle' | 'square' | 'list' =
+// Figma 1:21431 — поля НЕЗАВИСИМЫ, и разрешаются они тоже независимо. Раньше
+// здесь оба схлопывались в один legacy-enum `mode`, который передавался в
+// ProductVariants единственным пропом; значение 'list' форму не несёт вовсе,
+// поэтому «Список» + «Круг/Квадрат» приезжал в блок как shape=undefined → 'none'
+// и мерчант видел голую выпадашку вместо образцов (баг тестировщика
+// 2026-09-14). Ветка «список с образцами» в ProductVariants при этом была
+// написана и недостижима.
+// Back-compat: старые ревизии держат merged `style`(button/circle/square/list)
+// без displayStyle/shape — раскладываем его на те же две оси.
+const variantsDisplayStyle: 'button' | 'list' =
   vDisplayStyle === 'list'
     ? 'list'
     : vDisplayStyle === 'button'
-      ? (vShape === 'circle' || vShape === 'square' ? (vShape as 'circle' | 'square') : 'button')
+      ? 'button'
+      : vStyle === 'list'
+        ? 'list'
+        : 'button';
+const variantsShape: 'circle' | 'square' | 'none' =
+  vShape === 'circle' || vShape === 'square'
+    ? (vShape as 'circle' | 'square')
+    : vShape === 'none'
+      ? 'none'
       : vStyle === 'circle' || vStyle === 'square'
         ? (vStyle as 'circle' | 'square')
-        : vStyle === 'list'
-          ? 'list'
-          : vShape === 'circle' || vShape === 'square'
-            ? (vShape as 'circle' | 'square')
-            : 'button';
+        : 'none';
+// Legacy-enum остаётся ТОЛЬКО для `data-variants-mode` (на него смотрят внешние
+// селекторы/снимки). Решения по рендеру принимают две оси выше.
+const variantsMode: 'button' | 'circle' | 'square' | 'list' =
+  variantsDisplayStyle === 'list'
+    ? 'list'
+    : variantsShape === 'circle' || variantsShape === 'square'
+      ? variantsShape
+      : 'button';
 
 // — Resolve product → ProductView (single source of truth). —
 //
@@ -313,7 +332,6 @@ const cartImage = view.gallery.hero?.src ?? '';
             hideBrand={isFieldHidden('text')}
             title={view.name || 'Товар'}
             hideTitle={isFieldHidden('title')}
-            variant="uppercase-title"
           />
           {priceVisible && view.price.formatted && (
             <div
@@ -342,6 +360,8 @@ const cartImage = view.gallery.hero?.src ?? '';
               groups={view.variantGroups}
               type={visual.variantsType}
               mode={variantsMode}
+              displayStyle={variantsDisplayStyle}
+              shape={variantsShape}
             />
           </div>
         )}
@@ -676,6 +696,9 @@ const cartImage = view.gallery.hero?.src ?? '';
         const isActive = c === chip;
         c.setAttribute('data-variant-active', isActive ? 'true' : 'false');
         if (c.getAttribute('data-variant-available') === 'false') return;
+        // Строки закрытого списка («Список» + Круг/Квадрат) оформлены классами,
+        // своего style у них нет — перетирать его нечем и незачем.
+        if (c.hasAttribute('data-variant-dd-option')) return;
         var isSwatch = c.hasAttribute('data-variant-swatch');
         c.setAttribute(
           'style',
@@ -684,6 +707,24 @@ const cartImage = view.gallery.hero?.src ?? '';
             : (isActive ? ACTIVE_CHIP_STYLE : INACTIVE_CHIP_STYLE),
         );
       });
+      // Закрытый список: свёрнутое состояние показывает ВЫБРАННОЕ значение и
+      // схлопывается после выбора. Без этого список оставался раскрытым и
+      // продолжал показывать первую опцию — ветка рисовалась, но не работала,
+      // потому что до правки формы она была недостижима и никем не оживлялась.
+      const dd = chip.closest('[data-variant-dd]');
+      if (dd) {
+        const label = dd.querySelector('[data-variant-dd-label]');
+        if (label) label.textContent = val;
+        const summaryFill = dd.querySelector('[data-variant-dd-swatch-fill]');
+        const pickedFill = chip.querySelector('[data-variant-swatch-fill]');
+        const summarySwatch = dd.querySelector('[data-variant-dd-swatch]');
+        if (summaryFill && pickedFill) {
+          summaryFill.setAttribute('style', pickedFill.getAttribute('style') || '');
+        }
+        // У не-цветового значения свотча нет — прячем образец в свёрнутой строке.
+        if (summarySwatch) summarySwatch.hidden = !pickedFill;
+        dd.removeAttribute('open');
+      }
       refreshPriceFromVariant();
     });
 

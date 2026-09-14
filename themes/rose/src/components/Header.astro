@@ -2,6 +2,7 @@
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import NavItem from "./NavItem.astro";
 import { SITE_TITLE } from "../consts";
+import { ROSE_RAIL_INNER, ROSE_RAIL_OUTER, ROSE_RAIL_PAD_MOBILE } from "../lib/container";
 
 interface NavLink {
 	label: string;
@@ -99,15 +100,32 @@ const headerPad = pad
 const headerPadStyle = headerPad
 	? `padding-top:${headerPad.top}px;padding-bottom:${headerPad.bottom}px;`
 	: undefined;
+// Внешний рельс шапки = канон сетки темы (ROSE_RAIL_OUTER: лестница отступов
+// + max-w-1920, как у подвала). Вертикальные отступы — прежние.
 const desktopRowCls = [
-	"mx-auto flex max-w-[1920px] items-center justify-between px-4",
+	ROSE_RAIL_OUTER,
 	headerPad ? "" : "py-5",
-	"sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]",
 	headerPad ? "" : "lg:py-6",
+]
+	.filter(Boolean)
+	.join(" ");
+
+// Внутренний рельс шапки = ROSE_RAIL_INNER (контент 1320px, центрирован) —
+// тот самый второй уровень, которого у шапки не было и из-за которого её края
+// на широких экранах не вставали на вертикали секций. `relative` переезжает
+// сюда: абсолютно центрируемый логотип должен центрироваться по рельсу
+// контента, а не по всей ширине окна (рельс сам центрирован, так что для
+// глаза центр тот же).
+const desktopRailCls = [
+	ROSE_RAIL_INNER,
+	"flex items-center justify-between",
 	logoCentered ? "relative" : "",
 ]
 	.filter(Boolean)
 	.join(" ");
+
+/** Внутренний рельс для двухрядных раскладок (лого/иконки + nav под ними). */
+const desktopRailColumnCls = `${ROSE_RAIL_INNER} flex flex-col`;
 
 // Двухрядные раскладки: «Сверху слева» (top-left) и «Сверху в центре» (top-center).
 // top-left = лого-слева + иконки-справа (ряд1), nav ПОД лого прижат ВЛЕВО (ряд2,
@@ -149,7 +167,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 		<header class="relative w-full overflow-visible" data-nt="rose-header">
 			<div>
 				<!-- Mobile -->
-				<div class="relative z-[60] flex h-11 items-center justify-between px-4 sm:px-5 md:px-10 lg:hidden">
+				<div class={`relative z-[60] flex h-11 items-center justify-between ${ROSE_RAIL_PAD_MOBILE} lg:hidden`}>
 					<button
 						type="button"
 						id="rose-burger-btn"
@@ -205,15 +223,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				<div class="hidden w-full lg:block">
 					{isTwoRow ? (
 						/* ── TWO-ROW LAYOUTS: top-left / top-center ── */
-						<div
-							class={[
-								"mx-auto flex max-w-[1920px] flex-col px-4",
-								headerPad ? "" : "py-5",
-								"sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]",
-								headerPad ? "" : "lg:py-6",
-							].filter(Boolean).join(" ")}
-							style={headerPadStyle}
-						>
+						<div class={desktopRowCls} style={headerPadStyle}>
+						<div class={desktopRailColumnCls}>
 							{logoPosition === "top-left" ? (
 								/* top-left («Сверху слева», фото №1): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT, justify-start] */
 								<>
@@ -372,9 +383,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</>
 							)}
 						</div>
+						</div>
 					) : (
 						/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 						<div class={desktopRowCls} style={headerPadStyle}>
+						<div class={desktopRailCls}>
 							{isSidebar && (
 									<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
 										<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
@@ -442,6 +455,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 									<RoseNtIcon name="user" sizeClass="size-6" />
 								</a>
 							</div>
+						</div>
 						</div>
 					)}
 				</div>

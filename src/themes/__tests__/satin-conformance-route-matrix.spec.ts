@@ -53,12 +53,15 @@ describe('Satin manifest ↔ registry — checkout-result seed', () => {
   // spec 103 завёл странице подтверждения заказа сид и в satin: страниц десять,
   // hasCheckoutResultPage — true. Прежние ожидания описывали состояние до фичи.
   // Одиннадцатая страница — «Профиль» (`/account/profile`, пункт 14).
-  it('sees eleven manifest pages including checkout-result and profile', async () => {
+  // Двенадцатая — «Избранное» (`/wishlist`, тестировщик 14.09): витрина была,
+  // записи страницы не было, поэтому секцию «Избранное» негде было настроить.
+  it('sees twelve manifest pages including checkout-result, profile and wishlist', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.pageSlugs).toHaveLength(11);
+    expect(snap.pageSlugs).toHaveLength(12);
     expect(snap.hasCheckoutResultPage).toBe(true);
     expect(snap.pageSlugs).toContain('/checkout-result');
     expect(snap.pageSlugs).toContain('/account/profile');
+    expect(snap.pageSlugs).toContain('/wishlist');
   });
 });
 

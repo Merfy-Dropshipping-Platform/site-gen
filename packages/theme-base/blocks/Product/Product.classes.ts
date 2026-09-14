@@ -9,6 +9,23 @@ export const ProductClasses = {
   galleryThumbs: 'mt-4 grid grid-cols-4 gap-2',
   galleryThumb:
     'aspect-square rounded-[var(--radius-media)] bg-[rgb(var(--color-surface))] opacity-70',
+  /**
+   * Скругление медиа галереи — настройка темы «Скругления → Медиа»
+   * (`--radius-media`; панель пишет её через ThemeSettingsPanel.mediaRadius).
+   *
+   * Отдельная роль, а не `galleryMedia`/`galleryThumb` целиком: у галереи
+   * ЧЕТЫРЕ макета (split / carousel / two-columns / stacked), и каждый несёт
+   * свою геометрию — ширину, `aspect-ratio`, порядок во flex. Те два ключа
+   * описывают ещё и `w-full aspect-square`, заливку и `opacity-70` у
+   * миниатюр; подключить их целиком = переписать вёрстку всех четырёх
+   * макетов. Поэтому в разметку уезжает ровно роль «скругление».
+   *
+   * Запасные числа = сегодняшний вид байт-в-байт там, где токена нет
+   * (`inline-small` — 12px, остальные — 8px; Figma 648:55733).
+   */
+  galleryMediaRadius: 'rounded-[var(--radius-media,8px)]',
+  galleryMediaRadiusInlineSmall: 'rounded-[var(--radius-media,12px)]',
+  galleryThumbRadius: 'rounded-[var(--radius-media,8px)]',
   infoCol: 'w-full',
   title:
     '[font-family:var(--font-heading)] text-[length:var(--size-hero-heading)] leading-tight text-[rgb(var(--color-heading))] mb-4',

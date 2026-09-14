@@ -32,6 +32,15 @@ const schemeClass = schemeClassOf(colorScheme);
   style={paddingStyle}
 >
   {/*
+    Содержимое колонки сводки. Владелец, 14.09, п.2: «секция Сводка заказа
+    отображается не в полный размер всей правой части» — замер «до»: колонка
+    x=720 w=720 h≈1276-1298, секция x=768 w=468 h≈462-464. Секция стала самой
+    колонкой, поэтому меру (556 + 48/40 десктоп, 540 + 16 мобилка) и липкость
+    (баги 17 и 18-Б) держит эта обёртка. Имя атрибута сохранено: по нему же
+    липнет сводка и его же ищет скрипт высоты ниже.
+  */}
+  <div data-checkout-column="summary">
+  {/*
     Spec 102: стабильный id для под-блоков обязателен — рендерится как
     data-puck-component-id, по нему инлайн-скрипт находит корень через
     window.__merfyRoot(blockId). Без id __merfyRoot на отложенном init
@@ -58,6 +67,7 @@ const schemeClass = schemeClassOf(colorScheme);
     showDiscount={true}
     padding={{ top: 0, bottom: 0 }}
   />
+  </div>
 </section>
 
 {/*
@@ -86,8 +96,14 @@ const schemeClass = schemeClassOf(colorScheme);
   (function () {
     var section = window.__merfyRoot ? window.__merfyRoot(blockId) : null;
     if (!section) section = document.querySelector('[data-block="checkout-summary"]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
-    if (!section || !section.closest) return;
-    var col = section.closest('[data-checkout-column="summary"]');
+    if (!section) return;
+    // Содержимое колонки переехало ВНУТРЬ секции (п.2 четвёртого круга), поэтому
+    // сначала ищем его у себя. `closest` оставлен фолбэком: собранные ДО этой
+    // правки витрины держат тот же атрибут на обёртке колонки снаружи секции, и
+    // без фолбэка липкость на них молча отвалилась бы до пересборки.
+    var col =
+      (section.querySelector && section.querySelector('[data-checkout-column="summary"]')) ||
+      (section.closest && section.closest('[data-checkout-column="summary"]'));
     if (!col) return;
     if (col.hasAttribute('data-checkout-summary-fit')) return;
     col.setAttribute('data-checkout-summary-fit', '1');

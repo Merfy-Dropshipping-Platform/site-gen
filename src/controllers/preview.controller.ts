@@ -31,7 +31,7 @@ import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { adaptLegacyProps, extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
-import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, getChromeKindByPageId, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from '../themes/page-registry';
 import {
   assembleChrome,
   injectChromeIntoHtml,
@@ -539,6 +539,8 @@ export class PreviewController {
             {
               form: checkoutBlockIdentity(pagesData, 'CheckoutForm'),
               summary: checkoutBlockIdentity(pagesData, 'CheckoutSummary'),
+              // Узел «Подвал» страницы чекаута → юр.инфа (п.1 владельца 14.09).
+              footer: checkoutBlockIdentity(pagesData, 'Footer'),
             },
           );
         } catch (chromeErr) {
@@ -630,7 +632,7 @@ export class PreviewController {
     }
 
     try {
-      const html = await this.preview.renderPreviewPage({
+      let html = await this.preview.renderPreviewPage({
         blocks,
         tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
         fontHead: googleFontHead(loaded.themeId),
@@ -640,6 +642,32 @@ export class PreviewController {
         publicUrl: loaded.publicUrl,
         merfy,
       });
+      // Страница оформления, собранная ИЗ БЛОКОВ. Этот путь работает, когда у
+      // темы нет собственного шелла чекаута в превью — в проде он встречается,
+      // и общая доводка чекаута до него НЕ доезжала: ветка выше зовёт
+      // `injectCheckoutChromeIntoHtml` только для блоб-пути. Отсюда превью
+      // расходилось с витриной ровно в том, что правит четвёртый круг:
+      // «Цветовые схемы» КОЛОНОК не применялись вовсе, а узел «Подвал» не
+      // находил юр.инфу. Зовём ту же функцию — она идемпотентна, и на
+      // composed-странице ей нечего снимать (подвал сюда не попадает: его
+      // отфильтровал `isBodyBlockOnPage`).
+      //
+      // `headerHtml: null` — шапку не подменяем: она уже отрендерена из блока
+      // ревизии, то есть с пропсами мерчанта.
+      if (getChromeKindByPageId(page) === 'checkout') {
+        const pagesData =
+          ((loaded.data as { pagesData?: Record<string, unknown> } | null)
+            ?.pagesData) ?? {};
+        html = injectCheckoutChromeIntoHtml(
+          html,
+          { headerHtml: null, footerHtml: null },
+          {
+            form: checkoutBlockIdentity(pagesData, 'CheckoutForm'),
+            summary: checkoutBlockIdentity(pagesData, 'CheckoutSummary'),
+            footer: checkoutBlockIdentity(pagesData, 'Footer'),
+          },
+        );
+      }
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый
       // на свежий код мог отдавать stale HTML из browser cache (etag 304),

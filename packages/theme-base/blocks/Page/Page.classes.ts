@@ -1,5 +1,17 @@
 export const PageClasses = {
-  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))]',
+  // Вертикальный ритм = ритм ТЕМЫ (`--section-padding`, он же
+  // `--spacing-section-y`: rose 120, vanilla 80, flux 64, satin 40, bloom 120).
+  // До этого у корня не было отступа ВООБЩЕ: без пропа `padding` секция шла
+  // впритык, поэтому единственным числом оставался проп, и страница «Доставка»
+  // печатала одинаковые 80px во всех темах. У соседей ритм есть — классом
+  // порта (vanilla MainText `py-16 lg:py-[120px]`) или пер-блочным токеном
+  // (Collections `pt-[var(--collections-root-padding-top)]`); «Страница» была
+  // единственной контентной секцией без него.
+  // Запасное 80px = сегодняшний вид байт-в-байт там, где токена нет.
+  // Проп `padding` мерчанта остаётся сильнее: Page.astro печатает его
+  // инлайн-стилем, а инлайн перебивает класс (спека 2026-07-06 — пер-секционный
+  // отступ независим от темы).
+  root: 'relative w-full bg-[rgb(var(--color-bg))] text-[rgb(var(--color-text))] py-[var(--section-padding,80px)]',
   // Side padding matches the chrome container (Header/Footer responsive scale)
   // so content-page sections align with the page's content margin (вровень с
   // лого/навигацией), not hugging the far-left edge. См. themes/*/Header.astro.

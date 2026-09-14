@@ -18,6 +18,9 @@ const ROSE_SYSTEM_PAGE_IDS = [
   'page-checkout',
   'page-checkout-result',
   'page-profile',
+  // Страница «Избранное» (/wishlist): витрина была у всех пяти тем, записи
+  // страницы не было — секцию «Избранное» негде было настроить.
+  'page-wishlist',
 ];
 
 describe('sites multipage integration', () => {

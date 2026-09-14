@@ -1,0 +1,149 @@
+{
+  "content": [
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-wishlist",
+        "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+        "link": {
+          "text": "Смотреть больше",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase"
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-wishlist",
+        "siteTitle": "Flux",
+        "logo": "",
+        "logoPosition": "top-left",
+        "stickiness": "always",
+        "colorScheme": "scheme-2",
+        "menuType": "dropdown",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        },
+        "navigationLinks": [
+          {
+            "label": "Главная",
+            "href": "/"
+          },
+          {
+            "label": "Полноразмерные наушники",
+            "href": "/catalog/naushniki"
+          },
+          {
+            "label": "TWS-наушники с кейсом",
+            "href": "/catalog/tws"
+          },
+          {
+            "label": "Портативные колонки",
+            "href": "/catalog/kolonki"
+          },
+          {
+            "label": "Саундбары",
+            "href": "/catalog/saundbary"
+          }
+        ],
+        "actionButtons": {
+          "showSearch": "true",
+          "showCart": "true",
+          "showProfile": "true"
+        }
+      }
+    },
+    {
+      "type": "WishlistSection",
+      "props": {
+        "id": "WishlistSection-1",
+        "colorScheme": 2,
+        "padding": {
+          "top": 80,
+          "bottom": 80
+        }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-wishlist",
+        "colorScheme": "scheme-2",
+        "copyrightColorScheme": "scheme-1",
+        "padding": {
+          "top": 80,
+          "bottom": 40
+        },
+        "newsletter": {
+          "enabled": "false"
+        },
+        "navigationColumn": {
+          "title": "Навигация",
+          "links": [
+            {
+              "label": "Каталог",
+              "href": "/catalog"
+            },
+            {
+              "label": "О нас",
+              "href": "/about"
+            },
+            {
+              "label": "Контакты",
+              "href": "/contacts"
+            }
+          ]
+        },
+        "informationColumn": {
+          "title": "Информация",
+          "links": [
+            {
+              "label": "Политика доставки",
+              "href": "/legal/delivery"
+            },
+            {
+              "label": "Политика возврата",
+              "href": "/legal/return"
+            },
+            {
+              "label": "Условия обслуживания",
+              "href": "/legal/terms"
+            },
+            {
+              "label": "Политика конфиденциальности",
+              "href": "/legal/privacy"
+            }
+          ]
+        },
+        "socialColumn": {
+          "title": "Социальные сети",
+          "email": "flux@example.ru",
+          "socialLinks": [
+            {
+              "platform": "telegram",
+              "href": "#"
+            },
+            {
+              "platform": "vk",
+              "href": "#"
+            }
+          ]
+        },
+        "copyright": {
+          "companyName": "Flux",
+          "showYear": "true",
+          "poweredBy": "Powered by Merfy"
+        }
+      }
+    }
+  ],
+  "root": {
+    "props": {
+      "title": "Избранное"
+    }
+  },
+  "zones": {}
+}

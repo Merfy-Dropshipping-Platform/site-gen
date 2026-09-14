@@ -752,7 +752,15 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   // Жалоба тестировщика 14.09: «во всех секциях вместо используемого цвета для
   // текста применяется Серый». Считаем сами: 60 % текста + 40 % фона — та же
   // пропорция, которой уже приглушены описание и старая цена в секции «Товар».
-  const muted = mixRgbTriples(text, bg, 0.6) ?? hexToRgbTriple(scheme.muted);
+  // Осознанно заданный приглушённый уважаем (например, схема сайдбара корзины
+  // несёт свой `187 187 187` под тёмный дровер). Пересчитываем ТОЛЬКО тот самый
+  // серый `153 153 153`, который стоял во всех схемах всех пяти тем и которого
+  // мерчант изменить не мог — поля для него в редакторе схемы нет.
+  const declaredMuted = hexToRgbTriple(scheme.muted);
+  const muted =
+    declaredMuted === null || declaredMuted === FROZEN_GREY_MUTED
+      ? (mixRgbTriples(text, bg, 0.6) ?? declaredMuted)
+      : declaredMuted;
   if (muted) parts.push(`--color-muted: ${muted}`);
   const primaryBg = hexToRgbTriple(primary.background);
   const primaryText = hexToRgbTriple(primary.text);
@@ -791,6 +799,9 @@ function schemeToVars(scheme: Record<string, unknown>): string {
  * Возвращает null, если любая из троек не разобралась, — вызывающий код тогда
  * падает на прежнее значение и ничего не ломает.
  */
+/** Тот самый серый, который приезжал из theme.json во все схемы всех тем. */
+const FROZEN_GREY_MUTED = '153 153 153';
+
 function mixRgbTriples(
   a: string | null,
   b: string | null,

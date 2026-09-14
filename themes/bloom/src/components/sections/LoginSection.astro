@@ -1,0 +1,247 @@
+---
+/**
+ * Секция «Вход» (bloom). Вынесена из `themes/bloom/src/pages/login.astro`
+ * БЕЗ изменения логики — та же разметка (AuthShell + AuthInput + AuthButton,
+ * развёрнутые inline), те же id (`magic-form`, `login-email`, `login-error`,
+ * `btn-magic`), тот же порядок вызовов. Теперь это Puck-секция: страницу
+ * «Вход» мерчант редактирует как главную.
+ *
+ * Параметров РОВНО четыре (владелец 14.09): «Заголовок», «Текст», «Цветовая
+ * схема», «Отступы». Первые два — это `title`/`description` прежнего AuthShell:
+ * раньше они были зашиты в шаблон, теперь приходят пропами, а дефолты равны
+ * прежним литералам — сайт, где мерчант ничего не настраивал, выглядит как до
+ * правки.
+ *
+ * Санитайзера `?redirect` здесь НЕТ намеренно: его не было и на странице
+ * `themes/bloom/src/pages/login.astro` (он есть только у rose). Перенос
+ * секции — не повод менять поведение темы; это отдельная задача.
+ *
+ * Секция одна на странице (maxInstances: 1) → `document.getElementById`
+ * безопасен. Резолвится раньше theme-base-скаффолда (resolveV2Section по
+ * dist/theme-sections/bloom/manifest.json).
+ *
+ * Правки вёрстки против исходной страницы ровно две, обе вынужденные:
+ *   1. фон секции взят из токена `--color-bg` — иначе «Цветовая схема» красила
+ *      бы текст, но не фон (та же правка, что в OrdersSection.astro);
+ *   2. у прежнего AuthShell снят `background:#FFFFFF` и вертикальный `py-28` —
+ *      белый фон закрывал бы схему собой, а фиксированные 112px не дали бы
+ *      работать «Отступам». Остальные var-переопределения AuthShell оставлены
+ *      дословно: поля и кнопка выглядят в точности как раньше.
+ */
+import { schemeIdOf } from "../../lib/color-scheme";
+
+interface Props {
+	id?: string;
+	heading?: string;
+	text?: string;
+	colorScheme?: number | string;
+	padding?: { top?: number; bottom?: number };
+}
+const {
+	id,
+	heading = "Вход в аккаунт",
+	text = "Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.",
+	colorScheme,
+	padding,
+} = Astro.props as Props;
+
+// Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+const schemeClass = `color-scheme-${schemeIdOf(colorScheme) || "2"}`;
+const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padding?.bottom ?? 80}px;`;
+---
+
+<section
+	data-puck-component-id={id}
+	data-block="login-section"
+	data-login-page
+	data-site-id={shopId}
+	class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", schemeClass]}
+	style={paddingStyle}
+>
+	<div
+		class="auth-shell flex items-start justify-center px-5"
+		style="
+			--color-background: 255, 255, 255;
+			--color-foreground: 0, 0, 0;
+			--color-text-muted: 163, 163, 163;
+			--color-border: 163, 163, 163;
+			--color-border-active: 0, 0, 0;
+			--color-surface-muted: 245, 245, 245;
+			--color-primary: 0, 0, 0;
+			--color-button: 0, 0, 0;
+			--color-button-text: 255, 255, 255;
+		"
+	>
+		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			<div class="flex flex-col items-center gap-2 text-center">
+				<h1
+					class="font-heading text-xl uppercase font-normal"
+					style="color: rgb(var(--color-heading, 0 0 0));"
+				>{heading}</h1>
+				{text && (
+					<p class="text-base font-normal" style="color: rgb(163, 163, 163);">{text}</p>
+				)}
+			</div>
+
+			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
+				<div class="flex flex-col items-start gap-2 w-full">
+					<label for="login-email" class="auth-label">
+						E-mail<span class="auth-required"> *</span>
+					</label>
+					<input
+						type="email"
+						id="login-email"
+						name="email"
+						placeholder="example@merfy.ru"
+						required
+						autocomplete="email"
+						data-error="false"
+						data-testid="auth-input-email"
+						class="auth-input"
+					/>
+					<span class="auth-helper-error hidden" data-error-for="login-email"></span>
+				</div>
+				<div class="auth-helper-error hidden text-center" id="login-error" role="alert"></div>
+			</form>
+
+			<div class="w-full flex flex-col items-center gap-8">
+				<button
+					type="submit"
+					id="btn-magic"
+					form="magic-form"
+					class="auth-button-primary"
+					data-testid="btn-magic"
+					style="background:#000000;color:#FFFFFF;border-radius:var(--radius-button,8px);"
+				>
+					<span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
+						<span class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+						<span>Отправляем...</span>
+					</span>
+					<span class="auth-button-text" data-button-text>Получить ссылку для входа</span>
+				</button>
+			</div>
+		</div>
+	</div>
+</section>
+
+{/* Конфиг для auth-слоя темы (shopId патчится build.service на деплое). */}
+<script is:inline define:vars={{ shopId, apiUrl }}>
+	window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+		shopId: shopId || "",
+		apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+	};
+</script>
+
+<script is:inline>
+	/**
+	 * Клиент секции «Вход» (bloom). is:inline (НЕ module): на live theme dist
+	 * module-script секции не компилится → 404. Тело — дословный перенос
+	 * initLoginPage() со страницы login.astro; импорты заменены на глобал
+	 * auth-слоя темы.
+	 */
+	(function () {
+	/**
+	 * Мост к auth-слою темы. Оригинальная страница импортировала
+	 * `../lib/auth` module-скриптом; у СЕКЦИИ такой возможности нет — на live
+	 * theme dist module-script секции не компилится (404), поэтому скрипт
+	 * `is:inline`, а функции берутся из глобала `window.__bloomAuth`, который
+	 * ставит `initAuthUI()` из Layout на каждой странице. Набор вызовов и их
+	 * порядок — те же, что были на странице: логика не менялась.
+	 */
+	function whenAuth(cb) {
+		var tries = 0;
+		(function poll() {
+			var a = window.__bloomAuth;
+			if (a) return cb(a);
+			if (tries++ > 200) return; // ~10с: auth-бандл темы так и не приехал
+			setTimeout(poll, 50);
+		})();
+	}
+	/** navTo из lib/auth — скопирован дословно (превью конструктора = iframe). */
+	function navTo(path) {
+		if (typeof window === "undefined") return;
+		if (window.self !== window.top) {
+			try {
+				var u = new URL(window.location.href);
+				u.searchParams.set("page", path.split("?")[0].split("#")[0]);
+				window.location.href = u.toString();
+				return;
+			} catch (e) {
+				/* fallthrough */
+			}
+		}
+		window.location.href = path;
+	}
+
+		function initLoginPage() {
+			var magicForm = document.getElementById("magic-form");
+			if (!magicForm || magicForm.dataset.bound === "true") return;
+			magicForm.dataset.bound = "true";
+
+			var errorEl = document.getElementById("login-error");
+			var emailField = document.getElementById("login-email");
+			var magicBtn = document.getElementById("btn-magic");
+
+			var prefillEmail = new URLSearchParams(window.location.search).get("email");
+			if (prefillEmail) emailField.value = prefillEmail;
+
+			function validEmail(e) {
+				return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+			}
+			function showError(msg) {
+				errorEl.textContent = msg;
+				errorEl.classList.remove("hidden");
+			}
+
+			whenAuth(function (A) {
+				// Уже вошёл → редирект.
+				if (A.getToken()) {
+					var params = new URLSearchParams(window.location.search);
+					navTo(params.get("redirect") || "/account");
+					return;
+				}
+
+				magicForm.addEventListener("submit", async function (e) {
+					e.preventDefault();
+					errorEl.classList.add("hidden");
+					emailField.setAttribute("data-error", "false");
+					var email = emailField.value.trim();
+					if (!email || !validEmail(email)) {
+						emailField.setAttribute("data-error", "true");
+						showError("Введите корректный e-mail");
+						return;
+					}
+					var l = magicBtn.querySelector("[data-loading]");
+					var t = magicBtn.querySelector("[data-button-text]");
+					if (l) l.classList.remove("hidden");
+					if (t) t.classList.add("hidden");
+					magicBtn.disabled = true;
+					try {
+						var result = await A.requestMagicLink({ email: email });
+						if (result.success) {
+							sessionStorage.setItem("magicEmail", email);
+							navTo("/verify");
+						} else {
+							throw result;
+						}
+					} catch (err) {
+						var msg =
+							(err && (err.error || err.message)) || "Не удалось отправить ссылку";
+						if (err && err.code === "RATE_LIMIT_EXCEEDED")
+							msg = "Письмо уже отправлено. Проверьте почту.";
+						showError(msg);
+					} finally {
+						if (l) l.classList.add("hidden");
+						if (t) t.classList.remove("hidden");
+						magicBtn.disabled = false;
+					}
+				});
+			});
+		}
+
+		initLoginPage();
+		document.addEventListener("astro:page-load", initLoginPage);
+	})();
+</script>

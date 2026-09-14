@@ -1,0 +1,59 @@
+{
+  "content": [
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-login"
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-login",
+        "navigationLinks": [
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
+        ]
+      }
+    },
+    {
+      "type": "LoginSection",
+      "props": {
+        "id": "LoginSection-1",
+        "colorScheme": 2,
+        "padding": {
+          "top": 80,
+          "bottom": 80
+        }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-login"
+      }
+    }
+  ],
+  "root": {
+    "props": {
+      "meta": {
+        "title": "Вход"
+      }
+    }
+  },
+  "zones": {}
+}

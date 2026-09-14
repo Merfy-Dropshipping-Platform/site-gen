@@ -1,98 +1,13 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import AuthShell from '../components/auth/AuthShell.astro';
-import AuthInput from '../components/auth/AuthInput.astro';
-import AuthButton from '../components/auth/AuthButton.astro';
-
-// Конфиг auth-стора: shopId патчит build.service (patchShopIdInDist) → siteId на деплое.
-const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+// Страница «Вход» — ШЕЛЛ для системы секций (page-login).
+// Тело вынесено в Puck-секцию «Вход»
+// (themes/vanilla/src/components/sections/LoginSection.astro).
+// composeContentPagesIntoDist пересаживает секции ревизии page-login в этот
+// шелл (дефолт [LoginSection] приходит из packages/theme-vanilla/pages/login.json
+// через lazy-seed). Страницу теперь можно собирать из секций, как главную.
+import Layout from "../layouts/Layout.astro";
 ---
+
 <Layout title="Вход">
-  <script is:inline define:vars={{ shopId, apiUrl }}>
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
-      shopId: shopId || "",
-      apiUrl: apiUrl || "https://gateway.merfy.ru/api",
-    };
-  </script>
-
-  <AuthShell title="Вход в аккаунт" description="Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.">
-    <form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
-      <AuthInput
-        label="E-mail"
-        type="email"
-        name="email"
-        id="login-email"
-        placeholder="example@merfy.ru"
-        required
-        autocomplete="email"
-      />
-      <div class="auth-helper-error hidden text-center" id="login-error" role="alert"></div>
-    </form>
-
-    <div class="w-full flex flex-col items-center gap-8">
-      <AuthButton id="btn-magic" form="magic-form" loadingLabel="Отправляем...">Получить ссылку для входа</AuthButton>
-    </div>
-  </AuthShell>
-
-  <script>
-    import { navTo, requestMagicLink, getToken } from '../lib/auth';
-
-    function initLoginPage() {
-      const magicForm = document.getElementById('magic-form') as HTMLFormElement | null;
-      if (!magicForm || magicForm.dataset.bound === 'true') return;
-      magicForm.dataset.bound = 'true';
-
-      // Уже вошёл → редирект.
-      if (getToken()) {
-        const params = new URLSearchParams(window.location.search);
-        navTo(params.get('redirect') || '/account');
-        return;
-      }
-
-      const errorEl = document.getElementById('login-error')!;
-      const emailField = document.getElementById('login-email') as HTMLInputElement;
-
-      const prefillEmail = new URLSearchParams(window.location.search).get('email');
-      if (prefillEmail) emailField.value = prefillEmail;
-
-      const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-      const showError = (msg: string) => {
-        errorEl.textContent = msg;
-        errorEl.classList.remove('hidden');
-      };
-
-      const magicBtn = document.getElementById('btn-magic') as HTMLButtonElement;
-      magicForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        errorEl.classList.add('hidden');
-        emailField.setAttribute('data-error', 'false');
-        const email = emailField.value.trim();
-        if (!email || !validEmail(email)) {
-          emailField.setAttribute('data-error', 'true');
-          showError('Введите корректный e-mail');
-          return;
-        }
-        const l = magicBtn.querySelector('[data-loading]');
-        const t = magicBtn.querySelector('[data-button-text]');
-        l?.classList.remove('hidden'); t?.classList.add('hidden'); magicBtn.disabled = true;
-        try {
-          const result = await requestMagicLink({ email });
-          if (result.success) {
-            sessionStorage.setItem('magicEmail', email);
-            navTo('/verify');
-          } else { throw result; }
-        } catch (err: any) {
-          let msg = err?.error || err?.message || 'Не удалось отправить ссылку';
-          if (err?.code === 'RATE_LIMIT_EXCEEDED') msg = 'Письмо уже отправлено. Проверьте почту.';
-          showError(msg);
-        } finally {
-          l?.classList.add('hidden'); t?.classList.remove('hidden'); magicBtn.disabled = false;
-        }
-      });
-    }
-
-    initLoginPage();
-    document.addEventListener('astro:page-load', initLoginPage);
-  </script>
+	<!-- Секция «Вход» (+ добавленные секции) вставляются composeContentPagesIntoDist -->
 </Layout>

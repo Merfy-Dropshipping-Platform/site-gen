@@ -1,0 +1,51 @@
+---
+import type { LoginSectionProps } from './LoginSection.puckConfig';
+import { LoginSectionClasses as C } from './LoginSection.classes';
+
+interface Props extends LoginSectionProps {
+  id?: string;
+}
+
+const {
+  id,
+  heading = 'Вход в аккаунт',
+  text = 'Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.',
+  padding,
+} = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+// Общий скаффолд (зеркало CartSection.astro / WishlistSection.astro): живую
+// форму входа рисует ПОРТ темы —
+// themes/<t>/src/components/sections/LoginSection.astro. Сюда попадают только
+// темы без собственного порта; у всех пяти он есть. Id формы и полей — те же,
+// что у портов: клиентский скрипт входа темы ищет их по id.
+---
+<section
+  id="login-section"
+  class={C.root}
+  data-puck-component-id={id}
+  data-block="login-section"
+  data-login-page
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>{heading}</h1>
+    {text && <p class={C.text}>{text}</p>}
+    <form id="magic-form" class={C.form} novalidate>
+      <input
+        id="login-email"
+        type="email"
+        name="email"
+        placeholder="example@merfy.ru"
+        autocomplete="email"
+        required
+      />
+      <div id="login-error" class="hidden text-center" role="alert"></div>
+      <button id="btn-magic" type="submit" form="magic-form">
+        Получить ссылку для входа
+      </button>
+    </form>
+  </div>
+</section>

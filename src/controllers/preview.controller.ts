@@ -31,7 +31,7 @@ import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { adaptLegacyProps, extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
-import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from '../themes/page-registry';
 import {
   assembleChrome,
   injectChromeIntoHtml,
@@ -278,6 +278,13 @@ export class PreviewController {
       match?.id === 'page-orders';
     const unifiedAccount =
       isAccountSectionPage && ACCOUNT_SECTION_THEMES.has(bareThemeKey);
+    // Страница входа (14.09): «Вход» (/login) получила собственную секцию
+    // (LoginSection) и обязана рендериться секционным путём — иначе клик по
+    // превью не открывает панель (в блобе нет узлов data-puck-component-id), и
+    // «Заголовок»/«Текст»/«Цветовая схема»/«Отступы» мертвы. Тот же приём, что
+    // unifiedAccount; гейт адресный, по конкретной странице.
+    const isLoginPage = route === 'login' || match?.id === 'page-login';
+    const unifiedLogin = isLoginPage && LOGIN_SECTION_THEMES.has(bareThemeKey);
 
     // The product page's slug is `/product`, but the theme builds per-product
     // pages at <template>/products/<id>/index.html. Resolve to the first built
@@ -295,7 +302,11 @@ export class PreviewController {
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
     const isComplexRoute =
-      isV2ComplexRoute(route) && !unifiedProduct && !unifiedCart && !unifiedAccount;
+      isV2ComplexRoute(route) &&
+      !unifiedProduct &&
+      !unifiedCart &&
+      !unifiedAccount &&
+      !unifiedLogin;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют

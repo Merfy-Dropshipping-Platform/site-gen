@@ -70,6 +70,9 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   // механика: секция живёт только на своей странице, в палитру не выводится.
   AccountSection: staticComponent("AccountSection", "AccountSection.astro"),
   OrdersSection: staticComponent("OrdersSection", "OrdersSection.astro"),
+  // «Вход» (/login) — та же механика: секция живёт только на своей странице,
+  // в палитру не выводится.
+  LoginSection: staticComponent("LoginSection", "LoginSection.astro"),
   CartBody: staticComponent("CartBody", "CartBody.astro"),
   CartSummary: staticComponent("CartSummary", "CartSummary.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),

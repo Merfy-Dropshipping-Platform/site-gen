@@ -2189,6 +2189,117 @@ function seedAccountPageSections(
   return { ...out, pages, pagesData };
 }
 
+/**
+ * Страница «Вход» (`/login`) и её тело — секция «Вход» (владелец 14.09,
+ * дословно: «В меню у пункта Профиль создать новый подпункт Вход. На странице
+ * Вход как раз отобажать от темы решистрацию/вход»).
+ *
+ * До 14.09 записи страницы не было НИ У ОДНОЙ темы: `/login` собиралась Astro
+ * как статика и в конструкторе не показывалась вовсе. Поэтому сидер делает два
+ * шага:
+ *   1. заводит страницу `page-login` (`/login`), если её нет;
+ *   2. кладёт `LoginSection` в `page-login`, если её там нет.
+ *
+ * Идемпотентность — по НАЛИЧИЮ БЛОКА, а не по факту прогона (как у
+ * `seedAccountPageSections`). Скрыть секцию мерчант может (`props.hidden`), и
+ * блок при этом остаётся в контенте — сидер его видит и проходит мимо, не
+ * дублируя и не «открывая» обратно. Удалить секцию через конструктор нельзя
+ * (она в NON_DELETABLE), поэтому её отсутствие означает ровно одно: досева
+ * ещё не было.
+ *
+ * Вставка — ПЕРЕД подвалом (и после шапки), чтобы порядок совпадал с сидом
+ * темы `packages/theme-<t>/pages/login.json`.
+ *
+ * Дефолты секции здесь НЕ проставляются сверх `colorScheme`/`padding`:
+ * «Заголовок» и «Текст» приходят из `defaults` puckConfig и из фолбэков порта.
+ * Записать их в ревизию значило бы заморозить нынешние формулировки у всех
+ * живых сайтов — ровно та ловушка, что описана в
+ * «сид страницы замораживает настройки темы».
+ */
+function seedLoginPageSection(
+  out: Record<string, unknown>,
+): Record<string, unknown> {
+  // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
+  // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
+  // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
+  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+
+  let pagesData = out.pagesData as Record<string, unknown>;
+  let pages = Array.isArray(out.pages)
+    ? (out.pages as Array<Record<string, unknown>>)
+    : [];
+  let changed = false;
+  const ts = Date.now();
+
+  // ── 1. Страница «Вход» ──────────────────────────────────────────────────
+  const hasMeta = pages.some(
+    (p) =>
+      p?.id === 'page-login' ||
+      String(p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'login',
+  );
+  if (!hasMeta) {
+    pages = [
+      ...pages,
+      {
+        id: 'page-login',
+        name: 'Вход',
+        slug: '/login',
+        role: 'system',
+        contentFile: 'pages/login.json',
+      },
+    ];
+    changed = true;
+  }
+  if (!pagesData['page-login']) {
+    const chrome = getHomeChrome(pagesData);
+    pagesData = {
+      ...pagesData,
+      'page-login': {
+        // Свои id — Puck ломается на дубликатах между страницами.
+        content: [
+          {
+            ...chrome.headerBlock,
+            props: { ...(chrome.headerBlock.props ?? {}), id: `Header-login-${ts}` },
+          },
+          {
+            ...chrome.footerBlock,
+            props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-login-${ts}` },
+          },
+        ],
+        root: { props: { meta: { title: 'Вход' } } },
+        zones: {},
+      } as PageData,
+    };
+    changed = true;
+  }
+
+  // ── 2. Тело страницы: секция перед подвалом ─────────────────────────────
+  const pd = pagesData['page-login'] as PageData | undefined;
+  if (pd && Array.isArray(pd.content)) {
+    const content = pd.content as Block[];
+    if (!content.some((b) => b?.type === 'LoginSection')) {
+      const section: Block = {
+        type: 'LoginSection',
+        props: {
+          id: `LoginSection-${ts}`,
+          colorScheme: 2,
+          padding: { top: 80, bottom: 80 },
+        },
+      };
+      const footerIdx = content.findIndex((b) => b?.type === 'Footer');
+      const next =
+        footerIdx === -1
+          ? [...content, section]
+          : [...content.slice(0, footerIdx), section, ...content.slice(footerIdx)];
+      pagesData = { ...pagesData, 'page-login': { ...(pd as object), content: next } };
+      changed = true;
+    }
+  }
+
+  if (!changed) return out;
+  return { ...out, pages, pagesData };
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -2264,13 +2375,17 @@ export function migrateRevisionData(
   // была создана пустой).
   const withAccount = seedAccountPageSections(withWishlist);
 
+  // Страница «Вход» + её тело (секция «Вход») — для всех тем (порт секции и
+  // шелл страницы есть у всех пяти).
+  const withLogin = seedLoginPageSection(withAccount);
+
   // Пункт 13 — шапка = шапка главной. САМОЙ ПОСЛЕДНЕЙ: все сидеры выше уже
   // создали свои страницы (catalog/product/cart/checkout/collection/
   // checkout-result), значит унификация накрывает и их тоже.
-  if (withAccount.pagesData && typeof withAccount.pagesData === 'object') {
-    withAccount.pagesData = unifyHeaderWithHome(
-      withAccount.pagesData as Record<string, unknown>,
+  if (withLogin.pagesData && typeof withLogin.pagesData === 'object') {
+    withLogin.pagesData = unifyHeaderWithHome(
+      withLogin.pagesData as Record<string, unknown>,
     );
   }
-  return withAccount;
+  return withLogin;
 }

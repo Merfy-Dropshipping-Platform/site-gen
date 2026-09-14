@@ -131,6 +131,25 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
   // секция «Заказы» (`OrdersSection`, порт темы). Verbatim по той же причине,
   // что page-profile (см. выше).
   { id: 'page-orders', route: 'account/orders', kind: 'verbatim', chrome: 'full' },
+  // Страница «Вход» (`/login`, пункт «Профиль → Вход»). До 14.09 записи не было
+  // вовсе: `/login` собиралась Astro как статика и в конструкторе не
+  // показывалась. Тело страницы — секция «Вход» (`LoginSection`, порт темы):
+  // та же magic-link форма, что рисовала `themes/<t>/src/pages/login.astro`
+  // («на странице Вход как раз отобажать от темы решистрацию/вход»).
+  //
+  // kind:'verbatim' + адресный гейт `LOGIN_SECTION_THEMES` — тем же приёмом,
+  // что page-product / page-cart / страницы аккаунта. Причина здесь ДРУГАЯ,
+  // чем у page-profile (там verbatim держит первосегмент `account` ради хаба
+  // /account и /account/order — у `login` вложенных маршрутов нет вовсе):
+  //   • гейт даёт поштучный откат темы (убрал из множества — страница снова
+  //     берётся verbatim из диста), как у корзины и товара;
+  //   • `login` становится verbatim-первосегментом, и кастомная страница
+  //     мерчанта со слагом `login` больше не может перезаписать страницу входа
+  //     (collision-guard `isV2ComplexRoute` в v2-live-pages и
+  //     custom-pages-seo-inject). Раньше могла.
+  // На сборке страница пропускается как STATIC_TEMPLATE_PAGES ('login' уже был
+  // в списке build.service) — генератор astro-страниц её не трогает.
+  { id: 'page-login', route: 'login', kind: 'verbatim', chrome: 'full' },
   {
     id: 'page-checkout',
     route: 'checkout',
@@ -201,6 +220,27 @@ export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
  * отсюда, страница снова берётся verbatim из dist.
  */
 export const ACCOUNT_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
+  'rose',
+  'vanilla',
+  'bloom',
+  'satin',
+  'flux',
+]);
+
+/**
+ * Темы, чья страница входа (`/login`) рендерится Puck-секцией `LoginSection`,
+ * а не verbatim-телом порта темы. Зеркало `ACCOUNT_SECTION_THEMES`: страница
+ * остаётся verbatim-записью реестра, но `composeContentPagesIntoDist` и превью
+ * конструктора получают её через явный гейт.
+ *
+ * Все пять тем: порт секции (`themes/<t>/src/components/sections/LoginSection.astro`)
+ * и шелл страницы (`themes/<t>/src/pages/login.astro`) есть у каждой —
+ * проверено `src/themes/__tests__/login-section.spec.ts`. luna шелла не имеет и
+ * в множество не входит: её `/login` остаётся статикой темы.
+ *
+ * Откат темы = убрать её отсюда, страница снова берётся verbatim из dist.
+ */
+export const LOGIN_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
   'rose',
   'vanilla',
   'bloom',

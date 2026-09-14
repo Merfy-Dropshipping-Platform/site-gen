@@ -434,6 +434,13 @@
       "slug": "/account/orders",
       "role": "system",
       "contentFile": "pages/orders.json"
+    },
+    {
+      "id": "page-login",
+      "name": "Вход",
+      "slug": "/login",
+      "role": "system",
+      "contentFile": "pages/login.json"
     }
   ],
   "blockPlaceholders": {

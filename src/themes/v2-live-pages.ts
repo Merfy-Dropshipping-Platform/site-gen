@@ -5,7 +5,7 @@ import { PreviewService } from '../services/preview.service';
 import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
 import { extractPageBlocks } from './page-blocks';
 import { isV2ComplexRoute } from './v2-routes';
-import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES } from './page-registry';
+import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from './page-registry';
 import {
   assembleChrome,
   injectChromeIntoHtml,
@@ -115,6 +115,14 @@ export async function composeContentPagesIntoDist(
   if (ACCOUNT_SECTION_THEMES.has(theme)) {
     pages.push({ key: 'page-profile', route: 'account/profile', requireOwnShell: true, title: pageName('page-profile') });
     pages.push({ key: 'page-orders', route: 'account/orders', requireOwnShell: true, title: pageName('page-orders') });
+  }
+
+  // Страница входа (14.09): «Вход» (/login) получила собственную секцию — ту же
+  // magic-link форму темы, что показывает превью конструктора. requireOwnShell —
+  // только поверх SSG-шелла темы (dist/login/index.html), без фоллбэка на home:
+  // тема без шелла тихо пропускается, а не получает главную вместо формы входа.
+  if (LOGIN_SECTION_THEMES.has(theme)) {
+    pages.push({ key: 'page-login', route: 'login', requireOwnShell: true, title: pageName('page-login') });
   }
 
   // Кастомные страницы мерчанта — ТОЛЬКО позитивный opt-in. В прод-ревизиях

@@ -75,6 +75,9 @@ export const roseRegistry: Record<string, ComponentRegistryEntry> = {
   // механика: секция живёт только на своей странице, в палитру не выводится.
   AccountSection: packageComponent("AccountSection", "AccountSection"),
   OrdersSection: packageComponent("OrdersSection", "OrdersSection"),
+  // «Вход» (/login) — та же механика: секция живёт только на своей странице,
+  // в палитру не выводится.
+  LoginSection: packageComponent("LoginSection", "LoginSection"),
   CartBody: packageComponent("CartBody", "CartBody"),
   CartSummary: packageComponent("CartSummary", "CartSummary"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),

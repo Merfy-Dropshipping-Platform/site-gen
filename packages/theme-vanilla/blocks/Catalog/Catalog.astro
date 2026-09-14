@@ -83,7 +83,6 @@ const {
 	cards,
 	padding,
 	colorScheme,
-	containerColorScheme,
 	productCard,
 	collectionSlug,
 } = Astro.props as Props;
@@ -138,12 +137,10 @@ const containerStyle =
 	(padding ? `padding-top:${padding.top ?? 0}px;padding-bottom:${padding.bottom ?? 0}px;` : "") +
 	`--vanilla-cols:${colCount};`;
 
-// «Цветовая схема контейнера» — на внутреннюю обёртку каталога (отдельно от
-// схемы секции), зеркалит theme-base/flux.
-const containerSchemeClass =
-	typeof containerColorScheme === "string" && containerColorScheme
-		? ` color-scheme-${containerColorScheme.replace("scheme-", "")}`
-		: "";
+// Отдельной «цветовой схемы контейнера» больше нет: тестировщик 14.09
+// (санкционировано владельцем) — «цветовая схема одна для всей секции».
+// Проп containerColorScheme остаётся в Props ради старых ревизий, но в
+// разметку не попадает: обёртка наследует схему секции.
 
 // «Стиль (аспект фото)» карточки: square 1:1 (канон vanilla) · portrait 318/444 ·
 // landscape 4/3. Нет пропа = канон вёрстки.
@@ -294,7 +291,7 @@ const rowStockOptions: RadioOption[] = [
 						<img src={card.image} alt="" loading="lazy" style="position:absolute;left:20%;top:20%;width:60%;height:60%;object-fit:contain;" />
 					</div>
 					<div class="flex flex-col gap-1">
-						<span class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black">Товар</span>
+						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">Товар</span>
 						<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">2 500 ₽</span>
 					</div>
 				</div>
@@ -303,16 +300,14 @@ const rowStockOptions: RadioOption[] = [
 	</template>
 
 	<div class="vanilla-pad w-full bg-[var(--vanilla-surface)] py-16 md:py-20" style={containerStyle}>
-		<div
-			class={`vanilla-container flex flex-col gap-10${containerSchemeClass}`}
-			style={containerSchemeClass
-				? "background:rgb(var(--color-bg,238 238 238));color:rgb(var(--color-text,0 0 0));"
-				: undefined}
-		>
+		{/* Контейнер каталога схемы не имеет: секция красится ОДНОЙ схемой
+		    (тестировщик 14.09, санкционировано владельцем). Обёртка прозрачная —
+		    заливку держит vanilla-pad выше. */}
+		<div class="vanilla-container flex flex-col gap-10">
 			<header class="flex flex-col gap-2">
 				<h1
 					id="catalog-title"
-					class="font-vanilla-bitter text-[20px] font-normal italic uppercase leading-none tracking-normal text-black"
+					class="font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-black"
 					set:html={inlineFormat(title)}
 				></h1>
 				{subtitleVisible && (
@@ -747,7 +742,7 @@ const rowStockOptions: RadioOption[] = [
 	${heartBtn}
 	</div>
 	<div class="flex flex-col gap-1">
-		<a href="${href}" class="font-vanilla-arsenal text-base font-normal uppercase leading-none text-black transition-opacity hover:opacity-70">${name}</a>
+		<a href="${href}" class="font-vanilla-arsenal text-base font-normal leading-none text-black transition-opacity hover:opacity-70">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-2">
 			<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">${price}</span>
 			${oldPrice}

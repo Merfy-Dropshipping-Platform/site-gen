@@ -105,7 +105,13 @@ const infoColTitle = columnTitle(p.informationColumn);
 const columnTitleCls =
 	"font-manrope !text-[16px] font-normal !leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))]";
 
-type SocialIconName = "social-vk" | "social-youtube" | "social-yandex-dzen" | "social-tiktok" | "social-telegram";
+type SocialIconName =
+	| "social-vk"
+	| "social-youtube"
+	| "social-yandex-dzen"
+	| "social-tiktok"
+	| "social-telegram"
+	| "social-max";
 
 type SocialLink = { platform: string; href: string; icon: SocialIconName };
 
@@ -117,6 +123,9 @@ const SOCIAL_PLATFORMS: Record<string, { label: string; icon: SocialIconName }> 
 	dzen: { label: "YandexDzen", icon: "social-yandex-dzen" },
 	tiktok: { label: "TikTok", icon: "social-tiktok" },
 	telegram: { label: "Telegram", icon: "social-telegram" },
+	// MAX — российский мессенджер (просьба владельца 14.09). Иконка лежит рядом
+	// с остальными: themes/rose/public/icons/social-max.svg.
+	max: { label: "MAX", icon: "social-max" },
 };
 // Соцсети — ТОЛЬКО настроенные в Theme Settings (непустой href ≠ "#"). Без
 // фолбэка defaultSocials: пустой набор → ряд иконок не рендерится вовсе.

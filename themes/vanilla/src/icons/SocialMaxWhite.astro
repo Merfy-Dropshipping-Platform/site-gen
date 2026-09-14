@@ -1,0 +1,26 @@
+---
+import { withBase } from "../lib/with-base";
+
+/**
+ * MAX — российский мессенджер (просьба владельца 14.09). Обёртка сделана
+ * дословно как у соседних белых иконок подвала: тот же <img>, те же атрибуты,
+ * своя пропорция файла (18×18, контур официального логотипа max.ru).
+ */
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={withBase("/icons/social-max-white.svg")}
+	alt=""
+	width="18"
+	height="18"
+	loading="lazy"
+	decoding="async"
+	draggable={false}
+	aria-hidden="true"
+	class:list={["block shrink-0 object-contain", className]}
+/>

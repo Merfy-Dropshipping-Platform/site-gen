@@ -1,6 +1,10 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+// Иконки соцсетей — через обёртку темы: карта имён дизайн-системы закрыта, а
+// MAX (просьба владельца 14.09) лежит только в themes/flux/public/icons.
+// Правило пути у обёртки то же (<имя>.svg), поэтому разметка соседних иконок
+// не меняется.
+import FluxNtIcon from "./icons/FluxNtIcon.astro";
 import { withBase } from "../lib/with-base";
 import { schemeIdOf } from "../lib/color-scheme";
 import { SITE_TITLE } from "../consts";
@@ -135,6 +139,7 @@ const SOCIAL_PLATFORMS: Record<string, { platform: string; icon: string }> = {
 	youtube: { platform: "YouTube", icon: "social-youtube" },
 	dzen: { platform: "Дзен", icon: "social-yandex-dzen" },
 	tiktok: { platform: "TikTok", icon: "social-tiktok" },
+	max: { platform: "MAX", icon: "social-max" },
 };
 const socials = (Array.isArray(p.socialColumn?.socialLinks) ? p.socialColumn.socialLinks : [])
 	.map((s: any) => {
@@ -360,7 +365,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 								aria-label={s.platform}
 								class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
 							>
-								<NtIcon name={s.icon as any} sizeClass="size-6" />
+								<FluxNtIcon name={s.icon} sizeClass="size-6" />
 							</a>
 						))}
 					</div>

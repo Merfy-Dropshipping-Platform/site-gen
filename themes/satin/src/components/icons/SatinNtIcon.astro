@@ -1,0 +1,33 @@
+---
+import type { NtIconName } from "@merfy-dropshipping-platform/design-systems-theme/lib/icon-paths";
+import { withBase } from "../../lib/with-base";
+
+/**
+ * Иконка темы satin — тот же <img>, что отдаёт NtIcon дизайн-системы, но без её
+ * закрытого перечня имён.
+ *
+ * Зачем: карта DS (`NT_ICON_FILES`) — внешний npm-пакет, дописать её из темы
+ * нельзя, а мессенджер MAX (просьба владельца 14.09) живёт только в
+ * themes/satin/public/icons/social-max.svg. Правило пути у DS одно и то же —
+ * `<имя>.svg` (35 имён из 35), поэтому обёртка повторяет его дословно и
+ * разметка соседних иконок не меняется ни на байт.
+ */
+interface Props {
+	name: NtIconName | (string & {});
+	class?: string;
+	iconBasePath?: string;
+	sizeClass?: string;
+}
+
+const {
+	name,
+	class: className = "",
+	iconBasePath: iconBaseProp,
+	sizeClass = "size-[24px]",
+} = Astro.props as Props;
+
+const iconBase = (iconBaseProp ?? withBase("/icons")).replace(/\/$/, "");
+const src = `${iconBase}/${name}.svg`;
+---
+
+<img src={src} alt="" class={`shrink-0 object-contain pointer-events-none ${sizeClass} ${className}`} width="24" height="24" aria-hidden="true" />

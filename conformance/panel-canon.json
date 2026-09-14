@@ -2704,9 +2704,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -5870,9 +5870,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -9041,9 +9041,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -12207,9 +12207,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -15373,9 +15373,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",

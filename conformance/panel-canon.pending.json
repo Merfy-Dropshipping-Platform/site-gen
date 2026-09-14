@@ -31,6 +31,14 @@
       "measuredNow": "packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts → defaults.placeholder = 'Твой email'",
       "notCoveredHere": "Это ЗНАЧЕНИЕ по умолчанию, а не состав панели. Канон записывает состав (имя, тип, подпись, видимость, опции, потолок списка) и значений не хранит — эту правку он не поймает. Значения по умолчанию сторожит test:panel-defaults.",
       "whoFixes": "отдельный агент"
+    },
+    {
+      "id": "theme-settings-social-max",
+      "scope": "constructor",
+      "title": "Настройки темы → «Социальные сети»: добавить MAX (поле ссылки + иконка на витрине)",
+      "ownerWords": "В настройках темы во вкладке Социальные сети добавить пункт и живность MAX, то есть надо ещё добавить иконку макс мессенджера.",
+      "notCoveredHere": "Список соцсетей живёт в конструкторе (ThemeSettingsPanel → SOCIAL_NETWORKS), а в puckConfig Footer поле socialColumn помечено visibility:\"off\" (type hidden) — гард канона его состав НЕ описывает и правку не видит. Витринную половину сторожит src/themes/__tests__/social-max-icon.spec.ts (иконка в пяти темах), конструкторскую — constructor/src/__tests__/themeSettingsSocialMax.test.tsx.",
+      "whoFixes": "сделано 2026-09-14 (ветка fix/b5-theme-panel + конструктор main)"
     }
   ]
 }

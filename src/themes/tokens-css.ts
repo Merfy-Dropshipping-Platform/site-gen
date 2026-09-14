@@ -679,7 +679,30 @@ function buildThemeSchemeRule(scheme: {
   id: string;
   tokens: Record<string, string>;
 }): string {
-  const pairs = Object.entries(scheme.tokens).map(([k, v]) => `${k}: ${v}`);
+  const tokens = { ...scheme.tokens };
+  // Тот же закон, что и для схемы мерчанта (buildSchemeRule): замороженный серый
+  // пересчитываем из текста и фона ЭТОЙ схемы.
+  //
+  // Сюда попадают схемы, которые мерчант не переопределял, — и до 14.09 их
+  // токены перекладывались из манифеста один в один, вместе с `153 153 153`.
+  // Замер живой витрины satin (8afc7b1ed6ee, 14.09): в корне (схема 1)
+  // --color-muted уже 102 102 102, а внутри секции со схемой 2 — по-прежнему
+  // 153 153 153, и шесть надписей («6 товаров», «Общая», текст коллекции)
+  // выходили серыми. Жалоба тестировщика: «во всех секциях вместо используемого
+  // цвета для текста применяется Серый».
+  //
+  // Осознанно заданный приглушённый (например 187 187 187 у тёмного дровера
+  // корзины) не трогаем — он не равен замороженному и уходит как есть.
+  const declared = tokens['--color-muted']?.trim();
+  if (declared === FROZEN_GREY_MUTED) {
+    const пересчитанный = mixRgbTriples(
+      tokens['--color-text']?.trim() ?? null,
+      tokens['--color-bg']?.trim() ?? null,
+      0.6,
+    );
+    if (пересчитанный) tokens['--color-muted'] = пересчитанный;
+  }
+  const pairs = Object.entries(tokens).map(([k, v]) => `${k}: ${v}`);
   if (pairs.length === 0) return '';
   return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
 }

@@ -1,119 +1,163 @@
 {
-  "content": [
-    {
-      "type": "PromoBanner",
-      "props": {
-        "id": "PromoBanner-product",
-        "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
-        "link": {
-          "text": "Смотреть больше",
-          "href": "/catalog"
-        },
-        "size": "large",
-        "textTransform": "uppercase"
-      }
-    },
-    {
-      "type": "Header",
-      "props": {
-        "id": "Header-product",
-        "siteTitle": "Flux",
-        "logo": "",
-        "logoPosition": "top-left",
-        "stickiness": "always",
-        "colorScheme": "scheme-2",
-        "menuType": "dropdown",
-        "padding": {
-          "top": 12,
-          "bottom": 12
-        },
-        "navigationLinks": [
-          {
-            "label": "Главная",
-            "href": "/"
-          },
-          {
-            "label": "Полноразмерные наушники",
-            "href": "/catalog/naushniki"
-          },
-          {
-            "label": "TWS-наушники с кейсом",
-            "href": "/catalog/tws"
-          },
-          {
-            "label": "Портативные колонки",
-            "href": "/catalog/kolonki"
-          },
-          {
-            "label": "Саундбары",
-            "href": "/catalog/saundbary"
-          }
-        ],
-        "actionButtons": {
-          "showSearch": "true",
-          "showCart": "true",
-          "showProfile": "true"
-        }
-      }
-    },
-    {
-      "type": "Product",
-      "props": {
-        "id": "Product-1",
-        "colorScheme": "scheme-2",
-        "visualConfig": {
-          "gallery": { "variant": "inline-small", "showDiscountBadge": false },
-          "variantsType": "dropdown",
-          "showDescription": true
-        },
-        "padding": { "top": 40, "bottom": 80 }
-      }
-    },
-    {
-      "type": "PopularProducts",
-      "props": {
-        "id": "PopularProducts-product",
-        "heading": { "text": "Вам также может понравиться", "size": "small" },
-        "colorScheme": "scheme-2"
-      }
-    },
-    {
-      "type": "Footer",
-      "props": {
-        "id": "Footer-product",
-        "colorScheme": "scheme-2",
-        "copyrightColorScheme": "scheme-1",
-        "padding": { "top": 80, "bottom": 40 },
-        "newsletter": { "enabled": "false" },
-        "navigationColumn": {
-          "title": "Навигация",
-          "links": [
-            { "label": "Каталог", "href": "/catalog" },
-            { "label": "О нас", "href": "/about" },
-            { "label": "Контакты", "href": "/contacts" }
-          ]
-        },
-        "informationColumn": {
-          "title": "Информация",
-          "links": [
-            { "label": "Политика доставки", "href": "/legal/delivery" },
-            { "label": "Политика возврата", "href": "/legal/return" },
-            { "label": "Условия обслуживания", "href": "/legal/terms" },
-            { "label": "Политика конфиденциальности", "href": "/legal/privacy" }
-          ]
-        },
-        "socialColumn": {
-          "title": "Социальные сети",
-          "email": "flux@example.ru",
-          "socialLinks": [
-            { "platform": "telegram", "href": "#" },
-            { "platform": "vk", "href": "#" }
-          ]
-        },
-        "copyright": { "companyName": "Flux", "showYear": "true", "poweredBy": "Powered by Merfy" }
-      }
-    }
-  ],
-  "root": { "props": { "title": "Товар" } },
-  "zones": {}
+	"content": [
+		{
+			"type": "PromoBanner",
+			"props": {
+				"id": "PromoBanner-product",
+				"text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+				"link": {
+					"text": "Смотреть больше",
+					"href": "/catalog"
+				},
+				"size": "large",
+				"textTransform": "uppercase"
+			}
+		},
+		{
+			"type": "Header",
+			"props": {
+				"id": "Header-product",
+				"siteTitle": "Flux",
+				"logo": "",
+				"logoPosition": "top-left",
+				"stickiness": "always",
+				"colorScheme": "scheme-2",
+				"menuType": "dropdown",
+				"padding": {
+					"top": 12,
+					"bottom": 12
+				},
+				"navigationLinks": [
+					{
+						"label": "Главная",
+						"href": "/"
+					},
+					{
+						"label": "Полноразмерные наушники",
+						"href": "/catalog/naushniki"
+					},
+					{
+						"label": "TWS-наушники с кейсом",
+						"href": "/catalog/tws"
+					},
+					{
+						"label": "Портативные колонки",
+						"href": "/catalog/kolonki"
+					},
+					{
+						"label": "Саундбары",
+						"href": "/catalog/saundbary"
+					}
+				],
+				"actionButtons": {
+					"showSearch": "true",
+					"showCart": "true",
+					"showProfile": "true"
+				}
+			}
+		},
+		{
+			"type": "Product",
+			"props": {
+				"id": "Product-1",
+				"colorScheme": "scheme-2",
+				"visualConfig": {
+					"showDescription": true
+				},
+				"padding": {
+					"top": 40,
+					"bottom": 80
+				}
+			}
+		},
+		{
+			"type": "PopularProducts",
+			"props": {
+				"id": "PopularProducts-product",
+				"heading": {
+					"text": "Вам также может понравиться",
+					"size": "small"
+				},
+				"colorScheme": "scheme-2"
+			}
+		},
+		{
+			"type": "Footer",
+			"props": {
+				"id": "Footer-product",
+				"colorScheme": "scheme-2",
+				"copyrightColorScheme": "scheme-1",
+				"padding": {
+					"top": 80,
+					"bottom": 40
+				},
+				"newsletter": {
+					"enabled": "false"
+				},
+				"navigationColumn": {
+					"title": "Навигация",
+					"links": [
+						{
+							"label": "Каталог",
+							"href": "/catalog"
+						},
+						{
+							"label": "О нас",
+							"href": "/about"
+						},
+						{
+							"label": "Контакты",
+							"href": "/contacts"
+						}
+					]
+				},
+				"informationColumn": {
+					"title": "Информация",
+					"links": [
+						{
+							"label": "Политика доставки",
+							"href": "/legal/delivery"
+						},
+						{
+							"label": "Политика возврата",
+							"href": "/legal/return"
+						},
+						{
+							"label": "Условия обслуживания",
+							"href": "/legal/terms"
+						},
+						{
+							"label": "Политика конфиденциальности",
+							"href": "/legal/privacy"
+						}
+					]
+				},
+				"socialColumn": {
+					"title": "Социальные сети",
+					"email": "flux@example.ru",
+					"socialLinks": [
+						{
+							"platform": "telegram",
+							"href": "#"
+						},
+						{
+							"platform": "vk",
+							"href": "#"
+						}
+					]
+				},
+				"copyright": {
+					"companyName": "Flux",
+					"showYear": "true",
+					"poweredBy": "Powered by Merfy"
+				}
+			}
+		}
+	],
+	"root": {
+		"props": {
+			"title": "Товар"
+		}
+	},
+	"zones": {}
 }

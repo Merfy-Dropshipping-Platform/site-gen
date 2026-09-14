@@ -62,7 +62,7 @@ describe("visualConfig.counter — силуэт темы, а не данные �
     expect(props?.visualConfig).toEqual({});
   });
 
-  it("остальной visualConfig остаётся нетронутым", () => {
+  it("снимает и gallery с variantsType — ими тоже владеет тема", () => {
     const out = migrateRevisionData(
       revisionWith({
         visualConfig: {
@@ -74,11 +74,10 @@ describe("visualConfig.counter — силуэт темы, а не данные �
       }),
       "rose",
     );
-    expect(productBlock(out)?.visualConfig).toEqual({
-      gallery: { variant: "wrap-large", showDiscountBadge: true },
-      variantsType: "chips",
-      showDescription: true,
-    });
+    // showDescription остаётся сознательно: у flux сид (true) расходится с
+    // манифестом (false), и снятие спрятало бы описание товара. Когда владелец
+    // решит, какое значение верное, — ключ добавляется в SEED_FROZEN_VISUAL_KEYS.
+    expect(productBlock(out)?.visualConfig).toEqual({ showDescription: true });
   });
 
   it("работает для любой темы, не только rose (сиды меняются)", () => {
@@ -194,7 +193,52 @@ describe("сиды страницы товара не пинят силуэт с
       const content = Array.isArray(raw) ? raw : (raw.content ?? []);
       const props = content.find((b) => b?.type === "Product")?.props;
       const visual = props?.visualConfig as Record<string, unknown> | undefined;
-      expect(visual === undefined || !("counter" in visual)).toBe(true);
+      const frozen = visual
+        ? ["counter", "gallery", "variantsType"].filter((k) => k in visual)
+        : [];
+      // Сообщение важнее факта: следующий, кто уронит этот тест, должен сразу
+      // понять, ПОЧЕМУ сид не имеет права хранить настройку темы. В jest у
+      // expect нет второго аргумента, поэтому объяснение вносим в сравниваемое
+      // значение — оно попадёт в текст падения целиком.
+      const explain =
+        `сид ${theme}/pages/product.json заморозил настройки темы внутри пропов блока. ` +
+        `Пропы магазина сильнее theme.json, поэтому тема больше не сможет их изменить — ` +
+        `ровно так сломался счётчик rose 14.09. Настройку задаёт ` +
+        `theme.json → blockDefaults.Product.visualConfig.`;
+      expect(frozen.length === 0 ? "" : `${explain} Замороженные ключи: ${frozen.join(", ")}`).toBe("");
     },
   );
+
+  /**
+   * `showDescription` намеренно НЕ в списке: у flux сид (`true`) расходится с
+   * манифестом (`false`), и снятие спрятало бы описание товара. Тест фиксирует
+   * это расхождение, чтобы оно не потерялось: когда владелец решит, какое
+   * значение верное, — привести обе стороны и внести ключ в список выше.
+   */
+  it("известное расхождение showDescription у flux зафиксировано", () => {
+    const read = (theme: string) => {
+      const raw = JSON.parse(
+        readFileSync(
+          resolve(SITES_ROOT, "packages", `theme-${theme}`, "pages", "product.json"),
+          "utf8",
+        ),
+      ) as
+        | { type?: string; props?: Record<string, unknown> }[]
+        | { content?: { type?: string; props?: Record<string, unknown> }[] };
+      const content = Array.isArray(raw) ? raw : (raw.content ?? []);
+      const props = content.find((b) => b?.type === "Product")?.props;
+      return (props?.visualConfig as Record<string, unknown> | undefined)
+        ?.showDescription;
+    };
+    const themeManifest = JSON.parse(
+      readFileSync(
+        resolve(SITES_ROOT, "packages", "theme-flux", "theme.json"),
+        "utf8",
+      ),
+    ) as { blockDefaults?: { Product?: { visualConfig?: Record<string, unknown> } } };
+    expect(read("flux")).toBe(true);
+    expect(themeManifest.blockDefaults?.Product?.visualConfig?.showDescription).toBe(
+      false,
+    );
+  });
 });

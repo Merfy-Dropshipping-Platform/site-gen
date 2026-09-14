@@ -1499,6 +1499,14 @@ function dropSeededCartScheme(
  * товара, о чём никто не просил. Это тот же класс дефекта и он остаётся
  * открытым осознанно.
  */
+/**
+ * Ключи `visualConfig`, которые сид страницы темы не имеет права замораживать
+ * в данных магазина: ими управляет `theme.json`, а не мерчант. `showDescription`
+ * СЮДА НЕ ВХОДИТ — у flux сид (`true`) расходится с манифестом (`false`), и
+ * снятие спрятало бы описание товара; это решение за владельцем.
+ */
+const SEED_FROZEN_VISUAL_KEYS = ['counter', 'gallery', 'variantsType'] as const;
+
 function dropSeededCounterVariant(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -1515,9 +1523,11 @@ function dropSeededCounterVariant(
       if (!visual || typeof visual !== 'object' || Array.isArray(visual)) {
         return block;
       }
-      if (!('counter' in (visual as Record<string, unknown>))) return block;
-      const nextVisual = { ...(visual as Record<string, unknown>) };
-      delete nextVisual.counter;
+      const visualRec = visual as Record<string, unknown>;
+      const present = SEED_FROZEN_VISUAL_KEYS.filter((k) => k in visualRec);
+      if (present.length === 0) return block;
+      const nextVisual = { ...visualRec };
+      for (const k of present) delete nextVisual[k];
       pageChanged = true;
       return { ...b, props: { ...b.props, visualConfig: nextVisual } };
     });

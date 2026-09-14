@@ -281,16 +281,36 @@ export function injectChromeIntoHtml(
 
   if (chrome.headerHtml) {
     const target = chrome.headerHtml;
-    const re = HEADER_CHECKOUT_RE.test(out)
-      ? HEADER_CHECKOUT_RE
-      : HEADER_NT_RE.test(out)
-        ? HEADER_NT_RE
-        : null;
-    if (re) {
-      const current = re.exec(out)?.[0];
-      // Идемпотентность: уже целевой → не пишем.
-      if (current !== target) {
-        out = out.replace(re, () => target);
+    // Checkout — прежний путь байт-в-байт (его шапка живёт в своём слоте).
+    if (HEADER_CHECKOUT_RE.test(out)) {
+      const current = HEADER_CHECKOUT_RE.exec(out)?.[0];
+      if (current !== target) out = out.replace(HEADER_CHECKOUT_RE, () => target);
+    } else {
+      // Страница, СОБРАННАЯ из блоков ревизии (composeContentPagesIntoDist),
+      // уже несёт мерчантскую шапку целым блоком: её корень — div с
+      // `data-puck-component-id`. Подменять надо ВЕСЬ этот блок.
+      //
+      // Раньше здесь всегда искался внутренний `<header data-nt=…>` и на его
+      // место клался блок ЦЕЛИКОМ — вместе с собственным корневым div. Внутрь
+      // блока клался блок: шапки оказывались ВЛОЖЕНЫ, и в DOM их было две
+      // (замер живых витрин 14.09 — 34 сочетания страница×тема из 35).
+      // Идемпотентность при этом не работала по построению: `current` —
+      // внутренний `<header>`, `target` — весь блок, равными они не бывают, и
+      // каждый прогон добавлял ещё один слой (1 → 2 → 3).
+      const range = merchantHeaderBlockRange(out);
+      if (range) {
+        const current = out.slice(range.start, range.end);
+        // Теперь сравниваются сопоставимые вещи — блок с блоком, и повторный
+        // прогон действительно no-op.
+        if (current !== target) {
+          out = out.slice(0, range.start) + target + out.slice(range.end);
+        }
+      } else if (HEADER_NT_RE.test(out)) {
+        // Verbatim-страница темы (/verify, /register, /legal/*): своего блока
+        // шапки у неё нет, есть только дефолтный `<header data-nt=…>`. Для неё
+        // подмена внутреннего `<header>` — единственно возможная и прежняя.
+        const current = HEADER_NT_RE.exec(out)?.[0];
+        if (current !== target) out = out.replace(HEADER_NT_RE, () => target);
       }
     }
     // Унификация хедера. Пред-собранные verbatim-страницы темы (account/*, login,
@@ -310,6 +330,64 @@ export function injectChromeIntoHtml(
   }
 
   return out;
+}
+
+/**
+ * Диапазон [start, end) КОРНЕВОГО div мерчантского блока «Шапка», если он уже
+ * стоит на странице. Корень блока — div, который несёт `data-puck-component-id`
+ * шапки (или общий `data-header-wrapper`) и ОХВАТЫВАЕТ внутренний
+ * `<header data-nt=…>`. Берётся САМЫЙ ВНЕШНИЙ такой div: если предыдущая
+ * (сломанная) сборка успела вложить блок в блок, подменится вся матрёшка, и
+ * страница вылечится сама, без пересборки с нуля.
+ *
+ * null — блока нет (verbatim-страница темы), зовущий падает на подмену
+ * внутреннего `<header>`.
+ *
+ * Баланс `<div>` считает `matchingDivEnd` — тот же приём, что у
+ * `dedupeThemeBurgerDrawers`: HTML-парсера в проекте нет, а regex по вложенным
+ * div ненадёжен.
+ */
+function merchantHeaderBlockRange(
+  html: string,
+): { start: number; end: number } | null {
+  const m = HEADER_NT_RE.exec(html);
+  if (!m || m.index === undefined) return null;
+  const headerStart = m.index;
+  const headerEnd = m.index + m[0].length;
+
+  const OPEN = /<div\b[^>]*>/gi;
+  let d: RegExpExecArray | null;
+  while ((d = OPEN.exec(html)) !== null) {
+    if (d.index >= headerStart) break; // корень блока стоит ДО <header>
+    const tag = d[0];
+    const isBlockRoot =
+      /\bdata-puck-component-id=["'](?:Header|header)[^"']*["']/i.test(tag) ||
+      /\bdata-header-wrapper\b/i.test(tag);
+    if (!isBlockRoot) continue;
+    const end = matchingDivEnd(html, d.index);
+    if (end === -1 || end < headerEnd) continue; // не охватывает <header>
+    // Блок — это не только корневой div: Astro печатает следом ЕГО поднятые
+    // <script type="module">. Цель (`chrome.headerHtml`) их содержит, поэтому
+    // и заменять надо вместе с ними — иначе старые скрипты остаются соседями и
+    // КОПЯТСЯ с каждым прогоном (замерено: +4,7 КБ на проход у rose), а
+    // побайтовая идемпотентность недостижима.
+    //
+    // Границы безопасны: в собранной странице за блоком шапки идёт закрывающий
+    // </div> обёртки схемы, а не скрипт, — поглощаются только свои.
+    return { start: d.index, end: consumeTrailingScripts(html, end) };
+  }
+  return null;
+}
+
+/** Индекс после подряд идущих `<script>…</script>` (и пробелов) начиная с idx. */
+function consumeTrailingScripts(html: string, idx: number): number {
+  const NEXT = /^\s*<script\b[^>]*>[\s\S]*?<\/script>/i;
+  let end = idx;
+  for (;;) {
+    const m = NEXT.exec(html.slice(end));
+    if (!m) return end;
+    end += m[0].length;
+  }
 }
 
 /**

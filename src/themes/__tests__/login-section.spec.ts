@@ -40,6 +40,8 @@ import {
   isVerbatimRoute,
 } from "../page-registry";
 import { migrateRevisionData } from "../../utils/revision-migrations";
+import { extractPageBlocks } from "../page-blocks";
+import { composeV2Page } from "../v2-page-composer";
 
 const CANON_DUMP = resolve(__dirname, "panel-canon.mjs");
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
@@ -513,4 +515,154 @@ describe("секция «Вход» — только на своей стран�
       }).toEqual({ login: true, orders: true });
     }
   });
+});
+
+/**
+ * ПУТЬ ВИТРИНЫ, а не путь порта.
+ *
+ * Замечание владельца 14.09: «твой гард проверял отступы на рендере порта и был
+ * зелёным — значит гард смотрит не на тот путь, которым страница попадает на
+ * витрину». Замечание по существу: рендер порта — это только последнее звено.
+ * Настройка может умереть РАНЬШЕ — в `extractPageBlocks`, где пропы блока
+ * нормализуются перед рендером, и тогда до порта доедет уже пустота, а гард на
+ * порту останется зелёным.
+ *
+ * Здесь проверяется вся цепочка, которой страница доезжает до витрины:
+ *   ревизия → extractPageBlocks (нормализация пропов)
+ *           → рендер порта темы
+ *           → composeV2Page (пересадка в шелл)
+ * — те же функции, что зовёт `composeContentPagesIntoDist` на сборке.
+ *
+ * Значения взяты НЕ дефолтные. Это принципиально: дефолт отступов 80/80 совпал
+ * бы с фолбэком порта (`padding?.top ?? 80`), и «настройка работает» нельзя
+ * было бы отличить от «настройка потеряна, сработал фолбэк». 137/42 не
+ * получится ниоткуда, кроме как из ревизии.
+ */
+describe("секция «Вход» — настройки доезжают до ВИТРИНЫ (путь сборки)", () => {
+  const PROPS = {
+    id: "LoginSection-live",
+    heading: "ЗАГОЛОВОК-ВИТРИНЫ",
+    text: "ТЕКСТ-ВИТРИНЫ",
+    colorScheme: 4,
+    padding: { top: 137, bottom: 42 },
+  };
+
+  const revision = () => ({
+    pages: [
+      { id: "home", name: "Главная", slug: "/", role: "system" },
+      { id: PAGE_ID, name: "Вход", slug: SLUG, role: "system" },
+    ],
+    pagesData: {
+      home: { content: [], root: { props: {} }, zones: {} },
+      [PAGE_ID]: {
+        content: [
+          { type: "Header", props: { id: "Header-login" } },
+          { type: BLOCK, props: { ...PROPS } },
+          { type: "Footer", props: { id: "Footer-login" } },
+        ],
+        root: { props: {} },
+        zones: {},
+      },
+    },
+  });
+
+  /** Шелл темы: composeV2Page опирается на <body> и последний </footer>. */
+  const SHELL =
+    `<!doctype html><html><head><title>шелл</title></head><body>` +
+    `<main>тело шелла</main><footer>подвал шелла</footer></body></html>`;
+
+  it("extractPageBlocks НЕ теряет настройки секции", async () => {
+    const blocks = await extractPageBlocks(
+      revision() as never,
+      PAGE_ID,
+      null,
+      "rose",
+      "site-1",
+    );
+    const mine = (blocks ?? []).find((b) => b.type === BLOCK);
+    expect(mine).toBeDefined();
+    // Именно здесь настройка и могла бы умереть молча.
+    expect(mine!.props.padding).toEqual({ top: 137, bottom: 42 });
+    expect(mine!.props.heading).toBe("ЗАГОЛОВОК-ВИТРИНЫ");
+    expect(mine!.props.text).toBe("ТЕКСТ-ВИТРИНЫ");
+    expect(mine!.props.colorScheme).toBe(4);
+  });
+
+  it.each(THEMES)(
+    "%s: настройки доезжают до HTML собранной страницы",
+    async (theme) => {
+      const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+      if (!existsSync(mf)) return;
+
+      // 1. Ревизия → пропы (та же нормализация, что на сборке витрины).
+      const blocks = await extractPageBlocks(
+        revision() as never,
+        PAGE_ID,
+        null,
+        theme,
+        "site-1",
+      );
+      const section = (blocks ?? []).find((b) => b.type === BLOCK);
+      expect(section).toBeDefined();
+
+      // 2. Пропы → HTML портом темы (рендерим ИМЕННО извлечённые пропы,
+      //    а не исходные: иначе потеря на шаге 1 осталась бы незамеченной).
+      const rows = JSON.parse(
+        execFileSync(
+          "node",
+          [RENDERER, theme, JSON.stringify([{ block: BLOCK, props: section!.props }])],
+          { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 128 * 1024 * 1024 },
+        ),
+      ) as Array<{ html?: string; error?: string }>;
+      expect(rows[0]?.error).toBeUndefined();
+      const blockHtml = rows[0]?.html ?? "";
+
+      // 3. HTML → страница (пересадка в шелл темы).
+      const page = composeV2Page({
+        shellHtml: SHELL,
+        blocksHtml: [blockHtml],
+        blockTypes: [BLOCK],
+        blockSchemes: [String(section!.props.colorScheme ?? "")],
+        assetPrefix: null,
+      });
+      expect(page).not.toBeNull();
+
+      // Отступы — ровно те, что задал мерчант, а не фолбэк 80/80.
+      expect(page!).toMatch(/padding-top:\s*137px/);
+      expect(page!).toMatch(/padding-bottom:\s*42px/);
+      expect(page!).not.toMatch(/padding-top:\s*80px/);
+      // Заголовок, текст и схема — тоже на месте.
+      expect(page!).toContain("ЗАГОЛОВОК-ВИТРИНЫ");
+      expect(page!).toContain("ТЕКСТ-ВИТРИНЫ");
+      expect(page!).toContain("color-scheme-4");
+      // Тело страницы вытеснило тело шелла (пересадка состоялась).
+      expect(page!).not.toContain("тело шелла");
+    },
+  );
+
+  it.each(THEMES)(
+    "%s: БЕЗ отступов в ревизии страница получает дефолт 80/80",
+    async (theme) => {
+      const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+      if (!existsSync(mf)) return;
+      const rev = revision() as unknown as {
+        pagesData: Record<string, { content: Array<{ type: string; props: Record<string, unknown> }> }>;
+      };
+      const sec = rev.pagesData[PAGE_ID]!.content.find((b) => b.type === BLOCK)!;
+      delete sec.props.padding;
+      const blocks = await extractPageBlocks(rev as never, PAGE_ID, null, theme, "site-1");
+      const props = (blocks ?? []).find((b) => b.type === BLOCK)!.props;
+      const rows = JSON.parse(
+        execFileSync(
+          "node",
+          [RENDERER, theme, JSON.stringify([{ block: BLOCK, props }])],
+          { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 128 * 1024 * 1024 },
+        ),
+      ) as Array<{ html?: string }>;
+      // Фолбэк порта — он и рисуется на живых сайтах, где мерчант ничего не
+      // трогал. Проверка нужна, чтобы «137/42 доехали» не оказалось правдой
+      // только потому, что порт печатает отступы всегда одинаково.
+      expect(rows[0]?.html ?? "").toMatch(/padding-top:\s*80px/);
+    },
+  );
 });

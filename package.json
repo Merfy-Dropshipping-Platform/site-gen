@@ -59,6 +59,7 @@
     "test:wishlist-section": "jest --runInBand src/themes/__tests__/wishlist-section.spec.ts",
     "test:account-sections": "jest --runInBand src/themes/__tests__/account-sections.spec.ts",
     "test:login-section": "jest --runInBand src/themes/__tests__/login-section.spec.ts",
+    "test:single-chrome": "jest --runInBand src/themes/__tests__/chrome-single-header.spec.ts",
     "test:slide-panel": "jest --runInBand src/themes/__tests__/slideshow-slide-panel.spec.ts src/themes/__tests__/slideshow-slide-overlay.spec.ts",
     "panel-canon:refresh": "node src/themes/__tests__/panel-canon.mjs --out conformance/panel-canon.json",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",

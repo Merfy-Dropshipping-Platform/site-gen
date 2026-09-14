@@ -354,16 +354,16 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					: [];
 				return (
 					<div class="flex flex-col gap-1.5">
-						<a href={link.href} class:list={["font-manrope text-xs font-normal leading-normal", active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[#606060]"]}>{link.label}</a>
+						<a href={link.href} class:list={["font-manrope text-xs font-normal leading-normal", active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,96_96_96))]"]}>{link.label}</a>
 						{active && <div class="h-0.5 w-12 bg-[rgb(var(--color-text,0_0_0))]" aria-hidden="true"></div>}
 						{subs.map((s) => (
-							<a href={s.href} class="pl-3 font-manrope text-xs font-light leading-normal text-[#999999]">{s.label}</a>
+							<a href={s.href} class="pl-3 font-manrope text-xs font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">{s.label}</a>
 						))}
 					</div>
 				);
 			})}
-			<a href="/cart" class="font-manrope text-xs font-normal uppercase leading-normal text-[#606060]">Корзина</a>
-			<a href="/auth/sign-up" class="font-manrope text-xs font-normal uppercase leading-normal text-[#606060]">Регистрация</a>
+			<a href="/cart" class="font-manrope text-xs font-normal uppercase leading-normal text-[rgb(var(--color-muted,96_96_96))]">Корзина</a>
+			<a href="/auth/sign-up" class="font-manrope text-xs font-normal uppercase leading-normal text-[rgb(var(--color-muted,96_96_96))]">Регистрация</a>
 		</nav>
 	</div>
 

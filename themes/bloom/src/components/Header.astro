@@ -778,7 +778,7 @@ const headerHeartSvg =
 							aria-current={active ? "page" : undefined}
 							class:list={[
 								"font-inter text-[14px] font-light leading-normal",
-								active ? "text-[#000000]" : "text-[#999999]",
+								active ? "text-[#000000]" : "text-[rgb(var(--color-muted,153_153_153))]",
 							]}
 						>
 							{link.label}
@@ -794,7 +794,7 @@ const headerHeartSvg =
 										<div class="flex flex-col gap-2">
 											<a
 												href={c2.href}
-												class="font-inter text-[13px] font-light leading-normal text-[#999999] transition-colors hover:text-[#000000]"
+												class="font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
 											>
 												{c2.label}
 											</a>
@@ -803,7 +803,7 @@ const headerHeartSvg =
 													{kids2.map((k) => (
 														<a
 															href={k.href}
-															class="font-inter text-[12px] font-light leading-normal text-[#999999] transition-colors hover:text-[#000000]"
+															class="font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
 														>
 															{k.label}
 														</a>
@@ -818,8 +818,8 @@ const headerHeartSvg =
 					</div>
 				);
 			})}
-			<a href="/cart" class="font-inter text-[14px] font-light leading-normal text-[#999999]">Корзина</a>
-			<a href="/auth/sign-up" class="font-inter text-[14px] font-light leading-normal text-[#999999]">Регистрация</a>
+			<a href="/cart" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">Корзина</a>
+			<a href="/auth/sign-up" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">Регистрация</a>
 		</nav>
 	</div>
 

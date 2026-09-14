@@ -35,9 +35,9 @@ const api = createNtCart({
 							<div class="flex items-start justify-between gap-2">
 								<div class="flex flex-col gap-1">
 									<a href="${pHref}" class="font-roboto-flex text-[16px] font-light leading-normal text-[#000000] hover:opacity-80">${line.name}</a>
-									${variant ? `<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]">${variant}</span>` : ""}
+									${variant ? `<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
 								</div>
-								<button type="button" data-cart-remove data-id="${line.id}" class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
+								<button type="button" data-cart-remove data-id="${line.id}" class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
 							</div>
 							<div class="flex items-center justify-between">
 								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#F5F5F5]">

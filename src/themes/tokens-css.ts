@@ -338,12 +338,29 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
           }
         }
       }
+      // Приглушённый НЕ наследуем из манифеста темы, когда мерчант задал свои
+      // цвета: у `--color-muted` нет поля в редакторе схемы (состав настроек
+      // канон), поэтому константа темы для мерчанта неизменяема ровно так же,
+      // как был неизменяем `153 153 153`. Наследование её сюда и замораживало
+      // приглушённый текст у flux (204 204 204), vanilla (200 200 200) и bloom
+      // (245 245 245): фикс «muted следует схеме» работал только у rose и satin,
+      // где манифест нёс тот самый серый. Замер на схеме тестировщика (фон
+      // #71C0FF, текст #E91E8C): flux отдавал 204 204 204 вместо 185 95 186.
+      // Оставляем undefined → schemeToVars посчитает 60 % текста + 40 % фона
+      // мерчанта. Явно заданный в схеме muted (например, тёмный сайдбар
+      // корзины) сюда не попадает — он !== undefined и уважается как прежде.
       if (merged.muted === undefined) {
-        const themeMuted = themeScheme.tokens?.['--color-muted'];
-        if (themeMuted) {
-          const [r, g, b] = themeMuted.trim().split(/\s+/).map((n) => parseInt(n, 10));
-          if ([r, g, b].every((n) => !Number.isNaN(n))) {
-            merged.muted = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+        const canMix =
+          hexToRgbTriple(merged.text) !== null && hexToRgbTriple(merged.background) !== null;
+        if (!canMix) {
+          // Смешивать не из чего (мерчант не дал текст/фон) — тогда константа
+          // темы всё ещё лучше, чем отсутствие переменной.
+          const themeMuted = themeScheme.tokens?.['--color-muted'];
+          if (themeMuted) {
+            const [r, g, b] = themeMuted.trim().split(/\s+/).map((n) => parseInt(n, 10));
+            if ([r, g, b].every((n) => !Number.isNaN(n))) {
+              merged.muted = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+            }
           }
         }
       }
@@ -662,7 +679,30 @@ function buildThemeSchemeRule(scheme: {
   id: string;
   tokens: Record<string, string>;
 }): string {
-  const pairs = Object.entries(scheme.tokens).map(([k, v]) => `${k}: ${v}`);
+  const tokens = { ...scheme.tokens };
+  // Тот же закон, что и для схемы мерчанта (buildSchemeRule): замороженный серый
+  // пересчитываем из текста и фона ЭТОЙ схемы.
+  //
+  // Сюда попадают схемы, которые мерчант не переопределял, — и до 14.09 их
+  // токены перекладывались из манифеста один в один, вместе с `153 153 153`.
+  // Замер живой витрины satin (8afc7b1ed6ee, 14.09): в корне (схема 1)
+  // --color-muted уже 102 102 102, а внутри секции со схемой 2 — по-прежнему
+  // 153 153 153, и шесть надписей («6 товаров», «Общая», текст коллекции)
+  // выходили серыми. Жалоба тестировщика: «во всех секциях вместо используемого
+  // цвета для текста применяется Серый».
+  //
+  // Осознанно заданный приглушённый (например 187 187 187 у тёмного дровера
+  // корзины) не трогаем — он не равен замороженному и уходит как есть.
+  const declared = tokens['--color-muted']?.trim();
+  if (declared === FROZEN_GREY_MUTED) {
+    const пересчитанный = mixRgbTriples(
+      tokens['--color-text']?.trim() ?? null,
+      tokens['--color-bg']?.trim() ?? null,
+      0.6,
+    );
+    if (пересчитанный) tokens['--color-muted'] = пересчитанный;
+  }
+  const pairs = Object.entries(tokens).map(([k, v]) => `${k}: ${v}`);
   if (pairs.length === 0) return '';
   return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
 }

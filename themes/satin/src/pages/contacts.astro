@@ -18,18 +18,18 @@ const email = "satin@example.ru";
 				<div class="flex flex-col gap-10">
 					{addresses.map((addr, i) => (
 						<div class="flex flex-col gap-1">
-							<span class="text-[#999999]">Адрес магазина{addresses.length > 1 ? ` ${i + 1}` : ""}</span>
+							<span class="text-[rgb(var(--color-muted,153_153_153))]">Адрес магазина{addresses.length > 1 ? ` ${i + 1}` : ""}</span>
 							<span class="font-light text-[#000000]">{addr}</span>
 						</div>
 					))}
 				</div>
 				<div class="flex flex-col gap-10">
 					<div class="flex flex-col gap-1">
-						<span class="text-[#999999]">Номер телефона</span>
+						<span class="text-[rgb(var(--color-muted,153_153_153))]">Номер телефона</span>
 						<a href={`tel:${phone.replace(/[^+\d]/g, "")}`} class="font-light text-[#000000] transition-opacity hover:opacity-70">{phone}</a>
 					</div>
 					<div class="flex flex-col gap-1">
-						<span class="text-[#999999]">E-mail</span>
+						<span class="text-[rgb(var(--color-muted,153_153_153))]">E-mail</span>
 						<a href={`mailto:${email}`} class="font-light text-[#000000] transition-opacity hover:opacity-70">{email}</a>
 					</div>
 				</div>
@@ -47,7 +47,7 @@ const email = "satin@example.ru";
 		<div class="satin-container flex flex-col gap-8">
 			<div class="flex flex-col gap-2">
 				<h2 id="feedback-title" class="font-logo text-[20px] font-normal uppercase leading-[1.15] text-[#000000]">Обратная связь</h2>
-				<p class="font-manrope text-[16px] font-light leading-normal text-[#999999]">Оставьте контакты, чтобы нам было проще связаться с вами</p>
+				<p class="font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">Оставьте контакты, чтобы нам было проще связаться с вами</p>
 			</div>
 
 			<form class="grid grid-cols-1 gap-4 lg:grid-cols-[429px_1fr] lg:gap-6" data-contacts-form novalidate>

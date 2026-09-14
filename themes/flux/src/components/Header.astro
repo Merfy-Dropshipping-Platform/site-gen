@@ -170,7 +170,7 @@ const navActiveCls = "text-[rgb(var(--color-heading,0_0_0))]";
 // CSS-правило в global.css ([data-nav-inline][class*=color-scheme] a) — схему
 // на контейнер вешает и ПАТЧЕР превью без пере-рендера, поэтому чисто классами
 // в разметке это не решается (ловля theme-registry 2026-08-06).
-const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]";
+const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(var(--color-heading,0_0_0))]";
 ---
 
 <div
@@ -590,7 +590,7 @@ const navIdleCls = "text-[#cccccc] hover:text-[rgb(var(--color-heading,0_0_0))]"
 								{kids.map((k) => (
 									<a
 										href={k.href}
-										class="flex h-9 items-center rounded-[4px] px-2 font-roboto-flex text-[14px] font-light leading-normal text-[#666666] transition-colors hover:text-black"
+										class="flex h-9 items-center rounded-[4px] px-2 font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,102_102_102))] transition-colors hover:text-black"
 									>
 										{k.label}
 									</a>

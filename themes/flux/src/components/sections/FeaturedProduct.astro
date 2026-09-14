@@ -440,7 +440,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<div class="flex flex-col gap-2">
 					{displayBrand && !isFieldHidden('text') && (
 						<p
-							class={`font-roboto-flex ${textSizeCls} font-light leading-normal text-[#999999]`}
+							class={`font-roboto-flex ${textSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="100"
 							data-puck-subsection-field="text"
@@ -463,7 +463,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000] md:text-[20px]" data-cfg-price>
 							{displayPrice}
 						</span>
-						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[#999999] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
+						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
 							{displayOldPrice}
 						</span>
 					</div>
@@ -528,7 +528,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				{hasDescription && !isFieldHidden('description') && (
 					<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
 						<div data-cfg-spec-body>
-							<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]">{description}</p>
+							<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[15px]">{description}</p>
 						</div>
 					</div>
 				)}
@@ -584,7 +584,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<!-- Текст -->
 			<div class="flex flex-col gap-2">
 				{displayBrand && !isFieldHidden('text') && (
-					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text" set:html={inlineFormat(displayBrand)}></p>
+					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text" set:html={inlineFormat(displayBrand)}></p>
 				)}
 				{!isFieldHidden('title') && (
 				<h1 class="font-roboto-flex text-[19px] font-light leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
@@ -594,7 +594,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				{!isFieldHidden('price') && (
 				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000]" data-cfg-price>{displayPrice}</span>
-					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[#999999] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
+					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
 				</div>
 				)}
 			</div>
@@ -652,7 +652,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{hasDescription && !isFieldHidden('description') && (
 				<div class="flex flex-col" data-cfg-spec data-puck-subsection-parent={id} data-puck-subsection-index="106" data-puck-subsection-field="description">
 					<div data-cfg-spec-body>
-						<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999]">{description}</p>
+						<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]">{description}</p>
 					</div>
 				</div>
 			)}

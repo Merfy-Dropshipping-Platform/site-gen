@@ -26,7 +26,7 @@ const { title, subtitle, titleId } = Astro.props;
   {
     subtitle && (
       <p
-        class="text-center font-manrope text-sm md:text-lg xl:text-[24px] font-normal leading-[1.366] text-[#999999] px-2"
+        class="text-center font-manrope text-sm md:text-lg xl:text-[24px] font-normal leading-[1.366] text-[rgb(var(--color-muted,153_153_153))] px-2"
         set:html={inlineFormat(subtitle)}
       />
     )

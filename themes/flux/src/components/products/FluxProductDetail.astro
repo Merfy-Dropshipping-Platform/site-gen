@@ -243,7 +243,7 @@ const pdpHeartSvg =
 		<div class="flex flex-col gap-10">
 			<div class="flex flex-col gap-2">
 				<p
-					class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]"
+					class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
 					data-pdp-brand
 					hidden={!displayBrand}
 					data-puck-subsection-parent={id}
@@ -287,7 +287,7 @@ const pdpHeartSvg =
 						{displayPrice}
 					</span>
 					<span
-						class="font-roboto-flex text-[16px] font-light leading-normal text-[#999999] line-through md:text-[18px]"
+						class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[18px]"
 						data-pdp-oldprice
 						hidden={!displayOldPrice}
 					>
@@ -408,7 +408,7 @@ const pdpHeartSvg =
 					data-puck-subsection-field="description"
 					hidden={isPlaceholder}
 				>
-					<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[#999999] md:text-[15px]" data-pdp-desc>
+					<p class="font-roboto-flex text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[15px]" data-pdp-desc>
 						{isPlaceholder ? "" : (product as { description?: string }).description}
 					</p>
 				</div>

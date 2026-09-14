@@ -23,6 +23,11 @@
  *      белый фон закрывал бы схему собой, а фиксированные 112px не дали бы
  *      работать «Отступам». Остальные var-переопределения AuthShell оставлены
  *      дословно: поля и кнопка выглядят в точности как раньше.
+ *
+ * Цвет пояснения — `rgb(var(--color-muted, 163 163 163))`, один-в-один как у
+ * `AuthShell.astro` после ветки `fix/b7-grey-literals`: серый на витрине
+ * производный от схемы, а не константа. Фолбэк равен прежнему литералу, так что
+ * на схеме без токена вид не меняется. Сторож: `pnpm test:grey-literals`.
  */
 import { schemeIdOf } from "../../lib/color-scheme";
 
@@ -77,7 +82,7 @@ const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padd
 					style="color: rgb(var(--color-heading, 0 0 0));"
 				>{heading}</h1>
 				{text && (
-					<p class="text-base font-normal" style="color: rgb(163, 163, 163);">{text}</p>
+					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));">{text}</p>
 				)}
 			</div>
 

@@ -82,7 +82,9 @@
     "test:rich-text-fields": "jest --runInBand src/themes/__tests__/rich-text-fields.spec.ts",
     "rich-text:coverage": "node src/themes/__tests__/rich-text-coverage.mjs --table",
     "test:muted-text": "jest --runInBand src/themes/__tests__/muted-text-follows-scheme.spec.ts",
-    "test:grey-literals": "jest --runInBand src/themes/__tests__/grey-literals-follow-scheme.spec.ts"
+    "test:grey-literals": "jest --runInBand src/themes/__tests__/grey-literals-follow-scheme.spec.ts",
+    "test:page-padding": "jest --runInBand src/themes/__tests__/page-section-theme-padding.spec.ts",
+    "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

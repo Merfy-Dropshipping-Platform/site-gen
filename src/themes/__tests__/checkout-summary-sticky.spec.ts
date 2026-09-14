@@ -45,9 +45,23 @@ const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
 const styleSourceFor = (theme: string) =>
   read(SPLIT) + '\n' + read(`themes/${theme}/src/pages/checkout.astro`);
 
-/** Правило `[data-checkout-column="summary"] { … }` из исходника страницы. */
+/**
+ * ЛИПКОЕ правило колонки сводки из исходника.
+ *
+ * Селектор `[data-checkout-column="summary"]` встречается в таблице дважды:
+ * базовое правило (мобилка, в потоке) и десктопное с `position: sticky`.
+ * Берём именно липкое — первое попавшееся давало пустую проверку (замер:
+ * `top: var(--checkout-summary-top)` в базовом правиле нет и быть не должно).
+ *
+ * 14.09 (п.2 четвёртого круга) этот узел переехал ВНУТРЬ секции «Сводка
+ * заказа»: секция стала колонкой целиком, а меру и липкость держит её
+ * содержимое. Имя атрибута сохранено, поэтому проверка та же.
+ */
 function summaryRule(css: string): string {
-  return /\[data-checkout-column=["']summary["']\][\s\S]{0,500}?\}/.exec(css)?.[0] ?? '';
+  const all = [
+    ...css.matchAll(/\[data-checkout-column=["']summary["']\][^{}]*\{[^}]*\}/g),
+  ].map((m) => m[0]);
+  return all.find((r) => /position:\s*sticky/.test(r)) ?? all[0] ?? '';
 }
 
 describe('сводка чекаута едет вместе с формой (баг 17)', () => {
@@ -129,8 +143,22 @@ describe('общий скрипт сводки считает отступ по 
     return m[1];
   };
 
-  /** Минимальный DOM-стенд: столько, сколько трогает скрипт. */
-  function run(opts: { summaryHeight: number; viewport: number }) {
+  /**
+   * Минимальный DOM-стенд: столько, сколько трогает скрипт.
+   *
+   * `where` — где лежит узел `[data-checkout-column="summary"]`:
+   *   'inside'  — ВНУТРИ секции (раскладка с 14.09, п.2 четвёртого круга):
+   *               секция стала колонкой целиком, содержимое с липкостью — её
+   *               ребёнок, скрипт находит его через `querySelector`;
+   *   'outside' — снаружи, на обёртке колонки (витрины, собранные ДО правки):
+   *               скрипт обязан найти его через `closest`, иначе на них липкость
+   *               молча отвалится до ближайшей пересборки.
+   */
+  function run(opts: {
+    summaryHeight: number;
+    viewport: number;
+    where?: 'inside' | 'outside';
+  }) {
     const styles: Record<string, string> = {};
     const attrs: Record<string, string> = {};
     let resizeCb: (() => void) | null = null;
@@ -147,8 +175,12 @@ describe('общий скрипт сводки считает отступ по 
       },
       closest: () => null,
     };
+    const inside = (opts.where ?? 'outside') === 'inside';
     const section = {
-      closest: (sel: string) => (sel.includes('checkout-column') ? column : null),
+      querySelector: (sel: string) =>
+        inside && sel.includes('checkout-column') ? column : null,
+      closest: (sel: string) =>
+        !inside && sel.includes('checkout-column') ? column : null,
     };
     const win: Record<string, unknown> = {
       innerHeight: opts.viewport,
@@ -208,5 +240,36 @@ describe('общий скрипт сводки считает отступ по 
   it('не навешивается дважды на одну колонку (hot-replace конструктора)', () => {
     const { attrs } = run({ summaryHeight: 400, viewport: 900 });
     expect(Object.keys(attrs)).toContain('data-checkout-summary-fit');
+  });
+
+  // ── новая раскладка: содержимое колонки лежит ВНУТРИ секции ──────────────
+
+  it('содержимое внутри секции: отступ считается так же', () => {
+    const { styles } = run({ summaryHeight: 3272, viewport: 900, where: 'inside' });
+    expect(styles['--checkout-summary-top']).toBe('-2396px');
+  });
+
+  it('содержимое внутри секции: короткая сводка липнет к верху', () => {
+    const { styles } = run({ summaryHeight: 400, viewport: 900, where: 'inside' });
+    expect(styles['--checkout-summary-top']).toBe('24px');
+  });
+
+  it('САБОТАЖ: узла нет ни внутри, ни снаружи — скрипт молчит', () => {
+    // Калибровка: проверки выше не должны проходить «сами собой».
+    const scriptBody2 = scriptBody();
+    const styles: Record<string, string> = {};
+    const section = { querySelector: () => null, closest: () => null };
+    const win: Record<string, unknown> = {
+      innerHeight: 900,
+      __merfyRoot: () => section,
+      addEventListener: () => {},
+      ResizeObserver: class {
+        observe() {}
+      },
+    };
+    const doc = { querySelector: () => section, addEventListener: () => {} };
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
+    new Function('window', 'document', 'blockId', scriptBody2)(win, doc, 'checkout-summary');
+    expect(Object.keys(styles)).toHaveLength(0);
   });
 });

@@ -176,12 +176,20 @@ describe('класс схемы сводки — на правой колонк�
 /**
  * САМОЕ ВАЖНОЕ МЕСТО ЭТОГО ФАЙЛА.
  *
- * Прошлый круг красил схемой ОБЕ колонки; уточнение владельца это отменило:
- * «левая часть от нас… только цвет кнопки и юр инфа цвет». Гард сторожит ровно
- * границу — левая колонка и секция формы БЕЗ класса схемы, кнопка С классом,
- * правая колонка как была.
+ * Границу «что красит схема» двигали дважды, поэтому она здесь зафиксирована
+ * поимённо:
+ *   • третий круг сузил покраску до правой колонки («левая часть от нас…
+ *     только цвет кнопки и юр инфа цвет») — потому что секция «Оформление
+ *     заказа» была карточкой 394px по центру колонки и класс схемы на ней
+ *     красил «пятно»;
+ *   • 14.09 карточки не стало (checkout-form-fills-column), и владелец
+ *     вернулся с п.5 «к секции Оформление закаказа не применяется никакая
+ *     цветовая схема». Замер подтвердил цену сужения: выбор схемы не менял на
+ *     левой половине НИЧЕГО у 4 тем из 5.
+ * Итог, который сторожит гард: КОЛОНКИ красятся обе, СЕКЦИИ внутри них — нет
+ * (иначе полосы сверху и снизу), кнопка оформления по-прежнему со схемой.
  */
-describe('общая доводка чекаута: левая колонка — наша, кнопка — схемы', () => {
+describe('общая доводка чекаута: обе колонки красятся своей схемой', () => {
   const out = injectCheckoutChromeIntoHtml(
     PANE_HTML,
     { headerHtml: null, footerHtml: null },
@@ -192,11 +200,18 @@ describe('общая доводка чекаута: левая колонка �
     expect(paneTag(out, 'summary')).toContain('color-scheme-4');
   });
 
-  it('ЛЕВАЯ колонка схемой НЕ красится', () => {
-    expect(paneTag(out, 'form')).not.toMatch(/color-scheme-\d/);
+  it('ЛЕВАЯ колонка красится схемой «Оформления заказа»', () => {
+    // 14.09, п.5 владельца: «к секции Оформление закаказа не применяется
+    // никакая цветовая схема». Третий круг сужал её до одной кнопки, потому что
+    // секция была карточкой 394px по центру колонки и класс схемы на ней давал
+    // «пятно»; карточки больше нет (checkout-form-fills-column), поэтому схема
+    // снова красит КОЛОНКУ — как и у сводки.
+    expect(paneTag(out, 'form')).toContain('color-scheme-1');
   });
 
-  it('секция формы тоже без класса схемы (иначе пятно под контентом)', () => {
+  it('секция формы тоже без класса схемы (красит КОЛОНКА, не секция)', () => {
+    // На корне секции класс дал бы полосы сверху и снизу: у колонки свои
+    // вертикальные отступы, и секция короче её на 64+64px.
     expect(sectionTag(out, 'checkout-form')).not.toMatch(/color-scheme-\d/);
   });
 
@@ -245,13 +260,18 @@ describe('общая split-колонка: поверхность по этал�
   const css = read(SPLIT_CSS);
 
   it('колонка сводки красится токеном схемы, а не литералом', () => {
-    expect(css).toMatch(/\[data-checkout-pane="summary"\][^}]*background:\s*rgb\(var\(--color-surface/);
+    // 14.09, п.4: поверх `--color-surface` появился `--color-checkout-surface`
+    // — его считает buildTokensCss, когда мерчант перекрасил «Фон» схемы
+    // (поля `surfaceBg` в редакторе схем нет). Фолбэк прежний, поэтому
+    // магазины, где схему не трогали, выглядят как раньше.
+    expect(css).toMatch(
+      /\[data-checkout-pane="summary"\][^}]*background:\s*rgb\(var\(--color-checkout-surface,\s*var\(--color-surface/,
+    );
   });
 
-  it('колонка формы держит фон ПАЛИТРЫ СТРАНИЦЫ (класса схемы на ней нет)', () => {
-    // Токен тот же (--color-bg), но приходит он от обёртки страницы чекаута —
-    // это фон темы, ровно как до cb182717. Гард против возврата заливки живёт
-    // выше, в «общая доводка чекаута».
+  it('колонка формы красится токеном схемы', () => {
+    // Без выбранной схемы `--color-bg` приходит от палитры страницы — это фон
+    // темы; с выбранной — «Фон» схемы (п.5).
     expect(css).toMatch(/\[data-checkout-pane="form"\][^}]*background:\s*rgb\(var\(--color-bg/);
   });
 
@@ -290,7 +310,7 @@ describe('превью конструктора = витрина', () => {
    * что перезагрузка: правую колонку красим, левую — нет. Исполняем РОВНО ту
    * строку, что уходит в кадр, а не её копию.
    */
-  describe('агент превью красит только правую колонку', () => {
+  describe('агент превью красит обе колонки', () => {
     const applyCheckoutColumnScheme = new Function(
       `${PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE}; return applyCheckoutColumnScheme;`,
     )() as (el: unknown, schemeId: string) => unknown;
@@ -315,15 +335,23 @@ describe('превью конструктора = витрина', () => {
       expect(pane.className).not.toMatch(/color-scheme-\d/);
     });
 
-    it('форма: класс схемы НЕ появляется', () => {
+    it('форма: класс схемы появляется (п.5, 14.09)', () => {
       const { pane, el } = paneStub('form', 'mfy-checkout-pane');
       applyCheckoutColumnScheme(el, '4');
-      expect(pane.className).not.toMatch(/color-scheme-\d/);
+      expect(pane.className).toContain('color-scheme-4');
     });
 
-    it('форма: старый класс из прежней ревизии СНИМАЕТСЯ', () => {
+    it('форма: прошлая схема заменяется, а не копится', () => {
       const { pane, el } = paneStub('form', 'mfy-checkout-pane color-scheme-2');
       applyCheckoutColumnScheme(el, '4');
+      expect(pane.className).toContain('color-scheme-4');
+      expect(pane.className).not.toContain('color-scheme-2');
+      expect(pane.className).toContain('mfy-checkout-pane');
+    });
+
+    it('форма: схему сняли — класс снят', () => {
+      const { pane, el } = paneStub('form', 'mfy-checkout-pane color-scheme-2');
+      applyCheckoutColumnScheme(el, '');
       expect(pane.className).not.toMatch(/color-scheme-\d/);
       expect(pane.className).toContain('mfy-checkout-pane');
     });

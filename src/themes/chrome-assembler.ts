@@ -462,7 +462,7 @@ function replaceLastFooter(html: string, target: string): string {
  */
 export function patchCheckoutBlockScheme(
   html: string,
-  block: 'checkout-form' | 'checkout-summary' | 'checkout-submit',
+  block: 'checkout-form' | 'checkout-summary' | 'checkout-submit' | 'checkout-terms',
   scheme: unknown,
 ): string {
   const id = schemeIdOf(scheme);
@@ -495,18 +495,20 @@ function schemeIdOf(value: unknown): string {
 /**
  * Цветовая схема секции → на КОЛОНКУ чекаута.
  *
- * Эталон владельца (п.4 третьего круга): схема применяется к колонке целиком
- * как к поверхности — сплошной цвет до низа окна и до правого края, текст из
- * той же схемы. До этого класс садился только на `<section>` внутри колонки, а
- * секция сводки ПРОЗРАЧНА (тонирует колонка) — выбор схемы не менял ничего.
+ * Канон чекаута: схема применяется к колонке целиком как к поверхности —
+ * сплошной цвет до низа окна и до края экрана, текст из той же схемы. Класс на
+ * `<section>` внутри колонки этого не давал: секция сводки ПРОЗРАЧНА, тонирует
+ * колонка, и выбор схемы не менял ничего.
  *
- * ТОЛЬКО для `summary`. Левую колонку (`form`) сюда больше не отдают:
- * уточнение владельца после третьего круга — «левая часть от нас… всё
- * остальное наше», её поверхность держит тема. Замер «до» (собранные витрины,
- * пять тем, Chromium, 1440×900, 13-14.09): колонка формы 0..720 заливалась
- * 0,0,0 (rose scheme-4, flux scheme-1), 8,2,0 (satin scheme-4), 207,122,139
- * (bloom scheme-1) — ровно это и снято. Параметр `pane` оставлен: контракт
- * разметки общий, а сужать сигнатуру ради одного вызова — прятать намерение.
+ * ОБЕ колонки. Третий круг сузил покраску до правой («левая часть от нас… всё
+ * остальное наше»), но держалось это сужение на том, что секция «Оформление
+ * заказа» была карточкой 394px по центру колонки, и класс схемы красил под ней
+ * «пятно». Карточки больше нет — прошлый круг отдал секции всю колонку, — а
+ * владелец 14.09 вернулся с п.5: «к секции Оформление закаказа не применяется
+ * никакая цветовая схема». Замер это подтвердил: выбор схемы-4 не менял на
+ * левой половине НИЧЕГО у 4 тем из 5 (кнопка rose 0,0,0→0,0,0;
+ * vanilla 255,255,255→255,255,255; flux 30,41,82→30,41,82; satin 0,0,0→8,2,0;
+ * менялся только bloom). Поэтому схема снова красит колонку — обе.
  *
  * Колонку ищем по `data-checkout-pane` — общий контракт разметки
  * (packages/theme-base/blocks/CheckoutLayout/checkout-split.ts), один на пять
@@ -546,7 +548,7 @@ export function patchCheckoutColumnScheme(
  */
 export function patchCheckoutBlockId(
   html: string,
-  block: 'checkout-form' | 'checkout-summary',
+  block: 'checkout-form' | 'checkout-summary' | 'checkout-terms',
   id: unknown,
 ): string {
   if (typeof id !== 'string' || !id) return html;
@@ -578,6 +580,11 @@ export interface CheckoutBlockSchemes {
   form?: CheckoutBlockIdentity;
   /** CheckoutSummary — «Сводка заказа». */
   summary?: CheckoutBlockIdentity;
+  /**
+   * Footer — узел «Подвал» страницы чекаута. Владелец, 14.09, п.1: «секция
+   * Подвал не присвоена ни к чему. Ожидаемый результат: присвоить к юр инфе».
+   */
+  footer?: CheckoutBlockIdentity;
 }
 
 /**
@@ -609,20 +616,26 @@ export function injectCheckoutChromeIntoHtml(
   // --color-*.
   out = patchCheckoutBlockScheme(out, 'checkout-summary', blocks.summary?.scheme);
   out = patchCheckoutColumnScheme(out, 'summary', blocks.summary?.scheme);
-  // «Цветовая схема» ФОРМЫ красит ровно ОДИН элемент левой колонки — кнопку
-  // оформления. Уточнение владельца (после третьего круга): «левая часть от
-  // нас. Там только меняется цвет кнопки и юр инфа цвет. Всё остальное наше».
-  // Поэтому ни колонку (`patchCheckoutColumnScheme(…, 'form')`), ни секцию
-  // формы (`checkout-form` — её корень несёт `bg-[rgb(var(--color-bg))]` и
-  // покрасился бы «пятном») мы схемой больше не трогаем: их фон = фон темы.
-  // Второго «схемного» элемента внизу колонки больше нет: правовую полосу с
-  // копирайтом владелец снял 14.09 («УДАЛИТЬ В ЧЕКАУТЕ»). Узел «Подвал» в
-  // дереве конструктора остаётся (состав панели — канон), но его «Цветовая
-  // схема» на чекауте теперь ничего не красит — как и у «Шапки оформления»,
-  // палитру которой перекрывает колонка.
+  // «Цветовая схема» ФОРМЫ красит ЛЕВУЮ КОЛОНКУ — п.5 владельца (14.09): «к
+  // секции Оформление закаказа не применяется никакая цветовая схема». Третий
+  // круг сузил её до одной кнопки оплаты, потому что секция была карточкой
+  // 394px по центру колонки и класс схемы на ней давал «пятно». Прошлый круг
+  // отдал секции всю колонку — причина сужения исчезла, и замер показал цену:
+  // выбор схемы у «Оформления заказа» не менял на левой половине ничего у
+  // 4 тем из 5. Кнопку схемой красить не перестаём (строка ниже) — просто это
+  // больше не единственное, что она красит.
+  out = patchCheckoutColumnScheme(out, 'form', blocks.form?.scheme);
   out = patchCheckoutBlockScheme(out, 'checkout-submit', blocks.form?.scheme);
+  // «Подвал» страницы чекаута = ЮР.ИНФА — п.1 владельца (14.09): «секция Подвал
+  // не присвоена ни к чему. Ожидаемый результат: присвоить к юр инфе». Полосу
+  // копирайта, которую этот узел рисовал раньше, владелец снял тем же
+  // сообщением, и узел остался без работы (замер: его схема не меняла цвет
+  // юр.инфы ни в одной из пяти тем). Теперь он адресует блок условий — тем же
+  // механизмом, что «Оформление заказа» и «Сводка заказа», нового не вводим.
+  out = patchCheckoutBlockScheme(out, 'checkout-terms', blocks.footer?.scheme);
   out = patchCheckoutBlockId(out, 'checkout-form', blocks.form?.id);
   out = patchCheckoutBlockId(out, 'checkout-summary', blocks.summary?.id);
+  out = patchCheckoutBlockId(out, 'checkout-terms', blocks.footer?.id);
   // Подвала на чекауте нет вообще (см. ветку `chrome === 'checkout'` выше).
   // Снятие БЕЗУСЛОВНОЕ и не зависит от `chrome.footerHtml`: иначе старый
   // собранный шелл, который ещё несёт подвал витрины, снова показал бы
@@ -670,7 +683,7 @@ function stripCheckoutFooter(html: string): string {
  */
 export function checkoutBlockIdentity(
   pagesData: Record<string, unknown>,
-  blockType: 'CheckoutForm' | 'CheckoutSummary',
+  blockType: 'CheckoutForm' | 'CheckoutSummary' | 'Footer',
 ): CheckoutBlockIdentity {
   const props = (findBlockProps(pagesData['page-checkout'], blockType) ??
     findBlockProps(pagesData['checkout'], blockType) ??
@@ -681,7 +694,7 @@ export function checkoutBlockIdentity(
 /** «Цветовая схема» секции чекаута из ревизии (узкая обёртка над identity). */
 export function checkoutBlockScheme(
   pagesData: Record<string, unknown>,
-  blockType: 'CheckoutForm' | 'CheckoutSummary',
+  blockType: 'CheckoutForm' | 'CheckoutSummary' | 'Footer',
 ): unknown {
   return checkoutBlockIdentity(pagesData, blockType).scheme;
 }

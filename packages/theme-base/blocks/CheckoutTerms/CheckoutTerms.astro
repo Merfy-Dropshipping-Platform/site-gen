@@ -39,10 +39,24 @@ const html = sanitizeInlineWithLinks(
   C.link,
 );
 ---
+{/*
+  `data-block="checkout-terms"` — адрес блока для общей доводки чекаута.
+  Владелец, 14.09, п.1: «секция Подвал не присвоена ни к чему. Ожидаемый
+  результат: присвоить к юр инфе». Узел «Подвал» страницы чекаута (блок Footer
+  в ревизии) с 14.09 не рисует ничего — чёрную полосу копирайта владелец снял
+  тем же сообщением. Теперь его «Цветовая схема» и его id садятся сюда, на
+  правовую информацию: `chrome-assembler.injectCheckoutChromeIntoHtml` зовёт
+  `patchCheckoutBlockScheme`/`patchCheckoutBlockId` по этому адресу. Механизм
+  тот же, что у «Оформления заказа» и «Сводки заказа», нового не вводится.
+  `data-checkout-slot="terms"` остаётся: по нему блок ищет React-остров.
+  Порядок атрибутов важен: `class` идёт ДО `data-block` (этого требует регулярка
+  доводки), `data-puck-component-id` блок не печатает — его ставит доводка.
+*/}
 <section
   class={C.root}
   data-puck-component-id={id}
   data-checkout-slot="terms"
+  data-block="checkout-terms"
   style={paddingStyle}
 >
   <p class={C.text} set:html={html}></p>

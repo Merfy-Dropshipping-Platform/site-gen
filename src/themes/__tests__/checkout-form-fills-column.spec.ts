@@ -22,9 +22,13 @@
  * колонки — `max-width: 446px` + прижатие вправо на `.mfy-checkout-pane__inner`.
  * Секция несёт `w-full`, поэтому шире обёртки быть физически не могла.
  *
- * ЛЕЧЕНИЕ: мера переехала на СОДЕРЖИМОЕ колонки — на шапку оформления и на
- * под-секции формы. Числа те же (446 + 24/28 на десктопе, 540 + 16 на
- * мобилке), поэтому поля не сдвинулись; сдвинулись только границы секции.
+ * ЛЕЧЕНИЕ: мера переехала на СОДЕРЖИМОЕ колонки — на под-секции формы. Числа
+ * те же (446 + 24/28 на десктопе, 540 + 16 на мобилке), поэтому поля не
+ * сдвинулись; сдвинулись только границы секции.
+ *
+ * 14.09 из этой меры ушла шапка оформления: по п.3 владельца она стала
+ * ОТДЕЛЬНОЙ полосой над колонками (checkout-header-strip.spec.ts), и вместе с
+ * ней из колонки ушёл её отступ — верхние 64px снова держит сама колонка.
  *
  * ЗАМЕР «ПОСЛЕ» (та же цепочка): секция x=0 w=720 у всех пяти тем, при этом
  * контакты/доставка/оплата/кнопка/условия остались x=298 w=394.
@@ -37,115 +41,20 @@
 import { CheckoutFormClasses } from '../../../packages/theme-base/blocks/CheckoutForm/CheckoutForm.classes';
 import { CHECKOUT_SPLIT_CSS } from '../../../packages/theme-base/blocks/CheckoutLayout/checkout-split';
 
-// ── крошечный разрешатель каскада ──────────────────────────────────────────
+// ── разрешатель каскада ────────────────────────────────────────────────────
+// Общий с `checkout-sections-round4.spec.ts` (п.2-5 четвёртого круга): вторая
+// копия разъехалась бы с первой молча, поэтому он вынесен в
+// `src/themes/checkout-split-cascade.ts` (в `__tests__` нельзя — jest считает
+// тестом любой `.ts` в этой папке).
+import { parse, resolve, type Rule } from '../checkout-split-cascade';
 
-interface Rule {
-  selector: string;
-  decls: Record<string, string>;
-  /** 0 — вне медиазапроса, 1 — внутри `@media (min-width: 1024px)`. */
-  media: 0 | 1;
-  order: number;
-}
-
-/** Раскрытие шорткатов, которые реально встречаются в этой таблице стилей. */
-function expand(prop: string, value: string): Record<string, string> {
-  if (prop !== 'padding' && prop !== 'margin') return { [prop]: value };
-  const p = value.trim().split(/\s+/);
-  const [top, right, bottom, left] =
-    p.length === 1
-      ? [p[0], p[0], p[0], p[0]]
-      : p.length === 2
-        ? [p[0], p[1], p[0], p[1]]
-        : p.length === 3
-          ? [p[0], p[1], p[2], p[1]]
-          : [p[0], p[1], p[2], p[3]];
-  return {
-    [`${prop}-top`]: top,
-    [`${prop}-right`]: right,
-    [`${prop}-bottom`]: bottom,
-    [`${prop}-left`]: left,
-  };
-}
-
-function parse(css: string): Rule[] {
-  const rules: Rule[] = [];
-  let order = 0;
-  let media: 0 | 1 = 0;
-  // Комментарии выкусываем: внутри них встречаются и `{`, и селекторы.
-  const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const re = /([^{}]+)\{([^{}]*)\}/g;
-  let m: RegExpExecArray | null;
-  let mediaEnd = -1;
-  const mediaOpen = src.indexOf('@media (min-width: 1024px)');
-  if (mediaOpen !== -1) mediaEnd = src.length;
-  while ((m = re.exec(src))) {
-    const rawSel = m[1].trim();
-    if (rawSel.startsWith('@media')) {
-      media = 1;
-      continue;
-    }
-    if (mediaOpen !== -1 && m.index > mediaOpen && m.index < mediaEnd) media = 1;
-    const decls: Record<string, string> = {};
-    for (const chunk of m[2].split(';')) {
-      const i = chunk.indexOf(':');
-      if (i === -1) continue;
-      Object.assign(
-        decls,
-        expand(chunk.slice(0, i).trim(), chunk.slice(i + 1).trim()),
-      );
-    }
-    for (const selector of rawSel.split(',').map((s) => s.trim())) {
-      if (selector) rules.push({ selector, decls, media, order: order++ });
-    }
-  }
-  return rules;
-}
-
-/** Специфичность (a,b,c) достаточно грубая: id / класс-атрибут-псевдо / тип. */
-function specificity(selector: string): number {
-  const ids = (selector.match(/#[\w-]+/g) ?? []).length;
-  const classes = (selector.match(/\.[\w-]+|\[[^\]]+\]|:[\w-]+/g) ?? []).length;
-  const types = (selector.match(/(^|[\s>+~])[a-z][\w-]*/gi) ?? []).length;
-  return ids * 10000 + classes * 100 + types;
-}
-
-/**
- * Разрешённое значение свойства для «элемента», описанного списком селекторов,
- * которые на него попадают. Порядок: сначала специфичность, при равной —
- * позиция в файле; правила из медиазапроса применяются только на десктопе.
- */
-function resolve(
-  rules: Rule[],
-  matching: string[],
-  prop: string,
-  viewport: 'mobile' | 'desktop',
-): string | undefined {
-  const hits = rules
-    .filter((r) => matching.includes(r.selector))
-    .filter((r) => (viewport === 'desktop' ? true : r.media === 0))
-    .filter((r) => r.decls[prop] !== undefined)
-    .sort((a, b) => {
-      if (a.media !== b.media) return a.media - b.media;
-      const s = specificity(a.selector) - specificity(b.selector);
-      return s !== 0 ? s : a.order - b.order;
-    });
-  return hits.length ? hits[hits.length - 1].decls[prop] : undefined;
-}
-
-/** Обёртка колонки формы (со слотом шапки — как на всех живых страницах). */
+/** Обёртка колонки формы. */
 const FORM_INNER = [
   '.mfy-checkout-pane__inner',
-  '.mfy-checkout-pane__inner--brand',
   '[data-checkout-pane="form"] .mfy-checkout-pane__inner',
-  '[data-checkout-pane="form"] .mfy-checkout-pane__inner--brand',
 ];
 /** Под-секция формы (контакты / доставка / оплата / кнопка / условия). */
 const FORM_CHILD = ['[data-checkout-pane="form"] [data-block="checkout-form"] > *'];
-/** Шапка оформления внутри колонки. */
-const HEADER = [
-  '[data-checkout-pane] [data-checkout-slot="header"]',
-  '[data-checkout-pane="form"] [data-checkout-slot="header"]',
-];
 
 const RULES = parse(CHECKOUT_SPLIT_CSS);
 
@@ -165,9 +74,15 @@ describe('калибровка: разрешатель каскада читае
     expect(RULES.some((r) => r.media === 1)).toBe(true);
   });
 
-  it('колонка сводки не тронута — читаем её прежнее значение', () => {
+  it('колонка сводки читается тем же разрешателем', () => {
+    // Мера правой колонки 14.09 уехала с обёртки на содержимое — тем же
+    // приёмом, что и здесь у левой (п.2 четвёртого круга,
+    // checkout-sections-round4.spec.ts). Обёртка меры больше не держит.
     expect(
       resolve(RULES, ['[data-checkout-pane="summary"] .mfy-checkout-pane__inner'], 'max-width', 'desktop'),
+    ).toBe('none');
+    expect(
+      resolve(RULES, ['[data-checkout-pane="summary"] [data-checkout-column="summary"]'], 'max-width', 'desktop'),
     ).toBe('556px');
   });
 
@@ -190,12 +105,15 @@ describe('колонка формы больше не сужает секцию'
     expect(resolve(RULES, FORM_INNER, 'padding-right', 'mobile')).toBe('0');
   });
 
-  it('вертикальные отступы колонки сохранены (64/32 + ноль под шапкой)', () => {
+  it('вертикальные отступы колонки сохранены (64 десктоп / 32 мобилка)', () => {
     // Их нельзя переносить на корень секции: `CheckoutForm` печатает
     // padding-top/bottom ИНЛАЙНОМ из своего скрытого параметра «Отступы».
-    expect(resolve(RULES, ['[data-checkout-pane="form"] .mfy-checkout-pane__inner'], 'padding-top', 'desktop')).toBe('64px');
+    // Ноль сверху был нужен, пока шапка стояла ПЕРВЫМ узлом этой же колонки и
+    // приносила свой отступ; 14.09 она уехала в собственную полосу над
+    // колонками (п.3), и колонка снова держит свои 64px.
+    expect(resolve(RULES, FORM_INNER, 'padding-top', 'desktop')).toBe('64px');
     expect(resolve(RULES, FORM_INNER, 'padding-bottom', 'desktop')).toBe('64px');
-    expect(resolve(RULES, FORM_INNER, 'padding-top', 'desktop')).toBe('0');
+    expect(resolve(RULES, FORM_INNER, 'padding-top', 'mobile')).toBe('32px');
   });
 
   it('секция тянется на всю ширину колонки (w-full на корне)', () => {
@@ -214,18 +132,11 @@ describe('мера контента переехала на содержимое
     expect(446 - 24 - 28).toBe(394);
   });
 
-  it('десктоп: шапка оформления стоит по той же мере', () => {
-    expect(resolve(RULES, HEADER, 'max-width', 'desktop')).toBe('446px');
-    expect(resolve(RULES, HEADER, 'margin-left', 'desktop')).toBe('auto');
-    expect(resolve(RULES, HEADER, 'padding-left', 'desktop')).toBe('24px');
-  });
-
   it('мобилка: прежние 540 + 16 у содержимого', () => {
     expect(resolve(RULES, FORM_CHILD, 'max-width', 'mobile')).toBe('540px');
     expect(resolve(RULES, FORM_CHILD, 'margin-left', 'mobile')).toBe('auto');
     expect(resolve(RULES, FORM_CHILD, 'margin-right', 'mobile')).toBe('auto');
     expect(resolve(RULES, FORM_CHILD, 'padding-left', 'mobile')).toBe('16px');
-    expect(resolve(RULES, HEADER, 'max-width', 'mobile')).toBe('540px');
   });
 
   it('мера считает ширину вместе с отступами (иначе поля разъедутся)', () => {

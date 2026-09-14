@@ -87,6 +87,13 @@
     },
     "PromoBanner": {
       "textTransform": "none"
+    },
+    "Product": {
+      "visualConfig": {
+        "counter": {
+          "variant": "boxed"
+        }
+      }
     }
   },
   "colorSchemes": [
@@ -368,6 +375,13 @@
       "slug": "/account/profile",
       "role": "system",
       "contentFile": "pages/profile.json"
+    },
+    {
+      "id": "page-wishlist",
+      "name": "Избранное",
+      "slug": "/wishlist",
+      "role": "system",
+      "contentFile": "pages/wishlist.json"
     }
   ],
   "blockPlaceholders": {

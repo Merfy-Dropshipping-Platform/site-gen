@@ -223,6 +223,9 @@ describe('ThemePuckConfigController base-block catalog parity (extraction)', () 
     'Publications',
     'Page',
     'CartSection',
+    // Тело страницы «Избранное» (/wishlist) — заведено так же, как корзина:
+    // в палитру конструктора не выводится, живёт только на своей странице.
+    'WishlistSection',
     'CheckoutSection',
     'CartBody',
     'CartSummary',

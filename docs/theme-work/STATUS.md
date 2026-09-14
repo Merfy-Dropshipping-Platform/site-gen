@@ -689,3 +689,35 @@ satin — `subscription_not_found`, vanilla и bloom — `open_invoice_pending`,
 
 **Остаётся тем же дефектом и НЕ чинилось:** `MultiColumns.headingSize` в
 rose/flux/vanilla/satin читает легаси первым — отдельное решение владельца.
+
+## 2026-09-14 — счётчик количества «Товар» берёт оформление своей темы — VERIFIED
+
+Жалоба тестировщика (02:07): «счётчик количества товара применяется единый».
+Замер подтвердил буквально: страница `/product` у rose, bloom, satin и vanilla
+рендерилась ПОБАЙТОВО одинаковым HTML общего порта `theme-base/blocks/Product`
+(md5 `d680c42f…` на все четыре), и счётчик у всех был один — прозрачная строка
+96×24 без рамки и заливки. Отличался только flux: у него собственный порт
+секции (`sections.map.json: Product → FeaturedProduct.astro`), и он уже рисовал
+ровно ту «пустоту», которую тестировщик называет эталоном flux.
+
+Силуэт теперь берётся из темы — существующим layout-переключателем
+`theme.json blockDefaults.Product.visualConfig.counter.variant`
+(в конструкторе полей для него нет, состав панели не тронут):
+
+| тема | вариант | что рисует | откуда взято |
+|---|---|---|---|
+| rose | `boxed` | плашка, рамка `--color-border`, радиус `--radius-input` 8px | `themes/rose/src/components/sections/CartBody.astro` (счётчик строки корзины) + `Popular.astro` (цвет рамки токеном) |
+| bloom | `boxed` | плашка, радиус 4px | `BloomProductDetail.astro` (`rounded-[4px] border`) |
+| satin | `boxed` | плашка без скругления (radius-input 0) | `satinProductDetail.astro` |
+| flux | `inline` | пустота (не менялось) | `FeaturedProduct.astro` |
+| vanilla | `split` | две плашки на кнопках, заливка `--color-button-bg` | `VanillaProductDetail.astro` (`bg-[var(--vanilla-header-bg)]`, а она объявлена как `rgb(var(--color-button-bg, …))` в `global.css:99`) |
+
+Новых токенов нет. Замер — computed-стилем в Chromium (реальный CSS темы +
+`buildTokensCss`, порядок как на витрине: бандл темы, `tokens.css` последним).
+Сторож `product-counter-theme` (27) в CI строкой `pnpm test:product-counter`,
+саботаж проверен тремя подменами вариантов — каждая красит ровно свою тему.
+
+**Наблюдение, не дефект правки:** у vanilla схема 1 тёмная (фон `38 49 28`,
+кнопка `58 69 48`), поэтому плашки счётчика малоконтрастные — ровно как её
+собственная кнопка «Добавить в корзину» на той же секции (замерено, тот же
+цвет). Меняется цветом кнопки в схеме, оба двигаются вместе.

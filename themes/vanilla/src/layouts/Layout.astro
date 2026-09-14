@@ -1,7 +1,6 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
-import CheckoutFooterStrip from "../../../../packages/theme-base/blocks/CheckoutFooterStrip/CheckoutFooterStrip.astro";
 import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
 import LoginDrawer from "../components/LoginDrawer.astro";
@@ -45,14 +44,16 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			<slot />
 		</main>
 		{showNewsletter && <FooterNewsletter />}
-		{/* Чекаут — без футера (header="checkout"), паритет с rose. */}
-		{header !== "checkout" ? (
-			<Footer />
-		) : (
-			<div class="color-scheme-2" style="display:contents;">
-				<CheckoutFooterStrip siteTitle={SITE_TITLE} />
-			</div>
-		)}
+		{/* Чекаут — БЕЗ подвала вообще. Просьба владельца 14.09: «УДАЛИТЬ В
+		    ЧЕКАУТЕ», показано на чёрную полосу «© 2026 …. Все права защищены»
+		    внизу страницы оформления. Тем же сообщением владелец назвал подвалом
+		    чекаута блок условий под кнопкой оплаты («вот Подвал в чекауте» —
+		    «Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой
+		    конфиденциальности и Политикой использования файлов cookie»). Правовая
+		    информация остаётся там: замер на пяти собранных витринах — три ссылки
+		    /legal/* в блоке условий у каждой темы. Полный Footer — только на
+		    остальных страницах. */}
+		{header !== "checkout" && <Footer />}
 		<LoginDrawer />
 		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
 		<script>

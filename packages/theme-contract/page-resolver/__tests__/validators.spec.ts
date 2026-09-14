@@ -121,6 +121,10 @@ describe('rose theme manifest validation', () => {
       'page-profile',
       'page-wishlist',
       'page-orders',
+      // Страница «Вход» (14.09) — тело /login стало секцией «Вход»
+      // (LoginSection), пункт «Профиль → Вход» в конструкторе. Добавлена
+      // последней во ВСЕХ пяти манифестах.
+      'page-login',
     ]);
     expect(m.pages.every((p: any) => p.role === 'system')).toBe(true);
   });

@@ -102,10 +102,60 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		window.location.href = path;
 	}
 
+		/**
+		 * Нарисовать список заказов. ОДНА функция на оба контекста: витрина
+		 * зовёт её ответом `fetchOrders`, превью конструктора — демо-заказами.
+		 * Строка заказа поэтому не может разойтись между превью и витриной.
+		 */
+		function paintOrders(root, orders) {
+			var loadingEl = document.getElementById("orders-loading");
+			var emptyEl = document.getElementById("orders-empty");
+			loadingEl.classList.add("hidden");
+			if (!orders || !orders.length) {
+				emptyEl.classList.remove("hidden");
+				return;
+			}
+
+			root.classList.remove("hidden");
+			root.style.display = "flex";
+			root.style.flexDirection = "column";
+			root.style.gap = "1.5rem";
+
+			orders.forEach(function (order) {
+				var date = new Date(order.createdAt).toLocaleDateString("ru-RU", {
+					day: "2-digit", month: "2-digit", year: "2-digit",
+				});
+				var row = document.createElement("div");
+				row.className = "account-order-row";
+				row.innerHTML =
+					'<div class="order-info">' +
+						'<span class="order-number">Заказ №' + order.orderNumber + "</span>" +
+						'<span class="order-date">от ' + date + "</span>" +
+					"</div>" +
+					'<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="account-button">Перейти</a>';
+				root.appendChild(row);
+			});
+		}
+
 		function initOrders() {
 			var root = document.getElementById("orders-list");
 			if (!root || root.dataset.bound === "true") return;
 			root.dataset.bound = "true";
+
+			// Превью конструктора: покупательской сессии в iframe мерчанта нет и
+			// быть не может, а гость-гейт ниже уводил превью на страницу «Вход»
+			// (navTo в iframe переписывает `?page=` у самого превью). Мерчант видел
+			// форму входа вместо «Заказов» и не мог настроить секцию (баг владельца
+			// 14.09). Глобал ставит ТОЛЬКО превью — на витрине его нет, и гейт
+			// работает как работал. Разбор безопасности —
+			// backend/services/sites/src/common/preview-account-inline.ts.
+			var preview = window.__MERFY_PREVIEW_ACCOUNT__;
+			if (preview && preview.customer) {
+				var previewEmailEl = document.getElementById("orders-email");
+				if (previewEmailEl) previewEmailEl.textContent = preview.customer.email || "";
+				paintOrders(root, preview.orders);
+				return;
+			}
 
 			whenAuth(async function (A) {
 				if (!A.getToken()) {
@@ -113,8 +163,6 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					return;
 				}
 
-				var loadingEl = document.getElementById("orders-loading");
-				var emptyEl = document.getElementById("orders-empty");
 				var emailEl = document.getElementById("orders-email");
 
 				var me = await A.fetchMe();
@@ -126,34 +174,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 				try {
 					var result = await A.fetchOrders({ skip: 0, take: 50 });
-					loadingEl.classList.add("hidden");
 					var orders = Array.isArray(result.data) ? result.data : result.data && result.data.items;
-					if (!result.success || !orders || !orders.length) {
-						emptyEl.classList.remove("hidden");
-						return;
-					}
-
-					root.classList.remove("hidden");
-					root.style.display = "flex";
-					root.style.flexDirection = "column";
-					root.style.gap = "1.5rem";
-
-					orders.forEach(function (order) {
-						var date = new Date(order.createdAt).toLocaleDateString("ru-RU", {
-							day: "2-digit", month: "2-digit", year: "2-digit",
-						});
-						var row = document.createElement("div");
-						row.className = "account-order-row";
-						row.innerHTML =
-							'<div class="order-info">' +
-								'<span class="order-number">Заказ №' + order.orderNumber + "</span>" +
-								'<span class="order-date">от ' + date + "</span>" +
-							"</div>" +
-							'<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="account-button">Перейти</a>';
-						root.appendChild(row);
-					});
+					paintOrders(root, result.success ? orders : null);
 				} catch (e) {
-					loadingEl.textContent = "Не удалось загрузить заказы";
+					document.getElementById("orders-loading").textContent = "Не удалось загрузить заказы";
 				}
 			});
 		}

@@ -135,10 +135,40 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		window.location.href = path;
 	}
 
+		/**
+		 * Заполнить форму данными покупателя. ОДНА функция на оба контекста:
+		 * витрина зовёт её ответом `fetchMe`, превью конструктора — демо-
+		 * покупателем. Раскладка у мерчанта и у вошедшего покупателя поэтому
+		 * совпадает по построению, а не «пока никто не разошёлся».
+		 */
+		function paintProfile(formEl, c) {
+			document.getElementById("profile-loading").classList.add("hidden");
+			formEl.classList.remove("hidden");
+			document.getElementById("profile-actions").style.display = "";
+			document.getElementById("profile-email-display").textContent = c.email || "";
+			document.getElementById("profile-email").value = c.email || "";
+			document.getElementById("profile-phone").value = c.phone || "";
+		}
+
 		function initProfile() {
 			var formEl = document.getElementById("profile-form");
 			if (!formEl || formEl.dataset.bound === "true") return;
 			formEl.dataset.bound = "true";
+
+			// Превью конструктора. Покупательской сессии в iframe мерчанта нет и
+			// быть не может, а гость-гейт ниже уводил превью на страницу «Вход»:
+			// navTo внутри iframe не идёт на витрину, он переписывает `?page=` у
+			// САМОГО превью. Мерчант вместо «Личного кабинета» видел форму входа и
+			// не мог настроить секцию (баг владельца 14.09). Глобал ставит ТОЛЬКО
+			// превью (injectPreviewAccountGlobal из injectPreviewGlobals) — на витрине
+			// его нет,
+			// и гейт работает как работал. Разбор безопасности —
+			// backend/services/sites/src/common/preview-account-inline.ts.
+			var preview = window.__MERFY_PREVIEW_ACCOUNT__;
+			if (preview && preview.customer) {
+				paintProfile(formEl, preview.customer);
+				return;
+			}
 
 			whenAuth(async function (A) {
 				if (!A.getToken()) {
@@ -146,10 +176,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					return;
 				}
 
-				var loadingEl = document.getElementById("profile-loading");
-				var actionsEl = document.getElementById("profile-actions");
 				var statusEl = document.getElementById("profile-status");
-				var emailDisplay = document.getElementById("profile-email-display");
 				var btn = document.getElementById("btn-save");
 				var logoutBtn = document.getElementById("btn-logout-profile");
 
@@ -159,12 +186,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					return;
 				}
 
-				loadingEl.classList.add("hidden");
-				formEl.classList.remove("hidden");
-				actionsEl.style.display = "";
-				emailDisplay.textContent = c.email || "";
-				document.getElementById("profile-email").value = c.email || "";
-				document.getElementById("profile-phone").value = c.phone || "";
+				paintProfile(formEl, c);
 
 				formEl.addEventListener("submit", async function (e) {
 					e.preventDefault();

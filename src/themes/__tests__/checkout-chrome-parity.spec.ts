@@ -74,13 +74,21 @@ describe('injectCheckoutChromeIntoHtml — общий чекаут-хром пр
     expect(formTag).not.toMatch(/color-scheme-\d/);
   });
 
-  it('не трогает обычный подвал темы (у чекаута своя правовая полоса)', () => {
-    // Подменяется ТОЛЬКО <footer data-checkout-footer-strip>; полный подвал
-    // магазина (data-nt) на чекауте не рендерится и трогать его нечем.
+  it('снимает подвал темы: на чекауте подвала нет вообще', () => {
+    // 14.09 владелец убрал со страницы оплаты и правовую полосу («УДАЛИТЬ В
+    // ЧЕКАУТЕ»), которой прошлый круг вытеснял подвал витрины. Раньше эта
+    // проверка требовала обратного — «подвал темы не трогаем»: тогда подменялась
+    // ТОЛЬКО полоса, и старый шелл с «Powered by Merfy» оставался (баг 18-А).
+    // Теперь снятие безусловное; правило целиком — checkout-footer-legal.spec.ts.
     const out = injectCheckoutChromeIntoHtml(THEME_BLOB, chrome(merchantHeader), {
       form: { scheme: 'scheme-2' },
     });
-    expect(out).toContain('ПОДВАЛ ТЕМЫ');
+    expect(out).not.toContain('ПОДВАЛ ТЕМЫ');
+    expect(out).not.toMatch(/<footer\b/);
+    // Тело страницы при этом цело — сняли подвал, а не половину документа.
+    expect(out).toContain('data-block="checkout-form"');
+    expect(out).toContain('data-block="checkout-summary"');
+    expect(out).toContain('ОПЛАТИТЬ');
   });
 
   it('идемпотентна: повторный прогон ничего не меняет', () => {

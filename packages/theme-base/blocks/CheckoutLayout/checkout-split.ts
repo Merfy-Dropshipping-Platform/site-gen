@@ -120,12 +120,46 @@ export const CHECKOUT_SPLIT_CSS = `
    верхний отступ даёт она сама (её параметр «Отступы»), иначе они сложились бы
    и логотип уехал бы на 112px от верха. */
 .mfy-checkout-pane__inner--brand { padding-top: 0; }
+/* ── Секция «Оформление заказа» = ВСЯ ЛЕВАЯ КОЛОНКА ───────────────────────
+   Просьба владельца 14.09: «Оформление заказа секция идет все левое
+   пространство до кнопки оплаты». Замер «до» (собранные витрины пяти тем,
+   Chromium, 1440×900, корзина 3 позиции): колонка формы 0..720, а сама секция
+   298..692 — полоска 394px по центру колонки. То есть секция была КАРТОЧКОЙ
+   внутри колонки, ровно то, что канон чекаута запрещает («поверхность от края
+   до края и на всю высоту, а не карточка внутри»), только про границы секции,
+   а не про заливку.
+   Причина была в том, ЧТО держит меру: её держала ОБЁРТКА колонки
+   (max-width 446px + прижатие вправо), поэтому секция физически не могла быть
+   шире 446. Мера переезжает на СОДЕРЖИМОЕ — на шапку оформления и на
+   под-секции формы. Колонка перестаёт сужать, секция занимает её целиком, а
+   поля внутри остаются на прежних 394px (Figma 1:19998) — замер «после»
+   подтверждает: контакты/доставка/оплата/кнопка как были 298..692.
+   Вертикаль не трогаем: секция и до правки занимала всю высоту колонки под
+   шапкой (rose: 134 + 1179 + 64 = 1377 = высота колонки), кнопка оплаты внутри
+   неё. Верхний/нижний отступы остаются на колонке — на корне секции их держать
+   нельзя: мега-блок «Оформление заказа» печатает padding-top/bottom ИНЛАЙНОМ
+   из своего (скрытого) параметра «Отступы», и инлайн перебил бы правило
+   отсюда. */
+[data-checkout-pane="form"] .mfy-checkout-pane__inner { max-width: none; margin: 0; padding-left: 0; padding-right: 0; }
+[data-checkout-pane="form"] [data-checkout-slot="header"],
+[data-checkout-pane="form"] [data-block="checkout-form"] > * {
+  width: 100%; max-width: 540px; margin-left: auto; margin-right: auto;
+  padding-left: 16px; padding-right: 16px; box-sizing: border-box;
+}
 @media (min-width: 1024px) {
   .mfy-checkout-split { flex-direction: row; align-items: stretch; }
   .mfy-checkout-pane { width: 50%; display: flex; }
   [data-checkout-pane="form"] { justify-content: flex-end; }
   [data-checkout-pane="summary"] { justify-content: flex-start; }
-  [data-checkout-pane="form"] .mfy-checkout-pane__inner { margin: 0 0 0 auto; max-width: 446px; padding: 64px 28px 64px 24px; }
+  [data-checkout-pane="form"] .mfy-checkout-pane__inner { margin: 0; max-width: none; padding: 64px 0; }
+  /* Мера контента левой колонки на десктопе. Числа те же, что раньше стояли на
+     обёртке (446 + 24/28), поэтому поля не сдвинулись ни на пиксель — сдвинулись
+     ТОЛЬКО границы секции. */
+  [data-checkout-pane="form"] [data-checkout-slot="header"],
+  [data-checkout-pane="form"] [data-block="checkout-form"] > * {
+    max-width: 446px; margin-left: auto; margin-right: 0;
+    padding-left: 24px; padding-right: 28px;
+  }
   [data-checkout-pane="summary"] .mfy-checkout-pane__inner { margin: 0 auto 0 0; max-width: 556px; padding: 64px 40px 64px 48px; }
   /* Тот же ноль, что и на мобилке, но повторён ВНУТРИ медиазапроса: строка выше
      задаёт padding СОКРАЩЁННО и с большей специфичностью (0,2,0 против 0,1,0),

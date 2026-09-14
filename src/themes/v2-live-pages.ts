@@ -613,9 +613,6 @@ export async function unifyChromeInDist(
   if (!chrome.headerHtml) {
     logger.warn('[v2-chrome] CheckoutHeader render empty — checkout keeps theme header');
   }
-  if (!chrome.footerHtml) {
-    logger.warn('[v2-chrome] CheckoutFooterStrip render empty — checkout keeps theme strip');
-  }
 
   // Figma 1:19998 — независимые «Цветовые схемы» узлов «Оформление заказа»
   // (CheckoutForm) и «Сводка заказа» (CheckoutSummary). Плюс id блоков из
@@ -641,7 +638,8 @@ export async function unifyChromeInDist(
       //    (data-checkout-slot) внутри своей token-обёртки — её подменяем;
       //    fallback на data-nt до раскатки theme-edit.
       // 2) Цветовая схема и id «Оформление заказа» / «Сводка заказа».
-      // 3) Правовая полоса подвала вместо «Powered by Merfy» (баг 18-А).
+      // 3) Снятие подвала: на чекауте его нет ни в каком виде — ни полосы
+      //    копирайта (владелец, 14.09), ни подвала витрины (баг 18-А).
       // Все правки — ОДНА общая функция с превью конструктора
       // (`injectCheckoutChromeIntoHtml`), чтобы вкладка «Оформление заказа» не
       // расходилась с витриной (баг-репорты 16, 18-А, 18-В).

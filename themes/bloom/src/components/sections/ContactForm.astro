@@ -38,6 +38,19 @@ const placeholderHeading =
 	(typeof p.heading === "string" && p.heading) ||
 	"Контактная форма";
 
+// «Текст» панели (`description`) — просьба владельца 2026-09-15. Порт его НЕ
+// рендерил вовсе: замер живой цепочкой 2026-09-15 давал `absent` у bloom и
+// rose при `ok` у satin/flux/vanilla, то есть поле молча пропадало у двух тем
+// из пяти. Рисуем ТОЛЬКО при непустом значении (манера соседей: нет текста —
+// нет абзаца). Классы абзаца — базовая ступень «Текста» bloom из Gallery.astro
+// и Collections.astro ДОСЛОВНО (font-inter 16 light, токен color-muted): своя
+// манера не выдумывается, а «Размера текста» у этой секции в панели нет.
+const description =
+	(typeof p.description === "string" ? p.description : p.description?.content) ?? "";
+const descriptionText = typeof description === "string" ? description.trim() : "";
+const descriptionCls =
+	"font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
+
 // Лестница §9 заголовка bloom (Urbanist uppercase, color-heading): base medium = 20,
 // small ≈ 0.9× = 18, large ≈ 1.2× = 24. Совпадает с манерой Collections/Popular.
 // Панель пишет размер в top-level `headingSize` (select), поле `heading` = aiText-строка.
@@ -117,6 +130,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		>
 			<h2 id="contacts-title" class={headingCls} set:html={inlineFormat(placeholderHeading)}></h2>
 		</div>
+		)}
+		{descriptionText && (
+		<p
+			class={`text-center ${descriptionCls}`}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="101"
+			data-puck-subsection-field="description"
+			set:html={inlineFormat(descriptionText)}
+		/>
 		)}
 		<form
 			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-start lg:gap-10"

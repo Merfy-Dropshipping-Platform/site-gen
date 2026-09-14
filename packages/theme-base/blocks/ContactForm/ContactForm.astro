@@ -100,8 +100,12 @@ const norm = {
       {heading && (
         <h2 class:list={[C.heading, headingAlignClass, headingSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading"><Fragment set:html={sanitizeInline(heading)} /></h2>
       )}
+      {/* «Текст» панели — тот же контрол «Ж»/«К», что и «Заголовок» (aiText),
+          поэтому и рендерится так же: sanitizeInline (allow-list), а не голой
+          подстановкой. Голая подстановка печатала бы `<strong><em>…` текстом —
+          ровно та жалоба тестера, из-за которой заведён test:rich-text-fields. */}
       {description && (
-        <p class={C.description} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description">{description}</p>
+        <p class={C.description} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description"><Fragment set:html={sanitizeInline(description)} /></p>
       )}
       <form class={C.form} method="POST" action="/api/contact/submit">
         <div class={C.leftColumn}>

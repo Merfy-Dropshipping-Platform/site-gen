@@ -44,6 +44,21 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
   category: 'form',
   // Figma 314-35069: Содержание (header) / Заголовок (aiText) /
   // Размер заголовка / Цветовая схема / Отступы.
+  //
+  // «Текст» (`description`) добавлен по прямой просьбе владельца 2026-09-15:
+  // «во всех темах в секции Контактная форма добавить наш инпут Текст».
+  // Состав параметров секций — канон (владелец 2026-09-13), поэтому правка
+  // разрешена именно этой просьбой и ничем больше: поле ровно одно, соседи не
+  // тронуты, conformance/panel-canon.json переснят отдельным коммитом.
+  // Контрол и его место сняты с полей-соседей дословно (Gallery.text,
+  // Collections.subtitle, Catalog.categorySubtitle): aiText / «Текст» /
+  // fieldType 'description' / плейсхолдер «Ввести текст...», сразу за
+  // «Размером заголовка» внутри раздела «Содержание».
+  //
+  // Проп НЕ новый: `description` жил в схеме и в defaults с появления секции,
+  // но был `type: 'hidden'` — мерчанту контрола не доставалось. Поэтому
+  // меняется ВИДИМОСТЬ, а не состав пропсов, и данные старых ревизий
+  // продолжают работать как раньше.
   fields: {
     ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
     heading: {
@@ -61,11 +76,16 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
         { label: 'Большой', value: 'large' },
       ],
     },
+    description: {
+      type: 'aiText',
+      label: 'Текст',
+      fieldType: 'description',
+      placeholder: 'Ввести текст...',
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-35069.
     headingAlignment: { type: 'hidden', label: '' },
-    description: { type: 'hidden', label: '' },
     fields: { type: 'hidden', label: '' },
     buttonText: { type: 'hidden', label: '' },
   },

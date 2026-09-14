@@ -28,12 +28,12 @@ function readJson(rel: string): Record<string, string> {
 }
 
 describe('Satin sections manifest ↔ source map key parity', () => {
-  it('the compiled manifest has the same 23 canonical keys as the source map', () => {
+  it('the compiled manifest has the same 24 canonical keys as the source map', () => {
     const sourceMap = readJson('themes/satin/sections.map.json');
     const manifest = readJson('dist/theme-sections/satin/manifest.json');
     const sourceKeys = Object.keys(sourceMap).sort();
     const manifestKeys = Object.keys(manifest).sort();
-    expect(sourceKeys).toHaveLength(23);
+    expect(sourceKeys).toHaveLength(24);
     expect(manifestKeys).toEqual(sourceKeys);
     // A `{}` manifest (build failure / wrong target) would be a structural
     // failure — never allowed as a fallback.
@@ -44,7 +44,7 @@ describe('Satin sections manifest ↔ source map key parity', () => {
 describe('Satin mapped renderers resolve to Satin-owned compiled modules', () => {
   it('every mapped section resolves to a Satin section module, not theme-base', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.sectionsMap).toHaveLength(23);
+    expect(snap.sectionsMap).toHaveLength(24);
     for (const rec of snap.sectionsMap) {
       // The mapped compiled module is Satin-owned; theme-base cannot mask it.
       expect(rec.compiledModule).not.toBeNull();
@@ -77,7 +77,7 @@ describe('Satin mapped renderers resolve to Satin-owned compiled modules', () =>
 });
 
 describe('Satin generator renderers vs sections-map (kept distinct)', () => {
-  it('the 27 generator renderers are reachable and are a superset of the 23 sections', async () => {
+  it('the 28 generator renderers are reachable and are a superset of the 24 sections', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
     const sectionKeys = new Set(snap.sectionsMap.map((r) => r.name));
     const generatorNames = new Set(snap.registry.map((r) => r.name));
@@ -86,8 +86,8 @@ describe('Satin generator renderers vs sections-map (kept distinct)', () => {
     for (const key of sectionKeys) {
       expect(generatorNames.has(key)).toBe(true);
     }
-    expect(snap.registry.length).toBe(27);
-    expect(snap.sectionsMap.length).toBe(23);
+    expect(snap.registry.length).toBe(28);
+    expect(snap.sectionsMap.length).toBe(24);
     // Generator-only entries (not in the sections map) still resolve compiled.
     const generatorOnly = [...generatorNames].filter((n) => !sectionKeys.has(n)).sort();
     expect(generatorOnly).toEqual(

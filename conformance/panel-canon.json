@@ -2269,6 +2269,26 @@
           }
         }
       },
+      "AccountSection": {
+        "label": "Личный кабинет",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "OrdersSection": {
+        "label": "Заказы",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -5428,6 +5448,26 @@
               }
             }
           },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "AccountSection": {
+        "label": "Личный кабинет",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "OrdersSection": {
+        "label": "Заказы",
+        "fields": {
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -8606,6 +8646,26 @@
           }
         }
       },
+      "AccountSection": {
+        "label": "Личный кабинет",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "OrdersSection": {
+        "label": "Заказы",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -11772,6 +11832,26 @@
           }
         }
       },
+      "AccountSection": {
+        "label": "Личный кабинет",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "OrdersSection": {
+        "label": "Заказы",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -14931,6 +15011,26 @@
               }
             }
           },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "AccountSection": {
+        "label": "Личный кабинет",
+        "fields": {
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
+      "OrdersSection": {
+        "label": "Заказы",
+        "fields": {
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",

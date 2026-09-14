@@ -3487,3 +3487,43 @@ T2 подписи кнопок, T3 «Поделиться», T4 «Текст» +
 - `description.size` («Размер» подпанели «Описание») мёртв: тело описания
   считает кегль от `text.size`. В панели поля нет (подпанель — `disabledHint`),
   поэтому мерчанту он не виден; состав параметров не трогал.
+
+
+## 2026-09-14 — MAX в соцсетях подвала (пять тем) + раскладка ползунков в конструкторе
+
+Ветка sites: `fix/b5-theme-panel`. Конструктор: ветка `main` (отдельные коммиты).
+
+### Что сделано в темах
+
+- `packages/theme-base/blocks/Footer/Footer.astro` — `SOCIAL_ICONS.max` (инлайн
+  контур, `currentColor`).
+- `themes/{rose,bloom,satin,flux,vanilla}/src/components/Footer.astro` — запись
+  `max` в карту платформ темы.
+- `themes/{rose,bloom,satin,flux,vanilla}/public/icons/social-max.svg` +
+  `themes/vanilla/public/icons/social-max-white.svg` — контур официального
+  логотипа max.ru, монохром, сетка соседних иконок.
+- `themes/rose/src/components/icons/RoseNtIcon.astro` — fallback перестал ходить
+  в закрытую карту DS: путь строится как `<имя>.svg` (ровно правило DS, 35 из 35).
+- `themes/flux/src/components/Footer.astro` — соцсети через `FluxNtIcon`.
+- `themes/satin/src/components/icons/SatinNtIcon.astro` (новый) + Footer satin.
+- `themes/vanilla/src/icons/SocialMaxWhite.astro` (новый) + Footer vanilla.
+- `themes/bloom/src/components/footer/SocialIcon.astro` — локальная карта иконок
+  темы для платформ, которых нет в DS.
+
+### Проверки
+
+`social-max-icon` 31/31, `section-snapshots` 155/155 (снимки не сдвинулись),
+`panel-canon` 183/183, `conformance:satin` зелёный (инвентарь обновлён отдельным
+коммитом — сдвинулся только `sourceDigest`). Рендер подвала пяти тем со стилями
+темы снят скриншотами: MAX стоит последним в ряду, в родном размере и цвете.
+
+Саботаж: снятие `max` из карты satin валит ровно три проверки (карта + ссылка +
+иконка), удаление файла `social-max.svg` у rose — проверку наличия файла.
+
+### Осталось владельцу
+
+- Иконка нарисована по контуру официального логотипа (маска из `max.ru/favicon.svg`),
+  монохромная — как соседние. Если в бренд-ките есть «официальная» монохромная
+  версия с другим силуэтом, подменить файлы `social-max*.svg` в пяти темах.
+- `themes/satin/src/components/footer/SocialIcon.astro` — мёртвый компонент
+  (Footer его не импортирует), MAX в него не заводил.

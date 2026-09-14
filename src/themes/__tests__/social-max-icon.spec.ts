@@ -150,6 +150,22 @@ describe.each(THEMES)("подвал %s: MAX доезжает до витрины
     );
   });
 
+  it("файл иконки MAX лежит в статике темы", () => {
+    if (!built) return;
+    const anchor = anchorFor(html, "https://max.ru/merfyshop");
+    if (!anchor) throw new Error("ссылка MAX не обёрнута в <a>");
+    const src = anchor.match(/<img[^>]+src="([^"]+)"/)?.[1];
+    // Инлайн-SVG (без <img>) файла не требует — там глиф лежит в коде темы.
+    if (!src) {
+      expect(/<svg[\s\S]*?<(path|circle|rect|polygon)/i.test(anchor)).toBe(true);
+      return;
+    }
+    const file = resolve(SITES_ROOT, `themes/${theme}/public`, src.replace(/^\//, ""));
+    // Без этой проверки удаление .svg не заметил бы никто: разметка осталась
+    // бы прежней, а мерчант увидел бы «битую картинку».
+    expect(existsSync(file) ? "файл есть" : `нет файла ${file}`).toBe("файл есть");
+  });
+
   it("соседние соцсети не пострадали (telegram на месте)", () => {
     if (!built) return;
     const anchor = anchorFor(html, "https://t.me/merfyshop");

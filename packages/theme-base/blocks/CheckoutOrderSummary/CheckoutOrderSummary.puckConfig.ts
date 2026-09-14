@@ -37,7 +37,7 @@ export const CheckoutOrderSummaryPuckConfig: BlockPuckConfig<CheckoutOrderSummar
     showCompareAtPrice: { type: 'boolean', label: 'Старая цена зачёркнутая' },
     promoToggle: { type: 'object', label: 'Промокод' },
     bogoBadge: { type: 'boolean', label: 'Badge «Подарок» для BOGO' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Сводка заказа',

@@ -30,7 +30,7 @@ export const CheckoutSubmitPuckConfig: BlockPuckConfig<CheckoutSubmitProps> = {
     },
     loadingText: { type: 'text', label: 'Текст в состоянии загрузки' },
     successRedirectUrl: { type: 'text', label: 'URL успеха' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     buttonText: 'Оплатить {total}',

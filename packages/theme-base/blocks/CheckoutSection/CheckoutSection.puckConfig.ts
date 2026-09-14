@@ -16,7 +16,7 @@ export const CheckoutSectionPuckConfig: BlockPuckConfig<CheckoutSectionProps> = 
   label: 'Оформление заказа',
   category: 'form',
   fields: {
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     padding: { top: 80, bottom: 80 },

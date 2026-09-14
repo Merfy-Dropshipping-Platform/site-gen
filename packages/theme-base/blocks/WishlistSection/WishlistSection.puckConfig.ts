@@ -30,7 +30,7 @@ export const WishlistSectionPuckConfig: BlockPuckConfig<WishlistSectionProps> = 
   label: 'Избранное',
   category: 'layout',
   fields: {
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
   },
   defaults: {

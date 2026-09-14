@@ -24,7 +24,7 @@ export const CheckoutTotalsPuckConfig: BlockPuckConfig<CheckoutTotalsProps> = {
     totalLabel: { type: 'text', label: 'Лейбл итога' },
     showSubtotal: { type: 'boolean', label: 'Показать подытог' },
     showDiscount: { type: 'boolean', label: 'Показать скидку' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     deliveryLabel: 'Доставка',

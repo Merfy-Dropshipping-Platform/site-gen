@@ -51,6 +51,12 @@ type Theme = (typeof THEMES)[number];
 /** Смешанный регистр — ровно так имя заведено в админке. */
 const NAME_MARK = "ТестОвый Товар";
 
+/**
+ * Заголовок секции «Каталог» — поле панели `categoryTitle` (aiText, вкладка
+ * «Содержание»). Тот же смешанный регистр: мерчант пишет его руками.
+ */
+const HEADING_MARK = "КаталОг Мерчанта";
+
 /** Каталог для живой цепочки (rose/satin читают его из `__merfy.resolved`). */
 const CATALOG = {
   collections: [
@@ -95,7 +101,10 @@ const JOBS = [
       collection: "col-1",
     },
   },
-  { block: "Catalog", props: { ...base, id: "Cat-1" } },
+  {
+    block: "Catalog",
+    props: { ...base, id: "Cat-1", categoryTitle: HEADING_MARK },
+  },
 ] as const;
 
 /** Самозакрывающиеся теги — в стек предков не кладутся. */
@@ -324,5 +333,41 @@ describe("саботаж: детектор капса не вырожден", ()
     // капсовой обёртки — там регистр читателю не виден вовсе.
     const html = `<div class="uppercase"><img alt="${NAME_MARK}" /></div>`;
     expect(capsedChains(html, NAME_MARK)).toEqual([]);
+  });
+});
+
+// ───── слой 3: заголовок «Каталога» — та же болезнь, найдена попутно ─────
+
+/**
+ * `categoryTitle` — поле сайдбара, а не имя товара, поэтому формально это
+ * другой баг. Но болезнь одна: тема переписывает регистр чужого текста.
+ * Старый сторож `section-text-case.spec.ts` его не ловит — блока `Catalog`
+ * нет в его списке JOBS вовсе (там 12 блоков, каталога среди них нет).
+ *
+ * ЗАМЕР «ДО» (2026-09-14): vanilla, flux, satin → КАПС на `<h1 id="catalog-title">`;
+ * rose и bloom — чисто. То есть верхний регистр тут расхождение трёх путей из
+ * пяти, а не решение дизайна (ровно та же картина, что была у выпадашек
+ * вариантов: `product-variants-text-case.spec.ts`).
+ */
+describe.each(THEMES)("заголовок «Каталога» — %s", (theme) => {
+  let html: string | null = null;
+
+  beforeAll(() => {
+    if (built(theme)) html = renderTheme(theme).Catalog;
+  }, 180_000);
+
+  it("заголовок мерчанта есть в разметке", () => {
+    if (html == null) return; // блока в теме нет
+    expect(markupOnly(html)).toContain(HEADING_MARK);
+  });
+
+  it("заголовок печатается без принудительного капса", () => {
+    if (html == null) return;
+    expect(capsedChains(markupOnly(html), HEADING_MARK)).toEqual([]);
+  });
+
+  it("регистр заголовка не переписан в тексте", () => {
+    if (html == null) return;
+    expect(markupOnly(html)).not.toContain(HEADING_MARK.toUpperCase());
   });
 });

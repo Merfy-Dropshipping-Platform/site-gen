@@ -1476,6 +1476,59 @@ function dropSeededCartScheme(
 }
 
 /**
+ * «Товар»: снять силуэт счётчика, вшитый сидом в данные мерчанта.
+ *
+ * `visualConfig` — LAYOUT-переключатель ТЕМЫ: в `Product.puckConfig` для него
+ * нет ни одного поля, мерчант его не видит и выбрать не может. Источник —
+ * `theme.json blockDefaults.Product.visualConfig`. Но сиды страницы товара
+ * rose и flux клали его ВНУТРЬ пропов блока, а рендер мерджит
+ * `deepMergeBlockProps(blockDefaults, props)` — пропы ревизии сильнее темы.
+ * Итог: тема меняет силуэт счётчика, а витрина показывает слепок, сделанный в
+ * момент создания сайта.
+ *
+ * Поймано 14.09: правка «счётчик берёт оформление своей темы» доехала до
+ * bloom, satin и vanilla (у них `visualConfig` в сиде нет) и не доехала до
+ * rose. Раньше это было незаметно, потому что сид rose повторял
+ * `DEFAULT_VISUAL_CONFIG` слово в слово — «сид победил» и «тема применилась»
+ * давали одинаковый HTML во всех ключах, кроме `counter`.
+ *
+ * Снимается ТОЛЬКО `counter`. Соседние `gallery`/`variantsType`/
+ * `showDescription` читает ещё и собственный порт flux
+ * (`FeaturedProduct.astro` берёт `visualConfig.showDescription`), и у flux сид
+ * (`true`) расходится с манифестом (`false`) — снятие спрятало бы описание
+ * товара, о чём никто не просил. Это тот же класс дефекта и он остаётся
+ * открытым осознанно.
+ */
+function dropSeededCounterVariant(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (b?.type !== 'Product' || !b.props) return block;
+      const visual = b.props.visualConfig;
+      if (!visual || typeof visual !== 'object' || Array.isArray(visual)) {
+        return block;
+      }
+      if (!('counter' in (visual as Record<string, unknown>))) return block;
+      const nextVisual = { ...(visual as Record<string, unknown>) };
+      delete nextVisual.counter;
+      pageChanged = true;
+      return { ...b, props: { ...b.props, visualConfig: nextVisual } };
+    });
+    if (!pageChanged) continue;
+    out[pageId] = { ...(page as object), content };
+    changed = true;
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * PromoBanner: снять легаси-`padding {12,12}` старого сида.
  *
  * До этой волны «Отступы» промо-баннера не были выведены в панель и НЕ
@@ -2054,6 +2107,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = dropSeededCounterVariant(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = materializeMultiRowsItemSize(out.pagesData as Record<string, unknown>);

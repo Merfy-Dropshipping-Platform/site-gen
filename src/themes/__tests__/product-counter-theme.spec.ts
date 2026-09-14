@@ -61,6 +61,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { migrateRevisionData } from "../../utils/revision-migrations";
 import { buildTokensCss } from "../tokens-css";
 
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
@@ -234,14 +235,61 @@ const built = (theme: Theme) =>
   );
 
 /**
+ * Пропы блока «Товар» РОВНО ТЕ, что уходят на витрину: сид страницы товара
+ * темы (`packages/theme-<t>/pages/product.json`), пропущенный через
+ * `migrateRevisionData` — так его читает `extractPageBlocks` на каждой сборке.
+ *
+ * Без этого режима проверка меряет не тот путь. 14.09 гард был зелёный 27/27,
+ * а на живой витрине rose счётчик остался прежним: сид rose пинит
+ * `visualConfig` ВНУТРЬ данных мерчанта, а `renderBlock` мерджит
+ * `deepMergeBlockProps(blockDefaults, props)` — пропы ревизии сильнее темы.
+ * У bloom/satin/vanilla `visualConfig` в сиде нет, поэтому у них тема доезжала
+ * и правка «работала» — расхождение пряталось ровно в одной теме.
+ */
+function seedProductProps(theme: Theme): Record<string, unknown> {
+  const seedPath = resolve(
+    SITES_ROOT,
+    "packages",
+    `theme-${theme}`,
+    "pages",
+    "product.json",
+  );
+  const raw = JSON.parse(readFileSync(seedPath, "utf8")) as
+    | { type?: string; props?: Record<string, unknown> }[]
+    | { content?: { type?: string; props?: Record<string, unknown> }[] };
+  const content = Array.isArray(raw) ? raw : (raw.content ?? []);
+  const migrated = migrateRevisionData(
+    { pagesData: { "page-product": { content } } },
+    theme,
+  ) as {
+    pagesData?: Record<
+      string,
+      { content?: { type?: string; props?: Record<string, unknown> }[] }
+    >;
+  };
+  const page = migrated.pagesData?.["page-product"];
+  const block = (page?.content ?? []).find((b) => b?.type === "Product");
+  if (!block?.props) {
+    throw new Error(`в сиде страницы товара ${theme} нет блока Product`);
+  }
+  return block.props;
+}
+
+/**
  * Рендер секции «Товар» ЛЕСТНИЦЕЙ витрины: порт темы → пакет темы → theme-base.
  * Именно ею секцию резолвит `defaultComponentResolver`, поэтому flux приходит
  * своим портом, а остальные четыре — общим блоком.
+ *
+ * `mode: "seed"` — пропы из сида страницы темы (то, что реально уходит в прод);
+ * `mode: "bare"` — голая ревизия без `visualConfig` (тема обязана дать силуэт
+ * и когда мерчант ничего не сохранял).
  */
-function renderProduct(theme: Theme): string {
-  const jobs = [
-    { block: "Product", props: productProps, cascade: true, live: true },
-  ];
+function renderProduct(theme: Theme, mode: "seed" | "bare" = "seed"): string {
+  const props =
+    mode === "seed"
+      ? { ...seedProductProps(theme), colorScheme: SCHEME }
+      : productProps;
+  const jobs = [{ block: "Product", props, cascade: true, live: true }];
   const raw = execFileSync(
     "node",
     ["--import", CATALOG_STUB, RENDERER, theme, JSON.stringify(jobs)],
@@ -255,7 +303,7 @@ function renderProduct(theme: Theme): string {
   };
   if (row.html === undefined) {
     throw new Error(
-      `рендер «Товар» (${theme}) не дал HTML: ${row.error ?? row.pipelineError ?? (row.missing ? "блока нет" : "?")}`,
+      `рендер «Товар» (${theme}, ${mode}) не дал HTML: ${row.error ?? row.pipelineError ?? (row.missing ? "блока нет" : "?")}`,
     );
   }
   return row.html;
@@ -309,19 +357,28 @@ const EXPECTED: Record<Theme, Shape> = {
   vanilla: "split",
 };
 
-describe.each(THEMES)("счётчик количества «Товар» — %s", (theme) => {
+const MODES = ["seed", "bare"] as const;
+type Mode = (typeof MODES)[number];
+const MODE_LABEL: Record<Mode, string> = {
+  seed: "сид страницы темы (путь витрины)",
+  bare: "голая ревизия",
+};
+
+describe.each(
+  THEMES.flatMap((theme) => MODES.map((mode) => [theme, mode] as const)),
+)("счётчик количества «Товар» — %s, %s", (theme, mode) => {
   const tokens = tokenMap(buildTokensCss({}, theme), SCHEME);
   let boxClasses: string[] = [];
   let decClasses: string[] = [];
 
   beforeAll(() => {
     if (!built(theme)) return;
-    const html = renderProduct(theme);
+    const html = renderProduct(theme, mode);
     boxClasses = classesOfAny(html, BOX_MARKERS);
     decClasses = classesOfAny(html, DEC_MARKERS);
   }, 180_000);
 
-  it("секции темы собраны (pnpm build:theme-sections)", () => {
+  it(`секции темы собраны (${MODE_LABEL[mode]})`, () => {
     expect(built(theme)).toBe(true);
   });
 
@@ -404,7 +461,7 @@ it("пять тем дают три разных силуэта счётчика
     THEMES.map((theme) => {
       const tokens = tokenMap(buildTokensCss({}, theme), SCHEME);
       const themeCss = themeCssOf(theme);
-      const html = renderProduct(theme);
+      const html = renderProduct(theme, "seed");
       const box = surfaceOf(themeCss, tokens, classesOfAny(html, BOX_MARKERS));
       const dec = surfaceOf(themeCss, tokens, classesOfAny(html, DEC_MARKERS));
       if (box.borderWidth) return `плашка/${box.radius}`;
@@ -443,7 +500,7 @@ describe.each(THEMES)("калибровка по Chromium — %s", (theme) => {
     if (!built(theme)) return;
     const tokens = tokenMap(buildTokensCss({}, theme), SCHEME);
     const themeCss = themeCssOf(theme);
-    const html = renderProduct(theme);
+    const html = renderProduct(theme, "seed");
     const box = surfaceOf(themeCss, tokens, classesOfAny(html, BOX_MARKERS));
     const dec = surfaceOf(themeCss, tokens, classesOfAny(html, DEC_MARKERS));
     const want = CHROMIUM[theme];
@@ -470,7 +527,7 @@ describe("саботаж — подмена оформления одной те
     if (!built("rose")) return;
     const tokens = tokenMap(buildTokensCss({}, "rose"), SCHEME);
     const themeCss = themeCssOf("rose");
-    const html = renderProduct("rose");
+    const html = renderProduct("rose", "seed");
     const real = surfaceOf(themeCss, tokens, classesOfAny(html, BOX_MARKERS));
     expect(real.borderWidth).toBe(1);
     // Ровно прежняя (общая) разметка: inline-обёртка без рамки.
@@ -486,7 +543,7 @@ describe("саботаж — подмена оформления одной те
     if (!built("vanilla")) return;
     const tokens = tokenMap(buildTokensCss({}, "vanilla"), SCHEME);
     const themeCss = themeCssOf("vanilla");
-    const html = renderProduct("vanilla");
+    const html = renderProduct("vanilla", "seed");
     const real = surfaceOf(themeCss, tokens, classesOfAny(html, DEC_MARKERS));
     expect(paints(real.bg)).toBe(true);
     // Классы кнопки boxed-варианта (rose/bloom/satin) — заливки у них нет.

@@ -26,7 +26,6 @@
         "visualConfig": {
           "gallery": { "variant": "wrap-large", "showDiscountBadge": true },
           "variantsType": "chips",
-          "counter": { "variant": "inline" },
           "showDescription": true
         },
         "padding": { "top": 40, "bottom": 80 }

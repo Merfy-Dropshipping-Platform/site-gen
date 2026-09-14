@@ -5317,3 +5317,63 @@ exit=0.
 - Зелёные: `catalog-filters-mobile` 52, `catalog-scheme` 46, `section-snapshots` 155, `panel-canon` 203, `account-surface` 44, `padding-control` 14, `fresh-sections` 65, `hidden-fields` 495, `panel-defaults` 22, `conformance:satin` 84, `conformance:shared` 199+100, `check:css-layers` ок, `conformance:satin` (структурный) exit 0.
 - Гейт `pre-push.sh` — `✓ гейт пройден`.
 - Push и деплой НЕ выполнялись.
+
+### Слияние с `origin/main` 8b18a896 (2026-09-15)
+
+Влиты чекаут (`331f4794`) и B11 (`8b18a896`); база ветки была `5afaf16c`.
+
+Конфликты и разрешение:
+
+- `.github/workflows/ci.yml` — авто-слияние, проверено сложением по именам шагов
+  и по `- run:`-строкам: 68 в базе → 72 (наш `test:catalog-layout-mobile` плюс
+  четыре из main — `test:page-padding`, `test:media-radius`,
+  `checkout-header-strip`, `checkout-sections-round4`; минус удалённый в main
+  `checkout-header-in-column`). Шагов 17 на обеих сторонах, потерь нет.
+- `package.json` — авто-слияние, проверено разбором JSON (не грепом): скриптов
+  83 → 86, зависимости и dev-зависимости не разошлись.
+- `docs/theme-work/WORKLOG.md` — обе стороны: два блока main (чекаут, четвёртый
+  круг; B11), затем наш W-B12.
+- `docs/theme-work/STATUS.md` — обе строки, новейшее первым.
+- `conformance/inventory/satin.generated.json` — сторона не выбиралась.
+  Перегенерация после полной пересборки отдельным коммитом. Дайджест:
+  ветка `f26884e1…`, main `a6a50599…`, слитое дерево `a0753afb…` — ни одна
+  сторона слитому дереву не подошла, как и в трёх прошлых слияниях. Факты
+  инвентаря при этом не изменились (requirements 76, findings 265,
+  structuralIssues 113 на всех трёх версиях) — разошлась только строка
+  `sourceDigest`.
+
+Маркеры конфликта: два прохода (рабочее дерево и индекс) по всем 3970
+отслеживаемым файлам формой `git ls-files -z` — ноль. Форма `$(git ls-files)`
+не использовалась: она молча пропускает файлы с кириллицей в именах.
+
+Числа на итоговом дереве после полной пересборки: `catalog-layout-mobile` 35/35,
+`catalog-filters-mobile` 52/52, `page-padding` 22/22, `media-radius` 68/68,
+`account-surface` 44/44, `padding-control` 14/14, `fresh-sections` 65/65,
+`panel-canon` 203/203, `section-snapshots` 155/155, `conformance:satin` 84/84
+(с первого прогона, без флака по таймауту), `conformance:satin` (CLI) exit 0.
+Чекаутные гарды, приехавшие из main: `checkout-sections-round4` 61/61,
+`checkout-form-fills-column` 15/15, `checkout-scheme-surface` 53/53,
+`checkout-header-strip` 43/43, `checkout-summary-sticky` 41/41.
+
+Повторный замер каталога на слитом дереве (Chromium, собранные порты
+`dist/theme-live/<t>/catalog`, раскладка ставится атрибутом `data-catalog-layout`;
+режим «до» воспроизводит болезнь инжектом безусловной пары правил порта —
+unlayered, как `is:global` в `<style>` порта):
+
+| тема | окно | раскладка | до: top/side, плиток, `<main>` | после |
+|---|---|---|---|---|
+| rose | 375 | side | `none`/`none`, 0, 130px | `flex`/`none`, 8, 1746px |
+| satin | 375 | side | `none`/`none`, 0, 151px | `flex`/`none`, 6, 1502px |
+| flux | 375 | side | `none`/`none`, 0, 181px | `flex`/`none`, 8, 1727px |
+
+Раскладка `top` на 375px не изменилась ни в одной теме. Контроль 1280px: обе
+раскладки трёх тем совпали до пикселя между «до» и «после» — **0 изменившихся
+клеток из 6**.
+
+Оговорка к числам: харнесс этого прогона мерит собранную порт-страницу каталога
+с её демо-товарами, а первый замер (1602/1509/1375px, 8 плиток) шёл по
+композиции живой страницы. Поэтому абсолютные числа не совпадают: у satin в
+порт-странице 12 карточек (6 на обёртку), восьми там быть не может. Совпали
+направление и механика, а «до» у flux сошлось до пикселя — 181px.
+
+Push и деплой НЕ выполнялись.

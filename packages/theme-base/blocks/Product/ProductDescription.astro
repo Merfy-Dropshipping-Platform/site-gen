@@ -15,6 +15,19 @@
  * состав параметров канон, поле не трогаем. Проп `heading` снят как мёртвый:
  * его никто не передавал, и вернуть подпись «настройкой» он не может.
  *
+ * Жалоба тестировщика 14.09: «описание в товаре поднять в начало параметра,
+ * сейчас отступ большой, так как убрали слово ОПИСАНИЕ». Отступ давала не
+ * колонка секции (её шаг 40px — общий для всех групп и остался прежним), а сам
+ * абзац: `whitespace-pre-line` + отбивка `{trimmed}` в шаблоне давали пустую
+ * ПЕРВУЮ строку, текст начинался со второй. Замер живой витрины 14.09
+ * (7b64b7a527d2, rose): innerHTML абзаца = "\n      hhhhhh\n    ",
+ * высота 48px на шесть символов, текст в 25px от верха своего блока.
+ *
+ * Обёртка осталась голым `w-full`: `flex flex-col gap-2` держала расстояние
+ * между h2 и телом, а с уходом заголовка ребёнок остался один — колонка с
+ * gap'ом стала мёртвой. Сам узел и `data-product-description` нужны: по нему
+ * ищет цветовой гард (`product-section-colors.spec.ts`).
+ *
  * Цвет тела: приглушённый ТЕКСТ схемы (--color-text/60), а НЕ --color-muted.
  * Жалоба тестировщика 13.09: описание во всех схемах выходило 153/153/153, а
  * поля «Приглушённый текст» в редакторе схемы нет вовсе (там Фон, Заголовок,
@@ -30,9 +43,11 @@ const { content = '' } = Astro.props as Props;
 const trimmed = content.trim();
 ---
 {trimmed && (
-  <div class="flex flex-col gap-2 w-full" data-product-description>
-    <p class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-text))]/60 leading-normal m-0 whitespace-pre-line">
-      {trimmed}
-    </p>
+  <div class="w-full" data-product-description>
+    {/* Выражение ВПЛОТНУЮ к тегам — при `whitespace-pre-line` перевод строки из
+        шаблона рисуется настоящей пустой строкой. С отбивкой абзац занимал 48px
+        на одну строку текста, и текст сидел на второй. `content.trim()` тут не
+        помогает: пробелы приходят из вёрстки, а не из данных. */}
+    <p class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-text))]/60 leading-normal m-0 whitespace-pre-line">{trimmed}</p>
   </div>
 )}

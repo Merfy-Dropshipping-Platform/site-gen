@@ -320,11 +320,21 @@ function loadSourceFacts(): SatinSourceFacts {
   // — divergent from the canonical `next`.
   const CANONICAL_RETURN_PARAM = 'next';
   const observedReturnParams = new Set<string>();
+  // 14.09: тела страниц входа и аккаунта переехали из `src/pages/*` в
+  // Puck-секции `src/components/sections/*` (страницы стали шеллами). Код
+  // ТОТ ЖЕ, адрес другой — детектор обязан идти за кодом, иначе он перестанет
+  // находить `redirect` и тихо отчитается, что расхождения конвенций больше
+  // нет. Страницы оставлены в списке: у тем, где переезда не было, факты
+  // по-прежнему читаются оттуда, а `readSource` молча отдаёт null на
+  // отсутствующий файл.
   const authSources = [
     'themes/satin/src/pages/login.astro',
+    'themes/satin/src/components/sections/LoginSection.astro',
     'themes/satin/src/pages/account/order.astro',
     'themes/satin/src/pages/account/orders.astro',
     'themes/satin/src/pages/account/profile.astro',
+    'themes/satin/src/components/sections/AccountSection.astro',
+    'themes/satin/src/components/sections/OrdersSection.astro',
     'themes/satin/src/lib/auth.ts',
   ];
   for (const rel of authSources) {
@@ -343,10 +353,16 @@ function loadSourceFacts(): SatinSourceFacts {
   ].sort();
 
   // login-return-propagation: fallback target `/account` on a successful login.
-  const authLoginFallbackTarget = fileMatches(
+  // Ищем в ОБОИХ адресах: с 14.09 тело страницы входа живёт в секции
+  // `LoginSection.astro`, сама `login.astro` — шелл. Правило не изменилось:
+  // satin по-прежнему роняет возврат в чекаут, просто код переехал. Проверять
+  // только страницу значило бы отчитаться «возврат сохраняется» на ровном месте.
+  const LOGIN_FALLBACK_RE =
+    /params?\.get\(\s*['"]redirect['"]\s*\)\s*\|\|\s*['"]\/account['"]/;
+  const authLoginFallbackTarget = [
     'themes/satin/src/pages/login.astro',
-    /params?\.get\(\s*['"]redirect['"]\s*\)\s*\|\|\s*['"]\/account['"]/,
-  )
+    'themes/satin/src/components/sections/LoginSection.astro',
+  ].some((rel) => fileMatches(rel, LOGIN_FALLBACK_RE))
     ? '/account'
     : 'preserved';
 

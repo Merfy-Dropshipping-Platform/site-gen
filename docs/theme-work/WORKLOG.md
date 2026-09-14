@@ -5228,3 +5228,44 @@ bloom 120`; настройка мерчанта 40 → 40px, 140 → 140px во 
 - Стенд rose за время работы изменили снаружи: `Page-delivery` перешёл с
   `80/80` на `0/120` между двумя моими замерами. Лишнее подтверждение, что
   стенд — снимок, а не свойство.
+
+### Слияния с `origin/main` (15.09, подготовка к пушу)
+
+За один проход пришлось слить main ДВАЖДЫ: пока шла пересборка, владелец
+запушил чекаут B9, и `origin/main` уехал с `5afaf16c` на `331f4794`.
+
+- Первое: `97c03e5c` → `5afaf16c` (фильтры каталога), коммит `25e75aef`.
+- Второе: `5afaf16c` → `331f4794` (чекаут, четвёртый круг), коммит `f4215f7f`.
+  Со стороны main принято удаление `checkout-header-in-column.spec.ts` —
+  его заменил `checkout-header-strip.spec.ts`.
+
+Конфликтовали оба раза одни и те же файлы: `docs/theme-work/WORKLOG.md`
+(сохранены ОБЕ записи: запись main идёт первой, наша — следом, префикс файла
+побайтово равен main-версии, хвост — нашей записи) и
+`conformance/inventory/satin.generated.json`. `ci.yml` и `package.json`
+слились сами, но проверены СЛОЖЕНИЕМ поимённо, двусторонней сверкой набора
+команд: слитое минус main = ровно `test:page-padding` + `test:media-radius`,
+слитое минус наша ветка = ровно то, что добавил main. Скриптов в
+`package.json` 82 → 85 (+1 main, +2 наши). `STATUS.md` наша ветка не трогала,
+поэтому взят целиком со стороны main.
+
+⚠️ Инвентарь satin — ни одна сторона слитому дереву не подошла, подтверждено
+числами дважды: `176417f1…` (main) → `6327a28b…` после первого слияния,
+`4ab2d239…` (main) → `a6a50599…` после второго. Порядок каждый раз: коммит
+слияния → полная пересборка → `pnpm conformance:satin:refresh` → отдельный
+коммит (`b6da0374`, `47e34baa`).
+
+Маркеры конфликта: два прохода (рабочее дерево и индекс) по всем 3967
+отслеживаемым файлам через `grep -E` — ноль.
+
+Прогон на итоговом дереве после полной пересборки: `test:page-padding` 22/22,
+`test:media-radius` 68/68, `test:catalog-filters-mobile` 52/52,
+`test:account-surface` 44/44, `test:padding-control` 14/14,
+`test:fresh-sections` 65/65, `test:panel-canon` 203/203,
+`test:section-snapshots` 155/155, `test:conformance:satin` 84/84 (с первого
+прогона, без флака по таймауту), `conformance:satin` (CLI) зелёный.
+Чекаут-гарды, приехавшие из main, тоже прогнаны: `checkout-header-strip`
+43/43, `checkout-sections-round4` 61/61, `checkout-form-fills-column` 15/15,
+`checkout-scheme-surface` 53/53, `checkout-summary-sticky` 41/41,
+`preview-checkout-column-scheme` 11/11. Гейт `pre-push.sh`: «✓ гейт пройден»,
+exit=0.

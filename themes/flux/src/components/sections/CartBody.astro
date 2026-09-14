@@ -54,7 +54,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				>
 					Корзина
 				</h1>
-				<p class="font-roboto-flex text-[16px] font-light leading-normal text-[#cccccc]">
+				<p class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-muted,204_204_204))]">
 					Вы пока не добавили товар в корзину
 				</p>
 			</div>
@@ -64,7 +64,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			>
 				Продолжить покупки
 			</a>
-			<p class="font-roboto-flex text-[14px] font-light leading-normal text-[#999999]">
+			<p class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
 				Есть аккаунт?
 				<a href="/login" class="text-black hover:opacity-80">Войти</a>
 			</p>
@@ -149,7 +149,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 									<a href="/products/${line.productId}" class="font-roboto-flex text-[20px] font-light leading-normal text-black transition-opacity hover:opacity-70">${line.name}</a>
 									<div class="flex items-center gap-2 uppercase">
 										<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">${formatCartPrice(line.price)}</span>
-										${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[#cccccc] line-through">${oldPrice}</span>` : ""}
+										${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-muted,204_204_204))] line-through">${oldPrice}</span>` : ""}
 									</div>
 								</div>
 								${varInfo}

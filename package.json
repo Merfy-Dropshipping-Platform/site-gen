@@ -76,7 +76,8 @@
     "test:product-counter": "jest --runInBand src/themes/__tests__/product-counter-theme.spec.ts",
     "test:rich-text-fields": "jest --runInBand src/themes/__tests__/rich-text-fields.spec.ts",
     "rich-text:coverage": "node src/themes/__tests__/rich-text-coverage.mjs --table",
-    "test:muted-text": "jest --runInBand src/themes/__tests__/muted-text-follows-scheme.spec.ts"
+    "test:muted-text": "jest --runInBand src/themes/__tests__/muted-text-follows-scheme.spec.ts",
+    "test:grey-literals": "jest --runInBand src/themes/__tests__/grey-literals-follow-scheme.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

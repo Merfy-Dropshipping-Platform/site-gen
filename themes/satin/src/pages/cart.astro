@@ -38,7 +38,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				>
 					Корзина
 				</h1>
-				<p class="font-manrope text-[14px] font-light leading-normal text-[#999999] md:text-[16px]">
+				<p class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]">
 					Вы пока не добавили товар в корзину.
 				</p>
 				<a
@@ -47,7 +47,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				>
 					Продолжить покупки
 				</a>
-				<p class="font-manrope text-[14px] font-normal leading-normal text-[#999999] md:text-[16px]">
+				<p class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]">
 					Есть аккаунт?
 					<a href="/auth/sign-in" class="text-[#000000] hover:opacity-80">Войти</a>
 				</p>
@@ -159,8 +159,8 @@ const apiUrl = "https://gateway.merfy.ru/api";
 							</a>
 							<div class="flex flex-col gap-2">
 								<a href="/products/${line.productId}" class="font-manrope text-[16px] font-normal text-[#000000] hover:opacity-80 md:text-[20px]">${line.name}</a>
-								${variant ? `<span class="font-manrope text-[14px] font-light text-[#999999]">${variant}</span>` : ""}
-								<button type="button" data-cart-remove data-id="${line.id}" class="w-fit font-manrope text-[14px] font-normal text-[#999999] transition-opacity hover:text-[#000000]">Удалить</button>
+								${variant ? `<span class="font-manrope text-[14px] font-light text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
+								<button type="button" data-cart-remove data-id="${line.id}" class="w-fit font-manrope text-[14px] font-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[#000000]">Удалить</button>
 							</div>
 						</div>
 						<div class="flex items-center justify-between gap-6 md:flex-col md:items-end md:justify-start md:gap-3">

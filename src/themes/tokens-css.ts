@@ -338,12 +338,29 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
           }
         }
       }
+      // Приглушённый НЕ наследуем из манифеста темы, когда мерчант задал свои
+      // цвета: у `--color-muted` нет поля в редакторе схемы (состав настроек
+      // канон), поэтому константа темы для мерчанта неизменяема ровно так же,
+      // как был неизменяем `153 153 153`. Наследование её сюда и замораживало
+      // приглушённый текст у flux (204 204 204), vanilla (200 200 200) и bloom
+      // (245 245 245): фикс «muted следует схеме» работал только у rose и satin,
+      // где манифест нёс тот самый серый. Замер на схеме тестировщика (фон
+      // #71C0FF, текст #E91E8C): flux отдавал 204 204 204 вместо 185 95 186.
+      // Оставляем undefined → schemeToVars посчитает 60 % текста + 40 % фона
+      // мерчанта. Явно заданный в схеме muted (например, тёмный сайдбар
+      // корзины) сюда не попадает — он !== undefined и уважается как прежде.
       if (merged.muted === undefined) {
-        const themeMuted = themeScheme.tokens?.['--color-muted'];
-        if (themeMuted) {
-          const [r, g, b] = themeMuted.trim().split(/\s+/).map((n) => parseInt(n, 10));
-          if ([r, g, b].every((n) => !Number.isNaN(n))) {
-            merged.muted = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+        const canMix =
+          hexToRgbTriple(merged.text) !== null && hexToRgbTriple(merged.background) !== null;
+        if (!canMix) {
+          // Смешивать не из чего (мерчант не дал текст/фон) — тогда константа
+          // темы всё ещё лучше, чем отсутствие переменной.
+          const themeMuted = themeScheme.tokens?.['--color-muted'];
+          if (themeMuted) {
+            const [r, g, b] = themeMuted.trim().split(/\s+/).map((n) => parseInt(n, 10));
+            if ([r, g, b].every((n) => !Number.isNaN(n))) {
+              merged.muted = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+            }
           }
         }
       }

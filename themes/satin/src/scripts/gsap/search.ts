@@ -31,7 +31,7 @@ function rowHtml(item: SearchItem): string {
 			<img src="${item.image}" alt="" loading="lazy" class="h-12 w-9 shrink-0 object-cover" />
 			<span class="flex min-w-0 flex-col">
 				<span class="truncate font-manrope text-[14px] font-normal leading-tight text-[#000000]">${item.name}</span>
-				<span class="font-manrope text-[12px] font-light leading-tight text-[#999999]">${item.price}</span>
+				<span class="font-manrope text-[12px] font-light leading-tight text-[rgb(var(--color-muted,153_153_153))]">${item.price}</span>
 			</span>
 		</a>`;
 }

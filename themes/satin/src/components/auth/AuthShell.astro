@@ -34,7 +34,7 @@ const { title, description } = Astro.props;
     <div class="flex flex-col items-center gap-2 text-center">
       <h1 class="font-heading text-xl uppercase font-normal" style="color: #000000;">{title}</h1>
       {description && (
-        <p class="text-base font-normal" style="color: rgb(163, 163, 163);">{description}</p>
+        <p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));">{description}</p>
       )}
     </div>
     <slot />

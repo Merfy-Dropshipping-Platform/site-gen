@@ -29,7 +29,7 @@ const { name, price, oldPrice, image, alt = name } = Astro.props;
 			<span class="text-base sm:text-lg md:text-xl lg:text-lg font-normal text-black leading-tight font-manrope">
 				{price}
 			</span>
-			<span class="text-xs sm:text-sm md:text-base lg:text-sm font-light text-[#999999] line-through leading-tight font-manrope">
+			<span class="text-xs sm:text-sm md:text-base lg:text-sm font-light text-[rgb(var(--color-muted,153_153_153))] line-through leading-tight font-manrope">
 				{oldPrice}
 			</span>
 		</div>

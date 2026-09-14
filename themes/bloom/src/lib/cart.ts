@@ -193,9 +193,9 @@ export const initCartUI = () => {
 							<div class="flex items-start justify-between gap-2">
 								<div class="flex flex-col gap-1">
 									<a href="${href}" class="font-inter text-[16px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70">${escapeHtml(line.name)}</a>
-									${variant ? `<span class="font-inter text-[14px] font-light leading-normal text-[#999999]">${escapeHtml(variant)}</span>` : ""}
+									${variant ? `<span class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${escapeHtml(variant)}</span>` : ""}
 								</div>
-								<button type="button" data-cart-remove data-id="${escapeHtml(line.id)}" class="font-inter text-[14px] font-light leading-normal text-[#999999] transition-colors hover:text-[#E38E9F]" aria-label="Удалить">Удалить</button>
+								<button type="button" data-cart-remove data-id="${escapeHtml(line.id)}" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#E38E9F]" aria-label="Удалить">Удалить</button>
 							</div>
 							<div class="flex items-center justify-between gap-3">
 								<div class="inline-flex h-9 items-center rounded-full border border-[#FFD4E5] bg-white">

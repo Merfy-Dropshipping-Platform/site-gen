@@ -307,7 +307,7 @@ export function renderCardHtml(p: RealProduct, quickAdd?: string): string {
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
-		? `<span class="font-manrope text-[14px] font-light leading-tight text-[#999999] line-through">${escapeHtml(oldRaw)}</span>`
+		? `<span class="font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-muted,153_153_153))] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	const badge = oldRaw
 		? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[#000000] px-2 font-manrope text-[12px] font-medium uppercase leading-none text-white">Скидка</span>`

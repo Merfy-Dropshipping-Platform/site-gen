@@ -6,6 +6,9 @@ export const PageTokens = [
   '--color-muted',
   '--color-accent',
   '--container-max-width',
+  // Вертикальный ритм секции: значение темы (`--spacing-section-y`) эмиттер
+  // отдаёт под обоими именами, разметка читает `--section-padding`.
+  '--section-padding',
   '--size-body',
   '--font-body',
   '--font-heading',

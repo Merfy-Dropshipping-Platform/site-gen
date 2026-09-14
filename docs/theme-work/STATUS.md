@@ -1411,9 +1411,14 @@ pnpm build:theme-sections:all`.
 `src/themes/tokens-css.ts` (токен `--color-checkout-surface`),
 `src/services/preview.service.ts` (горячая правка).
 
-Гарды (в `ci.yml`): `checkout-sections-round4.spec.ts` (58),
+Гарды (в `ci.yml`): `checkout-sections-round4.spec.ts` (61),
 `checkout-header-strip.spec.ts` (43, переименован из `checkout-header-in-column`
-— премиса развернулась). Чекаут-сьюты: 487/487, 13 файлов.
+— премиса развернулась). Чекаут-сьюты: 490/490, 13 файлов.
+
+Слито с `origin/main` `9abba80a` (отступы + галерея). После слияния:
+`test:padding-control` 14/14, `test:fresh-sections` 65/65, `test:panel-canon`
+203/203, чекаут 490/490, `conformance:satin` зелёный (инвентарь переснят
+отдельным коммитом).
 
 ⚠️ Отменены два решения третьего круга — по прямой просьбе владельца:
 шапка снова полосой над колонками, и схема «Оформления заказа» снова красит

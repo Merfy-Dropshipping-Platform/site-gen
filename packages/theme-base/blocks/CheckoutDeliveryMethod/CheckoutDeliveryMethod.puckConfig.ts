@@ -46,7 +46,7 @@ export const CheckoutDeliveryMethodPuckConfig: BlockPuckConfig<CheckoutDeliveryM
       },
     },
     freeShippingThresholdCents: { type: 'number', label: 'Бесплатно от (копейки), пусто = выкл' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Способ доставки',

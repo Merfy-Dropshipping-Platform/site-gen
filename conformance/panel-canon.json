@@ -2219,21 +2219,9 @@
         "label": "Корзина",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -2246,21 +2234,9 @@
         "label": "Избранное",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -2308,21 +2284,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -2330,21 +2294,9 @@
         "label": "Оформление заказа",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -3077,21 +3029,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -3112,21 +3052,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -3163,21 +3091,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -3206,21 +3122,9 @@
             ]
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       }
@@ -5442,21 +5346,9 @@
         "label": "Корзина",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -5469,21 +5361,9 @@
         "label": "Избранное",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -5531,21 +5411,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -5553,21 +5421,9 @@
         "label": "Оформление заказа",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -6300,21 +6156,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -6335,21 +6179,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -6386,21 +6218,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -6429,21 +6249,9 @@
             ]
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       }
@@ -8670,21 +8478,9 @@
         "label": "Корзина",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -8697,21 +8493,9 @@
         "label": "Избранное",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -8759,21 +8543,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -8781,21 +8553,9 @@
         "label": "Оформление заказа",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -9528,21 +9288,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -9563,21 +9311,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -9614,21 +9350,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -9657,21 +9381,9 @@
             ]
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       }
@@ -11893,21 +11605,9 @@
         "label": "Корзина",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -11920,21 +11620,9 @@
         "label": "Избранное",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -11982,21 +11670,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -12004,21 +11680,9 @@
         "label": "Оформление заказа",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -12751,21 +12415,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -12786,21 +12438,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -12837,21 +12477,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -12880,21 +12508,9 @@
             ]
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       }
@@ -15116,21 +14732,9 @@
         "label": "Корзина",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -15143,21 +14747,9 @@
         "label": "Избранное",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           },
           "colorScheme": {
             "type": "colorScheme",
@@ -15205,21 +14797,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -15227,21 +14807,9 @@
         "label": "Оформление заказа",
         "fields": {
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -15974,21 +15542,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -16009,21 +15565,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -16060,21 +15604,9 @@
             "visibility": "panel"
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       },
@@ -16103,21 +15635,9 @@
             ]
           },
           "padding": {
-            "type": "object",
+            "type": "padding",
             "label": "Отступы",
-            "visibility": "panel",
-            "objectFields": {
-              "top": {
-                "type": "number",
-                "label": "top",
-                "visibility": "panel"
-              },
-              "bottom": {
-                "type": "number",
-                "label": "bottom",
-                "visibility": "panel"
-              }
-            }
+            "visibility": "panel"
           }
         }
       }

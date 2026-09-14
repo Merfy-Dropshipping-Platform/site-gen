@@ -51,7 +51,7 @@ export const LoginSectionPuckConfig: BlockPuckConfig<LoginSectionProps> = {
     heading: { type: 'text', label: 'Заголовок' },
     text: { type: 'textarea', label: 'Текст' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     // Дефолты — ровно то, что стояло на живой витрине ДО этой правки (замер

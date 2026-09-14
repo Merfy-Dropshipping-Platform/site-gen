@@ -35,7 +35,7 @@ export const CheckoutContactFormPuckConfig: BlockPuckConfig<CheckoutContactFormP
         { label: 'Международный', value: 'intl' },
       ],
     },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Контакты',

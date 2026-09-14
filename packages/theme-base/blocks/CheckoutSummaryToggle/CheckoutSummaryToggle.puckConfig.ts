@@ -30,7 +30,7 @@ export const CheckoutSummaryTogglePuckConfig: BlockPuckConfig<CheckoutSummaryTog
       ],
     },
     responsive: { type: 'object', label: 'Видимость' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     headerText: 'Сводка заказа',

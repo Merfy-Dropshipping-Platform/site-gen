@@ -30,7 +30,7 @@ export const CheckoutTermsPuckConfig: BlockPuckConfig<CheckoutTermsProps> = {
         url: { type: 'text', label: 'URL' },
       },
     },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     text: defaultText,

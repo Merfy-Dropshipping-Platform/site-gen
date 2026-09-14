@@ -60,8 +60,7 @@ import FluxPicture from "../img/FluxPicture.astro";
 import {
 	deriveVariantGroups,
 	findCombination,
-	renderVariantGroupsHtml,
-	renderVariantSelectsHtml,
+	renderVariantsHtml,
 	formatPrice,
 	productHref,
 	resolveComboPricing,
@@ -202,10 +201,14 @@ const activeCombo = hasVariants ? findCombination(combos, selectedOptions) : nul
 const variantsDisplayStyle = p.variants?.displayStyle === "list" ? "list" : "button";
 const variantsShapeRaw = typeof p.variants?.shape === "string" ? p.variants.shape : "";
 const variantsShape = variantsShapeRaw === "circle" || variantsShapeRaw === "square" ? variantsShapeRaw : "";
+// «Стиль» и «Вариации» НЕЗАВИСИМЫ. Раньше ветка «Списка» звала выпадашку, у
+// которой в сигнатуре формы нет вовсе, — и «Круг/Квадрат» пропадал вместе с
+// образцами (баг тестировщика 2026-09-14). Список + форма = закрытый список с
+// образцами (паритет theme-base ProductVariants, ветка isListShaped); голая
+// выпадашка остаётся только там, где формы нет («Вариации: Нет»). Развилка
+// одна на оба пути порта (этот серверный рендер и живой рефреш в скрипте).
 const variantsHtml = hasVariants
-	? variantsDisplayStyle === "list"
-		? renderVariantSelectsHtml(variantGroups, selectedOptions)
-		: renderVariantGroupsHtml(variantGroups, selectedOptions, variantsShape)
+	? renderVariantsHtml(variantGroups, selectedOptions, variantsDisplayStyle, variantsShape)
 	: "";
 
 function pickOpt(opts: Record<string, string> | undefined, keys: string[]): string {
@@ -689,8 +692,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		formatPrice,
 		deriveVariantGroups,
 		findCombination,
-		renderVariantGroupsHtml,
-		renderVariantSelectsHtml,
+		renderVariantsHtml,
 		resolveComboPricing,
 	} from "../../lib/storefront-hydrate";
 
@@ -1091,8 +1093,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			// переключался на дефолт.
 			const isListStyle = variantsWrap?.getAttribute("data-variants-style") === "list";
 			const wrapShape = variantsWrap?.getAttribute("data-variants-shape") ?? "";
+			// Развилка ОДНА на оба пути (SSR-фронтматтер и этот живой рефреш) —
+			// `renderVariantsHtml` из storefront-hydrate: раньше она была
+			// продублирована, и правка одной ветки оставляла вторую со старым
+			// поведением — так форма и терялась после первого же клика.
 			const renderVariants = (gs: { name: string; values: string[] }[], sel: Record<string, string>) =>
-				isListStyle ? renderVariantSelectsHtml(gs, sel) : renderVariantGroupsHtml(gs, sel, wrapShape);
+				renderVariantsHtml(gs, sel, isListStyle ? "list" : "button", wrapShape);
 
 			if (variantsWrap && groups.length) {
 				variantsWrap.hidden = false;

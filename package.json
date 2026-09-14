@@ -63,6 +63,7 @@
     "test:media-order": "jest --runInBand src/themes/__tests__/product-media-order.spec.ts",
     "test:zoom-wiring": "jest --runInBand src/themes/__tests__/product-zoom-wiring.spec.ts",
     "test:variant-colors": "jest --runInBand src/themes/__tests__/variant-swatch-color-names.spec.ts",
+    "test:variant-shape": "jest --runInBand src/themes/__tests__/product-variant-shape-in-list.spec.ts",
     "test:collection-card": "jest --runInBand src/themes/__tests__/collection-card-settings.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
     "test:rich-text-fields": "jest --runInBand src/themes/__tests__/rich-text-fields.spec.ts",

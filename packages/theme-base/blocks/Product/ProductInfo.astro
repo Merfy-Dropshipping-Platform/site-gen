@@ -2,9 +2,15 @@
 /**
  * ProductInfo — brand + title primitive.
  *
- * Variants:
- *  - `uppercase-title` (rose, default) — title rendered UPPERCASE.
- *  - `normal-title` (flux) — title kept as-authored (no transform).
+ * Название печатается РОВНО так, как мерчант завёл его в админке. Жалоба
+ * тестировщика 14.09: «Капс в названии товара. Ожидаемый результат: тянет с
+ * админки название, а не сам пишет капсом». До правки здесь жил проп
+ * `variant`: `uppercase-title` (дефолт, и он же был вбит в `Product.astro`)
+ * добавлял `uppercase tracking-wide`, `normal-title` — нет. Ни один вызов
+ * второе значение не передавал, то есть «вариант» был просто капсом для всех
+ * четырёх тем общего порта (rose/vanilla/satin/bloom). Тот же класс, что
+ * `section-text-case.spec.ts`: `text-transform: uppercase` поверх чужих
+ * данных — подмена ввода. Проп снят как мёртвый.
  *
  * Brand line is shown when present (non-empty). Красится приглушённым ТЕКСТОМ
  * схемы (--color-text/60), как старая цена и описание: до 13.09 здесь стоял
@@ -25,7 +31,6 @@ import { sanitizeInline } from '../../runtime/rich-text';
 interface Props {
   brand?: string | null;
   title: string;
-  variant?: 'uppercase-title' | 'normal-title';
   /** id секции — для data-puck-subsection-parent (подсветка выбора в превью). */
   blockId?: string;
   hideBrand?: boolean;
@@ -35,12 +40,10 @@ interface Props {
 const {
   brand,
   title,
-  variant = 'uppercase-title',
   blockId,
   hideBrand = false,
   hideTitle = false,
 } = Astro.props as Props;
-const isUpper = variant === 'uppercase-title';
 ---
 <div class="flex flex-col gap-2 w-full" data-product-info>
   {brand && !hideBrand && (
@@ -54,10 +57,7 @@ const isUpper = variant === 'uppercase-title';
   )}
   {!hideTitle && (
     <h1
-      class:list={[
-        '[font-family:var(--font-heading)] text-[length:var(--product-title-size,24px)] leading-tight text-[rgb(var(--color-heading))] m-0',
-        isUpper ? 'uppercase tracking-wide' : 'normal-case',
-      ]}
+      class="[font-family:var(--font-heading)] text-[length:var(--product-title-size,24px)] leading-tight text-[rgb(var(--color-heading))] m-0 normal-case"
       data-puck-subsection-parent={blockId}
       data-puck-subsection-index="101"
       data-puck-subsection-field="title"

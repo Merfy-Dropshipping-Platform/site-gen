@@ -1,36 +1,78 @@
 ---
 /**
- * ProductCounter — quantity selector.
+ * ProductCounter — счётчик количества на странице товара.
  *
- * Variants (LAYOUT only):
- *  - `inline` (rose) — minus/value/plus, no fill, icons size-6, gap-3
- *  - `pill` (flux) — same controls inside a filled rounded pill, gap-2 p-2
+ * СИЛУЭТ БЕРЁТСЯ ИЗ ТЕМЫ (LAYOUT-переключатель, не настройка мерчанта):
+ * `theme.json blockDefaults.Product.visualConfig.counter.variant`. Полей в
+ * конструкторе у него нет и не заводится — состав панели канон.
  *
- * Colour:
- *  - `pill` — заливка основной кнопки (--color-button-bg) + её текст: контраст
- *    задан самой парой токенов, читаемость гарантирована.
- *  - `inline` — заливки нет, значит цифра и стрелки обязаны краситься ТЕКСТОМ
- *    схемы (--color-text), как цена рядом. До 13.09 здесь стоял
- *    --color-button-bg: в схеме 3 тестировщика (фон секции #71C0FF, фон кнопки
- *    #5AF810) на голубом фоне печаталась салатовая цифра. В схеме 1 совпадение
- *    было случайным (белая кнопка на чёрном фоне), поэтому баг долго не видели.
+ *  - `inline` (flux) — «пустота»: ни коробки, ни рамки, ни заливки. Ровно так
+ *    счётчик выглядит в собственном порте flux
+ *    (`themes/flux/src/components/sections/FeaturedProduct.astro`:
+ *    `inline-flex w-fit items-center gap-3`).
+ *  - `boxed` (rose, bloom, satin) — «плашка»: группа обведена рамкой со
+ *    скруглением темы. Форма взята у самих тем: rose — счётчик строки корзины
+ *    `themes/rose/src/components/sections/CartBody.astro`
+ *    (`inline-flex h-10 items-center rounded-[var(--radius-input,8px)] border
+ *    border-solid`, кнопки 40×40, число `min-w-[28px]`); bloom —
+ *    `BloomProductDetail.astro` (`h-10 w-fit rounded-[4px] border`); satin —
+ *    `satinProductDetail.astro` (коробка с рамкой без скругления).
+ *  - `split` (vanilla) — «две плашки»: общей коробки нет, залит каждый из двух
+ *    шагов. Так сделано в `VanillaProductDetail.astro`: кнопки
+ *    `size-6 bg-[var(--vanilla-header-bg)]` с белой иконкой, между ними `gap-3`.
+ *
+ * Цвет и скругление — существующими токенами, новых не заводится:
+ *  - рамка `boxed` — `--color-border` (им же обведён счётчик карточки коллекции
+ *    у rose и satin);
+ *  - скругление `boxed` — `--radius-input` (rose 8px, bloom 4px, satin 0px:
+ *    ровно те числа, что стоят литералами в собственных портах тем);
+ *  - плашки `split` — `--color-button-bg` / `--color-button-text`. Это и есть
+ *    `--vanilla-header-bg`: `themes/vanilla/src/styles/global.css:99`
+ *    объявляет её как `rgb(var(--color-button-bg, var(--color-heading)))`.
+ *
+ * Цифра и стрелки красятся ТЕКСТОМ схемы (`--color-text`), кроме залитых
+ * плашек `split`, где читаемость держит пара button-bg/button-text. До 13.09
+ * здесь стоял `--color-button-bg`: в схеме 3 тестировщика (фон секции #71C0FF,
+ * фон кнопки #5AF810) на голубом фоне печаталась салатовая цифра.
  */
 interface Props {
-  variant?: 'inline' | 'pill';
+  variant?: 'inline' | 'boxed' | 'split';
   initialValue?: number;
 }
 
 const { variant = 'inline', initialValue = 1 } = Astro.props as Props;
-const isPill = variant === 'pill';
+const isBoxed = variant === 'boxed';
+const isSplit = variant === 'split';
+
+// Общее у всех трёх силуэтов. Заливка/рамка/цвет текста — ТОЛЬКО в ветках:
+// две конкурирующие утилиты одного свойства (`bg-transparent` и `bg-[…]`)
+// разрешались бы порядком объявления в бандле, а не порядком классов в атрибуте.
+const boxBase = 'inline-flex items-center [font-family:var(--font-body)]';
+const btnBase =
+  'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 border-0';
+
+const boxClass = isBoxed
+  ? `${boxBase} h-10 rounded-[var(--radius-input)] border border-solid border-[rgb(var(--color-border))] text-[rgb(var(--color-text))]`
+  : `${boxBase} gap-3 text-[rgb(var(--color-text))]`;
+
+const btnClass = isBoxed
+  ? `${btnBase} h-full w-10 bg-transparent text-current`
+  : isSplit
+    ? `${btnBase} w-6 h-6 rounded-[var(--radius-button)] bg-[rgb(var(--color-button-bg))] text-[rgb(var(--color-button-text))]`
+    : `${btnBase} w-6 h-6 bg-transparent text-current`;
+
+const valueClass = isBoxed
+  ? 'min-w-[28px] text-center select-none text-[16px]'
+  : isSplit
+    ? 'min-w-10 text-center select-none text-[16px]'
+    : 'min-w-6 text-center select-none text-[16px]';
+
+// Иконка внутри залитой плашки vanilla — 12px (в её порте `size-3` внутри
+// `size-6`); 24px заполнили бы плашку целиком.
+const glyph = isSplit ? '12' : '24';
 ---
 <div
-  class:list={[
-    'inline-flex items-center [font-family:var(--font-body)]',
-    isPill ? 'gap-2 p-2 rounded-[var(--radius-button)]' : 'text-[rgb(var(--color-text))] gap-3',
-  ]}
-  style={isPill
-    ? 'background:rgb(var(--color-button-bg)); color:rgb(var(--color-button-text));'
-    : ''}
+  class={boxClass}
   data-product-counter
   data-counter-variant={variant}
 >
@@ -38,32 +80,20 @@ const isPill = variant === 'pill';
     type="button"
     data-counter-action="decrement"
     aria-label="Уменьшить количество"
-    class:list={[
-      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 text-current',
-      isPill ? 'w-8 h-8 rounded-[var(--radius-button)]' : 'w-6 h-6',
-    ]}
+    class={btnClass}
   >
-    <svg width={isPill ? '16' : '24'} height={isPill ? '16' : '24'} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <svg width={glyph} height={glyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   </button>
-  <span
-    class:list={[
-      'min-w-6 text-center select-none',
-      isPill ? 'text-[20px]' : 'text-[16px]',
-    ]}
-    data-counter-value
-  >{initialValue}</span>
+  <span class={valueClass} data-counter-value>{initialValue}</span>
   <button
     type="button"
     data-counter-action="increment"
     aria-label="Увеличить количество"
-    class:list={[
-      'inline-flex items-center justify-center cursor-pointer transition-opacity hover:opacity-70 bg-transparent border-0 text-current',
-      isPill ? 'w-8 h-8 rounded-[var(--radius-button)]' : 'w-6 h-6',
-    ]}
+    class={btnClass}
   >
-    <svg width={isPill ? '16' : '24'} height={isPill ? '16' : '24'} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+    <svg width={glyph} height={glyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>

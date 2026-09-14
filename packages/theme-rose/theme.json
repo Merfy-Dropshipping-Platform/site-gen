@@ -189,7 +189,7 @@
         },
         "variantsType": "chips",
         "counter": {
-          "variant": "inline"
+          "variant": "boxed"
         },
         "showDescription": true
       }
@@ -451,6 +451,13 @@
       "slug": "/account/profile",
       "role": "system",
       "contentFile": "pages/profile.json"
+    },
+    {
+      "id": "page-wishlist",
+      "name": "Избранное",
+      "slug": "/wishlist",
+      "role": "system",
+      "contentFile": "pages/wishlist.json"
     }
   ]
 }

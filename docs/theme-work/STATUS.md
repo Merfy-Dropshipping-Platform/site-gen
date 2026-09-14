@@ -1350,3 +1350,42 @@ iframe уезжал с `preview?page=page-profile` на `preview?page=%2Flogin`,
 **Ключевые файлы:** `src/common/preview-account-inline.ts` (демо + инжектор +
 разбор безопасности), `src/controllers/preview.controller.ts`,
 `themes/<t>/src/components/sections/{Account,Orders}Section.astro`.
+
+## 2026-09-14 — свежий магазин: галерея видна сразу (ветка `fix/b9-gallery-seed`) — VERIFIED замером, НЕ задеплоено и НЕ запушено
+
+**Жалоба владельца.** «При создании магазина секция галерея не отображается,
+требуется выполнить любое действие с секцией и тогда все работает штатно».
+
+**Диагноз — данные, не рендер.** Сид темы кладёт три плитки; их снимает
+`clearDemoImageSections` (spec 099, URL сида лежат в `DEMO_IMAGE_URLS`). Порты
+всех пяти тем рисуют плитки СТРОГО по `props.items`, поэтому секция уезжала к
+мерчанту пустой (видимый текст «Галерея», ноль `<img>`), хотя в дереве
+конструктора её три плитки были видны — там работает фолбэк на
+`defaultProps.items`. Первая правка вписывала этот массив в props — отсюда
+«после любого действия всё работает».
+
+**Что стало.** `materializeGalleryItems` в `src/utils/revision-migrations.ts`
+(шаг сразу после стриппера) кладёт канон-тройку, когда ключа `items` нет.
+Пустой массив НЕ трогается: `[]` пишет удаление плитки мерчантом. Правку видят
+все три пути рендера — витрина, конструктор, превью.
+
+**Состав панели не менялся:** те же три плитки «Изображение / Товар /
+Коллекция», тот же потолок `max: 3`.
+
+**Как проверять:** `pnpm test:fresh-sections` (65 проверок; шаг в `ci.yml`
+рядом с `test:gallery-count`). Требует `pnpm build && pnpm build:blocks &&
+pnpm build:theme-sections:all`.
+
+**Хвосты (это состав главной = канон, решает владелец):** у vanilla главную
+пересобирает `migrateVanillaHomePage` БЕЗ галереи; у satin её нет в сиде
+главной; у flux на главной остаются демо-фото дизайнера, а у rose/bloom —
+канон-плейсхолдеры.
+
+**Отдельный хвост — дефект стриппера, НЕ галереи:** `valueContainsDemoImage`
+сравнивает URL с `DEMO_IMAGE_URLS` точно, поэтому query-хвост (`?e2eSeed=1` у
+сида flux) уводит ссылку из-под сравнения, и демо-контент дизайнера доезжает до
+мерчанта. Касается всех типов `DEMO_IMAGE_SECTION_TYPES`. Отдельной задачей.
+
+**Ключевые файлы:** `src/utils/revision-migrations.ts`
+(`GALLERY_CANON_ITEMS`, `materializeGalleryItems`),
+`src/themes/__tests__/fresh-site-sections.spec.ts`, `.github/workflows/ci.yml`.

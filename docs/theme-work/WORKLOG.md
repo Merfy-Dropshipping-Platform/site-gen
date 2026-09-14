@@ -5092,7 +5092,15 @@ bloom/satin/flux на стендах не вылезли не потому, чт
   `object`→`padding`), моя — `CheckoutTerms.astro`; форма пропса `{top,bottom}`
   та же, поэтому не спорят.
   Второй раз `9abba80a` → `97c03e5c` (поверхность страниц аккаунта) — слит
-  `bf108687`. Этот трогает `src/themes/tokens-css.ts`, который правит и наша
+  `bf108687`. Третий раз `97c03e5c` → `5afaf16c` (фильтры каталога на узких
+  экранах) — слит `703a0bb9`; `tokens-css.ts` он не трогает, конфликтовали
+  только WORKLOG и сгенерированный инвентарь. `ci.yml` и `package.json`
+  разрешены СЛОЖЕНИЕМ (69 шагов `- run:` = 68 + `pnpm
+  test:catalog-filters-mobile`; двусторонняя сверка команд и ключей пуста).
+  STATUS слился сам — проверено счётом, а не на веру: 17+17 → 18 строк.
+  ⚠️ Инвентарь satin: ни сторона main (`176417f1…`), ни наша слитому дереву НЕ
+  подошли — нужен `4ab2d239…`. Выбирать сторону бесполезно, только
+  перегенерация после полной пересборки. Этот трогает `src/themes/tokens-css.ts`, который правит и наша
   ветка, поэтому слит здесь, а не оставлен тому, кто пушит: слияние прошло
   автоматически, обе стороны проверены ПОИМЁННО в дереве и в индексе
   (`ACCOUNT_SURFACE_BLOCKS`/`ACCOUNT_SURFACES`/`ACCOUNT_SURFACE_SCOPE`/
@@ -5100,9 +5108,10 @@ bloom/satin/flux на стендах не вылезли не потому, чт
   `--color-checkout-surface` от нас). ⚠️ Первый греп по main-стороне дал нули —
   я угадывал имена; правильные взял из дифа, а не из головы. `ci.yml` 68 шагов
   `- run:` = 67 + `pnpm test:account-surface`.
-- После обоих слияний прогон: `test:padding-control` 14/14,
+- После трёх слияний прогон: `test:catalog-filters-mobile` 52/52, `test:padding-control` 14/14,
   `test:fresh-sections` 65/65, `test:account-surface` 44/44, `test:panel-canon`
-  203/203, `test:section-snapshots` 155/155, чекаут-сьюты 490/490 (13 файлов),
-  `conformance:satin` зелёный (инвентарь переснят дважды — `package.json` в
-  `SHARED_DIGEST_INPUTS`, и оба слияния его двигали). Гейт `pre-push.sh`:
-  «✓ гейт пройден», exit=0.
+  203/203, `test:section-snapshots` 155/155, `test:padding-control` 14/14,
+  `test:conformance:satin` 84/84, чекаут-сьюты 490/490 (13 файлов),
+  `conformance:satin` зелёный (инвентарь пересняли ТРИЖДЫ — `package.json`
+  входит в `SHARED_DIGEST_INPUTS`, и каждое слияние его двигало). Гейт
+  `pre-push.sh`: «✓ гейт пройден», exit=0.

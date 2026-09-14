@@ -555,16 +555,61 @@ export function injectCheckoutChromeIntoHtml(
 }
 
 /**
- * Подмена правовой полосы чекаута (`<footer data-checkout-footer-strip>`).
- * Обёртку схемы вокруг неё (темы кладут `<div class="color-scheme-2">`) не
+ * Подвал страницы оформления заказа = правовая полоса, и только она.
+ *
+ * Обёртку схемы вокруг полосы (темы кладут `<div class="color-scheme-2">`) не
  * трогаем. Идемпотентно: совпало с целевым — no-op.
+ *
+ * Три случая, и раньше обрабатывался только первый:
+ *
+ *  1. в шелле уже стоит полоса → подменяем собранной;
+ *  2. в шелле стоит ПОДВАЛ ВИТРИНЫ → заменяем его полосой;
+ *  3. подвала нет вовсе → дописываем полосу перед `</body>`.
+ *
+ * Случай 2 — причина возврата бага «во вкладке Оформление заказа убрать подвал,
+ * где идёт Powered by merfy». Прежний код на отсутствие полосы делал
+ * `return html`, то есть МОЛЧА ничего: подменить полосу на полосу он умел, а
+ * убрать подвал витрины — нет. Любой сайт, чей собранный шелл чекаута ещё нёс
+ * подвал витрины (сборка темы старше гейта `header !== "checkout"` в Layout),
+ * показывал колонки навигации, телефон, иконки оплаты и «Powered by Merfy» —
+ * и на витрине, и в превью конструктора: обе стороны зовут эту функцию.
+ * Замер на main (jest, 2026-09-14): шелл с `<footer data-nt="rose-footer">`
+ * возвращался байт-в-байт, «Powered by» — 1, `<ul>` — 1, полосы нет.
+ *
+ * Случай 3 — прежний симптом flux («подвала на чекауте не было ВООБЩЕ»):
+ * покупатель на шаге оплаты оставался без оферты и копирайта. Дописываем,
+ * только если полосы нет нигде, поэтому повторный прогон — no-op.
+ *
+ * Других `<footer>` на чекауте не бывает: блоки `Checkout*` элемент `<footer>`
+ * не рендерят (проверено по исходникам и по пяти живым витринам — ровно один
+ * `<footer>` на странице), поэтому «последний `<footer>`» здесь однозначен.
  */
 function replaceCheckoutFooterStrip(html: string, target: string): string {
   const re = /<footer\b[^>]*\bdata-checkout-footer-strip[^>]*>[\s\S]*?<\/footer>/i;
   const m = re.exec(html);
-  if (!m) return html;
-  if (m[0] === target) return html;
-  return html.slice(0, m.index) + target + html.slice(m.index + m[0].length);
+  if (m) {
+    if (m[0] === target) return html;
+    return html.slice(0, m.index) + target + html.slice(m.index + m[0].length);
+  }
+
+  // Полосы нет. Подвал витрины на чекауте телом страницы не является —
+  // заменяем его целиком (а не дописываем полосу рядом: иначе внизу останутся
+  // и колонки навигации, и «Powered by Merfy»).
+  const closeIdx = html.lastIndexOf('</footer>');
+  if (closeIdx !== -1) {
+    const openIdx = html.lastIndexOf('<footer', closeIdx);
+    if (openIdx !== -1) {
+      return (
+        html.slice(0, openIdx) + target + html.slice(closeIdx + '</footer>'.length)
+      );
+    }
+  }
+
+  // Подвала нет вообще → полоса обязана появиться (правовая строка не
+  // опциональна), перед закрытием <body>.
+  const bodyIdx = html.lastIndexOf('</body>');
+  if (bodyIdx === -1) return html + target;
+  return html.slice(0, bodyIdx) + target + html.slice(bodyIdx);
 }
 
 /**

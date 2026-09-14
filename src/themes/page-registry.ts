@@ -245,3 +245,49 @@ export function getChromeKind(route: string): ChromeKind {
   if (route === '') return 'none';
   return 'full';
 }
+
+/**
+ * Тип хрома по ID страницы ревизии (а не по маршруту).
+ *
+ * Зачем отдельная проекция: рендер по БЛОКАМ (`extractPageBlocks`) оперирует
+ * ключом `pagesData` — `page-checkout` у конструктора, `checkout` у старых
+ * витринных ревизий, — и маршрута в этот момент не знает. Раньше знание «у
+ * чекаута особый хром» жило только в маршрутной ветке, поэтому блочные пути
+ * рисовали на чекауте подвал витрины (баг тестировщика 14.09, повтор 18-А).
+ *
+ * Неизвестная страница → 'full' (как `getChromeKind` для неизвестного
+ * маршрута): новая кастомная страница мерчанта ведёт себя как контентная.
+ */
+export function getChromeKindByPageId(pageId: string): ChromeKind {
+  const bare = pageId.replace(/^page-/, '');
+  const entry = PAGE_REGISTRY.find(
+    (e) => e.id === pageId || e.id === `page-${bare}` || e.id === bare,
+  );
+  return entry ? entry.chrome : 'full';
+}
+
+/**
+ * Блоки ХРОМА витрины: шапка магазина, подвал магазина, промо-полоса. На
+ * странице их рисует не тело, а сборка хрома (`assembleChrome`) — поэтому на
+ * странице с чужим хромом (чекаут) они не являются секциями тела.
+ * Тот же набор, что агент превью считает хромом при reconcile (spec 106).
+ */
+export const STOREFRONT_CHROME_BLOCKS: ReadonlySet<string> = new Set([
+  'Header',
+  'Footer',
+  'PromoBanner',
+]);
+
+/**
+ * Рисуется ли блок `blockType` в ТЕЛЕ страницы `pageId`.
+ *
+ * Правило одно и живёт здесь: у страницы с хромом `checkout` подвал/шапка
+ * витрины телом не являются — их место занимают `CheckoutHeader` и правовая
+ * полоса `CheckoutFooterStrip`. Блок при этом остаётся в ревизии: на нём
+ * держится узел «Подвал» в дереве конструктора и выбор его «Цветовой схемы»
+ * (`checkoutFooterScheme`), поэтому состав панели не меняется.
+ */
+export function isBodyBlockOnPage(pageId: string, blockType: string): boolean {
+  if (getChromeKindByPageId(pageId) !== 'checkout') return true;
+  return !STOREFRONT_CHROME_BLOCKS.has(blockType);
+}

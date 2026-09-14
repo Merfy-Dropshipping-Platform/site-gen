@@ -252,6 +252,13 @@ jobs:
       # (5) страница «Профиль» заведена штатным механизмом (жалоба №14).
       - run: pnpm exec jest --runInBand src/utils/__tests__/revision-migrations-header-unify.test.ts src/themes/__tests__/page-blocks-header-unify.spec.ts src/themes/__tests__/page-seed-header-parity.spec.ts src/utils/__tests__/revision-migrations-profile.test.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-scheme-notation.spec.ts
+      # Сетка шапки rose (жалоба тестировщика 14.09 «Шапка в теме Rose не по
+      # сетке»). Канон сетки темы — лестница боковых отступов + рельс контента
+      # 1320px; шапка рельс потеряла и на широких экранах вылезала за секции
+      # (замер: 1512 → 16px, 1920 → 20px с каждой стороны; на 1440 и 390
+      # совпадало, поэтому глазом на ноутбуке баг не ловился). Тест сверяет
+      # расчётные края шапки и секции на лестнице вьюпортов с допуском 1px.
+      - run: pnpm test:rose-header-grid
       - run: pnpm test:conformance:shared
       - run: pnpm test:conformance:satin
       - run: node --test scripts/__tests__/block-source-layout.test.mjs

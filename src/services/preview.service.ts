@@ -1262,9 +1262,22 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // и мешала оценивать цвета секции под курсором.
       '[data-puck-section-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
       '[data-puck-section-selected="true"]{outline:2px solid #88b0da !important;outline-offset:-2px}',
+      // NB (тот же урок, что строкой выше, но для ПОДСЕКЦИИ): z-index не ставим.
+      // position:relative + z-index = контекст наложения на КАЖДОЙ обёртке
+      // параметра; у соседних обёрток он такой же, при равном z-index порядок
+      // решает дерево — и нижние рисуются поверх верхних вместе со всем своим
+      // содержимым. Всплывающий слой внутри обёртки (раскрытый список вариаций
+      // «Товара», z-index:20) оказывался заперт: счётчик и «Добавить в корзину»
+      // печатались поверх него (тестировщик 14.09 «съезжает при настройке круг
+      // и квадрат»; Chromium: 10 точек из 10 внутри пересечения — сосед, во всех
+      // пяти темах). Своей работы у z-index тут нет с 4aabd7bb: он держал
+      // слой-заливку ::after, снятую вместе со «свечением». Outline в z-stack
+      // не участвует, а порядок обёрток между собой не меняется: все
+      // z-index:auto, решает порядок дерева — как и было при равных 3/3.
+      // Гард — src/themes/__tests__/product-variant-list-overlap.spec.ts.
       '[data-puck-subsection-parent]{position:relative;cursor:pointer}',
-      '[data-puck-subsection-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:2px;z-index:3}',
-      '[data-puck-subsection-selected="true"]{outline:2px solid #88b0da !important;outline-offset:2px;z-index:4}',
+      '[data-puck-subsection-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:2px}',
+      '[data-puck-subsection-selected="true"]{outline:2px solid #88b0da !important;outline-offset:2px}',
       // Puck ActionBar styling (1:1 with @measured/puck DraggableComponent action overlay).
       '.__merfy_pill{position:fixed;display:none;align-items:center;cursor:default;padding:4px;border-radius:8px;background:#181818;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;z-index:9999;user-select:none;white-space:nowrap}',
       '.__merfy_pill[data-visible="true"]{display:inline-flex}',

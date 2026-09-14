@@ -17,7 +17,7 @@ export const CartSectionPuckConfig: BlockPuckConfig<CartSectionProps> = {
   label: 'Корзина',
   category: 'layout',
   fields: {
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
   },
   defaults: {

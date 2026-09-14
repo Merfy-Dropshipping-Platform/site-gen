@@ -18,7 +18,7 @@ export const CartDrawerPuckConfig: BlockPuckConfig<CartDrawerProps> = {
   fields: {
     position: { type: 'radio', label: 'Позиция' },
     showCheckoutButton: { type: 'switch', label: 'Кнопка оформления' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     position: 'right',

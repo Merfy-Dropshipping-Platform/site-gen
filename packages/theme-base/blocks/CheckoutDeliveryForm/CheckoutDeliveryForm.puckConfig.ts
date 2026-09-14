@@ -45,7 +45,7 @@ export const CheckoutDeliveryFormPuckConfig: BlockPuckConfig<CheckoutDeliveryFor
         { label: 'Индекс', value: 'index' },
       ],
     },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Доставка',

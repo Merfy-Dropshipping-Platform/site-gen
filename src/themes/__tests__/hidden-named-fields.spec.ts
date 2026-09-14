@@ -321,6 +321,11 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   // секции «Промежуточный итог» (NAMED_SUBSECTIONS.CartSummary).
   CartBody:
     "нет в NAMED_SUBSECTIONS; «Итого»/«Оформить заказ» живут в CartSummary",
+  // «Избранное»: в панели ровно два параметра (схема + отступы) — это КАНОН
+  // (тестировщик 14.09). Именованных параметров с «глазом» у секции нет и не
+  // должно появиться; состав сторожит panel-canon + wishlist-section.spec.ts.
+  WishlistSection:
+    "нет в NAMED_SUBSECTIONS: в панели только схема и отступы (канон)",
 };
 
 /**

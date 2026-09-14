@@ -129,8 +129,16 @@ export interface ProductVisualConfig {
     showDiscountBadge: boolean;
   };
   variantsType: 'chips' | 'dropdown';
+  /**
+   * Силуэт счётчика количества — оформление СВОЕЙ темы, не настройка мерчанта:
+   *   inline — «пустота» (flux: FeaturedProduct.astro);
+   *   boxed  — «плашка» с рамкой --color-border и скруглением --radius-input
+   *            (rose: CartBody.astro; bloom/satin: их <T>ProductDetail.astro);
+   *   split  — «две плашки» на кнопках, заливка --color-button-bg
+   *            (vanilla: VanillaProductDetail.astro).
+   */
   counter: {
-    variant: 'inline' | 'pill';
+    variant: 'inline' | 'boxed' | 'split';
   };
   showDescription: boolean;
 }

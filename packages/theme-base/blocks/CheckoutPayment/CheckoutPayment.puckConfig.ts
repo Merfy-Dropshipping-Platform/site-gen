@@ -51,7 +51,7 @@ export const CheckoutPaymentPuckConfig: BlockPuckConfig<CheckoutPaymentProps> = 
       },
     },
     cardForm: { type: 'object', label: 'Форма карты' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     heading: 'Платёжная система',

@@ -1431,6 +1431,80 @@ function materializeMultiRowsItemSize(
 }
 
 /**
+ * Канон галереи = `Gallery.defaultProps.items` из puck-config, который получает
+ * конструктор. Литерал, а не импорт `GalleryPuckConfig`: файл блока лежит в
+ * `packages/` и тянет за собой zod-схему (и её незакрытый тип `defaults` без
+ * `padding` — `padding` там снят намеренно, чтобы не плющить ритм пяти тем).
+ * Совпадение сторожит гард `fresh-site-sections.spec.ts`: он сверяет этот
+ * массив с живым `GET /api/themes/:id/puck-config` по всем пяти темам.
+ */
+export const GALLERY_CANON_ITEMS: ReadonlyArray<Record<string, unknown>> = [
+  { id: 'item-1', type: 'image', url: '', alt: 'Изображение' },
+  { id: 'item-2', type: 'product', productId: null },
+  { id: 'item-3', type: 'collection', collectionId: null },
+];
+
+/**
+ * Галерея: нетронутая секция обязана нести свои три плитки в данных.
+ *
+ * Баг владельца (2026-09-14): «При создании магазина секция галерея не
+ * отображается, требуется выполнить любое действие с секцией и тогда все
+ * работает штатно».
+ *
+ * Механизм (замер 2026-09-14). Порты всех пяти тем рисуют галерею СТРОГО по
+ * `props.items` — пустой массив даёт секцию с одним заголовком и больше ничем
+ * (видимый текст rose = "Галерея", ноль <img>). У соседей по
+ * `clearDemoImageSections` пустое состояние — это ВЕТКА РЕНДЕРА (Hero,
+ * ImageWithText, Slideshow, MultiColumns рисуют свой плейсхолдер и без пропов),
+ * а у галереи — ДАННЫЕ: три плитки «Изображение / Товар / Коллекция», каждая со
+ * своим плейсхолдером по типу. Ровно их конструктор показывает в дереве, пока
+ * `props.items` нет: `findArrayField().defaultItems` подставляет
+ * `defaultProps.items` из puck-config. Первая же правка мерчанта пишет этот
+ * массив в props («Первая же правка запишет массив целиком в props»,
+ * CustomFieldsPanel) — отсюда и «после любого действия всё работает».
+ *
+ * Поэтому материализуем их здесь, в данных, а не ветку рендера в пяти портах:
+ * ветка воскрешала бы плитки, которые мерчант удалил осознанно.
+ *
+ * Правило ровно одно и то же, что у конструктора: `items` НЕ массив (ключа нет
+ * — сид сняли демо-стриппером, либо ревизия старая) → кладём канон. `items`
+ * есть, пусть и пустой массив — НЕ трогаем: `[]` пишет удаление плитки
+ * (`deleteSubsection`, `handleItemDelete`), это осознанный выбор мерчанта.
+ *
+ * Идемпотентна: после прогона `items` — массив, второй проход проходит мимо.
+ */
+function materializeGalleryItems(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (b?.type !== 'Gallery') return block;
+      const props = b.props ?? {};
+      if (Array.isArray(props.items)) return block;
+      pageChanged = true;
+      return {
+        ...b,
+        props: {
+          ...props,
+          items: GALLERY_CANON_ITEMS.map((item) => ({ ...item })),
+        },
+      };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Корзина: снять схему платформенного сида там, где тема задаёт свою.
  *
  * `migrateCartPage` сеет блоки корзины с жёстким `colorScheme: 'scheme-2'` —
@@ -2348,6 +2422,11 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);
+  }
+  // СТРОГО после clearDemoImageSections: стриппер снимает демо-плитки сида,
+  // и без материализации секция уезжала бы к мерчанту пустой.
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = materializeGalleryItems(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillProductVariants(out.pagesData as Record<string, unknown>);

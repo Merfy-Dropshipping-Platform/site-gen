@@ -2242,6 +2242,33 @@
           }
         }
       },
+      "WishlistSection": {
+        "label": "Избранное",
+        "fields": {
+          "padding": {
+            "type": "object",
+            "label": "Отступы",
+            "visibility": "panel",
+            "objectFields": {
+              "top": {
+                "type": "number",
+                "label": "top",
+                "visibility": "panel"
+              },
+              "bottom": {
+                "type": "number",
+                "label": "bottom",
+                "visibility": "panel"
+              }
+            }
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -2677,9 +2704,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -5381,6 +5408,33 @@
           }
         }
       },
+      "WishlistSection": {
+        "label": "Избранное",
+        "fields": {
+          "padding": {
+            "type": "object",
+            "label": "Отступы",
+            "visibility": "panel",
+            "objectFields": {
+              "top": {
+                "type": "number",
+                "label": "top",
+                "visibility": "panel"
+              },
+              "bottom": {
+                "type": "number",
+                "label": "bottom",
+                "visibility": "panel"
+              }
+            }
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -5816,9 +5870,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -8525,6 +8579,33 @@
           }
         }
       },
+      "WishlistSection": {
+        "label": "Избранное",
+        "fields": {
+          "padding": {
+            "type": "object",
+            "label": "Отступы",
+            "visibility": "panel",
+            "objectFields": {
+              "top": {
+                "type": "number",
+                "label": "top",
+                "visibility": "panel"
+              },
+              "bottom": {
+                "type": "number",
+                "label": "bottom",
+                "visibility": "panel"
+              }
+            }
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -8960,9 +9041,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -11664,6 +11745,33 @@
           }
         }
       },
+      "WishlistSection": {
+        "label": "Избранное",
+        "fields": {
+          "padding": {
+            "type": "object",
+            "label": "Отступы",
+            "visibility": "panel",
+            "objectFields": {
+              "top": {
+                "type": "number",
+                "label": "top",
+                "visibility": "panel"
+              },
+              "bottom": {
+                "type": "number",
+                "label": "bottom",
+                "visibility": "panel"
+              }
+            }
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -12099,9 +12207,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -14803,6 +14911,33 @@
           }
         }
       },
+      "WishlistSection": {
+        "label": "Избранное",
+        "fields": {
+          "padding": {
+            "type": "object",
+            "label": "Отступы",
+            "visibility": "panel",
+            "objectFields": {
+              "top": {
+                "type": "number",
+                "label": "top",
+                "visibility": "panel"
+              },
+              "bottom": {
+                "type": "number",
+                "label": "bottom",
+                "visibility": "panel"
+              }
+            }
+          },
+          "colorScheme": {
+            "type": "colorScheme",
+            "label": "Цветовая схема",
+            "visibility": "panel"
+          }
+        }
+      },
       "CheckoutSection": {
         "label": "Оформление заказа",
         "fields": {
@@ -15238,9 +15373,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "colorScheme",
-            "label": "Цветовая схема контейнера",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",

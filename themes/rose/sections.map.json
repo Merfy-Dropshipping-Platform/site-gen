@@ -15,6 +15,7 @@
   "Newsletter": "src/components/sections/Newsletter.astro",
   "Slideshow": "src/components/sections/Slideshow.astro",
   "CartSection": "src/components/sections/CartSection.astro",
+  "WishlistSection": "src/components/sections/WishlistSection.astro",
   "CartBody": "src/components/sections/CartBody.astro",
   "CartSummary": "src/components/sections/CartSummary.astro"
 }

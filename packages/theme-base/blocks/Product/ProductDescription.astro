@@ -1,10 +1,19 @@
 ---
 /**
- * ProductDescription — section with heading "ОПИСАНИЕ" + body copy.
+ * ProductDescription — тело описания товара. БЕЗ заголовка.
  *
  * Renders nothing when content is empty. Themes that hide description
  * entirely (e.g. flux PDP variant) just omit this primitive in Product.astro
  * via `showDescription: false`.
+ *
+ * Заголовка «Описание» здесь больше нет. Жалоба тестировщика 14.09 02:07:
+ * «в секции товар везде убрать слово ОПИСАНИЕ, это только название секции,
+ * все данные тянутся с админки». Слово было ЖЁСТКОЙ строкой — дефолтом пропа
+ * `heading` этого примитива (`Product.astro` его никогда не передавал), а не
+ * значением поля панели. В конструкторе «Описание» остаётся подписью подпанели
+ * (`Product.puckConfig.ts`: description → disabledHint, label 'Описание') —
+ * состав параметров канон, поле не трогаем. Проп `heading` снят как мёртвый:
+ * его никто не передавал, и вернуть подпись «настройкой» он не может.
  *
  * Цвет тела: приглушённый ТЕКСТ схемы (--color-text/60), а НЕ --color-muted.
  * Жалоба тестировщика 13.09: описание во всех схемах выходило 153/153/153, а
@@ -15,17 +24,13 @@
  */
 interface Props {
   content?: string;
-  heading?: string;
 }
 
-const { content = '', heading = 'Описание' } = Astro.props as Props;
+const { content = '' } = Astro.props as Props;
 const trimmed = content.trim();
 ---
 {trimmed && (
   <div class="flex flex-col gap-2 w-full" data-product-description>
-    <h2 class="[font-family:var(--font-heading)] text-[20px] uppercase tracking-wide text-[rgb(var(--color-heading))] m-0">
-      {heading}
-    </h2>
     <p class="[font-family:var(--font-body)] text-[length:var(--product-text-size,16px)] text-[rgb(var(--color-text))]/60 leading-normal m-0 whitespace-pre-line">
       {trimmed}
     </p>

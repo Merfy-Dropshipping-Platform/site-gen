@@ -1,0 +1,36 @@
+---
+import type { WishlistSectionProps } from './WishlistSection.puckConfig';
+import { WishlistSectionClasses as C } from './WishlistSection.classes';
+
+interface Props extends WishlistSectionProps {
+  id?: string;
+}
+
+const {
+  id,
+  padding,
+} = Astro.props as Props;
+
+const paddingStyle = padding
+  ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
+  : '';
+// Общий скаффолд (зеркало CartSection.astro): живую разметку избранного рисует
+// ПОРТ темы — themes/<t>/src/components/sections/WishlistSection.astro. Сюда
+// попадают только темы без собственного порта; у всех пяти он есть.
+---
+<section
+  id="wishlist-section"
+  class={C.root}
+  data-puck-component-id={id}
+  data-block="wishlist-section"
+  data-wishlist-page
+  style={paddingStyle}
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>Избранное</h1>
+    <ul data-wishlist-grid role="list" hidden></ul>
+    <div class={C.empty} data-wishlist-empty>
+      <p>В избранном пока пусто</p>
+    </div>
+  </div>
+</section>

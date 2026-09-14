@@ -48,7 +48,6 @@ const {
   filterPosition,
   showSort,
   colorScheme,
-  containerColorScheme,
   collectionSlug,
   // Legacy aliases (revisions saved before Figma redesign).
   showCollectionFilter,
@@ -160,12 +159,10 @@ const schemeClass =
   typeof colorScheme === 'string' && colorScheme
     ? `color-scheme-${colorScheme.replace('scheme-', '')}`
     : '';
-// Figma 1:34017 — отдельная схема для внутреннего контейнера. Когда не задана —
-// используется та же что и у секции (тогда визуально wrapper не отличается).
-const containerSchemeClass =
-  typeof containerColorScheme === 'string' && containerColorScheme
-    ? `color-scheme-${containerColorScheme.replace('scheme-', '')}`
-    : '';
+// Отдельной схемы внутреннего контейнера больше нет (тестировщик 14.09,
+// санкционировано владельцем): «цветовая схема одна для всей секции».
+// Проп containerColorScheme остаётся в CatalogProps ради старых ревизий, но
+// в разметку не попадает — контейнер наследует схему секции.
 
 // 084 Stage 3 vanilla pilot — additive grid + caption variants.
 // Default → empty class (rose/satin/bloom/flux behavior unchanged).
@@ -236,7 +233,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
       max-width/padding — чтобы край контента совпадал с хедером и соседними
       секциями. Схема (bg/color) остаётся инлайном: она не часть layout-класса. */}
   <div
-    class:list={[C.container, containerSchemeClass]}
+    class:list={[C.container]}
     style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"
   >
     <div style="margin-bottom: 24px;">

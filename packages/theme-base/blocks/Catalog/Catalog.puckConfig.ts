@@ -62,8 +62,13 @@ export const CatalogSchema = z.object({
   showSidebar: z.union([z.boolean(), z.enum(['true', 'false'])]).optional(),
 
   colorScheme: z.string().optional(),
-  // Figma 1:34017 — отдельная цветовая схема для внутреннего контейнера
-  // (max-width:1320px wrapper). Когда не задана — используется colorScheme.
+  // ЛЕГАСИ. Была отдельная схема внутреннего контейнера (Figma 1:34017).
+  // Тестировщик 14.09, санкционировано владельцем: «В секции Группа товаров в
+  // сайдбаре и настройке убрать цветовую схему контейнера. Ожидаемый
+  // результат: цветовая схема одна для всей секции». Поле остаётся в схеме,
+  // чтобы старые ревизии продолжали валидироваться, но в панель не выводится
+  // (fields.containerColorScheme = hidden) и в рендере не участвует ни в одном
+  // порту — ровно как containerColorScheme у «Коллекции товаров».
   containerColorScheme: z.string().optional(),
   // Optional: injected by preview pipeline so the SSG shell can client-fetch
   // real products from the storefront API. Not user-editable.
@@ -87,13 +92,14 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
   // Карточки / Колонки / [Содержание] Заголовок + Текст / [Карточка товара]
   // Стиль кнопки / Вид изображения / Следующее фото при наведении / Быстрое
   // добавление / [Фильтрация и сортировка] Фильтры / Вид фильтра / Сортировка /
-  // Цветовая схема / Цветовая схема контейнера / Отступы. Schema-driven, без
-  // хардкода в CustomFieldsPanel.
+  // Цветовая схема / Отступы. Schema-driven, без хардкода в CustomFieldsPanel.
+  // «Цветовая схема контейнера» убрана из панели 14.09 — см. поле ниже.
   fields: {
     // hidden by design — categorySubtitleColor заполняется через theme.json
     // blockDefaults (flux: accent); gridAspect/cardCaptionStyle — legacy
-    // (084 vanilla pilot, Figma 1:34015 их не показывает). Existing revisions
-    // с этими props продолжают рендериться нормально через Astro.props.
+    // (084 vanilla pilot, Figma 1:34015 их не показывает); containerColorScheme
+    // (ниже) убран из панели 14.09. Existing revisions с этими props
+    // продолжают рендериться нормально через Astro.props.
     categorySubtitleColor: { type: 'hidden', label: '' },
     gridAspect: { type: 'hidden', label: '' },
     cardCaptionStyle: { type: 'hidden', label: '' },
@@ -107,9 +113,8 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     // 5. [Содержание] categoryTitle / categorySubtitle (aiText — 098)
     // 6. [Карточка товара] productCard sub-fields
     // 7. [Фильтрация и сортировка] showFilter/filterPosition/showSort
-    // 8. Цветовая схема
-    // 9. Цветовая схема контейнера
-    // 10. [Отступы] padding
+    // 8. Цветовая схема (одна на всю секцию)
+    // 9. [Отступы] padding
     // ──────────────────────────────────────────────────────────────────
     collectionSlug: { type: 'collectionPicker', label: 'Выбор коллекции' } as any,
     // Figma 1:34015 — «Подзаголовок» идёт сразу под заголовком в верхней части
@@ -237,10 +242,14 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     },
 
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    // Figma 1:34015 — отдельная схема для внутреннего контейнера
-    // (max-width:1320px wrapper, Catalog.astro:147-150,210). 097 pattern:
-    // НЕ задаём universal default — при unset рендер фоллбечит на colorScheme.
-    containerColorScheme: { type: 'colorScheme', label: 'Цветовая схема контейнера' },
+    // Тестировщик 14.09 (санкционировано владельцем): «убрать цветовую схему
+    // контейнера, цветовая схема одна для всей секции». Контрол скрыт, а не
+    // удалён: проп остаётся в ревизиях мерчантов, и `type: 'hidden'` —
+    // единственный способ убрать его с экрана, ничего не потеряв (и
+    // FieldRenderer, и CustomFieldsPanel конструктора возвращают null).
+    // Тот же приём применён к контейнеру «Коллекции товаров»
+    // (PopularProducts.puckConfig.ts:179-181).
+    containerColorScheme: { type: 'hidden', label: '' } as any,
     padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {

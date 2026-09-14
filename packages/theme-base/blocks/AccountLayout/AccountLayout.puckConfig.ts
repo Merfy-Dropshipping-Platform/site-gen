@@ -20,7 +20,7 @@ export const AccountLayoutPuckConfig: BlockPuckConfig<AccountLayoutProps> = {
     showGreeting: { type: 'switch', label: 'Приветствие' },
     sidebarPosition: { type: 'radio', label: 'Позиция меню' },
     activePage: { type: 'radio', label: 'Активная страница' },
-    padding: { type: 'object', label: 'Отступы' },
+    padding: { type: 'padding', label: 'Отступы' },
   },
   defaults: {
     showGreeting: true,

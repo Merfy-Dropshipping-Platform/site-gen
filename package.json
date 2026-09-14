@@ -67,6 +67,7 @@
     "test:zoom-wiring": "jest --runInBand src/themes/__tests__/product-zoom-wiring.spec.ts",
     "test:variant-colors": "jest --runInBand src/themes/__tests__/variant-swatch-color-names.spec.ts",
     "test:variant-shape": "jest --runInBand src/themes/__tests__/product-variant-shape-in-list.spec.ts",
+    "test:variant-overlap": "jest --runInBand src/themes/__tests__/product-variant-list-overlap.spec.ts",
     "test:collection-card": "jest --runInBand src/themes/__tests__/collection-card-settings.spec.ts",
     "test:catalog-scheme": "jest --runInBand src/themes/__tests__/catalog-single-scheme.spec.ts",
     "test:flux-edge-veil": "jest --runInBand src/themes/__tests__/flux-section-edge-veil.spec.ts",

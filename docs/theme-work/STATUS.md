@@ -1377,8 +1377,13 @@ pnpm build:theme-sections:all`.
 
 **Хвосты (это состав главной = канон, решает владелец):** у vanilla главную
 пересобирает `migrateVanillaHomePage` БЕЗ галереи; у satin её нет в сиде
-главной; у flux на главной остаются демо-фото дизайнера (стриппер не узнаёт их
-из-за `?e2eSeed=N`), а у rose/bloom — канон-плейсхолдеры.
+главной; у flux на главной остаются демо-фото дизайнера, а у rose/bloom —
+канон-плейсхолдеры.
+
+**Отдельный хвост — дефект стриппера, НЕ галереи:** `valueContainsDemoImage`
+сравнивает URL с `DEMO_IMAGE_URLS` точно, поэтому query-хвост (`?e2eSeed=1` у
+сида flux) уводит ссылку из-под сравнения, и демо-контент дизайнера доезжает до
+мерчанта. Касается всех типов `DEMO_IMAGE_SECTION_TYPES`. Отдельной задачей.
 
 **Ключевые файлы:** `src/utils/revision-migrations.ts`
 (`GALLERY_CANON_ITEMS`, `materializeGalleryItems`),

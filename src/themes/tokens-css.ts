@@ -457,41 +457,8 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
         }
       }
       // ── Поверхность правой колонки чекаута ───────────────────────────
-      // Владелец, 14.09, п.4: «для секции Сводка заказа применяются только
-      // заданые цветовые схемы от тем, а при измении их не принимает новые
-      // условия». Замер (пять тем, Chromium 1440×900): мерчант перекрасил
-      // схему-4 (Фон #71C0FF, Текст #E91E8C) — текст сменился, фон колонки
-      // остался заводским (rose/flux 26,26,26; satin 8,2,0;
-      // vanilla 255,255,255; bloom 247,247,249).
-      //
-      // Причина: колонка красится `--color-surface`, то есть полем `surfaceBg`,
-      // а ЕГО В РЕДАКТОРЕ СХЕМ НЕТ (`ColorSchemePanel`: Фон/Заголовок/Текст +
-      // две кнопки; состав настроек — канон, поля не добавляем). Значит
-      // мерчант физически не может изменить поверхность.
-      //
-      // Поэтому: перекрасил «Фон», а поверхность осталась ровно заводской —
-      // поверхность идёт за «Фоном». Не трогал схему — всё как было, вид
-      // существующих магазинов не меняется (это важно: сид rose пинит на
-      // чекауте `scheme-2`, и безусловный переход на `--color-bg` сделал бы
-      // правую колонку всех rose-магазинов белой вместо серой).
-      //
-      // Отдельный токен, а не переопределение `--color-surface`: на нём висят
-      // карточки товара и другие поверхности, и трогать их никто не просил.
-      const themeBgTriple = normTriple(themeScheme.tokens?.['--color-bg']);
-      const themeSurfaceTriple = normTriple(themeScheme.tokens?.['--color-surface']);
-      const merchantBgTriple = hexToRgbTriple(merged.background);
-      const merchantSurfaceTriple = hexToRgbTriple(merged.surfaceBg);
-      const repaintedBackground =
-        merchantBgTriple !== null &&
-        themeBgTriple !== null &&
-        merchantBgTriple !== themeBgTriple;
-      const surfaceUntouched =
-        merchantSurfaceTriple !== null &&
-        themeSurfaceTriple !== null &&
-        merchantSurfaceTriple === themeSurfaceTriple;
-      if (repaintedBackground && surfaceUntouched) {
-        merged.checkoutSurface = merged.background;
-      }
+      // Считается ВСЕГДА, для каждой схемы — см. `checkoutSurfaceOf`.
+      merged.checkoutSurface = checkoutSurfaceOf(themeScheme.tokens, merged);
       const rule = buildSchemeRule(merged);
       if (rule) {
         schemeRuleLines.push(rule);
@@ -504,7 +471,12 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     merchantById.delete(key);
   }
   for (const remaining of merchantById.values()) {
-    const rule = buildSchemeRule(remaining);
+    // Схема, которой в манифесте темы нет вовсе (мерчант добавил свою). Близнеца
+    // для сверки не существует — поверхность берём из самой схемы мерчанта.
+    const rule = buildSchemeRule({
+      ...remaining,
+      checkoutSurface: checkoutSurfaceOf(undefined, remaining),
+    });
     if (rule) schemeRuleLines.push(rule);
   }
   const schemeRules = schemeRuleLines.filter((r) => r.length > 0).join('\n');
@@ -809,6 +781,62 @@ function schemeClassId(id: string): string {
   return id.replace(/^scheme-/, '');
 }
 
+/**
+ * ПОВЕРХНОСТЬ ПРАВОЙ КОЛОНКИ ЧЕКАУТА для ОДНОЙ схемы. Тотальная функция: у любой
+ * схемы любой темы ответ есть всегда, «промолчать» она не умеет.
+ *
+ * Зачем тотальная. Предыдущая редакция считала токен ТОЛЬКО когда мерчант
+ * перекрасил «Фон», а его поверхность задана и равна заводской:
+ *
+ *     surfaceUntouched = merchantSurface !== null && merchantSurface === themeSurface
+ *
+ * «Поверхность задана» — это поле `surfaceBg`, которого в редакторе схем нет и не
+ * будет (состав настроек — канон). В сидах магазинов оно есть только у rose и
+ * satin: `src/generator/templates/defaults/{vanilla,bloom,flux}.json` несут схемы
+ * БЕЗ него. Для трёх тем из пяти «поля нет» — единственно возможное состояние, и
+ * условие молча выключалось: токен не появлялся никогда. Хуже того, без
+ * `surfaceBg` правило `.color-scheme-N` вообще не объявляло `--color-surface`
+ * (`schemeToVars` печатает его только при заданном поле), и правая колонка
+ * садилась на унаследованное значение, одинаковое для ВСЕХ схем.
+ *
+ * Замер на сидовых данных (Chromium 1440×1400, мишень — две схемы с максимально
+ * разной заводской поверхностью): vanilla 250,250,250 → 250,250,250;
+ * bloom 246,246,247 → 246,246,247 (инлайновый набор из
+ * `themes/bloom/src/pages/checkout.astro`); flux 250,250,250 → 250,250,250.
+ * Те же числа тестер снял на живых стендах — замер сошёлся.
+ *
+ * Порядок ответов (первый подошедший выигрывает):
+ *   1. мерчант ОСОЗНАННО задал свою поверхность (в редакторе поля нет, но в
+ *      данных магазина она встречается — например тёмный сайдбар корзины) —
+ *      уважаем её и не перебиваем «Фоном»;
+ *   2. мерчант перекрасил «Фон» схемы — поверхность идёт за ним (п.4 владельца
+ *      14.09: «при измении их не принимает новые условия»);
+ *   3. схему не трогали — ЗАВОДСКАЯ поверхность ИМЕННО ЭТОЙ схемы из манифеста.
+ *      Это и чинит vanilla/bloom/flux: раньше на её месте было унаследованное
+ *      значение, не зависящее от схемы.
+ *
+ * Почему отдельный токен, а не `--color-surface`: на последнем висят карточки
+ * товара, плитки коллекций и прочие поверхности витрины — их никто менять не
+ * просил. `--color-checkout-surface` читает ровно одно правило
+ * (`checkout-split.ts`, `[data-checkout-pane="summary"]`).
+ */
+function checkoutSurfaceOf(
+  themeTokens: Record<string, string> | undefined,
+  merchant: Record<string, unknown> | null | undefined,
+): string | null {
+  const themeSurface = normTriple(themeTokens?.['--color-surface']);
+  const themeBg = normTriple(themeTokens?.['--color-bg']);
+  const merchantSurface =
+    hexToRgbTriple(merchant?.surfaceBg) ?? normTriple(merchant?.surfaceBg);
+  const merchantBg =
+    hexToRgbTriple(merchant?.background) ?? normTriple(merchant?.background);
+  if (merchantSurface !== null && merchantSurface !== themeSurface)
+    return merchantSurface;
+  if (merchantBg !== null && themeBg !== null && merchantBg !== themeBg)
+    return merchantBg;
+  return themeSurface ?? merchantSurface ?? merchantBg;
+}
+
 function buildThemeSchemeRule(scheme: {
   id: string;
   tokens: Record<string, string>;
@@ -836,6 +864,12 @@ function buildThemeSchemeRule(scheme: {
     );
     if (пересчитанный) tokens['--color-muted'] = пересчитанный;
   }
+  // Схема, которую мерчант не переопределял. Поверхность чекаута — заводская,
+  // но объявить её надо ЯВНО: инвариант «каждое правило `.color-scheme-N` несёт
+  // `--color-checkout-surface`» должен держаться на обеих ветках, иначе колонка
+  // снова начнёт брать унаследованное значение там, где ветки разошлись.
+  const checkoutSurface = checkoutSurfaceOf(scheme.tokens, null);
+  if (checkoutSurface) tokens['--color-checkout-surface'] = checkoutSurface;
   const pairs = Object.entries(tokens).map(([k, v]) => `${k}: ${v}`);
   if (pairs.length === 0) return '';
   return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
@@ -918,10 +952,15 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   // muted text variants — Figma 905-19049 flux electronics.
   const accent = hexToRgbTriple(scheme.accent);
   if (accent) parts.push(`--color-accent: ${accent}`);
-  // Поверхность правой колонки чекаута, когда мерчант перекрасил «Фон» схемы
-  // (см. п.4 четвёртого круга выше). Токена нет → колонка остаётся на
-  // `--color-surface`, то есть ровно как была.
-  const checkoutSurface = hexToRgbTriple(scheme.checkoutSurface);
+  // Поверхность правой колонки чекаута — её считает `checkoutSurfaceOf` (см.
+  // подробный разбор там же). Токен объявлен у КАЖДОЙ схемы: пока он появлялся
+  // выборочно, колонка у vanilla/bloom/flux садилась на унаследованное значение
+  // и на смену схемы не реагировала вовсе.
+  // Значение приходит из `checkoutSurfaceOf` уже триплетом («245 245 245»), но
+  // шестнадцатеричную запись тоже принимаем — в ревизиях магазинов цвета лежат
+  // в hex, и схема мерчанта может прийти сюда напрямую.
+  const checkoutSurface =
+    hexToRgbTriple(scheme.checkoutSurface) ?? normTriple(scheme.checkoutSurface);
   if (checkoutSurface) parts.push(`--color-checkout-surface: ${checkoutSurface}`);
   // Приглушённый текст — это ТЕКСТ схемы, разбавленный её фоном, а не отдельный
   // фиксированный серый. Раньше `--color-muted` приезжал готовым из theme.json

@@ -77,7 +77,7 @@ import {
 } from '../chrome-assembler';
 import { buildTokensCss } from '../tokens-css';
 import { PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE } from '../../services/preview.service';
-import { themeToMerchantColorSchemes } from '../theme-manifest-loader';
+import { getThemeManifest, themeToMerchantColorSchemes } from '../theme-manifest-loader';
 
 const SITES_ROOT = join(__dirname, '..', '..', '..');
 const RENDERER = resolvePath(__dirname, 'render-theme-sections.mjs');
@@ -526,12 +526,28 @@ describe('п.4 «Сводка заказа» принимает перекраш
     expect(summaryFollowsEditedScheme(CHECKOUT_SPLIT_CSS)).toBe(true);
   });
 
-  it.each(THEMES)('тема %s: схему не трогали — токена нет, вид прежний', (theme) => {
+  it.each(THEMES)('тема %s: схему не трогали — вид прежний, поверхность заводская', (theme) => {
     // Это и есть страховка от «починки, которая перекрасит все магазины»:
-    // сид rose пинит чекауту scheme-2, и без этой ветки правая колонка всех
-    // rose-магазинов стала бы белой вместо серой (замер подтвердил).
+    // сид rose пинит чекауту scheme-2, и безусловный переход на «Фон» сделал бы
+    // правую колонку всех rose-магазинов белой вместо серой (замер подтвердил).
+    //
+    // Раньше страховка была записана как «токена нет вовсе», и это оказалось
+    // слишком грубо: у vanilla/bloom/flux токена не было НИКОГДА (их сиды не
+    // несут `surfaceBg`), колонка садилась на унаследованное значение и на
+    // смену схемы не реагировала. Проверяем то, что владельца волнует на самом
+    // деле, — ЗНАЧЕНИЕ: у нетронутой схемы поверхность ровно заводская.
     const css = buildTokensCss({ colorSchemes: themeSchemes(theme) }, theme);
-    expect(css).not.toContain('--color-checkout-surface');
+    const manifest = getThemeManifest(theme);
+    let проверено = 0;
+    for (const sc of manifest?.colorSchemes ?? []) {
+      const factory = (sc.tokens?.['--color-surface'] ?? '').trim().replace(/\s+/g, ' ');
+      if (!factory) continue;
+      expect(schemeVar(css, sc.id.replace(/^scheme-/, ''), '--color-checkout-surface')).toBe(
+        factory,
+      );
+      проверено++;
+    }
+    expect(проверено).toBeGreaterThan(0);
   });
 
   it.each(THEMES)('тема %s: перекрасили «Фон» — поверхность идёт за ним', (theme) => {
@@ -544,25 +560,28 @@ describe('п.4 «Сводка заказа» принимает перекраш
     expect(schemeVar(css, '4', '--color-checkout-surface')).toBe('113 192 255');
   });
 
-  it('перекрашена одна схема — соседние не трогаются', () => {
+  it('перекрашена одна схема — соседние остаются на заводской поверхности', () => {
     const css = buildTokensCss(
       { colorSchemes: repainted('rose', 'scheme-4', '#71C0FF') },
       'rose',
     );
-    expect(schemeVar(css, '3', '--color-checkout-surface')).toBeNull();
-    expect(schemeVar(css, '2', '--color-checkout-surface')).toBeNull();
+    expect(schemeVar(css, '4', '--color-checkout-surface')).toBe('113 192 255');
+    // Заводские значения rose из `packages/theme-rose/theme.json`.
+    expect(schemeVar(css, '3', '--color-checkout-surface')).toBe('230 225 220');
+    expect(schemeVar(css, '2', '--color-checkout-surface')).toBe('245 245 245');
   });
 
   it('мерчант задал свою поверхность — уважаем её, а не «Фон»', () => {
     // Поля для неё в редакторе схем нет, но в данных магазина она встречается
-    // (тёмный сайдбар корзины). Осознанный выбор не перебиваем.
+    // (тёмный сайдбар корзины). Осознанный выбор не перебиваем: колонка идёт за
+    // поверхностью мерчанта (16 32 48), а не за перекрашенным «Фоном».
     const schemes = themeSchemes('rose').map((sc) =>
       sc.id === 'scheme-4'
         ? { ...sc, background: '#71C0FF', surfaceBg: '#102030' }
         : sc,
     );
     const css = buildTokensCss({ colorSchemes: schemes }, 'rose');
-    expect(schemeVar(css, '4', '--color-checkout-surface')).toBeNull();
+    expect(schemeVar(css, '4', '--color-checkout-surface')).toBe('16 32 48');
     expect(schemeVar(css, '4', '--color-surface')).toBe('16 32 48');
   });
 

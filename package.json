@@ -64,6 +64,7 @@
     "test:single-chrome": "jest --runInBand src/themes/__tests__/chrome-single-header.spec.ts",
     "test:account-preview-body": "jest --runInBand src/themes/__tests__/account-preview-body.spec.ts",
     "test:account-surface": "jest --runInBand src/themes/__tests__/account-surface-fills-main.spec.ts",
+    "test:checkout-summary-scheme": "jest --runInBand src/themes/__tests__/checkout-summary-scheme-surface.spec.ts",
     "test:slide-panel": "jest --runInBand src/themes/__tests__/slideshow-slide-panel.spec.ts src/themes/__tests__/slideshow-slide-overlay.spec.ts",
     "panel-canon:refresh": "node src/themes/__tests__/panel-canon.mjs --out conformance/panel-canon.json",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",

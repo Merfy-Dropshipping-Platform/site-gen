@@ -22,6 +22,98 @@ import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-default
 import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
 
 /**
+ * Корни секций-страниц личного кабинета. Ровно эти четыре страницы конструктор
+ * отдаёт мерчанту как «страницу целиком, одна секция на ней»
+ * (`ACCOUNT_SECTION_THEMES` / `LOGIN_SECTION_THEMES` в page-registry), поэтому
+ * их поверхность обязана занимать всё место между шапкой и подвалом.
+ *
+ * Список — маркеры `data-block` корня секции. Они одинаковы у скаффолда
+ * theme-base и у портов всех пяти тем (проверяет
+ * `account-surface-fills-main.spec.ts` живым рендером), поэтому правило одно на
+ * пять тем и не требует ни классов тем, ни правки вёрстки.
+ *
+ * Корзины здесь НЕТ намеренно: у `page-cart` своя раскладка (spec 110) и свой
+ * автор; лезть туда этой правкой нельзя.
+ */
+export const ACCOUNT_SURFACE_BLOCKS = [
+  'account-section',
+  'orders-section',
+  'wishlist-section',
+  'login-section',
+] as const;
+
+/** `[data-block="a"],[data-block="b"],…` — список поверхностей для селекторов. */
+const ACCOUNT_SURFACES = ACCOUNT_SURFACE_BLOCKS.map(
+  (b) => `[data-block="${b}"]`,
+).join(',');
+
+/**
+ * Область — та же, что у sticky-footer (см. `stickyFooterRule` ниже):
+ * полностраничный рендер с подвалом, кроме чекаута. Шире брать нельзя —
+ * одиночный `preview/block` обязан сайзиться по контенту, а чекаут ведёт
+ * свой автор.
+ */
+const ACCOUNT_SURFACE_SCOPE = 'body:has(footer):not(:has(main main))';
+
+/**
+ * ПОВЕРХНОСТЬ СТРАНИЦЫ АККАУНТА = ВСЯ ВЫСОТА МЕЖДУ ШАПКОЙ И ПОДВАЛОМ.
+ *
+ * Владелец, 14.09: «Секция заказы не применяется до конца цветовая схема»,
+ * «Секция Личный кабинет не применяется до конца цветовая схема». Цветная
+ * область обрывается по высоте текста, ниже — светлая полоса фона страницы,
+ * ещё ниже подвал.
+ *
+ * Замер «ДО» (Chromium 1280×1400, задеплоенное превью sites, main ed3d5948,
+ * тема каждого стенда определена маркерами разметки в момент замера). ЩЕЛЬ =
+ * низ `<main>` − низ секции, то есть высота светлой полосы:
+ *
+ *   тема      page-orders  page-profile  page-wishlist  page-login
+ *   rose          422          91            424           314
+ *   flux          149           0            140            49
+ *   vanilla       398          73            459           298
+ *   bloom         339          14            325           239
+ *   satin         314           0            308           214
+ *
+ * Схема тут ни при чём — она применялась: у rose page-orders фон секции был
+ * rgb(171,54,159), это и есть scheme-3. Не доставало РАСТЯЖЕНИЯ. `stickyFooterRule`
+ * делает `<body>` flex-колонкой ≥ вьюпорта и растягивает `<main>`, но дальше
+ * цепочка обрывалась: `<main>` оставался `display:block`, а обёртка схемы
+ * (её вешает composeV2Page) и сама секция сайзились по контенту. Растянутый
+ * `<main>` под секцией и показывал фон страницы.
+ *
+ * Лечение — приём чекаута (канон «схема красит КОЛОНКУ: поверхность от края до
+ * края и на всю высоту, а не карточка внутри»; правка `fix/b8-checkout-col`):
+ * меру держит СОДЕРЖИМОЕ, а поверхность забирает всё доступное место. Здесь это
+ * три звена одной цепочки:
+ *
+ *   1. `<main>` страницы аккаунта → flex-колонка. Без этого его блочные дети
+ *      сайзятся по контенту, сколько бы места ни было.
+ *   2. прямой ребёнок `<main>`, ВНУТРИ которого лежит поверхность (обёртка
+ *      `.color-scheme-N` от composeV2Page), → `flex:1 0 auto` и сам колонка.
+ *      `:has()` вместо `>*` — чтобы остаток забирала именно страница аккаунта,
+ *      а не любая соседняя секция, если мерчант добавит её сверху.
+ *   3. сама секция → `flex:1 0 auto`. Работает и когда обёртки схемы нет
+ *      (блок без `colorScheme`): тогда секция — прямой ребёнок `<main>` и
+ *      растягивается этим же правилом.
+ *
+ * Чего правило НЕ делает, намеренно:
+ *   • не задаёт высоту числом (`100vh`/`height:100%`) — доступное место равно
+ *     вьюпорт минус шапка минус подвал, его знает только flex; жёсткая высота
+ *     дала бы полосу НИЖЕ подвала и скролл на пустом месте;
+ *   • не трогает padding/margin/gap — внутренние отступы секции остаются на
+ *     `.account-page-container`, поэтому контент не сдвигается ни на пиксель:
+ *     секция растёт только вниз;
+ *   • не трогает `<main>` страниц без поверхности аккаунта — главная, каталог,
+ *     товар остаются блочным потоком.
+ *
+ * Unlayered (как и sticky-footer) → перебивает `@layer base` из global.css тем.
+ */
+export const ACCOUNT_SURFACE_CSS =
+  `${ACCOUNT_SURFACE_SCOPE}>main:has(${ACCOUNT_SURFACES}){display:flex;flex-direction:column}` +
+  `${ACCOUNT_SURFACE_SCOPE}>main>*:has(${ACCOUNT_SURFACES}){flex:1 0 auto;display:flex;flex-direction:column}` +
+  `${ACCOUNT_SURFACE_SCOPE}>main ${ACCOUNT_SURFACE_BLOCKS.map((b) => `[data-block="${b}"]`).join(`,${ACCOUNT_SURFACE_SCOPE}>main `)}{flex:1 0 auto}`;
+
+/**
  * Превью-вариант токенов: тот же CSS + @import Google Fonts, когда мерчант выбрал
  * шрифты. Пришло из main (там его зовут preview.service и тест preview-fonts);
  * при слиянии линий разработки функция была только на той стороне.
@@ -556,6 +648,11 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     'body:has(footer):not(:has(main main)){min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}' +
     'body:has(footer):not(:has(main main))>main{flex:1 0 auto}';
 
+  // Поверхность страницы аккаунта = вся высота между шапкой и подвалом.
+  // Продолжает цепочку sticky-footer: тот растягивает <main>, это — то, что
+  // внутри него. Разбор и замеры — у ACCOUNT_SURFACE_CSS.
+  const accountSurfaceRule = ACCOUNT_SURFACE_CSS;
+
   // Порт origin/main (спека 2026-07-06 + «оживление слайдеров типографики»):
   // зазор МЕЖДУ секциями = margin-top прямых детей <main> кроме первого
   // (owl `* + *`); header/footer вне <main>, props.padding блоков не трогается.
@@ -601,6 +698,7 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     cartDrawerSchemeRule,
     wishlistHideRule,
     stickyFooterRule,
+    accountSurfaceRule,
     sectionGapRule,
     typographyLayer,
   ]

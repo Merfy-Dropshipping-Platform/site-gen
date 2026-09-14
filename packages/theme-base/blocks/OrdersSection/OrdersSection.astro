@@ -1,0 +1,28 @@
+---
+import type { OrdersSectionProps } from './OrdersSection.puckConfig';
+import { OrdersSectionClasses as C } from './OrdersSection.classes';
+
+interface Props extends OrdersSectionProps {
+  id?: string;
+}
+
+const { id } = Astro.props as Props;
+// Общий скаффолд (зеркало CartSection.astro / WishlistSection.astro): живую
+// разметку списка заказов рисует ПОРТ темы —
+// themes/<t>/src/components/sections/OrdersSection.astro. Сюда попадают только
+// темы без собственного порта; у всех пяти он есть.
+---
+<section
+  id="orders-section"
+  class={C.root}
+  data-puck-component-id={id}
+  data-block="orders-section"
+  data-orders-page
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>Мои заказы</h1>
+    <div id="orders-loading" class={C.muted}>Загрузка...</div>
+    <div id="orders-empty" class="hidden">У вас пока нет заказов</div>
+    <div id="orders-list" class="hidden"></div>
+  </div>
+</section>

@@ -55,13 +55,16 @@ describe('Satin manifest ↔ registry — checkout-result seed', () => {
   // Одиннадцатая страница — «Профиль» (`/account/profile`, пункт 14).
   // Двенадцатая — «Избранное» (`/wishlist`, тестировщик 14.09): витрина была,
   // записи страницы не было, поэтому секцию «Избранное» негде было настроить.
-  it('sees twelve manifest pages including checkout-result, profile and wishlist', async () => {
+  // Тринадцатая — «Заказы» (`/account/orders`, тестировщик 14.09): у страницы
+  // появилось тело (секция «Заказы»), значит нужна и запись страницы.
+  it('sees thirteen manifest pages including checkout-result, profile, wishlist and orders', async () => {
     const snap = await loadThemeSourceSnapshot('satin');
-    expect(snap.pageSlugs).toHaveLength(12);
+    expect(snap.pageSlugs).toHaveLength(13);
     expect(snap.hasCheckoutResultPage).toBe(true);
     expect(snap.pageSlugs).toContain('/checkout-result');
     expect(snap.pageSlugs).toContain('/account/profile');
     expect(snap.pageSlugs).toContain('/wishlist');
+    expect(snap.pageSlugs).toContain('/account/orders');
   });
 });
 

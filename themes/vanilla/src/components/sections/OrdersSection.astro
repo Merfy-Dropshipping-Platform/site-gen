@@ -1,0 +1,164 @@
+---
+/**
+ * Секция «Заказы» (vanilla). Вынесена из
+ * `themes/vanilla/src/pages/account/orders.astro` БЕЗ изменения логики — та же
+ * разметка, те же id и классы, тот же порядок вызовов `fetchMe → fetchOrders`
+ * и тот же рецепт строки заказа. Теперь это Puck-секция: страницу «Заказы»
+ * мерчант редактирует как главную, а у самой секции РОВНО ОДИН параметр —
+ * «Цветовая схема» (тестировщик 14.09).
+ *
+ * Почему у секции нет «Отступов» — см. AccountSection.astro: их не просили,
+ * вертикаль задаёт `.account-page-container`.
+ *
+ * Секция одна на странице (maxInstances: 1) → `document.getElementById`
+ * безопасен. Резолвится раньше theme-base-скаффолда (resolveV2Section по
+ * dist/theme-sections/vanilla/manifest.json).
+ *
+ * Единственная правка вёрстки против исходной страницы: фон секции взят из
+ * токена `--color-bg` — иначе «Цветовая схема» красила бы текст, но не фон.
+ */
+interface Props {
+	id?: string;
+	colorScheme?: number | string;
+}
+const { id, colorScheme } = Astro.props as Props;
+
+// Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
+const shopId = "";
+const apiUrl = "https://gateway.merfy.ru/api";
+const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
+---
+
+<section
+	data-puck-component-id={id}
+	data-block="orders-section"
+	data-orders-page
+	data-site-id={shopId}
+	class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", schemeClass]}
+>
+	<div class="account-page-container">
+		<a href="/account" class="account-back-link">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+			Вернуться назад
+		</a>
+
+		<div class="account-title">
+			<h1>Мои заказы</h1>
+			<span class="account-subtitle" id="orders-email"></span>
+		</div>
+
+		<div id="orders-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
+		<div id="orders-empty" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-text-muted));">У вас пока нет заказов</div>
+		<div id="orders-list" class="hidden"></div>
+	</div>
+</section>
+
+{/* Конфиг для auth-слоя темы (shopId патчится build.service на деплое). */}
+<script is:inline define:vars={{ shopId, apiUrl }}>
+	window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
+		shopId: shopId || "",
+		apiUrl: apiUrl || "https://gateway.merfy.ru/api",
+	};
+</script>
+
+<script is:inline>
+	/**
+	 * Клиент секции «Заказы» (vanilla). is:inline (НЕ module): на live theme dist
+	 * module-script секции не компилится → 404. Тело — дословный перенос
+	 * initOrders() со страницы account/orders.astro; импорты заменены на глобал
+	 * auth-слоя темы.
+	 */
+	(function () {
+	/**
+	 * Мост к auth-слою темы. Оригинальная страница импортировала
+	 * `../../lib/auth` module-скриптом; у СЕКЦИИ такой возможности нет — на live
+	 * theme dist module-script секции не компилится (404), поэтому скрипт
+	 * `is:inline`, а функции берутся из глобала `window.__vanillaAuth`, который
+	 * ставит `initAuthUI()` из Layout на каждой странице. Набор вызовов и их
+	 * порядок — те же, что были на странице: логика не менялась.
+	 */
+	function whenAuth(cb) {
+		var tries = 0;
+		(function poll() {
+			var a = window.__vanillaAuth;
+			if (a) return cb(a);
+			if (tries++ > 200) return; // ~10с: auth-бандл темы так и не приехал
+			setTimeout(poll, 50);
+		})();
+	}
+	/** navTo из lib/auth — скопирован дословно (превью конструктора = iframe). */
+	function navTo(path) {
+		if (typeof window === "undefined") return;
+		if (window.self !== window.top) {
+			try {
+				var u = new URL(window.location.href);
+				u.searchParams.set("page", path.split("?")[0].split("#")[0]);
+				window.location.href = u.toString();
+				return;
+			} catch (e) {
+				/* fallthrough */
+			}
+		}
+		window.location.href = path;
+	}
+
+		function initOrders() {
+			var root = document.getElementById("orders-list");
+			if (!root || root.dataset.bound === "true") return;
+			root.dataset.bound = "true";
+
+			whenAuth(async function (A) {
+				if (!A.getToken()) {
+					navTo("/login?redirect=/account/orders");
+					return;
+				}
+
+				var loadingEl = document.getElementById("orders-loading");
+				var emptyEl = document.getElementById("orders-empty");
+				var emailEl = document.getElementById("orders-email");
+
+				var me = await A.fetchMe();
+				if (!me) {
+					navTo("/login?redirect=/account/orders");
+					return;
+				}
+				if (emailEl) emailEl.textContent = me.email || "";
+
+				try {
+					var result = await A.fetchOrders({ skip: 0, take: 50 });
+					loadingEl.classList.add("hidden");
+					var orders = Array.isArray(result.data) ? result.data : result.data && result.data.items;
+					if (!result.success || !orders || !orders.length) {
+						emptyEl.classList.remove("hidden");
+						return;
+					}
+
+					root.classList.remove("hidden");
+					root.style.display = "flex";
+					root.style.flexDirection = "column";
+					root.style.gap = "1.5rem";
+
+					orders.forEach(function (order) {
+						var date = new Date(order.createdAt).toLocaleDateString("ru-RU", {
+							day: "2-digit", month: "2-digit", year: "2-digit",
+						});
+						var row = document.createElement("div");
+						row.className = "account-order-row";
+						row.innerHTML =
+							'<div class="order-info">' +
+								'<span class="order-number">Заказ №' + order.orderNumber + "</span>" +
+								'<span class="order-date">от ' + date + "</span>" +
+							"</div>" +
+							'<a href="/account/order?n=' + encodeURIComponent(order.orderNumber) + '" class="account-button">Перейти</a>';
+						root.appendChild(row);
+					});
+				} catch (e) {
+					loadingEl.textContent = "Не удалось загрузить заказы";
+				}
+			});
+		}
+
+		initOrders();
+		document.addEventListener("astro:page-load", initOrders);
+	})();
+</script>

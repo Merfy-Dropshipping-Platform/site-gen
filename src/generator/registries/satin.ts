@@ -66,6 +66,10 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   // «Избранное» — тело страницы /wishlist (та же механика, что корзина:
   // секция живёт только на своей странице, в палитру конструктора не выводится).
   WishlistSection: staticComponent("WishlistSection", "WishlistSection.astro"),
+  // «Личный кабинет» (/account/profile) и «Заказы» (/account/orders) — та же
+  // механика: секция живёт только на своей странице, в палитру не выводится.
+  AccountSection: staticComponent("AccountSection", "AccountSection.astro"),
+  OrdersSection: staticComponent("OrdersSection", "OrdersSection.astro"),
   CartBody: staticComponent("CartBody", "CartBody.astro"),
   CartSummary: staticComponent("CartSummary", "CartSummary.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),

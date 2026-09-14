@@ -1,0 +1,31 @@
+---
+import type { AccountSectionProps } from './AccountSection.puckConfig';
+import { AccountSectionClasses as C } from './AccountSection.classes';
+
+interface Props extends AccountSectionProps {
+  id?: string;
+}
+
+const { id } = Astro.props as Props;
+// Общий скаффолд (зеркало CartSection.astro / WishlistSection.astro): живую
+// разметку личного кабинета рисует ПОРТ темы —
+// themes/<t>/src/components/sections/AccountSection.astro. Сюда попадают только
+// темы без собственного порта; у всех пяти он есть.
+---
+<section
+  id="account-section"
+  class={C.root}
+  data-puck-component-id={id}
+  data-block="account-section"
+  data-account-page
+>
+  <div class={C.container}>
+    <h1 class={C.heading}>Личный кабинет</h1>
+    <div id="profile-loading" class={C.muted}>Загрузка...</div>
+    <form id="profile-form" class="hidden">
+      <input type="email" id="profile-email" disabled />
+      <input type="tel" id="profile-phone" />
+    </form>
+    <button type="button" id="btn-logout-profile" class={C.muted}>Выйти из аккаунта</button>
+  </div>
+</section>

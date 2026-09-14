@@ -120,6 +120,7 @@ describe('rose theme manifest validation', () => {
       'page-checkout-result',
       'page-profile',
       'page-wishlist',
+      'page-orders',
     ]);
     expect(m.pages.every((p: any) => p.role === 'system')).toBe(true);
   });

@@ -16,6 +16,8 @@
   "Slideshow": "src/components/sections/Slideshow.astro",
   "CartSection": "src/components/sections/CartSection.astro",
   "WishlistSection": "src/components/sections/WishlistSection.astro",
+  "AccountSection": "src/components/sections/AccountSection.astro",
+  "OrdersSection": "src/components/sections/OrdersSection.astro",
   "CartBody": "src/components/sections/CartBody.astro",
   "CartSummary": "src/components/sections/CartSummary.astro"
 }

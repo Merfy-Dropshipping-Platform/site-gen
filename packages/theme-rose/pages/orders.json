@@ -1,0 +1,55 @@
+{
+  "content": [
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-orders"
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-orders",
+        "navigationLinks": [
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          },
+          {
+            "label": "О нас",
+            "href": "/about"
+          },
+          {
+            "label": "Доставка",
+            "href": "/delivery"
+          },
+          {
+            "label": "Контакты",
+            "href": "/contacts"
+          }
+        ]
+      }
+    },
+    {
+      "type": "OrdersSection",
+      "props": {
+        "id": "OrdersSection-1",
+        "colorScheme": 2
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-orders"
+      }
+    }
+  ],
+  "root": {
+    "props": {
+      "meta": {
+        "title": "Мои заказы"
+      }
+    }
+  },
+  "zones": {}
+}

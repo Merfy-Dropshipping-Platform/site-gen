@@ -50,7 +50,15 @@ describe('страница «Профиль» в конструкторе', () =
     expect(page!.role).toBe('system');
   });
 
-  it('содержимое — только шапка и подвал (никаких мёртвых секций)', () => {
+  // Было «содержимое — только шапка и подвал (никаких мёртвых секций)».
+  // Ожидание описывало состояние ДО 14.09: у страницы не было собственного
+  // тела, класть туда «Страницу»-секцию было бы мёртвой настройкой — поэтому
+  // сидер оставлял хром. Тестировщик 14.09 попросил обратное: «Для страницы
+  // личный кабинет <…> создать исключительно там секцию Личный кабинет».
+  // Тело появилось (порт темы AccountSection), и настройка у него живая —
+  // «Цветовая схема» доезжает до витрины. Проверяем НОВЫЙ состав целиком, а не
+  // «секция где-то есть»: лишний блок в этой странице тест обязан назвать.
+  it('содержимое — шапка, секция «Личный кабинет», подвал', () => {
     const homeHeader = { type: 'Header', props: { id: 'Header-home', siteTitle: 'Магазин' } };
     const homeFooter = { type: 'Footer', props: { id: 'Footer-home' } };
     const out = migrateRevisionData(
@@ -62,7 +70,7 @@ describe('страница «Профиль» в конструкторе', () =
     ) as { pagesData: Record<string, { content: Array<{ type: string; props: Record<string, unknown> }> }> };
 
     const content = out.pagesData['page-profile'].content;
-    expect(content.map((b) => b.type)).toEqual(['Header', 'Footer']);
+    expect(content.map((b) => b.type)).toEqual(['Header', 'AccountSection', 'Footer']);
     // Шапка — та же, что на главной (пункт 13), но со своим id.
     expect(content[0].props.siteTitle).toBe('Магазин');
     expect(content[0].props.id).not.toBe('Header-home');

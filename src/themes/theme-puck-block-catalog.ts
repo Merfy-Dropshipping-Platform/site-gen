@@ -41,6 +41,12 @@ export const THEME_PUCK_BASE_BLOCK_NAMES: readonly string[] = [
   // (ComponentPicker.PUPA_BLOCK_ALLOWLIST) — секция живёт только на своей
   // странице, как CartSection.
   "WishlistSection",
+  // Тело страницы «Личный кабинет» (/account/profile) и страницы «Заказы»
+  // (/account/orders). В палитру конструктора НЕ выведены
+  // (ComponentPicker.PUPA_BLOCK_ALLOWLIST) — секции живут только на своих
+  // страницах, как CartSection и WishlistSection.
+  "AccountSection",
+  "OrdersSection",
   "CheckoutSection",
   // Cart page Puck-driven sections
   "CartBody",

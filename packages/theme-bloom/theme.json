@@ -427,6 +427,13 @@
       "slug": "/wishlist",
       "role": "system",
       "contentFile": "pages/wishlist.json"
+    },
+    {
+      "id": "page-orders",
+      "name": "Заказы",
+      "slug": "/account/orders",
+      "role": "system",
+      "contentFile": "pages/orders.json"
     }
   ],
   "blockPlaceholders": {

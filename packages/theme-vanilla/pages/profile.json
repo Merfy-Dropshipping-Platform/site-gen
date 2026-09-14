@@ -25,6 +25,13 @@
       }
     },
     {
+      "type": "AccountSection",
+      "props": {
+        "id": "AccountSection-1",
+        "colorScheme": 2
+      }
+    },
+    {
       "type": "Footer",
       "props": {
         "id": "Footer-profile"

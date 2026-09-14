@@ -326,6 +326,13 @@ const NO_NAMED_FIELDS: Record<string, string> = {
   // должно появиться; состав сторожит panel-canon + wishlist-section.spec.ts.
   WishlistSection:
     "нет в NAMED_SUBSECTIONS: в панели только схема и отступы (канон)",
+  // «Личный кабинет» и «Заказы»: в панели РОВНО ОДИН параметр — цветовая схема
+  // (канон, тестировщик 14.09). Именованных параметров с «глазом» у секций нет
+  // и не должно появиться; состав сторожат panel-canon + account-sections.spec.
+  AccountSection:
+    "нет в NAMED_SUBSECTIONS: в панели только цветовая схема (канон)",
+  OrdersSection:
+    "нет в NAMED_SUBSECTIONS: в панели только цветовая схема (канон)",
 };
 
 /**

@@ -31,7 +31,7 @@ import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { adaptLegacyProps, extractPageBlocks } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
-import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES } from '../themes/page-registry';
+import { getSystemPageRoute, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES } from '../themes/page-registry';
 import {
   assembleChrome,
   injectChromeIntoHtml,
@@ -264,6 +264,20 @@ export class PreviewController {
     const unifiedProduct = isProductPage && PRODUCT_UNIFIED_THEMES.has(bareThemeKey);
     const isCartPage = route === 'cart' || match?.id === 'page-cart';
     const unifiedCart = isCartPage && CART_UNIFIED_THEMES.has(bareThemeKey);
+    // Страницы аккаунта (14.09): «Личный кабинет» (/account/profile) и «Заказы»
+    // (/account/orders) получили собственные секции (AccountSection /
+    // OrdersSection) и обязаны рендериться секционным путём — иначе клик по
+    // превью не открывает панель (в блобе нет узлов data-puck-component-id), и
+    // «Цветовая схема» секции мертва. Ровно тот же приём, что unifiedCart.
+    // Маршрут остаётся verbatim для ХАБА /account и /account/order — гейт
+    // адресный, по конкретной странице.
+    const isAccountSectionPage =
+      route === 'account/profile' ||
+      route === 'account/orders' ||
+      match?.id === 'page-profile' ||
+      match?.id === 'page-orders';
+    const unifiedAccount =
+      isAccountSectionPage && ACCOUNT_SECTION_THEMES.has(bareThemeKey);
 
     // The product page's slug is `/product`, but the theme builds per-product
     // pages at <template>/products/<id>/index.html. Resolve to the first built
@@ -280,7 +294,8 @@ export class PreviewController {
     // на v2-пути для unified-тем (снимают complex-гейт).
     // Любой сбой v2-ветки ОБЯЗАН деградировать в блоб-путь, не в 500 —
     // отсюда try/catch-ремень вокруг всей ветки.
-    const isComplexRoute = isV2ComplexRoute(route) && !unifiedProduct && !unifiedCart;
+    const isComplexRoute =
+      isV2ComplexRoute(route) && !unifiedProduct && !unifiedCart && !unifiedAccount;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют

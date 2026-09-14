@@ -74,9 +74,9 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
   // манифесте, чтобы в конструкторе появился пункт меню.
   // Двенадцатая — «Избранное» (`/wishlist`, тестировщик 14.09): та же история —
   // витрина была, записи не было, поэтому секцию «Избранное» негде было настроить.
-  it('sees exactly twelve manifest pages including checkout-result, profile and wishlist', async () => {
+  it('sees exactly thirteen manifest pages including checkout-result, profile, wishlist and orders', async () => {
     const snap = await loadSatin();
-    expect(snap.pageSlugs).toHaveLength(12);
+    expect(snap.pageSlugs).toHaveLength(13);
     expect(snap.pageSlugs).toEqual(
       expect.arrayContaining([
         '/',
@@ -91,6 +91,7 @@ describe('loadThemeSourceSnapshot(satin) — pages & routing', () => {
         '/checkout-result',
         '/account/profile',
         '/wishlist',
+        '/account/orders',
       ]),
     );
     expect(snap.hasCheckoutResultPage).toBe(true);
@@ -244,10 +245,12 @@ describe('loadThemeSourceSnapshot(satin) — real validateBlock debt (ratcheted,
 });
 
 describe('loadThemeSourceSnapshot(satin) — generator registry & sections map', () => {
-  it('records twenty-five generator entries (distinct from manifest/sections-map)', async () => {
+  it('records twenty-seven generator entries (distinct from manifest/sections-map)', async () => {
     const snap = await loadSatin();
-    // Двадцать пятая — WishlistSection («Избранное», тело страницы /wishlist).
-    expect(snap.registry).toHaveLength(25);
+    // Двадцать пятая — WishlistSection («Избранное», тело страницы /wishlist);
+    // двадцать шестая и седьмая — AccountSection/OrdersSection (тела страниц
+    // /account/profile и /account/orders).
+    expect(snap.registry).toHaveLength(27);
     expect(snap.registry).toHaveLength(Object.keys(satinRegistry).length);
     // Catalog is a package block routed through src/components (assemble path).
     const catalog = snap.registry.find((r) => r.name === 'Catalog');
@@ -255,10 +258,11 @@ describe('loadThemeSourceSnapshot(satin) — generator registry & sections map',
     expect(catalog!.importPath).toBe('../components/Catalog.astro');
   });
 
-  it('records twenty-one sections-map entries, each proved by its OWN Satin renderer', async () => {
+  it('records twenty-three sections-map entries, each proved by its OWN Satin renderer', async () => {
     const snap = await loadSatin();
-    // Двадцать первая — WishlistSection: у satin собственный порт секции.
-    expect(snap.sectionsMap).toHaveLength(21);
+    // Двадцать первая — WishlistSection, двадцать вторая и третья —
+    // AccountSection/OrdersSection: у satin собственные порты секций.
+    expect(snap.sectionsMap).toHaveLength(23);
     // Each mapped block resolves to a Satin-owned compiled section module and is
     // reachable ONLY through that exact module (a base renderer cannot mask it).
     for (const rec of snap.sectionsMap) {
@@ -268,8 +272,9 @@ describe('loadThemeSourceSnapshot(satin) — generator registry & sections map',
       expect(rec.mappedRendererReachable).toBe(true);
       expect(rec.sourceExists).toBe(true);
     }
-    // The exact 21 canonical keys.
+    // The exact 23 canonical keys.
     expect(snap.sectionsMap.map((r) => r.name).sort()).toEqual([
+      'AccountSection',
       'CartBody',
       'CartSection',
       'CartSummary',
@@ -285,6 +290,7 @@ describe('loadThemeSourceSnapshot(satin) — generator registry & sections map',
       'MultiColumns',
       'MultiRows',
       'Newsletter',
+      'OrdersSection',
       'PopularProducts',
       'PromoBanner',
       'Publications',

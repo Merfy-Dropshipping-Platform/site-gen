@@ -116,7 +116,21 @@ export const PAGE_REGISTRY: readonly PageEntry[] = [
   // (`injectChromeIntoHtml`), что подтверждено замером превью vanilla QA.
   // На сборке страница пропускается как STATIC_TEMPLATE_PAGES ('account/profile'
   // уже в списке build.service) — генератор astro-страниц её не трогает.
+  //
+  // 14.09 (тестировщик): у страницы появилось собственное ТЕЛО — секция
+  // «Личный кабинет» (`AccountSection`, порт темы). Запись осталась verbatim
+  // НАМЕРЕННО: пересадка секций идёт не через `getContentPages()`, а точечным
+  // гейтом `ACCOUNT_SECTION_THEMES` (тем же приёмом, что `page-product` и
+  // `page-cart`). Сделай её content — и первый сегмент `account` исчез бы из
+  // `VERBATIM_FIRST_SEGMENTS`, а вместе с ним поехали бы хаб `/account` и
+  // `/account/order`, у которых страниц ревизии нет вовсе.
   { id: 'page-profile', route: 'account/profile', kind: 'verbatim', chrome: 'full' },
+  // Страница «Заказы» покупателя (`/account/orders`, пункт «Профиль → Заказы»).
+  // До 14.09 записи страницы не было: пункт меню открывал витрину в режиме
+  // просмотра (`storefront-view`), настроить там было нечего. Тело страницы —
+  // секция «Заказы» (`OrdersSection`, порт темы). Verbatim по той же причине,
+  // что page-profile (см. выше).
+  { id: 'page-orders', route: 'account/orders', kind: 'verbatim', chrome: 'full' },
   {
     id: 'page-checkout',
     route: 'checkout',
@@ -171,6 +185,30 @@ export const CART_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
 ]);
 
 /**
+ * Темы, чьи страницы аккаунта (`/account/profile`, `/account/orders`)
+ * рендерятся Puck-секциями `AccountSection` / `OrdersSection`, а не verbatim-
+ * телом порта темы. Зеркало `PRODUCT_UNIFIED_THEMES` / `CART_UNIFIED_THEMES`:
+ * страница остаётся verbatim-записью реестра, но `composeContentPagesIntoDist`
+ * и превью конструктора получают её через явный гейт.
+ *
+ * Зачем гейт, а не `kind:'content'`: первый сегмент `account` обязан остаться
+ * verbatim ради хаба `/account` и страницы одного заказа `/account/order` —
+ * у них нет ни записи страницы, ни блоков, и контентный путь отдал бы им
+ * чужое тело.
+ *
+ * Все пять тем: порт секции и шелл страницы есть у каждой (проверено
+ * `src/themes/__tests__/account-sections.spec.ts`). Откат темы = убрать её
+ * отсюда, страница снова берётся verbatim из dist.
+ */
+export const ACCOUNT_SECTION_THEMES: ReadonlySet<string> = new Set<string>([
+  'rose',
+  'vanilla',
+  'bloom',
+  'satin',
+  'flux',
+]);
+
+/**
  * Плоские verbatim-префиксы без собственной страницы-id (маршруты-исключения,
  * не «системные страницы»). Вместе с verbatim-записями реестра дают полное
  * множество прежнего V2_COMPLEX_ROUTE_PREFIXES.
@@ -180,7 +218,8 @@ export const VERBATIM_PREFIXES: ReadonlySet<string> = new Set([
   'auth',
   'blog',
   'legal',
-  // 'account' переехал в PAGE_REGISTRY (page-profile, route 'account/profile'):
+  // 'account' переехал в PAGE_REGISTRY (page-profile 'account/profile' и
+  // page-orders 'account/orders'):
   // у страницы появился пункт в конструкторе, а значит и запись с id. Первый
   // сегмент всё тот же 'account', поэтому isVerbatimRoute('account'),
   // ('account/orders'), ('account/order') отвечают как прежде — множество

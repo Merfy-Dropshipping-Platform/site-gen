@@ -69,6 +69,10 @@ export const bloomRegistry: Record<string, ComponentRegistryEntry> = {
   // «Избранное» — тело страницы /wishlist (та же механика, что корзина:
   // секция живёт только на своей странице, в палитру конструктора не выводится).
   WishlistSection: packageComponent("WishlistSection", "WishlistSection"),
+  // «Личный кабинет» (/account/profile) и «Заказы» (/account/orders) — та же
+  // механика: секция живёт только на своей странице, в палитру не выводится.
+  AccountSection: packageComponent("AccountSection", "AccountSection"),
+  OrdersSection: packageComponent("OrdersSection", "OrdersSection"),
   CartBody: packageComponent("CartBody", "CartBody"),
   CartSummary: packageComponent("CartSummary", "CartSummary"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),

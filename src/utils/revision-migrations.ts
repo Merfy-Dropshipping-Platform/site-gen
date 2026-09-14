@@ -2078,6 +2078,117 @@ function seedWishlistPage(out: Record<string, unknown>): Record<string, unknown>
   return { ...out, pages: newPages, pagesData: newPagesData };
 }
 
+/**
+ * Страницы аккаунта получают собственное ТЕЛО — секции «Личный кабинет» и
+ * «Заказы» (тестировщик 14.09, дословно: «Для страницы заказы <…> создать
+ * исключительно там секцию Заказы <…> Для страницы личный кабинет <…> секцию
+ * Личный кабинет»).
+ *
+ * Почему это ОТДЕЛЬНЫЙ шаг, а не правка `seedProfilePage`. Тот идемпотентен по
+ * СТРАНИЦЕ: у живых сайтов `page-profile` уже создан (и создан пустым — ровно
+ * [Header, Footer], тела у страницы тогда не было), поэтому он выходит по
+ * первой же проверке и секцию туда никогда не положит. Досев тела — здесь.
+ *
+ * Что делает, по шагам:
+ *   1. заводит страницу `page-orders` (`/account/orders`), если её нет: до
+ *      14.09 записи страницы не существовало ни у одной темы — пункт меню
+ *      «Профиль → Заказы» открывал витрину в режиме просмотра;
+ *   2. кладёт `AccountSection` в `page-profile`, если её там нет;
+ *   3. кладёт `OrdersSection` в `page-orders`, если её там нет.
+ *
+ * Идемпотентность — по НАЛИЧИЮ БЛОКА, а не по факту прогона. Скрыть секцию
+ * мерчант может (`props.hidden`), и блок при этом остаётся в контенте — сидер
+ * его видит и проходит мимо, не дублируя и не «открывая» обратно. Удалить
+ * секцию через конструктор нельзя (она в NON_DELETABLE), поэтому её отсутствие
+ * означает ровно одно: досева ещё не было.
+ *
+ * Вставка — ПЕРЕД подвалом (и после шапки), чтобы порядок совпадал с сидом
+ * темы `packages/theme-<t>/pages/{profile,orders}.json`.
+ */
+function seedAccountPageSections(
+  out: Record<string, unknown>,
+): Record<string, unknown> {
+  // Пустая ревизия (без pagesData вовсе) — не сайт, а заглушка: у новых сайтов
+  // страницы приходят из манифеста темы. Не создаём pagesData на ровном месте,
+  // иначе `migrateRevisionData({})` перестаёт быть тождественным преобразованием.
+  if (!out.pagesData || typeof out.pagesData !== 'object') return out;
+
+  let pagesData = out.pagesData as Record<string, unknown>;
+  let pages = Array.isArray(out.pages)
+    ? (out.pages as Array<Record<string, unknown>>)
+    : [];
+  let changed = false;
+  const ts = Date.now();
+
+  // ── 1. Страница «Заказы» ────────────────────────────────────────────────
+  const ordersHasMeta = pages.some(
+    (p) =>
+      p?.id === 'page-orders' ||
+      String(p?.slug ?? '').replace(/^\/+|\/+$/g, '') === 'account/orders',
+  );
+  if (!ordersHasMeta) {
+    pages = [
+      ...pages,
+      {
+        id: 'page-orders',
+        name: 'Заказы',
+        slug: '/account/orders',
+        role: 'system',
+        contentFile: 'pages/orders.json',
+      },
+    ];
+    changed = true;
+  }
+  if (!pagesData['page-orders']) {
+    const chrome = getHomeChrome(pagesData);
+    pagesData = {
+      ...pagesData,
+      'page-orders': {
+        // Свои id — Puck ломается на дубликатах между страницами.
+        content: [
+          {
+            ...chrome.headerBlock,
+            props: { ...(chrome.headerBlock.props ?? {}), id: `Header-orders-${ts}` },
+          },
+          {
+            ...chrome.footerBlock,
+            props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-orders-${ts}` },
+          },
+        ],
+        root: { props: { meta: { title: 'Мои заказы' } } },
+        zones: {},
+      } as PageData,
+    };
+    changed = true;
+  }
+
+  // ── 2-3. Тело страниц: секция перед подвалом ────────────────────────────
+  const BODIES: Array<{ pageId: string; block: string }> = [
+    { pageId: 'page-profile', block: 'AccountSection' },
+    { pageId: 'page-orders', block: 'OrdersSection' },
+  ];
+  for (const { pageId, block } of BODIES) {
+    const pd = pagesData[pageId] as PageData | undefined;
+    if (!pd || !Array.isArray(pd.content)) continue;
+    const content = pd.content as Block[];
+    if (content.some((b) => b?.type === block)) continue;
+    const section: Block = {
+      type: block,
+      props: { id: `${block}-${ts}`, colorScheme: 2 },
+    };
+    const footerIdx = content.findIndex((b) => b?.type === 'Footer');
+    const next =
+      footerIdx === -1
+        ? [...content, section]
+        : [...content.slice(0, footerIdx), section, ...content.slice(footerIdx)];
+    pagesData = { ...pagesData, [pageId]: { ...(pd as object), content: next } };
+    changed = true;
+  }
+
+  if (!changed) return out;
+  return { ...out, pages, pagesData };
+}
+
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
@@ -2147,13 +2258,19 @@ export function migrateRevisionData(
   // «Избранное» — для всех тем (порт секции и шелл страницы есть у всех пяти).
   const withWishlist = seedWishlistPage(withProfile);
 
+  // Тело страниц аккаунта: секции «Личный кабинет» и «Заказы» + сама страница
+  // «Заказы». СТРОГО после seedProfilePage — тот создаёт page-profile новым
+  // сайтам, а этот кладёт в неё секцию (в том числе тем, у кого страница уже
+  // была создана пустой).
+  const withAccount = seedAccountPageSections(withWishlist);
+
   // Пункт 13 — шапка = шапка главной. САМОЙ ПОСЛЕДНЕЙ: все сидеры выше уже
   // создали свои страницы (catalog/product/cart/checkout/collection/
   // checkout-result), значит унификация накрывает и их тоже.
-  if (withWishlist.pagesData && typeof withWishlist.pagesData === 'object') {
-    withWishlist.pagesData = unifyHeaderWithHome(
-      withWishlist.pagesData as Record<string, unknown>,
+  if (withAccount.pagesData && typeof withAccount.pagesData === 'object') {
+    withAccount.pagesData = unifyHeaderWithHome(
+      withAccount.pagesData as Record<string, unknown>,
     );
   }
-  return withWishlist;
+  return withAccount;
 }

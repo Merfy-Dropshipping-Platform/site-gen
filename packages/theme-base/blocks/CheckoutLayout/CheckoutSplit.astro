@@ -1,16 +1,22 @@
 ---
 /**
  * Две колонки чекаута: форма и сводка. Общий компонент для пяти тем —
- * см. `checkout-split.ts` (там же контракт data-атрибутов и история п.4).
+ * см. `checkout-split.ts` (там же контракт data-атрибутов и история кругов).
  *
  * Тема отдаёт содержимое слотами; поверхность, ширины, липкость и цвета —
  * здесь, одинаковые для всех. Цветовую схему на колонку вешает сборка
  * (chrome-assembler), поэтому в шаблоне её нет.
  *
- * Слот `header` — шапка оформления (логотип). По эталону владельца она стоит
- * ВНУТРИ левой колонки, а не полосой над обеими: иначе над цветной колонкой
- * сводки остаётся белая полоса (замер «до»: 132-134px у всех пяти тем).
- * Слот не обязателен: без него разметка ровно прежняя.
+ * Слот `header` — шапка оформления. Владелец, 14.09, п.3: «отделить от левой и
+ * правой части и придать свои размеры», поэтому она идёт ОТДЕЛЬНОЙ полосой над
+ * строкой колонок, а не внутри левой колонки (так было в третьем круге).
+ * Слот не обязателен: без него полосы нет, разметка — только строка колонок.
+ *
+ * Обёртки содержимого у колонок разные, и это намеренно:
+ *   форма  — `[data-checkout-column="form"]` на обёртке, меру держат под-секции;
+ *   сводка — обёртка меры не держит вовсе, `[data-checkout-column="summary"]`
+ *            живёт ВНУТРИ секции «Сводка заказа» (CheckoutSummary.astro), иначе
+ *            секция не могла бы занимать колонку целиком (п.2 четвёртого круга).
  */
 import { CHECKOUT_SPLIT_CSS } from './checkout-split';
 
@@ -18,18 +24,21 @@ const hasBrand = Astro.slots.has('header');
 ---
 
 <div class="mfy-checkout-split">
-  <div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-pane="form">
-    <div
-      class:list={['mfy-checkout-pane__inner', hasBrand && 'mfy-checkout-pane__inner--brand']}
-      data-checkout-column="form"
-    >
+  {hasBrand && (
+    <div class="mfy-checkout-topbar" data-checkout-topbar>
       <slot name="header" />
-      <slot name="form" />
     </div>
-  </div>
-  <div class="mfy-checkout-pane mfy-checkout-pane--summary" data-checkout-pane="summary">
-    <div class="mfy-checkout-pane__inner" data-checkout-column="summary">
-      <slot name="summary" />
+  )}
+  <div class="mfy-checkout-cols" data-checkout-cols>
+    <div class="mfy-checkout-pane mfy-checkout-pane--form" data-checkout-pane="form">
+      <div class="mfy-checkout-pane__inner" data-checkout-column="form">
+        <slot name="form" />
+      </div>
+    </div>
+    <div class="mfy-checkout-pane mfy-checkout-pane--summary" data-checkout-pane="summary">
+      <div class="mfy-checkout-pane__inner">
+        <slot name="summary" />
+      </div>
     </div>
   </div>
 </div>

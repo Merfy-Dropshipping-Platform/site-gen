@@ -623,6 +623,10 @@ export async function unifyChromeInDist(
   // брали из одного места и вкладка «Оформление заказа» совпадала с витриной.
   const formBlock = checkoutBlockIdentity(pagesData, 'CheckoutForm');
   const summaryBlock = checkoutBlockIdentity(pagesData, 'CheckoutSummary');
+  // Узел «Подвал» страницы чекаута — блок Footer ревизии. Рисовать ему нечего
+  // (полосу копирайта владелец снял 14.09), но его «Цветовая схема» и id теперь
+  // адресуют юр.инфу — п.1 владельца «присвоить к юр инфе».
+  const footerBlock = checkoutBlockIdentity(pagesData, 'Footer');
 
   for (const file of await listIndexHtmlFiles(ctx.distDir)) {
     const route = distRoute(ctx.distDir, file);
@@ -646,6 +650,7 @@ export async function unifyChromeInDist(
       next = injectCheckoutChromeIntoHtml(next, chrome, {
         form: formBlock,
         summary: summaryBlock,
+        footer: footerBlock,
       });
       if (next !== html) {
         await fs.writeFile(file, next, 'utf8');

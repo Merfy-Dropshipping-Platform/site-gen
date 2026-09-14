@@ -1097,16 +1097,13 @@ async function loadThemeCss(themeId: string | null): Promise<string> {
  * самое «пятно», от которого ушли. Поэтому секция внутри колонки чекаута
  * заменяется разметкой как есть.
  *
- * Что при этом делает класс схемы на самой КОЛОНКЕ:
- *   summary — красится целиком (эталон владельца: сплошной цвет до низа окна и
- *             до правого края). Схема снята → класс снимаем;
- *   form    — НЕ красится. Уточнение владельца после третьего круга: «левая
- *             часть от нас. Там только меняется цвет кнопки и юр инфа цвет».
- *             Класс схемы с левой колонки снимаем ВСЕГДА (иначе ревизия,
- *             сохранённая до этой правки, оставила бы колонку залитой до
- *             перезагрузки), а цвет кнопки приезжает уже внутри свежего HTML
- *             секции: `/preview/block` рендерит CheckoutForm с пропсами, и
- *             класс схемы печатается на корне «Кнопки оплаты».
+ * Что при этом делает класс схемы на самой КОЛОНКЕ: красит её целиком —
+ * сплошной цвет до низа окна и до края экрана, текст из той же схемы. ОБЕ
+ * колонки: третий круг выключал покраску левой («левая часть от нас»), но
+ * держалось это на том, что секция «Оформление заказа» была карточкой 394px по
+ * центру колонки; прошлый круг отдал секции всю колонку, и владелец 14.09
+ * вернулся с п.5 «к секции Оформление закаказа не применяется никакая цветовая
+ * схема». Схема снята → класс и признак снимаем.
  *
  * Зеркало первичного рендера — chrome-assembler.injectCheckoutChromeIntoHtml.
  */
@@ -1115,15 +1112,26 @@ function applyCheckoutColumnScheme(el, schemeId) {
   if (!el || typeof el.closest !== 'function') return null;
   var pane = el.closest('[data-checkout-pane]');
   if (!pane) return null;
-  var paints = pane.getAttribute('data-checkout-pane') === 'summary';
   var next = [];
   var classes = String(pane.className || '').split(/\\s+/);
   for (var i = 0; i < classes.length; i++) {
     if (classes[i] && !/^color-scheme-\\d+$/.test(classes[i])) next.push(classes[i]);
   }
-  if (schemeId && paints) next.push('color-scheme-' + schemeId);
+  if (schemeId) next.push('color-scheme-' + schemeId);
   pane.className = next.join(' ');
   return pane;
+}
+function applyCheckoutTermsScheme(el, schemeId) {
+  if (!el || typeof el.getAttribute !== 'function') return null;
+  if (el.getAttribute('data-block') !== 'checkout-terms') return null;
+  var next = [];
+  var classes = String(el.className || '').split(/\\s+/);
+  for (var i = 0; i < classes.length; i++) {
+    if (classes[i] && !/^color-scheme-\\d+$/.test(classes[i])) next.push(classes[i]);
+  }
+  if (schemeId) next.push('color-scheme-' + schemeId);
+  el.className = next.join(' ');
+  return el;
 }
 `;
 
@@ -2344,6 +2352,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
           // после перезагрузки. Схема правой колонки едет на саму колонку,
           // схема левой — только на кнопку внутри свежего HTML секции
           // (см. PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE).
+          // «Подвал» страницы чекаута управляет ЮР.ИНФОЙ (владелец, 14.09,
+          // п.1): его id доводка ставит на блок условий. Рендерить сюда ответ
+          // /preview/block НЕЛЬЗЯ — по типу узла это Footer, и в колонку формы
+          // приехал бы подвал витрины с «Powered by Merfy», то есть ровно
+          // баг 18-А, только через горячую правку. Меняем один класс схемы,
+          // как у колонок; остальные поля «Подвала» на чекауте не рисуются
+          // вовсе (страница собрана без него).
+          if (applyCheckoutTermsScheme(el, newSchemeId)) {
+            LAST_PROPS[blockId] = newProps;
+            LAST_TYPES[blockId] = blockType;
+            return;
+          }
           var checkoutPane = applyCheckoutColumnScheme(el, newSchemeId);
           if (checkoutPane) {
             el.outerHTML = html;

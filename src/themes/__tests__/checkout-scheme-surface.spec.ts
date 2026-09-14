@@ -10,9 +10,10 @@
  *     цвет от верха до низа окна и до правого края, текст из той же схемы.
  *     Это прошлый круг, он в силе и НЕ трогается.
  *   ЛЕВАЯ колонка — фон ТЕМЫ (палитра страницы чекаута). Из схемы «Оформления
- *     заказа» она берёт РОВНО один элемент — кнопку оформления. Второй
- *     «схемный» элемент низа — правовая полоса, у неё своя схема (секция
- *     «Подвал» страницы чекаута).
+ *     заказа» она берёт РОВНО один элемент — кнопку оформления. Второго
+ *     «схемного» элемента внизу больше нет: правовую полосу с копирайтом
+ *     владелец снял 14.09 («УДАЛИТЬ В ЧЕКАУТЕ»), см.
+ *     checkout-footer-legal.spec.ts.
  *
  * Замер снятия заливки — собранные витрины пяти тем, Chromium, 1440×900 и
  * 390×844, корзина 1/3/30, 13-14.09. Колонка формы 0..720:
@@ -23,19 +24,17 @@
  *   bloom     scheme-3 255,255,255 / scheme-1 207,122,139 255,255,255
  *   vanilla   scheme-3 238,238,238 / scheme-4 255,255,255 58,69,48
  * «ПОСЛЕ» = значение при НЕ выбранной схеме, то есть картина до cb182717.
- * Правая колонка в обоих замерах одинакова; кнопка и правовая полоса цвета
- * схемы не потеряли.
+ * Правая колонка в обоих замерах одинакова; кнопка цвета схемы не потеряла.
  *
  * Проверяем ровно это: схема сводки — на колонке; схема формы — на кнопке, и
- * ни на колонке, ни на секции формы; полоса красится своей схемой; разметка и
- * стили одни на пять тем и на превью.
+ * ни на колонке, ни на секции формы; разметка и стили одни на пять тем и на
+ * превью.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import {
-  checkoutFooterScheme,
   injectCheckoutChromeIntoHtml,
   patchCheckoutColumnScheme,
 } from '../chrome-assembler';
@@ -332,46 +331,6 @@ describe('превью конструктора = витрина', () => {
     it('вне колонок чекаута агент не вмешивается', () => {
       expect(applyCheckoutColumnScheme({ closest: () => null }, '4')).toBeNull();
     });
-  });
-});
-
-// ── 5. Подвал чекаута реагирует на свою «Цветовую схему» ───────────────────
-
-describe('правовая полоса чекаута — своя схема', () => {
-  it('класс схемы печатается на корне полосы', () => {
-    const html = renderBaseBlock('CheckoutFooterStrip', {
-      siteTitle: 'Магазин',
-      colorScheme: 'scheme-3',
-    });
-    expect(html).toMatch(/<footer[^>]*class="[^"]*color-scheme-3/);
-  });
-
-  it('число (живая нормализация) тоже красит', () => {
-    const html = renderBaseBlock('CheckoutFooterStrip', { siteTitle: 'Магазин', colorScheme: 3 });
-    expect(html).toMatch(/<footer[^>]*class="[^"]*color-scheme-3/);
-  });
-
-  it('САБОТАЖ: без схемы класса нет', () => {
-    const html = renderBaseBlock('CheckoutFooterStrip', { siteTitle: 'Магазин' });
-    expect(html).not.toMatch(/color-scheme-\d/);
-  });
-
-  it('сборка берёт схему у секции «Подвал» страницы чекаута', () => {
-    const pagesData = {
-      home: { content: [{ type: 'Footer', props: { id: 'F-home', colorScheme: 'scheme-1' } }] },
-      'page-checkout': {
-        content: [{ type: 'Footer', props: { id: 'F-checkout', colorScheme: 'scheme-5' } }],
-      },
-    };
-    expect(checkoutFooterScheme(pagesData)).toBe('scheme-5');
-  });
-
-  it('нет своей секции — берём схему подвала главной', () => {
-    const pagesData = {
-      home: { content: [{ type: 'Footer', props: { id: 'F-home', colorScheme: 'scheme-1' } }] },
-      'page-checkout': { content: [] },
-    };
-    expect(checkoutFooterScheme(pagesData)).toBe('scheme-1');
   });
 });
 

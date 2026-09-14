@@ -34,9 +34,10 @@ export interface AssembledChrome {
   /** renderBlock('Header'|'CheckoutHeader', props) | null (пусто → не подменять). */
   headerHtml: string | null;
   /**
-   * renderBlock('Footer'|'CheckoutFooterStrip', props) | null (пусто → не
-   * подменять). У чекаута это правовая полоса (`CheckoutFooterStrip`), у
-   * остальных страниц — обычный подвал магазина.
+   * renderBlock('Footer', props) | null (пусто → не подменять) — обычный подвал
+   * магазина. У чекаута ВСЕГДА null: подвала на странице оформления нет
+   * (просьба владельца 14.09, см. ветку `chrome === 'checkout'`), а сам подвал
+   * со страницы снимает `injectCheckoutChromeIntoHtml`.
    */
   footerHtml: string | null;
 }
@@ -191,43 +192,33 @@ export async function assembleChrome(
 
   if (chrome === 'checkout') {
     const checkoutProps = buildCheckoutHeaderProps(pagesData);
-    // Подвал чекаута — ПРАВОВОЙ, а не маркетинговый (баг-репорт 18-А: «убрать
-    // подвал, где идёт "Powered by merfy"; ожидаемый результат — юридическая
-    // информация, ссылки»). Ссылки берём там же, где их берёт обычный подвал:
-    // `applyFooterData` кладёт заполненные политики магазина (site_policy:
-    // refund/privacy/tos/shipping) в `Footer.props.informationColumn.links`
-    // ревизии — и в сборке витрины, и в превью конструктора. Значит чекаут
-    // ничего не выдумывает, не ходит в БД отдельно и не может разойтись с
-    // подвалом остальных страниц.
-    const homeFooterProps = findBlockProps(pagesData['home'], 'Footer') ?? {};
-    const infoColumn = homeFooterProps['informationColumn'] as
-      | { links?: unknown }
-      | undefined;
-    const legalLinks = Array.isArray(infoColumn?.links) ? infoColumn.links : [];
-    const [headerHtml, footerHtml] = await Promise.all([
-      renderChromeBlock(
-        renderBlock,
-        'CheckoutHeader',
-        checkoutProps,
-        theme,
-        isPreview,
-      ),
-      renderChromeBlock(
-        renderBlock,
-        'CheckoutFooterStrip',
-        {
-          siteTitle: checkoutProps['siteTitle'],
-          links: legalLinks,
-          // «Цветовая схема» секции «Подвал» страницы чекаута. Контрол в панели
-          // есть, а полоса красилась токенами страницы — выбор не делал ничего
-          // (п.4 третьего круга: «очень плохо работают цветовые схемы»).
-          colorScheme: checkoutFooterScheme(pagesData),
-        },
-        theme,
-        isPreview,
-      ),
-    ]);
-    return { headerHtml, footerHtml };
+    // ПОДВАЛА НА ЧЕКАУТЕ НЕТ — ни витринного, ни правовой полосы.
+    //
+    // Просьба владельца 14.09: «УДАЛИТЬ В ЧЕКАУТЕ», показано на чёрную полосу
+    // «© 2026 Rose. Все права защищены.» внизу страницы оформления. Тем же
+    // сообщением он показал, что подвалом чекаута считает блок условий под
+    // кнопкой оплаты («вот Подвал в чекауте» → CheckoutTerms: Условия
+    // обслуживания / Политика конфиденциальности / Политика использования
+    // файлов cookie). Замер на пяти собранных витринах (Chromium, 1440×900,
+    // 14.09): три ссылки /legal/* в блоке условий у КАЖДОЙ темы — то есть
+    // правовая информация со снятием полосы не теряется.
+    //
+    // Прошлый круг (баг-репорт 18-А) полосу, наоборот, ЗАВОДИЛ: она заменяла
+    // подвал витрины с «Powered by Merfy». Снятие подвала никуда не делось —
+    // оно переехало в `injectCheckoutChromeIntoHtml`, и теперь безусловное:
+    // раньше подвал витрины убирался только вместе с подстановкой полосы, и
+    // без неё старый шелл снова показал бы «Powered by Merfy».
+    //
+    // `footerHtml: null` здесь означает «подвала быть не должно», а не «рендер
+    // пустой»: сборщик витрины по нему больше ничего не решает.
+    const headerHtml = await renderChromeBlock(
+      renderBlock,
+      'CheckoutHeader',
+      checkoutProps,
+      theme,
+      isPreview,
+    );
+    return { headerHtml, footerHtml: null };
   }
 
   // chrome === 'full'
@@ -521,9 +512,10 @@ export interface CheckoutBlockSchemes {
  * подтягивался, а цветовые схемы секций ничего не меняли. Теперь оба пути
  * зовут эту функцию, и превью = live по построению.
  *
- * Обычный подвал страницы не трогаем — у чекаута свой, правовая полоса
- * `CheckoutFooterStrip` (баг-репорт 18-А), и подменяем именно её, а не
- * последний `<footer>` документа. Идемпотентна.
+ * Подвал со страницы СНИМАЕТСЯ целиком (`stripCheckoutFooter`): на чекауте его
+ * не должно быть ни в каком виде — просьба владельца 14.09 «УДАЛИТЬ В ЧЕКАУТЕ»
+ * про чёрную полосу копирайта, и продолжение бага 18-А про подвал витрины.
+ * Идемпотентна.
  */
 export function injectCheckoutChromeIntoHtml(
   html: string,
@@ -545,71 +537,49 @@ export function injectCheckoutChromeIntoHtml(
   // Поэтому ни колонку (`patchCheckoutColumnScheme(…, 'form')`), ни секцию
   // формы (`checkout-form` — её корень несёт `bg-[rgb(var(--color-bg))]` и
   // покрасился бы «пятном») мы схемой больше не трогаем: их фон = фон темы.
-  // Второй элемент, правовая полоса, красится своей схемой — секции «Подвал»
-  // страницы чекаута (`checkoutFooterScheme` → CheckoutFooterStrip).
+  // Второго «схемного» элемента внизу колонки больше нет: правовую полосу с
+  // копирайтом владелец снял 14.09 («УДАЛИТЬ В ЧЕКАУТЕ»). Узел «Подвал» в
+  // дереве конструктора остаётся (состав панели — канон), но его «Цветовая
+  // схема» на чекауте теперь ничего не красит — как и у «Шапки оформления»,
+  // палитру которой перекрывает колонка.
   out = patchCheckoutBlockScheme(out, 'checkout-submit', blocks.form?.scheme);
   out = patchCheckoutBlockId(out, 'checkout-form', blocks.form?.id);
   out = patchCheckoutBlockId(out, 'checkout-summary', blocks.summary?.id);
-  if (chrome.footerHtml) out = replaceCheckoutFooterStrip(out, chrome.footerHtml);
+  // Подвала на чекауте нет вообще (см. ветку `chrome === 'checkout'` выше).
+  // Снятие БЕЗУСЛОВНОЕ и не зависит от `chrome.footerHtml`: иначе старый
+  // собранный шелл, который ещё несёт подвал витрины, снова показал бы
+  // «Powered by Merfy» — ровно возврат бага 18-А.
+  out = stripCheckoutFooter(out);
   return out;
 }
 
 /**
- * Подвал страницы оформления заказа = правовая полоса, и только она.
+ * На странице оформления заказа подвала нет — ни правовой полосы, ни подвала
+ * витрины. Инвариант простой: `<footer>` на чекауте не бывает.
  *
- * Обёртку схемы вокруг полосы (темы кладут `<div class="color-scheme-2">`) не
- * трогаем. Идемпотентно: совпало с целевым — no-op.
+ * Просьба владельца 14.09: «УДАЛИТЬ В ЧЕКАУТЕ» — показано на чёрную полосу
+ * «© 2026 Rose. Все права защищены.». Правовая информация страницы оплаты
+ * живёт в блоке условий под кнопкой («вот Подвал в чекауте» → CheckoutTerms).
  *
- * Три случая, и раньше обрабатывался только первый:
+ * Снимаем ОБА вида подвала, потому что в проде встречаются оба:
  *
- *  1. в шелле уже стоит полоса → подменяем собранной;
- *  2. в шелле стоит ПОДВАЛ ВИТРИНЫ → заменяем его полосой;
- *  3. подвала нет вовсе → дописываем полосу перед `</body>`.
+ *  1. правовая полоса `data-checkout-footer-strip` — её несут шеллы, собранные
+ *     между 13.09 и 14.09;
+ *  2. подвал витрины (`<footer>` с колонками навигации, телефоном, иконками
+ *     оплаты и «Powered by Merfy») — его несут шеллы старше гейта
+ *     `header !== "checkout"` в Layout темы. Это и был баг-репорт 18-А, и он
+ *     вернулся бы, если бы снятие зависело от того, собралась ли замена:
+ *     прежний код умел только ПОДМЕНИТЬ подвал полосой, поэтому без полосы
+ *     молча оставлял всё как есть.
  *
- * Случай 2 — причина возврата бага «во вкладке Оформление заказа убрать подвал,
- * где идёт Powered by merfy». Прежний код на отсутствие полосы делал
- * `return html`, то есть МОЛЧА ничего: подменить полосу на полосу он умел, а
- * убрать подвал витрины — нет. Любой сайт, чей собранный шелл чекаута ещё нёс
- * подвал витрины (сборка темы старше гейта `header !== "checkout"` в Layout),
- * показывал колонки навигации, телефон, иконки оплаты и «Powered by Merfy» —
- * и на витрине, и в превью конструктора: обе стороны зовут эту функцию.
- * Замер на main (jest, 2026-09-14): шелл с `<footer data-nt="rose-footer">`
- * возвращался байт-в-байт, «Powered by» — 1, `<ul>` — 1, полосы нет.
- *
- * Случай 3 — прежний симптом flux («подвала на чекауте не было ВООБЩЕ»):
- * покупатель на шаге оплаты оставался без оферты и копирайта. Дописываем,
- * только если полосы нет нигде, поэтому повторный прогон — no-op.
- *
- * Других `<footer>` на чекауте не бывает: блоки `Checkout*` элемент `<footer>`
- * не рендерят (проверено по исходникам и по пяти живым витринам — ровно один
- * `<footer>` на странице), поэтому «последний `<footer>`» здесь однозначен.
+ * Функция идемпотентна по построению: второй прогон уже ничего не находит.
+ * Своих `<footer>` блоки чекаута и корзины не рендерят — проверено по всем
+ * исходникам packages/theme-base/blocks/Checkout… и Cart…: ни одного тега
+ * `<footer>`. Поэтому «убрать все» здесь однозначно и ничего чужого не
+ * задевает.
  */
-function replaceCheckoutFooterStrip(html: string, target: string): string {
-  const re = /<footer\b[^>]*\bdata-checkout-footer-strip[^>]*>[\s\S]*?<\/footer>/i;
-  const m = re.exec(html);
-  if (m) {
-    if (m[0] === target) return html;
-    return html.slice(0, m.index) + target + html.slice(m.index + m[0].length);
-  }
-
-  // Полосы нет. Подвал витрины на чекауте телом страницы не является —
-  // заменяем его целиком (а не дописываем полосу рядом: иначе внизу останутся
-  // и колонки навигации, и «Powered by Merfy»).
-  const closeIdx = html.lastIndexOf('</footer>');
-  if (closeIdx !== -1) {
-    const openIdx = html.lastIndexOf('<footer', closeIdx);
-    if (openIdx !== -1) {
-      return (
-        html.slice(0, openIdx) + target + html.slice(closeIdx + '</footer>'.length)
-      );
-    }
-  }
-
-  // Подвала нет вообще → полоса обязана появиться (правовая строка не
-  // опциональна), перед закрытием <body>.
-  const bodyIdx = html.lastIndexOf('</body>');
-  if (bodyIdx === -1) return html + target;
-  return html.slice(0, bodyIdx) + target + html.slice(bodyIdx);
+function stripCheckoutFooter(html: string): string {
+  return html.replace(/<footer\b[^>]*>[\s\S]*?<\/footer>/gi, '');
 }
 
 /**
@@ -628,25 +598,6 @@ export function checkoutBlockIdentity(
     findBlockProps(pagesData['checkout'], blockType) ??
     {}) as Record<string, unknown>;
   return { id: props['id'], scheme: props['colorScheme'] };
-}
-
-/**
- * «Цветовая схема» секции «Подвал» страницы чекаута. Ключ страницы разнится по
- * возрасту сайта (`page-checkout` / `checkout`), поэтому смотрим оба — как и
- * `checkoutBlockIdentity`. Нет своей секции (старый сид) → схема подвала
- * главной, чтобы полоса не выпадала из палитры магазина.
- */
-export function checkoutFooterScheme(
-  pagesData: Record<string, unknown>,
-): unknown {
-  const own =
-    findBlockProps(pagesData['page-checkout'], 'Footer') ??
-    findBlockProps(pagesData['checkout'], 'Footer');
-  const props = (own ?? findBlockProps(pagesData['home'], 'Footer') ?? {}) as Record<
-    string,
-    unknown
-  >;
-  return props['colorScheme'];
 }
 
 /** «Цветовая схема» секции чекаута из ревизии (узкая обёртка над identity). */

@@ -180,8 +180,12 @@ describe.each(THEMES)('тема %s: шапки над колонками нет'
     expect(page).toMatch(/<CheckoutHeader[^>]*slot="header"/s);
   });
 
-  it('правовая полоса подвала осталась (баг 18-А не откатывается)', () => {
-    expect(layout).toMatch(/<CheckoutFooterStrip\b/);
+  it('подвала на чекауте нет вообще (владелец, 14.09)', () => {
+    // Прошлая версия проверки требовала обратного — что правовая полоса
+    // осталась (баг 18-А). 14.09 владелец её снял: «УДАЛИТЬ В ЧЕКАУТЕ».
+    // Правило целиком и цена возврата — checkout-footer-legal.spec.ts.
+    expect(layout).not.toMatch(/<CheckoutFooterStrip\b/);
+    expect(layout).not.toContain('CheckoutFooterStrip');
   });
 });
 

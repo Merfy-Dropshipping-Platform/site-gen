@@ -73,6 +73,7 @@
     "test:variant-overlap": "jest --runInBand src/themes/__tests__/product-variant-list-overlap.spec.ts",
     "test:collection-card": "jest --runInBand src/themes/__tests__/collection-card-settings.spec.ts",
     "test:catalog-scheme": "jest --runInBand src/themes/__tests__/catalog-single-scheme.spec.ts",
+    "test:catalog-filters-mobile": "jest --runInBand src/themes/__tests__/catalog-filters-mobile.spec.ts",
     "test:flux-edge-veil": "jest --runInBand src/themes/__tests__/flux-section-edge-veil.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
     "test:product-description": "jest --runInBand src/themes/__tests__/product-description-heading.spec.ts",

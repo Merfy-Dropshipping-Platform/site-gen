@@ -49,6 +49,9 @@ export const fluxRegistry: Record<string, ComponentRegistryEntry> = {
   // «Промежуточный итог» (сводка). CartSection остаётся легаси-алиасом для
   // ревизий, которые ещё не прошли migrateCartPage.
   CartSection: packageComponent("CartSection", "CartSection"),
+  // «Избранное» — тело страницы /wishlist (та же механика, что корзина:
+  // секция живёт только на своей странице, в палитру конструктора не выводится).
+  WishlistSection: packageComponent("WishlistSection", "WishlistSection"),
   CartBody: packageComponent("CartBody", "CartBody"),
   CartSummary: packageComponent("CartSummary", "CartSummary"),
   CheckoutSection: packageComponent("CheckoutSection", "CheckoutSection"),

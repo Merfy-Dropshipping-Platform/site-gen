@@ -37,6 +37,10 @@ export const THEME_PUCK_BASE_BLOCK_NAMES: readonly string[] = [
   // Page (Страница) — embed-карточка ссылки на другую страницу магазина (Figma 314-35117).
   "Page",
   "CartSection",
+  // Тело страницы «Избранное» (/wishlist). В палитру конструктора НЕ выведен
+  // (ComponentPicker.PUPA_BLOCK_ALLOWLIST) — секция живёт только на своей
+  // странице, как CartSection.
+  "WishlistSection",
   "CheckoutSection",
   // Cart page Puck-driven sections
   "CartBody",

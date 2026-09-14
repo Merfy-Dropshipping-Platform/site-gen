@@ -63,6 +63,9 @@ export const satinRegistry: Record<string, ComponentRegistryEntry> = {
   // «Промежуточный итог» (сводка). CartSection остаётся легаси-алиасом для
   // ревизий, которые ещё не прошли migrateCartPage.
   CartSection: staticComponent("CartSection", "CartSection.astro"),
+  // «Избранное» — тело страницы /wishlist (та же механика, что корзина:
+  // секция живёт только на своей странице, в палитру конструктора не выводится).
+  WishlistSection: staticComponent("WishlistSection", "WishlistSection.astro"),
   CartBody: staticComponent("CartBody", "CartBody.astro"),
   CartSummary: staticComponent("CartSummary", "CartSummary.astro"),
   CheckoutSection: staticComponent("CheckoutSection", "CheckoutSection.astro"),

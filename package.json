@@ -55,6 +55,7 @@
     "test:gallery-count": "jest --runInBand src/themes/__tests__/gallery-item-count.spec.ts",
     "test:promo-banner-panel": "jest --runInBand src/themes/__tests__/promo-banner-panel.spec.ts",
     "test:panel-canon": "jest --runInBand src/themes/__tests__/panel-canon.spec.ts",
+    "test:wishlist-section": "jest --runInBand src/themes/__tests__/wishlist-section.spec.ts",
     "test:slide-panel": "jest --runInBand src/themes/__tests__/slideshow-slide-panel.spec.ts src/themes/__tests__/slideshow-slide-overlay.spec.ts",
     "panel-canon:refresh": "node src/themes/__tests__/panel-canon.mjs --out conformance/panel-canon.json",
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",

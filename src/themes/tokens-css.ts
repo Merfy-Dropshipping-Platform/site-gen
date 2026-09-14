@@ -212,6 +212,16 @@ export function buildTokensCss(
   // precedence so merchant edits actually take effect — previously theme
   // manifest defaults always won, silently discarding merchant input.
   const themeDefaults = (manifest?.defaults ?? {}) as Record<string, string>;
+  // Опоры для рамки поля: фон поля и цвет рамки, как их объявила тема (иначе —
+  // общие значения контракта). Обе величины нужны в каждой ветке ниже, поэтому
+  // читаются один раз здесь. Разбор — в `inputBorderOf`.
+  const themeInputBg = normTriple(
+    themeDefaults['--color-input-bg'] ?? BASE_DEFAULTS['--color-input-bg'],
+  );
+  const themeInputBorder = normTriple(
+    themeDefaults['--color-input-border'] ?? BASE_DEFAULTS['--color-input-border'],
+  );
+  const inputAnchors = { border: themeInputBorder, bg: themeInputBg };
 
   // Стиль карточки товара «Карточка» (productCardStyle=card): бордер+радиус+
   // паддинг+подложка на карточке товара. Дефолт из манифеста темы
@@ -459,14 +469,22 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
       // ── Поверхность правой колонки чекаута ───────────────────────────
       // Считается ВСЕГДА, для каждой схемы — см. `checkoutSurfaceOf`.
       merged.checkoutSurface = checkoutSurfaceOf(themeScheme.tokens, merged);
+      // ── Рамка поля формы ─────────────────────────────────────────────
+      // Тоже для КАЖДОЙ схемы — см. `inputBorderOf`. Подложка берётся из фона
+      // ЭТОЙ схемы (мерчантский, если он его перекрасил).
+      merged.inputBorder = inputBorderOf(
+        themeInputBorder,
+        themeInputBg,
+        hexToRgbTriple(merged.background) ?? normTriple(themeScheme.tokens?.['--color-bg']),
+      );
       const rule = buildSchemeRule(merged);
       if (rule) {
         schemeRuleLines.push(rule);
       } else {
-        schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
+        schemeRuleLines.push(buildThemeSchemeRule(themeScheme, inputAnchors));
       }
     } else {
-      schemeRuleLines.push(buildThemeSchemeRule(themeScheme));
+      schemeRuleLines.push(buildThemeSchemeRule(themeScheme, inputAnchors));
     }
     merchantById.delete(key);
   }
@@ -476,6 +494,11 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     const rule = buildSchemeRule({
       ...remaining,
       checkoutSurface: checkoutSurfaceOf(undefined, remaining),
+      inputBorder: inputBorderOf(
+        themeInputBorder,
+        themeInputBg,
+        hexToRgbTriple(remaining.background) ?? normTriple(remaining.background),
+      ),
     });
     if (rule) schemeRuleLines.push(rule);
   }
@@ -782,6 +805,69 @@ function schemeClassId(id: string): string {
 }
 
 /**
+ * РАМКА ПОЛЯ ФОРМЫ для ОДНОЙ схемы.
+ *
+ * Жалоба 15.09: «убрать тёмные очертания по периметру». Замер собранной витрины
+ * (Chromium 1440×1400, схема с «Фоном» #71C0FF): каждое поле чекаута обведено
+ * рамкой 1px — rose `rgb(153,153,153)`, остальные четыре `rgb(210,210,210)`. На
+ * светло-голубой подложке этот серый читается как чужая тёмная обводка.
+ *
+ * ПРИЧИНА. `--color-input-border` объявлен в реестре токенов
+ * (`packages/theme-contract/tokens/registry.ts`) как `scope: 'scheme'`, но НИ
+ * ОДНА тема не кладёт его в `colorSchemes[].tokens`: rose задаёт его один раз в
+ * `defaults` (`153 153 153`), остальные берут `BASE_DEFAULTS` (`210 210 210`).
+ * Генератор печатал его только в `:root` — то есть рамка была одна на все схемы
+ * и на смену схемы не реагировала вовсе. Ровно та же болезнь, что была у
+ * замороженного `--color-muted: 153 153 153`.
+ *
+ * ПОЧЕМУ НЕЛЬЗЯ ПРОСТО УБРАТЬ. Фон поля — `--color-input-bg`, сегодня во всех
+ * пяти темах это белый `255 255 255`. Считаем контраст «поле ↔ подложка схемы»
+ * по всей матрице 21 связки: он ниже 1.2 в ТРИНАДЦАТИ связках (rose 1/2/3/5,
+ * vanilla 3/4, bloom 3/4, satin 1/2/3, flux 2/3) — там белое поле лежит на
+ * белой или почти белой подложке, и рамка ЕДИНСТВЕННОЕ, что его очерчивает.
+ * Снять её значит потерять поля на 13 экранах из 21.
+ *
+ * ПРАВИЛО. Рамка нужна ровно тогда, когда поле само по себе не читается:
+ *   контраст(поле, подложка) < 1.5 → рамка темы, как была (13 заводских связок
+ *       остаются байт в байт);
+ *   иначе                          → рамка цвета САМОГО ПОЛЯ, то есть её не
+ *       видно: поле уже очерчено собственным фоном.
+ * Порог 1.5 взят из данных, а не с потолка: «нужные» связки лежат в 1.00–1.16,
+ * «ненужные» начинаются с 1.96 (случай жалобы) и 2.43 (bloom scheme-2) — запас
+ * с обеих сторон 0.34 и 0.46. Геометрия не меняется: рамка остаётся 1px,
+ * меняется только её цвет.
+ */
+function inputBorderOf(
+  themeBorder: string | null,
+  inputBg: string | null,
+  schemeBg: string | null,
+): string | null {
+  if (!themeBorder) return null;
+  const field = normTriple(inputBg);
+  const back = normTriple(schemeBg);
+  if (!field || !back) return themeBorder;
+  return contrastRatio(field, back) >= INPUT_BORDER_VISIBLE_AT ? field.trim() : themeBorder;
+}
+
+/** Порог «поле читается само» — см. разбор в `inputBorderOf`. */
+const INPUT_BORDER_VISIBLE_AT = 1.5;
+
+/** WCAG-контраст двух триплетов «r g b». */
+function contrastRatio(a: string, b: string): number {
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const lum = (v: string) => {
+    const [r, g, bl] = v.trim().split(/\s+/).map(Number);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(bl);
+  };
+  const la = lum(a);
+  const lb = lum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/**
  * ПОВЕРХНОСТЬ ПРАВОЙ КОЛОНКИ ЧЕКАУТА для ОДНОЙ схемы. Тотальная функция: у любой
  * схемы любой темы ответ есть всегда, «промолчать» она не умеет.
  *
@@ -837,10 +923,13 @@ function checkoutSurfaceOf(
   return themeSurface ?? merchantSurface ?? merchantBg;
 }
 
-function buildThemeSchemeRule(scheme: {
-  id: string;
-  tokens: Record<string, string>;
-}): string {
+function buildThemeSchemeRule(
+  scheme: {
+    id: string;
+    tokens: Record<string, string>;
+  },
+  inputAnchors?: { border: string | null; bg: string | null },
+): string {
   const tokens = { ...scheme.tokens };
   // Тот же закон, что и для схемы мерчанта (buildSchemeRule): замороженный серый
   // пересчитываем из текста и фона ЭТОЙ схемы.
@@ -870,6 +959,14 @@ function buildThemeSchemeRule(scheme: {
   // снова начнёт брать унаследованное значение там, где ветки разошлись.
   const checkoutSurface = checkoutSurfaceOf(scheme.tokens, null);
   if (checkoutSurface) tokens['--color-checkout-surface'] = checkoutSurface;
+  // Рамка поля — тот же инвариант «объявлена у каждой схемы», что и поверхность.
+  // Опоры темы приходят параметром: `buildThemeSchemeRule` манифеста не видит.
+  const inputBorder = inputBorderOf(
+    inputAnchors?.border ?? null,
+    inputAnchors?.bg ?? null,
+    normTriple(scheme.tokens?.['--color-bg']),
+  );
+  if (inputBorder) tokens['--color-input-border'] = inputBorder;
   const pairs = Object.entries(tokens).map(([k, v]) => `${k}: ${v}`);
   if (pairs.length === 0) return '';
   return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
@@ -962,6 +1059,12 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   const checkoutSurface =
     hexToRgbTriple(scheme.checkoutSurface) ?? normTriple(scheme.checkoutSurface);
   if (checkoutSurface) parts.push(`--color-checkout-surface: ${checkoutSurface}`);
+  // Рамка поля формы — реестр токенов объявляет её `scope: 'scheme'`, но до
+  // 15.09 генератор печатал её только в `:root`, одну на все схемы. Считает
+  // `inputBorderOf`.
+  const inputBorder =
+    hexToRgbTriple(scheme.inputBorder) ?? normTriple(scheme.inputBorder);
+  if (inputBorder) parts.push(`--color-input-border: ${inputBorder}`);
   // Приглушённый текст — это ТЕКСТ схемы, разбавленный её фоном, а не отдельный
   // фиксированный серый. Раньше `--color-muted` приезжал готовым из theme.json
   // (у всех схем `153 153 153`), поэтому подзаголовки секций, описания и телефон

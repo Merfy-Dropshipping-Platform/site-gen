@@ -104,6 +104,34 @@ function __merfyCheckoutButtonColors(roles, columnBg) {
   var plate = values['button-bg'];
   var source = 'button-bg';
   var shaded = false;
+  // ①-бис ЦВЕТ КНОПКИ МЕРЧАНТА НЕ ВЫБРАСЫВАЕМ. Если он ОТЛИЧАЕТСЯ от фона
+  // колонки, но не дотянул до порога, — затеняем ЕГО до порога, а не меняем на
+  // чужую роль. Замер жалобы 15.09 («в левой части не применяется цветовая
+  // схема к кнопке»): мерчант задал кнопку #B722B0 = 183 34 176 на фоне схемы
+  // #71C0FF = 113 192 255, контраст 2.76:1 — не хватило 0.24 до порога 3:1, и
+  // шаг ② отдавал вместо неё чужую роль: rose/satin/flux → button-2-bg
+  // (0 0 0 / 8 2 0 / 11 11 11), vanilla/bloom → heading (38 49 28 / 0 0 0).
+  // Кнопка становилась почти чёрной, а вместе с disabled:opacity-50 пустой
+  // корзины читалась как серая и неактивная.
+  //
+  // Почему именно «отличается от фона». Все СЕМЬ заводских связок, ради которых
+  // шаг ② и заводился, имеют контраст РОВНО 1.00 и манхэттенское расстояние
+  // РОВНО 0: --color-button-bg там побайтно равен фону колонки (замер всей
+  // матрицы 21 связки: rose scheme-4, satin scheme-4, bloom scheme-1/2,
+  // vanilla scheme-1/3/4). Такой цвет о кнопке не говорит ничего — подменять
+  // его ролью правильно. Цвет, который мерчант выбрал сам, отличается от фона
+  // (в жалобе — на 307 по манхэттену) и несёт его выбор: у него сохраняем
+  // ОТТЕНОК, а порог добираем затенением — тем же приёмом, что и шаг ③.
+  var sameAsColumn =
+    !!plate && plate[0] === column[0] && plate[1] === column[1] && plate[2] === column[2];
+  if (plate && !sameAsColumn && ratio(plate, column) < MIN_PLATE) {
+    var tgt = ratio(BLACK, column) >= ratio(WHITE, column) ? BLACK : WHITE;
+    for (var s1 = 1; s1 <= 64; s1++) {
+      var cand = mix(plate, tgt, s1 / 64);
+      if (ratio(cand, column) >= MIN_PLATE) { plate = cand; shaded = true; break; }
+    }
+    if (!shaded) { plate = tgt; shaded = true; }
+  }
   if (!plate || ratio(plate, column) < MIN_PLATE) {
     // ② самая контрастная роль ТОЙ ЖЕ схемы.
     var best = null;

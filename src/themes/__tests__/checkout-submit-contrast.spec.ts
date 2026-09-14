@@ -295,6 +295,95 @@ describe('САБОТАЖ: прежняя логика (плашка = --color-bu
   });
 });
 
+// ── 4-бис. ЦВЕТ КНОПКИ, ВЫБРАННЫЙ МЕРЧАНТОМ, НЕ ВЫБРАСЫВАЕТСЯ ────────────
+//
+// Жалоба 15.09: «в левой части не применяется цветовая схема к кнопке». Замер
+// собранной витрины пяти тем (Chromium 1440×1400): мерчант задал в палитре
+// схемы «Фон» #71C0FF = 113 192 255 и «кнопку» #B722B0 = 183 34 176, а на
+// кнопке оказалось `--color-button-bg` = 0 0 0 (rose, bloom), 38 49 28
+// (vanilla), 8 2 0 (satin), 11 11 11 (flux) — атрибут
+// data-checkout-submit-contrast показывал button-2-bg / heading.
+//
+// Причина: пурпур мерчанта даёт к светло-голубой колонке 2.76:1 — не хватило
+// 0.24 до порога 3:1, и шаг ② отдавал вместо него чужую роль схемы. Вместе с
+// disabled:opacity-50 (корзина пуста) почти чёрная плашка читалась серой, и
+// выбор мерчанта на экране не появлялся вовсе.
+//
+// Теперь такой цвет ЗАТЕНЯЕТСЯ до порога с сохранением оттенка. Отличать от
+// «цвета, который ничего не значит», можно точно: у всех СЕМИ заводских связок
+// (см. блок САБОТАЖ выше) --color-button-bg побайтно равен фону колонки —
+// контраст ровно 1.00, манхэттен ровно 0.
+const MERCHANT_COLUMN = '113 192 255';
+const MERCHANT_BUTTON = '183 34 176';
+
+describe('цвет кнопки из палитры схемы доезжает до кнопки', () => {
+  for (const theme of THEMES) {
+    it(`${theme}: выбранный мерчантом цвет остаётся собой, а не подменяется ролью`, () => {
+      const scheme = schemesOf(theme)[0];
+      const roles = { ...rolesOf(scheme), buttonBg: MERCHANT_BUTTON, bg: MERCHANT_COLUMN };
+      const out = pick(roles, MERCHANT_COLUMN);
+      expect(out.source).toBe('button-bg');
+      expect(out.plateRatio).toBeGreaterThanOrEqual(MIN_PLATE);
+      // оттенок сохранён: порядок каналов тот же, что у цвета мерчанта
+      expect(sameHue(out.plate, triple(MERCHANT_BUTTON))).toBe(true);
+      // и это всё ещё пурпур, а не «почти чёрный»: красный канал выше синего у
+      // подменных ролей был бы нулевым.
+      expect(out.plate[0]).toBeGreaterThan(120);
+      expect(out.plate[2]).toBeGreaterThan(120);
+      expect(out.plate[1]).toBeLessThan(80);
+    });
+  }
+
+  it('сырой цвет мерчанта не дотягивал 0.24 до порога — цифра, ради которой всё', () => {
+    const raw = ratio(triple(MERCHANT_BUTTON), triple(MERCHANT_COLUMN));
+    expect(raw).toBeLessThan(MIN_PLATE);
+    expect(raw).toBeGreaterThan(2.7);
+  });
+
+  it('подпись пересчитывается по яркости получившейся плашки', () => {
+    const out = pick({ buttonBg: MERCHANT_BUTTON, buttonText: '255 255 255' }, MERCHANT_COLUMN);
+    expect(out.labelRatio).toBeGreaterThanOrEqual(MIN_LABEL);
+  });
+
+  it('цвет кнопки, РАВНЫЙ фону колонки, по-прежнему подменяется ролью', () => {
+    // Иначе починка съела бы то, ради чего расчёт заводился: заводская пара,
+    // собранная под исчезнувшую поверхность, стала бы кнопкой-невидимкой.
+    const out = pick(
+      { buttonBg: '255 255 255', buttonText: '0 0 0', bg: '0 0 0', text: '0 0 0' },
+      '255 255 255',
+    );
+    expect(out.source).not.toBe('button-bg');
+    expect(out.plateRatio).toBeGreaterThanOrEqual(MIN_PLATE);
+  });
+
+  it('САБОТАЖ: вернули подмену роли для цвета мерчанта → кнопка снова не пурпурная', () => {
+    // Прежняя логика дословно: ниже порога → сразу шаг ②, оттенок не сохраняем.
+    const прежняя = new Function(
+      `${CHECKOUT_BUTTON_CONTRAST_SOURCE.replace(
+        'if (plate && !sameAsColumn && ratio(plate, column) < MIN_PLATE) {',
+        'if (false) {',
+      )}; return __merfyCheckoutButtonColors;`,
+    )() as (roles: Roles, columnBg: string) => Result;
+    const roles = { ...rolesOf(schemesOf('rose')[0]), buttonBg: MERCHANT_BUTTON, bg: MERCHANT_COLUMN };
+    const было = прежняя(roles, MERCHANT_COLUMN);
+    const стало = pick(roles, MERCHANT_COLUMN);
+    expect(было.source).not.toBe('button-bg');
+    expect(sameHue(было.plate, triple(MERCHANT_BUTTON))).toBe(false);
+    expect(стало.source).toBe('button-bg');
+  });
+
+  it('САБОТАЖ-КАЛИБРОВКА: связка, которой контраста хватало, не трогается вовсе', () => {
+    // rose scheme-1 на белой колонке: чёрная кнопка 21:1 — ни затенения, ни
+    // подмены быть не должно. Если бы предикат краснел и здесь, он сторожил бы
+    // «что угодно».
+    const roles = rolesOf(schemesOf('rose')[0]);
+    const out = pick(roles, '255 255 255');
+    expect(out.source).toBe('button-bg');
+    expect(out.shaded).toBe(false);
+    expect(out.plate.join(' ')).toBe(roles.buttonBg);
+  });
+});
+
 // ── 5. Поведение функции в одиночку ───────────────────────────────────────
 
 describe('расчёт сам по себе', () => {

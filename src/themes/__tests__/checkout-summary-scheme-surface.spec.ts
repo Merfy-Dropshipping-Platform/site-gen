@@ -167,6 +167,178 @@ describe('поверхность «Сводки заказа» следует з
     expect(без.sort()).toEqual(['bloom', 'flux', 'vanilla']);
   });
 
+  // ── жалоба 15.09: «убрать в правой части серую подложку» ────────────────
+  //
+  // Дословно: «из-за неё цвета темнее выглядят по сравнению с цветовой схемой».
+  // Замер собранных витрин пяти тем (Chromium 1440×1400, мерчант перекрасил
+  // «Фон» схемы-4 в #71C0FF, схема стоит и на форме, и на сводке):
+  //   ДО  — левая 113,192,255, правая: rose/satin 113,192,255 (шли за схемой),
+  //         vanilla 250,250,250, flux 250,250,250, bloom 246,246,247 — та самая
+  //         серая подложка, она же баг «Сводка не принимает схему» выше;
+  //   ПОСЛЕ — правая 113,192,255 во всех пяти.
+  // Это ОДНА и та же причина, поэтому и проверка одна: когда мерчант перекрасил
+  // «Фон», поверхность сводки обязана совпасть с фоном формы, а не остаться на
+  // унаследованном сером.
+  it.each(THEMES)('тема %s: перекрасили «Фон» — серой подложки справа не остаётся', (theme) => {
+    const settings = seedThemeSettings(theme);
+    const schemes = (settings.colorSchemes as Record<string, unknown>[]).map((sc) =>
+      sc.id === 'scheme-4' ? { ...sc, background: '#71C0FF' } : sc,
+    );
+    const css = buildTokensCss({ ...settings, colorSchemes: schemes }, theme);
+    const body = schemeRules(css).get('4') ?? '';
+    const surface = varIn(body, '--color-checkout-surface');
+    const bg = varIn(body, '--color-bg');
+    // Правая колонка красится поверхностью, левая — фоном. Равенство и означает
+    // «подложки нет»: одна схема — один цвет на обе половины.
+    expect(surface).toBe('113 192 255');
+    expect(surface).toBe(bg);
+  });
+
+  it('САБОТАЖ: поверхность отвязали от перекрашенного «Фона» → подложка возвращается', () => {
+    // Подменяем значение токена на заводскую серую поверхность темы — ровно то,
+    // что давал прежний генератор у vanilla/bloom/flux.
+    const settings = seedThemeSettings('vanilla');
+    const schemes = (settings.colorSchemes as Record<string, unknown>[]).map((sc) =>
+      sc.id === 'scheme-4' ? { ...sc, background: '#71C0FF' } : sc,
+    );
+    const css = buildTokensCss({ ...settings, colorSchemes: schemes }, 'vanilla');
+    const испорчен = css.replace(
+      /--color-checkout-surface:\s*113 192 255/,
+      '--color-checkout-surface: 250 250 250',
+    );
+    expect(испорчен).not.toEqual(css);
+    const body = schemeRules(испорчен).get('4') ?? '';
+    expect(varIn(body, '--color-checkout-surface')).toBe('250 250 250');
+    expect(varIn(body, '--color-checkout-surface')).not.toBe(varIn(body, '--color-bg'));
+  });
+
+  // ── жалоба 15.09: «убрать тёмные очертания по периметру» ────────────────
+  //
+  // Замер собранной витрины (Chromium 1440×1400, схема с «Фоном» #71C0FF): у
+  // каждого поля чекаута рамка 1px — rose rgb(153,153,153), остальные четыре
+  // rgb(210,210,210). На светло-голубой подложке это чужая тёмная обводка.
+  //
+  // Причина: `--color-input-border` объявлен в реестре токенов как
+  // `scope: 'scheme'`, но НИ ОДНА тема не кладёт его в схемы — генератор печатал
+  // его только в `:root`, одним значением на все схемы.
+  //
+  // Просто убрать нельзя: фон поля `--color-input-bg` во всех пяти темах белый,
+  // и контраст «поле ↔ подложка схемы» ниже 1.2 в ТРИНАДЦАТИ связках из 21 —
+  // там рамка единственное, что очерчивает поле. Поэтому она остаётся ровно
+  // там, где нужна, и исчезает там, где поле читается само.
+  const INPUT_BG = '255 255 255';
+  /** Контраст WCAG двух триплетов — та же формула, что в генераторе. */
+  function contrast(a: string, b: string): number {
+    const lin = (c: number) => {
+      const x = c / 255;
+      return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+    };
+    const lum = (v: string) => {
+      const [r, g, bl] = v.trim().split(/\s+/).map(Number);
+      return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(bl);
+    };
+    const la = lum(a);
+    const lb = lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  it.each(THEMES)('тема %s: рамка поля объявлена у каждой схемы', (theme) => {
+    const css = buildTokensCss(seedThemeSettings(theme), theme);
+    const без: string[] = [];
+    for (const [id, body] of schemeRules(css)) {
+      if (!varIn(body, '--color-input-border')) без.push(id);
+    }
+    expect(без).toEqual([]);
+  });
+
+  it.each(THEMES)('тема %s: рамка есть там, где поле сливается, и снята там, где нет', (theme) => {
+    const css = buildTokensCss(seedThemeSettings(theme), theme);
+    let сливается = 0;
+    let читается = 0;
+    for (const [id, body] of schemeRules(css)) {
+      const bg = varIn(body, '--color-bg');
+      const border = varIn(body, '--color-input-border');
+      if (!bg || !border) continue;
+      if (contrast(INPUT_BG, bg) < 1.5) {
+        // поле неотличимо от подложки → рамка обязана быть видимой
+        expect(border).not.toBe(INPUT_BG);
+        сливается++;
+      } else {
+        // поле читается само → рамка цвета поля, то есть её не видно
+        expect(border).toBe(INPUT_BG);
+        читается++;
+      }
+    }
+    expect(сливается + читается).toBeGreaterThanOrEqual(4);
+  });
+
+  it('по всей матрице: рамка нужна ровно в 13 связках из 21', () => {
+    // Это и есть довод «нельзя просто убрать»: на 13 экранах из 21 рамка —
+    // единственное очертание поля. Если завтра цифра поедет, значит поехали
+    // палитры тем, и решение надо пересматривать, а не проспать.
+    let нужна = 0;
+    let всего = 0;
+    for (const theme of THEMES) {
+      const css = buildTokensCss(seedThemeSettings(theme), theme);
+      for (const [, body] of schemeRules(css)) {
+        const border = varIn(body, '--color-input-border');
+        if (!border) continue;
+        всего++;
+        if (border !== INPUT_BG) нужна++;
+      }
+    }
+    expect(всего).toBe(21);
+    expect(нужна).toBe(13);
+  });
+
+  it.each(THEMES)('тема %s: перекрасили «Фон» — тёмной обводки у поля не остаётся', (theme) => {
+    const settings = seedThemeSettings(theme);
+    const schemes = (settings.colorSchemes as Record<string, unknown>[]).map((sc) =>
+      sc.id === 'scheme-4' ? { ...sc, background: '#71C0FF' } : sc,
+    );
+    const css = buildTokensCss({ ...settings, colorSchemes: schemes }, theme);
+    expect(varIn(schemeRules(css).get('4') ?? '', '--color-input-border')).toBe(INPUT_BG);
+  });
+
+  it('САБОТАЖ: рамку вернули к прежнему одному значению на все схемы', () => {
+    const css = buildTokensCss(seedThemeSettings('rose'), 'rose');
+    const испорчен = css.replace(/--color-input-border:\s*255 255 255/g, '--color-input-border: 153 153 153');
+    expect(испорчен).not.toEqual(css);
+    // на схеме-4 rose поле читается само (чёрная подложка) — рамка обязана быть
+    // снята; саботаж возвращает серую, и проверка обязана это увидеть
+    expect(varIn(schemeRules(испорчен).get('4') ?? '', '--color-input-border')).toBe('153 153 153');
+    expect(varIn(schemeRules(css).get('4') ?? '', '--color-input-border')).toBe(INPUT_BG);
+  });
+
+  it('САБОТАЖ: рамку сняли ВЕЗДЕ → поля сливаются с подложкой на 13 связках', () => {
+    let потеряно = 0;
+    for (const theme of THEMES) {
+      const css = buildTokensCss(seedThemeSettings(theme), theme);
+      const испорчен = css.replace(/--color-input-border:\s*[^;}]+/g, '--color-input-border: 255 255 255');
+      for (const [, body] of schemeRules(испорчен)) {
+        const bg = varIn(body, '--color-bg');
+        const border = varIn(body, '--color-input-border');
+        if (bg && border === INPUT_BG && contrast(INPUT_BG, bg) < 1.5) потеряно++;
+      }
+    }
+    expect(потеряно).toBe(13);
+  });
+
+  it('САБОТАЖ-КАЛИБРОВКА: правка НЕсторожимого не трогает рамку', () => {
+    const settings = seedThemeSettings('satin');
+    const schemes = (settings.colorSchemes as Record<string, unknown>[]).map((sc) => ({
+      ...sc,
+      secondaryButton: { background: '#654321', text: '#ffffff', border: '#654321' },
+    }));
+    const css = buildTokensCss({ ...settings, colorSchemes: schemes }, 'satin');
+    expect(css).toContain('--color-button-secondary-bg: 101 67 33');
+    const без: string[] = [];
+    for (const [id, body] of schemeRules(css)) {
+      if (!varIn(body, '--color-input-border')) без.push(id);
+    }
+    expect(без).toEqual([]);
+  });
+
   it('колонка читает именно этот токен, а фолбэк оставлен прежний', () => {
     expect(CHECKOUT_SPLIT_CSS).toContain(
       '[data-checkout-pane="summary"] { background: rgb(var(--color-checkout-surface, var(--color-surface, 245 245 245))); }',

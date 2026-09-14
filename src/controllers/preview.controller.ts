@@ -42,6 +42,7 @@ import {
 import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
+import { injectPreviewAccountGlobal } from '../common/preview-account-inline';
 import { createRenderContext, type RenderContext } from '../render/create-render-context';
 import { applyPageBinding } from '../render/page-transclude';
 import { fetchPublications } from '../generator/data-fetcher';
@@ -1007,6 +1008,14 @@ export class PreviewController {
         (m) => `${m}${BLOCK_ROOT_INLINE}`,
       );
     }
+    // Демо-кабинет превью: секции «Личный кабинет»/«Заказы» читают этот глобал
+    // ПЕРЕД гость-гейтом и рисуют тело страницы, как у вошедшего покупателя.
+    // Без него гейт уводил превью на «Вход» — мерчант не видел ни своей секции,
+    // ни её настроек (баг владельца 14.09). Инжектится ТОЛЬКО здесь, в превью;
+    // сборка витрины этот модуль не импортирует, поэтому на live глобала нет и
+    // гость по-прежнему уходит на /login. Почему это не утечка — в шапке
+    // src/common/preview-account-inline.ts.
+    html = injectPreviewAccountGlobal(html);
     const dadataToken = process.env.DADATA_API_KEY;
     if (dadataToken) {
       html = html.replace(

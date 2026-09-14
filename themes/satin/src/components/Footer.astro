@@ -1,6 +1,9 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+// Иконки соцсетей — через обёртку темы: карта имён дизайн-системы закрыта, а
+// MAX (просьба владельца 14.09) лежит только в themes/satin/public/icons.
+import SatinNtIcon from "./icons/SatinNtIcon.astro";
 import { SITE_TITLE } from "../consts";
 import { withBase } from "../lib/with-base";
 
@@ -145,6 +148,7 @@ const SOCIAL_PLATFORMS: Record<string, { name: string; label: string }> = {
 	tiktok: { name: "social-tiktok", label: "TikTok" },
 	youtube: { name: "social-youtube", label: "YouTube" },
 	dzen: { name: "social-yandex-dzen", label: "Дзен" },
+	max: { name: "social-max", label: "MAX" },
 };
 const socials = Array.isArray(p.socialColumn?.socialLinks)
 	? p.socialColumn.socialLinks
@@ -298,7 +302,7 @@ const linkClassSm =
 						<div class="flex items-center gap-3">
 							{socials.map((s) => (
 								<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-70">
-									<NtIcon name={s.name} sizeClass="size-6" />
+									<SatinNtIcon name={s.name} sizeClass="size-6" />
 								</a>
 							))}
 						</div>
@@ -351,7 +355,7 @@ const linkClassSm =
 				<div class="flex items-center gap-2">
 					{socials.map((s) => (
 						<a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="flex h-5 w-5 items-center justify-center transition-opacity hover:opacity-70">
-							<NtIcon name={s.name} sizeClass="size-5" />
+							<SatinNtIcon name={s.name} sizeClass="size-5" />
 						</a>
 					))}
 				</div>

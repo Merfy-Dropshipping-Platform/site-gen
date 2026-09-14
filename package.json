@@ -65,6 +65,7 @@
     "test:variant-colors": "jest --runInBand src/themes/__tests__/variant-swatch-color-names.spec.ts",
     "test:collection-card": "jest --runInBand src/themes/__tests__/collection-card-settings.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
+    "test:product-counter": "jest --runInBand src/themes/__tests__/product-counter-theme.spec.ts",
     "test:rich-text-fields": "jest --runInBand src/themes/__tests__/rich-text-fields.spec.ts",
     "rich-text:coverage": "node src/themes/__tests__/rich-text-coverage.mjs --table"
   },

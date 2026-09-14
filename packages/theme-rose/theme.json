@@ -189,7 +189,7 @@
         },
         "variantsType": "chips",
         "counter": {
-          "variant": "inline"
+          "variant": "boxed"
         },
         "showDescription": true
       }

@@ -139,7 +139,7 @@
         },
         "variantsType": "dropdown",
         "counter": {
-          "variant": "pill"
+          "variant": "inline"
         },
         "showDescription": false
       }

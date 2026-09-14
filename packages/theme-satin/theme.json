@@ -87,6 +87,13 @@
     },
     "PromoBanner": {
       "textTransform": "none"
+    },
+    "Product": {
+      "visualConfig": {
+        "counter": {
+          "variant": "boxed"
+        }
+      }
     }
   },
   "colorSchemes": [

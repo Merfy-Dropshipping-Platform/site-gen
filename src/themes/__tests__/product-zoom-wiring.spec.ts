@@ -420,3 +420,374 @@ describe.each(PORTS)(
     });
   },
 );
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Второй слой: та же проводка НА РЕАЛЬНОЙ РАЗМЕТКЕ отрендеренной секции.
+//
+//  Зачем он понадобился (2026-09-14). Тестировщик прислал «Увеличение
+//  (Нажатие / Наведение) ни на что не влияет при настройке 2 колонки» ПОВТОРНО,
+//  через час после того, как баг закрыли. Баг не воспроизвёлся (витрины и
+//  превью конструктора мерены браузером по пяти темам), но проверка верхнего
+//  слоя оказалась бумажной: она берёт функцию из исходника и запускает её на
+//  РУКОПИСНОМ мини-DOM, который живёт в этом же файле. Четыре саботажа прошли
+//  её насквозь — все 26 проверок остались зелёными:
+//
+//    S1  убрать сам ВЫЗОВ wireGalleryZoom(galleryEl, zoomMode, …)   → зелено
+//    S2  снять data-media-index с плиток «2 колонки» в ProductGallery → зелено
+//    S3  снять data-zoom-mode с корня секции                         → зелено
+//    S4  зашить во flux литерал "none" вместо прочитанного режима    → зелено
+//
+//  S2 — это ДОСЛОВНО форма исходного бага: в «2 колонках» героя нет, и если
+//  плитка перестаёт быть кадром, оживлять становится нечего. Верхний слой это
+//  не видит принципиально: свой мини-DOM он рисует сам и про ProductGallery.astro
+//  не знает.
+//
+//  Поэтому ниже — тот же контракт, но на живой цепочке:
+//    • секция рендерится РОВНО тем модулем, который тема отдаёт на витрину и в
+//      превью (render-theme-sections.mjs, cascade+live — см. его шапку);
+//    • товар приезжает общей заглушкой каталога (storefront-data-stub.mjs) —
+//      без неё Product.astro рисует «Нет фото», и кадров не бывает ни в одном
+//      макете, то есть проверка снова мерила бы пустоту;
+//    • проводка берётся ИЗ ОТРЕНДЕРЕННОГО скрипта секции, а не из исходника —
+//      это тот самый текст, который уезжает в браузер;
+//    • разметка разбирается node-html-parser (прямая зависимость, package.json,
+//      им же пользуются rich-text-coverage.mjs и scripts/lib/validation-checks).
+//
+//  Требует собранных блоков и секций:
+//    pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { parse as parseHtml, type HTMLElement } from "node-html-parser";
+
+const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
+const CATALOG_STUB = resolve(__dirname, "storefront-data-stub.mjs");
+
+/** Пять тем магазина. Порт у flux свой, у остальных — общий theme-base. */
+const THEMES = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
+type Theme = (typeof THEMES)[number];
+
+/** Все четыре макета панели «Макет». «2 колонки» — дефолт и место бага. */
+const LAYOUTS = ["two-columns", "stacked", "carousel", "split"] as const;
+
+/** Селекторы кадра и миниатюры у двух портов. */
+const PORT_SEL: Record<"flux" | "base", { frames: string; thumb: string }> = {
+  flux: {
+    frames: "[data-cfg-hero], [data-media-index]",
+    thumb: "data-cfg-thumb",
+  },
+  base: {
+    frames: "[data-product-hero], [data-media-index]",
+    thumb: "data-product-thumb",
+  },
+};
+const portOf = (t: Theme) => (t === "flux" ? PORT_SEL.flux : PORT_SEL.base);
+
+/** Рендер дорогой (отдельный процесс на каждый) — держим по одному на набор. */
+const RENDER_CACHE = new Map<string, string>();
+
+function renderSection(theme: Theme, layout: string, zoomMode: string): string {
+  const key = `${theme}|${layout}|${zoomMode}`;
+  const hit = RENDER_CACHE.get(key);
+  if (hit !== undefined) return hit;
+  const jobs = [
+    {
+      block: "Product",
+      cascade: true,
+      live: true,
+      props: {
+        id: "Product-1",
+        siteId: "test-site",
+        productId: "p1",
+        layout,
+        zoomMode,
+        padding: { top: 40, bottom: 40 },
+      },
+    },
+  ];
+  const out = execFileSync(
+    "node",
+    ["--import", CATALOG_STUB, RENDERER, theme, JSON.stringify(jobs)],
+    { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 64 * 1024 * 1024 },
+  );
+  const row = JSON.parse(out)[0] as { html?: string; error?: string };
+  if (row.error) throw new Error(`${theme}/${layout}: ${row.error}`);
+  const html = row.html ?? "";
+  RENDER_CACHE.set(key, html);
+  return html;
+}
+
+/**
+ * Дооснащает разобранные узлы тем, чего нет у node-html-parser, но что трогает
+ * проводка: style, слушатели, размеры кадра. Разметку не меняем — только
+ * доклеиваем поведение браузера.
+ */
+function liven(root: HTMLElement): void {
+  for (const el of root.querySelectorAll("*")) {
+    const node = el as unknown as Record<string, unknown>;
+    node.style = {};
+    node.listeners = {};
+    node.addEventListener = function (type: string, fn: (ev: unknown) => void) {
+      const ls = node.listeners as Record<string, ((ev: unknown) => void)[]>;
+      (ls[type] ??= []).push(fn);
+    };
+    node.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 400,
+      height: 400,
+    });
+    node.wired = () => {
+      const ls = node.listeners as Record<string, ((ev: unknown) => void)[]>;
+      return Object.keys(ls)
+        .filter((t) => ls[t].length > 0)
+        .sort();
+    };
+    node.fire = (type: string, ev: Record<string, unknown> = {}) => {
+      const ls = node.listeners as Record<string, ((ev: unknown) => void)[]>;
+      (ls[type] ?? []).forEach((fn) =>
+        fn({ target: el, preventDefault() {}, stopPropagation() {}, ...ev }),
+      );
+    };
+  }
+}
+
+type LiveEl = HTMLElement & {
+  style: Record<string, string>;
+  wired: () => string[];
+  fire: (type: string, ev?: Record<string, unknown>) => void;
+};
+
+/** Инлайн-скрипт секции — тот, что уезжает в браузер. */
+function sectionScript(root: HTMLElement): string {
+  const withWiring = root
+    .querySelectorAll("script")
+    .map((s) => s.textContent)
+    .filter((t) => t.includes("wireGalleryZoom"));
+  return withWiring.join("\n");
+}
+
+/** Проводка, вынутая ИЗ ОТРЕНДЕРЕННОГО скрипта (а не из исходника порта). */
+function wiringFromRendered(script: string): Wire {
+  const fnSrc = extractFunction(script, "wireGalleryZoom");
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  return new Function(`${fnSrc}; return wireGalleryZoom;`)() as Wire;
+}
+
+interface CallSite {
+  /** Сколько раз проводку ВЫЗВАЛИ (объявление не считается). */
+  calls: number;
+  /** Второй аргумент вызова — как он записан в коде. */
+  modeArg: string | null;
+  /** Вид второго аргумента: имя переменной или литерал. */
+  modeArgIsLiteral: boolean;
+  /** Из чего эта переменная получена (текст инициализатора). */
+  modeInit: string | null;
+}
+
+/** Разбор вызова проводки в отрендеренном скрипте (ts уже в зависимостях). */
+function callSiteOf(script: string): CallSite {
+  const sf = ts.createSourceFile(
+    "section.js",
+    script,
+    ts.ScriptTarget.ES2019,
+    true,
+    ts.ScriptKind.JS,
+  );
+  const res: CallSite = {
+    calls: 0,
+    modeArg: null,
+    modeArgIsLiteral: false,
+    modeInit: null,
+  };
+  const decls = new Map<string, string>();
+  const visit = (n: ts.Node): void => {
+    if (
+      ts.isVariableDeclaration(n) &&
+      ts.isIdentifier(n.name) &&
+      n.initializer
+    ) {
+      decls.set(n.name.text, n.initializer.getText(sf));
+    }
+    if (
+      ts.isCallExpression(n) &&
+      ts.isIdentifier(n.expression) &&
+      n.expression.text === "wireGalleryZoom"
+    ) {
+      res.calls++;
+      const arg = n.arguments[1];
+      if (arg) {
+        res.modeArg = arg.getText(sf);
+        res.modeArgIsLiteral =
+          ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg);
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  if (res.modeArg && !res.modeArgIsLiteral) {
+    res.modeInit = decls.get(res.modeArg) ?? null;
+  }
+  return res;
+}
+
+/**
+ * Источник кадра — ровно той же лестницей, что и openLightbox в проводке.
+ */
+const srcOf = (el: HTMLElement): string =>
+  el.getAttribute("data-media-src") ||
+  el.getAttribute("data-image") ||
+  el.querySelector("img")?.getAttribute("src") ||
+  "";
+
+/**
+ * Все фото галереи по разметке: источники носят и кадры, и миниатюры, поэтому
+ * множество их значений — это ровно снимки товара, без догадок о числе.
+ */
+const galleryPhotos = (section: HTMLElement): Set<string> =>
+  new Set(
+    section
+      .querySelectorAll("[data-media-src], [data-image]")
+      .map(srcOf)
+      .filter(Boolean),
+  );
+
+const built = (): boolean =>
+  existsSync(resolve(SITES_ROOT, "dist", "astro-blocks", "manifest.json")) &&
+  THEMES.every((t) =>
+    existsSync(
+      resolve(SITES_ROOT, "dist", "theme-sections", t, "manifest.json"),
+    ),
+  );
+
+describe("«Увеличение» — живая цепочка: реальная разметка секции", () => {
+  it("блоки и секции всех пяти тем собраны (pnpm build:blocks && pnpm build:theme-sections:all)", () => {
+    expect(built()).toBe(true);
+  });
+
+  describe.each(THEMES)("%s", (theme) => {
+    describe.each(LAYOUTS)("макет «%s»", (layout) => {
+      it("режим доезжает до корня секции и его читает проводка, а не литерал", () => {
+        if (!built()) return;
+        const root = parseHtml(renderSection(theme, layout, "click"));
+        const section = root.querySelector("[data-zoom-mode]");
+        // S3: без атрибута на корне читать режим неоткуда.
+        expect(section).not.toBeNull();
+        expect(section!.getAttribute("data-zoom-mode")).toBe("click");
+
+        const site = callSiteOf(sectionScript(root));
+        // S1: функция может быть образцовой и при этом никем не вызванной.
+        expect(site.calls).toBeGreaterThanOrEqual(1);
+        // S4: режим обязан приехать из разметки, а не быть зашит в вызове.
+        expect(site.modeArgIsLiteral).toBe(false);
+        expect(site.modeInit ?? "").toContain("data-zoom-mode");
+      });
+
+      it("«Наведение» оживляет КАЖДЫЙ кадр с фото, миниатюры не трогает", () => {
+        if (!built()) return;
+        const html = renderSection(theme, layout, "hover");
+        const root = parseHtml(html);
+        liven(root);
+        const section = root.querySelector("[data-zoom-mode]")!;
+        const { frames: frameSel, thumb } = portOf(theme);
+        const expected = section
+          .querySelectorAll(frameSel)
+          .filter((e) => !e.hasAttribute(thumb) && e.querySelector("img"));
+
+        // S2: в «2 колонках» героя нет — если плитка перестала быть кадром,
+        // оживлять нечего, и это ровно исходный баг.
+        expect(expected.length).toBeGreaterThanOrEqual(1);
+
+        const wire = wiringFromRendered(sectionScript(root));
+        expect(wire(section as never, "hover", () => {})).toBe(expected.length);
+
+        const wiredEls = section.querySelectorAll("[data-zoom-wired]");
+        expect(wiredEls.length).toBe(expected.length);
+
+        // «2 колонки» — героя нет, КАЖДОЕ фото само себе кадр. Проверяем не
+        // «кадров хотя бы один», а покрытие: во flux первая плитка вдобавок
+        // несёт data-cfg-hero, поэтому счётный порог там проходил и с мёртвыми
+        // остальными плитками (саботаж S5 2026-09-14 прошёл гард насквозь).
+        if (layout === "two-columns") {
+          const photos = galleryPhotos(section);
+          expect(photos.size).toBeGreaterThanOrEqual(2);
+          const covered = new Set(wiredEls.map((e) => srcOf(e)));
+          expect([...photos].sort()).toEqual([...covered].sort());
+        }
+        for (const el of wiredEls) {
+          const f = el as LiveEl;
+          expect(f.getAttribute("data-zoom-wired")).toBe("hover");
+          expect(f.wired()).toEqual(["mouseenter", "mouseleave", "mousemove"]);
+          expect(f.style.cursor).toBe("zoom-in");
+          // Миниатюра-переключатель кадром не становится никогда.
+          expect(f.hasAttribute(thumb)).toBe(false);
+        }
+      });
+
+      it("«Наведение» — фото под курсором растёт и возвращается назад", () => {
+        if (!built()) return;
+        const root = parseHtml(renderSection(theme, layout, "hover"));
+        liven(root);
+        const section = root.querySelector("[data-zoom-mode]")!;
+        const wire = wiringFromRendered(sectionScript(root));
+        wire(section as never, "hover", () => {});
+
+        const frame = section.querySelector("[data-zoom-wired]") as LiveEl;
+        const img = frame.querySelector("img") as unknown as LiveEl;
+        frame.fire("mouseenter");
+        expect(img.style.transform).toBe("scale(2)");
+        frame.fire("mousemove", { clientX: 100, clientY: 300 });
+        expect(img.style.transformOrigin).toBe("25% 75%");
+        frame.fire("mouseleave");
+        expect(img.style.transform).toBe("");
+      });
+
+      it("«Нажатие» — клик по кадру открывает лупу с ЭТИМ фото", () => {
+        if (!built()) return;
+        const root = parseHtml(renderSection(theme, layout, "click"));
+        liven(root);
+        const section = root.querySelector("[data-zoom-mode]")!;
+        const wire = wiringFromRendered(sectionScript(root));
+        const opened: string[] = [];
+        const n = wire(section as never, "click", (src) => opened.push(src));
+        expect(n).toBeGreaterThanOrEqual(1);
+
+        const frames = section.querySelectorAll("[data-zoom-wired]");
+        for (const el of frames) {
+          const f = el as LiveEl;
+          expect(f.wired()).toEqual(["click"]);
+          expect(f.style.cursor).toBe("zoom-in");
+        }
+        const last = frames[frames.length - 1] as LiveEl;
+        const expectSrc =
+          last.getAttribute("data-media-src") ||
+          last.getAttribute("data-image") ||
+          (last.querySelector("img")?.getAttribute("src") ?? "");
+        last.fire("click");
+        expect(opened).toEqual([expectSrc]);
+        expect(expectSrc).not.toBe("");
+      });
+
+      it("«Нет» — ни одного обработчика, курсор не тронут", () => {
+        if (!built()) return;
+        const root = parseHtml(renderSection(theme, layout, "none"));
+        liven(root);
+        const section = root.querySelector("[data-zoom-mode]")!;
+        expect(section.getAttribute("data-zoom-mode")).toBe("none");
+
+        const wire = wiringFromRendered(sectionScript(root));
+        expect(wire(section as never, "none", () => {})).toBe(0);
+        expect(section.querySelectorAll("[data-zoom-wired]").length).toBe(0);
+
+        const { frames: frameSel } = portOf(theme);
+        for (const el of section.querySelectorAll(frameSel)) {
+          const f = el as LiveEl;
+          expect(f.wired()).toEqual([]);
+          expect(f.style.cursor ?? "").toBe("");
+        }
+      });
+    });
+  });
+});

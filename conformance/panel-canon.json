@@ -1976,6 +1976,11 @@
               "large=Большой"
             ]
           },
+          "description": {
+            "type": "aiText",
+            "label": "Текст",
+            "visibility": "panel"
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -1987,11 +1992,6 @@
             "visibility": "panel"
           },
           "headingAlignment": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
-          },
-          "description": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -5103,6 +5103,11 @@
               "large=Большой"
             ]
           },
+          "description": {
+            "type": "aiText",
+            "label": "Текст",
+            "visibility": "panel"
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -5114,11 +5119,6 @@
             "visibility": "panel"
           },
           "headingAlignment": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
-          },
-          "description": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -8235,6 +8235,11 @@
               "large=Большой"
             ]
           },
+          "description": {
+            "type": "aiText",
+            "label": "Текст",
+            "visibility": "panel"
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -8246,11 +8251,6 @@
             "visibility": "panel"
           },
           "headingAlignment": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
-          },
-          "description": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -11362,6 +11362,11 @@
               "large=Большой"
             ]
           },
+          "description": {
+            "type": "aiText",
+            "label": "Текст",
+            "visibility": "panel"
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -11373,11 +11378,6 @@
             "visibility": "panel"
           },
           "headingAlignment": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
-          },
-          "description": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -14489,6 +14489,11 @@
               "large=Большой"
             ]
           },
+          "description": {
+            "type": "aiText",
+            "label": "Текст",
+            "visibility": "panel"
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -14500,11 +14505,6 @@
             "visibility": "panel"
           },
           "headingAlignment": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
-          },
-          "description": {
             "type": "hidden",
             "label": "",
             "visibility": "off"

@@ -93,7 +93,8 @@
     "test:page-padding": "jest --runInBand src/themes/__tests__/page-section-theme-padding.spec.ts",
     "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts",
     "test:media-columns": "jest --runInBand src/themes/__tests__/media-section-column-parity.spec.ts",
-    "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts"
+    "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts",
+    "test:cart-scheme": "jest --runInBand src/themes/__tests__/cart-page-scheme.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

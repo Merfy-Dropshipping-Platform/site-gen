@@ -104,6 +104,73 @@ body {
   --vanilla-line: rgb(var(--color-muted) / 0.3);
 }
 
+/* Секции КОРЗИНЫ vanilla (страница /cart: «Корзина» + «Промежуточный итог»).
+   Жалоба владельца 15.09 про bloom/satin, замер показал то же у vanilla: при
+   смене цветовой схемы секции не двигались ни на один rgb (фон 255,255,255,
+   текст 10,10,10 на обеих схемах).
+
+   Причина у vanilla ДРУГАЯ, чем у bloom/satin. Разметка порта уже написана
+   через var(--vanilla-*) и var(--color-*), но ни одна из этих утилит Tailwind
+   в dist/theme-css/vanilla.css НЕ ПОПАДАЕТ: в отличие от rose (global.css:11),
+   flux (:14), bloom (:18) и satin (:15), у vanilla нет @source на собственные
+   ../components/**. Замер: text-[var(--vanilla-muted)] → 0 утилит в CSS,
+   text-[rgb(var(--color-muted,68_68_68))] → 0. Цвет надписей приходил
+   наследованием от body { color: var(--vanilla-dark) } = #0a0a0a.
+
+   Поэтому здесь красим ПРАВИЛАМИ (их сканер не касается), а не утилитами, и
+   ровно тем же набором алиасов, что у дровера выше — источник один.
+   Скоуп сознательно узкий (только два блока корзины): общий @source оживил бы
+   мёртвые утилиты по всей теме и сдвинул бы секции, которых жалоба не касается. */
+[data-block="cart-body"][class*="color-scheme-"],
+[data-block="cart-summary"][class*="color-scheme-"] {
+  --vanilla-surface: rgb(var(--color-bg));
+  --vanilla-dark: rgb(var(--color-heading));
+  --vanilla-muted: rgb(var(--color-muted));
+  --vanilla-header-bg: rgb(var(--color-button-bg, var(--color-heading)));
+  --vanilla-line: rgb(var(--color-muted) / 0.3);
+  /* Кнопку «Продолжить покупки» красит scoped <style> самой секции (он unlayered
+     и бьёт этот @layer base), поэтому текст кнопки отдаём ему переменной. */
+  --vanilla-button-text: rgb(var(--color-button-text));
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-text));
+}
+
+/* Заголовок «Корзина» — цвет заголовка схемы (канон rose: .rose-title). */
+[data-block="cart-body"][class*="color-scheme-"] h1 {
+  color: rgb(var(--color-heading));
+}
+
+/* Приглушённые надписи: «Вы пока не добавили товар», «Есть аккаунт?»,
+   примечание сводки, старая цена (канон rose: .rose-subtitle → --color-muted). */
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-empty] p,
+[data-block="cart-summary"][class*="color-scheme-"] p,
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-items] .line-through {
+  color: rgb(var(--color-muted));
+}
+
+/* Ссылка «Войти», название товара, цена, счётчик, «Итого» и сумма — цвет текста. */
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-empty] p a,
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-items] a,
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-items] span:not(.line-through),
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-items] button,
+[data-block="cart-summary"][class*="color-scheme-"] .cart-summary-totals span {
+  color: rgb(var(--color-text));
+}
+
+/* Разделитель строк и рамка счётчика — приглушённый схемы (как --vanilla-line). */
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-items] li,
+[data-block="cart-body"][class*="color-scheme-"] [data-cart-page-items] li div {
+  border-color: rgb(var(--color-muted) / 0.3);
+}
+
+/* Кнопки «Продолжить покупки» / «Оформить заказ» — кнопочные токены схемы. */
+[data-block="cart-body"][class*="color-scheme-"] .vanilla-button-cart,
+[data-block="cart-summary"][class*="color-scheme-"] .vanilla-button-cart {
+  background: rgb(var(--color-button-bg));
+  border-color: rgb(var(--color-button-bg));
+  color: rgb(var(--color-button-text));
+}
+
 /* NB: img/video max-width:100% даёт Tailwind preflight в @layer base (утилиты
    max-w-[..] перекрывают). Unlayered-дубликат бил утилиту лого max-w-[160px]. */
 

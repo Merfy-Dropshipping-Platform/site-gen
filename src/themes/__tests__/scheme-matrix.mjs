@@ -645,7 +645,6 @@ export const ALLOWED = [
     test: (c) => c.chain.includes('--color-error'),
   },
   {
-<<<<<<< HEAD
     id: 'hero-overlay-veil',
     why: 'слой «Затемнение» героя — вуаль МЕЖДУ фото (z-0) и текстом (z-10). По устройству packages/theme-base/styles/hero-over-photo.css цвет текста над фото берёт СХЕМА, а читаемость держит именно затемнение. Осветлять вуаль вместе со схемой — значит отнять у неё смысл: на светлой схеме текст пропадёт на фото. Мерчант управляет ПРОЗРАЧНОСТЬЮ слоя (ползунок 0–100), а не его цветом',
     test: (c) =>
@@ -655,7 +654,8 @@ export const ALLOWED = [
       /(^|\s)absolute(\s|$)/.test(c.nodeClasses) &&
       /(^|\s)inset-0(\s|$)/.test(c.nodeClasses) &&
       /(^|\s)z-\[1\](\s|$)/.test(c.nodeClasses),
-=======
+  },
+  {
     id: 'slide-over-photo',
     why: 'белое и чёрное ВНУТРИ кадра слайда — намеренный дизайн, а не краска секции: надпись и кнопка лежат на ЗАТЕМНЁННОЙ фотографии, точки пейджера и скрим рисуются поверх неё. Эталон rose делает ровно так же (Slideshow.astro: !bg-white/50 у точек, text-white у надписи при s.image && !s.boxed, bg-black со своей прозрачностью у скрима). Схема до секции ДОХОДИТ: корень «Слайд-шоу» у всех пяти тем уже на --color-bg — спорит только краска, положенная абсолютом поверх кадра',
     test: (c) =>
@@ -678,7 +678,6 @@ export const ALLOWED = [
     test: (c) =>
       c.verdict === 'palette' &&
       ('data-cart-count' in c.node.attrs || 'data-wishlist-count' in c.node.attrs),
->>>>>>> fix/b21-palette
   },
   {
     id: 'search-always-scheme-1',

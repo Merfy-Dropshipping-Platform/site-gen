@@ -204,6 +204,10 @@ describe("матрица «тема × секция × мишень» проти
     expect(guard.allowed.map((a) => a.id).sort()).toEqual([
       "error-token",
       "form-status",
+      // Заведено 15.09 осознанно: вуаль «Затемнение» героя обязана оставаться
+      // тёмной при любой схеме — цвет текста над фото берёт схема, читаемость
+      // держит затемнение (packages/theme-base/styles/hero-over-photo.css).
+      "hero-overlay-veil",
       "search-always-scheme-1",
     ]);
   });

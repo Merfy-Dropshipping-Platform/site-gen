@@ -645,6 +645,17 @@ export const ALLOWED = [
     test: (c) => c.chain.includes('--color-error'),
   },
   {
+    id: 'hero-overlay-veil',
+    why: 'слой «Затемнение» героя — вуаль МЕЖДУ фото (z-0) и текстом (z-10). По устройству packages/theme-base/styles/hero-over-photo.css цвет текста над фото берёт СХЕМА, а читаемость держит именно затемнение. Осветлять вуаль вместе со схемой — значит отнять у неё смысл: на светлой схеме текст пропадёт на фото. Мерчант управляет ПРОЗРАЧНОСТЬЮ слоя (ползунок 0–100), а не его цветом',
+    test: (c) =>
+      c.block === 'Hero' &&
+      c.prop === 'background-color' &&
+      /(^|\s)pointer-events-none(\s|$)/.test(c.nodeClasses) &&
+      /(^|\s)absolute(\s|$)/.test(c.nodeClasses) &&
+      /(^|\s)inset-0(\s|$)/.test(c.nodeClasses) &&
+      /(^|\s)z-\[1\](\s|$)/.test(c.nodeClasses),
+  },
+  {
     id: 'search-always-scheme-1',
     why: 'панель поиска в шапке ПРИБИТА к схеме 1 решением владельца 15.09 («Всегда Схема 1, жёстко») — правило form[role="search"] в tokens-css, сторож src/themes/__tests__/search-always-scheme-1.spec.ts. Краска не должна ехать за схемой шапки: это не дефект, а требование',
     test: (c) => c.verdict === 'pinned' && /form\[role="search"\]/.test(c.pinnedBy ?? ''),

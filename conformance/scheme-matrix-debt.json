@@ -1,6 +1,6 @@
 {
   "generated": "node src/themes/__tests__/scheme-matrix.mjs --debt-out <файл>",
-  "total": 110,
+  "total": 88,
   "entries": [
     {
       "key": "bloom|AccountSection|заголовок|color|account-title h1",
@@ -131,14 +131,6 @@
         "--color-white"
       ],
       "where": "themes/bloom/src/components/Header.astro:679"
-    },
-    {
-      "key": "bloom|Hero|фон контейнера|background-color|#000",
-      "verdict": "hex",
-      "value": "#000",
-      "role": null,
-      "chain": [],
-      "where": "themes/bloom/src/components/sections/Hero.astro:370"
     },
     {
       "key": "bloom|LoginSection|текст|color|auth-label",
@@ -471,52 +463,12 @@
       "where": "themes/rose/src/components/Footer.astro:213"
     },
     {
-      "key": "rose|Header|ссылка|color|text-gray",
-      "verdict": "theme-var",
-      "value": "var(--color-gray)",
-      "role": "--color-gray",
-      "chain": [
-        "--color-gray"
-      ],
-      "where": "themes/rose/src/components/Header.astro:562"
-    },
-    {
-      "key": "rose|Header|ссылка|color|text-rose-primary",
-      "verdict": "theme-var",
-      "value": "var(--color-rose-primary)",
-      "role": "--color-rose-primary",
-      "chain": [
-        "--color-rose-primary"
-      ],
-      "where": "themes/rose/src/components/Header.astro:189"
-    },
-    {
       "key": "rose|Header|текст|color|text-white",
       "verdict": "palette",
       "value": "var(--color-white)",
       "role": "--color-white",
       "chain": [
         "--color-white"
-      ],
-      "where": "themes/rose/src/components/Header.astro:203"
-    },
-    {
-      "key": "rose|Header|фон кнопки|background-color|bg-rose-primary",
-      "verdict": "theme-var",
-      "value": "var(--color-rose-primary)",
-      "role": "--color-rose-primary",
-      "chain": [
-        "--color-rose-primary"
-      ],
-      "where": "themes/rose/src/components/Header.astro:203"
-    },
-    {
-      "key": "rose|Header|фон контейнера|background-color|bg-rose-primary",
-      "verdict": "theme-var",
-      "value": "var(--color-rose-primary)",
-      "role": "--color-rose-primary",
-      "chain": [
-        "--color-rose-primary"
       ],
       "where": "themes/rose/src/components/Header.astro:203"
     },
@@ -641,16 +593,6 @@
       "where": "themes/satin/src/components/sections/CartSection.astro:30"
     },
     {
-      "key": "satin|CollapsibleSection|текст|color|satin-copy",
-      "verdict": "theme-var",
-      "value": "var(--satin-muted)",
-      "role": "--satin-muted",
-      "chain": [
-        "--satin-muted"
-      ],
-      "where": "themes/satin/src/components/sections/CollapsibleSection.astro:204"
-    },
-    {
       "key": "satin|ContactForm|фон поля ввода|background-color|bg-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -709,16 +651,6 @@
         "--color-foreground"
       ],
       "where": "themes/satin/src/styles/global.css:513"
-    },
-    {
-      "key": "satin|PopularProducts|текст кнопки|color|satin-button-dark",
-      "verdict": "theme-var",
-      "value": "var(--satin-white)",
-      "role": "--satin-white",
-      "chain": [
-        "--satin-white"
-      ],
-      "where": "themes/satin/src/components/sections/Popular.astro:201"
     },
     {
       "key": "satin|Slideshow|заголовок|color|text-white",
@@ -811,46 +743,6 @@
       "where": "themes/vanilla/src/components/sections/AccountSection.astro:62"
     },
     {
-      "key": "vanilla|CartSection|заголовок|color|text-[var(--vanilla-dark)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-dark)",
-      "role": "--vanilla-dark",
-      "chain": [
-        "--vanilla-dark"
-      ],
-      "where": "themes/vanilla/src/components/sections/CartSection.astro:45"
-    },
-    {
-      "key": "vanilla|CartSection|ссылка|color|text-[var(--vanilla-header-bg)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-header-bg)",
-      "role": "--vanilla-header-bg",
-      "chain": [
-        "--vanilla-header-bg"
-      ],
-      "where": "themes/vanilla/src/components/sections/CartSection.astro:57"
-    },
-    {
-      "key": "vanilla|CartSection|текст|color|text-[var(--vanilla-dark)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-dark)",
-      "role": "--vanilla-dark",
-      "chain": [
-        "--vanilla-dark"
-      ],
-      "where": "themes/vanilla/src/components/sections/CartSection.astro:45"
-    },
-    {
-      "key": "vanilla|CartSection|текст|color|text-[var(--vanilla-muted)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-muted)",
-      "role": "--vanilla-muted",
-      "chain": [
-        "--vanilla-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/CartSection.astro:49"
-    },
-    {
       "key": "vanilla|CartSection|фон секции|background-color|bg-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -889,36 +781,6 @@
         "--color-black"
       ],
       "where": "packages/theme-vanilla/blocks/Catalog/Catalog.astro:294"
-    },
-    {
-      "key": "vanilla|Catalog|фон кнопки|background-color|bg-[var(--vanilla-header-bg)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-header-bg)",
-      "role": "--vanilla-header-bg",
-      "chain": [
-        "--vanilla-header-bg"
-      ],
-      "where": "packages/theme-vanilla/blocks/Catalog/Catalog.astro:170"
-    },
-    {
-      "key": "vanilla|Catalog|фон контейнера|background-color|bg-[var(--vanilla-card)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-card)",
-      "role": "--vanilla-card",
-      "chain": [
-        "--vanilla-card"
-      ],
-      "where": "packages/theme-vanilla/blocks/Catalog/Catalog.astro:113"
-    },
-    {
-      "key": "vanilla|Catalog|фон контейнера|background-color|bg-[var(--vanilla-surface)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-surface)",
-      "role": "--vanilla-surface",
-      "chain": [
-        "--vanilla-surface"
-      ],
-      "where": "packages/theme-vanilla/blocks/Catalog/Catalog.astro:302"
     },
     {
       "key": "vanilla|ContactForm|фон поля ввода|background-color|bg-white",
@@ -961,16 +823,6 @@
       "where": "themes/vanilla/src/components/sections/Gallery.astro:229"
     },
     {
-      "key": "vanilla|Header|ссылка|color|text-[var(--vanilla-muted)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-muted)",
-      "role": "--vanilla-muted",
-      "chain": [
-        "--vanilla-muted"
-      ],
-      "where": "themes/vanilla/src/components/Header.astro:643"
-    },
-    {
       "key": "vanilla|Header|ссылка|color|text-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -981,36 +833,6 @@
       "where": "themes/vanilla/src/components/Header.astro:74"
     },
     {
-      "key": "vanilla|Header|текст|color|text-[var(--vanilla-dark)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-dark)",
-      "role": "--vanilla-dark",
-      "chain": [
-        "--vanilla-dark"
-      ],
-      "where": "themes/vanilla/src/components/Header.astro:216"
-    },
-    {
-      "key": "vanilla|Header|фон кнопки|background-color|bg-[var(--vanilla-green)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-green)",
-      "role": "--vanilla-green",
-      "chain": [
-        "--vanilla-green"
-      ],
-      "where": "themes/vanilla/src/components/Header.astro:652"
-    },
-    {
-      "key": "vanilla|Header|фон контейнера|background-color|bg-[var(--vanilla-surface)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-surface)",
-      "role": "--vanilla-surface",
-      "chain": [
-        "--vanilla-surface"
-      ],
-      "where": "themes/vanilla/src/components/Header.astro:590"
-    },
-    {
       "key": "vanilla|Header|фон контейнера|background-color|bg-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -1019,26 +841,6 @@
         "--color-white"
       ],
       "where": "themes/vanilla/src/components/Header.astro:216"
-    },
-    {
-      "key": "vanilla|Header|фон секции|background-color|[data-vanilla-header]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-announcement-bg)",
-      "role": "--vanilla-announcement-bg",
-      "chain": [
-        "--vanilla-announcement-bg"
-      ],
-      "where": "themes/vanilla/src/components/Header.astro:84"
-    },
-    {
-      "key": "vanilla|Hero|фон секции|background-color|bg-[var(--vanilla-green-deep)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-green-deep)",
-      "role": "--vanilla-green-deep",
-      "chain": [
-        "--vanilla-green-deep"
-      ],
-      "where": "themes/vanilla/src/components/sections/Hero.astro:437"
     },
     {
       "key": "vanilla|LoginSection|текст|color|auth-label",
@@ -1079,26 +881,6 @@
         "--color-white"
       ],
       "where": "themes/vanilla/src/components/sections/Slideshow.astro:324"
-    },
-    {
-      "key": "vanilla|WishlistSection|текст|color|text-[var(--vanilla-muted)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-muted)",
-      "role": "--vanilla-muted",
-      "chain": [
-        "--vanilla-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/WishlistSection.astro:93"
-    },
-    {
-      "key": "vanilla|WishlistSection|фон контейнера|background-color|bg-[var(--vanilla-card)]",
-      "verdict": "theme-var",
-      "value": "var(--vanilla-card)",
-      "role": "--vanilla-card",
-      "chain": [
-        "--vanilla-card"
-      ],
-      "where": "themes/vanilla/src/components/sections/WishlistSection.astro:73"
     }
   ]
 }

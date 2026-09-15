@@ -364,10 +364,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	}
 
 	{
+		/* Вуаль «Затемнение» между фото (z-0) и контентом (z-10). Цвет несёт ТОЛЬКО
+		   класс bg-black, инлайн — ТОЛЬКО прозрачность: паритет с rose:388,
+		   satin:470 и vanilla:481, где так и написано. Литерал background-color в
+		   инлайне был лишним и бил любой каскад, из-за чего матрица схем читала
+		   слой как «краска мимо схемы» (единственная клетка hex на пять тем). */
 		overlayN > 0 && (
 			<div
 				class="pointer-events-none absolute inset-0 z-[1] bg-black"
-				style={`background-color:#000;opacity:${overlayN / 100}`}
+				style={`opacity:${overlayN / 100}`}
 			/>
 		)
 	}

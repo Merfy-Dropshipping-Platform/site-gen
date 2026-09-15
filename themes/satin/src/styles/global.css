@@ -118,7 +118,10 @@ main {
   font-size: 16px;
   font-weight: 300;
   line-height: 1.5;
-  color: var(--satin-muted);
+  /* Приглушённая копия — токен схемы, а не --satin-muted: мишень «текст» в
+     «Разделе» стояла на #999999 при любой схеме мерчанта (матрица схем).
+     Фолбэк 153 153 153 = #999999 — прежний литерал, вид без схемы тот же. */
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 .satin-button {
@@ -173,9 +176,15 @@ main {
 }
 
 .satin-button-dark {
-  color: var(--satin-white);
-  background: var(--satin-black);
-  border-color: var(--satin-black);
+  /* Кнопка-заливка (primary). Цвет и фон едут ПАРОЙ: мишень «текст кнопки»
+     стояла на #ffffff при любой схеме, и перевести один только цвет нельзя —
+     на светлой схеме тёмный текст лёг бы на чёрную заливку и пропал.
+     Фон матрица не меряет (она слепа к сокращённому `background:`), но
+     разъединять пару из-за слепоты замера значит завести новый баг.
+     Фолбэки 255 255 255 / 0 0 0 — прежние литералы вёрстки. */
+  color: rgb(var(--color-button-text, 255 255 255));
+  background: rgb(var(--color-button-bg, 0 0 0));
+  border-color: rgb(var(--color-button-border, var(--color-button-bg, 0 0 0)));
 }
 
 .satin-button-light {

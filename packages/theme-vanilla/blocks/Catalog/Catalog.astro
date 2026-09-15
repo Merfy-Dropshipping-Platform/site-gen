@@ -451,19 +451,11 @@ const rowStockOptions: RadioOption[] = [
 			grid-template-columns: repeat(var(--vanilla-cols, 3), minmax(0, 1fr)) !important;
 		}
 	}
-	/* Переключение раскладок каталога: виден только выбранный вариант.
-	   data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
-	   (или дефолт из настройки filterPosition). */
-	@media (min-width: 1024px) {
-		[data-catalog-layout="top"] [data-catalog-variant="side"] { display: none; }
-		[data-catalog-layout="side"] [data-catalog-variant="top"] { display: none; }
-	}
-	/* Мобилка (<lg): side-сайдбар = lg-only → на узких экранах side-фильтров нет.
-	   Поэтому на <lg ВСЕГДА показываем top-вариант (фильтры сверху), независимо от
-	   выбранной раскладки; side-вариант прячем. (0,2,0) бьёт Tailwind .flex (0,1,0). */
-	@media (max-width: 1023px) {
-		[data-catalog-layout] [data-catalog-variant="side"] { display: none; }
-	}
+	/* Переключение раскладок каталога (top ⇄ side) — ЕДИНЫЙ источник:
+	   packages/theme-base/styles/catalog-layout.css (подключён из
+	   themes/vanilla/src/styles/global.css). Копия правила ЗДЕСЬ не нужна и
+	   вредна: у портов тем лежала вторая, без @media, и на узком экране
+	   обе вместе прятали ОБА варианта — каталог был пустой. */
 </style>
 
 <script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass }}>

@@ -208,14 +208,11 @@ function pluralizeProducts(count: number): string {
 </Layout>
 
 <style is:global>
-	/* Переключение раскладок каталога: в HTML отрендерены обе зоны, видна только
-	   зона активной раскладки (атрибут на section выставляет inline-скрипт выше). */
-	[data-catalog-layout="top"] [data-catalog-variant="side"] {
-		display: none;
-	}
-	[data-catalog-layout="side"] [data-catalog-variant="top"] {
-		display: none;
-	}
+	/* Переключение раскладок каталога (top ⇄ side) — ЕДИНЫЙ источник:
+	   packages/theme-base/styles/catalog-layout.css (подключён из
+	   themes/bloom/src/styles/global.css). Здесь копии БЫТЬ НЕ ДОЛЖНО: она
+	   жила без @media, доживала до страницы каталога вместе с блочной и
+	   на узком экране они вдвоём прятали ОБА варианта — каталог был пустой. */
 
 	/* ───── Зоны фильтров: токены цветовых схем конструктора ─────
 	   DS-компоненты (NtFilterSidebar/NtFilterPanel/NtRadioField/NtFilterPriceRows)

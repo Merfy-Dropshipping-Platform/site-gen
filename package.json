@@ -68,6 +68,7 @@
     "test:checkout-summary-scheme": "jest --runInBand src/themes/__tests__/checkout-summary-scheme-surface.spec.ts",
     "test:slide-panel": "jest --runInBand src/themes/__tests__/slideshow-slide-panel.spec.ts src/themes/__tests__/slideshow-slide-overlay.spec.ts",
     "test:account-muted": "jest --runInBand src/themes/__tests__/account-muted-token.spec.ts",
+    "test:account-foreground": "jest --runInBand src/themes/__tests__/account-foreground-token.spec.ts",
     "test:slide-media": "jest --runInBand src/themes/__tests__/slideshow-merchant-image.spec.ts",
     "test:collapsible-item-fields": "jest --runInBand src/themes/__tests__/collapsible-item-fields-parity.spec.ts",
     "panel-canon:refresh": "node src/themes/__tests__/panel-canon.mjs --out conformance/panel-canon.json",

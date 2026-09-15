@@ -72,6 +72,16 @@ const render = (theme: string, block: string): string => {
 };
 
 /**
+ * Комментарии вырезаются ДО любого разбора CSS.
+ *
+ * Иначе разборщик читает прозу как код: комментарий соседней ветки упоминал
+ * `.auth-input` и строкой ниже `--color-text-muted`, и регулярка правил
+ * склеила из них несуществующее правило с мёртвым токеном — гард покраснел на
+ * тексте, которого браузер не видит (2026-09-15).
+ */
+const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+/**
  * Вырезает из global.css темы правила, чьи селекторы начинаются с `.account-`.
  * Именно они рисуют обе секции аккаунта и страницу заказа; правила `.auth-*`
  * сюда не попадают намеренно (см. шапку файла).
@@ -80,7 +90,7 @@ const accountRules = (css: string): string[] => {
   const out: string[] = [];
   const re = /(^|\})\s*([^{}@]+)\{([^{}]*)\}/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(css))) {
+  while ((m = re.exec(stripComments(css)))) {
     const selector = m[2].trim();
     if (/(^|,)\s*\.account-/.test(selector)) out.push(`${selector}{${m[3]}}`);
   }
@@ -132,7 +142,7 @@ describe("вёрстка страниц аккаунта — тот же жив�
     "%s: .auth-input даёт фолбэк на схему (страница входа не меняется)",
     (theme) => {
       const css = readFileSync(themeFile(theme, "styles/global.css"), "utf-8");
-      const rules = css.match(/\.auth-input[^{]*\{[^}]*\}/g) ?? [];
+      const rules = stripComments(css).match(/\.auth-input[^{]*\{[^}]*\}/g) ?? [];
       const withDead = rules.filter((r) => r.includes(DEAD));
       // Правило может опираться на локальный `--color-text-muted` (его объявляет
       // `.auth-shell` страницы входа), но ОБЯЗАНО иметь запасной путь на схему —

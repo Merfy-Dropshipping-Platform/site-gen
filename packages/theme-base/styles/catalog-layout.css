@@ -1,0 +1,101 @@
+/**
+ * Переключение раскладок каталога (top ⇄ side) — ЕДИНСТВЕННЫЙ источник правды.
+ *
+ * Подключается из themes/<t>/src/styles/global.css сразу после catalog-filters.css:
+ *
+ *     @import "../../../../packages/theme-base/styles/catalog-layout.css";
+ *
+ * ── ЧТО БЫЛО СЛОМАНО ───────────────────────────────────────────────────────
+ *
+ * Правило жило в ДВУХ слоях и они разъехались:
+ *
+ *   packages/theme-<t>/blocks/Catalog/Catalog.astro  (5 форков × 3 правила)
+ *       @media (min-width: 1024px) { скрыть неактивный вариант }
+ *       @media (max-width: 1023px) { скрыть side всегда }   ← мобильная ветка
+ *
+ *   порты тем                                        (5 форков × 2 правила)
+ *       themes/rose|satin|flux/src/pages/catalog.astro         <style is:global>
+ *       themes/bloom/src/components/catalog/BloomCategoryPage.astro
+ *       themes/vanilla/src/components/catalog/VanillaCatalogSection.astro
+ *       [data-catalog-layout="top"] [data-catalog-variant="side"]{display:none}
+ *       [data-catalog-layout="side"] [data-catalog-variant="top"]{display:none}
+ *       ↑ БЕЗ @media — то есть старая, доmobile-версия того же правила.
+ *
+ * На живой странице каталога встречались ОБЕ копии: тело страницы собирает
+ * composeContentPagesIntoDist (page-catalog, requireOwnShell:true) из БЛОКА, а
+ * <head> остаётся от порта-шелла — и его `is:global` стили никуда не деваются.
+ *
+ * Итог на узком экране при раскладке side:
+ *   порт  (безусловно)          прячет top
+ *   блок  (max-width: 1023px)   прячет side
+ *   → не остаётся НИ ОДНОГО варианта. Каталог пустой.
+ *
+ * ЗАМЕР «ДО» (Chromium, окно 375px, раскладка side, 5 тем × 2 раскладки):
+ *
+ *   тема     сработало правил   плиток   высота <main>
+ *   rose            2              0        154px
+ *   satin           2              0        175px
+ *   flux            2              0        181px
+ *   vanilla         1             12       5346px   (его копия — scoped <style>)
+ *   bloom           1             12       5649px   (его копия не на /catalog)
+ *
+ * Живой стенд flux подтверждает: 2 сработавших правила, 0 плиток, <main> 221px
+ * против 1590px на 1280px.
+ *
+ * ── ПОЧЕМУ ОБЩИЙ ФАЙЛ, А НЕ «ПЕРЕНЕСТИ @media В ПОРТЫ» ─────────────────────
+ *
+ * Перенос @media в порты оставил бы 25 правил в 10 местах — сама болезнь
+ * (дубль) никуда не девается, и следующая правка снова разъедется. Удалить
+ * дубль в пользу блочной копии тоже нельзя: порт рисует СВОЮ разметку там, где
+ * блока нет вовсе — ветки `continue` в v2-live-pages (пустой page-catalog,
+ * пустой рендер, неузнанный шелл) и три категорийные страницы bloom
+ * (/cosmetics, /hair-care, /skin-care используют BloomCategoryPage напрямую).
+ * Там блочной копии нет, и переключение раскладок пропало бы совсем.
+ *
+ * Общий файл закрывает оба пути сразу: 25 правил в 10 местах → 3 правила в 1.
+ * Канал доставки уже проверен на соседнем catalog-filters.css:
+ *   • витрина — global.css → бандл темы (правила найдены в /_astro/*.css живого
+ *     стенда);
+ *   • конструктор — global.css → dist/theme-css/<t>.css (loadThemeCss в
+ *     src/services/preview.service.ts).
+ *
+ * ── ПОЧЕМУ @layer utilities ────────────────────────────────────────────────
+ *
+ * Правило обязано перебить утилиты Tailwind у самих обёрток вариантов
+ * (`.flex` у обоих `[data-catalog-variant]`), а те лежат в @layer utilities.
+ * Unlayered перебило бы вообще всё и нарушило урок base.css (гард
+ * scripts/check-css-layers.mjs). Свой слой — тот же utilities: специфичность
+ * этих селекторов (0,2,0) выше односоставной утилиты (0,1,0).
+ *
+ * ── ПОЧЕМУ 1023.98px, а не 1023px ──────────────────────────────────────────
+ *
+ * Дробные ширины окна (масштаб страницы, дробный dppx) давали щель: при 1023.5px
+ * не срабатывало ни `min-width: 1024px`, ни `max-width: 1023px`, и на экране
+ * оказывались ОБА варианта сразу. Порог десктопа (`min-width: 1024px`) НЕ
+ * тронут — поведение на ≥1024px остаётся прежним до байта.
+ */
+
+@layer utilities {
+  /* Десктоп (≥lg): показываем ровно ту раскладку, что выбрал мерчант
+     (data-catalog-layout ставит инлайн-скрипт секции из
+     window.__MERFY_CATALOG_LAYOUT__ или дефолт настройки filterPosition). */
+  @media (min-width: 1024px) {
+    [data-catalog-layout="top"] [data-catalog-variant="side"] {
+      display: none;
+    }
+
+    [data-catalog-layout="side"] [data-catalog-variant="top"] {
+      display: none;
+    }
+  }
+
+  /* Мобилка (<lg): сайдбар side-варианта — lg-only (hidden lg:flex), то есть на
+     узком экране фильтров в нём нет вовсе. Поэтому здесь ВСЕГДА показываем
+     top-вариант (фильтры сверху) независимо от выбранной раскладки, а side
+     прячем. НЕ добавлять сюда скрытие top — ровно оно и делало каталог пустым. */
+  @media (max-width: 1023.98px) {
+    [data-catalog-layout] [data-catalog-variant="side"] {
+      display: none;
+    }
+  }
+}

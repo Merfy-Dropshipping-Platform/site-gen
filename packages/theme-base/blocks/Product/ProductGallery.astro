@@ -31,6 +31,7 @@
  * `aria-current` (какая плитка сейчас в герое).
  */
 import type { GalleryView } from '../Product.types';
+import { ProductClasses as C } from './Product.classes';
 import { PLACEHOLDER_ASSETS } from '../../runtime/placeholders';
 
 interface Props {
@@ -54,8 +55,16 @@ const {
 } = Astro.props as Props;
 
 const isInlineSmall = variant === 'inline-small';
-const heroRadius = isInlineSmall ? 'rounded-[12px]' : 'rounded-[8px]';
-const thumbRadius = 'rounded-[8px]';
+// Скругление медиа берём из КАНОНА блока (`Product.classes.ts`), а не числом
+// в разметке: это настройка темы «Скругления → Медиа» (`--radius-media`), тот
+// же токен читают Gallery/Image/Hero/Collections/ImageWithText/Video. До этой
+// правки галерея товара была единственным местом с жёстким числом — канон в
+// `Product.classes.ts` существовал, но этот файл его не импортировал, и
+// настройка до медиа товара не доезжала.
+const heroRadius = isInlineSmall
+  ? C.galleryMediaRadiusInlineSmall
+  : C.galleryMediaRadius;
+const thumbRadius = C.galleryThumbRadius;
 const photoOnRight = photoPosition === 'right';
 
 // Все thumbs включая hero (в two-columns/stacked-grid hero — первый item).

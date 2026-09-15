@@ -385,7 +385,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					   гонял свап и файлы меняли места. */
 					<div class="grid w-full grid-cols-2 gap-4">
 						{galleryImages.map((img, i) => (
-							<div data-cfg-hero={i === 0 ? "" : undefined} data-media-index={i} data-image={img} class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+							<div data-cfg-hero={i === 0 ? "" : undefined} data-media-index={i} data-image={img} class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label={displayName}>
 								{i === 0 ? (
 									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="eager" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 								) : (
@@ -396,7 +396,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				) : (
 				<>
-				<div data-cfg-hero class:list={["relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
+				<div data-cfg-hero class:list={["relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (
@@ -410,7 +410,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<button
 									type="button"
 									class:list={[
-										"size-[88px] shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] transition-opacity hover:opacity-90 md:size-[var(--product-thumb-size,120px)]",
+										"size-[88px] shrink-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5] transition-opacity hover:opacity-90 md:size-[var(--product-thumb-size,120px)]",
 										i === 0 ? "border border-solid border-[#1e2952]/50" : "",
 									]}
 									data-cfg-thumb
@@ -555,7 +555,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div class="flex w-full flex-col gap-6 md:hidden" data-nt="product-configurator">
 			<!-- Фото: карусель + бейджи -->
 			<div class="relative w-full" data-cfg-carousel data-cfg-images={galleryImages.join("|")}>
-				<div data-cfg-hero class="relative block aspect-square w-full overflow-hidden rounded-[8px] bg-[#F5F5F5]" aria-label={displayName}>
+				<div data-cfg-hero class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="343" height="343" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (

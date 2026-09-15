@@ -79,7 +79,8 @@ const render = (theme: string, block: string): string => {
  * склеила из них несуществующее правило с мёртвым токеном — гард покраснел на
  * тексте, которого браузер не видит (2026-09-15).
  */
-const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
+const stripComments = (css: string): string =>
+  css.replace(/\/\*[\s\S]*?\*\//g, "");
 
 /**
  * Вырезает из global.css темы правила, чьи селекторы начинаются с `.account-`.
@@ -88,11 +89,18 @@ const stripComments = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, 
  */
 const accountRules = (css: string): string[] => {
   const out: string[] = [];
-  const re = /(^|\})\s*([^{}@]+)\{([^{}]*)\}/g;
+  // Якоря `(^|\})` здесь нет намеренно: он заставляет регулярку требовать
+  // закрывающую скобку ПЕРЕД каждым правилом и она читает файл ЧЕРЕЗ ОДНО —
+  // видно было 23 правила `.account-*` из 46 в каждой теме. Саботаж это
+  // показал: мёртвый токен, возвращённый в `.account-back-link`, оставлял
+  // гард зелёным (2026-09-15). Без якоря регулярка доходит и до правил,
+  // вложенных в `@media`.
+  const re = /([^{}]*)\{([^{}]*)\}/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(stripComments(css)))) {
-    const selector = m[2].trim();
-    if (/(^|,)\s*\.account-/.test(selector)) out.push(`${selector}{${m[3]}}`);
+    const selector = m[1].trim();
+    if (!selector || selector.startsWith("@")) continue;
+    if (/(^|,)\s*\.account-/.test(selector)) out.push(`${selector}{${m[2]}}`);
   }
   return out;
 };
@@ -142,7 +150,8 @@ describe("вёрстка страниц аккаунта — тот же жив�
     "%s: .auth-input даёт фолбэк на схему (страница входа не меняется)",
     (theme) => {
       const css = readFileSync(themeFile(theme, "styles/global.css"), "utf-8");
-      const rules = stripComments(css).match(/\.auth-input[^{]*\{[^}]*\}/g) ?? [];
+      const rules =
+        stripComments(css).match(/\.auth-input[^{]*\{[^}]*\}/g) ?? [];
       const withDead = rules.filter((r) => r.includes(DEAD));
       // Правило может опираться на локальный `--color-text-muted` (его объявляет
       // `.auth-shell` страницы входа), но ОБЯЗАНО иметь запасной путь на схему —

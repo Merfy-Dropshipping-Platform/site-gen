@@ -5755,3 +5755,56 @@ main уезжал, пока проверялось первое слияние).
 легаси-сиде миграции. Сейчас НЕ течёт: страница `collections/preview` входит в
 `STATIC_TEMPLATE_PAGES`, и её `root.props` до генератора не доходит — `<title>`
 на всех пяти стендах чистый. Данные всё равно мусорные, снимать отдельно.
+
+## 2026-09-15 — B13 — «Контактная форма»: наш инпут «Текст» во всех пяти темах
+
+### Цель
+
+Просьба владельца дословно: «во всех темах в секции Контактная форма добавить наш инпут Текст».
+«Наш инпут» — контрол с панелькой начертаний («Жирный»/«Курсив») и плейсхолдером «Ввести текст…»,
+то есть `type: 'aiText'` (constructor `FieldRenderer.tsx:254` → `AITextInput`).
+
+### Что нашла разведка
+
+- Панель «Контактной формы» ЕДИНА для пяти тем: `packages/theme-base/blocks/ContactForm/ContactForm.puckConfig.ts`.
+  Пер-темных override'ов у этого блока нет — значит правка одна, а не пять.
+- Поле «Текст» в панели отсутствовало ВО ВСЕХ ПЯТИ. При этом проп `description`
+  существовал в схеме и в `defaultProps` с появления секции — он был `type: 'hidden'`,
+  то есть контрола мерчанту не доставалось нигде.
+- Худшая часть: два порта из пяти проп вообще не рендерили. Замер живой цепочкой
+  (`render-theme-sections --live --cascade`, значение `<strong><em>RTXCFZ</em></strong>`):
+  rose `absent`, bloom `absent`, satin/flux/vanilla `ok`.
+
+### Сделано
+
+- `ContactForm.puckConfig.ts`: `description` `hidden` → `{ type:'aiText', label:'Текст',
+  fieldType:'description', placeholder:'Ввести текст...' }`, место — «Содержание», сразу за
+  «Размером заголовка» (как у соседей `Gallery.text`, `Collections.subtitle`,
+  `Catalog.categorySubtitle`). Состав пропсов НЕ менялся — поменялась видимость.
+- `themes/rose/src/components/sections/Contacts.astro`: подзаголовок уходит в
+  `RoseSectionHeading` (`subtitle`), у него уже `inlineFormat` + allow-list.
+- `themes/bloom/src/components/sections/ContactForm.astro`: абзац базовой ступени
+  «Текста» bloom (`font-inter 16 light`, токен `--color-muted`) — классы взяты дословно
+  из `Gallery.astro`/`Collections.astro`; «Размера текста» у секции в панели нет.
+- `packages/theme-base/blocks/ContactForm/ContactForm.astro`: `description` рендерится
+  через `sanitizeInline`, а не голой подстановкой (иначе печатал бы теги текстом).
+- satin/flux/vanilla не тронуты — они рендерили поле и до правки.
+
+### Числа до / после
+
+| замер | до | после |
+|---|---|---|
+| поле «Текст» в панели (5 тем) | нет ни в одной | есть во всех пяти, `aiText` |
+| `description` доезжает до разметки | rose absent, bloom absent, satin/flux/vanilla ok | ok × 5 |
+| `rich-text-coverage --table` | всего 168, не ok 0 | всего 173, не ok 0 |
+| `rich-text-coverage --table --xss` | 168 safe | 173 safe |
+| `panel-canon` | 203 зелёных | 203 зелёных (переснят, разошлись 5 клеток ContactForm) |
+| `section-snapshots` | 155 | 155 (ContactForm в фикстурах нет — снимки не двигались) |
+
+### Проверки
+
+- Новый гард `pnpm test:contact-form-text` — 42 проверки. До правки 26 красных
+  (20 панель + 6 рендер rose/bloom), после — 42 зелёных. Заведён в `ci.yml`.
+- Саботажи — см. отчёт ветки: снятие поля, разрыв связи с рендером у одной темы,
+  подмена контрола на голое поле; контрольный саботаж несторожимого остался зелёным.
+- Commit — да; push/merge/deploy — НЕ выполнялись. Живьём на стендах НЕ проверялось.

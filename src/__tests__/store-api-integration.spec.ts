@@ -199,9 +199,24 @@ function createStoreDb() {
             const activeProducts = products
               .filter((p) => p.isActive)
               .sort((a, b) => a.sortOrder - b.sortOrder);
+            // Счётчик: сервис берёт общее число тем же запросом с count(*).
+            const selectsCount =
+              selectArgs[0] && Object.keys(selectArgs[0])[0] === 'value';
+            if (selectsCount) {
+              return Promise.resolve([{ value: activeProducts.length }]);
+            }
+            // Страницы (DEBT-21): цепочка orderBy → limit → offset. Мок повторяет
+            // её целиком, иначе тест зелёный там, где сервис в жизни падает.
+            const page = (rows: typeof activeProducts) => ({
+              limit: (n: number) => ({
+                offset: (skip: number) => Promise.resolve(rows.slice(skip, skip + n)),
+                then: (fn: any) => fn(rows.slice(0, n)),
+              }),
+              then: (fn: any) => fn(rows),
+            });
             return {
-              orderBy: () => Promise.resolve(activeProducts),
-              limit: (_n: number) => Promise.resolve(activeProducts),
+              orderBy: () => page(activeProducts),
+              limit: (n: number) => Promise.resolve(activeProducts.slice(0, n)),
             };
           }
           return Promise.resolve([]);
@@ -287,10 +302,11 @@ describe('Store API Integration', () => {
       const db = createStoreDb();
       const service = createService(db);
 
-      const products = await service.listSiteProducts('s1', 't1');
+      // Метод стал страничным (DEBT-21): список лежит в `items`, рядом счётчик.
+      const { items: products, total } = await service.listSiteProducts('s1', 't1');
 
-      // Should only return active products (isActive=true)
       expect(Array.isArray(products)).toBe(true);
+      expect(total).toBe(products.length);
       expect(products.every((p: any) => p.isActive === true)).toBe(true);
       // Archived product (p3) should be excluded
       expect(products.find((p: any) => p.id === 'p3')).toBeUndefined();
@@ -300,7 +316,7 @@ describe('Store API Integration', () => {
       const db = createStoreDb();
       const service = createService(db);
 
-      const products = await service.listSiteProducts('s1', 't1');
+      const { items: products } = await service.listSiteProducts('s1', 't1');
 
       // Products should be in sortOrder: p1 (1), p2 (2)
       if (products.length >= 2) {
@@ -831,5 +847,43 @@ describe('Store API Integration', () => {
       expect(config.storeId).toBeTruthy();
       expect(config.currency).toBe('RUB');
     });
+  });
+});
+
+describe('Products Listing — страницы (DEBT-21)', () => {
+  it('предел режет выдачу, а счётчик говорит, сколько всего', async () => {
+    const db = createStoreDb();
+    const service = createService(db);
+
+    const all = await service.listSiteProducts('s1', 't1');
+    const firstPage = await service.listSiteProducts('s1', 't1', { limit: 1 });
+
+    // Без счётчика «вернулось ровно limit» неотличимо от «это всё» — именно
+    // из-за этого агент принимал обрезанную выдачу за полную.
+    expect(firstPage.items.length).toBe(1);
+    expect(firstPage.total).toBe(all.total);
+    expect(firstPage.limit).toBe(1);
+  });
+
+  it('смещение отдаёт следующую страницу, а не ту же самую', async () => {
+    const db = createStoreDb();
+    const service = createService(db);
+
+    const first = await service.listSiteProducts('s1', 't1', { limit: 1, offset: 0 });
+    const second = await service.listSiteProducts('s1', 't1', { limit: 1, offset: 1 });
+
+    if (first.total > 1) {
+      expect(second.items[0]?.id).not.toBe(first.items[0]?.id);
+    }
+  });
+
+  it('вызов без параметров по-прежнему работает — предел лишь мягкий', async () => {
+    const db = createStoreDb();
+    const service = createService(db);
+
+    const page = await service.listSiteProducts('s1', 't1');
+
+    expect(page.limit).toBe(100);
+    expect(page.offset).toBe(0);
   });
 });

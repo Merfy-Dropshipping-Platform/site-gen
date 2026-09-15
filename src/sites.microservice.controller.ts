@@ -434,12 +434,23 @@ export class SitesMicroserviceController {
   @MessagePattern("sites.products.list")
   async listProducts(@Payload() data: any) {
     try {
-      const { tenantId, siteId } = data ?? {};
+      const { tenantId, siteId, limit, offset } = data ?? {};
       if (!tenantId || !siteId) {
         return { success: false, message: "tenantId and siteId required" };
       }
-      const products = await this.service.listSiteProducts(siteId, tenantId);
-      return { success: true, data: products };
+      const page = await this.service.listSiteProducts(siteId, tenantId, {
+        ...(limit !== undefined && { limit: Number(limit) }),
+        ...(offset !== undefined && { offset: Number(offset) }),
+      });
+      // `data` остаётся списком: так его читают все, кто звал этот метод до
+      // появления страниц. Счётчик и границы уезжают рядом, не ломая форму.
+      return {
+        success: true,
+        data: page.items,
+        total: page.total,
+        limit: page.limit,
+        offset: page.offset,
+      };
     } catch (e: any) {
       this.logger.error("products.list failed", e);
       return { success: false, message: e?.message ?? "internal_error" };

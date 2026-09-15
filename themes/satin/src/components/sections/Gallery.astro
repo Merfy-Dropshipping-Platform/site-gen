@@ -233,7 +233,13 @@ const sideTiles = galleryTiles.slice(1);
 const soloTile = galleryTiles.length === 1;
 const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
 // Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
-const heroSizeCls = soloTile ? "aspect-[16/9]" : "aspect-square";
+// В паре с боковой колонкой высоту большой плитке задаёт СТРОКА
+// (`lg:h-full` + `lg:flex-1` на медиа), а не собственный аспект: иначе низы
+// колонок не сходятся — замер Chromium 1440px давал 154px пустоты под парой
+// карточек против 0 у rose (ориентир владельца, 2026-09-15).
+const heroSizeCls = soloTile
+	? "aspect-[16/9]"
+	: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0 lg:flex-1";
 
 // Подписи плиток — манера карточек satin (PC:48-62 / CC:31-35): имя Arsenal 16
 // 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
@@ -295,11 +301,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		</div>
 		)}
 
-		<div class={`grid grid-cols-1 items-start gap-4 ${gridLayoutCls}`}>
+		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4 lg:items-stretch ${gridLayoutCls}`}>
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`group flex cursor-pointer flex-col gap-3${heroOrderCls}`}
+					class={`group flex min-h-0 min-w-0 cursor-pointer flex-col gap-3 lg:h-full${heroOrderCls}`}
 					aria-label={heroTile.label || heroTile.alt || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={
@@ -309,13 +315,19 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					data-puck-subsection-index={0}
 					data-puck-subsection-field="items"
 				>
-					<div class={`${heroSizeCls} w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]`}>
+					{/* Картинка большой плитки — ВНЕ потока (`absolute inset-0`, паттерн
+					    rose/bloom/flux). Иначе `!h-full` разрешается против гибкого
+					    бокса нулевой базы как auto, и высоту строки начинает задавать
+					    собственный размер файла: замер с загруженной картинкой 1080×1080
+					    возвращал плитке 592×592 и оставлял под парой карточек ту же
+					    пустоту, хотя обёртки формально сходились низами. */}
+					<div class={`relative ${heroSizeCls} w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]`}>
 						{heroTile.url && (
 							<img
 								src={heroTile.url}
 								alt={heroTile.alt}
 								loading="lazy"
-								class={`!h-full !w-full ${fitCls(heroTile)}`}
+								class={`absolute inset-0 !h-full !w-full ${fitCls(heroTile)}`}
 							/>
 						)}
 					</div>

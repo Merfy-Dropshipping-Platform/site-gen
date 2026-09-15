@@ -91,6 +91,7 @@
     "test:grey-literals": "jest --runInBand src/themes/__tests__/grey-literals-follow-scheme.spec.ts",
     "test:page-padding": "jest --runInBand src/themes/__tests__/page-section-theme-padding.spec.ts",
     "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts",
+    "test:size-settings": "jest --runInBand src/themes/__tests__/theme-size-settings-reach-theme.spec.ts",
     "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts"
   },
   "dependencies": {

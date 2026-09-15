@@ -325,8 +325,9 @@ function stepGuards(o, ctx) {
   step('гарды');
   const guards = buildGuardSet(o, ctx);
   if (!guards.length) { say('   ⚠ гарды отключены (--guards none) — залив без них запрещён'); return { skipped: true }; }
+  const fromSet = guards.length - o.extraGuards.length;
   const src = o.guards === 'ci' ? '.github/workflows/ci.yml' : o.guards;
-  say(`   набор: ${guards.length} шт. из ${src}${o.extraGuards.length ? ` + ${o.extraGuards.length} через --guard` : ''}`);
+  say(`   набор: ${guards.length} шт.${fromSet ? ` — ${fromSet} из ${src}` : ''}${o.extraGuards.length ? `${fromSet ? ',' : ' —'} ${o.extraGuards.length} через --guard` : ''}`);
   const res = runGuards(guards, { repoRoot: ctx.root, log: say });
   say('');
   say(formatGuardTable(res.results).split('\n').map((l) => `   ${l}`).join('\n'));

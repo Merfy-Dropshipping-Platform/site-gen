@@ -13,6 +13,21 @@
  *
  * Единственное отличие от исходной версии: ширина окна стала ПАРАМЕТРОМ
  * (была модульной константой 375). Гарду раскладок нужны обе — 375 и 1280.
+ *
+ * Дополнено при переезде третьего гарда (строки фильтров, 2026-09-15) — три
+ * способности пришли из его собственной копии движка и теперь общие:
+ *   1. `splitSelectorList` — запятые внутри `:is(…)`/`:not(…)` НЕ разделители.
+ *      Наивный `split(",")` рвал `:is(p, li, …)` на куски вроде `li)`, узел на
+ *      них не матчится, правило молча исчезало из конкурентов — проверка
+ *      зеленела там, где в браузере победил бы кто-то другой;
+ *   2. специфичность `:is()/:not()/:has()` считается по САМОМУ СИЛЬНОМУ
+ *      аргументу (как в спецификации), а не суммой всех;
+ *   3. атрибут `style` узла участвует в каскаде. Инлайн сильнее любого правила
+ *      без `!important` — без этого саботаж `style="top:100%"` на пяти панелях
+ *      flux оставлял гард фильтров 52/52 зелёными (дыра F2, найденная его же
+ *      автором). Победивший инлайн возвращается правилом с селектором
+ *      `INLINE_SELECTOR`: проверки «победил ли общий файл» его не спутают с
+ *      правилом.
  */
 
 export type Rule = {
@@ -26,7 +41,12 @@ export type Rule = {
 /** Минимальный интерфейс узла, который нужен каскаду (node-html-parser подходит). */
 export interface MatchableElement {
   matches(selector: string): boolean;
+  /** Атрибут узла. Нужен для `style`; node-html-parser отдаёт `string | undefined`. */
+  getAttribute?(name: string): string | undefined | null;
 }
+
+/** Селектор синтетического правила, которым возвращается победивший инлайн-стиль. */
+export const INLINE_SELECTOR = "style=";
 
 /**
  * Комментарии — вон до разбора.
@@ -57,6 +77,32 @@ export function stripComments(css: string): string {
     out += ch;
     i++;
   }
+  return out;
+}
+
+/**
+ * Разбить список селекторов по запятым ВЕРХНЕГО уровня.
+ *
+ * Наивный `split(",")` рвал бы `:is(p, li, …)` на куски вроде `li)` — правило
+ * получило бы бессмысленный селектор, узел на нём не сматчился бы, и конкурент
+ * молча исчез бы из каскада. Молчаливая потеря конкурента красит проверку
+ * зелёным ровно там, где она должна была бы упасть.
+ */
+export function splitSelectorList(prelude: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of prelude) {
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    if (ch === "," && depth === 0) {
+      if (cur.trim()) out.push(cur.trim());
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
   return out;
 }
 
@@ -94,9 +140,9 @@ export function parseRules(cssRaw: string): Rule[] {
           if (!prop || prop.startsWith("@") || part.includes("{")) continue;
           decls[prop] = part.slice(k + 1).trim();
         }
-        for (const sel of prelude.split(","))
+        for (const sel of splitSelectorList(prelude))
           rules.push({
-            selector: sel.trim(),
+            selector: sel,
             decls,
             layer,
             atRules: ats,
@@ -151,10 +197,26 @@ export function atRuleApplies(at: string, widthPx: number): boolean {
   });
 }
 
-/** Специфичность селектора: [id, класс/атрибут/псевдокласс, элемент]. */
+/**
+ * Специфичность селектора: [id, класс/атрибут/псевдокласс, элемент].
+ *
+ * У `:is()/:not()/:has()` сам псевдокласс не считается, а считается САМЫЙ
+ * СИЛЬНЫЙ аргумент (так в спецификации). Прежняя версия подставляла весь список
+ * аргументов и складывала их: `:is(p, li, label, button, a, [data-nt=…] > div)`
+ * получал шесть элементов вместо одного атрибута с элементом — вес правила
+ * оказывался завышен, и оно «побеждало» в тесте того, кого в браузере
+ * проигрывает.
+ */
 export function specificity(selector: string): [number, number, number] {
-  // :not(X) / :is(X) сами не считаются, считается их аргумент
-  const inner = selector.replace(/:(?:not|is|has)\(([^()]*)\)/g, " $1 ");
+  const inner = selector.replace(
+    /:(?:not|is|has)\(([^()]*)\)/g,
+    (_all, arg: string) => {
+      const best = splitSelectorList(arg)
+        .map((sel) => specificity(sel))
+        .sort((a, b) => b[0] - a[0] || b[1] - a[1] || b[2] - a[2])[0] ?? [0, 0, 0];
+      return ` ${"#i".repeat(best[0])}${".c".repeat(best[1])}${" e".repeat(best[2])} `;
+    },
+  );
   const ids = (inner.match(/#[\w-]+/g) ?? []).length;
   const classes =
     (inner.match(/(?<!\\)\.(?:\\.|[\w-])+/g) ?? []).length +
@@ -200,8 +262,26 @@ export function layerRank(css: string, layer: string): number {
 }
 
 /**
+ * Объявление свойства из атрибута `style`.
+ *
+ * Возвращает значение как есть (с `!important`, если он там был) или `null`.
+ */
+export function inlineDecl(style: string, prop: string): string | null {
+  const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, "i").exec(style);
+  return m ? m[1].trim() : null;
+}
+
+const isImportant = (value: string | undefined): boolean =>
+  value !== undefined && /!\s*important\s*$/i.test(value);
+
+/**
  * Победитель каскада для свойства на конкретном узле при ширине `widthPx`:
- * слой → специфичность → порядок в файле. Ровно этим порядком считает браузер.
+ * инлайн → слой → специфичность → порядок в файле. Ровно этим порядком считает
+ * браузер.
+ *
+ * Инлайн проигрывает только правилу с `!important` (и своему `!important`
+ * уступает тоже). Победивший инлайн отдаётся синтетическим правилом с
+ * селектором `INLINE_SELECTOR` — вызывающий увидит, что победил не файл.
  */
 export function winnerIn(
   css: string,
@@ -210,6 +290,7 @@ export function winnerIn(
   prop: string,
   widthPx: number,
 ): Rule | null {
+  const inline = inlineDecl(el.getAttribute?.("style") ?? "", prop);
   const matched = rules.filter((r) => {
     if (!(prop in r.decls)) return false;
     if (!r.atRules.every((at) => atRuleApplies(at, widthPx))) return false;
@@ -219,17 +300,32 @@ export function winnerIn(
       return false;
     }
   });
-  if (matched.length === 0) return null;
+  const asInline = (): Rule | null =>
+    inline === null
+      ? null
+      : {
+          selector: INLINE_SELECTOR,
+          decls: { [prop]: inline },
+          layer: "INLINE",
+          atRules: [],
+          order: -1,
+        };
+  if (matched.length === 0) return asInline();
   const weight = (r: Rule): number[] => [
     layerRank(css, r.layer),
     ...specificity(r.selector),
     r.order,
   ];
-  return matched.reduce((best, r) => {
+  const best = matched.reduce((acc, r) => {
     const a = weight(r);
-    const b = weight(best);
+    const b = weight(acc);
     for (let i = 0; i < a.length; i++)
-      if (a[i] !== b[i]) return a[i] > b[i] ? r : best;
-    return best;
+      if (a[i] !== b[i]) return a[i] > b[i] ? r : acc;
+    return acc;
   });
+  // Инлайн сильнее правила без `!important`; правило с `!important` сильнее
+  // обычного инлайна, но инлайн с `!important` сильнее и его.
+  if (inline === null) return best;
+  if (isImportant(inline) || !isImportant(best.decls[prop])) return asInline();
+  return best;
 }

@@ -34,9 +34,12 @@
  * же каскадом. Свою фикстуру не сочиняем: поменяется вёрстка гидрации —
  * поменяется и то, что проверяется.
  *
- * ИНЛАЙН-СТИЛИ. `winner()` учитывает атрибут `style` узла: инлайн сильнее любого
+ * ИНЛАЙН-СТИЛИ. Каскад учитывает атрибут `style` узла: инлайн сильнее любого
  * правила без `!important`. Без этого подмена `style="min-height:0"` оставила бы
- * проверку зелёной (дыра, найденная на соседнем гарде).
+ * проверку зелёной (дыра, найденная на соседнем гарде). Способность живёт в
+ * общем движке src/themes/__tests__/lib/css-cascade.ts — вместе с разбором
+ * запятых внутри `:is(…)` и специфичностью `:is()` по сильнейшему аргументу;
+ * своей копии движка у этого гарда нет.
  *
  * Требует сборки (тот же порядок, что в CI):
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
@@ -45,6 +48,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse, type HTMLElement } from "node-html-parser";
+
+import {
+  INLINE_SELECTOR,
+  parseRules,
+  winnerIn,
+  type Rule,
+} from "./lib/css-cascade";
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
@@ -272,162 +282,16 @@ function hydratedRows(theme: Theme): { label: string; el: HTMLElement }[] {
 }
 
 // ──────────────────── мини-каскад по реальному бандлу ────────────────────
-
-type Rule = {
-  selector: string;
-  decls: Record<string, string>;
-  layer: string;
-  atRules: string[];
-  order: number;
-};
-
-/** Комментарии — вон до разбора (кавычки уважаем). */
-function stripComments(css: string): string {
-  let out = "";
-  let i = 0;
-  while (i < css.length) {
-    const ch = css[i];
-    if (ch === "/" && css[i + 1] === "*") {
-      const e = css.indexOf("*/", i + 2);
-      i = e < 0 ? css.length : e + 2;
-      continue;
-    }
-    if (ch === '"' || ch === "'") {
-      const q = ch;
-      let j = i + 1;
-      while (j < css.length && css[j] !== q) j += css[j] === "\\" ? 2 : 1;
-      out += css.slice(i, Math.min(j + 1, css.length));
-      i = j + 1;
-      continue;
-    }
-    out += ch;
-    i++;
-  }
-  return out;
-}
-
-/** Разбор бандла в плоский список правил с их слоем и at-обёртками. */
-function parseRules(cssRaw: string): Rule[] {
-  const css = stripComments(cssRaw);
-  const rules: Rule[] = [];
-  let order = 0;
-
-  const walk = (text: string, layer: string, ats: string[]) => {
-    let i = 0;
-    while (i < text.length) {
-      const open = text.indexOf("{", i);
-      if (open < 0) break;
-      let depth = 1;
-      let j = open + 1;
-      while (j < text.length && depth > 0) {
-        if (text[j] === "{") depth++;
-        else if (text[j] === "}") depth--;
-        j++;
-      }
-      const prelude = text.slice(i, open).trim();
-      const body = text.slice(open + 1, j - 1);
-      if (prelude.startsWith("@layer")) {
-        walk(body, prelude.slice(6).trim(), ats);
-      } else if (prelude.startsWith("@")) {
-        walk(body, layer, [...ats, prelude]);
-      } else if (prelude) {
-        const decls: Record<string, string> = {};
-        for (const part of body.split(";")) {
-          const k = part.indexOf(":");
-          if (k < 0) continue;
-          const prop = part.slice(0, k).trim();
-          if (!prop || prop.startsWith("@") || part.includes("{")) continue;
-          decls[prop] = part.slice(k + 1).trim();
-        }
-        // запятые внутри :is(…)/:not(…) — не разделители списка селекторов
-        for (const sel of splitSelectorList(prelude))
-          rules.push({ selector: sel, decls, layer, atRules: ats, order: order++ });
-      }
-      i = j;
-    }
-  };
-
-  walk(css, "UNLAYERED", []);
-  return rules;
-}
-
-/**
- * Разбить список селекторов по запятым ВЕРХНЕГО уровня.
- *
- * Наивный `split(",")` рвал бы `:is(p, li, …)` на куски вроде `li` — и правило
- * получило бы специфичность (0,0,1) и селектор, который матчит пол-документа.
- */
-export function splitSelectorList(prelude: string): string[] {
-  const out: string[] = [];
-  let depth = 0;
-  let cur = "";
-  for (const ch of prelude) {
-    if (ch === "(") depth++;
-    else if (ch === ")") depth--;
-    if (ch === "," && depth === 0) {
-      if (cur.trim()) out.push(cur.trim());
-      cur = "";
-      continue;
-    }
-    cur += ch;
-  }
-  if (cur.trim()) out.push(cur.trim());
-  return out;
-}
-
-/** Применима ли at-обёртка в контексте «узкий экран, палец». */
-function atRuleApplies(at: string): boolean {
-  if (at.startsWith("@supports")) return true; // современный Chromium
-  if (!at.startsWith("@media")) {
-    throw new Error(`неизвестная at-обёртка: ${at}`);
-  }
-  const query = at.slice(6).replace(/\{$/, "").trim();
-  return query.split(",").some((clause) => {
-    const conds = clause.match(/\([^()]*\)/g) ?? [];
-    if (conds.length === 0) return false;
-    return conds.every((cond) => {
-      const c = cond.slice(1, -1).trim();
-      let m: RegExpMatchArray | null;
-      const px = (v: string) =>
-        v.endsWith("rem") ? parseFloat(v) * 16 : parseFloat(v);
-      if ((m = c.match(/^max-width:\s*([\d.]+(?:px|rem))$/)))
-        return NARROW_PX <= px(m[1]);
-      if ((m = c.match(/^min-width:\s*([\d.]+(?:px|rem))$/)))
-        return NARROW_PX >= px(m[1]);
-      if ((m = c.match(/^width\s*>=\s*([\d.]+(?:px|rem))$/)))
-        return NARROW_PX >= px(m[1]);
-      if ((m = c.match(/^width\s*<\s*([\d.]+(?:px|rem))$/)))
-        return NARROW_PX < px(m[1]);
-      if ((m = c.match(/^pointer:\s*(\w+)$/))) return m[1] === "coarse";
-      if ((m = c.match(/^hover:\s*(\w+)$/))) return m[1] === "none";
-      if (c.startsWith("prefers-reduced-motion")) return true;
-      if (c.startsWith("prefers-color-scheme")) return c.includes("light");
-      throw new Error(`неизвестное медиа-условие: ${c} (в ${at})`);
-    });
-  });
-}
-
-/** Специфичность селектора: [id, класс/атрибут/псевдокласс, элемент]. */
-export function specificity(selector: string): [number, number, number] {
-  // у :is()/:not()/:has() считается САМЫЙ СИЛЬНЫЙ аргумент, сам псевдокласс — нет
-  const inner = selector.replace(/:(?:not|is|has)\(([^()]*)\)/g, (_all, arg: string) => {
-    const best = splitSelectorList(arg)
-      .map((s) => specificity(s))
-      .sort((a, b) => b[0] - a[0] || b[1] - a[1] || b[2] - a[2])[0] ?? [0, 0, 0];
-    return ` ${"#i".repeat(best[0])}${".c".repeat(best[1])}${" e".repeat(best[2])} `;
-  });
-  const ids = (inner.match(/#[\w-]+/g) ?? []).length;
-  const classes =
-    (inner.match(/(?<!\\)\.(?:\\.|[\w-])+/g) ?? []).length +
-    (inner.match(/(?<!\\)\[[^\]]*\]/g) ?? []).length +
-    (inner.match(/(?<!:):(?!:)[a-z-]+/g) ?? []).length;
-  const elements = (
-    inner
-      .replace(/(?<!\\)\[[^\]]*\]/g, " ")
-      .match(/(?:^|[\s>+~])([a-z][\w-]*)/g) ?? []
-  ).length;
-  return [ids, classes, elements];
-}
+//
+// Движок каскада (разбор бандла, слои, специфичность, инлайн-стиль,
+// победитель) — общий: src/themes/__tests__/lib/css-cascade.ts. Его же
+// используют гарды catalog-filters-mobile и catalog-layout-mobile. Своей копии
+// здесь нет намеренно: вторая копия того же разбора — ровно та болезнь, от
+// которой лечится этот каталог (одно правило в двух местах, которые разъедутся).
+//
+// Три способности этого гарда переехали в общий движок, а не остались тут:
+// разбор списка селекторов с запятыми внутри `:is(…)`, специфичность `:is()` по
+// самому сильному аргументу и учёт атрибута `style`.
 
 const cssCache = new Map<Theme, string>();
 const rulesCache = new Map<Theme, Rule[]>();
@@ -452,71 +316,25 @@ function themeRules(theme: Theme): Rule[] {
   return rules;
 }
 
-/** Порядок слоёв бандла: чем позже — тем сильнее; unlayered сильнее любого. */
-function layerOrder(css: string): string[] {
-  const order: string[] = [];
-  const add = (name: string) => {
-    const n = name.trim();
-    if (n && !order.includes(n)) order.push(n);
-  };
-  const re = /@layer\s+([a-z0-9_,\s-]+)([;{])/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(css))) m[1].split(",").forEach(add);
-  return order;
-}
-
-function layerRank(css: string, layer: string): number {
-  if (layer === "UNLAYERED") return Number.MAX_SAFE_INTEGER;
-  const i = layerOrder(css).indexOf(layer);
-  return i < 0 ? -1 : i;
-}
-
-/** Объявление из атрибута style: сильнее любого правила без !important. */
-function inlineDecl(style: string, prop: string): string | null {
-  const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, "i").exec(style);
-  return m ? m[1].trim() : null;
-}
-
 type Win = { value: string; source: "inline" | "shared" | "other"; selector: string };
 
 /**
- * Победитель каскада для свойства на конкретном узле в узком/тач-контексте:
- * инлайн → слой → специфичность → порядок в файле.
+ * Победитель каскада для свойства на конкретном узле в узком/тач-контексте.
+ *
+ * Считает общий движок; здесь — только ярлык источника: общий файл, чужое
+ * правило или атрибут `style` узла (инлайн сильнее правила без `!important`,
+ * и подмена им обязана красить проверку).
  */
 function winner(theme: Theme, el: HTMLElement, prop: string): Win | null {
-  const inline = inlineDecl(el.getAttribute("style") ?? "", prop);
-  if (inline != null) return { value: inline, source: "inline", selector: "style=" };
-
-  const css = themeCss(theme);
-  const matched = themeRules(theme).filter((r) => {
-    if (!(prop in r.decls)) return false;
-    if (!r.atRules.every(atRuleApplies)) return false;
-    try {
-      return el.matches(r.selector);
-    } catch {
-      return false;
-    }
-  });
-  if (matched.length === 0) return null;
-  const weight = (r: Rule): number[] => [
-    layerRank(css, r.layer),
-    ...specificity(r.selector),
-    r.order,
-  ];
-  const best = matched.reduce((acc, r) => {
-    const a = weight(r);
-    const b = weight(acc);
-    for (let i = 0; i < a.length; i++)
-      if (a[i] !== b[i]) return a[i] > b[i] ? r : acc;
-    return acc;
-  });
-  return {
-    value: best.decls[prop],
-    source: best.selector.includes('[data-nt="catalog-filters"]')
-      ? "shared"
-      : "other",
-    selector: best.selector,
-  };
+  const best = winnerIn(themeCss(theme), themeRules(theme), el, prop, NARROW_PX);
+  if (!best) return null;
+  const source: Win["source"] =
+    best.selector === INLINE_SELECTOR
+      ? "inline"
+      : best.selector.includes('[data-nt="catalog-filters"]')
+        ? "shared"
+        : "other";
+  return { value: best.decls[prop], source, selector: best.selector };
 }
 
 const built = (theme: Theme) =>

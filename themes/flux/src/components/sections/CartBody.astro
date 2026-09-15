@@ -60,13 +60,13 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			</div>
 			<a
 				href="/catalog"
-				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
+				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 			>
 				Продолжить покупки
 			</a>
 			<p class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
 				Есть аккаунт?
-				<a href="/login" class="text-black hover:opacity-80">Войти</a>
+				<a href="/login" class="text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">Войти</a>
 			</p>
 		</div>
 
@@ -119,10 +119,28 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		itemsEl.innerHTML = lines
 			.map((line) => {
 				// Богатая товарная строка — канон верстальщиков (207px превью + бейдж
-				// скидки + Цвет/Размер + чёрный счётчик с иконками). Данные счётчика/
+				// скидки + Цвет/Размер + счётчик с иконками). Данные счётчика/
 				// удаления (data-cart-inc/dec/remove + data-id) НЕ трогаем: их слушает
 				// общий делегат initCartUI (nt-cart-flux.ts). «Новинка»-бейдж опущен —
 				// NtCartLine его не несёт; бейдж скидки берётся из реального oldPrice.
+				//
+				// ЦВЕТ — только токенами схемы (жалоба владельца 15.09: «схема не
+				// доезжает до корзины flux»). Раскладка ролей — по эталону rose:
+				//   • кнопки и счётчик        → пара --color-button-bg/--color-button-text;
+				//   • название, цена, «Цвет/Размер» → --color-text (в flux это ОСНОВНОЙ
+				//     текст, а не приглушённый: rose даёт там muted, но у flux подпись
+				//     варианта по канону верстальщиков идёт основным цветом);
+				//   • старая цена             → --color-muted (уже было);
+				//   • значок скидки           → --color-accent, идиома самой темы
+				//     (Slideshow.astro:381 тот же `rgb(var(--color-accent,250_81_9))`).
+				// Единственный оставшийся литерал — серая плашка под превью
+				// (#F5F5F5): она законна и у rose (CartBody:131), сторож её знает.
+				//
+				// Иконки «−»/«+» — ИНЛАЙН-svg по currentColor, а не <img> с
+				// `brightness-0 invert`. Фильтр красил их в белое БЕЗУСЛОВНО: как
+				// только фон счётчика поехал за --color-button-bg, светлая кнопка
+				// мерчанта (замер: схема-1 даёт 255,255,255) дала бы белое по белому.
+				// Через currentColor штрих наследует --color-button-text и виден всегда.
 				const color = line.variant?.color ?? "";
 				const size = line.variant?.size ?? "";
 				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
@@ -131,11 +149,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					? `-${Math.round((1 - line.price / (line.oldPrice as number)) * 100)}%`
 					: "";
 				const badges = discountPercent
-					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-white">${discountPercent}</span></div>`
+					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))]">${discountPercent}</span></div>`
 					: "";
 				const varInfo =
 					color || size
-						? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-black">${color ? `<span>Цвет:</span><span>${color}</span>` : ""}${size ? `<span class="ml-1">Размер:</span><span>${size}</span>` : ""}</div>`
+						? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${color ? `<span>Цвет:</span><span>${color}</span>` : ""}${size ? `<span class="ml-1">Размер:</span><span>${size}</span>` : ""}</div>`
 						: "";
 				return `
 					<li class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4" data-line-id="${line.id}">
@@ -146,9 +164,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 						<div class="flex min-w-0 flex-1 items-start gap-4 self-stretch">
 							<div class="flex min-w-0 flex-1 flex-col gap-4">
 								<div class="flex flex-col gap-1">
-									<a href="/products/${line.productId}" class="font-roboto-flex text-[20px] font-light leading-normal text-black transition-opacity hover:opacity-70">${line.name}</a>
+									<a href="/products/${line.productId}" class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${line.name}</a>
 									<div class="flex items-center gap-2 uppercase">
-										<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">${formatCartPrice(line.price)}</span>
+										<span class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatCartPrice(line.price)}</span>
 										${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-muted,204_204_204))] line-through">${oldPrice}</span>` : ""}
 									</div>
 								</div>
@@ -158,13 +176,13 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								<button type="button" data-cart-remove data-id="${line.id}" class="flex size-6 items-center justify-center transition-opacity hover:opacity-70" aria-label="Удалить товар">
 									<img src="${withBase("/icons/menu-close.svg")}" alt="" aria-hidden="true" width="12" height="12" class="size-3" />
 								</button>
-								<div class="inline-flex items-center justify-center gap-2 rounded-[4px] bg-black p-2">
+								<div class="inline-flex items-center justify-center gap-2 rounded-[4px] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))] p-2">
 									<button type="button" data-cart-dec data-id="${line.id}" class="flex size-8 items-center justify-center rounded-[4px] transition-opacity hover:opacity-70" aria-label="Уменьшить количество">
-										<img src="${withBase("/icons/minus.svg")}" alt="" aria-hidden="true" width="16" height="16" class="size-4 brightness-0 invert" />
+										<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none size-4"><path d="M5 12h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
 									</button>
-									<span class="min-w-[16px] text-center font-roboto-flex text-[20px] font-light leading-normal text-white">${line.quantity}</span>
+									<span class="min-w-[16px] text-center font-roboto-flex text-[20px] font-light leading-normal">${line.quantity}</span>
 									<button type="button" data-cart-inc data-id="${line.id}" class="flex size-8 items-center justify-center rounded-[4px] transition-opacity hover:opacity-70" aria-label="Увеличить количество">
-										<img src="${withBase("/icons/plus.svg")}" alt="" aria-hidden="true" width="16" height="16" class="size-4 brightness-0 invert" />
+										<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" class="pointer-events-none size-4"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
 									</button>
 								</div>
 							</div>

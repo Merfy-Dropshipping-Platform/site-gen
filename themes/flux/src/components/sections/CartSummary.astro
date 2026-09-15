@@ -56,8 +56,8 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				</p>
 				{!isFieldHidden("cartTotals") && (
 					<div class="cart-summary-totals flex items-center gap-3">
-						<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">Итого</span>
-						<span data-cart-page-total class="font-roboto-flex text-[20px] font-light leading-normal text-black">0 ₽</span>
+						<span class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">Итого</span>
+						<span data-cart-page-total class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">0 ₽</span>
 					</div>
 				)}
 			</div>
@@ -65,7 +65,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				<button
 					type="button"
 					data-action="checkout"
-					class="cart-checkout-btn inline-flex h-[56px] w-full items-center justify-center rounded-[6px] bg-[#FA5109] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
+					class="cart-checkout-btn inline-flex h-[56px] w-full items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 				>
 					Оформить заказ
 				</button>

@@ -100,3 +100,64 @@ describe("слайд-шоу — выбранный медиафайл доезж
     },
   );
 });
+
+/**
+ * Баг владельца 2026-09-16 (скриншот): «медиафайл в слайде применяется только
+ * в Bloom». §11-гейт выше проверяет РЕНДЕР картинки внутри слайда, но НЕ
+ * проверяет гейт «есть ли вообще реальные слайды» (`hasSlides`/пустое
+ * состояние) — а у satin он СЧИТАЛ ПО-СВОЕМУ, отдельно от рендера, и на нём
+ * тот же §11-приоритет не стоял: `imageUrl` читался ПЕРВЫМ. Легаси-путь
+ * верстальщика (/images/4x/…) не пуст как СТРОКА — гейт брал его, а
+ * `slotImage()` гасил его до "" (это НЕ фото мерчанта) — реальный `image`
+ * мерчанта до проверки не доходил вовсе. Если у ВСЕХ слайдов вдобавок пуст
+ * заголовок (мерчант его очистил), `hasSlides` ложно становился `false`, и
+ * секция ЦЕЛИКОМ заменялась плейсхолдером «Слайд-шоу» — не «картинка не
+ * та», а «нет вообще ничего из того, что выбрал мерчант».
+ */
+const CHOSEN_2 = "/uploads/b19-chosen-gate-photo.jpg";
+/** Легаси-путь ВЕРСТАЛЬЩИКА (не URL мерчанта) — ровно то, что гасит slotImage(). */
+const LEGACY_DESIGN_ASSET = "/images/4x/legacy-verstka-asset.png";
+
+const renderSlideshowEmptyHeading = (theme: string): string => {
+  const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+  if (!existsSync(mf)) return "";
+  const props = {
+    id: "Slideshow-1",
+    slides: [
+      {
+        id: "slide-1",
+        image: CHOSEN_2,
+        imageUrl: LEGACY_DESIGN_ASSET,
+        heading: "",
+        subtitle: "",
+        ctaText: "",
+        ctaUrl: "/catalog",
+      },
+    ],
+  };
+  const rows = JSON.parse(
+    execFileSync(
+      "node",
+      [RENDERER, theme, JSON.stringify([{ block: "Slideshow", props }])],
+      { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 128 * 1024 * 1024 },
+    ),
+  ) as Array<{ html?: string; error?: string; missing?: boolean }>;
+  expect(rows[0]?.error).toBeUndefined();
+  expect(rows[0]?.missing).toBeFalsy();
+  return rows[0]?.html ?? "";
+};
+
+describe("слайд-шоу — гейт «есть слайды» не роняет секцию в плейсхолдер", () => {
+  it.each(THEMES)(
+    "%s: фото мерчанта + легаси-путь верстальщика + пустой заголовок — секция НЕ уходит в плейсхолдер",
+    (theme) => {
+      const html = renderSlideshowEmptyHeading(theme);
+      if (!html) return;
+      expect(html).toContain(CHOSEN_2);
+      expect(html).not.toContain(LEGACY_DESIGN_ASSET);
+      // Плейсхолдер пустого состояния («Слайд-шоу» + хелпер-текст верстальщика) —
+      // секция не должна скатиться в него, пока у мерчанта есть реальное фото.
+      expect(html).not.toContain("landscape-slideshow");
+    },
+  );
+});

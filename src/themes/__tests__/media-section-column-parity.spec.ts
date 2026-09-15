@@ -246,8 +246,20 @@ function galleryShape(theme: Theme, html: string): GalleryShape | null {
 
 /** Темы с композицией «большая плитка + колонка» — их и проверяем. */
 const COLUMN_GALLERY_THEMES: Theme[] = ["rose", "bloom", "satin", "flux"];
-/** Из них со СТОПКОЙ справа — только им нельзя делить полотно пополам. */
-const STACKED_GALLERY_THEMES: Theme[] = ["rose", "bloom", "flux"];
+/**
+ * Из них со СТОПКОЙ справа — только им нельзя делить полотно пополам.
+ *
+ * Баг-репорт владельца 2026-09-16 (скриншот): в satin «Товар» стоял СПРАВА-
+ * СВЕРХУ, «Выбери коллекцию» — СПРАВА-СНИЗУ (стопка), а не рядом. Прежняя
+ * калибровка здесь (satin — «ряд», единственный из четырёх) закрывала ТОЛЬКО
+ * 154px разбега низов (bloom/satin, замер 2026-09-15), а не саму структуру:
+ * satin делил полотно `lg:grid-cols-2` пополам и рисовал боковые плитки СВОЕЙ
+ * строкой (`grid grid-cols-2`) — рядом друг с другом, а не стопкой под узкой
+ * колонкой (`minmax(280px,429px)`), как rose/bloom/flux. 0px разбега низов при
+ * этом получались — заплатка `lg:h-full`/`lg:flex-1` работала, — а состав
+ * колонок оставался чужим. Теперь satin — четвёртая тема со стопкой.
+ */
+const STACKED_GALLERY_THEMES: Theme[] = ["rose", "bloom", "satin", "flux"];
 
 // ───────────────────────────── калибровка ─────────────────────────────
 
@@ -273,7 +285,7 @@ describe("резолвер каскада откалиброван по этал
     expect(found).toEqual(COLUMN_GALLERY_THEMES);
   });
 
-  it("стопка справа — у rose/bloom/flux, ряд — у satin", () => {
+  it("стопка справа — у rose/bloom/satin/flux", () => {
     const stacked = COLUMN_GALLERY_THEMES.filter(
       (t) => galleryShape(t, render(t, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }))!.stacked,
     );

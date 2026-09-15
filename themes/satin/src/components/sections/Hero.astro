@@ -96,7 +96,19 @@ const rawBackgroundImage2 =
 			: undefined;
 const merchantBackground2 = merchantImage(["backgroundImage2"], rawBackgroundImage2) || undefined;
 const hasMerchantCta = contentSet(["buttonText"], rawPrimaryText);
-const isEmpty = !merchantBackground && !merchantBackground2 && !hasMerchantTitle && !hasMerchantSubtitle;
+// Баг владельца (satin, секция «Изображение»): мерчант грузит ОДНО фото и не
+// трогает заголовок/текст/кнопку — полотно всё равно делилось на текст-колонку
+// (пустая, с плейсхолдер-копией) и фото-колонку в 50% ширины. У остальных
+// четырёх тем (rose/bloom/flux/vanilla) секция ВСЕГДА full-bleed: фото на всю
+// ширину, текст — оверлей поверх него; колонок нет вовсе. У satin колонки были
+// БЕЗУСЛОВНЫМИ (не зависели от того, задан ли текст), поэтому даже «1 фото,
+// текст не задан» уходило в сплит-ветку. Правило теперь то же, что у остальных
+// тем: сплит-макет (текст-колонка + фото-колонка) — ТОЛЬКО когда мерчант реально
+// задал текст/кнопку; иначе — full-bleed (тот же контракт, что и у полностью
+// пустого состояния, но с РЕАЛЬНЫМ фото мерчанта вместо плейсхолдера).
+// Заменяет прежний `isEmpty` (учитывал только заголовок/подзаголовок, не кнопку)
+// как условие ветки — теперь совпадает с rose (rose.isEmpty включает и cta).
+const hasMerchantText = hasMerchantTitle || hasMerchantSubtitle || hasMerchantCta;
 
 // Лейблы заданного состояния (рендер мерчанта — НЕ трогаем при наличии данных).
 const title = hasMerchantTitle
@@ -123,7 +135,11 @@ const ctaLink =
 const heroSlots = resolveHeroMediaSlots(merchantBackground, merchantBackground2);
 // Нет своего фото (или стоит 4x верстальщика) → landscape-заглушка,
 // не кампания /images/4x/Главный_экран.png и не чёрный кадр.
-const backgroundImage = heroSlots.primary || (isEmpty ? undefined : PH_IMAGE);
+// Раньше плейсхолдер подставлялся ТОЛЬКО когда секция небезусловно НЕ isEmpty
+// (сплит-ветка); теперь full-bleed-ветка (ниже) тоже ждёт непустой backgroundImage —
+// фолбэк на PH_IMAGE безусловный, ветка сама решает рисовать плейсхолдер или нет
+// (по heroSlots.primary: пусто → плейсхолдер, есть фото — оно).
+const backgroundImage = heroSlots.primary || PH_IMAGE;
 const backgroundImage2 = heroSlots.secondary || undefined;
 
 
@@ -294,11 +310,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 {
-	isEmpty ? (
-		/* Пустое состояние (Figma 1:19335, тип «Изображение»): пустой image-rect
-		   surface-тона на всю секцию + overlay-лейбл «Изображение» + хелпер-текст +
-		   кнопка «Кнопка». Без мок-фото и без split-контента верстальщика
-		   («Заголовок»/«Поясняющий текст»). Эталон — rose Hero.astro isEmpty-ветка.
+	!hasMerchantText ? (
+		/* Full-bleed-ветка (Figma 1:19335, тип «Изображение»): фото на ВСЮ секцию
+		   + overlay-лейбл «Изображение» + хелпер-текст + кнопка «Кнопка» поверх
+		   него. Раньше срабатывала ТОЛЬКО когда секция полностью пуста (без фото);
+		   стоило добавить ОДНО фото — блок безусловно уходил в сплит-ветку ниже
+		   (текст-колонка + фото-колонка 50/50), даже когда заголовок/текст/кнопку
+		   мерчант не трогал (отчёт владельца: «загрузил одно фото — блок всё
+		   равно делится на две части, слева пусто»). Теперь гейт — ЗАДАННЫЙ
+		   мерчантом текст/кнопка, а не наличие фото: без текста секция full-bleed
+		   с РЕАЛЬНЫМ фото мерчанта (heroSlots), без фото — тем же плейсхолдером,
+		   что и раньше. Эталон — rose/bloom/flux/vanilla Hero.astro: там текст
+		   ВСЕГДА оверлей поверх full-bleed фото, отдельной колонки нет вовсе.
 		   Цвет заголовка/текста ПОВЕРХ фото — общий источник packages/theme-base/
 		   styles/hero-over-photo.css (решает схема, белое — только фолбэк
 		   переменной); читаемость держит градиент from-black/30 to-black/45 ниже.
@@ -311,15 +334,56 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			style={paddingStyle}
 		>
 			<div class={`relative aspect-[375/362] w-full md:aspect-auto ${heroHeightCls}`}>
-				{/* Контракт картиночной секции (правило 2): дизайн-ассет
-				    landscape-image.png показывается ВСЕГДА (object-cover) + штатное
-				    затемнение для читаемости overlay-лейбла. НЕ пустой surface-rect.
-				    Эталон vanilla/rose Hero.astro empty-state. Плоский <img> (НЕ
-				    SatinPicture): у placeholder-PNG нет соимённого .webp, а SatinPicture
-				    безусловно эмитит <source srcset=*.webp> → 404 + <picture> не
-				    откатывается (баг project_cart_thumb_image_bug). */}
-				<img src={PH_IMAGE} alt="" loading="eager" fetchpriority="high" class="absolute inset-0 size-full object-cover object-center" aria-hidden="true" />
+				{/* Контракт картиночной секции (правило 2): картинка показывается
+				    ВСЕГДА (object-cover) + штатное затемнение для читаемости overlay-
+				    лейбла. Два фото мерчанта (оба слота заполнены, текст не задан) —
+				    делятся 50/50 МЕЖДУ СОБОЙ на всю ширину секции (паритет rose:
+				    grid-cols-2 внутри full-bleed рамки, а не рядом с текст-колонкой).
+				    Плоский <img> — ТОЛЬКО для дизайн-плейсхолдера (нет фото мерчанта):
+				    у placeholder-PNG нет соимённого .webp, а SatinPicture безусловно
+				    эмитит <source srcset=*.webp> → 404 + <picture> не откатывается
+				    (баг project_cart_thumb_image_bug). Реальное фото(-а) мерчанта —
+				    SatinPicture, как в сплит-ветке ниже (webp/responsive). */}
+				{
+					backgroundImage2 ? (
+						<div class="absolute inset-0 grid grid-cols-2">
+							<SatinPicture
+								src={backgroundImage}
+								alt=""
+								loading="eager"
+								fetchpriority="high"
+								class="size-full object-cover object-center"
+							/>
+							<SatinPicture
+								src={backgroundImage2}
+								alt=""
+								loading="eager"
+								fetchpriority="high"
+								class="size-full object-cover object-center"
+							/>
+						</div>
+					) : merchantBackground ? (
+						<SatinPicture
+							src={backgroundImage}
+							alt=""
+							loading="eager"
+							fetchpriority="high"
+							class="absolute inset-0 size-full object-cover object-center"
+						/>
+					) : (
+						<img src={PH_IMAGE} alt="" loading="eager" fetchpriority="high" class="absolute inset-0 size-full object-cover object-center" aria-hidden="true" />
+					)
+				}
 				<div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 to-black/45" aria-hidden="true"></div>
+				{
+					backgroundImage && overlayN > 0 && (
+						<div
+							class="pointer-events-none absolute inset-0 bg-black"
+							style={`opacity:${overlayN / 100}`}
+							aria-hidden="true"
+						/>
+					)
+				}
 				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10">
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-4 text-center md:max-w-[640px]">
 						{!isFieldHidden('heading') && (

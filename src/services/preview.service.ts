@@ -1187,6 +1187,11 @@ function scrollSelfTo(el, mode) {
  *    real orders. An empty `formId` falls back to the form's index.
  */
 
+// ВНИМАНИЕ: это ШАБЛОННАЯ строка — одиночный `\\d` в ней схлопывается в `d`
+// ещё до браузера, и регулярка `/\\bcolor-scheme-\\d+\\b/` приезжает как
+// `/color-scheme-d+/`: старый класс схемы не снимается, классы наслаиваются,
+// разметка корёжится при живой правке. Все escape-последовательности здесь
+// обязаны быть удвоены. Поймано 15.09 (22 штуки), сторож — preview-agent-regex.
 const PREVIEW_NAV_AGENT_INLINE = `
 (function () {
   var TARGET = '*';
@@ -1555,7 +1560,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       },
       colorScheme: function (el, _oldVal, newVal) {
         var wrap = el.closest('[data-header-wrapper]') || el;
-        wrap.className = wrap.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        wrap.className = wrap.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();
         if (typeof newVal === 'string' && newVal) {
           var n = newVal.replace('scheme-', '');
           wrap.classList.add('color-scheme-' + n);
@@ -1566,7 +1571,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         var items = el.querySelectorAll('[data-nav-inline]');
         for (var i = 0; i < items.length; i++) {
           var it = items[i];
-          it.className = it.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+          it.className = it.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();
           if (typeof newVal === 'string' && newVal) {
             var n = newVal.replace('scheme-', '');
             it.classList.add('color-scheme-' + n);
@@ -1577,9 +1582,9 @@ const PREVIEW_NAV_AGENT_INLINE = `
       stickiness: function (el, _oldVal, newVal) {
         var wrap = el.closest('[data-header-wrapper]') || el;
         wrap.className = wrap.className
-          .replace(/sticky\s+top-0\s+z-50(\s+transition-transform\s+duration-300)?/g, '')
-          .replace(/relative\s+z-50/g, '')
-          .replace(/\s+/g, ' ')
+          .replace(/sticky\\s+top-0\\s+z-50(\\s+transition-transform\\s+duration-300)?/g, '')
+          .replace(/relative\\s+z-50/g, '')
+          .replace(/\\s+/g, ' ')
           .trim();
         var classToAdd = newVal === 'scroll-up' ? 'sticky top-0 z-50 transition-transform duration-300'
           : newVal === 'always' ? 'sticky top-0 z-50'
@@ -1675,7 +1680,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return true;
       },
       colorScheme: function (el, _oldVal, newVal) {
-        el.className = el.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        el.className = el.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();
         el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
         return true;
       }
@@ -1688,7 +1693,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return true;
       },
       colorScheme: function (el, _oldVal, newVal) {
-        el.className = el.className.replace(/\bcolor-scheme-\d+\b/g, '').replace(/\s+/g, ' ').trim();
+        el.className = el.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();
         el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
         return true;
       }

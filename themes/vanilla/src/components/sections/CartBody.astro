@@ -109,10 +109,19 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 						? `<span class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
 						: "";
 
+				// Плитка под фото — «Поверхность» СХЕМЫ. Жалоба тестировщика 15.09
+				// [50]: «внутри корзины остался белый литерал, корень уже по схеме».
+				// Замер (Chromium 1440, схемы мерчанта scheme-2 → scheme-3): корень
+				// секции 255,255,255 → 113,192,255 идёт, а плитка 236,235,231 →
+				// 236,235,231 замерла. Причина: алиас `--vanilla-card` не входит в
+				// набор, который global.css ремапит на токены схемы для
+				// [data-block="cart-body"] (там surface, dark, muted, header-bg, line —
+				// card нет). Берём тот же токен и тот же фолбэк, что у плитки карточки
+				// в Popular.astro ТОЙ ЖЕ темы. Сторож: pnpm test:scheme-targets.
 				return `
 					<li class="flex flex-col gap-4 border-b border-[var(--vanilla-line)] py-6 first:pt-0 last:border-b-0 md:flex-row md:items-center md:justify-between md:gap-8" data-line-id="${line.id}">
 						<div class="flex min-w-0 flex-1 items-center gap-4 md:gap-6">
-							<a href="/products/${line.productId}" class="block size-20 shrink-0 overflow-hidden bg-[var(--vanilla-card)] md:size-24">
+							<a href="/products/${line.productId}" class="block size-20 shrink-0 overflow-hidden bg-[rgb(var(--color-surface,236_235_231))] md:size-24">
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">

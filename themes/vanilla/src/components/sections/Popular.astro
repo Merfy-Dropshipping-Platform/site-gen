@@ -427,11 +427,22 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								class="absolute inset-0 h-full w-full object-contain p-[15%]"
 							/>
 						</div>
+						{/* Имя и цена — «Текст» СХЕМЫ (жалоба тестировщика 15.09 [47]:
+						    «цена не принимает цветовую схему»). Замер, Chromium 1440,
+						    схемы мерчанта scheme-2 → scheme-3 («Текст» 0,0,0 →
+						    255,255,255): цена 0,0,0 → 0,0,0 — стояла на `text-black`,
+						    а Tailwind 4 печатает его как `var(--color-black)`: переменная
+						    ЕСТЬ, но её нет ни в одной схеме, поэтому цвет замирает. Имя
+						    стояло на ТОМ ЖЕ литерале строкой выше — чинятся вместе, иначе на
+						    тёмной схеме имя осталось бы чёрным. Эталон rose
+						    (Popular.astro, .rose-product-name/.rose-product-price)
+						    красит обе строки `--color-text`. Фолбэк — прежний тёмный
+						    vanilla. Сторож: pnpm test:scheme-targets. */}
 						<div class="flex flex-col gap-1">
-							<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">
+							<span class="font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,38_49_28))]">
 								{card.name}
 							</span>
-							<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">
+							<span class="font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,38_49_28))]">
 								{card.price}
 							</span>
 						</div>

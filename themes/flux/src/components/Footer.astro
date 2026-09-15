@@ -218,9 +218,20 @@ const footerSchemeId = schemeIdOf(p.colorScheme);
 const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : "";
 ---
 
-{/* Подвал в вёрстке стоит на bg-[#fbfbfb] — поверхность, а не фон страницы.
-    На --color-bg он получал 255 от схемы и сливался с полотном. */}
-<footer class:list={["w-full bg-[rgb(var(--color-surface,251_251_251))]", footerSchemeClass]} data-puck-component-id={id}>
+{/* ФОН ПОДВАЛА — «Фон» СХЕМЫ, как у rose/bloom/vanilla.
+    Жалобы тестировщика 15.09 [10, 36]: «подвал красится не тем цветом». Замер
+    (Chromium 1440, схемы мерчанта scheme-2 → scheme-3): подвал 251,251,251 →
+    90,175,255, то есть он шёл за `--color-surface`, а «Фон» схемы в это время
+    255,255,255 → 113,192,255.
+    Токен `--color-surface` за схемой ИДЁТ (это поле `surfaceBg`), но поля для
+    него в редакторе схем НЕТ и не будет — состав настроек канон. Мерчанту
+    доступен ровно один фон, «Фон»; поверхность ему достаётся из легаси-сида
+    (src/themes/legacy-seed-schemes.ts) и на его выбор не реагирует. Поэтому
+    подвал садится на «Фон», как у эталона rose (Footer.astro) и у bloom с
+    vanilla — 3 темы из 5 уже так и делают.
+    Дизайнерский оттенок #fbfbfb сохранён ФОЛБЭКОМ: магазин без схемы выглядит
+    ровно как в вёрстке. Сторож: pnpm test:scheme-targets. */}
+<footer class:list={["w-full bg-[rgb(var(--color-bg,251_251_251))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<!-- Newsletter «Подпишитесь на нашу рассылку» -->
 		{newsletterEnabled && (
@@ -385,14 +396,14 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 
 	<!-- Copyright — полоса Powered by (Inter, фикс-роль Figma flux) -->
 	{/* п.9/п.10 тестировщика (2026-09-13): полоса копирайта обязана жить по ТОЙ ЖЕ
-	    схеме, что и вся секция (тело подвала flux стоит на --color-surface —
+	    схеме, что и вся секция (тело подвала flux стоит на «Фоне» схемы —
 	    полоса берёт ТОТ ЖЕ токен). Раньше фон брался из --color-heading, то есть
 	    инвертировался: у любой тёмной схемы heading светлый (merchant-сид
 	    scheme-1: bg #000000, heading #FFFFFF) — и внизу КАЖДОЙ страницы магазина
 	    появлялась белая полоса. */}
 	{bottomStripVisible && (
 		<div
-			class="flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-surface,251_251_251))] md:h-[100px]"
+			class="flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))] md:h-[100px]"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"

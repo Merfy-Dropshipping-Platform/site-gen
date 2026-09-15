@@ -199,8 +199,8 @@ const pagination =
 // не используется; чёрная CTA читается и на фото, и на светлой плашке boxed.
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-black px-4 font-roboto-flex text-[16px] font-normal leading-none text-black transition-colors hover:bg-black/5"
-		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal leading-none text-white transition-opacity hover:opacity-90";
+		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-bg,0_0_0))] transition-colors hover:opacity-90"
+		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding

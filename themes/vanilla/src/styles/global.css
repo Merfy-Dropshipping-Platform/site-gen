@@ -657,12 +657,24 @@ blockquote {
   color: rgb(var(--color-error));
 }
 
+/* Фон — «Кнопка» СХЕМЫ (`--color-button-bg`), а не `--color-primary`.
+   Жалобы тестировщика 15.09 [12, 54]: «Вход», «Заказы», «Личный кабинет» —
+   кнопка не принимает цветовую схему. Замер (Chromium 1440, схемы мерчанта
+   scheme-2 → scheme-3, «Кнопка» 0,0,0 → 222,56,56): фон 17,17,17 → 17,17,17 во
+   всех пяти темах. `--color-primary` объявлен в схемах theme.json и стоит в
+   реестре со scope:'scheme', но `schemeToVars` (src/themes/tokens-css.ts) его
+   НЕ печатает — у магазина со своими схемами правило `.color-scheme-N` его не
+   несёт, и кнопка садится на `:root` (17 17 17 из BASE_DEFAULTS). Фолбэком
+   оставлен `--color-primary`: магазин, где схему не трогали, не меняется.
+   ЭТОТ ЖЕ текст лежит в packages/theme-base/styles/global.css и в четырёх
+   других темах — правило исторически размножено копиями, править все шесть.
+   Сторож: pnpm test:scheme-targets. */
 .auth-button-primary {
   width: 100%;
   height: 3.5rem;
   padding: 0 1.25rem;
   border-radius: var(--radius-button);
-  background: rgb(var(--color-primary));
+  background: rgb(var(--color-button-bg, var(--color-primary)));
   color: rgb(var(--color-button-text));
   font-family: var(--font-body);
   font-size: 1rem;
@@ -830,10 +842,11 @@ blockquote {
   color: rgb(var(--color-text-muted));
 }
 
+/* Фон — «Кнопка» схемы (разбор у `.auth-button-primary` выше). */
 .account-button {
   height: 3rem;
   padding: 0.625rem 1rem;
-  background: rgb(var(--color-primary));
+  background: rgb(var(--color-button-bg, var(--color-primary)));
   color: rgb(var(--color-button-text));
   border-radius: var(--radius-button);
   font-family: var(--font-body);

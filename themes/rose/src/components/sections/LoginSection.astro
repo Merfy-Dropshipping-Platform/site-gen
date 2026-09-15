@@ -28,6 +28,21 @@
  * `AuthShell.astro` после ветки `fix/b7-grey-literals`: серый на витрине
  * производный от схемы, а не константа. Фолбэк равен прежнему литералу, так что
  * на схеме без токена вид не меняется. Сторож: `pnpm test:grey-literals`.
+ *
+ * ЦВЕТ КНОПКИ — «Кнопка» СХЕМЫ (жалобы тестировщика 15.09 [12, 54]: «Вход» —
+ * кнопка не принимает цветовую схему). Замер (Chromium 1440, схемы мерчанта
+ * scheme-2 → scheme-3, «Кнопка» 0,0,0 → 222,56,56 / текст 255,255,255 →
+ * 113,192,255): фон 0,0,0 → 0,0,0 и текст 255,255,255 → 255,255,255 во ВСЕХ
+ * ПЯТИ темах. Причин было ДВЕ, и снимать надо обе:
+ *   1) на самой кнопке стоял инлайн `background:#000000;color:#FFFFFF` — он
+ *      бьёт любой класс;
+ *   2) обёртка `auth-shell` перебивала переменные `--color-primary: 0,0,0` и
+ *      `--color-button-text: 255,255,255` — каскадом они накрывали всё, что
+ *      внутри, поэтому даже без инлайна кнопка осталась бы чёрной.
+ * Теперь цвет даёт `.auth-button-primary` (packages/theme-base/styles/
+ * global.css) из `--color-button-bg` / `--color-button-text` схемы. У магазина
+ * без своих схем вид не меняется: заводская «Кнопка» темы это и есть прежний
+ * чёрный. Сторож: `pnpm test:scheme-targets`.
  */
 import { schemeIdOf } from "../../lib/color-scheme";
 
@@ -70,9 +85,7 @@ const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padd
 			--color-border: 163, 163, 163;
 			--color-border-active: 0, 0, 0;
 			--color-surface-muted: 245, 245, 245;
-			--color-primary: 0, 0, 0;
 			--color-button: 0, 0, 0;
-			--color-button-text: 255, 255, 255;
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
@@ -114,7 +127,7 @@ const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padd
 					form="magic-form"
 					class="auth-button-primary"
 					data-testid="btn-magic"
-					style="background:#000000;color:#FFFFFF;border-radius:var(--radius-button,8px);"
+					style="border-radius:var(--radius-button,8px);"
 				>
 					<span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
 						<span class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

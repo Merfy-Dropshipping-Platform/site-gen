@@ -213,7 +213,20 @@ const linkClassSm =
 	"font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-70";
 ---
 
-<footer class:list={["w-full bg-[rgb(var(--color-surface,245_245_245))]", footerSchemeClass]} data-puck-component-id={id}>
+{/* ФОН ПОДВАЛА — «Фон» СХЕМЫ, как у rose/bloom/vanilla.
+    Жалобы тестировщика 15.09 [10, 36]: «подвал красится не тем цветом». Замер
+    (Chromium 1440, схемы мерчанта scheme-2 → scheme-3): подвал 245,245,245 →
+    90,175,255, то есть он шёл за `--color-surface`, а «Фон» схемы в это время
+    255,255,255 → 113,192,255.
+    Токен `--color-surface` за схемой ИДЁТ (это поле `surfaceBg`), но поля для
+    него в редакторе схем НЕТ и не будет — состав настроек канон. Мерчанту
+    доступен ровно один фон, «Фон»; поверхность ему достаётся из легаси-сида
+    (src/themes/legacy-seed-schemes.ts) и на его выбор не реагирует. Поэтому
+    подвал садится на «Фон», как у эталона rose (Footer.astro) и у bloom с
+    vanilla — 3 темы из 5 уже так и делают.
+    Дизайнерский оттенок #f5f5f5 сохранён ФОЛБЭКОМ: магазин без схемы выглядит
+    ровно как в вёрстке. Сторож: pnpm test:scheme-targets. */}
+<footer class:list={["w-full bg-[rgb(var(--color-bg,245_245_245))]", footerSchemeClass]} data-puck-component-id={id}>
 	<!-- Desktop (≥ md) — Figma 905-16327 -->
 	<div class="hidden w-full md:block">
 		<div class={desktopWrapCls} style={footerPadStyle}>
@@ -431,12 +444,11 @@ const linkClassSm =
 	</div>
 
 	{/* п.9 тестировщика (2026-09-13): полоса копирайта обязана жить по ТОЙ ЖЕ
-	    схеме, что и вся секция. Тело подвала satin стоит на --color-surface, а
-	    полоса стояла на --color-bg — при любой схеме, где surface ≠ background,
-	    низ подвала красился отдельным цветом. */}
+	    схеме, что и вся секция. Тело подвала satin стоит на «Фоне» схемы —
+	    полоса берёт ТОТ ЖЕ токен (раньше оба стояли на --color-surface). */}
 	{bottomStripVisible && (
 		<div
-			class="w-full bg-[rgb(var(--color-surface,245_245_245))] py-4"
+			class="w-full bg-[rgb(var(--color-bg,245_245_245))] py-4"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"

@@ -214,12 +214,19 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
-{/* Фон секции — ПОВЕРХНОСТЬ, а не фон страницы: в вёрстке это bg-[#FBFBFB]
-    (Puk.astro), то есть секция намеренно чуть темнее полотна. На --color-bg
-    фолбэк 251 никогда не применялся (токен задан схемой = 255) и секция
-    сливалась с белой страницей. У scheme-2 --color-surface как раз 251 251 251. */}
+{/* ФОН СЕКЦИИ — «Фон» СХЕМЫ, как у rose/bloom/satin/vanilla.
+    Жалоба тестировщика 15.09 [8]: «Изображение с текстом» во flux красится не
+    тем цветом. Замер (Chromium 1440, схемы мерчанта scheme-2 → scheme-3):
+    секция 251,251,251 → 90,175,255 (это `--color-surface`), а «Фон» схемы в это
+    время 255,255,255 → 113,192,255.
+    Разбор тот же, что у подвала (themes/flux/src/components/Footer.astro):
+    поля «Поверхность» в редакторе схем нет, мерчант правит только «Фон», и
+    секция обязана идти за ним. Дизайнерский #FBFBFB остаётся ФОЛБЭКОМ — без
+    схемы вид не меняется. Плитка-плейсхолдер под картинкой ниже остаётся на
+    `--color-surface`: у эталона rose (ImageWithText.astro) и у bloom она тоже
+    поверхность. Сторож: pnpm test:scheme-targets. */}
 <section
-	class="w-full bg-[rgb(var(--color-surface,251_251_251))]"
+	class="w-full bg-[rgb(var(--color-bg,251_251_251))]"
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 >

@@ -453,7 +453,10 @@ const linkClassSm =
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"
 		>
-			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">{stripText}</p>
+			{/* 14px на десктопе — как у эталона rose (Footer:376) и flux. Было 16px:
+			    подпись платформы выходила крупнее строки копирайта рядом (12px) и
+			    крупнее, чем в остальных темах. Скриншот тестера 15.09. */}
+			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[14px]">{stripText}</p>
 		</div>
 	)}
 </footer>

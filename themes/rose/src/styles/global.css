@@ -11,6 +11,9 @@
 @source "../components/**/*.{astro,ts,tsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
 @source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
+/* Общие примитивы theme-base (окно «Товар добавлен в корзину») — без этой
+   строки Tailwind не увидит их классы и окно приедет без стилей. */
+@source "../../../../packages/theme-base/primitives/**/*.{astro,ts}";
 
 @theme {
   --font-family-sans: "Manrope", system-ui, -apple-system, sans-serif;

@@ -3,6 +3,10 @@ import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+// Окно «Товар добавлен в корзину» — ОБЩИЙ компонент theme-base (флоу bloom,
+// поднятый в общий слой). Разметка и механика одни на пять тем; вид идёт за
+// схемой/шрифтами/скруглениями этой темы.
+import CartAddedModal from "../../../../packages/theme-base/primitives/CartAddedModal.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 
 interface Props {
@@ -49,6 +53,7 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		    остальных страницах. */}
 		{header !== "checkout" && <Footer />}
 		<NtCartDrawer rootId="satin-cart-drawer-root" eventPrefix="satin:cart" />
+		<CartAddedModal />
 		{/* Тексты панели корзины из настроек темы («Заголовок панели», «Текст
 		    кнопки оформления», «Текст пустой корзины»). До этого у настроек не
 		    было ни одного читателя: панель сохраняла значения, витрина

@@ -34,7 +34,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-puck-component-id={id}
 	data-block="cart-body"
 	class:list={[
-		"w-full bg-white",
+		"w-full bg-[rgb(var(--color-bg,255_255_255))]",
 		schemeClass,
 		padStyle ? "" : "pb-6 pt-[40px] md:pt-[60px]",
 	]}
@@ -50,7 +50,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<div class="flex w-full flex-col items-start gap-2">
 				<h1
 					id="cart-title"
-					class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-black"
+					class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
 				>
 					Корзина
 				</h1>
@@ -76,7 +76,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			class="hidden w-full flex-col gap-6"
 		>
 			<div class="flex flex-col gap-6">
-				<h1 class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-black">
+				<h1 class="font-roboto-flex text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]">
 					Корзина
 				</h1>
 				<ul

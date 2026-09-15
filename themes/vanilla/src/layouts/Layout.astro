@@ -5,6 +5,10 @@ import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
 import LoginDrawer from "../components/LoginDrawer.astro";
 import VanillaCartDrawer from "../components/VanillaCartDrawer.astro";
+// Окно «Товар добавлен в корзину» — ОБЩИЙ компонент theme-base (флоу bloom,
+// поднятый в общий слой). Разметка и механика одни на пять тем; вид идёт за
+// схемой/шрифтами/скруглениями этой темы.
+import CartAddedModal from "../../../../packages/theme-base/primitives/CartAddedModal.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -56,6 +60,7 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		{header !== "checkout" && <Footer />}
 		<LoginDrawer />
 		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
+		<CartAddedModal />
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initWishlistUI } from "../lib/wishlist";

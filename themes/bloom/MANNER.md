@@ -141,7 +141,7 @@ urbanist/inter/manrope/roboto-flex, g:24-38 — рендерится систе�
 
 | Роль | Значения | Источник |
 |---|---|---|
-| Порядок | Header (со встроенной полосой объявления) → main → Footer → NtCartDrawer (`rootId bloom-cart-drawer-root`, `eventPrefix bloom:cart`) → BloomCartAddedModal | Layout.astro:25-32 |
+| Порядок | Header (со встроенной полосой объявления) → main → Footer → NtCartDrawer (`rootId bloom-cart-drawer-root`, `eventPrefix bloom:cart`) → CartAddedModal (общий, `packages/theme-base/primitives`) | Layout.astro:25-32 |
 | Sticky | весь блок `[data-bloom-header]` (полоса + шапка) `sticky top-0 z-50` | H:42 |
 | Полоса объявления | `bg-[#E38E9F] py-2` центр, Inter 12 uppercase белый, текст «Акция на новую коллекцию. Узнать больше»; встроена в Header (`[data-bloom-announcement]`). Отдельный компонент `header/PromoBanner.astro` (text+link+подчёркнутый linkText) существует, но страницами НЕ используется (✓ grep) | H:43-47; header/PromoBanner.astro:11-19 |
 | Шапка mobile | строка `h-16 px-4`: бургер 32px / лого по центру / поиск+корзина+аккаунт (`size-8`, иконки `size-5`) | H:51-104 |

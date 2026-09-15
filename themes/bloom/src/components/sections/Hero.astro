@@ -129,12 +129,23 @@ const backgroundImage2 = heroSlots.secondary || undefined;
 // «Затемнение» (overlay). Контейнер (boxed) сильнее — переключает на тёмный
 // через [&_h1]/[&_p] (important).
 const headingSize = p.heading?.size;
+// lg:text-[length:var(--size-hero-heading,20px)] — настройка темы «Кегль
+// заголовка Hero». Канал и место взяты С РОЗЫ (themes/rose/.../Hero.astro:94):
+// переменную читает ТОЛЬКО дефолтная ступень лестницы, малый и средний размеры
+// остаются литералами вёрстки. Значение по умолчанию 20px — это и литерал `md`
+// самой bloom, и `--size-hero-heading` из packages/theme-bloom/theme.json,
+// поэтому магазин, где настройку не трогали, не едет ни на пиксель.
+//
+// До правки лестница bloom обрывалась на `md`, и ЛЮБОЕ значение настройки
+// пропадало молча: замер живого стенда f7593c5f8f8f (окно 1440×1400, образ
+// 8b18a896) — настройка 48px, нарисовано 20px, то есть 0.42 от заданного,
+// при 1.00 у розы с тем же каналом. Отсюда «в разы меньше настроек».
 const headingCls =
 	headingSize === "small"
 		? "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]"
 		: headingSize === "medium"
 			? "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]";
+			: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px] lg:text-[length:var(--size-hero-heading,20px)]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
@@ -278,7 +289,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]"
+								class="font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px] lg:text-[length:var(--size-hero-heading,20px)]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"

@@ -6,6 +6,15 @@
 // set:html={inlineFormat(...)} (XSS-safe allow-list). Разметка/классы 1:1 с
 // оригиналом DS 0.1.4, чтобы вёрстка не поехала. Порты импортируют этот файл
 // под именем NtSectionHeading. Паритет rose: ui/RoseSectionHeading.astro.
+//
+// Заголовок берёт «Заголовок» схемы, а не литерал #000000. Жалоба владельца
+// 15.09: «секция „Коллекция товаров“ в теме bloom — не применяется цветовая
+// схема к ЗАГОЛОВКУ». Замер (Chromium 1440, схемы магазина тестировщика):
+// схема-1 «Заголовок» #ffffff, схема-4 #1a1a1a — до правки h2 отдавал
+// 0,0,0 на обеих. Фолбэк равен прежнему литералу: на схеме без токена
+// вид не меняется ни на пиксель. Тот же литерал остаётся в
+// ui/RoseSectionHeading.astro (rose) — там владелец пока не жаловался,
+// вынесено в отчёт.
 import { inlineFormat } from "../../lib/rich-text";
 
 interface Props {
@@ -20,7 +29,7 @@ const { title, subtitle, titleId } = Astro.props;
 <div class="flex max-w-[90vw] flex-col items-center gap-[5px]" data-nt="section-heading">
   <h2
     id={titleId}
- class="text-center font-comfortaa text-xl md:text-2xl lg:text-[32px] font-normal leading-[1.115] text-[#000000]"
+ class="text-center font-comfortaa text-xl md:text-2xl lg:text-[32px] font-normal leading-[1.115] text-[rgb(var(--color-heading,0_0_0))]"
     set:html={inlineFormat(title)}
   ></h2>
   {

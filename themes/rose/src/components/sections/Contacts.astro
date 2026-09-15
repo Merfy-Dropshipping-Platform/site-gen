@@ -26,6 +26,17 @@ const placeholderHeading =
 	(typeof p.heading === "string" && p.heading) ||
 	"Контактная форма";
 
+// «Текст» панели (`description`) — просьба владельца 2026-09-15. Порт его НЕ
+// рендерил вовсе: замер живой цепочкой 2026-09-15 давал `absent` у rose и
+// bloom при `ok` у satin/flux/vanilla, то есть поле молча пропадало у двух тем
+// из пяти. Рисуем ТОЛЬКО при непустом значении (манера соседей: нет текста —
+// нет абзаца), начертания «Ж»/«К» доезжают разметкой через RoseSectionHeading
+// (там же inlineFormat + allow-list), подзаголовок он рисует ровно теми же
+// классами, что у «Коллекций» и «Галереи» — своя манера не выдумывается.
+const description =
+	(typeof p.description === "string" ? p.description : p.description?.content) ?? "";
+const descriptionText = typeof description === "string" ? description.trim() : "";
+
 // Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —
 // проп-ветка рендерит поля канон-семантикой (фоллбеки частичного объекта =
 // канон-дефолты puckConfig: phone disabled, name/email required) В МАНЕРЕ
@@ -94,7 +105,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
 		{!isFieldHidden('heading') && (
 		<div class="flex w-full justify-center" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading" style={headingSizeStyle}>
-			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} />
+			<NtSectionHeading variant="rose" titleId="contacts-title" title={placeholderHeading} subtitle={descriptionText || undefined} />
 		</div>
 		)}
 		<div class="flex flex-col">

@@ -182,14 +182,11 @@ const totalCount = products.length;
 </Layout>
 
 <style is:global>
-	/* Переключение раскладок каталога: виден только выбранный вариант.
-	   data-catalog-layout ставит инлайн-скрипт секции из window.__MERFY_CATALOG_LAYOUT__. */
-	[data-catalog-layout="top"] [data-catalog-variant="side"] {
-		display: none;
-	}
-	[data-catalog-layout="side"] [data-catalog-variant="top"] {
-		display: none;
-	}
+	/* Переключение раскладок каталога (top ⇄ side) — ЕДИНЫЙ источник:
+	   packages/theme-base/styles/catalog-layout.css (подключён из
+	   themes/rose/src/styles/global.css). Здесь копии БЫТЬ НЕ ДОЛЖНО: она
+	   жила без @media, доживала до страницы каталога вместе с блочной и
+	   на узком экране они вдвоём прятали ОБА варианта — каталог был пустой. */
 
 	/* Мобилка (<md): фильтры «top» идут вертикальным стеком (flex-col) — лейблы
 	   крупнее, как в макете каталога. На ≥md — прежняя строка 16px. */

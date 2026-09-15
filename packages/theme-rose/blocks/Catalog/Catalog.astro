@@ -435,26 +435,11 @@ const skeletons = Array.from({ length: skeletonCount });
       grid-template-columns: repeat(var(--rose-cols, 4), minmax(0, 1fr)) !important;
     }
   }
-  /* Переключение раскладок каталога: виден только выбранный вариант.
-     data-catalog-layout ставит inline-скрипт секции из window.__MERFY_CATALOG_LAYOUT__
-     (или дефолт из настройки filterPosition). */
-  @media (min-width: 1024px) {
-    [data-catalog-layout="top"] [data-catalog-variant="side"] {
-      display: none;
-    }
-    [data-catalog-layout="side"] [data-catalog-variant="top"] {
-      display: none;
-    }
-  }
-  /* Мобилка (<lg): side-сайдбар = lg-only (hidden lg:flex) → на узких экранах
-     side-фильтров нет вообще. Поэтому на <lg ВСЕГДА показываем top-вариант
-     (фильтры сверху), независимо от выбранной раскладки; side-вариант прячем.
-     Селектор [data-catalog-layout] [...] = (0,2,0) бьёт Tailwind .flex (0,1,0). */
-  @media (max-width: 1023px) {
-    [data-catalog-layout] [data-catalog-variant="side"] {
-      display: none;
-    }
-  }
+  /* Переключение раскладок каталога (top ⇄ side) — ЕДИНЫЙ источник:
+     packages/theme-base/styles/catalog-layout.css (подключён из
+     themes/rose/src/styles/global.css). Копия правила ЗДЕСЬ не нужна и
+     вредна: у портов тем лежала вторая, без @media, и на узком экране
+     обе вместе прятали ОБА варианта — каталог был пустой. */
 
   /* ── Переопределения DS-компонентов фильтров (сами DS-файлы не трогаем). ──
      Селекторы — устойчивые data-атрибуты из исходников DS

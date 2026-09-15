@@ -294,14 +294,11 @@ const rowPanelClass =
 </section>
 
 <style>
-	/* Переключение раскладок: глобал __MERFY_CATALOG_LAYOUT__ выставляет
-	   data-catalog-layout на секции — противоположный вариант скрывается. */
-	[data-catalog-layout="top"] [data-catalog-variant="side"] {
-		display: none;
-	}
-	[data-catalog-layout="side"] [data-catalog-variant="top"] {
-		display: none;
-	}
+	/* Переключение раскладок каталога (top ⇄ side) — ЕДИНЫЙ источник:
+	   packages/theme-base/styles/catalog-layout.css (подключён из
+	   themes/vanilla/src/styles/global.css). Здесь копии БЫТЬ НЕ ДОЛЖНО: она
+	   жила без @media, доживала до страницы каталога вместе с блочной и
+	   на узком экране они вдвоём прятали ОБА варианта — каталог был пустой. */
 </style>
 
 <script>

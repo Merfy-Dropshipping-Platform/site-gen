@@ -169,8 +169,14 @@ const isMegaMenu = menuType === "mega-menu";
 const isSidebar = menuType === "sidebar";
 const megaLinkCls = "";
 
+// lg:text-[length:var(--size-nav-link,16px)] — настройка темы «Кегль пунктов
+// меню» (паритет с эталоном flux Header.astro:163 и rose Header.astro:157).
+// Значение по умолчанию = литерал вёрстки bloom и одновременно `--size-nav-link`
+// из packages/theme-bloom/theme.json, поэтому магазин без правки настройки
+// остаётся на прежних 16px. До правки пункты меню bloom игнорировали ползунок:
+// замер стенда f7593c5f8f8f — настройка 14px, нарисовано 16px.
 const navLinkCls = [
-	"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70",
+	"font-inter text-[16px] font-light leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 lg:text-[length:var(--size-nav-link,16px)]",
 	megaLinkCls,
 ]
 	.filter(Boolean)

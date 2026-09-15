@@ -42,6 +42,16 @@
  *        неразличим); только bloom 0,0,0→207,122,139. Колонка, секция и юр.инфа
  *        схемой формы не трогались вовсе.
  *
+ * ПОПРАВКА 16.09 (задача b31-checkout, п.4 выше — историческая, поведение
+ * заменено). `--color-checkout-surface` снят целиком: владелец прислал
+ * скриншот, где Схема 1 (Фон #000000) красит обе колонки РАЗНЫМИ оттенками, и
+ * попросил убрать различие — «цвет тот же, схема та же, но они различаются».
+ * Правая колонка теперь красится ТЕМ ЖЕ `--color-bg`, что и левая (см.
+ * describe ниже и подробный разбор в `checkout-summary-scheme-surface.
+ * spec.ts`). Условие «поверхность идёт за перекрашенным Фоном, если её не
+ * трогали» и приоритет «уважать осознанно заданную поверхность» — оба сняты:
+ * различий быть не должно вообще, откуда бы они ни брались.
+ *
  * ЧТО ИЗМЕНИЛОСЬ ПО СУЩЕСТВУ (и почему это не пинг-понг с третьим кругом):
  *
  *   • п.3 отменяет решение третьего круга «шапка внутри левой колонки». Тогда
@@ -492,20 +502,29 @@ describe('п.3 шапка отделена от левой и правой ча�
   });
 });
 
-// ── п.4 сводка принимает ИЗМЕНЁННУЮ схему ──────────────────────────────────
+// ── п.4 (16.09: заменено) — сводка красится ТЕМ ЖЕ «Фоном», что и форма ────
+//
+// Историческое п.4 (14.09/15.09, см. docblock файла) держало отдельный
+// токен `--color-checkout-surface` с приоритетом «уважать осознанно заданную
+// поверхность → перекрашенный Фон → заводскую поверхность». 16.09 владелец
+// это отменил целиком: обе колонки одной схемы обязаны быть НЕРАЗЛИЧИМЫ.
 
 const SUMMARY_PANE = ['[data-checkout-pane="summary"]'];
+const FORM_PANE = ['[data-checkout-pane="form"]'];
 
 /**
- * Предикат п.4: поверхность правой колонки идёт за токеном, который считает
- * `buildTokensCss`, а не за жёстко зашитым `--color-surface`.
+ * Предикат п.4 (16.09): поверхность правой колонки — тот же `--color-bg`,
+ * что красит левую, и никакого отдельного токена поверхности в правиле нет.
  */
-function summaryFollowsEditedScheme(css: string): boolean {
-  const bg = resolve(parse(css), SUMMARY_PANE, 'background', 'desktop');
+function summaryEqualsFormBackground(css: string): boolean {
+  const parsed = parse(css);
+  const summaryBg = resolve(parsed, SUMMARY_PANE, 'background', 'desktop');
+  const formBg = resolve(parsed, FORM_PANE, 'background', 'desktop');
   return (
-    typeof bg === 'string' &&
-    bg.includes('--color-checkout-surface') &&
-    bg.includes('--color-surface')
+    typeof summaryBg === 'string' &&
+    typeof formBg === 'string' &&
+    summaryBg === formBg &&
+    !summaryBg.includes('checkout-surface')
   );
 }
 
@@ -516,86 +535,93 @@ function schemeVar(css: string, scheme: string, name: string): string | null {
   return new RegExp(`${name}:\\s*([^;}]+)`).exec(rule[1])?.[1]?.trim() ?? null;
 }
 
-describe('п.4 «Сводка заказа» принимает перекрашенную схему', () => {
+describe('п.4 (16.09) «Сводка заказа» = «Фон» той же схемы, что и форма — без исключений', () => {
   const themeSchemes = (theme: string) => themeToMerchantColorSchemes(theme);
   /** Мерчант перекрасил в панели только «Фон» — других полей там нет. */
   const repainted = (theme: string, id: string, bg: string) =>
     themeSchemes(theme).map((sc) => (sc.id === id ? { ...sc, background: bg } : sc));
 
-  it('колонка красится токеном с фолбэком на прежнюю поверхность', () => {
-    expect(summaryFollowsEditedScheme(CHECKOUT_SPLIT_CSS)).toBe(true);
+  it('CSS-правило колонки читает то же выражение, что и правило формы', () => {
+    expect(summaryEqualsFormBackground(CHECKOUT_SPLIT_CSS)).toBe(true);
   });
 
-  it.each(THEMES)('тема %s: схему не трогали — вид прежний, поверхность заводская', (theme) => {
-    // Это и есть страховка от «починки, которая перекрасит все магазины»:
-    // сид rose пинит чекауту scheme-2, и безусловный переход на «Фон» сделал бы
-    // правую колонку всех rose-магазинов белой вместо серой (замер подтвердил).
-    //
-    // Раньше страховка была записана как «токена нет вовсе», и это оказалось
-    // слишком грубо: у vanilla/bloom/flux токена не было НИКОГДА (их сиды не
-    // несут `surfaceBg`), колонка садилась на унаследованное значение и на
-    // смену схемы не реагировала. Проверяем то, что владельца волнует на самом
-    // деле, — ЗНАЧЕНИЕ: у нетронутой схемы поверхность ровно заводская.
+  it.each(THEMES)('тема %s: схему не трогали — поверхность больше НЕ заводская, а равна «Фону»', (theme) => {
+    // ДО 16.09 нетронутая схема сохраняла заводскую поверхность (страховка
+    // от «починки, которая перекрасит все магазины» — сид rose пинит
+    // scheme-2, и переход на «Фон» действительно меняет вид). ПОСЛЕ 16.09
+    // это возражение снято владельцем явно: колонка ВСЕГДА равна «Фону»,
+    // даже когда он совпадает с заводским видом (флаг «вид не меняется»
+    // был подчинён старому приоритету, которого больше нет).
     const css = buildTokensCss({ colorSchemes: themeSchemes(theme) }, theme);
     const manifest = getThemeManifest(theme);
     let проверено = 0;
     for (const sc of manifest?.colorSchemes ?? []) {
-      const factory = (sc.tokens?.['--color-surface'] ?? '').trim().replace(/\s+/g, ' ');
-      if (!factory) continue;
-      expect(schemeVar(css, sc.id.replace(/^scheme-/, ''), '--color-checkout-surface')).toBe(
-        factory,
-      );
+      const id = sc.id.replace(/^scheme-/, '');
+      const bg = schemeVar(css, id, '--color-bg');
+      expect(bg).toBeTruthy();
+      expect(css).not.toContain('--color-checkout-surface');
       проверено++;
     }
     expect(проверено).toBeGreaterThan(0);
   });
 
-  it.each(THEMES)('тема %s: перекрасили «Фон» — поверхность идёт за ним', (theme) => {
+  it.each(THEMES)('тема %s: перекрасили «Фон» — колонка идёт за ним (как и раньше, но БЕЗ отдельного токена)', (theme) => {
     const css = buildTokensCss(
       { colorSchemes: repainted(theme, 'scheme-4', '#71C0FF') },
       theme,
     );
-    // #71C0FF — ровно тот цвет, которым замер «до» показывал, что колонка его
-    // НЕ принимает (оставалась 26,26,26 / 8,2,0 / 247,247,249 / 255,255,255).
-    expect(schemeVar(css, '4', '--color-checkout-surface')).toBe('113 192 255');
+    // #71C0FF — тот же контрольный цвет, которым замер «до» 14.09 показывал,
+    // что колонка его НЕ принимает (оставалась 26,26,26 / 8,2,0 / 247,247,249
+    // / 255,255,255). 16.09: значение читаем напрямую из --color-bg.
+    expect(schemeVar(css, '4', '--color-bg')).toBe('113 192 255');
+    expect(css).not.toContain('--color-checkout-surface');
   });
 
-  it('перекрашена одна схема — соседние остаются на заводской поверхности', () => {
+  it('перекрашена одна схема — соседние остаются на СВОЁМ «Фоне» (никакой заморозки)', () => {
     const css = buildTokensCss(
       { colorSchemes: repainted('rose', 'scheme-4', '#71C0FF') },
       'rose',
     );
-    expect(schemeVar(css, '4', '--color-checkout-surface')).toBe('113 192 255');
+    expect(schemeVar(css, '4', '--color-bg')).toBe('113 192 255');
     // Заводские значения rose из `packages/theme-rose/theme.json`.
-    expect(schemeVar(css, '3', '--color-checkout-surface')).toBe('230 225 220');
-    expect(schemeVar(css, '2', '--color-checkout-surface')).toBe('245 245 245');
+    expect(schemeVar(css, '3', '--color-bg')).toBe('245 240 235');
+    expect(schemeVar(css, '2', '--color-bg')).toBe('255 255 255');
   });
 
-  it('мерчант задал свою поверхность — уважаем её, а не «Фон»', () => {
-    // Поля для неё в редакторе схем нет, но в данных магазина она встречается
-    // (тёмный сайдбар корзины). Осознанный выбор не перебиваем: колонка идёт за
-    // поверхностью мерчанта (16 32 48), а не за перекрашенным «Фоном».
+  it('16.09: мерчант задал свою поверхность (surfaceBg) — БОЛЬШЕ НЕ уважаем, колонка идёт за «Фоном»', () => {
+    // ДО 16.09 это был приоритет №1 (тёмный сайдбар корзины и т.п.) — колонка
+    // красилась `surfaceBg`, а не «Фоном». Владелец 16.09 отменил исключение
+    // целиком: различия быть не должно, откуда бы оно ни бралось.
     const schemes = themeSchemes('rose').map((sc) =>
       sc.id === 'scheme-4'
         ? { ...sc, background: '#71C0FF', surfaceBg: '#102030' }
         : sc,
     );
     const css = buildTokensCss({ colorSchemes: schemes }, 'rose');
-    expect(schemeVar(css, '4', '--color-checkout-surface')).toBe('16 32 48');
-    expect(schemeVar(css, '4', '--color-surface')).toBe('16 32 48');
+    expect(schemeVar(css, '4', '--color-bg')).toBe('113 192 255');
+    expect(css).not.toContain('--color-checkout-surface');
   });
 
-  it('САБОТАЖ: вернули жёсткий --color-surface → предикат краснеет', () => {
+  it('САБОТАЖ: вернули отдельный --color-checkout-surface → предикат «одно правило» краснеет', () => {
     const sabotaged = CHECKOUT_SPLIT_CSS.replace(
+      '[data-checkout-pane="summary"] { background: rgb(var(--color-bg, 255 255 255)); }',
       '[data-checkout-pane="summary"] { background: rgb(var(--color-checkout-surface, var(--color-surface, 245 245 245))); }',
-      '[data-checkout-pane="summary"] { background: rgb(var(--color-surface, 245 245 245)); }',
     );
     expect(sabotaged).not.toEqual(CHECKOUT_SPLIT_CSS);
-    expect(summaryFollowsEditedScheme(sabotaged)).toBe(false);
+    expect(summaryEqualsFormBackground(sabotaged)).toBe(false);
   });
 
   it('САБОТАЖ-калибровка: замер видит и отсутствие правила', () => {
-    expect(summaryFollowsEditedScheme('')).toBe(false);
+    expect(summaryEqualsFormBackground('')).toBe(false);
+  });
+
+  it('САБОТАЖ-КАЛИБРОВКА: правка НЕсторожимого (текст комментария) не трогает предикат', () => {
+    const sabotaged = CHECKOUT_SPLIT_CSS.replace(
+      'Критерий владельца:',
+      'Критерий владельца (правка комментария, к покраске не относится):',
+    );
+    expect(sabotaged).not.toEqual(CHECKOUT_SPLIT_CSS);
+    expect(summaryEqualsFormBackground(sabotaged)).toBe(true);
   });
 });
 

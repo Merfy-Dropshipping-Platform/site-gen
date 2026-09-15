@@ -37,7 +37,7 @@ const schemeClass = schemeClassOf(colorScheme);
   style={paddingStyle}
 >
   <div data-checkout-submit-error role="alert" hidden style="color:rgb(var(--color-error));font-size:14px;margin-bottom:8px;"></div>
-  <button type="button" class={cls} data-checkout-submit disabled>
+  <button type="button" class={cls} data-checkout-submit>
     {initialLabel}
   </button>
 </section>
@@ -139,10 +139,21 @@ const schemeClass = schemeClassOf(colorScheme);
       return true;
     }
 
+    // 16.09, точка 2: «пусть просто отображается активной, как будто данные
+    // внесены... а не неактивный статус» — но ТОЛЬКО вид в конструкторе и
+    // превью. Живой сайт обязан вести себя как раньше: кнопка серая, пока
+    // форма не заполнена. `window.parent !== window` — тот же признак
+    // «мы в iframe превью», которым уже пользуется `cart-added-modal.ts`
+    // (goToCheckout); превью конструктора рендерится в iframe, витрина —
+    // нет. Реальную защиту это НЕ ослабляет: клик-хендлер ниже держит свой
+    // собственный `if (!canSubmit()) return;` независимо от inIframe и от
+    // DOM-атрибута disabled — покупатель на живом сайте не может отправить
+    // пустой заказ, даже если бы кто-то снял disabled в devtools.
     function refresh() {
       var label = buttonText.replace('{total}', fmtRub(getTotalCents()));
       button.textContent = state.submitting ? loadingText : label;
-      button.disabled = !canSubmit();
+      var inIframe = window.parent && window.parent !== window;
+      button.disabled = inIframe ? false : !canSubmit();
     }
 
     document.addEventListener('cart:updated', refresh);

@@ -254,9 +254,9 @@ describe('общая split-таблица стилей знает про пол�
     expect(CHECKOUT_SPLIT_CSS).toContain('--checkout-summary-top');
   });
 
-  it('поверхности колонок на месте', () => {
+  it('поверхности колонок на месте (16.09: сводка = «Фон», отдельной поверхности больше нет)', () => {
     expect(CHECKOUT_SPLIT_CSS).toMatch(
-      /\[data-checkout-pane="summary"\][^}]*background:\s*rgb\(var\(--color-checkout-surface/,
+      /\[data-checkout-pane="summary"\][^}]*background:\s*rgb\(var\(--color-bg/,
     );
     expect(CHECKOUT_SPLIT_CSS).toMatch(/min-height:\s*100dvh/);
   });

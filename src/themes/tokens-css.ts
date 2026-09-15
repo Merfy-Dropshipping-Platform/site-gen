@@ -468,16 +468,16 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
         }
       }
       // ── Поверхность правой колонки чекаута ───────────────────────────
-      // Считается ВСЕГДА, для каждой схемы — см. `checkoutSurfaceOf`.
-      merged.checkoutSurface = checkoutSurfaceOf(themeScheme.tokens, merged);
+      // 16.09: концепция снята — правая колонка красится «Фоном» той же схемы,
+      // как и левая (владелец: «цвет тот же, схема та же, но они
+      // различаются» — различие убрано, а не спрятано за очередным условием).
+      // `merged.checkoutSurface` больше НЕ проставляем — CSS-правило колонки
+      // (см. `checkout-split.ts`) читает `--color-bg` напрямую, отдельного
+      // токена нет.
       // ── Рамка поля формы ─────────────────────────────────────────────
-      // Тоже для КАЖДОЙ схемы — см. `inputBorderOf`. Подложка берётся из фона
-      // ЭТОЙ схемы (мерчантский, если он его перекрасил).
-      merged.inputBorder = inputBorderOf(
-        themeInputBorder,
-        themeInputBg,
-        hexToRgbTriple(merged.background) ?? normTriple(themeScheme.tokens?.['--color-bg']),
-      );
+      // Тоже для КАЖДОЙ схемы — см. `inputBorderOf`. Точка 3 (16.09): рамка
+      // всегда цвета поля, контраст со схемой больше не проверяем.
+      merged.inputBorder = inputBorderOf(themeInputBorder, themeInputBg);
       const rule = buildSchemeRule(merged);
       if (rule) {
         schemeRuleLines.push(rule);
@@ -490,16 +490,12 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     merchantById.delete(key);
   }
   for (const remaining of merchantById.values()) {
-    // Схема, которой в манифесте темы нет вовсе (мерчант добавил свою). Близнеца
-    // для сверки не существует — поверхность берём из самой схемы мерчанта.
+    // Схема, которой в манифесте темы нет вовсе (мерчант добавил свою).
+    // Поверхность больше не считаем (16.09) — колонка берёт «Фон» этой же
+    // схемы напрямую.
     const rule = buildSchemeRule({
       ...remaining,
-      checkoutSurface: checkoutSurfaceOf(undefined, remaining),
-      inputBorder: inputBorderOf(
-        themeInputBorder,
-        themeInputBg,
-        hexToRgbTriple(remaining.background) ?? normTriple(remaining.background),
-      ),
+      inputBorder: inputBorderOf(themeInputBorder, themeInputBg),
     });
     if (rule) schemeRuleLines.push(rule);
   }
@@ -878,107 +874,27 @@ function schemeClassId(id: string): string {
  * и на смену схемы не реагировала вовсе. Ровно та же болезнь, что была у
  * замороженного `--color-muted: 153 153 153`.
  *
- * ПОЧЕМУ НЕЛЬЗЯ ПРОСТО УБРАТЬ. Фон поля — `--color-input-bg`, сегодня во всех
- * пяти темах это белый `255 255 255`. Считаем контраст «поле ↔ подложка схемы»
- * по всей матрице 21 связки: он ниже 1.2 в ТРИНАДЦАТИ связках (rose 1/2/3/5,
- * vanilla 3/4, bloom 3/4, satin 1/2/3, flux 2/3) — там белое поле лежит на
- * белой или почти белой подложке, и рамка ЕДИНСТВЕННОЕ, что его очерчивает.
- * Снять её значит потерять поля на 13 экранах из 21.
+ * ПОПРАВКА 16.09. 15.09 сюда встал контраст-порог: рамку оставляли там, где
+ * белое поле сливалось с белой/светлой подложкой (13 связок из 21 — rose
+ * 1/2/3/5, vanilla 3/4, bloom 3/4, satin 1/2/3, flux 2/3), и снимали там, где
+ * поле читалось само. Владелец 16.09 отменил условие целиком: «убрать» —
+ * дословно и без исключений. Рамка теперь ВСЕГДА цвета самого поля
+ * (`--color-input-bg`), то есть невидима на любой схеме любой темы.
  *
- * ПРАВИЛО. Рамка нужна ровно тогда, когда поле само по себе не читается:
- *   контраст(поле, подложка) < 1.5 → рамка темы, как была (13 заводских связок
- *       остаются байт в байт);
- *   иначе                          → рамка цвета САМОГО ПОЛЯ, то есть её не
- *       видно: поле уже очерчено собственным фоном.
- * Порог 1.5 взят из данных, а не с потолка: «нужные» связки лежат в 1.00–1.16,
- * «ненужные» начинаются с 1.96 (случай жалобы) и 2.43 (bloom scheme-2) — запас
- * с обеих сторон 0.34 и 0.46. Геометрия не меняется: рамка остаётся 1px,
- * меняется только её цвет.
+ * ЧЕМ ПЛАТИМ. Контраст «поле ↔ подложка» в тех же 13 связках остаётся
+ * НИЖЕ 1.5 (диапазон 1.00–1.16 — считает `checkout-summary-scheme-surface.
+ * spec.ts`, раздел «точка 3»): без рамки границы поля на белой/светлой схеме
+ * не видно вовсе, различим только курсор фокуса. Это принятое владельцем
+ * решение, а не забытый баг — сторож проверяет ЧИСЛОМ, что деградация
+ * произошла именно там и только там.
  */
 function inputBorderOf(
   themeBorder: string | null,
   inputBg: string | null,
-  schemeBg: string | null,
 ): string | null {
   if (!themeBorder) return null;
   const field = normTriple(inputBg);
-  const back = normTriple(schemeBg);
-  if (!field || !back) return themeBorder;
-  return contrastRatio(field, back) >= INPUT_BORDER_VISIBLE_AT ? field.trim() : themeBorder;
-}
-
-/** Порог «поле читается само» — см. разбор в `inputBorderOf`. */
-const INPUT_BORDER_VISIBLE_AT = 1.5;
-
-/** WCAG-контраст двух триплетов «r g b». */
-function contrastRatio(a: string, b: string): number {
-  const lin = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  };
-  const lum = (v: string) => {
-    const [r, g, bl] = v.trim().split(/\s+/).map(Number);
-    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(bl);
-  };
-  const la = lum(a);
-  const lb = lum(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-}
-
-/**
- * ПОВЕРХНОСТЬ ПРАВОЙ КОЛОНКИ ЧЕКАУТА для ОДНОЙ схемы. Тотальная функция: у любой
- * схемы любой темы ответ есть всегда, «промолчать» она не умеет.
- *
- * Зачем тотальная. Предыдущая редакция считала токен ТОЛЬКО когда мерчант
- * перекрасил «Фон», а его поверхность задана и равна заводской:
- *
- *     surfaceUntouched = merchantSurface !== null && merchantSurface === themeSurface
- *
- * «Поверхность задана» — это поле `surfaceBg`, которого в редакторе схем нет и не
- * будет (состав настроек — канон). В сидах магазинов оно есть только у rose и
- * satin: `src/generator/templates/defaults/{vanilla,bloom,flux}.json` несут схемы
- * БЕЗ него. Для трёх тем из пяти «поля нет» — единственно возможное состояние, и
- * условие молча выключалось: токен не появлялся никогда. Хуже того, без
- * `surfaceBg` правило `.color-scheme-N` вообще не объявляло `--color-surface`
- * (`schemeToVars` печатает его только при заданном поле), и правая колонка
- * садилась на унаследованное значение, одинаковое для ВСЕХ схем.
- *
- * Замер на сидовых данных (Chromium 1440×1400, мишень — две схемы с максимально
- * разной заводской поверхностью): vanilla 250,250,250 → 250,250,250;
- * bloom 246,246,247 → 246,246,247 (инлайновый набор из
- * `themes/bloom/src/pages/checkout.astro`); flux 250,250,250 → 250,250,250.
- * Те же числа тестер снял на живых стендах — замер сошёлся.
- *
- * Порядок ответов (первый подошедший выигрывает):
- *   1. мерчант ОСОЗНАННО задал свою поверхность (в редакторе поля нет, но в
- *      данных магазина она встречается — например тёмный сайдбар корзины) —
- *      уважаем её и не перебиваем «Фоном»;
- *   2. мерчант перекрасил «Фон» схемы — поверхность идёт за ним (п.4 владельца
- *      14.09: «при измении их не принимает новые условия»);
- *   3. схему не трогали — ЗАВОДСКАЯ поверхность ИМЕННО ЭТОЙ схемы из манифеста.
- *      Это и чинит vanilla/bloom/flux: раньше на её месте было унаследованное
- *      значение, не зависящее от схемы.
- *
- * Почему отдельный токен, а не `--color-surface`: на последнем висят карточки
- * товара, плитки коллекций и прочие поверхности витрины — их никто менять не
- * просил. `--color-checkout-surface` читает ровно одно правило
- * (`checkout-split.ts`, `[data-checkout-pane="summary"]`).
- */
-function checkoutSurfaceOf(
-  themeTokens: Record<string, string> | undefined,
-  merchant: Record<string, unknown> | null | undefined,
-): string | null {
-  const themeSurface = normTriple(themeTokens?.['--color-surface']);
-  const themeBg = normTriple(themeTokens?.['--color-bg']);
-  const merchantSurface =
-    hexToRgbTriple(merchant?.surfaceBg) ?? normTriple(merchant?.surfaceBg);
-  const merchantBg =
-    hexToRgbTriple(merchant?.background) ?? normTriple(merchant?.background);
-  if (merchantSurface !== null && merchantSurface !== themeSurface)
-    return merchantSurface;
-  if (merchantBg !== null && themeBg !== null && merchantBg !== themeBg)
-    return merchantBg;
-  return themeSurface ?? merchantSurface ?? merchantBg;
+  return field ?? themeBorder;
 }
 
 function buildThemeSchemeRule(
@@ -1011,19 +927,14 @@ function buildThemeSchemeRule(
     );
     if (пересчитанный) tokens['--color-muted'] = пересчитанный;
   }
-  // Схема, которую мерчант не переопределял. Поверхность чекаута — заводская,
-  // но объявить её надо ЯВНО: инвариант «каждое правило `.color-scheme-N` несёт
-  // `--color-checkout-surface`» должен держаться на обеих ветках, иначе колонка
-  // снова начнёт брать унаследованное значение там, где ветки разошлись.
-  const checkoutSurface = checkoutSurfaceOf(scheme.tokens, null);
-  if (checkoutSurface) tokens['--color-checkout-surface'] = checkoutSurface;
-  // Рамка поля — тот же инвариант «объявлена у каждой схемы», что и поверхность.
+  // 16.09: `--color-checkout-surface` снят — правая колонка чекаута красится
+  // тем же `--color-bg`, что и левая (см. разбор в `checkout-split.ts`). Токен
+  // сюда больше не пишем, схема мерчанта его печатает сама только если он там
+  // физически есть (старые ревизии) — см. `schemeToVars`.
+  // Рамка поля — инвариант «объявлена у каждой схемы» остаётся, значение
+  // теперь ВСЕГДА цвет самого поля (точка 3, 16.09: «убрать» — без исключений).
   // Опоры темы приходят параметром: `buildThemeSchemeRule` манифеста не видит.
-  const inputBorder = inputBorderOf(
-    inputAnchors?.border ?? null,
-    inputAnchors?.bg ?? null,
-    normTriple(scheme.tokens?.['--color-bg']),
-  );
+  const inputBorder = inputBorderOf(inputAnchors?.border ?? null, inputAnchors?.bg ?? null);
   if (inputBorder) tokens['--color-input-border'] = inputBorder;
   const pairs = Object.entries(tokens).map(([k, v]) => `${k}: ${v}`);
   if (pairs.length === 0) return '';
@@ -1193,16 +1104,10 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   // muted text variants — Figma 905-19049 flux electronics.
   const accent = hexToRgbTriple(scheme.accent);
   if (accent) parts.push(`--color-accent: ${accent}`);
-  // Поверхность правой колонки чекаута — её считает `checkoutSurfaceOf` (см.
-  // подробный разбор там же). Токен объявлен у КАЖДОЙ схемы: пока он появлялся
-  // выборочно, колонка у vanilla/bloom/flux садилась на унаследованное значение
-  // и на смену схемы не реагировала вовсе.
-  // Значение приходит из `checkoutSurfaceOf` уже триплетом («245 245 245»), но
-  // шестнадцатеричную запись тоже принимаем — в ревизиях магазинов цвета лежат
-  // в hex, и схема мерчанта может прийти сюда напрямую.
-  const checkoutSurface =
-    hexToRgbTriple(scheme.checkoutSurface) ?? normTriple(scheme.checkoutSurface);
-  if (checkoutSurface) parts.push(`--color-checkout-surface: ${checkoutSurface}`);
+  // 16.09: `--color-checkout-surface` больше не эмитится — правая колонка
+  // чекаута берёт `--color-bg` этой же схемы напрямую (см. `checkout-split.
+  // ts`). Токена `scheme.checkoutSurface` в данных мерчанта не бывает: его
+  // единственный писатель (`buildTokensCss`) убран этим же патчем.
   // Рамка поля формы — реестр токенов объявляет её `scope: 'scheme'`, но до
   // 15.09 генератор печатал её только в `:root`, одну на все схемы. Считает
   // `inputBorderOf`.

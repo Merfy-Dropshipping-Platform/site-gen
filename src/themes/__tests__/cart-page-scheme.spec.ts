@@ -14,7 +14,8 @@ import { resolve } from "node:path";
  *              заголовок/название/цена/«Итого»/сумма 0,0,0, кнопки 0,0,0);
  *   • satin  — те же 13;
  *   • vanilla — 17 из 18 (фон 255,255,255, весь текст 10,10,10);
- *   • flux   — 16 из 18 (чинится в чужой ветке, см. FLUX_DEBT ниже);
+ *   • flux   — 16 из 18 на момент замера; фон корня починен веткой flux-product
+ *              (main fc58e01b), литералы внутри секций остались (см. ниже);
  *   • rose   — эталон, едет полностью.
  *
  * Причины оказались РАЗНЫЕ, поэтому сторожей два:
@@ -37,10 +38,15 @@ const SECTIONS = ["CartBody", "CartSummary"] as const;
  * Темы, где корзина ЕЩЁ красится литералом, и это чинит другой агент в своей
  * ветке. Держим как ДОЛГ, а не как «разрешено»: когда ветка вольётся, тест
  * «долг ещё на месте» упадёт и заставит убрать тему отсюда.
- * flux: ветка fix/b13-flux-product-scheme-layout (см. BUGS_2026-09-15, раздел
- * «Тема flux — схема не доезжает», строка «Корзина | секция»).
+ * Долг flux ЗАКРЫТ ЧАСТИЧНО. Ветка fix/b13-flux-product-scheme-layout влита в
+ * main (fc58e01b) и перевела на токен схемы ФОН КОРНЯ секций корзины — эту
+ * проверку flux теперь проходит наравне со всеми. Внутри секций у него
+ * остались литералы (кнопка «Оформить заказ» bg-[#FA5109], кнопки bg-black,
+ * значок скидки, плашка превью) — это отдельная задача, и до неё факт держится
+ * инвертированной проверкой ниже: починят — она упадёт и заставит снять
+ * исключение.
  */
-const FLUX_DEBT = "flux";
+const FLUX_INNER_DEBT = "flux";
 
 /** Литералы, которые остаются законными (совпадают с эталоном rose). */
 const ALLOWED = [
@@ -94,12 +100,14 @@ function rootTag(src: string): string {
 }
 
 describe("секции корзины едут за цветовой схемой", () => {
-  describe.each(THEMES.filter((t) => t !== FLUX_DEBT))("%s", (theme) => {
+  describe.each(THEMES.filter((t) => t !== FLUX_INNER_DEBT))("%s", (theme) => {
     it.each(SECTIONS)("%s — ни одной постоянной краски литералом", (section) => {
       const bad = literalPaintLines(sectionSource(theme, section));
       expect(bad).toEqual([]);
     });
+  });
 
+  describe.each(THEMES)("%s", (theme) => {
     it.each(SECTIONS)("%s — фон корня задан токеном схемы", (section) => {
       const tag = rootTag(sectionSource(theme, section));
       expect(tag).toMatch(/bg-\[rgb\(var\(--color-bg/);
@@ -138,10 +146,11 @@ describe("секции корзины едут за цветовой схемо�
     });
   });
 
-  // Долг: пока flux красит литералом, держим факт зафиксированным.
-  describe(`${FLUX_DEBT} — известный долг чужой ветки`, () => {
-    it("корзина ВСЁ ЕЩЁ красится литералом (починят — убрать тему из FLUX_DEBT)", () => {
-      const bad = SECTIONS.flatMap((s) => literalPaintLines(sectionSource(FLUX_DEBT, s)));
+
+  // Долг: внутри секций flux краска всё ещё литералом (кнопки, значок, плашка).
+  describe(`${FLUX_INNER_DEBT} — известный долг внутри секций`, () => {
+    it("литералы ВНУТРИ корзины ещё на месте (починят — убрать исключение)", () => {
+      const bad = SECTIONS.flatMap((sec) => literalPaintLines(sectionSource(FLUX_INNER_DEBT, sec)));
       expect(bad.length).toBeGreaterThan(0);
     });
   });

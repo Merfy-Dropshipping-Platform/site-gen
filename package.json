@@ -58,6 +58,7 @@
     "test:panel-canon": "jest --runInBand src/themes/__tests__/panel-canon.spec.ts",
     "test:padding-control": "jest --runInBand src/themes/__tests__/padding-control-canon.spec.ts",
     "test:rose-header-grid": "jest --runInBand src/themes/__tests__/rose-header-grid.spec.ts",
+    "test:hero-over-photo": "jest --runInBand src/themes/__tests__/hero-over-photo-scheme.spec.ts",
     "test:wishlist-section": "jest --runInBand src/themes/__tests__/wishlist-section.spec.ts",
     "test:account-sections": "jest --runInBand src/themes/__tests__/account-sections.spec.ts",
     "test:login-section": "jest --runInBand src/themes/__tests__/login-section.spec.ts",

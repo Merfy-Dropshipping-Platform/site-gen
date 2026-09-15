@@ -2287,6 +2287,23 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "button": {
+            "type": "object",
+            "label": "Кнопка",
+            "visibility": "subpanel",
+            "objectFields": {
+              "text": {
+                "type": "text",
+                "label": "Текст",
+                "visibility": "panel"
+              },
+              "link": {
+                "type": "pagePicker",
+                "label": "Ссылка",
+                "visibility": "panel"
+              }
+            }
           }
         }
       },
@@ -4252,10 +4269,24 @@
             "label": "Выравнивание",
             "visibility": "panel"
           },
+          "containerEnabled": {
+            "type": "toggle",
+            "label": "Контейнер",
+            "visibility": "panel",
+            "options": [
+              "true=Показать",
+              "false=Скрыть"
+            ]
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
             "visibility": "panel"
+          },
+          "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "padding": {
             "type": "padding",
@@ -4329,11 +4360,6 @@
             "visibility": "off"
           },
           "textStyle": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
-          },
-          "containerColorScheme": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -5414,6 +5440,23 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "button": {
+            "type": "object",
+            "label": "Кнопка",
+            "visibility": "subpanel",
+            "objectFields": {
+              "text": {
+                "type": "text",
+                "label": "Текст",
+                "visibility": "panel"
+              },
+              "link": {
+                "type": "pagePicker",
+                "label": "Ссылка",
+                "visibility": "panel"
+              }
+            }
           }
         }
       },
@@ -8551,6 +8594,23 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "button": {
+            "type": "object",
+            "label": "Кнопка",
+            "visibility": "subpanel",
+            "objectFields": {
+              "text": {
+                "type": "text",
+                "label": "Текст",
+                "visibility": "panel"
+              },
+              "link": {
+                "type": "pagePicker",
+                "label": "Ссылка",
+                "visibility": "panel"
+              }
+            }
           }
         }
       },
@@ -11678,6 +11738,23 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "button": {
+            "type": "object",
+            "label": "Кнопка",
+            "visibility": "subpanel",
+            "objectFields": {
+              "text": {
+                "type": "text",
+                "label": "Текст",
+                "visibility": "panel"
+              },
+              "link": {
+                "type": "pagePicker",
+                "label": "Ссылка",
+                "visibility": "panel"
+              }
+            }
           }
         }
       },
@@ -14805,6 +14882,23 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "button": {
+            "type": "object",
+            "label": "Кнопка",
+            "visibility": "subpanel",
+            "objectFields": {
+              "text": {
+                "type": "text",
+                "label": "Текст",
+                "visibility": "panel"
+              },
+              "link": {
+                "type": "pagePicker",
+                "label": "Ссылка",
+                "visibility": "panel"
+              }
+            }
           }
         }
       },

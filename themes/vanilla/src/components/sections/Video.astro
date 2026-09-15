@@ -171,7 +171,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				videoUrl ? (
 					<video
-						class="pointer-events-none absolute inset-0 size-full max-w-none object-cover"
+						class="absolute inset-0 size-full max-w-none object-cover"
 						src={videoUrl}
 						poster={merchantPoster}
 						autoplay
@@ -180,8 +180,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						playsinline
 						preload="auto"
 						disablepictureinpicture
-						aria-hidden="true"
-						tabindex="-1"
+						data-media-video
 					/>
 				) : (
 					<img
@@ -193,28 +192,56 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					/>
 				)
 			}
-			{/* Play-иконка по центру. С видео — белая поверх ролика (как было).
-			    БЕЗ видео (пустой плейсхолдер) — обводка токеном heading (тёмная на
-			    светлом surface, читается в любой схеме) per контракт «пустой image-
-			    rect + Play-иконка по центру». */}
+			{/* Play/pause-кнопка по центру. Репорт тестера 15.09 [62] — три жалобы
+			    одной причины: раньше здесь был ДЕКОРАТИВНЫЙ <svg pointer-events-none>
+			    без клика — видео (тоже pointer-events-none) играло автоплеем БЕЗ
+			    способа поставить на паузу [2], а если автоплей блокировался (напр.
+			    вложенный iframe конструктора без autoplay-разрешения) — ролик
+			    навечно стоял в первом кадре под неподвижной иконкой, что читалось
+			    как «бесконечная загрузка» [1]; сама иконка рисовалась ВСЕГДА по
+			    центру независимо от состояния воспроизведения [3].
+			    С видео — НАСТОЯЩАЯ кнопка (data-media-play-overlay), скрипт ниже
+			    переключает play/pause и синхронизирует видимость с реальным
+			    состоянием (скрыта пока играет, видна на паузе — включая паузу от
+			    блокированного автоплея на старте). БЕЗ видео (пустой плейсхолдер) —
+			    декоративная иконка per контракт Figma 1:19335, кликать там нечего. */}
 			{
-				<svg
-					width="44"
-					height="44"
-					viewBox="0 0 44 44"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					aria-hidden="true"
-					class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
-				>
-					<path
-						d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
-						stroke="white"
-						stroke-width="3"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
+				videoUrl ? (
+					<button
+						type="button"
+						class="absolute left-1/2 top-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center opacity-0 transition-opacity"
+						aria-label="Поставить видео на паузу или воспроизвести"
+						data-media-play-overlay
+					>
+						<svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path
+								d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
+								stroke="white"
+								stroke-width="3"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					</button>
+				) : (
+					<svg
+						width="44"
+						height="44"
+						viewBox="0 0 44 44"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						aria-hidden="true"
+						class="pointer-events-none absolute left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2"
+					>
+						<path
+							d="M9.16772 31.7784V12.2228C9.16772 10.6103 9.16772 9.8031 9.50706 9.32599C9.80323 8.90958 10.2597 8.63618 10.7665 8.57081C11.347 8.49595 12.0589 8.87564 13.4807 9.63394L31.814 19.4117L31.8207 19.4147C33.392 20.2527 34.178 20.6719 34.4358 21.2306C34.6607 21.718 34.6607 22.2806 34.4358 22.7681C34.1776 23.3276 33.3898 23.7485 31.814 24.5889L13.4807 34.3666C12.0579 35.1255 11.3472 35.5037 10.7665 35.4288C10.2597 35.3634 9.80323 35.0901 9.50706 34.6737C9.16772 34.1966 9.16772 33.3909 9.16772 31.7784Z"
+							stroke="white"
+							stroke-width="3"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				)
 			}
 			{
 				overlayN > 0 && (
@@ -226,4 +253,39 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			}
 		</div>
 	</div>
+	{videoUrl && (
+		<script is:inline define:vars={{ blockId: id }}>
+			(() => {
+				// Spec 102 — скоуп к своей секции: window.__merfyRoot(blockId), НЕ
+				// document.querySelector (несколько «Видео» на странице иначе делили
+				// бы один и тот же play-обработчик).
+				const root = window.__merfyRoot(blockId);
+				if (!root) return;
+				const v = root.querySelector("video[data-media-video]");
+				const btn = root.querySelector("[data-media-play-overlay]");
+				if (!v || !btn) return;
+				const show = () => {
+					btn.style.opacity = "1";
+					btn.style.pointerEvents = "auto";
+				};
+				const hide = () => {
+					btn.style.opacity = "0";
+					btn.style.pointerEvents = "none";
+				};
+				btn.addEventListener("click", (e) => {
+					e.preventDefault();
+					if (v.paused) v.play().catch(() => {});
+					else v.pause();
+				});
+				v.addEventListener("play", hide);
+				v.addEventListener("pause", show);
+				v.addEventListener("ended", show);
+				// Автоплей мог быть заблокирован политикой браузера (жалоба [1] —
+				// «бесконечная загрузка»: ролик стоит на первом кадре без способа
+				// его запустить) — кнопка обязана быть видна с самого начала, а не
+				// спрятана в расчёте на успешный автоплей.
+				if (v.paused) show();
+			})();
+		</script>
+	)}
 </section>

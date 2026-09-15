@@ -1,5 +1,6 @@
 /**
- * Окно «Товар добавлен в корзину» — один флоу и одна разметка на пять тем.
+ * Окно «Товар добавлен в корзину» — один флоу и одна разметка, теперь ТОЛЬКО
+ * у bloom и flux.
  *
  * Откуда задача. Владелец, 15.09: «взять флоу добавления в корзину из темы
  * bloom и применить его в остальных темах; окно и сайдбар корзины должны
@@ -10,9 +11,16 @@
  *     схемы карточка окна давала одинаковые `255,255,255`, кнопка —
  *     `227,142,159`: цвета были зашиты хексами `#E38E9F` / `#FDF4F6`.
  *
+ * Владелец, 16.09 (откат объёма): «работать только в bloom и flux должно» —
+ * rose/satin/vanilla вернулись на прежний фолбэк (автооткрытие дровера,
+ * устройство самого nt-cart.ts: `addedModal.exists()` false без разметки).
+ * Плюс окно на тесных окнах вылезало за экран без прокрутки («не должен
+ * отображаться во весь экран») — карточка получила `max-h` + `overflow-y`.
+ *
  * Что сторожим (каждая проверка ловит СВОЙ способ тихо всё сломать):
- *  1. тема перестала монтировать общий компонент → у неё молча вернётся
- *     сайдбар, и никто не заметит до жалобы;
+ *  1. bloom/flux перестали монтировать общий компонент → у них молча вернётся
+ *     сайдбар, и никто не заметит до жалобы; rose/satin/vanilla МОЛЧА снова
+ *     ЗАВЕЛИ окно → флоу выходит за объём, который просил владелец;
  *  2. в разметку окна вернулся хекс/rgb-литерал → окно перестанет идти за
  *     схемой ровно так, как было у bloom;
  *  3. окно красится токеном, которого НЕТ в правилах схемы. Это отдельная
@@ -37,8 +45,11 @@ const ROOT = resolve(__dirname, '../../..');
 const read = (rel: string) => readFileSync(resolve(ROOT, rel), 'utf8');
 
 const THEMES = ['rose', 'vanilla', 'satin', 'flux', 'bloom'] as const;
+/** Канон 16.09: окно живёт только в bloom и flux. */
+const MODAL_THEMES = ['bloom', 'flux'] as const;
+const NO_MODAL_THEMES = ['rose', 'vanilla', 'satin'] as const;
 
-/** Где каждая тема монтирует окно: у rose — общий storefront-рантайм. */
+/** Где каждая тема монтирует (или монтировала бы) окно: у rose — общий storefront-рантайм. */
 const MOUNT: Record<(typeof THEMES)[number], string> = {
   rose: 'themes/rose/src/components/StorefrontRuntime.astro',
   vanilla: 'themes/vanilla/src/layouts/Layout.astro',
@@ -60,15 +71,28 @@ const MODAL_RUNTIME = 'packages/theme-base/runtime/cart-added-modal.ts';
 const NT_CART = 'packages/theme-base/runtime/nt-cart.ts';
 
 describe('окно «Товар добавлен в корзину» — общий слой', () => {
-  it('1. все пять тем монтируют ОДИН общий компонент', () => {
+  it('1a. bloom и flux монтируют ОДИН общий компонент', () => {
     const missing: string[] = [];
-    for (const theme of THEMES) {
+    for (const theme of MODAL_THEMES) {
       const src = read(MOUNT[theme]);
       const importsShared = /packages\/theme-base\/primitives\/CartAddedModal\.astro/.test(src);
       const mounts = /<CartAddedModal\s*\/>/.test(src);
       if (!importsShared || !mounts) missing.push(theme);
     }
     expect(missing).toEqual([]);
+  });
+
+  it('1b. rose/satin/vanilla окно НЕ монтируют — прежний фолбэк (дровер)', () => {
+    // Комментарий-объяснение допустим (документирует, ПОЧЕМУ окна нет) — сторожим
+    // только КОД: импорт/JSX-тег компонента, а не упоминание пути в прозе.
+    const offenders: string[] = [];
+    for (const theme of NO_MODAL_THEMES) {
+      const code = stripComments(read(MOUNT[theme]));
+      const importsShared = /packages\/theme-base\/primitives\/CartAddedModal\.astro/.test(code);
+      const mounts = /<CartAddedModal\s*\/>/.test(code);
+      if (importsShared || mounts) offenders.push(theme);
+    }
+    expect(offenders).toEqual([]);
   });
 
   it('2. в разметке окна нет хексов и rgb()-литералов — иначе схема не доедет', () => {

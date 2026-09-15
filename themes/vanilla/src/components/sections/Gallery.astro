@@ -224,9 +224,16 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 ---
 
+{/* Краска секции — «Текст» СХЕМЫ. Было `text-white`: Tailwind 4 печатает его
+    как var(--color-white) — переменная ЕСТЬ, а схемы в ней нет, поэтому весь
+    текст «Галереи» замирал белым, при том что полоса под ним
+    (`bg-[rgb(var(--color-bg,58_69_48))]` ниже) за схемой уже едет. Замер
+    матрицы (схемы-зонды 1 → 4): текст #fff → #fff против 17,0,0 → 0,17,0 у
+    полосы. Фолбэк 255_255_255 = прежний вид.
+    Сторож: pnpm test:scheme-targets. */}
 <section
 	id="gallery"
-	class="w-full text-white"
+	class="w-full text-[rgb(var(--color-text,255_255_255))]"
 	aria-labelledby="gallery-title"
 	data-vanilla-gallery
 	data-vanilla-stack

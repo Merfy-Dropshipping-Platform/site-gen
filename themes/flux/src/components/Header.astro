@@ -509,7 +509,16 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	<div
 		id="flux-burger"
 		class:list={[
-			"fixed z-[55] hidden overflow-y-auto bg-white",
+			// Полотно шторки — «Фон» СХЕМЫ, а не палитра Tailwind. `bg-white` Tailwind 4
+			// печатает как `var(--color-white)`: переменная ЕСТЬ, но её нет ни в одной
+			// схеме мерчанта, поэтому шторка замирает белой при любой схеме. Замер
+			// (матрица `pnpm scheme-matrix:bad`, схемы-зонды 1 → 4, «Фон» 17,0,0 →
+			// 0,17,0): полотно #fff → #fff, пока сама шапка выше уже едет
+			// (`bg-[rgb(var(--color-bg,255_255_255))]` на <header>). У bloom это ещё и
+			// невидимое меню: на заводской схеме bloom «Фон» розовый, а «Текст» белый —
+			// белые пункты лежали на белом полотне. Фолбэк 255_255_255 = прежний вид.
+			// Сторож: pnpm test:scheme-targets.
+			"fixed z-[55] hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
 			isSidebar
 				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
 				: "inset-x-0 top-[80px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
@@ -556,9 +565,16 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					</form>
 				)}
 				{showProfile && (
+					/* Заливка — «Кнопка» СХЕМЫ. `bg-black` Tailwind 4 печатает как
+					   var(--color-black): переменная есть, схемы в ней нет, поэтому
+					   кнопка «Профиль» в шторке замирала чёрной на любой схеме
+					   (замер матрицы, схемы-зонды 1 → 4: #000 → #000, при том что
+					   полотно шторки теперь едет). Роль та же, что у кнопки слайда
+					   flux (fix b19, Slideshow.astro) и у эталона rose. Фолбэк 0_0_0
+					   = прежний чёрный. Сторож: pnpm test:scheme-targets. */
 					<a
 						href="/login" data-auth-link
-						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-black"
+						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,0_0_0))]"
 						aria-label="Профиль"
 					>
 						<NtIcon name="user" sizeClass="size-8" class="invert" />
@@ -577,7 +593,19 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 							href={link.href}
 							class:list={[
 								"flex h-11 items-center justify-between rounded-[4px] px-3 pr-[10px] font-roboto-flex text-[16px] leading-normal",
-								active ? "bg-black font-normal text-white" : "font-light text-black",
+								// Пункт шторки — те же роли, что у пункта десктопного меню выше
+								// (`navActiveCls`): активный/выделенный берёт «Заголовок», а НЕ
+								// «Текст», потому что --color-text у flux — вторичный серый
+								// #999999. Было `text-black` и `bg-black`+`text-white`: Tailwind 4
+								// печатает их как var(--color-black)/var(--color-white) —
+								// переменная есть, схемы в ней нет, и пункт замирал (замер
+								// матрицы, схемы-зонды 1 → 4: #000 → #000). Активная пилюля
+								// переведена той же правкой: она красится на ТОМ ЖЕ элементе, и
+								// перекрасить только неактивное состояние значило бы оставить
+								// пункт наполовину замершим. Фолбэки = прежние цвета.
+								active
+									? "bg-[rgb(var(--color-button-bg,0_0_0))] font-normal text-[rgb(var(--color-button-text,255_255_255))]"
+									: "font-light text-[rgb(var(--color-heading,0_0_0))]",
 							]}
 						>
 							<span>{link.label}</span>

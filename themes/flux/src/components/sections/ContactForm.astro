@@ -108,13 +108,21 @@ const containerCls = padStyle
 // Классы полей — стиль flux (Footer newsletter / Header search): Roboto Flex 16 light,
 // h-12, rounded-8, border surface-токен, bg-white, placeholder #999999, фокус #FA5109.
 // Цвета — токены (0 хардкод-hex, кроме #FA5109 акцент-фокус и #999999 плейсхолдер).
+// ФОН ПОЛЯ ВВОДА — «Фон» СХЕМЫ, а не палитра Tailwind. Было `bg-white`, а
+// Tailwind 4 печатает его как var(--color-white): переменная ЕСТЬ, но её нет ни
+// в одной схеме мерчанта, поэтому поля «Контактной формы» замирали белыми при
+// любой схеме — при том что корень секции вокруг них уже ехал. Замер матрицы
+// (`pnpm scheme-matrix:bad`, схемы-зонды 1 → 4, «Фон» 17,0,0 → 0,17,0): поле
+// #fff → #fff. Болезнь общая для всех пяти тем. Роль та же, что у поля
+// промокода «Сводки заказа» (fix b19). Фолбэк 255_255_255 = прежний вид.
+// Сторож: pnpm test:scheme-targets.
 const labelCls =
 	"font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]";
 const reqCls = "ml-1 text-[rgb(var(--color-error,255_148_148))]";
 const inputCls =
-	"box-border h-12 w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
+	"box-border h-12 w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
 const textareaCls =
-	"box-border min-h-[160px] w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-3 py-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
+	"box-border min-h-[160px] w-full rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-3 py-3 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[#999999] focus:border-[#FA5109]";
 // Кнопка отправки — чёрная CTA языка flux (как Hero/Puk): токен button-2, белый текст,
 // h-14, rounded-6, uppercase, Roboto Flex, на всю ширину формы.
 const submitCls =

@@ -645,6 +645,30 @@ export const ALLOWED = [
     test: (c) => c.chain.includes('--color-error'),
   },
   {
+    id: 'slide-over-photo',
+    why: 'белое и чёрное ВНУТРИ кадра слайда — намеренный дизайн, а не краска секции: надпись и кнопка лежат на ЗАТЕМНЁННОЙ фотографии, точки пейджера и скрим рисуются поверх неё. Эталон rose делает ровно так же (Slideshow.astro: !bg-white/50 у точек, text-white у надписи при s.image && !s.boxed, bg-black со своей прозрачностью у скрима). Схема до секции ДОХОДИТ: корень «Слайд-шоу» у всех пяти тем уже на --color-bg — спорит только краска, положенная абсолютом поверх кадра',
+    test: (c) =>
+      c.verdict === 'palette' &&
+      c.block === 'Slideshow' &&
+      [c.node, ...c.node.ancestors].some((n) => n.classes.some((x) => x === 'absolute' || x === '!absolute')),
+  },
+  {
+    id: 'card-badge-over-photo',
+    why: 'плашка «Скидка» карточки товара лежит абсолютом ПОВЕРХ фотографии — тот же случай, что надпись на фото слайда. Эталон rose (RoseProductCard.astro) красит её так же: заливка фирменным акцентом плюс жёстко !text-white. Увести надпись в роль схемы В ОДИНОЧКУ нельзя: заливка чипа — литерал вне вердикта palette, а «Текст кнопки» схемы у bloom по умолчанию РОЗОВЫЙ (207 122 139) — надпись пропала бы на розовом',
+    test: (c) =>
+      c.verdict === 'palette' &&
+      c.prop === 'color' &&
+      c.node.classes.includes('absolute') &&
+      c.node.ancestors.some((a) => a.tag === 'article'),
+  },
+  {
+    id: 'counter-badge',
+    why: 'счётчик корзины и избранного в шапке — ПАРА «плашка + цифра» фирменного цвета темы, и вторая её половина лежит ВНЕ вердикта palette: плашку красит алиас темы (rose, bg-rose-primary — вердикт theme-var) или литерал (#e38e9f у bloom, #1e2952 у flux, #000000 у satin), а у vanilla пара зеркальная — белая плашка с тёмной надписью на алиасе --vanilla-dark. Перекрасить одну половину значит сделать счётчик нечитаемым (белая цифра на белой плашке). ВАЖНО: правило держится ровно до тех пор, пока плашку красит фирменный литерал; как только её переведут на роль схемы, правило надо снять, а цифру перевести на --color-button-text',
+    test: (c) =>
+      c.verdict === 'palette' &&
+      ('data-cart-count' in c.node.attrs || 'data-wishlist-count' in c.node.attrs),
+  },
+  {
     id: 'search-always-scheme-1',
     why: 'панель поиска в шапке ПРИБИТА к схеме 1 решением владельца 15.09 («Всегда Схема 1, жёстко») — правило form[role="search"] в tokens-css, сторож src/themes/__tests__/search-always-scheme-1.spec.ts. Краска не должна ехать за схемой шапки: это не дефект, а требование',
     test: (c) => c.verdict === 'pinned' && /form\[role="search"\]/.test(c.pinnedBy ?? ''),

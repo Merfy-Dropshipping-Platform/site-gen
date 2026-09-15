@@ -177,7 +177,62 @@ const CASES: Case[] = [
   ...THEMES_5.flatMap((theme) => [
     { theme, block: "CheckoutSummary", label: "Сводка заказа", target: "фон поля промокода", marker: "data-checkout-promo", prop: "background-color", expect: "--color-bg" },
     { theme, block: "CheckoutSummary", label: "Сводка заказа", target: "фон строки «промокод применён»", marker: "data-checkout-promo-applied", prop: "background-color", expect: "--color-bg" },
-  ] as Case[]),];
+  ] as Case[]),
+
+  // ── ПАЧКА 15.09 (b21): «палитра Tailwind вместо роли схемы» ─────────────
+  // 58 клеток матрицы одного рода: цвет приходил из --color-white/--color-black
+  // (`bg-white`, `text-white`, `bg-black`, `text-black`). Переменная ЕСТЬ, но
+  // схемы в ней нет и не будет — мишень замирает при ЛЮБОЙ схеме. Замер: та же
+  // матрица (`pnpm scheme-matrix:bad`, схемы-зонды 1 → 4, у которых различаются
+  // ВСЕ девять полей: «Фон» 17,0,0 → 0,17,0, «Заголовок» 51,0,0 → 0,51,0,
+  // «Текст» 68,0,0 → 0,68,0, «Кнопка» 102,0,0 → 0,102,0, «Текст кнопки»
+  // 119,0,0 → 0,119,0). До правки каждая мишень ниже давала #fff → #fff или
+  // #000 → #000; после — числа выше. Ниже — точечные кейсы на самое заметное:
+  // шапка и подвал видны на КАЖДОЙ странице.
+  //
+  // [шторка меню] Полотно мобильного бургера. У bloom это ещё и невидимое меню:
+  // на заводской схеме темы «Фон» розовый, «Текст» белый — белые пункты лежали
+  // на белом полотне.
+  { theme: "rose", block: "Header", label: "Шапка", target: "полотно шторки меню", marker: 'id="rose-burger"', prop: "background-color", expect: "--color-bg" },
+  { theme: "bloom", block: "Header", label: "Шапка", target: "полотно шторки меню", marker: 'id="bloom-burger"', prop: "background-color", expect: "--color-bg" },
+  { theme: "flux", block: "Header", label: "Шапка", target: "полотно шторки меню", marker: 'id="flux-burger"', prop: "background-color", expect: "--color-bg" },
+  // [подсказки поиска] Выпадашка satin сидела белой, пока её собственная панель
+  // ([data-search-panel]) уже ехала за схемой. Поле и кнопку поиска НЕ трогали:
+  // их владелец прибил к Схеме 1 (см. search-always-scheme-1.spec.ts).
+  { theme: "satin", block: "Header", label: "Шапка", target: "фон подсказок поиска", marker: "data-search-results", prop: "background-color", expect: "--color-bg" },
+  // [подвал] Поле подписки — единственная белая заплата на полотне подвала.
+  ...(["rose", "bloom", "flux"] as const).map((theme) => (
+    { theme, block: "Footer", label: "Подвал", target: "фон поля подписки", marker: "data-newsletter-form", prop: "background-color", expect: "--color-bg" } as Case
+  )),
+  // [подвал vanilla] Копирайт: полоса под ним шла за схемой, буквы стояли.
+  { theme: "vanilla", block: "Footer", label: "Подвал", target: "копирайт", marker: 'data-puck-subsection-field="copyright"', prop: "color", expect: "--color-text" },
+  // [корзина] Полотно секции и кнопки. Кнопки переводились ПАРОЙ (заливка +
+  // надпись): перекрасить одну половину значит завести новый дефект —
+  // чёрное на чёрном.
+  ...(["bloom", "satin", "vanilla"] as const).map((theme) => (
+    { theme, block: "CartSection", label: "Корзина", target: "фон секции", marker: 'data-block="cart-section"', prop: "background-color", expect: "--color-bg" } as Case
+  )),
+  ...(["bloom", "satin", "flux"] as const).flatMap((theme) => [
+    { theme, block: "CartSection", label: "Корзина", target: "фон кнопки «Оформить заказ»", marker: 'data-action="checkout"', prop: "background-color", expect: "--color-button-bg" },
+    { theme, block: "CartSection", label: "Корзина", target: "текст кнопки «Оформить заказ»", marker: 'data-action="checkout"', prop: "color", expect: "--color-button-text" },
+  ] as Case[]),
+  // [контактная форма] Поле ввода белело во ВСЕХ пяти темах при том, что корень
+  // секции вокруг уже ехал. Роль та же, что у поля промокода «Сводки заказа».
+  ...THEMES_5.map((theme) => (
+    { theme, block: "ContactForm", label: "Контактная форма", target: "фон поля ввода", marker: "css:textarea", prop: "background-color", expect: "--color-bg" } as Case
+  )),
+  // [галерея vanilla] Краска всей секции: полоса внутри ехала, текст — нет.
+  { theme: "vanilla", block: "Gallery", label: "Галерея", target: "основной текст секции", marker: 'id="gallery"', prop: "color", expect: "--color-text" },
+  // [каталог vanilla] Заголовок и счётчик товаров.
+  { theme: "vanilla", block: "Catalog", label: "Каталог", target: "заголовок", marker: 'id="catalog-title"', prop: "color", expect: "--color-heading" },
+  { theme: "vanilla", block: "Catalog", label: "Каталог", target: "счётчик товаров", marker: 'data-nt="catalog-count"', prop: "color", expect: "--color-text" },
+  // [избранное] Кнопка пустого состояния: у flux ехала только заливка, у satin
+  // не ехало ничего.
+  ...(["flux", "satin"] as const).flatMap((theme) => [
+    { theme, block: "WishlistSection", label: "Избранное", target: "фон кнопки", marker: "текст:Перейти в каталог", prop: "background-color", expect: "--color-button-bg" },
+    { theme, block: "WishlistSection", label: "Избранное", target: "текст кнопки", marker: "текст:Перейти в каталог", prop: "color", expect: "--color-button-text" },
+  ] as Case[]),
+];
 
 const THEMES = [...new Set(CASES.map((c) => c.theme))];
 

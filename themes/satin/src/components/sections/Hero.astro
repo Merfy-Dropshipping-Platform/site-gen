@@ -345,9 +345,19 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 					</div>
 					{!isFieldHidden('buttons') && (
+					/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
+					   isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] + токен
+					   текста; белый там — ФОЛБЭК, а не литерал). Было `bg-white`,
+					   `border-white` и `text-[#111111]`: Tailwind 4 печатает `bg-white`
+					   как var(--color-white) — переменная ЕСТЬ, схемы в ней нет, и кнопка
+					   замирала белой (замер матрицы, схемы-зонды 1 → 4: #fff → #fff).
+					   Заливка, бордер и надпись переводятся ЦЕЛИКОМ: увести один фон
+					   значит получить светлое на светлом. Заголовок и текст поверх фото
+					   остаются на hero-over-photo — они намеренно белые. Фолбэки =
+					   прежний вид. Сторож: pnpm test:scheme-targets. */
 					<a
 						href={ctaLink}
-						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-white bg-white px-6 font-manrope text-[16px] font-normal leading-none text-[#111111] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,17_17_17))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"

@@ -397,9 +397,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 					{!isFieldHidden('buttons') && (
 					<div class="flex flex-wrap justify-center gap-3">
+						{/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
+						    isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] +
+						    токен текста). Было `bg-black` + `text-white`: Tailwind 4 печатает
+						    их как var(--color-black)/var(--color-white) — переменные ЕСТЬ, а
+						    схемы в них нет, и кнопка замирала (замер матрицы, схемы-зонды
+						    1 → 4: #000 → #000 и #fff → #fff), при том что рабочая кнопка
+						    ниже по файлу на токенах уже едет. Заголовок и текст поверх фото
+						    остаются белыми намеренно (hero-over-photo). Фолбэки = прежний
+						    вид. Сторож: pnpm test:scheme-targets. */}
 						<a
 							href={ctaLink}
-							class="inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-black px-4 font-roboto-flex text-[16px] font-normal leading-none text-white transition-opacity hover:opacity-90"
+							class="inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"

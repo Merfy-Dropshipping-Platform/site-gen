@@ -70,9 +70,17 @@ const logoImgDesktopCls = "h-[var(--size-logo-width,28px)] w-auto max-w-[160px] 
 const logoPosition = typeof p.logoPosition === "string" ? p.logoPosition : "";
 const logoLeft = logoPosition === "center-left";
 const isTwoRow = logoPosition === "top-left" || logoPosition === "top-center";
+// Цвет логотипа — «Заголовок» СХЕМЫ (логотип рисуется SVG на currentColor).
+// Было `text-white`: Tailwind 4 печатает его как var(--color-white) — переменная
+// есть, а схемы в ней нет, и логотип замирал белым, тогда как САМ бар шапки уже
+// едет за схемой (bg-[rgb(var(--color-bg,58_69_48))] на <header>). Замер матрицы
+// (схемы-зонды 1 → 4): логотип #fff → #fff против 17,0,0 → 0,17,0 у бара. Роль
+// взята у эталона — логотип bloom/rose стоит на --color-heading. Фолбэк
+// 255_255_255 = заводской белый vanilla. Сторож: pnpm test:scheme-targets.
+const logoInkCls = "text-[rgb(var(--color-heading,255_255_255))]";
 const desktopLogoCls = logoLeft
-	? "flex shrink-0 items-center text-white"
-	: "absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center text-white";
+	? `flex shrink-0 items-center ${logoInkCls}`
+	: `absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center ${logoInkCls}`;
 
 // Канон activeLinkIndicator: 'underline' (canon-default из blockDefaults vanilla) И
 // отсутствие = литерал верстальщика (after:h-px белая полоска под активной ссылкой);
@@ -190,7 +198,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					<NtIcon name="menu-close" sizeClass="size-6" class="brightness-0 invert" />
 				</span>
 			</button>
-			<a href="/" class="flex shrink-0 items-center text-white" aria-label={siteTitle}>
+			<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
 				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogo class="h-[var(--size-logo-width,24px)] w-auto max-w-[76px]" />}
 			</a>
 			<div class="flex items-center gap-3">
@@ -247,7 +255,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					/* top-left: Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
 					<>
 						<div class="flex w-full items-center justify-between">
-							<a href="/" class="flex shrink-0 items-center text-white" aria-label={siteTitle}>
+							<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class="h-[var(--size-logo-width,28px)] w-auto max-w-[89px]" />}
 							</a>
 							<div class="flex items-center gap-5">
@@ -358,7 +366,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								</button>
 							</div>
 							<div class="flex items-center justify-center">
-								<a href="/" class="flex items-center text-white" aria-label={siteTitle}>
+								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
 									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class="h-[var(--size-logo-width,28px)] w-auto max-w-[89px]" />}
 								</a>
 							</div>
@@ -599,7 +607,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		{isSidebar ? (
 			/* Sidebar drawer: logo + cart at top */
 			<div class="flex items-center justify-between">
-				<a href="/" class="flex shrink-0 items-center text-white" aria-label={siteTitle}>
+				<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
 					{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogo class="h-[var(--size-logo-width,24px)] w-auto max-w-[76px]" />}
 				</a>
 				<a

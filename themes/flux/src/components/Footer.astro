@@ -251,8 +251,14 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 				</p>
 			</div>
 
+			{/* Поле подписки — «Фон» СХЕМЫ. Было `bg-white`: Tailwind 4 печатает его как
+			    var(--color-white) — переменная ЕСТЬ, а схемы в ней нет, и поле замирало
+			    белым, пока полотно подвала вокруг уже ехало (замер матрицы, схемы-зонды
+			    1 → 4: #fff → #fff против 17,0,0 → 0,17,0). Роль та же, что у поля
+			    промокода «Сводки заказа» (fix b19). Фолбэк 255_255_255 = прежний вид.
+			    Сторож: pnpm test:scheme-targets. */}
 			<form
-				class="flex h-14 w-full max-w-[652px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-white px-4 md:h-16"
+				class="flex h-14 w-full max-w-[652px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4 md:h-16"
 				data-newsletter-form
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="997"

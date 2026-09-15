@@ -105,6 +105,13 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// ФОН И ТЕКСТ ПОЛЯ ПОДПИСКИ — роли СХЕМЫ. Было `bg-white` + `text-[#000000]`:
+// Tailwind 4 печатает `bg-white` как var(--color-white) — переменная ЕСТЬ, а
+// схемы в ней нет, поэтому поле замирало белым, пока корень секции вокруг уже
+// ехал (замер матрицы, схемы-зонды 1 → 4: #fff → #fff против 17,0,0 → 0,17,0).
+// Пара «фон + надпись» переводится целиком: увести один фон значит получить
+// чёрное на тёмном. Роль та же, что у поля промокода «Сводки заказа» (fix b19).
+// Фолбэки = прежний вид. Сторож: pnpm test:scheme-targets.
 ---
 
 <section
@@ -144,7 +151,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				inlineSubmit ? (
 					<form
-						class="flex h-14 w-full items-center gap-2 rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
+						class="flex h-14 w-full items-center gap-2 rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-[rgb(var(--color-bg,255_255_255))] pl-[18px] pr-4 transition-colors focus-within:border-[#000000]"
 						data-newsletter-form
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="997"
@@ -156,7 +163,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							required
 							placeholder={placeholder}
 							aria-label="Email"
-							class="min-w-0 flex-1 bg-transparent font-manrope text-[16px] font-normal leading-none text-[#000000] placeholder:text-[#999999] outline-none"
+							class="min-w-0 flex-1 bg-transparent font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] placeholder:text-[#999999] outline-none"
 						/>
 						{!isFieldHidden('buttonText') && (
 						<button
@@ -184,7 +191,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							required
 							placeholder={placeholder}
 							aria-label="Email"
-							class="h-14 w-full !rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-white px-[18px] font-manrope text-[16px] font-normal leading-none text-[#000000] outline-none transition-colors placeholder:text-[#999999] focus-visible:border-[#000000]"
+							class="h-14 w-full !rounded-[var(--radius-input,4px)] border border-[rgb(var(--color-input-border,153_153_153))] bg-[rgb(var(--color-bg,255_255_255))] px-[18px] font-manrope text-[16px] font-normal leading-none text-[#000000] outline-none transition-colors placeholder:text-[#999999] focus-visible:border-[#000000]"
 						/>
 						{!isFieldHidden('buttonText') && (
 						<button

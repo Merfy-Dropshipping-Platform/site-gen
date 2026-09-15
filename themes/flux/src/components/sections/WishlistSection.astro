@@ -101,9 +101,15 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<p class="font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[18px]">
 				В избранном пока пусто
 			</p>
+			{/* Надпись кнопки — «Текст кнопки» СХЕМЫ. Заливка рядом уже на роли
+			    схемы, а надпись стояла на `text-white`, который Tailwind 4 печатает
+			    как var(--color-white): переменная ЕСТЬ, схемы в ней нет — кнопка
+			    ехала наполовину (замер матрицы, схемы-зонды 1 → 4: заливка
+			    102,0,0 → 0,102,0, надпись #fff → #fff). Фолбэк 255_255_255 =
+			    прежний вид. Сторож: pnpm test:scheme-targets. */}
 			<a
 				href="/catalog"
-				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 			>
 				Перейти в каталог
 			</a>

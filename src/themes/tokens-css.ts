@@ -667,10 +667,10 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
   // То есть ни одна из двадцати величин не приходила из Схемы 1: фон и текст
   // поля — литералы `bg-white` / `text-[#000000]` в каждом порту
   // (themes/rose/src/components/Header.astro:477,485;
-  //  themes/vanilla/…:566,574; themes/bloom/…:673,681;
+  //  themes/vanilla/…:565,573; themes/bloom/…:673,679;
   //  themes/satin/…:295,296; themes/flux/…:489,495), кнопка — литерал у bloom
-  // (#e38e9f, :685), satin (#000000, :297), flux (#1e2952, :499), алиас
-  // --vanilla-header-bg у vanilla (:578) и наследование от ОКРУЖАЮЩЕЙ схемы у
+  // (#e38e9f, :683), satin (#000000, :297), flux (#1e2952, :499), алиас
+  // --vanilla-header-bg у vanilla (:577) и наследование от ОКРУЖАЮЩЕЙ схемы у
   // rose (:489 `!bg-[rgb(var(--color-button-bg,0_0_0))]`).
   //
   // Почему правило здесь, а не копией в пяти портах: tokens.css — единственный

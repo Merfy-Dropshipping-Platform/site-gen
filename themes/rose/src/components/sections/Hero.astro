@@ -2,6 +2,7 @@
 import { SITE_TITLE } from "../../consts";
 import RosePicture from "../img/RosePicture.astro";
 import { inlineFormat } from "../../lib/rich-text";
+import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
@@ -61,17 +62,15 @@ const PH_BUTTON = "Кнопка";
 // а НЕ пустая surface. Overlay-лейбл/хелпер/кнопка ложатся поверх него (тёмная
 // подложка-градиент ниже даёт читаемость белого текста, как у настоящего фото).
 const PH_BACKGROUND_IMAGE = "/placeholders/landscape-image.png";
-// Канон backgroundImages (imagePair url2) / legacy backgroundImage2: сплит двух
-// картинок 50/50 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
-
-// Сплит 50/50 — ТОЛЬКО когда мерчант заполнил ОБА слота. Если задан лишь один
-// (в том числе второй), он показывается на всю ширину: раньше заполнение второго
-// слота включало сетку из двух колонок, и первая половина оставалась пустой.
-const _bg2Raw = p.backgroundImages?.url2 ?? p.backgroundImage2;
-const _bg1Filled = Boolean(String(backgroundImageRaw ?? "").trim());
-const _bg2Filled = Boolean(String(_bg2Raw ?? "").trim());
-const backgroundImage = _bg1Filled ? backgroundImageRaw : _bg2Filled ? _bg2Raw : backgroundImageRaw;
-const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
+// Слоты «Добавить фото» — ЕДИНОЕ правило на все темы
+// (packages/theme-base/runtime/hero-media-slots.ts): одно фото занимает блок
+// целиком независимо от слота, деление 50/50 — только когда заполнены оба.
+const heroSlots = resolveHeroMediaSlots(
+	backgroundImageRaw,
+	p.backgroundImages?.url2 ?? p.backgroundImage2,
+);
+const backgroundImage = heroSlots.primary;
+const backgroundImage2 = heroSlots.secondary || undefined;
 
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:

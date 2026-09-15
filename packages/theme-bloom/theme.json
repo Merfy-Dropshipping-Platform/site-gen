@@ -291,7 +291,13 @@
     "Product": {},
     "Newsletter": {},
     "ContactForm": {},
-    "Catalog": {}
+    "Catalog": {},
+    "ImageWithText": {
+      "override": {
+        "path": "./blocks/ImageWithText",
+        "reason": "Репорт тестера 15.09, пункт [23]: добавить в сайдбар тумблер «Контейнер» (containerEnabled) — только у bloom. Формат toggle дословно как у MultiColumns/MultiRows/CollapsibleSection (канон Nikita)."
+      }
+    }
   },
   "features": {
     "newsletter": true,

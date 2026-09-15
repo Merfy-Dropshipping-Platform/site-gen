@@ -98,9 +98,21 @@ const widthCls =
 				? "max-w-none"
 				: "max-w-[1320px]";
 
-// Канон containerColorScheme (hidden): класс схемы на внутреннем контейнере.
+// Пункт [23] репорта тестера 15.09: тумблер «Контейнер» (containerEnabled) —
+// ТОЛЬКО у bloom (владелец). Формат и дефолт ('false') дословно как у
+// MultiColumns/MultiRows/CollapsibleSection (канон дизайнера Nikita,
+// project_container_canon_audit): ВКЛ → surface-бокс на текстовую колонку
+// (единственный «элемент» пары image+text, аналог Hero boxedCls под текстом);
+// ВЫКЛ (дефолт) → без подложки, как было — нет регрессии у существующих секций.
+const containerEnabled = String(p.containerEnabled ?? "false") === "true";
+const containerSurfaceCls = containerEnabled
+	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8"
+	: "";
+// Канон containerColorScheme (hidden): класс схемы на внутреннем контейнере,
+// ТОЛЬКО пока «Контейнер» включён (канон Nikita: при ВЫКЛ боксов нет → работает
+// основная секционная схема, а не схема контейнера).
 const containerSchemeCls =
-	typeof p.containerColorScheme === "string" && p.containerColorScheme
+	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
@@ -157,7 +169,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		{/* Порядок как у rose: `lg:items-center` НЕ последний перед интерполяцией.
 		    Класс, приклеенный к `${`, сканер Tailwind не извлекает — утилита не попадает
 		    в бандл темы, и правило молча не работает (у bloom так и было после main 4d4a11ce). */}
-		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`}
+		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 lg:items-center lg:gap-10`}
 		data-animate
 	>
 		{!isFieldHidden('image') && (
@@ -178,7 +190,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		</div>
 		)}
 
-		<div class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}`}>
+		<div
+			class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`}
+		>
 			{!isFieldHidden('heading') && (
 				<h2
 					id={titleId}

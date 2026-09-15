@@ -219,7 +219,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2`}>
+	{/* Зазор пары «медиа + текст». Жалоба владельца 2026-09-15: «контейнер и медиа
+	   соприкасаются». Замер (Chromium 1920/1440, обе стороны, три «Ширины»):
+	   satin/«Изображение с текстом» — ЕДИНСТВЕННАЯ клетка семьи с зазором 0px;
+	   остальные девять (rose 40/40, vanilla 40/40, bloom 16/16, flux 40/32,
+	   satin «Мультиряды» 40) зазор имеют. 40px — собственное значение satin:
+	   `--spacing-grid-col-gap` в packages/theme-satin/theme.json и md:gap-10 в
+	   satin/MultiRows.astro. Только по колонкам (gap-x): на 375px пара стоит в
+	   стопку, вертикальный стык — часть полосы satin, его не трогаем. */}
+	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2 md:gap-x-10`}>
 		{!isFieldHidden('image') && (
 		<div
 			class:list={[

@@ -94,6 +94,7 @@
     "test:page-padding": "jest --runInBand src/themes/__tests__/page-section-theme-padding.spec.ts",
     "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts",
     "test:size-settings": "jest --runInBand src/themes/__tests__/theme-size-settings-reach-theme.spec.ts",
+    "test:media-text-pair": "jest --runInBand src/themes/__tests__/media-text-pair.spec.ts",
     "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts"
   },
   "dependencies": {

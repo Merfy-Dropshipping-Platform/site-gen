@@ -217,7 +217,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`vanilla-container flex ${widthCls} flex-col gap-8`}>
+	{/* Контейнер ширины. Класс темы `.vanilla-container` не лежит ни в одном
+	   @layer, поэтому его `max-width: var(--vanilla-max)` (1320px) перебивал
+	   утилиту `max-w-[780px]`/`max-w-[1080px]` из @layer utilities — настройка
+	   «Ширина» была мертва (замер: 1320px на всех трёх значениях, и в превью, и в
+	   живом бандле). Тот же результат утилитами: `.vanilla-container` = width:100%
+	   + max-width:1320 + margin-inline:auto ≡ `mx-auto w-full max-w-[1320px]`,
+	   значит на «Ширина»=large вид не меняется, а small/medium оживают. */}
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8`}>
 		{
 			heading && !isFieldHidden('heading') && (
 				<h2
@@ -256,7 +263,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								/>
 							)}
 						</div>
-						<div class={`flex w-full flex-col ${alignCls} lg:self-center${r.right ? " lg:order-1" : ""}${containerSchemeCls}`}>
+						{/* ВНИМАНИЕ: класс, стоящий в шаблонной строке ВПЛОТНУЮ перед
+						    подстановкой, до CSS не доезжает — сканер Tailwind берёт
+						    кандидата вместе с долларом и отбрасывает его. Проба на двух
+						    уникальных классах: поставленный перед подстановкой дал 0
+						    правил в обоих бандлах, поставленный в конце литерала — по
+						    одному. Так класс вертикального центрирования этой колонки жил
+						    в разметке с нулём правил, и текст ряда никогда не
+						    центрировался. Поэтому подстановки идут ПЕРЕД хвостом из
+						    литеральных классов. Имена классов в комментариях НЕ писать:
+						    сканер берёт их как кандидатов и маскирует такую пропажу. */}
+						<div class={`flex w-full flex-col ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls} lg:self-center`}>
 							{r.heading && (
 								<h3
 									class={`font-vanilla-bitter ${r.headingCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}

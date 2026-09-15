@@ -205,7 +205,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`vanilla-container flex ${widthCls} flex-col gap-8`}>
+	{/* Контейнер ширины. Класс темы `.vanilla-container` не лежит ни в одном
+	   @layer, поэтому его `max-width: var(--vanilla-max)` (1320px) перебивал
+	   утилиту `max-w-[780px]`/`max-w-[1080px]` из @layer utilities — настройка
+	   «Ширина» была мертва (замер: 1320px на всех трёх значениях, и в превью, и в
+	   живом бандле). Тот же результат утилитами: `.vanilla-container` = width:100%
+	   + max-width:1320 + margin-inline:auto ≡ `mx-auto w-full max-w-[1320px]`,
+	   значит на «Ширина»=large вид не меняется, а small/medium оживают. */}
+	<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8`}>
 		{
 			heading && !isFieldHidden('heading') && (
 				<h2

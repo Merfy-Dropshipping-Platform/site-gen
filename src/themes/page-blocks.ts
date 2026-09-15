@@ -190,12 +190,11 @@ export async function extractPageBlocks(
         props.productId = productIdOverride;
       }
       // Подстановка плейсхолдеров коллекции в строковые props (рекурсивно,
-      // включая arrayFields) — только на странице page-collection.
+      // включая arrayFields) — только на странице page-collection. Общая
+      // функция: ЕЁ ЖЕ зовёт точечный hot-render секции (POST /preview/block),
+      // иначе правка в панели подменяет заголовок сырым {{COLLECTION_NAME}}.
       let finalProps = isCollectionPage
-        ? (substituteCollectionVars(props, collectionContext) as Record<
-            string,
-            unknown
-          >)
+        ? applyCollectionContextToProps(b.type, props, collectionContext)
         : props;
       // Секция «Страница» с привязкой (`pageId` из пикера «Выбор страницы»):
       // заголовок и текст берутся у ВЫБРАННОЙ страницы магазина, а не из
@@ -207,32 +206,54 @@ export async function extractPageBlocks(
           selfPageId: page,
         });
       }
-      // Catalog на странице коллекции: заголовок/подзаголовок из самой коллекции
-      // (collection.name / .description), если мерчант не задал свои в секции.
-      // Иначе Catalog падает на хардкод «КАТАЛОГ». Зеркало dynamic-pages-generator.
-      if (isCollectionPage && b.type === 'Catalog') {
-        const ct = finalProps.categoryTitle;
-        const ctText =
-          typeof ct === 'string'
-            ? ct
-            : (ct && typeof ct === 'object' && (ct as { text?: string }).text) ||
-              '';
-        const cs = finalProps.categorySubtitle;
-        const csText =
-          typeof cs === 'string'
-            ? cs
-            : (cs && typeof cs === 'object' && (cs as { text?: string }).text) ||
-              '';
-        const collName =
-          collectionContext?.name && collectionContext.name.trim()
-            ? collectionContext.name
-            : 'Каталог';
-        if (!String(ctText).trim()) finalProps.categoryTitle = collName;
-        if (!String(csText).trim())
-          finalProps.categorySubtitle = collectionContext?.description ?? '';
-      }
       return { type: b.type, props: finalProps };
     });
+}
+
+/**
+ * Привести props блока страницы коллекции к виду «как на витрине»: подставить
+ * {{COLLECTION_*}} и, для Catalog, заполнить пустой заголовок/подзаголовок
+ * именем и описанием коллекции.
+ *
+ * ЕДИНАЯ точка для ВСЕХ путей рендера страницы коллекции:
+ *  - целая страница превью и live-пересадка секций — `extractPageBlocks`;
+ *  - точечный hot-render одной секции — `PreviewController.renderBlock`
+ *    (`POST /api/sites/:id/preview/block`, им идут `update-block` и `reconcile`).
+ *
+ * Пока подстановка жила только в первом пути, любая правка в панели «Группа
+ * товаров» перерисовывала секцию через второй путь и показывала сырой
+ * `{{COLLECTION_NAME}}` (баг владельца 15.09). Разводить эти два пути нельзя:
+ * они рисуют ОДНУ И ТУ ЖЕ секцию на одном и том же экране.
+ *
+ * `ctx` без имени (пресет `collections/preview`, неизвестный slug, магазин без
+ * коллекций) — это НЕ повод оставить плейсхолдер: имя падает в «Каталог»,
+ * описание и картинка — в пустую строку, ровно как на live.
+ */
+export function applyCollectionContextToProps(
+  blockType: string,
+  props: Record<string, unknown>,
+  ctx: { name?: string; description?: string; image?: string } | undefined,
+): Record<string, unknown> {
+  const out = substituteCollectionVars(props, ctx) as Record<string, unknown>;
+  // Catalog на странице коллекции: заголовок/подзаголовок из самой коллекции
+  // (collection.name / .description), если мерчант не задал свои в секции.
+  // Иначе Catalog падает на хардкод «КАТАЛОГ». Зеркало dynamic-pages-generator.
+  if (blockType === 'Catalog') {
+    const ct = out.categoryTitle;
+    const ctText =
+      typeof ct === 'string'
+        ? ct
+        : (ct && typeof ct === 'object' && (ct as { text?: string }).text) || '';
+    const cs = out.categorySubtitle;
+    const csText =
+      typeof cs === 'string'
+        ? cs
+        : (cs && typeof cs === 'object' && (cs as { text?: string }).text) || '';
+    const collName = ctx?.name && ctx.name.trim() ? ctx.name : 'Каталог';
+    if (!String(ctText).trim()) out.categoryTitle = collName;
+    if (!String(csText).trim()) out.categorySubtitle = ctx?.description ?? '';
+  }
+  return out;
 }
 
 /**

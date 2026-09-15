@@ -2456,7 +2456,19 @@ export class SitesDomainService {
   /**
    * Получить все товары сайта.
    */
-  async listSiteProducts(siteId: string, tenantId: string) {
+  /**
+   * Товары сайта постранично (`DEBT-21`).
+   *
+   * Список растёт вместе с каталогом — его импортируют пачками от поставщиков,
+   * и без предела ответ упирается в лимит клиента: агент получает обрезанную
+   * выдачу и считает её полной. Предел по умолчанию мягкий: прежние вызовы без
+   * параметров продолжают работать, только перестают тянуть всё разом.
+   */
+  async listSiteProducts(
+    siteId: string,
+    tenantId: string,
+    paging?: { limit?: number; offset?: number },
+  ) {
     // Проверяем что сайт принадлежит тенанту
     const [site] = await this.db
       .select({ id: schema.site.id })
@@ -2470,18 +2482,33 @@ export class SitesDomainService {
       throw new Error("site_not_found");
     }
 
-    const products = await this.db
-      .select()
-      .from(schema.siteProduct)
-      .where(
-        and(
-          eq(schema.siteProduct.siteId, siteId),
-          eq(schema.siteProduct.isActive, true),
-        ),
-      )
-      .orderBy(schema.siteProduct.sortOrder);
+    const where = and(
+      eq(schema.siteProduct.siteId, siteId),
+      eq(schema.siteProduct.isActive, true),
+    );
 
-    return products;
+    // Предел держим в разумных границах: слишком большой возвращает нас к
+    // исходной беде, слишком малый заставляет агента ходить кругами.
+    const limit = Math.min(Math.max(paging?.limit ?? 100, 1), 250);
+    const offset = Math.max(paging?.offset ?? 0, 0);
+
+    const [products, [counted]] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.siteProduct)
+        .where(where)
+        .orderBy(schema.siteProduct.sortOrder)
+        .limit(limit)
+        .offset(offset),
+      // Общее число нужно, чтобы вызывающий знал, есть ли следующая страница:
+      // без него «вернулось ровно limit» неотличимо от «это всё».
+      this.db
+        .select({ value: sql<number>`count(*)::int` })
+        .from(schema.siteProduct)
+        .where(where),
+    ]);
+
+    return { items: products, total: Number(counted?.value ?? 0), limit, offset };
   }
 
   /**

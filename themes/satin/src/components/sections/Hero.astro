@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import SatinPicture from "../img/SatinPicture.astro";
 import { SITE_TITLE } from "../../consts";
 
@@ -112,20 +113,18 @@ const ctaLink =
 	p.cta?.href ??
 	p.ctaLink ??
 	"/catalog";
-// Фото мерчанта; нет своего (или стоит 4x верстальщика) → landscape-заглушка,
+// Слоты «Добавить фото» — ЕДИНОЕ правило на все темы
+// (packages/theme-base/runtime/hero-media-slots.ts): одно фото занимает фото-
+// половину целиком независимо от слота, деление 50/50 — только когда мерчант
+// заполнил ОБА. На вход идут ТОЛЬКО фото мерчанта: заглушку подставляем ПОСЛЕ
+// гейта. Раньше заглушка подставлялась ДО него, и одно фото во втором слоте
+// давало деление, где левая половина — /placeholders/landscape-image.png
+// (отчёт владельца: «блок делится на две части, как будто медиа два»).
+const heroSlots = resolveHeroMediaSlots(merchantBackground, merchantBackground2);
+// Нет своего фото (или стоит 4x верстальщика) → landscape-заглушка,
 // не кампания /images/4x/Главный_экран.png и не чёрный кадр.
-const backgroundImageRaw = merchantBackground ?? (isEmpty ? undefined : PH_IMAGE);
-// Канон backgroundImages.url2 (+legacy backgroundImage2): фото-половина делится на
-// 2 кадра grid-cols-2 ТОЛЬКО когда второе фото задано; иначе одиночный рендер дословно.
-
-// Сплит 50/50 — ТОЛЬКО когда мерчант заполнил ОБА слота. Если задан лишь один
-// (в том числе второй), он показывается на всю ширину: раньше заполнение второго
-// слота включало сетку из двух колонок, и первая половина оставалась пустой.
-const _bg2Raw = merchantBackground2;
-const _bg1Filled = Boolean(String(backgroundImageRaw ?? "").trim());
-const _bg2Filled = Boolean(String(_bg2Raw ?? "").trim());
-const backgroundImage = _bg1Filled ? backgroundImageRaw : _bg2Filled ? _bg2Raw : backgroundImageRaw;
-const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
+const backgroundImage = heroSlots.primary || (isEmpty ? undefined : PH_IMAGE);
+const backgroundImage2 = heroSlots.secondary || undefined;
 
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:

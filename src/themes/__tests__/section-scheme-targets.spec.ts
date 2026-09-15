@@ -92,6 +92,13 @@ const CASES: Case[] = [
   { theme: "flux", block: "CartSection", label: "Корзина", target: "заголовок", marker: 'id="cart-title"', prop: "color", expect: "--color-heading" },
   { theme: "flux", block: "WishlistSection", label: "Избранное", target: "заголовок", marker: 'id="wishlist-title"', prop: "color", expect: "--color-heading" },
   { theme: "bloom", block: "PopularProducts", label: "Коллекция товаров", target: "заголовок", marker: 'id="popular-title"', prop: "color", expect: "--color-heading" },
+  // Эталон платформы — rose («как пример работы можешь брать у розы»,
+  // владелец 15.09). У самой rose общий заголовок секций тоже висел на
+  // литерале #000000 (ui/RoseSectionHeading.astro) — те же 0,0,0 на обеих
+  // схемах у четырёх секций сразу.
+  { theme: "rose", block: "PopularProducts", label: "Коллекция товаров", target: "заголовок", marker: 'id="popular-title"', prop: "color", expect: "--color-heading" },
+  { theme: "rose", block: "Collections", label: "Список коллекций", target: "заголовок", marker: 'id="collections-title"', prop: "color", expect: "--color-heading" },
+  { theme: "rose", block: "Gallery", label: "Галерея", target: "заголовок", marker: 'id="gallery-title"', prop: "color", expect: "--color-heading" },
 ];
 
 const THEMES = [...new Set(CASES.map((c) => c.theme))];

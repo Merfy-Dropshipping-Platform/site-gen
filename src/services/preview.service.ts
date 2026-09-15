@@ -1,7 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
-import { buildTokensCss, previewTokensCssWithFonts } from '../themes/tokens-css';
+import { buildTokensCss, previewTokensCssWithFonts, CHECKOUT_SCHEME_ID } from '../themes/tokens-css';
 import { getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 import { CHROME_REORDER_INLINE } from '../common/chrome-reorder';
@@ -906,8 +906,18 @@ export class PreviewService {
 
   /**
    * Mirror /checkout.astro: header → summary toggle → 2-column grid via
-   * CheckoutLayout (form column on left, summary column on right). Wraps in
-   * .color-scheme-2 because Figma 1:13398 says checkout always renders light.
+   * CheckoutLayout (form column on left, summary column on right).
+   *
+   * b35 (16.09): wraps in `.color-scheme-${CHECKOUT_SCHEME_ID}`, NOT
+   * `color-scheme-2` — that literal silently assumed the theme's 2nd scheme
+   * is always light (vanilla's is dark olive, bloom's is pink). The fixed,
+   * theme-independent light palette lives in `CHECKOUT_SCHEME_CSS`
+   * (`tokens-css.ts`, single source shared by preview + live build) per
+   * Figma 1:13398 — checkout always renders light, regardless of theme.
+   * This branch is currently unreachable in production (migrateRevisionData
+   * always collapses legacy CheckoutLayout revisions to CheckoutForm/
+   * CheckoutSummary before renderPreviewPage runs — see isLegacyCheckout
+   * above), kept in sync anyway for defense-in-depth.
    */
   private async renderCheckoutLayout(
     input: RenderPreviewPageInput,
@@ -954,7 +964,7 @@ export class PreviewService {
         renderOne(megaFormBlock),
         renderOne(megaSummaryBlock),
       ]);
-      return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"><div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center"><div data-checkout-column="form">${formHtml}</div><div data-checkout-column="summary">${summaryHtml}</div></div></main></div>`;
+      return `<div class="color-scheme-${CHECKOUT_SCHEME_ID}">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));"><div class="mx-auto max-w-[var(--container-max-width)] px-4 py-16 grid grid-cols-1 lg:grid-cols-[652px_884px] gap-x-16 gap-y-8 justify-center"><div data-checkout-column="form">${formHtml}</div><div data-checkout-column="summary">${summaryHtml}</div></div></main></div>`;
     }
 
     const formInnerParts = await Promise.all(formBlocks.map(renderOne));
@@ -986,12 +996,12 @@ export class PreviewService {
           /(<[^<>]+data-checkout-column="summary"[^<>]*>)([\s\S]*?)(<\/div>)/i,
           (_m, open, _inner, close) => `${open}${summaryInner}${close}`,
         );
-      return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}${withSlots}</main></div>`;
+      return `<div class="color-scheme-${CHECKOUT_SCHEME_ID}">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}${withSlots}</main></div>`;
     }
 
     // No CheckoutLayout configured — fall back to linear column.
     const linearInner = [...formInnerParts, ...summaryInnerParts].join('');
-    return `<div class="color-scheme-2">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}<div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col gap-6">${linearInner}</div></main></div>`;
+    return `<div class="color-scheme-${CHECKOUT_SCHEME_ID}">${headerHtml}<main class="flex-1 w-full" style="background: rgb(var(--color-bg)); color: rgb(var(--color-text));">${toggleHtml}<div class="mx-auto max-w-[var(--container-max-width)] px-4 flex flex-col gap-6">${linearInner}</div></main></div>`;
   }
 }
 

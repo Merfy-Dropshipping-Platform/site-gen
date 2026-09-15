@@ -20,6 +20,7 @@
 import { getThemeManifest } from './theme-manifest-loader';
 import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-defaults';
 import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
+import { CONTENT_SURFACE_CSS } from './content-surface-css';
 
 /**
  * Корни секций-страниц личного кабинета. Ровно эти четыре страницы конструктор
@@ -788,6 +789,10 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     wishlistHideRule,
     stickyFooterRule,
     accountSurfaceRule,
+    // Поверхность контентной страницы («Страница») = вся высота между шапкой
+    // и подвалом. Продолжает ту же цепочку sticky-footer, что и поверхность
+    // аккаунта. Разбор, замеры «до/после» и причинность — у CONTENT_SURFACE_CSS.
+    CONTENT_SURFACE_CSS,
     sectionGapRule,
     typographyLayer,
   ]

@@ -21,9 +21,9 @@
  *
  *   node scripts/release/train.mjs --help
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run, sh, git, gitOk, tail, dur } from './lib/proc.mjs';
 import { collectGuards, classify } from './lib/ci-guards.mjs';
@@ -113,7 +113,7 @@ function parseArgs(argv) {
 const t0 = Date.now();
 const stamps = [];
 let stepNo = 0;
-const step = (title) => { stepNo += 1; console.log(`\n[${stepNo}/10] ${title}`); };
+const step = (title) => { stepNo += 1; console.log(`\n[${stepNo}/11] ${title}`); };
 const say = (s = '') => console.log(s);
 const mark = (name, ms) => stamps.push({ name, ms });
 
@@ -138,11 +138,16 @@ function stepEnvironment(o) {
   if (o.skipGate && o.push) throw new Stop(1, '--skip-gate вместе с --push', 'заливка без гейта запрещена: уберите один из флагов');
   if (o.publish && !o.push) say('   ⚠ --publish без --push: публиковать будет нечего, флаг игнорируется');
   const slug = repoSlug(root);
+  // Разводящий скрипт уезжает вместе с checkout: поезд собирается на ветке от
+  // origin/main, где scripts/release ещё нет, и python3 не нашёл бы файл ровно
+  // в момент конфликта. Копия во временной папке от переключения веток не зависит.
+  const resolver = join(mkdtempSync(join(tmpdir(), 'release-train-')), 'resolve-merge.py');
+  copyFileSync(resolve(HERE, 'resolve-merge.py'), resolver);
   say(`   дерево: ${root}`);
   say(`   ветка:  ${branch}`);
   say(`   репо:   ${slug}`);
   say(`   режим:  ${o.push ? 'ЗАЛИВКА (--push)' : 'без пуша — только сборка и проверки'}${o.push && o.publish ? ' + публикация стендов' : ''}`);
-  return { root, branch, slug };
+  return { root, branch, slug, resolver };
 }
 
 function repoSlug(root) {
@@ -201,7 +206,7 @@ function resolveRef(root, name) {
 
 function stepMerge(o, ctx, plan, round) {
   step(`мерж${round > 1 ? ` (круг ${round})` : ''}`);
-  const resolver = resolve(HERE, 'resolve-merge.py');
+  const resolver = ctx.resolver;
   const targets = [{ name: o.onto, ref: plan.base }, ...plan.members.filter((m) => !m.alreadyIn && m.name !== ctx.branch).map((m) => ({ name: m.name, ref: m.ref }))];
   let merged = 0; let resolved = 0;
   for (const t of targets) {
@@ -219,7 +224,13 @@ function stepMerge(o, ctx, plan, round) {
       say(rr.all.trimEnd().split('\n').map((l) => `     ${l}`).join('\n'));
       if (rr.code !== 0) {
         git(ctx.root, 'merge', '--abort');
-        const inCode = conflicted.filter((f) => !KNOWN_CONFLICTS.includes(f));
+        // Имена файлов берём из вывода самого разводящего скрипта: он знает,
+        // какие файлы умеет сводить, а какие назвал кодом. Список ниже — только
+        // запасной вариант, если формат вывода изменится.
+        const named = (rr.all.match(/КОД В КОНФЛИКТЕ — руками:\n([\s\S]*)/) ?? [])[1];
+        const inCode = named
+          ? named.split('\n').map((l) => l.trim()).filter(Boolean)
+          : conflicted.filter((f) => !KNOWN_CONFLICTS.includes(f));
         throw new Stop(3, `конфликт в КОДЕ: ${inCode.join(', ') || conflicted.join(', ')}`,
           [
             'мерж отменён, дерево вернулось в исходное состояние — ничего не потеряно.',

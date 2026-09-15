@@ -41,25 +41,27 @@
  * Рендер требует сборки:
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
  */
-import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { buildTokensCss } from "../tokens-css";
+import {
+  classesOfAllMarker,
+  declaredVar,
+  loadTesterSchemes,
+  renderBlock,
+  schemeValue,
+  themeCss,
+  tokensCssFor,
+} from "../../../scripts/qa/lib";
 
-const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
-/** flux/bloom/vanilla резолвят товар HTTP-запросом во фронтматтере. */
-const CATALOG_STUB = resolve(SITES_ROOT, "scripts/qa/product-six-images-stub.mjs");
 
 /**
  * Схемы РЕАЛЬНОГО магазина тестировщика. Важно, что они МЕРЧАНТСКИЕ: заводские
  * схемы темы печатаются другим путём (`buildThemeSchemeRule`) и несут больше
  * токенов — на них баг с `--color-primary` не воспроизводится вовсе.
  */
-const SCHEMES = JSON.parse(
-  readFileSync(resolve(SITES_ROOT, "scripts/qa/tester-schemes.json"), "utf8"),
-) as Array<Record<string, unknown>>;
+const SCHEMES = loadTesterSchemes();
 const SCHEME_A = "1"; // «Фон» #d14d4d, «Заголовок» #ffffff
 const SCHEME_B = "4"; // «Фон» #f5f0eb, «Заголовок» #1a1a1a
 
@@ -106,93 +108,36 @@ const THEMES = [...new Set(CASES.map((c) => c.theme))];
 const built = (theme: string) =>
   existsSync(resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json"));
 
-/** Живой рендер порта — та же лестница, что у витрины. */
-function renderLive(theme: string, block: string, layout?: string): string {
-  const jobs = [
-    {
-      block,
-      cascade: true,
-      live: true,
-      props: {
-        id: `${block}-1`,
-        productId: "p1",
-        colorScheme: `scheme-${SCHEME_A}`,
-        padding: { top: 40, bottom: 40 },
-        ...(layout ? { layout } : {}),
-      },
-    },
-  ];
-  const out = execFileSync(
-    "node",
-    ["--import", CATALOG_STUB, RENDERER, theme, JSON.stringify(jobs)],
-    { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 128 * 1024 * 1024 },
-  );
-  const row = (JSON.parse(out) as Array<{ html?: string; error?: string }>)[0];
-  if (!row.html) {
-    throw new Error(`рендер ${block} (${theme}) не дал HTML: ${JSON.stringify(row)}`);
-  }
-  return row.html;
-}
+/**
+ * Живой рендер порта — та же лестница, что у витрины. Рендер, разбор разметки,
+ * экранирование селекторов Tailwind и чтение схем делает общая библиотека
+ * зондов `scripts/qa/lib` (её README — список ловушек, на которых это ломалось).
+ */
+const renderLive = (theme: string, block: string, layout?: string): string =>
+  renderBlock(theme, block, {
+    productId: "p1",
+    colorScheme: `scheme-${SCHEME_A}`,
+    padding: { top: 40, bottom: 40 },
+    ...(layout ? { layout } : {}),
+  });
 
 /**
- * Классы узла, помеченного data-атрибутом или id (первый в разметке).
+ * Классы КАЖДОГО узла, помеченного маркером.
  *
- * Граница после имени атрибута обязательна: `data-cfg-thumb` без неё ловил
- * `data-cfg-thumbs-track`, и «плитка» мерилась по ЛЕНТЕ — проверка падала не
- * на том узле (поймано 15.09 на первом же прогоне).
+ * Две ловушки закрыты разом:
+ *   • узел ищется настоящим CSS-селектором по разобранной разметке, а не
+ *     регуляркой по тексту: `data-cfg-thumb` без границы ловил
+ *     `data-cfg-thumbs-track`, и «плитка» мерилась по ЛЕНТЕ (15.09);
+ *   • берётся НЕ ПЕРВЫЙ совпавший узел, а ВСЕ. У flux «Товар» две ветки
+ *     раскладки, и `data-cfg-name`/`data-cfg-price`/`data-cfg-buy` стоят на
+ *     обеих: саботаж ВТОРОГО заголовка (литерал вместо токена) оставлял эту
+ *     проверку зелёной — поймано 15.09 при переводе гарда на библиотеку.
  */
-function classesOf(html: string, marker: string): string[] {
-  const esc = marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const bounded = /=/.test(marker) ? esc : `${esc}(?![a-z0-9-])`;
-  const tag = new RegExp(`<[a-z0-9]+[^>]*${bounded}[^>]*>`, "i").exec(html)?.[0];
-  if (!tag) throw new Error(`узел ${marker} в разметке не найден`);
-  return (/class="([^"]*)"/.exec(tag)?.[1] ?? "").split(/\s+/).filter(Boolean);
-}
+const classesOfAll = (html: string, marker: string): string[][] =>
+  classesOfAllMarker(html, marker);
 
-/** Селектор класса ровно в том виде, в каком его печатает Tailwind. */
-const cssSelectorOf = (cls: string) =>
-  `.${cls.replace(/[.[\]()#/%,:!*+~='"^$&{}|<>?\\]/g, (ch) => `\\${ch}`)}`;
-const forRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
-
-/**
- * Переменная, из которой браузер возьмёт цвет узла. Классы идут в обратном
- * порядке: последний объявленный в файле выигрывает каскад. Литерал без var()
- * возвращает { token: null }.
- */
-function resolveVar(
-  themeCss: string,
-  classes: string[],
-  prop: "background-color" | "color",
-): { cls: string; token: string | null } {
-  // Варианты (`hover:`, `md:`, `2xl:`) — не базовое состояние. Без фильтра
-  // `hover:bg-[…]` выигрывал у обычного `bg-[…]`, и «фон кнопки» читался как
-  // цвет НАВЕДЕНИЯ (поймано 15.09: у основной кнопки вместо --color-bg
-  // возвращался --color-button-bg из hover-правила).
-  for (const cls of [...classes].reverse()) {
-    if (cls.includes(":")) continue;
-    const rule = new RegExp(`${forRegExp(cssSelectorOf(cls))}\\s*\\{([^}]*)\\}`).exec(themeCss);
-    if (!rule) continue;
-    // Граница объявления обязательна: без неё `border-color:` сходит за `color:`.
-    const decl = new RegExp(`(?:^|[;{\\s])${prop}:\\s*([^;]+)`, "i").exec(rule[1]);
-    if (!decl) continue;
-    const v = /var\((--[a-z0-9-]+)/i.exec(decl[1]);
-    return { cls, token: v ? v[1] : null };
-  }
-  throw new Error(`ни один класс не объявляет ${prop} в CSS темы: ${classes.join(" ")}`);
-}
-
-/** Значение переменной в правиле `.color-scheme-N` готового tokens.css. */
-function schemeValue(tokensCss: string, schemeId: string, token: string): string | null {
-  const rule = new RegExp(`\\.color-scheme-${schemeId}\\s*\\{([^}]*)\\}`).exec(tokensCss)?.[1];
-  if (!rule) return null;
-  return new RegExp(`(?:^|;)\\s*${token}:\\s*([^;]+)`).exec(rule)?.[1]?.trim() ?? null;
-}
-
-const themeCssOf = (theme: string) => {
-  const path = resolve(SITES_ROOT, "dist", "theme-css", `${theme}.css`);
-  if (!existsSync(path)) throw new Error(`нет ${path} — нужен pnpm build:theme-sections:all`);
-  return readFileSync(path, "utf8");
-};
+/** Классы первого совпавшего узла — там, где узел заведомо один. */
+const classesOf = (html: string, marker: string): string[] => classesOfAll(html, marker)[0];
 
 describe("мишени секций красятся токеном МЕРЧАНТСКОЙ схемы", () => {
   const tokensOf = new Map<string, string>();
@@ -202,8 +147,8 @@ describe("мишени секций красятся токеном МЕРЧАН
   beforeAll(() => {
     for (const theme of THEMES) {
       if (!built(theme)) continue;
-      tokensOf.set(theme, buildTokensCss({ colorSchemes: SCHEMES }, theme));
-      cssOf.set(theme, themeCssOf(theme));
+      tokensOf.set(theme, tokensCssFor(theme, SCHEMES));
+      cssOf.set(theme, themeCss(theme));
     }
     for (const c of CASES) {
       const key = `${c.theme}/${c.block}`;
@@ -215,21 +160,24 @@ describe("мишени секций красятся токеном МЕРЧАН
     "%s",
     (_name, c) => {
       if (!built(c.theme)) throw new Error(`тема ${c.theme} не собрана`);
-      const classes = classesOf(htmlOf.get(`${c.theme}/${c.block}`)!, c.marker);
-      const { cls, token } = resolveVar(cssOf.get(c.theme)!, classes, c.prop);
-      // 1. Цвет обязан приходить переменной, а не литералом.
-      expect(`${c.target}: ${cls}`).toEqual(expect.stringContaining(cls));
-      expect(token).not.toBeNull();
-      // 2. Это обязана быть та роль схемы, которую ждёт мишень.
-      expect(token).toBe(c.expect);
-      // 3. Переменная обязана быть объявлена В МЕРЧАНТСКОЙ схеме, а не только
-      //    в :root (иначе все схемы дают один и тот же цвет).
-      const a = schemeValue(tokensOf.get(c.theme)!, SCHEME_A, token!);
-      const b = schemeValue(tokensOf.get(c.theme)!, SCHEME_B, token!);
-      expect(a).not.toBeNull();
-      expect(b).not.toBeNull();
-      // 4. И две схемы обязаны давать РАЗНЫЕ числа — иначе мишень замрёт.
-      expect(a).not.toBe(b);
+      const nodes = classesOfAll(htmlOf.get(`${c.theme}/${c.block}`)!, c.marker);
+      expect(nodes.length).toBeGreaterThan(0);
+      // Проверяются ВСЕ узлы с этим маркером, а не первый попавшийся.
+      nodes.forEach((classes, i) => {
+        const where = `${c.theme}/${c.label}/${c.target} узел №${i + 1} из ${nodes.length}`;
+        const { cls, token } = declaredVar(cssOf.get(c.theme)!, classes, c.prop);
+        // 1. Цвет обязан приходить переменной, а не литералом.
+        expect({ where, cls, литерал: token === null }).toEqual({ where, cls, литерал: false });
+        // 2. Это обязана быть та роль схемы, которую ждёт мишень.
+        expect({ where, token }).toEqual({ where, token: c.expect });
+        // 3. Переменная обязана быть объявлена В МЕРЧАНТСКОЙ схеме, а не только
+        //    в :root (иначе все схемы дают один и тот же цвет).
+        const a = schemeValue(tokensOf.get(c.theme)!, SCHEME_A, token!);
+        const b = schemeValue(tokensOf.get(c.theme)!, SCHEME_B, token!);
+        expect({ where, нетA: a === null, нетB: b === null }).toEqual({ where, нетA: false, нетB: false });
+        // 4. И две схемы обязаны давать РАЗНЫЕ числа — иначе мишень замрёт.
+        expect({ where, одинаково: a === b }).toEqual({ where, одинаково: false });
+      });
     },
   );
 

@@ -26,7 +26,7 @@ import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run, sh, git, gitOk, tail, dur } from './lib/proc.mjs';
-import { collectGuards, classify } from './lib/ci-guards.mjs';
+import { collectGuards, classify, otherWorkflows } from './lib/ci-guards.mjs';
 import { runGuards, formatGuardTable } from './lib/guard-runner.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -325,6 +325,11 @@ function stepGuards(o, ctx) {
   step('гарды');
   const guards = buildGuardSet(o, ctx);
   if (!guards.length) { say('   ⚠ гарды отключены (--guards none) — залив без них запрещён'); return { skipped: true }; }
+  for (const w of otherWorkflows(ctx.root)) {
+    if (!w.cmds.length) continue;
+    say(`   ⚠ локально НЕ гоняется: ${w.file} (${w.name}) → ${w.cmds.join('; ')}`);
+    say(`     этот workflow тоже решает судьбу прогона — его проверит только CI на шаге 10.`);
+  }
   const fromSet = guards.length - o.extraGuards.length;
   const src = o.guards === 'ci' ? '.github/workflows/ci.yml' : o.guards;
   say(`   набор: ${guards.length} шт.${fromSet ? ` — ${fromSet} из ${src}` : ''}${o.extraGuards.length ? `${fromSet ? ',' : ' —'} ${o.extraGuards.length} через --guard` : ''}`);

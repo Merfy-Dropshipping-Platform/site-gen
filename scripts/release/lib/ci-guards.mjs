@@ -10,7 +10,7 @@
  * (новых зависимостей не вводим). Нужны ровно `run`, `name`,
  * `working-directory`, `continue-on-error` и имя джобы.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /** Шаги workflow: [{job, name, run, cwd, continueOnError}] */
@@ -87,12 +87,12 @@ const LOOKS_LIKE_GUARD = /(jest|node --test|eslint|conformance|check:css-layers|
  * Шаги с continue-on-error отброшены — CI на них не падает, значит и мы не должны
  * выдавать их за проверку.
  */
-export function guardsFromWorkflow(yamlText, { skipJobs = ['deploy-to-coolify'] } = {}) {
+export function guardsFromWorkflow(yamlText, { skipJobs = ['deploy-to-coolify'], requireTestish = true } = {}) {
   return parseWorkflowSteps(yamlText)
     .filter((s) => !skipJobs.includes(s.job))
     .filter((s) => !s.continueOnError)
     .filter((s) => !NOT_A_GUARD.some((re) => re.test(s.run)))
-    .filter((s) => LOOKS_LIKE_GUARD.test(s.run))
+    .filter((s) => !requireTestish || LOOKS_LIKE_GUARD.test(s.run))
     .map((s) => ({ label: s.name || s.run, cmd: s.run, cwd: s.cwd || null, job: s.job }));
 }
 
@@ -186,4 +186,35 @@ export function expandChain(guard, scripts) {
   const sub = parts.map((cmd, i) => classify({ ...guard, cmd, label: `${guard.label} [${i + 1}/${parts.length}]` }, scripts));
   if (sub.every((s) => s.kind !== 'opaque')) return sub;
   return [classify(guard, scripts)];
+}
+
+
+/**
+ * Кроме ci.yml в репозитории живут другие workflow (сейчас — theme-parity с
+ * Playwright и отдельным репозиторием эталонов). Локально мы их не гоняем, но
+ * и молчать про них нельзя: «зелено локально» не равно «зелено в CI», а тихая
+ * слепота — ровно тот механизм, которым баги и живут. Возвращаем список, чтобы
+ * инструмент назвал их вслух.
+ */
+export function otherWorkflows(repoRoot, { main = 'ci.yml' } = {}) {
+  const dir = resolve(repoRoot, '.github/workflows');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => /\.ya?ml$/.test(f) && f !== main)
+    .map((f) => {
+      const text = readFileSync(resolve(dir, f), 'utf-8');
+      const name = (text.match(/^name:\s*(.+)$/m) ?? [])[1]?.trim() ?? f;
+      // Здесь фильтр «похоже на тест» не применяется: в чужом workflow проверка
+      // может называться как угодно (`pnpm visual-diff:themes`), и пропустить её
+      // молча — хуже, чем назвать лишнее.
+      // Здесь фильтр «похоже на тест» не применяется: в чужом workflow проверка
+      // может называться как угодно (`pnpm visual-diff:themes`), и пропустить её
+      // молча — хуже, чем назвать лишнее. Но подготовительные шаги отсеиваем, а
+      // строки с токенами не печатаем вовсе — им не место в выводе.
+      const cmds = guardsFromWorkflow(text, { skipJobs: [], requireTestish: false })
+        .map((g) => g.cmd)
+        .filter((c) => !c.includes('\n'))
+        .filter((c) => !/token|auth|config set|git clone|playwright install|checkout/i.test(c));
+      return { file: f, name, cmds };
+    });
 }

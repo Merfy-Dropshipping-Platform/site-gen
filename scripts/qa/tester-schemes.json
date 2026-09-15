@@ -1,0 +1,97 @@
+[
+  {
+    "id": "scheme-1",
+    "name": "1",
+    "background": "#d14d4d",
+    "surfaceBg": "#1a1a1a",
+    "heading": "#ffffff",
+    "text": "#ffffff",
+    "accent": "#fa5109",
+    "primaryButton": {
+      "background": "#cc3131",
+      "text": "#000000",
+      "border": "#ffffff"
+    },
+    "secondaryButton": {
+      "background": "#53ff82",
+      "text": "#ffffff",
+      "border": "#ffffff"
+    }
+  },
+  {
+    "id": "scheme-2",
+    "name": "2",
+    "background": "#ffffff",
+    "surfaceBg": "#fbfbfb",
+    "heading": "#000000",
+    "text": "#000000",
+    "accent": "#fa5109",
+    "primaryButton": {
+      "background": "#000000",
+      "text": "#ffffff",
+      "border": "#000000"
+    },
+    "secondaryButton": {
+      "background": "#ffffff",
+      "text": "#000000",
+      "border": "#000000"
+    }
+  },
+  {
+    "id": "scheme-3",
+    "name": "3",
+    "background": "#71c0ff",
+    "surfaceBg": "#5aafff",
+    "heading": "#ffffff",
+    "text": "#ffffff",
+    "accent": "#fa5109",
+    "primaryButton": {
+      "background": "#de3838",
+      "text": "#71c0ff",
+      "border": "#ffffff"
+    },
+    "secondaryButton": {
+      "background": "#b722b0",
+      "text": "#71c0ff",
+      "border": "#e8f5ff"
+    }
+  },
+  {
+    "id": "scheme-4",
+    "name": "4",
+    "background": "#f5f0eb",
+    "surfaceBg": "#ebe5de",
+    "heading": "#1a1a1a",
+    "text": "#1a1a1a",
+    "accent": "#fa5109",
+    "primaryButton": {
+      "background": "#000000",
+      "text": "#ffffff",
+      "border": "#000000"
+    },
+    "secondaryButton": {
+      "background": "#f5f0eb",
+      "text": "#1a1a1a",
+      "border": "#1a1a1a"
+    }
+  },
+  {
+    "id": "scheme-5",
+    "name": "5",
+    "background": "#1a1a1a",
+    "surfaceBg": "#2a2a2a",
+    "heading": "#ffffff",
+    "text": "#f5f0eb",
+    "accent": null,
+    "primaryButton": {
+      "background": "#f5f0eb",
+      "text": "#1a1a1a",
+      "border": "#f5f0eb"
+    },
+    "secondaryButton": {
+      "background": "#1a1a1a",
+      "text": "#f5f0eb",
+      "border": "#f5f0eb"
+    }
+  }
+]

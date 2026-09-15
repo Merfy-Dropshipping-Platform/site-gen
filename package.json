@@ -80,6 +80,7 @@
     "test:catalog-layout-mobile": "jest --runInBand src/themes/__tests__/catalog-layout-mobile.spec.ts",
     "test:catalog-filter-rows": "jest --runInBand src/themes/__tests__/catalog-filter-rows-tap.spec.ts",
     "test:flux-edge-veil": "jest --runInBand src/themes/__tests__/flux-section-edge-veil.spec.ts",
+    "test:hero-media-slots": "jest --runInBand src/themes/__tests__/hero-media-slots.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
     "test:scheme-targets": "jest --runInBand src/themes/__tests__/section-scheme-targets.spec.ts",
     "test:product-description": "jest --runInBand src/themes/__tests__/product-description-heading.spec.ts",
@@ -95,6 +96,7 @@
     "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts",
     "test:size-settings": "jest --runInBand src/themes/__tests__/theme-size-settings-reach-theme.spec.ts",
     "test:media-text-pair": "jest --runInBand src/themes/__tests__/media-text-pair.spec.ts",
+    "test:media-columns": "jest --runInBand src/themes/__tests__/media-section-column-parity.spec.ts",
     "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts"
   },
   "dependencies": {

@@ -112,7 +112,6 @@
     },
     "ImageWithText": {
       "imagePosition": "right",
-      "ctaPosition": "bottom-pinned",
       "heading": {
         "text": "Изображение с текстом"
       },

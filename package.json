@@ -108,6 +108,8 @@
     "test:media-text-pair": "jest --runInBand src/themes/__tests__/media-text-pair.spec.ts",
     "test:media-columns": "jest --runInBand src/themes/__tests__/media-section-column-parity.spec.ts",
     "test:cart-scheme": "jest --runInBand src/themes/__tests__/cart-page-scheme.spec.ts",
+    "test:cart-drawer-scheme": "jest --runInBand src/themes/__tests__/cart-drawer-scheme.spec.ts",
+    "test:cart-drawer-items-scheme": "jest --runInBand src/themes/__tests__/cart-drawer-items-scheme.spec.ts",
     "test:port-utilities": "jest --runInBand src/themes/__tests__/theme-port-utilities.spec.ts",
     "test:scheme-matrix": "jest --runInBand src/themes/__tests__/scheme-matrix.spec.ts",
     "scheme-matrix:map": "node src/themes/__tests__/scheme-matrix.mjs",

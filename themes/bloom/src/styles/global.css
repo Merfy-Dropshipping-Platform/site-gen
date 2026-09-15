@@ -21,6 +21,13 @@
 @source "../../../../packages/theme-base/primitives/**/*.{astro,ts}";
 /* Порты верстальщика: без скана group-hover/d1 у NavItem дропдаун меню остаётся invisible. Как у rose/satin. */
 @source "../components/**/*.{astro,ts,tsx}";
+/* Дровер корзины (renderDrawerItem) и другой рантайм красят токенами схемы
+   из themes/<t>/src/lib/**.ts — без этой строки Tailwind не видит их классы
+   (сканирует ../components/** и обратно не поднимается): утилита молча не
+   попадает в бандл, класс есть в разметке, правила в CSS нет (замер 15.09,
+   scripts/qa/lib/tailwind-css.ts bundleClassNames — hover:text-[rgb(var(--color-text,0_0_0))]
+   отсутствовал в dist/theme-css при наличии в исходнике). */
+@source "../lib/**/*.{astro,ts,tsx}";
 
 /* Bloom Theme — розовый акцент (#e38e9f) и минималистичный дизайн */
 @theme {

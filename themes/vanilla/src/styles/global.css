@@ -20,6 +20,13 @@
    ряда «Мультирядов» показывался 16px (утилита gap-4), потому что md:gap-10 в
    бандл не попадала, а на живом сайте тот же ряд имеет 40px. */
 @source "../components/**/*.{astro,ts,tsx}";
+/* Дровер корзины (renderDrawerItem) и другой рантайм красят токенами схемы
+   из themes/<t>/src/lib/**.ts — без этой строки Tailwind не видит их классы
+   (сканирует ../components/** и обратно не поднимается): утилита молча не
+   попадает в бандл, класс есть в разметке, правила в CSS нет (замер 15.09,
+   scripts/qa/lib/tailwind-css.ts bundleClassNames — hover:text-[rgb(var(--color-text,0_0_0))]
+   отсутствовал в dist/theme-css при наличии в исходнике). */
+@source "../lib/**/*.{astro,ts,tsx}";
 
 @theme {
   --font-family-sans: var(--font-nt-ui);

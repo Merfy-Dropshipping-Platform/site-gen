@@ -20,8 +20,18 @@ import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 const api = createNtCart({
 	storageKey: "flux:cart:v1",
 	eventPrefix: "flux:cart",
-	// Разметка строки дровера — дословно из прежней локальной копии (вид flux
-	// сохранён байт-в-байт): шрифт roboto-flex, рамка степпера #F5F5F5.
+	// Разметка строки дровера — вид flux сохранён (шрифт roboto-flex).
+	//
+	// ЦВЕТ — только токенами схемы (жалоба владельца 15.09: «схема не доезжает
+	// до корзины flux» — CartBody.astro починили, а строки ДРОВЕРА рисует ЭТОТ
+	// файл, отдельная разметка, гард до него не доставал). Роли — по эталону
+	// CartBody.astro (flux): название/цена → --color-text (у flux это основной
+	// текст, не приглушённый); приглушённое (вариант, «Удалить») →
+	// --color-muted; рамка степпера → --color-muted/0.3 (щадящий перевод: было
+	// #F5F5F5, страница уже сменила степпер на заливку --color-button-bg, но
+	// здесь оставляем прежнюю рамочную вёрстку — переводим только краску, не
+	// форму). Плашка-плейсхолдер (#F5F5F5) — законное исключение, как в
+	// CartBody.astro. Сторож: pnpm test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
 		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
 		const pHref = `${productPathPrefix}/${line.productId}`;
@@ -34,18 +44,18 @@ const api = createNtCart({
 						<div class="flex flex-1 flex-col gap-2">
 							<div class="flex items-start justify-between gap-2">
 								<div class="flex flex-col gap-1">
-									<a href="${pHref}" class="font-roboto-flex text-[16px] font-light leading-normal text-[#000000] hover:opacity-80">${line.name}</a>
+									<a href="${pHref}" class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">${line.name}</a>
 									${variant ? `<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
 								</div>
-								<button type="button" data-cart-remove data-id="${line.id}" class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
+								<button type="button" data-cart-remove data-id="${line.id}" class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[rgb(var(--color-text,0_0_0))]" aria-label="Удалить">Удалить</button>
 							</div>
 							<div class="flex items-center justify-between">
-								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#F5F5F5]">
+								<div class="inline-flex h-9 items-center rounded-[4px] border border-[rgb(var(--color-muted,204_204_204)/0.3)]">
 									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Уменьшить">−</button>
 									<span class="min-w-[28px] text-center font-roboto-flex text-[14px] font-light">${line.quantity}</span>
 									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Увеличить">+</button>
 								</div>
-								<span class="font-roboto-flex text-[16px] font-light leading-normal text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
+								<span class="font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
 							</div>
 						</div>
 					</li>

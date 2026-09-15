@@ -214,7 +214,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 <style>
 	.vanilla-button-cart {
-		color: #ffffff;
+		color: var(--vanilla-button-text, #ffffff);
 		background: var(--vanilla-header-bg);
 		border-color: var(--vanilla-header-bg);
 		min-height: 48px;

@@ -38,8 +38,20 @@ const api = createNtCart({
 	// пере-резолвятся на загрузке, поэтому корзина всегда совпадает с
 	// оформлением. У локальной копии ядра этого не было вовсе.
 	catalogUrl: "/data/products.json",
-	// Разметка строки дровера — дословно из прежнего bloom-renderDrawer (вид
-	// сохранён байт-в-байт): шрифт inter, круглый степпер, розовые акценты.
+	// Разметка строки дровера (вид bloom сохранён: шрифт inter, круглый степпер,
+	// розовые акценты) — форма НЕ меняется, только краска.
+	//
+	// ЦВЕТ — только токенами схемы (жалоба владельца 15.09: «схема не
+	// применяется в корзине bloom» — CartBody.astro починили, а строки ДРОВЕРА
+	// рисует ЭТОТ файл, отдельная разметка, гард до него не доставал). Роли —
+	// по эталону CartBody.astro (bloom) + смысл «розовых акцентов» дровера:
+	// название/цена/счётчик → --color-text; приглушённое (вариант) →
+	// --color-muted; розовый акцент (hover «Удалить», иконки степпера, рамка
+	// степпера) → --color-accent (bloom: 227 142 159 = байт-в-байт #E38E9F,
+	// бывшая рамка #FFD4E5 — тот же акцент на 30% альфы, светлее); белая
+	// подложка степпера → --color-bg (секция и дровер делят один фон).
+	// Плашка-плейсхолдер уже была токеном (--color-surface) — не трогаем.
+	// Сторож: pnpm test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
 		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
 		const pHref = `${productPathPrefix}/${encodeURIComponent(line.productId)}`;
@@ -52,18 +64,18 @@ const api = createNtCart({
 						<div class="flex flex-1 flex-col gap-2">
 							<div class="flex items-start justify-between gap-2">
 								<div class="flex flex-col gap-1">
-									<a href="${pHref}" class="font-inter text-[16px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70">${escapeHtml(line.name)}</a>
+									<a href="${pHref}" class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${escapeHtml(line.name)}</a>
 									${variant ? `<span class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${escapeHtml(variant)}</span>` : ""}
 								</div>
-								<button type="button" data-cart-remove data-id="${escapeHtml(line.id)}" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#E38E9F]" aria-label="Удалить">Удалить</button>
+								<button type="button" data-cart-remove data-id="${escapeHtml(line.id)}" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[rgb(var(--color-accent,227_142_159))]" aria-label="Удалить">Удалить</button>
 							</div>
 							<div class="flex items-center justify-between gap-3">
-								<div class="inline-flex h-9 items-center rounded-full border border-[#FFD4E5] bg-white">
-									<button type="button" data-cart-dec data-id="${escapeHtml(line.id)}" class="flex h-9 w-9 items-center justify-center text-[#E38E9F] transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
-									<span class="min-w-[28px] text-center font-inter text-[14px] font-light text-[#000000]">${line.quantity}</span>
-									<button type="button" data-cart-inc data-id="${escapeHtml(line.id)}" class="flex h-9 w-9 items-center justify-center text-[#E38E9F] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
+								<div class="inline-flex h-9 items-center rounded-full border border-[rgb(var(--color-accent,227_142_159)/0.3)] bg-[rgb(var(--color-bg,255_255_255))]">
+									<button type="button" data-cart-dec data-id="${escapeHtml(line.id)}" class="flex h-9 w-9 items-center justify-center text-[rgb(var(--color-accent,227_142_159))] transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
+									<span class="min-w-[28px] text-center font-inter text-[14px] font-light text-[rgb(var(--color-text,0_0_0))]">${line.quantity}</span>
+									<button type="button" data-cart-inc data-id="${escapeHtml(line.id)}" class="flex h-9 w-9 items-center justify-center text-[rgb(var(--color-accent,227_142_159))] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
 								</div>
-								<span class="font-inter text-[16px] font-light leading-none text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
+								<span class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
 							</div>
 						</div>
 					</li>

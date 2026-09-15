@@ -20,8 +20,17 @@ const api = createNtCart({
 	// Само-лечение корзины из каталога — как у rose (эталон). У локальной копии
 	// ядра его не было: корзина могла показывать старую цену.
 	catalogUrl: "/data/products.json",
-	// Разметка строки дровера — дословно из прежней локальной копии (вид satin
-	// сохранён байт-в-байт): шрифт manrope, скруглённое превью, рамка #F5F5F5.
+	// Разметка строки дровера (вид satin сохранён: шрифт manrope, скруглённое
+	// превью) — форма НЕ меняется, только краска.
+	//
+	// ЦВЕТ — только токенами схемы (жалоба владельца 15.09: «не применяется
+	// цветовая схема» — CartBody.astro починили, а строки ДРОВЕРА рисует ЭТОТ
+	// файл, отдельная разметка, гард до него не доставал). Роли — по эталону
+	// CartBody.astro (satin): название/цена/счётчик → --color-text;
+	// приглушённое (вариант, «Удалить») → --color-muted; рамка степпера →
+	// --color-muted/0.3 (тот же перевод, что уже сделан в CartBody.astro).
+	// Плашка-плейсхолдер уже была токеном (--color-surface) — не трогаем.
+	// Сторож: pnpm test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
 		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
 		const pHref = `${productPathPrefix}/${line.productId}`;
@@ -34,18 +43,18 @@ const api = createNtCart({
 						<div class="flex flex-1 flex-col gap-2">
 							<div class="flex items-start justify-between gap-2">
 								<div class="flex flex-col gap-1">
-									<a href="${pHref}" class="font-manrope text-[16px] font-normal leading-normal text-[#000000] hover:opacity-80">${line.name}</a>
+									<a href="${pHref}" class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">${line.name}</a>
 									${variant ? `<span class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
 								</div>
-								<button type="button" data-cart-remove data-id="${line.id}" class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
+								<button type="button" data-cart-remove data-id="${line.id}" class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[rgb(var(--color-text,0_0_0))]" aria-label="Удалить">Удалить</button>
 							</div>
 							<div class="flex items-center justify-between">
-								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#F5F5F5]">
+								<div class="inline-flex h-9 items-center rounded-[4px] border border-[rgb(var(--color-muted,153_153_153)/0.3)]">
 									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Уменьшить">−</button>
 									<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
 									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Увеличить">+</button>
 								</div>
-								<span class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
+								<span class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
 							</div>
 						</div>
 					</li>

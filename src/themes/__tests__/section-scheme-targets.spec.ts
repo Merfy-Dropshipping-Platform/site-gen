@@ -41,25 +41,30 @@
  * Рендер требует сборки:
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
  */
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { buildTokensCss } from "../tokens-css";
+import {
+  classesOfAllMarker,
+  declaredVar,
+  inlineDecl,
+  inlineStylesOfAllMarker,
+  loadTesterSchemes,
+  renderBlock,
+  schemeValue,
+  themeCss,
+  tokensCssFor,
+  varShadowedInMarkup,
+} from "../../../scripts/qa/lib";
 
-const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
-/** flux/bloom/vanilla резолвят товар HTTP-запросом во фронтматтере. */
-const CATALOG_STUB = resolve(SITES_ROOT, "scripts/qa/product-six-images-stub.mjs");
 
 /**
  * Схемы РЕАЛЬНОГО магазина тестировщика. Важно, что они МЕРЧАНТСКИЕ: заводские
  * схемы темы печатаются другим путём (`buildThemeSchemeRule`) и несут больше
  * токенов — на них баг с `--color-primary` не воспроизводится вовсе.
  */
-const SCHEMES = JSON.parse(
-  readFileSync(resolve(SITES_ROOT, "scripts/qa/tester-schemes.json"), "utf8"),
-) as Array<Record<string, unknown>>;
+const SCHEMES = loadTesterSchemes();
 const SCHEME_A = "1"; // «Фон» #d14d4d, «Заголовок» #ffffff
 const SCHEME_B = "4"; // «Фон» #f5f0eb, «Заголовок» #1a1a1a
 
@@ -137,7 +142,9 @@ const CASES: Case[] = [
     // У vanilla корень <footer> прозрачный (flex-столбец), фон несут ПОЛОСЫ
     // внутри — цепляем красящий узел, а не корень: «красится не то, что видно».
     { theme, block: "Footer", label: "Подвал", target: "фон",
-      marker: theme === "vanilla" ? "класс:vanilla-pad shrink-0 border-0 bg-" : 'data-puck-component-id="Footer-1"',
+      marker: theme === "vanilla"
+        ? 'css:[class*="vanilla-pad shrink-0 border-0 bg-"]'
+        : 'data-puck-component-id="Footer-1"',
       prop: "background-color", expect: "--color-bg" },
     { theme, block: "ImageWithText", label: "Изображение с текстом", target: "фон секции", marker: 'data-puck-component-id="ImageWithText-1"', prop: "background-color", expect: "--color-bg" },
   ] as Case[]),
@@ -170,151 +177,43 @@ const CASES: Case[] = [
   ...THEMES_5.flatMap((theme) => [
     { theme, block: "CheckoutSummary", label: "Сводка заказа", target: "фон поля промокода", marker: "data-checkout-promo", prop: "background-color", expect: "--color-bg" },
     { theme, block: "CheckoutSummary", label: "Сводка заказа", target: "фон строки «промокод применён»", marker: "data-checkout-promo-applied", prop: "background-color", expect: "--color-bg" },
-  ] as Case[]),
-];
+  ] as Case[]),];
 
 const THEMES = [...new Set(CASES.map((c) => c.theme))];
 
 const built = (theme: string) =>
   existsSync(resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json"));
 
-/** Живой рендер порта — та же лестница, что у витрины. */
-function renderLive(theme: string, block: string, layout?: string): string {
-  const jobs = [
-    {
-      block,
-      cascade: true,
-      live: true,
-      props: {
-        id: `${block}-1`,
-        productId: "p1",
-        colorScheme: `scheme-${SCHEME_A}`,
-        padding: { top: 40, bottom: 40 },
-        ...(layout ? { layout } : {}),
-      },
-    },
-  ];
-  const out = execFileSync(
-    "node",
-    ["--import", CATALOG_STUB, RENDERER, theme, JSON.stringify(jobs)],
-    { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 128 * 1024 * 1024 },
-  );
-  const row = (JSON.parse(out) as Array<{ html?: string; error?: string }>)[0];
-  if (!row.html) {
-    throw new Error(`рендер ${block} (${theme}) не дал HTML: ${JSON.stringify(row)}`);
-  }
-  return row.html;
-}
+/**
+ * Живой рендер порта — та же лестница, что у витрины. Рендер, разбор разметки,
+ * экранирование селекторов Tailwind и чтение схем делает общая библиотека
+ * зондов `scripts/qa/lib` (её README — список ловушек, на которых это ломалось).
+ */
+const renderLive = (theme: string, block: string, layout?: string): string =>
+  renderBlock(theme, block, {
+    productId: "p1",
+    colorScheme: `scheme-${SCHEME_A}`,
+    padding: { top: 40, bottom: 40 },
+    ...(layout ? { layout } : {}),
+  });
 
 /**
- * Открывающий тег узла. Маркер — либо data-атрибут/id (первый в разметке), либо
- * `текст:XXX` — тег, сразу за которым идёт этот текст. Второй вид нужен там, где
- * у мишени нет своего атрибута: имя и цена карточки «Коллекции товаров» — просто
- * <span>, и цеплять их приходится по содержимому.
+ * Классы КАЖДОГО узла, помеченного маркером.
  *
- * Граница после имени атрибута обязательна: `data-cfg-thumb` без неё ловил
- * `data-cfg-thumbs-track`, и «плитка» мерилась по ЛЕНТЕ — проверка падала не
- * на том узле (поймано 15.09 на первом же прогоне).
+ * Две ловушки закрыты разом:
+ *   • узел ищется настоящим CSS-селектором по разобранной разметке, а не
+ *     регуляркой по тексту: `data-cfg-thumb` без границы ловил
+ *     `data-cfg-thumbs-track`, и «плитка» мерилась по ЛЕНТЕ (15.09);
+ *   • берётся НЕ ПЕРВЫЙ совпавший узел, а ВСЕ. У flux «Товар» две ветки
+ *     раскладки, и `data-cfg-name`/`data-cfg-price`/`data-cfg-buy` стоят на
+ *     обеих: саботаж ВТОРОГО заголовка (литерал вместо токена) оставлял эту
+ *     проверку зелёной — поймано 15.09 при переводе гарда на библиотеку.
  */
-function tagOf(html: string, marker: string): string {
-  const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  if (marker.startsWith("текст:")) {
-    const txt = esc(marker.slice("текст:".length));
-    const tag = new RegExp(`<[a-z0-9]+[^>]*>(?=\\s*${txt})`, "i").exec(html)?.[0];
-    if (!tag) throw new Error(`узел с текстом «${marker.slice(6)}» в разметке не найден`);
-    return tag;
-  }
-  if (marker.startsWith("класс:")) {
-    const needle = esc(marker.slice("класс:".length));
-    const tag = new RegExp(`<[a-z0-9]+[^>]*class="[^"]*${needle}[^"]*"[^>]*>`, "i").exec(html)?.[0];
-    if (!tag) throw new Error(`узел с классом «${marker.slice(6)}» в разметке не найден`);
-    return tag;
-  }
-  const e = esc(marker);
-  const bounded = /=/.test(marker) ? e : `${e}(?![a-z0-9-])`;
-  const tag = new RegExp(`<[a-z0-9]+[^>]*${bounded}[^>]*>`, "i").exec(html)?.[0];
-  if (!tag) throw new Error(`узел ${marker} в разметке не найден`);
-  return tag;
-}
+const classesOfAll = (html: string, marker: string): string[][] =>
+  classesOfAllMarker(html, marker);
 
-function classesOf(html: string, marker: string): string[] {
-  return (/class="([^"]*)"/.exec(tagOf(html, marker))?.[1] ?? "").split(/\s+/).filter(Boolean);
-}
-
-/** Инлайновый `style` узла — он бьёт ЛЮБОЙ класс, поэтому его смотрим первым. */
-function inlineStyleOf(html: string, marker: string): string {
-  return /style="([^"]*)"/.exec(tagOf(html, marker))?.[1] ?? "";
-}
-
-/**
- * Объявляет ли ХОТЬ ОДИН инлайновый style в разметке блока переменную `token`.
- *
- * Зачем отдельная проверка. У секции «Вход» причин было ДВЕ, и вторая ни одним
- * замером на самом узле не ловится: обёртка `auth-shell` печатала
- * `--color-primary: 0,0,0; --color-button-text: 255,255,255` своим инлайном, и
- * каскадом это накрывало кнопку внутри. Класс кнопки при этом выглядел
- * безупречно — `rgb(var(--color-button-text))`, — а цвет всё равно был
- * константой. Пока предок перебивает переменную, мишень к схеме не подключена.
- */
-function varShadowedInMarkup(html: string, token: string): boolean {
-  for (const m of html.matchAll(/style="([^"]*)"/g)) {
-    if (new RegExp(`${token}\\s*:`).test(m[1])) return true;
-  }
-  return false;
-}
-
-/** Селектор класса ровно в том виде, в каком его печатает Tailwind. */
-const cssSelectorOf = (cls: string) =>
-  `.${cls.replace(/[.[\]()#/%,:!*+~='"^$&{}|<>?\\]/g, (ch) => `\\${ch}`)}`;
-const forRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
-
-/**
- * Переменная, из которой браузер возьмёт цвет узла. Классы идут в обратном
- * порядке: последний объявленный в файле выигрывает каскад. Литерал без var()
- * возвращает { token: null }.
- */
-function resolveVar(
-  themeCss: string,
-  classes: string[],
-  prop: "background-color" | "color",
-): { cls: string; token: string | null; chain: string[] } {
-  // Варианты (`hover:`, `md:`, `2xl:`) — не базовое состояние. Без фильтра
-  // `hover:bg-[…]` выигрывал у обычного `bg-[…]`, и «фон кнопки» читался как
-  // цвет НАВЕДЕНИЯ (поймано 15.09: у основной кнопки вместо --color-bg
-  // возвращался --color-button-bg из hover-правила).
-  for (const cls of [...classes].reverse()) {
-    if (cls.includes(":")) continue;
-    const rule = new RegExp(`${forRegExp(cssSelectorOf(cls))}\\s*\\{([^}]*)\\}`).exec(themeCss);
-    if (!rule) continue;
-    // Граница объявления обязательна: без неё `border-color:` сходит за `color:`.
-    // `background-color` пишут и сокращённо — `.account-button` и
-    // `.auth-button-primary` объявлены как `background: rgb(var(…))`, и без этой
-    // ветки проверка падала «ни один класс не объявляет background-color»
-    // (поймано 15.09 на первом прогоне расширенного списка).
-    const names = prop === "background-color" ? "background-color|background" : prop;
-    const decl = new RegExp(`(?:^|[;{\\s])(?:${names}):\\s*([^;]+)`, "i").exec(rule[1]);
-    if (!decl) continue;
-    // Цепочка целиком: `rgb(var(--color-button-bg, var(--color-primary)))` даёт
-    // [--color-button-bg, --color-primary]. Первая — роль схемы, остальные —
-    // фолбэки; перебить инлайном предка нельзя НИ ОДНУ из них.
-    const chain = [...decl[1].matchAll(/var\((--[a-z0-9-]+)/gi)].map((m) => m[1]);
-    return { cls, token: chain[0] ?? null, chain };
-  }
-  throw new Error(`ни один класс не объявляет ${prop} в CSS темы: ${classes.join(" ")}`);
-}
-
-/** Значение переменной в правиле `.color-scheme-N` готового tokens.css. */
-function schemeValue(tokensCss: string, schemeId: string, token: string): string | null {
-  const rule = new RegExp(`\\.color-scheme-${schemeId}\\s*\\{([^}]*)\\}`).exec(tokensCss)?.[1];
-  if (!rule) return null;
-  return new RegExp(`(?:^|;)\\s*${token}:\\s*([^;]+)`).exec(rule)?.[1]?.trim() ?? null;
-}
-
-const themeCssOf = (theme: string) => {
-  const path = resolve(SITES_ROOT, "dist", "theme-css", `${theme}.css`);
-  if (!existsSync(path)) throw new Error(`нет ${path} — нужен pnpm build:theme-sections:all`);
-  return readFileSync(path, "utf8");
-};
+/** Классы первого совпавшего узла — там, где узел заведомо один. */
+const classesOf = (html: string, marker: string): string[] => classesOfAll(html, marker)[0];
 
 describe("мишени секций красятся токеном МЕРЧАНТСКОЙ схемы", () => {
   const tokensOf = new Map<string, string>();
@@ -324,8 +223,8 @@ describe("мишени секций красятся токеном МЕРЧАН
   beforeAll(() => {
     for (const theme of THEMES) {
       if (!built(theme)) continue;
-      tokensOf.set(theme, buildTokensCss({ colorSchemes: SCHEMES }, theme));
-      cssOf.set(theme, themeCssOf(theme));
+      tokensOf.set(theme, tokensCssFor(theme, SCHEMES));
+      cssOf.set(theme, themeCss(theme));
     }
     for (const c of CASES) {
       const key = `${c.theme}/${c.block}`;
@@ -338,38 +237,36 @@ describe("мишени секций красятся токеном МЕРЧАН
     (_name, c) => {
       if (!built(c.theme)) throw new Error(`тема ${c.theme} не собрана`);
       const html = htmlOf.get(`${c.theme}/${c.block}`)!;
-      // 0. ИНЛАЙН НА САМОМ УЗЛЕ. Он бьёт любой класс, поэтому смотрим первым:
-      //    у кнопки «Вход» пяти тем стоял `style="background:#000000;color:#FFFFFF"`,
-      //    и проверка «класс ссылается на переменную» проходила бы мимо.
-      const short = c.prop === "background-color" ? "background" : c.prop;
-      const inline = inlineStyleOf(html, c.marker);
-      const own = new RegExp(`(?:^|;)\\s*(?:${short}|${c.prop})\\s*:\\s*([^;]+)`, "i").exec(inline);
-      expect(
-        own ? `${c.target}: инлайн задаёт ${short}: ${own[1].trim()}` : `${c.target}: инлайна нет`,
-      ).toBe(`${c.target}: инлайна нет`);
-      const classes = classesOf(html, c.marker);
-      const { cls, token, chain } = resolveVar(cssOf.get(c.theme)!, classes, c.prop);
-      // 1. Цвет обязан приходить переменной, а не литералом.
-      expect(`${c.target}: ${cls}`).toEqual(expect.stringContaining(cls));
-      expect(token).not.toBeNull();
-      // 2. Это обязана быть та роль схемы, которую ждёт мишень.
-      expect(token).toBe(c.expect);
-      // 3. Переменная обязана быть объявлена В МЕРЧАНТСКОЙ схеме, а не только
-      //    в :root (иначе все схемы дают один и тот же цвет).
-      const a = schemeValue(tokensOf.get(c.theme)!, SCHEME_A, token!);
-      const b = schemeValue(tokensOf.get(c.theme)!, SCHEME_B, token!);
-      expect(a).not.toBeNull();
-      expect(b).not.toBeNull();
-      // 4. И две схемы обязаны давать РАЗНЫЕ числа — иначе мишень замрёт.
-      expect(a).not.toBe(b);
-      // 5. НИ ОДНУ переменную цепочки не перебивает инлайн внутри блока.
-      //    Вторая причина «Входа»: обёртка auth-shell печатала
-      //    `--color-primary`/`--color-button-text` своим style и накрывала
-      //    кнопку каскадом — класс выглядел правильным, цвет был константой.
-      const shadowed = chain.filter((t) => varShadowedInMarkup(html, t));
-      expect(`${c.target}: перебито инлайном — ${shadowed.join(", ") || "ничего"}`).toBe(
-        `${c.target}: перебито инлайном — ничего`,
-      );
+      const nodes = classesOfAll(html, c.marker);
+      const styles = inlineStylesOfAllMarker(html, c.marker);
+      expect(nodes.length).toBeGreaterThan(0);
+      // Проверяются ВСЕ узлы с этим маркером, а не первый попавшийся.
+      nodes.forEach((classes, i) => {
+        const where = `${c.theme}/${c.label}/${c.target} узел №${i + 1} из ${nodes.length}`;
+        // 0. ИНЛАЙН НА САМОМ УЗЛЕ. Он бьёт любой класс, поэтому смотрим первым:
+        //    у кнопки «Вход» пяти тем стоял `style="background:#000000;color:#FFFFFF"`,
+        //    и проверка «класс ссылается на переменную» проходила бы мимо.
+        const inline = inlineDecl(styles[i] ?? "", c.prop);
+        expect({ where, инлайн: inline }).toEqual({ where, инлайн: null });
+        const { cls, token, chain } = declaredVar(cssOf.get(c.theme)!, classes, c.prop);
+        // 1. Цвет обязан приходить переменной, а не литералом.
+        expect({ where, cls, литерал: token === null }).toEqual({ where, cls, литерал: false });
+        // 2. Это обязана быть та роль схемы, которую ждёт мишень.
+        expect({ where, token }).toEqual({ where, token: c.expect });
+        // 3. Переменная обязана быть объявлена В МЕРЧАНТСКОЙ схеме, а не только
+        //    в :root (иначе все схемы дают один и тот же цвет).
+        const a = schemeValue(tokensOf.get(c.theme)!, SCHEME_A, token!);
+        const b = schemeValue(tokensOf.get(c.theme)!, SCHEME_B, token!);
+        expect({ where, нетA: a === null, нетB: b === null }).toEqual({ where, нетA: false, нетB: false });
+        // 4. И две схемы обязаны давать РАЗНЫЕ числа — иначе мишень замрёт.
+        expect({ where, одинаково: a === b }).toEqual({ where, одинаково: false });
+        // 5. НИ ОДНУ переменную цепочки не перебивает инлайн внутри блока.
+        //    Вторая причина «Входа»: обёртка auth-shell печатала
+        //    `--color-primary`/`--color-button-text` своим style и накрывала
+        //    кнопку каскадом — класс выглядел правильным, цвет был константой.
+        const shadowed = chain.filter((t) => varShadowedInMarkup(html, t));
+        expect({ where, перебито: shadowed }).toEqual({ where, перебито: [] });
+      });
     },
   );
 
@@ -390,9 +287,9 @@ describe("мишени секций красятся токеном МЕРЧАН
     // причина жалоб [12, 54] «Вход/Заказы/Личный кабинет — кнопка». 15.09
     // кнопки переведены на `--color-button-bg` (фолбэком `--color-primary`
     // оставлен, чтобы магазин без своих схем не менялся), поэтому дыра в
-    // ГЕНЕРАТОРЕ больше никого не держит — но она никуда не делась.
-    // Проверка держит факт зафиксированным: когда генератор починят, она
-    // станет красной и её нужно перевернуть.
+    // ГЕНЕРАТОРЕ больше никого не держит — но она никуда не делась. Проверка
+    // держит факт зафиксированным: когда генератор починят, она станет
+    // красной и её нужно перевернуть.
     for (const theme of THEMES) {
       if (!built(theme)) continue;
       expect(schemeValue(tokensOf.get(theme)!, SCHEME_A, "--color-primary")).toBeNull();
@@ -425,19 +322,17 @@ describe("мишени, которые рисует инлайн-скрипт с
     );
     const cls = /class="(block size-20[^"]*)"/.exec(src)?.[1];
     expect(cls).toBeDefined();
-    const { token, chain } = resolveVar(
-      themeCssOf("vanilla"),
+    const { token } = declaredVar(
+      themeCss("vanilla"),
       cls!.split(/\s+/).filter(Boolean),
       "background-color",
     );
-    expect(chain.join(" → ")).not.toBe("");
     expect(token).toBe("--color-surface");
-    const tokens = buildTokensCss({ colorSchemes: SCHEMES }, "vanilla");
+    const tokens = tokensCssFor("vanilla", SCHEMES);
     const a = schemeValue(tokens, SCHEME_A, token!);
     const b = schemeValue(tokens, SCHEME_B, token!);
-    expect(a).not.toBeNull();
-    expect(b).not.toBeNull();
-    expect(a).not.toBe(b);
+    expect({ нетA: a === null, нетB: b === null }).toEqual({ нетA: false, нетB: false });
+    expect({ одинаково: a === b }).toEqual({ одинаково: false });
   });
 });
 

@@ -52,9 +52,10 @@
  *   && pnpm build:preview-tailwind
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse, type HTMLElement } from "node-html-parser";
+
+import { declaredValue, loadBundle, phantomClasses, pxOf, themeCss } from "../../../scripts/qa/lib";
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
@@ -180,295 +181,25 @@ function pairParts(theme: Theme, block: Block, width: "small" | "medium" | "larg
 const classesOf = (el: HTMLElement): string[] =>
   (el.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
 
-// ───────────────────────── мини-каскад по бандлам ─────────────────────────
-
-type Rule = {
-  selector: string;
-  decls: Record<string, string>;
-  layer: string | null;
-  minWidth: number;
-  specificity: number;
-  order: number;
-};
-
-function stripComments(css: string): string {
-  let out = "";
-  let i = 0;
-  while (i < css.length) {
-    if (css[i] === "/" && css[i + 1] === "*") {
-      const e = css.indexOf("*/", i + 2);
-      i = e < 0 ? css.length : e + 2;
-      continue;
-    }
-    if (css[i] === '"' || css[i] === "'") {
-      const q = css[i];
-      let j = i + 1;
-      while (j < css.length && css[j] !== q) j += css[j] === "\\" ? 2 : 1;
-      out += css.slice(i, Math.min(j + 1, css.length));
-      i = j + 1;
-      continue;
-    }
-    out += css[i];
-    i++;
-  }
-  return out;
-}
-
-/** min-width из условия @media в обеих формах Tailwind v4: `min-width:48rem` и `width >= 48rem`. */
-function minWidthOf(prelude: string): number {
-  const m =
-    /min-width\s*:\s*([\d.]+)(px|rem)/.exec(prelude) ??
-    /width\s*>=\s*([\d.]+)(px|rem)/.exec(prelude);
-  if (!m) return 0;
-  return m[2] === "rem" ? Number(m[1]) * 16 : Number(m[1]);
-}
+// ───────────────── каскад по бандлам: общая библиотека ─────────────────
 
 /**
- * Специфичность селектора. Экранированные символы гасим ПЕРЕД подсчётом: в
- * `.max-w-\[652px\]` скобки — часть ИМЕНИ класса, а не селектор атрибута.
- * Без этого утилита с произвольным значением получала специфичность 2 и
- * незаслуженно била `lg:`-вариант того же свойства (поймано саботажем:
- * `lg:max-w-none` проигрывал `max-w-[652px]`).
+ * Победителя каскада считает общий движок (`scripts/qa/lib/bundle.ts` поверх
+ * `src/themes/__tests__/lib/css-cascade.ts`): слои → специфичность → порядок →
+ * инлайн. Собственной копии движка у этого гарда больше нет: две копии
+ * разъезжаются, и первым же расхождением станет зелёная проверка там, где в
+ * браузере победил бы кто-то другой.
  */
-const specificityOf = (selector: string): number => {
-  const bare = selector.replace(/\\./g, "\u0000");
-  return (
-    (bare.match(/\./g) ?? []).length +
-    (bare.match(/\[/g) ?? []).length +
-    (bare.match(/#/g) ?? []).length * 100
-  );
-};
+const bundleOf = (theme: Theme, withPreview = true) => loadBundle(theme, { withPreview });
 
-type Bundle = { rules: Rule[]; vars: Record<string, string>; layerOrder: string[] };
+const gapPx = (theme: Theme, el: HTMLElement, withPreview = true): number | null =>
+  pxOf(bundleOf(theme, withPreview), el, ["column-gap", "gap"], DESKTOP_PX);
 
-/** Разбор бандла в плоский список правил со слоем, @media и порядком. */
-function parseBundle(cssRaw: string, startOrder: number): Bundle {
-  const css = stripComments(cssRaw);
-  const rules: Rule[] = [];
-  const vars: Record<string, string> = {};
-  const layerOrder: string[] = [];
-  let order = startOrder;
+const maxWidthPx = (theme: Theme, el: HTMLElement): number | null =>
+  pxOf(bundleOf(theme), el, ["max-width"], DESKTOP_PX);
 
-  const declsOf = (body: string): Record<string, string> => {
-    const decls: Record<string, string> = {};
-    let depth = 0;
-    let buf = "";
-    for (let i = 0; i < body.length; i++) {
-      const ch = body[i];
-      if (ch === "{") depth++;
-      if (ch === "}") depth--;
-      if (ch === ";" && depth === 0) {
-        const c = buf.indexOf(":");
-        if (c > 0) decls[buf.slice(0, c).trim()] = buf.slice(c + 1).trim();
-        buf = "";
-        continue;
-      }
-      if (depth === 0) buf += ch;
-    }
-    const c = buf.indexOf(":");
-    if (c > 0 && !/[{}]/.test(buf)) decls[buf.slice(0, c).trim()] = buf.slice(c + 1).trim();
-    return decls;
-  };
-
-  const walk = (text: string, layer: string | null, minWidth: number) => {
-    let i = 0;
-    while (i < text.length) {
-      const semi = text.indexOf(";", i);
-      const open = text.indexOf("{", i);
-      if (open < 0) {
-        // хвост без блока: объявление порядка слоёв `@layer a, b, c;`
-        const tail = text.slice(i).trim();
-        if (/^@layer\s+[^;{]+;/.test(tail)) {
-          for (const n of tail.replace(/^@layer\s+/, "").replace(/;.*$/s, "").split(","))
-            if (n.trim() && !layerOrder.includes(n.trim())) layerOrder.push(n.trim());
-        }
-        break;
-      }
-      if (semi >= 0 && semi < open) {
-        const stmt = text.slice(i, semi + 1).trim();
-        if (/^@layer\s/.test(stmt)) {
-          for (const n of stmt.replace(/^@layer\s+/, "").replace(/;$/, "").split(","))
-            if (n.trim() && !layerOrder.includes(n.trim())) layerOrder.push(n.trim());
-        }
-        i = semi + 1;
-        continue;
-      }
-      const prelude = text.slice(i, open).trim();
-      let depth = 1;
-      let j = open + 1;
-      while (j < text.length && depth > 0) {
-        if (text[j] === "{") depth++;
-        else if (text[j] === "}") depth--;
-        j++;
-      }
-      const body = text.slice(open + 1, j - 1);
-      i = j;
-
-      if (/^@layer\b/.test(prelude)) {
-        const name = prelude.replace(/^@layer\s*/, "").trim() || layer || "";
-        if (name && !layerOrder.includes(name)) layerOrder.push(name);
-        walk(body, name || layer, minWidth);
-        continue;
-      }
-      if (/^@media\b/.test(prelude)) {
-        walk(body, layer, Math.max(minWidth, minWidthOf(prelude)));
-        continue;
-      }
-      if (/^@(supports|scope|container)\b/.test(prelude)) {
-        walk(body, layer, minWidth);
-        continue;
-      }
-      if (/^@(keyframes|font-face|property|charset|import|page|counter-style)\b/.test(prelude)) {
-        continue;
-      }
-      if (/^@theme\b/.test(prelude)) {
-        for (const [k, v] of Object.entries(declsOf(body))) if (k.startsWith("--")) vars[k] = v;
-        continue;
-      }
-      // Обычное правило. В неминифицированном выводе v4 @media лежит ВНУТРИ него.
-      const own = declsOf(body);
-      for (const [k, v] of Object.entries(own)) if (k.startsWith("--")) vars[k] = v;
-      for (const sel of prelude.split(/(?<!\\),/)) {
-        const s = sel.trim();
-        if (!s) continue;
-        rules.push({
-          selector: s,
-          decls: own,
-          layer,
-          minWidth,
-          specificity: specificityOf(s),
-          order: order++,
-        });
-      }
-      // вложенные at-правила: те же селекторы, но своё условие
-      const nested = /@(media|supports)[^{]*\{/g;
-      let m: RegExpExecArray | null;
-      while ((m = nested.exec(body))) {
-        const nOpen = m.index + m[0].length - 1;
-        let d = 1;
-        let k = nOpen + 1;
-        while (k < body.length && d > 0) {
-          if (body[k] === "{") d++;
-          else if (body[k] === "}") d--;
-          k++;
-        }
-        const inner = body.slice(nOpen + 1, k - 1);
-        const innerMin = Math.max(minWidth, minWidthOf(m[0]));
-        const innerDecls = declsOf(inner);
-        for (const sel of prelude.split(/(?<!\\),/)) {
-          const s = sel.trim();
-          if (!s) continue;
-          rules.push({
-            selector: s,
-            decls: innerDecls,
-            layer,
-            minWidth: innerMin,
-            specificity: specificityOf(s),
-            order: order++,
-          });
-        }
-        nested.lastIndex = k;
-      }
-    }
-  };
-
-  walk(css, null, 0);
-  return { rules, vars, layerOrder };
-}
-
-const bundleCache = new Map<string, Bundle>();
-
-function bundle(theme: Theme, withPreview: boolean): Bundle {
-  const key = `${theme}/${withPreview}`;
-  const ready = bundleCache.get(key);
-  if (ready) return ready;
-  const themeCss = resolve(SITES_ROOT, "dist", "theme-css", `${theme}.css`);
-  const previewCss = resolve(SITES_ROOT, "dist", "preview-tailwind.css");
-  if (!existsSync(themeCss)) throw new Error(`нет ${themeCss} — нужен pnpm build:theme-sections:all`);
-  const parts: Bundle[] = [];
-  let order = 0;
-  if (withPreview) {
-    if (!existsSync(previewCss)) throw new Error(`нет ${previewCss} — нужен pnpm build:preview-tailwind`);
-    const p = parseBundle(readFileSync(previewCss, "utf-8"), order);
-    order += p.rules.length + 1;
-    parts.push(p);
-  }
-  parts.push(parseBundle(readFileSync(themeCss, "utf-8"), order + 1_000_000));
-  const merged: Bundle = {
-    rules: parts.flatMap((p) => p.rules),
-    vars: Object.assign({}, ...parts.map((p) => p.vars)),
-    layerOrder: [...new Set(parts.flatMap((p) => p.layerOrder))],
-  };
-  bundleCache.set(key, merged);
-  return merged;
-}
-
-/** Победитель каскада для свойства на узле с данными классами при ширине окна. */
-function winner(
-  b: Bundle,
-  classes: string[],
-  props: string[],
-  viewportPx: number,
-): { value: string; selector: string } | null {
-  const want = new Set(classes);
-  const matches = b.rules.filter((r) => {
-    if (r.minWidth > viewportPx) return false;
-    if (!props.some((p) => r.decls[p] !== undefined)) return false;
-    // селектор вида `.a`, `.a.b`, `.a:hover` — все классы должны быть на узле
-    if (!/^\.[^\s>+~,]*$/.test(r.selector)) return false;
-    if (/:(hover|focus|active|focus-visible|focus-within|disabled|checked)/.test(r.selector)) return false;
-    const names = (r.selector.match(/\.((?:\\.|[^.\s:[])+)/g) ?? []).map((c) =>
-      c.slice(1).replace(/\\/g, ""),
-    );
-    return names.length > 0 && names.every((n) => want.has(n));
-  });
-  if (!matches.length) return null;
-  const rank = (r: Rule) => [
-    r.layer === null ? 1 : 0,
-    r.layer === null ? 0 : Math.max(0, b.layerOrder.indexOf(r.layer)),
-    r.specificity,
-    r.minWidth,
-    r.order,
-  ];
-  let best = matches[0];
-  for (const r of matches.slice(1)) {
-    const a = rank(r);
-    const c = rank(best);
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] === c[i]) continue;
-      if (a[i] > c[i]) best = r;
-      break;
-    }
-  }
-  const prop = props.find((p) => best.decls[p] !== undefined) as string;
-  return { value: best.decls[prop], selector: best.selector };
-}
-
-/** Значение CSS в пикселях. null — «нет предела» (none/normal/auto). */
-function toPx(b: Bundle, raw: string | null): number | null {
-  if (raw === null) return null;
-  let v = raw.trim();
-  for (let i = 0; i < 6 && /var\(/.test(v); i++) {
-    v = v.replace(/var\(\s*(--[\w-]+)\s*(?:,\s*([^()]*))?\)/g, (_all, name, fb) =>
-      b.vars[name] !== undefined ? b.vars[name] : (fb ?? "0"),
-    );
-  }
-  if (/^(none|normal|auto)$/.test(v)) return null;
-  const calc = /^calc\(\s*([\d.]+)(rem|px)?\s*\*\s*([\d.]+)\s*\)$/.exec(v);
-  if (calc) {
-    const unit = calc[2] === "rem" || calc[2] === undefined ? 16 : 1;
-    return Number(calc[1]) * unit * Number(calc[3]);
-  }
-  const num = /^([\d.]+)(px|rem)?$/.exec(v);
-  if (num) return Number(num[1]) * (num[2] === "rem" ? 16 : 1);
-  return null;
-}
-
-const gapPx = (theme: Theme, classes: string[], withPreview = true): number | null =>
-  toPx(bundle(theme, withPreview), winner(bundle(theme, withPreview), classes, ["column-gap", "gap"], DESKTOP_PX)?.value ?? null);
-
-const maxWidthPx = (theme: Theme, classes: string[]): number | null =>
-  toPx(bundle(theme, true), winner(bundle(theme, true), classes, ["max-width"], DESKTOP_PX)?.value ?? null);
+const declared = (theme: Theme, el: HTMLElement, props: readonly string[]): string | null =>
+  declaredValue(bundleOf(theme), el, props, DESKTOP_PX)?.value ?? null;
 
 // ───────────────────────────── проверки ─────────────────────────────
 
@@ -477,12 +208,12 @@ describe("пара «медиа + текст»: зазор, доли колон�
     for (const block of BLOCKS) {
       const reference = () => {
         const { pair } = pairParts("rose", block, "large");
-        return gapPx("rose", classesOf(pair));
+        return gapPx("rose", pair);
       };
       for (const theme of THEMES) {
         it(`${theme} / ${block}: тот же зазор, что у rose, и не ноль`, () => {
           const { pair } = pairParts(theme, block, "large");
-          const gap = gapPx(theme, classesOf(pair));
+          const gap = gapPx(theme, pair);
           const rose = reference();
           expect({ theme, block, gap }).toEqual({ theme, block, gap: rose });
           expect(gap as number).toBeGreaterThan(0);
@@ -496,15 +227,14 @@ describe("пара «медиа + текст»: зазор, доли колон�
       for (const block of BLOCKS) {
         it(`${theme} / ${block}: ни медиа, ни контейнер не забирают чужую долю`, () => {
           const { pair, media, text } = pairParts(theme, block, "large");
-          const b = bundle(theme, true);
           const recipe = (el: typeof media) => ({
-            cap: toPx(b, winner(b, classesOf(el), ["max-width"], DESKTOP_PX)?.value ?? null),
-            basis: winner(b, classesOf(el), ["flex-basis"], DESKTOP_PX)?.value ?? null,
-            grow: winner(b, classesOf(el), ["flex-grow", "flex"], DESKTOP_PX)?.value ?? null,
-            width: winner(b, classesOf(el), ["width"], DESKTOP_PX)?.value ?? null,
+            cap: maxWidthPx(theme, el),
+            basis: declared(theme, el, ["flex-basis"]),
+            grow: declared(theme, el, ["flex-grow", "flex"]),
+            width: declared(theme, el, ["width"]),
           });
           // Грид: две дорожки обязаны быть ОДИНАКОВЫМИ (repeat(2, …)).
-          const template = winner(b, classesOf(pair), ["grid-template-columns"], DESKTOP_PX)?.value ?? null;
+          const template = declared(theme, pair, ["grid-template-columns"]);
           if (template !== null) {
             expect({ theme, block, template }).toEqual({
               theme,
@@ -529,7 +259,7 @@ describe("пара «медиа + текст»: зазор, доли колон�
           const capOf = (w: "small" | "large") => {
             const { ancestors } = pairParts(theme, block, w);
             const caps = ancestors
-              .map((el) => maxWidthPx(theme, classesOf(el)))
+              .map((el) => maxWidthPx(theme, el))
               .filter((v): v is number => v !== null);
             return caps.length ? Math.min(...caps) : null;
           };
@@ -564,18 +294,11 @@ describe("пара «медиа + текст»: зазор, доли колон�
       for (const block of BLOCKS) {
         it(`${theme} / ${block}: каждый класс пары есть в бандле темы`, () => {
           const { pair, media, text } = pairParts(theme, block, "large");
-          const themeOnly = bundle(theme, false);
-          const known = new Set<string>();
-          for (const r of themeOnly.rules) {
-            for (const c of r.selector.match(/\.((?:\\.|[^.\s:[])+)/g) ?? []) {
-              known.add(c.slice(1).replace(/\\/g, ""));
-            }
-          }
-          const phantom = [pair, media, text]
-            .flatMap(classesOf)
-            .filter((c) => !MARKERS.test(c))
-            .filter((c) => !known.has(c));
-          expect({ theme, block, phantom: [...new Set(phantom)] }).toEqual({
+          // Бандл БЕЗ превью: на живой витрине другого CSS нет.
+          const phantom = phantomClasses(themeCss(theme), [pair, media, text].flatMap(classesOf), {
+            ignore: MARKERS,
+          });
+          expect({ theme, block, phantom }).toEqual({
             theme,
             block,
             phantom: [],

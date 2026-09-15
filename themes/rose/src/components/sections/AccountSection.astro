@@ -19,6 +19,16 @@
  * Единственная правка вёрстки против исходной страницы: фон секции взят из
  * токена `--color-bg` вместо прозрачного — иначе параметр «Цветовая схема»
  * красил бы текст, но не фон. Без схемы токен даёт тот же белый.
+ *
+ * Приглушённый текст (тестировщик, пункты 13 и 14: «не применяется цветовая
+ * схема к кнопке и тексту»). Раньше он красился через
+ * `rgb(var(--color-text-muted))`, а такого токена НЕТ: его не объявляют ни
+ * схемы `.color-scheme-N`, ни buildTokensCss (замер live 2026-09-15 по пяти
+ * стендам: 18 использований на страницу, 0 объявлений). `rgb(var(--НЕТ))` —
+ * invalid at computed-value time: свойство обнуляется, цвет достаётся
+ * наследованием, схема на него не влияет. Теперь берётся живой `--color-muted`
+ * с тем же фолбэком, что у эталона rose (ProductCard/Footer/Newsletter).
+ * Гард: src/themes/__tests__/account-muted-token.spec.ts.
  */
 interface Props {
 	id?: string;
@@ -54,7 +64,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<span class="account-subtitle" id="profile-email-display"></span>
 		</div>
 
-		<div id="profile-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
+		<div id="profile-loading" style="color: rgb(var(--color-muted, 153 153 153)); font-family: var(--font-body);">Загрузка...</div>
 
 		<form id="profile-form" class="account-form hidden">
 			<div class="account-field">
@@ -68,7 +78,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<div class="account-field">
 				<label>Пароль</label>
 				<div class="auth-input" style="display: flex; align-items: center; justify-content: space-between; cursor: default;">
-					<span style="letter-spacing: 0.2em; color: rgb(var(--color-text-muted));">••••••••••••</span>
+					<span style="letter-spacing: 0.2em; color: rgb(var(--color-muted, 153 153 153));">••••••••••••</span>
 				</div>
 				<a href="/reset-password" class="account-text-link" style="font-size: 0.875rem;">Изменить</a>
 			</div>

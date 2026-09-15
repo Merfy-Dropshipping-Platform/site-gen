@@ -717,14 +717,14 @@ input[type="search"]::-webkit-search-results-decoration {
   font-size: 1rem;
   font-weight: 300;
   color: rgb(var(--color-foreground));
-  outline: 1px solid rgb(var(--color-text-muted));
+  outline: 1px solid rgb(var(--color-text-muted, var(--color-muted, 163 163 163)));
   outline-offset: -1px;
   background: transparent;
   transition: outline-color 0.15s ease;
 }
 
 .auth-input::placeholder {
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-text-muted, var(--color-muted, 163 163 163)));
 }
 
 .auth-input:focus,
@@ -881,6 +881,24 @@ input[type="search"]::-webkit-search-results-decoration {
 
 /* ── Account Pages ── */
 
+/*
+ * Страницы аккаунта («Заказы», «Личный кабинет», карточка заказа).
+ *
+ * Приглушённый текст берётся из ЖИВОГО токена схемы `--color-muted`. Раньше
+ * здесь стоял `--color-text-muted`, которого не существует: его объявляет
+ * только локальный контейнер `.auth-shell` страницы входа, а схемы
+ * `.color-scheme-N` и buildTokensCss — нет (замер live 2026-09-15: 18
+ * использований на `/account/orders`, 0 объявлений). Правило с несуществующим
+ * var обнуляется целиком, поэтому цвет доставался наследованием и схема на него
+ * не влияла — ровно это тестировщик описал пунктами 13 и 14.
+ *
+ * `.auth-input` выше — общий для страницы входа и формы профиля, поэтому там
+ * не замена, а цепочка: локальное значение входа остаётся, аккаунт падает на
+ * схему. Остальные `.auth-*` (ссылка, подсказка, OTP, глазок) живут только на
+ * входе и не тронуты намеренно.
+ *
+ * Гард: src/themes/__tests__/account-muted-token.spec.ts (pnpm test:account-muted).
+ */
 .account-page-container {
   width: 100%;
   padding: 3.5rem 18rem 7rem;
@@ -894,7 +912,7 @@ input[type="search"]::-webkit-search-results-decoration {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
@@ -931,7 +949,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 /* Фон — «Кнопка» схемы (разбор у `.auth-button-primary` выше). */
@@ -963,7 +981,7 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .account-text-link {
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
@@ -1015,7 +1033,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-size: 1rem;
   font-weight: 400;
   text-decoration: none;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 .account-nav-links a.active {
@@ -1048,7 +1066,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 .account-order-meta {
@@ -1059,7 +1077,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 .account-order-columns {
@@ -1122,7 +1140,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
   text-decoration: line-through;
 }
 
@@ -1130,14 +1148,14 @@ input[type="search"]::-webkit-search-results-decoration {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 .account-product-card .product-qty {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
   flex-shrink: 0;
 }
 
@@ -1169,7 +1187,7 @@ input[type="search"]::-webkit-search-results-decoration {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 400;
-  color: rgb(var(--color-text-muted));
+  color: rgb(var(--color-muted, 153 153 153));
 }
 
 .account-info-cell .info-value {

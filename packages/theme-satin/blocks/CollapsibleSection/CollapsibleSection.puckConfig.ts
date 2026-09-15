@@ -79,8 +79,17 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
       label: 'Пункты (макс 10)',
       hiddenInMainPanel: true,
       arrayFields: {
-        heading: { type: 'text', label: 'Вопрос / заголовок' },
-        content: { type: 'textarea', label: 'Ответ / содержимое' },
+        // Figma 1236-42153 (правый сайдбар «Раздел»): divider «Содержание» +
+        // Заголовок (aiText) + Текст (aiText). Общий блок переехал на этот
+        // состав 25.06; форк satin оставался на паре «Вопрос / заголовок»
+        // (text) + «Ответ / содержимое» (textarea) с 14.06 — три месяца тема
+        // показывала мерчанту чужие подписи и чужие контролы (тестировщик,
+        // пункт 59: «придать вид наших инпутов и названия Заголовок и Текст»).
+        // Дальше расхождение сторожит src/themes/__tests__/collapsible-item-fields-parity.spec.ts:
+        // пункт «Раздела» сверяется с rose, а не с константой.
+        ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
+        heading: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
       },
       defaultItemProps: {
         id: '',

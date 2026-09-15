@@ -8084,14 +8084,19 @@
             "visibility": "subpanel",
             "max": 10,
             "itemFields": {
+              "_contentSection": {
+                "type": "section-header",
+                "label": "Содержание",
+                "visibility": "panel"
+              },
               "heading": {
-                "type": "text",
-                "label": "Вопрос / заголовок",
+                "type": "aiText",
+                "label": "Заголовок",
                 "visibility": "panel"
               },
               "content": {
-                "type": "textarea",
-                "label": "Ответ / содержимое",
+                "type": "aiText",
+                "label": "Текст",
                 "visibility": "panel"
               }
             }

@@ -106,9 +106,15 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	// мерчанта = дизайн-подсказка — фото-плейсхолдер landscape-slideshow.png ФОНОМ +
 	// белая карточка (boxed) по ЦЕНТРУ полотна (заголовок/подзаголовок/кнопка). Слайд
 	// С фото мерчанта — full-bleed как раньше (boxed управляется флагом «Контейнер»).
+	// §11 Контракта секции: видимое поле панели «Изображение» (image) приоритетнее
+	// скрытого легаси «Изображение (старое)» (imageUrl). Замер 2026-09-15: канон
+	// нарушали ДВЕ темы — vanilla (пункт 61 репорта) и rose; у остальных трёх
+	// порядок правильный с коммита d7cc0ff8. Легаси почти всегда заполнено
+	// (дефолт слайда/старая ревизия), поэтому чтение его первым отменяло выбор
+	// мерчанта. Гард: src/themes/__tests__/slideshow-merchant-image.spec.ts.
 	const merchantImage =
-		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 		(typeof s.image === "string" && s.image.trim()) ||
+		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 		"";
 	const isPromptCard = !merchantImage;
 	// Карточка-подсказка включена по умолчанию (Figma), но тумблер «Контейнер: Скрыть»

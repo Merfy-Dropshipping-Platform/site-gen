@@ -16,6 +16,16 @@
  *
  * Единственная правка вёрстки против исходной страницы: фон секции взят из
  * токена `--color-bg` — иначе «Цветовая схема» красила бы текст, но не фон.
+ *
+ * Приглушённый текст (тестировщик, пункты 13 и 14: «не применяется цветовая
+ * схема к кнопке и тексту»). Раньше он красился через
+ * `rgb(var(--color-text-muted))`, а такого токена НЕТ: его не объявляют ни
+ * схемы `.color-scheme-N`, ни buildTokensCss (замер live 2026-09-15 по пяти
+ * стендам: 18 использований на страницу, 0 объявлений). `rgb(var(--НЕТ))` —
+ * invalid at computed-value time: свойство обнуляется, цвет достаётся
+ * наследованием, схема на него не влияет. Теперь берётся живой `--color-muted`
+ * с тем же фолбэком, что у эталона rose (ProductCard/Footer/Newsletter).
+ * Гард: src/themes/__tests__/account-muted-token.spec.ts.
  */
 interface Props {
 	id?: string;
@@ -47,8 +57,8 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<span class="account-subtitle" id="orders-email"></span>
 		</div>
 
-		<div id="orders-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
-		<div id="orders-empty" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-text-muted));">У вас пока нет заказов</div>
+		<div id="orders-loading" style="color: rgb(var(--color-muted, 153 153 153)); font-family: var(--font-body);">Загрузка...</div>
+		<div id="orders-empty" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-muted, 153 153 153));">У вас пока нет заказов</div>
 		<div id="orders-list" class="hidden"></div>
 	</div>
 </section>

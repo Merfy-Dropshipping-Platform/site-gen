@@ -53,7 +53,8 @@ const THEMES = ["rose", "bloom", "satin", "flux", "vanilla"] as const;
  * красный вместо четырёх).
  */
 const FORM = 'form[role="search"]';
-const PANEL_SUBMIT = '[data-search-panel] form[role="search"] button[type="submit"]';
+const PANEL_SUBMIT =
+  '[data-search-panel] form[role="search"] button[type="submit"]';
 
 /** Схема 1 и заведомо непохожая на неё Схема 3 — чтобы «до» и «после» нельзя было спутать. */
 const SCHEMES = [
@@ -132,7 +133,9 @@ function openLayersAt(css: string, at: number): string[] {
 describe("Поиск всегда красится Схемой 1", () => {
   describe("правило tokens.css", () => {
     it.each(THEMES)("%s: четыре величины берутся из Схемы 1", (theme) => {
-      const rules = searchRules(buildTokensCss({ colorSchemes: SCHEMES }, theme));
+      const rules = searchRules(
+        buildTokensCss({ colorSchemes: SCHEMES }, theme),
+      );
       expect(rules.length).toBe(3);
       const root = rules[0];
       expect(root.startsWith(`${FORM}{`)).toBe(true);
@@ -215,7 +218,9 @@ describe("Поиск всегда красится Схемой 1", () => {
 
   describe("объём — ровно четыре величины владельца", () => {
     it.each(THEMES)("%s: других свойств правило не объявляет", (theme) => {
-      const rules = searchRules(buildTokensCss({ colorSchemes: SCHEMES }, theme));
+      const rules = searchRules(
+        buildTokensCss({ colorSchemes: SCHEMES }, theme),
+      );
       const props = rules
         .flatMap((r) => r.slice(r.indexOf("{") + 1, -1).split(";"))
         .map((d) => d.slice(0, d.indexOf(":")).trim())
@@ -255,7 +260,9 @@ describe("Поиск всегда красится Схемой 1", () => {
         const rules = searchRules(
           buildTokensCss({ colorSchemes: SCHEMES }, theme),
         );
-        const painted = rules.filter((r) => r.includes('button[type="submit"]'));
+        const painted = rules.filter((r) =>
+          r.includes('button[type="submit"]'),
+        );
         expect(painted.length).toBe(1);
         expect(painted[0].startsWith("[data-search-panel] ")).toBe(true);
       }
@@ -264,16 +271,18 @@ describe("Поиск всегда красится Схемой 1", () => {
 
   describe("нулевая регрессия там, где Схемы 1 нет", () => {
     it("нет схемы с id scheme-1 — нет и правила", () => {
-      const noOne = [{ ...SCHEMES[1] }];
-      // Тема, у которой в манифесте нет своих схем, — иначе Схему 1 даст манифест.
-      expect(buildSearchScheme1Rule(pickSchemeOneTokens(""))).toBe("");
+      // Через buildTokensCss такое не воспроизвести: манифест каждой из пяти
+      // тем несёт свою Схему 1. Поэтому проверяем сами функции — именно они
+      // решают, появится правило или нет.
       expect(buildSearchScheme1Rule(null)).toBe("");
+      expect(buildSearchScheme1Rule(pickSchemeOneTokens(""))).toBe("");
       expect(
         buildSearchScheme1Rule(
           pickSchemeOneTokens(".color-scheme-3 { --color-bg: 1 2 3; }"),
         ),
       ).toBe("");
-      expect(noOne.length).toBe(1);
+      // И незнакомая тема (манифеста нет) тоже остаётся без правила.
+      expect(searchRules(buildTokensCss({}, "нет-такой-темы")).length).toBe(0);
     });
 
     it("scheme-10 мерчанта не читается как Схема 1", () => {
@@ -299,10 +308,17 @@ describe("Поиск всегда красится Схемой 1", () => {
     const ports: Array<[string, string]> = [
       ...THEMES.map(
         (t) =>
-          [t, join(process.cwd(), "themes", t, "src", "components", "Header.astro")] as [
-            string,
-            string,
-          ],
+          [
+            t,
+            join(
+              process.cwd(),
+              "themes",
+              t,
+              "src",
+              "components",
+              "Header.astro",
+            ),
+          ] as [string, string],
       ),
       [
         "theme-base",
@@ -317,27 +333,37 @@ describe("Поиск всегда красится Схемой 1", () => {
       ],
     ];
 
-    it.each(ports)("%s: панель поиска — form[role=search] с input[type=search] и кнопкой submit", (_name, file) => {
-      const src = readFileSync(file, "utf8");
-      const panelAt = src.indexOf("data-search-panel");
-      expect(panelAt).toBeGreaterThan(-1);
-      const roleAt = src.indexOf('role="search"', panelAt);
-      expect(roleAt).toBeGreaterThan(-1);
-      const formEnd = src.indexOf("</form>", roleAt);
-      expect(formEnd).toBeGreaterThan(roleAt);
-      const form = src.slice(roleAt, formEnd);
-      expect(form).toContain('type="search"');
-      expect(form).toContain('type="submit"');
-    });
+    it.each(ports)(
+      "%s: панель поиска — form[role=search] с input[type=search] и кнопкой submit",
+      (_name, file) => {
+        const src = readFileSync(file, "utf8");
+        const panelAt = src.indexOf("data-search-panel");
+        expect(panelAt).toBeGreaterThan(-1);
+        const roleAt = src.indexOf('role="search"', panelAt);
+        expect(roleAt).toBeGreaterThan(-1);
+        const formEnd = src.indexOf("</form>", roleAt);
+        expect(formEnd).toBeGreaterThan(roleAt);
+        const form = src.slice(roleAt, formEnd);
+        expect(form).toContain('type="search"');
+        expect(form).toContain('type="submit"');
+      },
+    );
 
     it.each(THEMES)(
       "%s: кнопка бургера — иконка вне [data-search-panel]",
       (theme) => {
         const src = readFileSync(
-          join(process.cwd(), "themes", theme, "src", "components", "Header.astro"),
+          join(
+            process.cwd(),
+            "themes",
+            theme,
+            "src",
+            "components",
+            "Header.astro",
+          ),
           "utf8",
         );
-        const roles = [...src.matchAll(/role="search"/g)].map((m) => m.index!);
+        const roles = [...src.matchAll(/role="search"/g)].map((m) => m.index);
         expect(roles.length).toBe(2);
         const burgerAt = roles[1];
         const form = src.slice(burgerAt, src.indexOf("</form>", burgerAt));

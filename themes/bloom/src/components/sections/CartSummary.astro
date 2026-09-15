@@ -41,7 +41,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-block="cart-summary"
 	data-cart-summary
 	class:list={[
-		"w-full bg-white px-4 md:px-20 2xl:px-[300px]",
+		"w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 md:px-20 2xl:px-[300px]",
 		schemeClass,
 		padStyle ? "" : "pb-[60px] md:pb-[80px]",
 	]}
@@ -50,8 +50,8 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
 		{!isFieldHidden("cartTotals") && (
 			<div class="cart-summary-totals flex items-center justify-end gap-6">
-				<span class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">Итого</span>
-				<span data-cart-page-total class="font-manrope text-[20px] font-normal leading-normal text-[#000000]">0 ₽</span>
+				<span class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">Итого</span>
+				<span data-cart-page-total class="font-manrope text-[20px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">0 ₽</span>
 			</div>
 		)}
 		{!isFieldHidden("cartCheckoutButton") && (
@@ -59,7 +59,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				<button
 					type="button"
 					data-action="checkout"
-					class="cart-checkout-btn inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-90 active:scale-95"
+					class="cart-checkout-btn inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
 				>
 					Оформить заказ
 				</button>

@@ -31,7 +31,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-puck-component-id={id}
 	data-block="cart-body"
 	class:list={[
-		"w-full bg-white px-4 md:px-20 2xl:px-[300px]",
+		"w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 md:px-20 2xl:px-[300px]",
 		schemeClass,
 		padStyle ? "" : "pb-[60px] pt-16 md:pb-[80px] md:pt-20",
 	]}
@@ -46,7 +46,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		>
 			<h1
 				id="cart-title"
-				class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px]"
+				class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]"
 			>
 				Корзина
 			</h1>
@@ -55,13 +55,13 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			</p>
 			<a
 				href="/catalog"
-				class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[#000000] px-6 font-manrope text-[16px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
+				class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 			>
 				Продолжить покупки
 			</a>
 			<p class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]">
 				Есть аккаунт?
-				<a href="/auth/sign-in" class="text-[#000000] hover:opacity-80">Войти</a>
+				<a href="/auth/sign-in" class="text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">Войти</a>
 			</p>
 		</div>
 
@@ -70,7 +70,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			data-cart-page-filled
 			class="hidden flex-col gap-10"
 		>
-			<h1 class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[#000000] md:text-[32px]">
+			<h1 class="font-comfortaa text-[28px] font-normal uppercase leading-[1.115] text-[rgb(var(--color-heading,0_0_0))] md:text-[32px]">
 				Корзина
 			</h1>
 			<ul
@@ -110,7 +110,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		itemsEl.innerHTML = lines
 			.map((line, index, arr) => {
 				const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
-				const borderClass = index === arr.length - 1 ? "" : "border-b border-[#F5F5F5] pb-6";
+				const borderClass = index === arr.length - 1 ? "" : "border-b border-[rgb(var(--color-muted,153_153_153)/0.3)] pb-6";
 				return `
 					<li class="flex flex-col gap-4 ${borderClass} md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
 						<div class="flex gap-4">
@@ -118,18 +118,18 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex flex-col gap-2">
-								<a href="/products/${line.productId}" class="font-manrope text-[16px] font-normal text-[#000000] hover:opacity-80 md:text-[20px]">${line.name}</a>
+								<a href="/products/${line.productId}" class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[20px]">${line.name}</a>
 								${variant ? `<span class="font-manrope text-[14px] font-light text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
-								<button type="button" data-cart-remove data-id="${line.id}" class="w-fit font-manrope text-[14px] font-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[#000000]">Удалить</button>
+								<button type="button" data-cart-remove data-id="${line.id}" class="w-fit font-manrope text-[14px] font-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[rgb(var(--color-text,0_0_0))]">Удалить</button>
 							</div>
 						</div>
 						<div class="flex items-center justify-between gap-6 md:flex-col md:items-end md:justify-start md:gap-3">
-							<div class="inline-flex h-10 items-center rounded-[4px] border border-[#F5F5F5]">
+							<div class="inline-flex h-10 items-center rounded-[4px] border border-[rgb(var(--color-muted,153_153_153)/0.3)]">
 								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Уменьшить">−</button>
 								<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
 								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Увеличить">+</button>
 							</div>
-							<span class="font-manrope text-[16px] font-normal text-[#000000] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
+							<span class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
 						</div>
 					</li>
 				`;

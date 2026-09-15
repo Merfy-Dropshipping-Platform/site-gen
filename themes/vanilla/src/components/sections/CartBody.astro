@@ -32,7 +32,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-puck-component-id={id}
 	data-block="cart-body"
 	class:list={[
-		"vanilla-pad w-full bg-white",
+		"vanilla-pad w-full bg-[rgb(var(--color-bg,255_255_255))]",
 		schemeClass,
 		padStyle ? "" : "py-12 md:py-16 lg:py-20",
 	]}
@@ -191,7 +191,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 <style>
 	.vanilla-button-cart {
-		color: #ffffff;
+		color: var(--vanilla-button-text, #ffffff);
 		background: var(--vanilla-header-bg);
 		border-color: var(--vanilla-header-bg);
 		min-height: 48px;

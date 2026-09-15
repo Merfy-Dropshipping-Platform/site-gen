@@ -79,6 +79,7 @@
     "test:catalog-filters-mobile": "jest --runInBand src/themes/__tests__/catalog-filters-mobile.spec.ts",
     "test:flux-edge-veil": "jest --runInBand src/themes/__tests__/flux-section-edge-veil.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
+    "test:scheme-targets": "jest --runInBand src/themes/__tests__/section-scheme-targets.spec.ts",
     "test:product-description": "jest --runInBand src/themes/__tests__/product-description-heading.spec.ts",
     "test:product-description-spacing": "jest --runInBand src/themes/__tests__/product-description-spacing.spec.ts",
     "test:product-name-case": "jest --runInBand src/themes/__tests__/product-name-text-case.spec.ts",

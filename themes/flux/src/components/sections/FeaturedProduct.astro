@@ -262,12 +262,30 @@ const href = isPlaceholder ? "/catalog" : productHref(realProduct);
 //   two-columns    — все фото равной сеткой 2×N, без главного.
 const isSplit = layout === "split";
 const isTwoCols = layout === "two-columns";
+// «Сложенный» — СЕТКА на ВСЮ ширину колонки-галереи, плитки тянутся по ячейке.
+// Было `grid grid-cols-3 gap-3` у плиток с ФИКСИРОВАННОЙ стороной
+// `size-[…var(--product-thumb-size,120px)]`: сетка внутри flex-строки
+// сжималась по содержимому, и лента занимала 384px из 652 (59 %), а на
+// планшете (768–1023px, колонка на всю ширину) — 384 из 736 (52 %). Замер
+// 15.09, Chromium: у остальных четырёх тем «Сложенный» — 552 из 552 (100 %),
+// и у самого flux «Карусель» 596/652 (91 %), «2 колонки» — сетка во всю
+// ширину. То есть из четырёх макетов не заполнял колонку ровно «Сложенный».
 const thumbsTrackCls =
 	layout === "stacked"
-		? "grid grid-cols-3 gap-3"
+		? "grid w-full grid-cols-3 gap-3"
 		: isSplit
 			? "flex flex-col items-start gap-3"
 			: "no-scrollbar flex flex-1 items-center gap-3 overflow-x-auto";
+/**
+ * Сторона миниатюры. В «Сложенном» её задаёт ЯЧЕЙКА сетки (плитка квадратная
+ * и растягивается), в остальных макетах — фиксированный размер из «Размера»
+ * секции: там лента прокручивается или стоит колонкой, и тянуть плитку не по
+ * чему.
+ */
+const thumbSizeCls =
+	layout === "stacked"
+		? "aspect-square w-full"
+		: "size-[88px] md:size-[var(--product-thumb-size,120px)]";
 const galleryColCls = isSplit
 	? "flex w-full flex-row-reverse items-start gap-4 lg:w-[var(--product-main-image-size,652px)] lg:min-w-0"
 	: "flex w-full flex-col gap-4 lg:w-[var(--product-main-image-size,652px)] lg:min-w-0";
@@ -339,7 +357,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 <section
 	id="featured"
-	class:list={["w-full bg-white", schemeClass]}
+	class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", schemeClass]}
 	aria-label={displayName}
 	data-puck-component-id={id}
 	data-block="featured-product"
@@ -385,7 +403,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					   гонял свап и файлы меняли места. */
 					<div class="grid w-full grid-cols-2 gap-4">
 						{galleryImages.map((img, i) => (
-							<div data-cfg-hero={i === 0 ? "" : undefined} data-media-index={i} data-image={img} class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label={displayName}>
+							<div data-cfg-hero={i === 0 ? "" : undefined} data-media-index={i} data-image={img} class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-label={displayName}>
 								{i === 0 ? (
 									<FluxPicture src={img} alt={displayName} width="326" height="326" loading="eager" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 								) : (
@@ -396,7 +414,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				) : (
 				<>
-				<div data-cfg-hero class:list={["relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
+				<div data-cfg-hero class:list={["relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]", isSplit && "min-w-0 flex-1"]} aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="652" height="652" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (
@@ -404,14 +422,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 				</div>
 				{thumbs.length > 1 && !isTwoCols && (
-					<div class:list={[isSplit ? "flex flex-col gap-3" : "flex items-center gap-3"]}>
+					<div class:list={[isSplit ? "flex flex-col gap-3" : "flex w-full items-center gap-3"]}>
 						<div class={thumbsTrackCls} data-cfg-thumbs-track>
 							{thumbs.map((img, i) => (
 								<button
 									type="button"
 									class:list={[
-										"size-[88px] shrink-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5] transition-opacity hover:opacity-90 md:size-[var(--product-thumb-size,120px)]",
-										i === 0 ? "border border-solid border-[#1e2952]/50" : "",
+										thumbSizeCls,
+										"shrink-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] transition-opacity hover:opacity-90",
+										i === 0 ? "border border-solid border-[rgb(var(--color-button-bg,30_41_82))]/50" : "",
 									]}
 									data-cfg-thumb
 									data-media-index={i}
@@ -449,7 +468,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 					{!isFieldHidden('title') && (
 					<h1
-						class={`font-roboto-flex ${titleSizeCls} font-light leading-normal text-[#000000]`}
+						class={`font-roboto-flex ${titleSizeCls} font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]`}
 						data-cfg-name
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
@@ -460,7 +479,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 					{!isFieldHidden('price') && (
 					<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
-						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000] md:text-[20px]" data-cfg-price>
+						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]" data-cfg-price>
 							{displayPrice}
 						</span>
 						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
@@ -492,7 +511,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
 							<NtIcon name="minus" sizeClass="size-4" />
 						</button>
-						<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[#1e2952]" data-cfg-qty-value>1</span>
+						<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))]" data-cfg-qty-value>1</span>
 						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
 							<NtIcon name="plus" sizeClass="size-4" />
 						</button>
@@ -507,7 +526,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								type="button"
 								data-cfg-add
 								{...addToCartAttrs}
-								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[#1e2952] bg-white px-6 font-roboto-flex text-[16px] font-light leading-none text-[#1e2952] transition-colors hover:bg-[#1e2952] hover:text-white"
+								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-6 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
 							>
 								{addBtnText}
 							</button>
@@ -516,7 +535,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<button
 								type="button"
 								data-cfg-buy
-								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[#1e2952] px-6 font-roboto-flex text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90"
+								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,30_41_82))] px-6 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 							>
 								{buyBtnText}
 							</button>
@@ -541,7 +560,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="107"
 					data-puck-subsection-field="share"
-					class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70"
+					class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70"
 					aria-label={shareText}
 				>
 					<NtIcon name="share" sizeClass="size-6" />
@@ -555,7 +574,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div class="flex w-full flex-col gap-6 md:hidden" data-nt="product-configurator">
 			<!-- Фото: карусель + бейджи -->
 			<div class="relative w-full" data-cfg-carousel data-cfg-images={galleryImages.join("|")}>
-				<div data-cfg-hero class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[#F5F5F5]" aria-label={displayName}>
+				<div data-cfg-hero class="relative block aspect-square w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-label={displayName}>
 					{isPlaceholder ? (
 						<img src={mainImage} alt={displayName} width="343" height="343" loading="eager" fetchpriority="high" class="absolute inset-0 h-full w-full object-cover" data-cfg-main />
 					) : (
@@ -565,7 +584,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 				{showBadges && (
 					<div class="absolute left-[18px] top-1 flex flex-col items-start gap-1">
-						<span class="inline-flex items-center justify-center rounded-[2px] bg-[#1e2952] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white">{salePercentText}</span>
+						<span class="inline-flex items-center justify-center rounded-[2px] bg-[rgb(var(--color-button-bg,30_41_82))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))]">{salePercentText}</span>
 					</div>
 				)}
 
@@ -587,13 +606,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<p class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]" data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="text" set:html={inlineFormat(displayBrand)}></p>
 				)}
 				{!isFieldHidden('title') && (
-				<h1 class="font-roboto-flex text-[19px] font-light leading-normal text-[#000000]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
+				<h1 class="font-roboto-flex text-[19px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]" data-cfg-name data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="title">
 					{displayName}
 				</h1>
 				)}
 				{!isFieldHidden('price') && (
 				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
-					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[#000000]" data-cfg-price>{displayPrice}</span>
+					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]" data-cfg-price>{displayPrice}</span>
 					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
 				</div>
 				)}
@@ -620,7 +639,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
 						<NtIcon name="minus" sizeClass="size-4" />
 					</button>
-					<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[#1e2952]" data-cfg-qty-value>1</span>
+					<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))]" data-cfg-qty-value>1</span>
 					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
 						<NtIcon name="plus" sizeClass="size-4" />
 					</button>
@@ -635,13 +654,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							type="button"
 							data-cfg-add
 							{...addToCartAttrs}
-							class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[#1e2952] bg-white px-4 font-roboto-flex text-[16px] font-light leading-none text-[#1e2952] transition-colors hover:bg-[#1e2952] hover:text-white"
+							class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
 						>
 							{addBtnText}
 						</button>
 					)}
 					{showBuyNow && (
-						<button type="button" data-cfg-buy class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[#1e2952] px-4 font-roboto-flex text-[16px] font-light leading-none text-white transition-opacity hover:opacity-90">
+						<button type="button" data-cfg-buy class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90">
 							{buyBtnText}
 						</button>
 					)}
@@ -665,7 +684,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="107"
 				data-puck-subsection-field="share"
-				class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light leading-normal text-[#000000] transition-opacity hover:opacity-70"
+				class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70"
 				aria-label={shareText}
 			>
 				<NtIcon name="share" sizeClass="size-6" />
@@ -733,8 +752,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				galleryRoot.querySelectorAll<HTMLElement>("[data-cfg-thumb]").forEach((t) => {
 					const isActive = t === thumb;
 					t.setAttribute("aria-current", isActive ? "true" : "false");
-					if (isActive) t.classList.add("border", "border-solid", "border-[#1e2952]/50");
-					else t.classList.remove("border", "border-solid", "border-[#1e2952]/50");
+					if (isActive) t.classList.add("border", "border-solid", "border-[rgb(var(--color-button-bg,30_41_82))]/50");
+					else t.classList.remove("border", "border-solid", "border-[rgb(var(--color-button-bg,30_41_82))]/50");
 				});
 			});
 		});

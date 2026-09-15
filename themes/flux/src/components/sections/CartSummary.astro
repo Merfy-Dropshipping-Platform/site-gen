@@ -42,7 +42,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-block="cart-summary"
 	data-cart-summary
 	class:list={[
-		"w-full bg-white",
+		"w-full bg-[rgb(var(--color-bg,255_255_255))]",
 		schemeClass,
 		padStyle ? "" : "pb-[80px] md:pb-[120px]",
 	]}

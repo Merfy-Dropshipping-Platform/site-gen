@@ -298,6 +298,10 @@ export class SitesMicroserviceController {
         actorUserId,
         setCurrent,
         expectedCurrentRevisionId,
+        // B17: внешний путь сохранения. Конструктор шлёт всю карту страниц,
+        // включая досеянные сервером на чтении, — отсеиваем их здесь, иначе
+        // они вмораживаются в ревизию и правки темы до них больше не доходят.
+        filterSeededPages: true,
       });
       return { success: true, ...res };
     } catch (e: any) {

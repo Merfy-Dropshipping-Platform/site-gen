@@ -121,23 +121,28 @@ const backgroundImage2 = _bg1Filled && _bg2Filled ? _bg2Raw : undefined;
 //     родных #E38E9F по §7).
 //   заголовок large 18/20 → medium 15/17 → small 13/14
 //   текст     large 14/16 → medium 12/14 → small 10/11
-// Канон rose: текст ПОВЕРХ фото = белый. Светлая scheme-3 (--color-heading чёрный)
-// + затемнение → текст «пропадает». Не читаем scheme-токен на фото: !text-white.
-// Контейнер (boxed) сам переключает на тёмный через [&_h1]/[&_p].
+// Канон rose (решение владельца 2026-09-15 по багу тестера «зашито белым»): цвет
+// текста ПОВЕРХ фото решает СХЕМА, белое остаётся только фолбэком переменной.
+// Правило НЕ здесь — общий источник packages/theme-base/styles/hero-over-photo.css
+// (подключён в src/styles/global.css), классы hero-over-photo-heading/-text; своих
+// литералов цвета у порта больше нет. Читаемость держит ЗАТЕМНЕНИЕ ниже по
+// разметке: постоянный градиент from-black/45 to-black/10 над фото + ползунок
+// «Затемнение» (overlay). Контейнер (boxed) сильнее — переключает на тёмный
+// через [&_h1]/[&_p] (important).
 const headingSize = p.heading?.size;
 const headingCls =
 	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal leading-none !text-white md:text-[14px]"
+		? "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]"
 		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal leading-none !text-white md:text-[17px]"
-			: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none !text-white md:text-[20px]";
+			? "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]"
+			: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
-		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] !text-white md:text-[11px]"
+		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] hero-over-photo-text md:text-[11px]"
 		: textSize === "medium"
-			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] !text-white md:text-[14px]"
-			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] !text-white md:text-[16px]";
+			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] hero-over-photo-text md:text-[14px]"
+			: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]";
 // «Размер» → высота секции (вьюпорт). Раньше высоту Hero диктовал aspect-[...] на
 // height-div'е, перебивая min-h от size → регулятор «Размер» не влиял (паритет бага
 // rose). Фикс: aspect убран с обоих height-div'ов (empty + filled), высоту ведёт
@@ -274,7 +279,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-urbanist text-[18px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]"
+								class="font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -284,7 +289,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{!isFieldHidden('text') && (
 							<p
-								class="font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
+								class="font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"

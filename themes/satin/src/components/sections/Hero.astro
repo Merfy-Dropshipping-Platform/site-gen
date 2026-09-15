@@ -300,6 +300,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   surface-тона на всю секцию + overlay-лейбл «Изображение» + хелпер-текст +
 		   кнопка «Кнопка». Без мок-фото и без split-контента верстальщика
 		   («Заголовок»/«Поясняющий текст»). Эталон — rose Hero.astro isEmpty-ветка.
+		   Цвет заголовка/текста ПОВЕРХ фото — общий источник packages/theme-base/
+		   styles/hero-over-photo.css (решает схема, белое — только фолбэк
+		   переменной); читаемость держит градиент from-black/30 to-black/45 ниже.
 		   Puck-subsection-атрибуты сохранены (heading=100, text=101,
 		   primaryButton=102) — блок остаётся выделяемым/редактируемым в конструкторе. */
 		<section
@@ -323,7 +326,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-logo text-[26px] font-normal leading-[1.08] text-white md:text-[32px]"
+								class="font-logo text-[26px] font-normal leading-[1.08] hero-over-photo-heading md:text-[32px]"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -333,7 +336,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{!isFieldHidden('text') && (
 							<p
-								class="font-manrope text-[16px] font-light tracking-[0.04em] text-white/80"
+								class="font-manrope text-[16px] font-light tracking-[0.04em] hero-over-photo-text"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"

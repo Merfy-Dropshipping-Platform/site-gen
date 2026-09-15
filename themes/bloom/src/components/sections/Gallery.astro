@@ -161,9 +161,23 @@ const sideTiles = galleryTiles.slice(1);
 // Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
 // половину рядом с пустотой.
 const soloTile = galleryTiles.length === 1;
-const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
+// Колонки НЕ пополам (ориентир — rose, владелец 2026-09-15). Справа стопка из
+// почти квадратных плиток 652/594 с подписями: при `lg:grid-cols-2` она вдвое
+// выше квадратной большой плитки, и под большой зияла дыра (замер Chromium
+// 1440px: разбег низов 656px против 0 у rose и flux). Узкая боковая колонка
+// (rose: minmax(280px,429px)) выравнивает высоты: большая плитка тянется по
+// строке и остаётся почти квадратной.
+const gridColsCls = mirror
+	? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
+	: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
+const gridLayoutCls = soloTile ? "lg:grid-cols-1" : gridColsCls;
 // Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
-const heroSizeCls = soloTile ? "aspect-[16/9]" : "aspect-square";
+// В паре с колонкой высоту большой плитке задаёт СТРОКА (`lg:h-full`), а не
+// собственный аспект — иначе низы колонок не сходятся ни при каких данных
+// (паритет rose `lg:min-h-0 lg:h-full`, flux `lg:aspect-auto lg:h-full`).
+const heroSizeCls = soloTile
+	? "aspect-[16/9]"
+	: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -212,11 +226,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			></h2>
 		))}
 
-		<div class={`grid grid-cols-1 items-start gap-4 ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
+		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4 lg:items-stretch ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`group relative block ${heroSizeCls} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
+					class={`group relative block ${heroSizeCls} w-full min-w-0 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}
@@ -236,7 +250,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex w-full max-w-[652px] flex-col gap-5 lg:max-w-none${sideOrderCls}`}>
+				<div class={`flex w-full min-h-0 min-w-0 flex-col gap-5${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}

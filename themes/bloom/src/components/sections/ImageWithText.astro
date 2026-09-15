@@ -120,10 +120,14 @@ const btnHref =
 	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	"/catalog";
 
-// Канон ctaPosition: 'bottom-pinned' (canon-default из theme.json blockDefaults)
-// и отсутствие = кнопка прижата к нижней кромке текстовой колонки (mt-auto,
-// колонка h-full); 'inline' — кнопка сразу под текстом.
-const inlineCta = p.ctaPosition === "inline";
+// Канон ctaPosition (скрытое поле панели): 'inline' (canon-default блока) и
+// отсутствие = кнопка сразу под текстом; 'bottom-pinned' — кнопка прижата к
+// нижней кромке текстовой колонки (mt-auto, колонка h-full).
+// blockDefaults темы держали 'bottom-pinned', и на дефолтных данных между
+// текстом и кнопкой зияло 460px (замер Chromium 1440px; rose 32, flux 40).
+// Это не особенность порта: с тем же пропом rose даёт 524px, flux 449px —
+// значение сняли из theme.json, порт остался прежним.
+const inlineCta = p.ctaPosition !== "bottom-pinned";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -148,7 +152,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div
-		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2${containerSchemeCls}`}
+		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 lg:items-center${containerSchemeCls}`}
 		data-animate
 	>
 		{!isFieldHidden('image') && (

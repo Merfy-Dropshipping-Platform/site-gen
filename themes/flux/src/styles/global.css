@@ -21,6 +21,47 @@
   --color-accent: #FA5109;
 }
 
+/* Контейнер темы — сетка боковых полей flux. ЕДИНСТВЕННОЕ объявление.
+
+   Класс `flux-container` носили секции порта, но правила у него не было ни
+   одного: в собранном CSS темы подстрока `flux-container` встречалась 0 раз.
+   Замер на живом стенде (окно 1440) показывал `width 1440, x 0, max-width none,
+   padding 0` — секция «Товар» (единственная, кто остался на голом классе, см.
+   components/sections/FeaturedProduct.astro) шла от кромки до кромки, тогда как
+   её соседи по главной держали поле 80 px. Мёртвый владелец записан в
+   flux-baseline/PHASE-2.md:102.
+
+   Числа — не новые: это ровно та лестница, которую остальные секции темы уже
+   рисуют утилитами `mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80`
+   (она же продублирована словами в components/Footer.astro:189 и
+   sections/Collections.astro:197). Здесь она получает владельца, и «Товар»
+   встаёт по одной линии с соседями на каждом окне, а не по своей.
+
+   Только `padding-inline`: вертикаль у секций своя (`py-*` либо инлайн-стиль от
+   настройки «Отступы»), и шорткат `padding` её бы стёр.
+
+   @layer base — чтобы утилиты (@layer utilities) могли перебить контейнер там,
+   где секции это осознанно делают. Вне слоёв правило било бы ЛЮБУЮ утилиту:
+   `flux-container px-0` молча перестал бы работать. */
+@layer base {
+  .flux-container {
+    width: 100%;
+    max-width: 1920px;
+    margin-inline: auto;
+    padding-inline: 1rem; /* px-4 */
+  }
+  @media (width >= 48rem) {
+    .flux-container {
+      padding-inline: 5rem; /* md:px-20 */
+    }
+  }
+  @media (width >= 96rem) {
+    .flux-container {
+      padding-inline: 20rem; /* 2xl:px-80 */
+    }
+  }
+}
+
 /* Заголовки — переключаемый токен (picker → --font-heading); дефолт Roboto Flex по Figma.
    .font-comfortaa используют все заголовки + DS NtSectionHeading (хардкодит этот класс). */
 .font-comfortaa {

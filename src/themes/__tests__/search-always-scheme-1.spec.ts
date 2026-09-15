@@ -46,6 +46,15 @@ import {
 
 const THEMES = ["rose", "bloom", "satin", "flux", "vanilla"] as const;
 
+/**
+ * Селекторы записаны ЛИТЕРАЛАМИ, а не взяты из констант модуля: иначе ожидание
+ * выводилось бы из того самого, что сторожим, и подмена селектора прошла бы
+ * мимо теста (проверено саботажем — снятие `[data-search-panel]` давало один
+ * красный вместо четырёх).
+ */
+const FORM = 'form[role="search"]';
+const PANEL_SUBMIT = '[data-search-panel] form[role="search"] button[type="submit"]';
+
 /** Схема 1 и заведомо непохожая на неё Схема 3 — чтобы «до» и «после» нельзя было спутать. */
 const SCHEMES = [
   {
@@ -87,7 +96,7 @@ const SCHEME_3 = {
 function searchRules(css: string): string[] {
   return css
     .split("\n")
-    .filter((line) => line.startsWith(SEARCH_FORM_SELECTOR))
+    .filter((line) => line.startsWith(FORM))
     .flatMap((line) => line.match(/[^}]+\}/g) ?? []);
 }
 
@@ -126,17 +135,17 @@ describe("Поиск всегда красится Схемой 1", () => {
       const rules = searchRules(buildTokensCss({ colorSchemes: SCHEMES }, theme));
       expect(rules.length).toBe(3);
       const root = rules[0];
-      expect(root.startsWith(`${SEARCH_FORM_SELECTOR}{`)).toBe(true);
+      expect(root.startsWith(`${FORM}{`)).toBe(true);
       expect(root).toContain(`--color-bg:${SCHEME_1.bg};`);
       expect(root).toContain(`--color-text:${SCHEME_1.text};`);
       expect(root).toContain(`--color-button-bg:${SCHEME_1.buttonBg};`);
       expect(root).toContain(`--color-button-text:${SCHEME_1.buttonText};`);
       expect(root).toContain("background-color:rgb(var(--color-bg));");
       expect(rules[1]).toBe(
-        `${SEARCH_FORM_SELECTOR} input[type="search"]{color:rgb(var(--color-text));}`,
+        `${FORM} input[type="search"]{color:rgb(var(--color-text));}`,
       );
       expect(rules[2]).toBe(
-        `${SEARCH_PANEL_SUBMIT_SELECTOR}{background-color:rgb(var(--color-button-bg));color:rgb(var(--color-button-text));}`,
+        `${PANEL_SUBMIT}{background-color:rgb(var(--color-button-bg));color:rgb(var(--color-button-text));}`,
       );
     });
 
@@ -177,11 +186,11 @@ describe("Поиск всегда красится Схемой 1", () => {
 
     it.each(THEMES)("%s: правило не завёрнуто в @layer", (theme) => {
       const css = buildTokensCss({ colorSchemes: SCHEMES }, theme);
-      let at = css.indexOf(SEARCH_FORM_SELECTOR);
+      let at = css.indexOf(FORM);
       expect(at).toBeGreaterThan(-1);
       while (at > -1) {
         expect(openLayersAt(css, at)).toEqual([]);
-        at = css.indexOf(SEARCH_FORM_SELECTOR, at + 1);
+        at = css.indexOf(FORM, at + 1);
       }
     });
 
@@ -240,9 +249,16 @@ describe("Поиск всегда красится Схемой 1", () => {
     it("кнопка красится только в выпадающей панели", () => {
       // В мобильном бургере `button[type="submit"]` — голая иконка без фона во
       // всех пяти темах; заливка была бы изменением сверх просьбы.
-      expect(SEARCH_PANEL_SUBMIT_SELECTOR.startsWith("[data-search-panel] ")).toBe(
-        true,
-      );
+      expect(SEARCH_PANEL_SUBMIT_SELECTOR).toBe(PANEL_SUBMIT);
+      expect(SEARCH_FORM_SELECTOR).toBe(FORM);
+      for (const theme of THEMES) {
+        const rules = searchRules(
+          buildTokensCss({ colorSchemes: SCHEMES }, theme),
+        );
+        const painted = rules.filter((r) => r.includes('button[type="submit"]'));
+        expect(painted.length).toBe(1);
+        expect(painted[0].startsWith("[data-search-panel] ")).toBe(true);
+      }
     });
   });
 

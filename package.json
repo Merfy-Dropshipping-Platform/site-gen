@@ -77,6 +77,8 @@
     "test:collection-card": "jest --runInBand src/themes/__tests__/collection-card-settings.spec.ts",
     "test:catalog-scheme": "jest --runInBand src/themes/__tests__/catalog-single-scheme.spec.ts",
     "test:catalog-filters-mobile": "jest --runInBand src/themes/__tests__/catalog-filters-mobile.spec.ts",
+    "test:catalog-layout-mobile": "jest --runInBand src/themes/__tests__/catalog-layout-mobile.spec.ts",
+    "test:catalog-filter-rows": "jest --runInBand src/themes/__tests__/catalog-filter-rows-tap.spec.ts",
     "test:flux-edge-veil": "jest --runInBand src/themes/__tests__/flux-section-edge-veil.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
     "test:scheme-targets": "jest --runInBand src/themes/__tests__/section-scheme-targets.spec.ts",
@@ -89,7 +91,8 @@
     "test:muted-text": "jest --runInBand src/themes/__tests__/muted-text-follows-scheme.spec.ts",
     "test:grey-literals": "jest --runInBand src/themes/__tests__/grey-literals-follow-scheme.spec.ts",
     "test:page-padding": "jest --runInBand src/themes/__tests__/page-section-theme-padding.spec.ts",
-    "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts"
+    "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts",
+    "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts"
   },
   "dependencies": {
     "@astrojs/compiler": "^3.0.1",

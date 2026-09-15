@@ -115,15 +115,21 @@ const wishlistOutlineSvg =
 			<span data-wishlist-icon class="block size-[18px]" set:html={wishlistOutlineSvg} />
 		</button>
 	</div>
+	{/* Имя и цена — роль «Текст» схемы (жалоба владельца, пункт 11: «названия
+	    товаров и цены мелкие и тёмные, не красные»). Было `text-black` — тот
+	    же баг, что уже чинили в placeholder-ветке ниже по файлу (см. Popular.astro
+	    комментарий про `--color-black` без роли в схеме). Эталон rose:
+	    .rose-product-name/.rose-product-price → `text-[rgb(var(--color-text,0_0_0))]`.
+	    Фолбэк-триплет 0 0 0 = прежний чёрный vanilla. Сторож: pnpm test:scheme-targets. */}
 	<div class="flex flex-col gap-1">
 		<a
 			href={href}
-			class="font-vanilla-arsenal text-base font-normal leading-none text-black transition-opacity hover:opacity-70"
+			class="font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
 		>
 			{product.name}
 		</a>
 		<div class="flex flex-wrap items-baseline gap-2">
-			<span class="font-vanilla-arsenal text-base font-normal leading-none text-black">
+			<span class="font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">
 				{product.price}
 			</span>
 			{product.oldPrice && (

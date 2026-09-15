@@ -759,7 +759,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -767,8 +767,21 @@ blockquote {
   cursor: pointer;
 }
 
+/* Наведение — «Фон/Текст при наведении» СХЕМЫ (жалоба владельца, пункт 12:
+   «Вход»/«Заказы»/«Личный кабинет» — текст в кнопке и наведение не работают).
+   Было `filter: brightness(0.85)`: генерик-затемнение, которое не читает ни
+   `--color-button-bg-hover`, ни `--color-button-text-hover` — настройки
+   мерчанта из панели «Фон / При наведении», «Текст / При наведении» не
+   влияли на вид кнопки НИКАК. Класс `.auth-button-primary` — семантическое
+   имя (не Tailwind-утилита с цветом в самом имени класса), поэтому его не
+   ловит общий подстрочный hover-фикс `[class*="bg-[rgb(var(--color-button-bg"]`
+   чуть ниже по файлу (тот чинит ТОЛЬКО литеральные Tailwind-классы). Фолбэк —
+   базовый цвет кнопки, если мерчант hover не задавал (совпадает с прежним
+   видимым эффектом только у мерчантов без своей схемы). Сторож:
+   pnpm test:scheme-targets. */
 .auth-button-primary:hover:not(:disabled) {
-  filter: brightness(0.85);
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .auth-button-primary:disabled {
@@ -963,11 +976,15 @@ blockquote {
   gap: 0.625rem;
   border: none;
   cursor: pointer;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
+/* Наведение — та же роль схемы, тот же баг, что у `.auth-button-primary»
+   выше (пункт 12: «Заказы»/«Личный кабинет» — кнопка «Перейти»/«Сохранить»).
+   Сторож: pnpm test:scheme-targets. */
 .account-button:hover:not(:disabled) {
-  filter: brightness(0.85);
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .account-button:disabled {

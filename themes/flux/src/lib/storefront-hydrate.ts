@@ -992,11 +992,18 @@ export function findCombination(
   );
 }
 
+// Чипы вариантов (жалоба владельца, пункт 5: «вариации») стояли на литералах
+// #000000/white — чёрно-белые НА ЛЮБОЙ схеме. Роли — «Кнопка»/«Фон»
+// (тот же выбор, что у add-to-cart-кнопки этой секции: выбран = заливка
+// button-bg/button-text, не выбран = обводка button-bg по button-bg на фоне
+// bg). Фолбэк-триплеты = прежние #000000/#ffffff — байт-в-байт старый вид у
+// магазина без своей схемы. Сторож: pnpm test:scheme-targets.
 const VARIANT_BTN_BASE =
-  "inline-flex h-10 shrink-0 items-center justify-center rounded-[6px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[#000000] focus-visible:ring-offset-2";
-const VARIANT_BTN_SEL = "border-0 !bg-[#000000] !text-white hover:opacity-95";
+  "inline-flex h-10 shrink-0 items-center justify-center rounded-[6px] px-3 py-2.5 text-[14px] font-normal leading-normal outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[rgb(var(--color-button-bg,0_0_0))] focus-visible:ring-offset-2";
+const VARIANT_BTN_SEL =
+  "border-0 !bg-[rgb(var(--color-button-bg,0_0_0))] !text-[rgb(var(--color-button-text,255_255_255))] hover:opacity-95";
 const VARIANT_BTN_UNSEL =
-  "border border-solid border-[#000000] !bg-white !text-[#000000] hover:opacity-90";
+  "border border-solid border-[rgb(var(--color-button-bg,0_0_0))] !bg-[rgb(var(--color-bg,255_255_255))] !text-[rgb(var(--color-button-bg,0_0_0))] hover:opacity-90";
 
 /**
  * Общая обёртка ОДНОЙ группы вариантов: `<div data-pdp-variant-group>` +
@@ -1010,7 +1017,7 @@ function renderVariantGroupWrapper(
   controlHtml: string,
 ): string {
   return `<div class="flex w-full flex-col gap-2 font-manrope" data-pdp-variant-group="${escapeHtml(groupName)}">
-	<span class="font-manrope text-[14px] font-normal leading-none text-[#000000]">${escapeHtml(groupName)}</span>
+	<span class="font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-heading,0_0_0))]">${escapeHtml(groupName)}</span>
 	${controlHtml}
 </div>`;
 }
@@ -1042,8 +1049,10 @@ export function renderVariantGroupsHtml(
           // Tailwind-скан превью-шелла: классы вроде h-7 дают 0×0 — реестр 2026-08-10).
           const radius = shape === "circle" ? "border-radius:9999px;" : "border-radius:0;";
           if (shaped && hex) {
-            const border = isSel ? "border-color:#000000;" : "border-color:rgba(0,0,0,0.2);";
-            return `<button type="button" class="relative inline-flex shrink-0 items-center justify-center border-2 border-solid bg-white p-0 transition-opacity hover:opacity-90" style="width:40px;height:40px;${radius}${border}" role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}" data-variant-swatch aria-label="${escapeHtml(v)}" title="${escapeHtml(v)}"><span style="display:block;width:28px;height:28px;background:${hex};${radius}"></span></button>`;
+            const border = isSel
+              ? "border-color:rgb(var(--color-button-bg,0 0 0));"
+              : "border-color:rgb(var(--color-button-bg,0 0 0) / 0.2);";
+            return `<button type="button" class="relative inline-flex shrink-0 items-center justify-center border-2 border-solid bg-[rgb(var(--color-bg,255_255_255))] p-0 transition-opacity hover:opacity-90" style="width:40px;height:40px;${radius}${border}" role="radio" aria-checked="${isSel}" data-variant-value="${escapeHtml(v)}" data-variant-swatch aria-label="${escapeHtml(v)}" title="${escapeHtml(v)}"><span style="display:block;width:28px;height:28px;background:${hex};${radius}"></span></button>`;
           }
           const cls = `${VARIANT_BTN_BASE} ${isSel ? VARIANT_BTN_SEL : VARIANT_BTN_UNSEL}`;
           const shapedTextStyle = shaped ? ` style="${radius}min-width:40px;padding-left:8px;padding-right:8px;"` : "";
@@ -1077,7 +1086,7 @@ export function renderVariantSelectsHtml(
           return `<option value="${escapeHtml(v)}"${isSel ? " selected" : ""}>${escapeHtml(v)}</option>`;
         })
         .join("");
-      const control = `<select class="h-10 w-full rounded-[6px] border border-solid border-[#000000] bg-white px-3 font-manrope text-[14px] font-normal leading-normal text-[#000000] outline-none" data-variant-select data-variant-key="${escapeHtml(g.name)}" aria-label="${escapeHtml(g.name)}">${options}</select>`;
+      const control = `<select class="h-10 w-full rounded-[6px] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-bg,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-button-bg,0_0_0))] outline-none" data-variant-select data-variant-key="${escapeHtml(g.name)}" aria-label="${escapeHtml(g.name)}">${options}</select>`;
       return renderVariantGroupWrapper(g.name, control);
     })
     .join("");
@@ -1113,7 +1122,7 @@ export function renderVariantListHtml(
   const swatch = (value: string, size: number, marker: string): string => {
     const hex = colorToHex(value);
     if (!hex) return "";
-    return `<span ${marker} style="display:block;flex:0 0 auto;width:${size}px;height:${size}px;background:${hex};${radius}border:1px solid rgba(0,0,0,0.15);"></span>`;
+    return `<span ${marker} style="display:block;flex:0 0 auto;width:${size}px;height:${size}px;background:${hex};${radius}border:1px solid rgb(var(--color-button-bg,0 0 0) / 0.15);"></span>`;
   };
   return groups
     .map((g) => {
@@ -1122,11 +1131,12 @@ export function renderVariantListHtml(
         .map((v) => {
           const isSel = current === v;
           const mark = swatch(v, 24, "data-variant-swatch-fill");
-          return `<li style="width:100%;list-style:none;"><button type="button" class="font-manrope text-[14px] font-normal leading-normal" role="option" aria-selected="${isSel}" data-variant-value="${escapeHtml(v)}"${mark ? " data-variant-swatch" : ""} style="display:flex;align-items:center;gap:12px;width:100%;padding:8px;text-align:left;border:0;border-radius:4px;cursor:pointer;background:${isSel ? "rgba(0,0,0,0.06)" : "transparent"};color:#000000;">${mark}<span style="flex:1 1 auto;">${escapeHtml(v)}</span></button></li>`;
+          const rowBg = isSel ? "rgb(var(--color-button-bg,0 0 0) / 0.06)" : "transparent";
+          return `<li style="width:100%;list-style:none;"><button type="button" class="font-manrope text-[14px] font-normal leading-normal" role="option" aria-selected="${isSel}" data-variant-value="${escapeHtml(v)}"${mark ? " data-variant-swatch" : ""} style="display:flex;align-items:center;gap:12px;width:100%;padding:8px;text-align:left;border:0;border-radius:4px;cursor:pointer;background:${rowBg};color:rgb(var(--color-button-bg,0 0 0));">${mark}<span style="flex:1 1 auto;">${escapeHtml(v)}</span></button></li>`;
         })
         .join("");
       const currentMark = swatch(current, 24, "data-variant-dd-swatch-fill");
-      const control = `<details data-variant-dd data-variant-key="${escapeHtml(g.name)}" style="position:relative;width:100%;"><summary class="font-manrope text-[14px] font-normal leading-normal" style="display:flex;align-items:center;gap:12px;width:100%;height:40px;padding:0 12px;border:1px solid #000000;border-radius:6px;background:#ffffff;color:#000000;cursor:pointer;list-style:none;">${currentMark}<span style="flex:1 1 auto;text-align:left;" data-variant-dd-label>${escapeHtml(current)}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:20px;height:20px;flex:0 0 auto;"><polyline points="6 9 12 15 18 9"/></svg></summary><ul role="listbox" style="position:absolute;left:0;right:0;top:100%;z-index:20;display:flex;flex-direction:column;gap:4px;margin:4px 0 0;padding:4px;list-style:none;border:1px solid rgba(0,0,0,0.12);border-radius:6px;background:#ffffff;box-shadow:0 8px 24px rgba(0,0,0,0.12);">${items}</ul></details>`;
+      const control = `<details data-variant-dd data-variant-key="${escapeHtml(g.name)}" style="position:relative;width:100%;"><summary class="font-manrope text-[14px] font-normal leading-normal" style="display:flex;align-items:center;gap:12px;width:100%;height:40px;padding:0 12px;border:1px solid rgb(var(--color-button-bg,0 0 0));border-radius:6px;background:rgb(var(--color-bg,255 255 255));color:rgb(var(--color-button-bg,0 0 0));cursor:pointer;list-style:none;">${currentMark}<span style="flex:1 1 auto;text-align:left;" data-variant-dd-label>${escapeHtml(current)}</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:20px;height:20px;flex:0 0 auto;"><polyline points="6 9 12 15 18 9"/></svg></summary><ul role="listbox" style="position:absolute;left:0;right:0;top:100%;z-index:20;display:flex;flex-direction:column;gap:4px;margin:4px 0 0;padding:4px;list-style:none;border:1px solid rgb(var(--color-button-bg,0 0 0) / 0.12);border-radius:6px;background:rgb(var(--color-bg,255 255 255));box-shadow:0 8px 24px rgba(0,0,0,0.12);">${items}</ul></details>`;
       return renderVariantGroupWrapper(g.name, control);
     })
     .join("");

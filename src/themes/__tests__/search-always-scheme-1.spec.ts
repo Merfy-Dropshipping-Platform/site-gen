@@ -363,19 +363,26 @@ describe("Поиск всегда красится Схемой 1", () => {
           ),
           "utf8",
         );
-        const roles = [...src.matchAll(/role="search"/g)].map((m) => m.index);
+        // Комментарии вырезаем: они не разметка. Иначе фраза
+        // `form[role="search"]` в пояснении рядом с правкой считается третьим
+        // вхождением, и гард краснеет на тексте, которого браузер не видит.
+        // Поймано 15.09 дважды за смену — так же врал account-muted.
+        const code = src
+          .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+          .replace(/<!--[\s\S]*?-->/g, "");
+        const roles = [...code.matchAll(/role="search"/g)].map((m) => m.index);
         expect(roles.length).toBe(2);
         const burgerAt = roles[1];
-        const form = src.slice(burgerAt, src.indexOf("</form>", burgerAt));
+        const form = code.slice(burgerAt, code.indexOf("</form>", burgerAt));
         expect(form).toContain('type="search"');
         // Иконка, а не подпись: у кнопки бургера есть aria-label «Найти».
         expect(form).toMatch(/aria-label="Найти"/);
         // И она действительно вне панели: выпадающая панель живёт ВНУТРИ
         // <header>, бургер — после него, значит форма бургера не может быть
         // потомком [data-search-panel] ни в одной из тем.
-        const panelFormEnd = src.indexOf("</form>", roles[0]);
+        const panelFormEnd = code.indexOf("</form>", roles[0]);
         expect(panelFormEnd).toBeGreaterThan(-1);
-        expect(src.slice(panelFormEnd, burgerAt)).toContain("</header>");
+        expect(code.slice(panelFormEnd, burgerAt)).toContain("</header>");
       },
     );
   });

@@ -80,6 +80,7 @@
     "test:catalog-layout-mobile": "jest --runInBand src/themes/__tests__/catalog-layout-mobile.spec.ts",
     "test:catalog-filter-rows": "jest --runInBand src/themes/__tests__/catalog-filter-rows-tap.spec.ts",
     "test:flux-edge-veil": "jest --runInBand src/themes/__tests__/flux-section-edge-veil.spec.ts",
+    "test:hero-media-slots": "jest --runInBand src/themes/__tests__/hero-media-slots.spec.ts",
     "test:product-params": "jest --runInBand src/themes/__tests__/product-panel-labels.spec.ts src/themes/__tests__/product-section-colors.spec.ts",
     "test:product-description": "jest --runInBand src/themes/__tests__/product-description-heading.spec.ts",
     "test:product-description-spacing": "jest --runInBand src/themes/__tests__/product-description-spacing.spec.ts",

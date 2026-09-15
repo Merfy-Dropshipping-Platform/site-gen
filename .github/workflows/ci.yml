@@ -385,6 +385,18 @@ jobs:
       # окажется следующая. Считается СЛЕДСТВИЕ (градиент/тень/размытие/маска),
       # а не имя класса: обход инлайн-стилем или чужим классом тоже красит тест.
       - run: pnpm test:flux-edge-veil
+      # Слоты «Добавить фото» секции «Изображение» (Hero) — отчёт владельца
+      # 15.09: в satin при ОДНОМ загруженном медиафайле блок делился на две
+      # части, «как будто медиа два». Причина: гейт сплита считался по
+      # значению, в которое ДО него подставлялся дизайн-плейсхолдер
+      # /placeholders/landscape-image.png, — фото, положенное во второй слот,
+      # получало «соседа»-заглушку на половину блока. Второй дефект того же
+      # класса: vanilla читала только первый слот, и одиночное фото во втором
+      # пропадало. Правило выбора слотов свёрнуто в один источник
+      # packages/theme-base/runtime/hero-media-slots.ts; гард проверяет РЕНДЕРОМ
+      # живой цепочки во всех пяти темах: одно фото (в любом слоте, включая
+      # легаси-пропсы) = один кадр и ноль чужих картинок рядом, два = два.
+      - run: pnpm test:hero-media-slots
       # Параметры секции «Товар» (баг-репорт 13.09, пункты T2/T3/T4/T5/T7).
       # Две группы, обе на живой цепочке рендера:
       #   1) подписи подпанелей («Основная кнопка», «Динамическая кнопка»,
@@ -796,15 +808,55 @@ jobs:
       - satin-structural-conformance
     runs-on: ubuntu-latest
     steps:
-      - name: Call Coolify deploy webhook
-        env:
-          COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
-          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
-        run: >-
-          curl
-          --fail-with-body
-          --silent
-          --show-error
-          --request GET
-          "$COOLIFY_DEPLOY_WEBHOOK"
-          --header "Authorization: Bearer $COOLIFY_TOKEN"
+      - name: Deploy through the Coolify API
+        # Вебхуком нельзя: при выключенном автодеплое Coolify его игнорирует, а
+        # по ответу это не видно. И запрос в любом случае лишь ставит сборку в
+        # очередь — 200 означает «принято», а не «выкатано»: 2026-09-15 так
+        # прошли две зелёные выкатки, не доехавшие до прода (DEBT-31).
+        #
+        # Повтор — только на сигнатуре сетевого сбоя сервера (`api.github.com`
+        # в логах Coolify). Сборку, упавшую по другой причине, повторять незачем.
+        run: |
+          set -euo pipefail
+          api="http://200.169.180.243:8000/api/v1"
+          auth="Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}"
+
+          for attempt in 1 2 3; do
+            response=$(curl -fsS -X POST -H "$auth" \
+              "$api/deploy?uuid=q40c8ww44ss4ckogo8w0csso&force=false")
+            deployment=$(echo "$response" | jq -r '.deployments[0].deployment_uuid')
+            if [ -z "$deployment" ] || [ "$deployment" = "null" ]; then
+              echo "Coolify не вернул номер выкатки: $response"
+              exit 1
+            fi
+            echo "попытка $attempt: выкатка $deployment поставлена в очередь"
+
+            status=""
+            for _ in $(seq 1 60); do
+              sleep 15
+              status=$(curl -fsS -H "$auth" "$api/deployments/$deployment" | jq -r '.status')
+              echo "статус: $status"
+              case "$status" in finished|failed|cancelled) break ;; esac
+            done
+
+            if [ "$status" = "finished" ]; then
+              echo "выкатка дошла до конца"
+              exit 0
+            fi
+            if [ "$status" != "failed" ] && [ "$status" != "cancelled" ]; then
+              echo "::error::за пятнадцать минут выкатка не пришла к финальному статусу"
+              exit 1
+            fi
+
+            logs=$(curl -fsS -H "$auth" "$api/deployments/$deployment" | jq -r '.logs')
+            if echo "$logs" | grep -q 'api.github.com'; then
+              echo "::warning::сервер не достучался до api.github.com — повторяю"
+              continue
+            fi
+            echo "::error::выкатка завершилась статусом $status"
+            echo "$logs" | tail -c 3000
+            exit 1
+          done
+
+          echo "::error::три попытки подряд упали на сетевом сбое сервера"
+          exit 1

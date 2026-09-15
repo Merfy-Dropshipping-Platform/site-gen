@@ -1,6 +1,6 @@
 {
   "generated": "node src/themes/__tests__/scheme-matrix.mjs --debt-out <файл>",
-  "total": 159,
+  "total": 119,
   "entries": [
     {
       "key": "bloom|AccountSection|заголовок|color|account-title h1",
@@ -11,36 +11,6 @@
         "--color-foreground"
       ],
       "where": "themes/bloom/src/styles/global.css:495"
-    },
-    {
-      "key": "bloom|AccountSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/components/sections/AccountSection.astro:47"
-    },
-    {
-      "key": "bloom|AccountSection|ссылка|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/components/sections/AccountSection.astro:73"
-    },
-    {
-      "key": "bloom|AccountSection|текст кнопки|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/components/sections/AccountSection.astro:73"
     },
     {
       "key": "bloom|AccountSection|текст поля ввода|color|auth-input",
@@ -63,16 +33,6 @@
       "where": "themes/bloom/src/styles/global.css:567"
     },
     {
-      "key": "bloom|AccountSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/styles/global.css:504"
-    },
-    {
       "key": "bloom|AccountSection|текст|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -81,16 +41,6 @@
         "--color-foreground"
       ],
       "where": "themes/bloom/src/components/sections/AccountSection.astro:62"
-    },
-    {
-      "key": "bloom|AccountSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/components/sections/AccountSection.astro:57"
     },
     {
       "key": "bloom|CartSection|ссылка|color|text-white",
@@ -239,36 +189,6 @@
       "where": "themes/bloom/src/styles/global.css:495"
     },
     {
-      "key": "bloom|OrdersSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/components/sections/OrdersSection.astro:40"
-    },
-    {
-      "key": "bloom|OrdersSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/styles/global.css:504"
-    },
-    {
-      "key": "bloom|OrdersSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/bloom/src/components/sections/OrdersSection.astro:50"
-    },
-    {
       "key": "bloom|PopularProducts|текст|color|text-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -299,36 +219,6 @@
       "where": "themes/flux/src/styles/global.css:502"
     },
     {
-      "key": "flux|AccountSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/components/sections/AccountSection.astro:47"
-    },
-    {
-      "key": "flux|AccountSection|ссылка|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/components/sections/AccountSection.astro:73"
-    },
-    {
-      "key": "flux|AccountSection|текст кнопки|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/components/sections/AccountSection.astro:73"
-    },
-    {
       "key": "flux|AccountSection|текст поля ввода|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -349,16 +239,6 @@
       "where": "themes/flux/src/styles/global.css:574"
     },
     {
-      "key": "flux|AccountSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/styles/global.css:511"
-    },
-    {
       "key": "flux|AccountSection|текст|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -367,16 +247,6 @@
         "--color-foreground"
       ],
       "where": "themes/flux/src/components/sections/AccountSection.astro:62"
-    },
-    {
-      "key": "flux|AccountSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/components/sections/AccountSection.astro:57"
     },
     {
       "key": "flux|CartSection|ссылка|color|text-black",
@@ -547,36 +417,6 @@
       "where": "themes/flux/src/styles/global.css:502"
     },
     {
-      "key": "flux|OrdersSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/components/sections/OrdersSection.astro:40"
-    },
-    {
-      "key": "flux|OrdersSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/styles/global.css:511"
-    },
-    {
-      "key": "flux|OrdersSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/flux/src/components/sections/OrdersSection.astro:50"
-    },
-    {
       "key": "flux|Slideshow|текст кнопки|color|text-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -617,36 +457,6 @@
       "where": "themes/rose/src/styles/global.css:909"
     },
     {
-      "key": "rose|AccountSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/components/sections/AccountSection.astro:47"
-    },
-    {
-      "key": "rose|AccountSection|ссылка|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/components/sections/AccountSection.astro:73"
-    },
-    {
-      "key": "rose|AccountSection|текст кнопки|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/components/sections/AccountSection.astro:73"
-    },
-    {
       "key": "rose|AccountSection|текст поля ввода|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -667,16 +477,6 @@
       "where": "themes/rose/src/styles/global.css:981"
     },
     {
-      "key": "rose|AccountSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/styles/global.css:918"
-    },
-    {
       "key": "rose|AccountSection|текст|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -685,16 +485,6 @@
         "--color-foreground"
       ],
       "where": "themes/rose/src/components/sections/AccountSection.astro:62"
-    },
-    {
-      "key": "rose|AccountSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/components/sections/AccountSection.astro:57"
     },
     {
       "key": "rose|ContactForm|фон поля ввода|background-color|bg-white",
@@ -815,36 +605,6 @@
       "where": "themes/rose/src/styles/global.css:909"
     },
     {
-      "key": "rose|OrdersSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/components/sections/OrdersSection.astro:40"
-    },
-    {
-      "key": "rose|OrdersSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/styles/global.css:918"
-    },
-    {
-      "key": "rose|OrdersSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/rose/src/components/sections/OrdersSection.astro:50"
-    },
-    {
       "key": "rose|Slideshow|текст|color|text-white",
       "verdict": "palette",
       "value": "var(--color-white)",
@@ -863,36 +623,6 @@
         "--color-foreground"
       ],
       "where": "themes/satin/src/styles/global.css:513"
-    },
-    {
-      "key": "satin|AccountSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/components/sections/AccountSection.astro:47"
-    },
-    {
-      "key": "satin|AccountSection|ссылка|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/components/sections/AccountSection.astro:73"
-    },
-    {
-      "key": "satin|AccountSection|текст кнопки|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/components/sections/AccountSection.astro:73"
     },
     {
       "key": "satin|AccountSection|текст поля ввода|color|auth-input",
@@ -915,16 +645,6 @@
       "where": "themes/satin/src/styles/global.css:585"
     },
     {
-      "key": "satin|AccountSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/styles/global.css:522"
-    },
-    {
       "key": "satin|AccountSection|текст|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -933,16 +653,6 @@
         "--color-foreground"
       ],
       "where": "themes/satin/src/components/sections/AccountSection.astro:62"
-    },
-    {
-      "key": "satin|AccountSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/components/sections/AccountSection.astro:57"
     },
     {
       "key": "satin|CartSection|ссылка|color|text-white",
@@ -1053,36 +763,6 @@
       "where": "themes/satin/src/styles/global.css:513"
     },
     {
-      "key": "satin|OrdersSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/components/sections/OrdersSection.astro:40"
-    },
-    {
-      "key": "satin|OrdersSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/styles/global.css:522"
-    },
-    {
-      "key": "satin|OrdersSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/satin/src/components/sections/OrdersSection.astro:50"
-    },
-    {
       "key": "satin|PopularProducts|текст кнопки|color|satin-button-dark",
       "verdict": "theme-var",
       "value": "var(--satin-white)",
@@ -1153,36 +833,6 @@
       "where": "themes/vanilla/src/styles/global.css:817"
     },
     {
-      "key": "vanilla|AccountSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/AccountSection.astro:47"
-    },
-    {
-      "key": "vanilla|AccountSection|ссылка|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/AccountSection.astro:73"
-    },
-    {
-      "key": "vanilla|AccountSection|текст кнопки|color|account-text-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/AccountSection.astro:73"
-    },
-    {
       "key": "vanilla|AccountSection|текст поля ввода|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -1203,16 +853,6 @@
       "where": "themes/vanilla/src/styles/global.css:889"
     },
     {
-      "key": "vanilla|AccountSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/styles/global.css:826"
-    },
-    {
       "key": "vanilla|AccountSection|текст|color|auth-input",
       "verdict": "undeclared",
       "value": "rgb(var(--color-foreground))",
@@ -1221,16 +861,6 @@
         "--color-foreground"
       ],
       "where": "themes/vanilla/src/components/sections/AccountSection.astro:62"
-    },
-    {
-      "key": "vanilla|AccountSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/AccountSection.astro:57"
     },
     {
       "key": "vanilla|CartSection|заголовок|color|text-[var(--vanilla-dark)]",
@@ -1489,36 +1119,6 @@
         "--color-foreground"
       ],
       "where": "themes/vanilla/src/styles/global.css:817"
-    },
-    {
-      "key": "vanilla|OrdersSection|ссылка|color|account-back-link",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/OrdersSection.astro:40"
-    },
-    {
-      "key": "vanilla|OrdersSection|текст|color|account-title .account-subtitle",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/styles/global.css:826"
-    },
-    {
-      "key": "vanilla|OrdersSection|текст|color|rgb(var(--color-text-muted))",
-      "verdict": "undeclared",
-      "value": "rgb(var(--color-text-muted))",
-      "role": "--color-text-muted",
-      "chain": [
-        "--color-text-muted"
-      ],
-      "where": "themes/vanilla/src/components/sections/OrdersSection.astro:50"
     },
     {
       "key": "vanilla|PopularProducts|текст|color|text-black",

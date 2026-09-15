@@ -123,7 +123,7 @@ const TEST_FILE = /\.(spec|test)\.(ts|mjs|js|tsx)$/;
  */
 export function classify(guard, scripts) {
   const body = resolveScript(guard.cmd, scripts);
-  const base = { ...guard, body };
+  const base = { ...guard, body, label: prettyLabel(guard, body) };
   if (/&&|\|\||^for\b|;/.test(body)) return { ...base, kind: 'opaque' };
 
   const jestM = body.match(/^(?:pnpm exec )?jest\b(.*)$/);
@@ -138,6 +138,24 @@ export function classify(guard, scripts) {
   }
   if (/^node --test\b/.test(body)) return { ...base, kind: 'node-test', paths: splitArgs(body.replace(/^node --test/, '')).filter((a) => !a.startsWith('-')) };
   return { ...base, kind: 'opaque' };
+}
+
+/**
+ * В ci.yml половина шагов без `name:` — их «именем» становится вся команда, и
+ * в таблице от неё видно только `pnpm exec jest --runInBand src/themes/__te…`.
+ * Для таких шагов имя собирается из имён сюит: по нему видно, ЧТО упало.
+ */
+function prettyLabel(guard, body) {
+  const label = guard.label ?? guard.cmd;
+  // Короткое `pnpm test:section-snapshots` читается лучше любого пересказа —
+  // переименовываем только развёрнутые команды с путями внутри.
+  if (label !== guard.cmd || !/jest|node --test/.test(guard.cmd)) return label;
+  const files = splitArgs(body)
+    .filter((a) => /\.(spec|test)\.(ts|mjs|js|tsx)$/.test(a))
+    .map((a) => a.split('/').pop().replace(/\.(spec|test)\.(ts|mjs|js|tsx)$/, ''));
+  if (!files.length) return label;
+  const shown = files.slice(0, 2).join(' + ');
+  return `${/node --test/.test(body) ? 'node:test' : 'jest'}: ${shown}${files.length > 2 ? ` +${files.length - 2}` : ''}`;
 }
 
 function splitArgs(s) {

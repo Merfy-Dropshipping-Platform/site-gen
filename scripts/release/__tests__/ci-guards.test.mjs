@@ -76,9 +76,14 @@ test('классификация: батч, свой конфиг, node --test, 
   const kind = (part) => g.find((x) => x.label.includes(part)).kind;
   assert.equal(kind('миграций'), 'jest-batch');
   assert.equal(kind('theme-contract'), 'jest-solo');
-  assert.equal(kind('node --test'), 'node-test');
+  assert.equal(kind('node:test: block-source-layout'), 'node-test');
   assert.equal(kind('conformance:satin'), 'opaque');
-  assert.deepEqual(g.find((x) => x.label.includes('section-snapshots')).paths, ['src/themes/__tests__/section-html-snapshot.spec.ts']);
+  assert.deepEqual(g.find((x) => x.label === 'pnpm test:section-snapshots').paths, ['src/themes/__tests__/section-html-snapshot.spec.ts']);
+});
+
+test('шаг без name: получает читаемое имя по сюитам, а не обрубок команды', () => {
+  const g = guardsFromWorkflow(WF).map((x) => classify(x, SCRIPTS));
+  assert.ok(g.some((x) => x.label === 'node:test: block-source-layout'), g.map((x) => x.label).join('|'));
 });
 
 test('pnpm-скрипт разворачивается в тело', () => {

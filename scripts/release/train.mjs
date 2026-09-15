@@ -333,19 +333,22 @@ function stepGuards(o, ctx) {
   say(`   ИТОГО: прошло проверок ${res.totals.passed}, не прошло ${res.totals.failed}, пропущено ${res.totals.skipped}; время ${dur(res.ms)}`);
   mark('гарды', res.ms);
 
-  if (res.empty.length) {
-    throw new Stop(6, `гардов без единой прошедшей проверки: ${res.empty.length}`,
-      [
-        'ноль проверок — это не «зелено», это проверка, которая ничего не сторожит.',
-        '«Tests: 0 total» и «1 skipped» дают код возврата 0 и выглядят как успех.',
-        'разберитесь, что с ними:',
-        ...res.empty.map((r) => `    ${r.label} → ${r.why}\n      ${r.body}`),
-      ].join('\n'));
-  }
-  if (res.red.length) {
-    throw new Stop(6, `красных гардов: ${res.red.length}`,
-      ['это регрессия поезда — чините её, а не отключайте гард:', ...res.red.map((r) => `    ${r.label} (не прошло ${r.failed})\n      ${r.body}`)].join('\n'),
-      tail(res.red.map((r) => r.log).filter(Boolean).join('\n'), 25));
+  if (res.empty.length || res.red.length) {
+    const todo = [];
+    if (res.red.length) {
+      todo.push('КРАСНЫЕ — это регрессия поезда; чините её, а не отключайте гард:');
+      todo.push(...res.red.map((r) => `    ${r.label}${r.failed ? ` (не прошло ${r.failed})` : ''}\n      ${r.cmd}`));
+    }
+    if (res.empty.length) {
+      todo.push('НОЛЬ ПРОВЕРОК — это не «зелено», это проверка, которая ничего не сторожит.');
+      todo.push('«Tests: 0 total» и «1 skipped» дают код возврата 0 и выглядят как успех.');
+      todo.push(...res.empty.map((r) => `    ${r.label} → ${r.why}\n      ${r.cmd}`));
+    }
+    throw new Stop(6, [
+      res.red.length ? `красных гардов: ${res.red.length}` : null,
+      res.empty.length ? `гардов без единой прошедшей проверки: ${res.empty.length}` : null,
+    ].filter(Boolean).join('; '), todo.join('\n'),
+      tail([...res.red, ...res.empty].map((r) => r.log).filter(Boolean).join('\n'), 30));
   }
   return { count: guards.length, totals: res.totals, ms: res.ms };
 }

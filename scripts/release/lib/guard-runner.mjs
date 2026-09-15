@@ -12,6 +12,16 @@ import { tmpdir } from 'node:os';
 import { join, resolve, relative } from 'node:path';
 import { run, sh, dur } from './proc.mjs';
 
+/**
+ * Гард выполняется ТОЙ ЖЕ строкой, что стоит в ci.yml, и с node_modules/.bin в
+ * PATH. Первая версия гоняла разложенное тело скрипта напрямую — и
+ * `tsx scripts/theme-conformance.ts …` падал с «command not found», выглядя
+ * как красный конформанс. Ровно та ошибка, ради которой этот инструмент и
+ * писался: замер врал, а не предмет замера.
+ */
+const env = (repoRoot) => ({ ...process.env, PATH: `${repoRoot}/node_modules/.bin:${process.env.PATH}` });
+const cmdOf = (g) => g.cmd ?? g.body;
+
 const j = (o) => JSON.stringify(o);
 
 /** Прогоняет батч jest-гардов одним запуском и раскладывает счётчики по гардам. */
@@ -21,7 +31,7 @@ export function runJestBatch(guards, { repoRoot, log }) {
   const tmp = mkdtempSync(join(tmpdir(), 'release-train-'));
   const outFile = join(tmp, 'jest.json');
   log(`   один прогон jest на ${guards.length} гард(ов), ${paths.length} путь(ей)…`);
-  const r = run('pnpm', ['exec', 'jest', '--runInBand', '--json', `--outputFile=${outFile}`, ...paths], { cwd: repoRoot });
+  const r = run('pnpm', ['exec', 'jest', '--runInBand', '--json', `--outputFile=${outFile}`, ...paths], { cwd: repoRoot, env: env(repoRoot) });
   let report = null;
   try { report = JSON.parse(readFileSync(outFile, 'utf-8')); } catch { /* jest не дошёл до отчёта */ }
   rmSync(tmp, { recursive: true, force: true });
@@ -64,7 +74,7 @@ export function runJestSolo(g, { repoRoot, log }) {
   const tmp = mkdtempSync(join(tmpdir(), 'release-train-'));
   const outFile = join(tmp, 'jest.json');
   const cwd = g.cwd ? resolve(repoRoot, g.cwd) : repoRoot;
-  const r = sh(`${g.body} --json --outputFile=${j(outFile)}`, { cwd });
+  const r = sh(`${cmdOf(g)} --json --outputFile=${j(outFile)}`, { cwd, env: env(repoRoot) });
   let report = null;
   try { report = JSON.parse(readFileSync(outFile, 'utf-8')); } catch { /* не дошёл */ }
   rmSync(tmp, { recursive: true, force: true });
@@ -84,11 +94,13 @@ export function runJestSolo(g, { repoRoot, log }) {
 
 /** node --test: счётчики берём из TAP-итогов. */
 export function runNodeTest(g, { repoRoot }) {
-  const r = sh(g.body, { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot });
+  const r = sh(cmdOf(g), { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot, env: env(repoRoot) });
+  // Итог печатают оба репортёра node:test, но по-разному: spec — «ℹ pass 6»,
+  // tap — «# pass 6». Ищем оба, иначе живой гард выглядит как пустой.
   const num = (re) => Number((r.all.match(re) ?? [])[1] ?? 0);
-  const passed = num(/^# pass (\d+)/m);
-  const failed = num(/^# fail (\d+)/m);
-  const skipped = num(/^# skipped (\d+)/m);
+  const passed = num(/^(?:#|ℹ) pass (\d+)/m);
+  const failed = num(/^(?:#|ℹ) fail (\d+)/m);
+  const skipped = num(/^(?:#|ℹ) skipped (\d+)/m);
   return {
     ...stat(g),
     files: g.paths?.length ?? 0,
@@ -102,7 +114,7 @@ export function runNodeTest(g, { repoRoot }) {
 
 /** Конформанс, линтер, валидаторы: счётчика проверок нет — только код возврата. */
 export function runOpaque(g, { repoRoot }) {
-  const r = sh(g.body, { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot });
+  const r = sh(cmdOf(g), { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot, env: env(repoRoot) });
   return { ...stat(g), files: 0, passed: null, failed: null, skipped: null, ok: r.code === 0, ms: r.ms, why: null, log: r.all };
 }
 

@@ -310,11 +310,48 @@ blockquote {
   min-height: 100vh;
 }
 
+/*
+ * Текст полей формы: роль схемы вместо мёртвого `--color-foreground`.
+ *
+ * Такого токена НЕ существует: его не объявляют ни правила `.color-scheme-N`
+ * из buildTokensCss, ни CSS тем — единственное объявление на весь магазин
+ * стоит ИНЛАЙНОМ на контейнере `.auth-shell` страницы входа
+ * (LoginSection.astro, AuthShell.astro: `--color-foreground: 0, 0, 0`).
+ * Замер 2026-09-15 (pnpm qa:probe, локальный рендер портов, пять тем):
+ *   • «Личный кабинет»/«Заказы» — getComputedStyle даёт `--color-foreground`
+ *     ПУСТОЙ, `rgb(var(--НЕТ))` невалиден, свойство обнуляется и цвет
+ *     достаётся наследованием: rose 255,255,255 · vanilla 10,10,10 ·
+ *     bloom/satin/flux 0,0,0 — лотерея вместо схемы;
+ *   • страница входа — `--color-foreground` = "0, 0, 0" от инлайна предка,
+ *     то есть там это не мёртвый токен, а ПРИБИТЫЙ чёрный.
+ *
+ * Отсюда две разные правки:
+ *   • `.auth-label` живёт только на входе, и цепочка фолбэков на нём была бы
+ *     пустышкой (инлайн предка всё равно победил бы) — поэтому роль схемы
+ *     читается НАПРЯМУЮ. На схеме по умолчанию (2) `--color-text` = 0 0 0 во
+ *     всех пяти темах, значит вход остаётся ровно rgb(0,0,0); на остальных
+ *     схемах метка наконец едет за выбором мерчанта;
+ *   • `.auth-input` рисуется И на входе, И в форме профиля, поэтому у него не
+ *     замена, а ЦЕПОЧКА: на входе выигрывает локальный `--color-foreground`
+ *     (страница не двигается ни на один rgb), в аккаунте подхватывается схема.
+ *     Тот же приём, что у `--color-text-muted` в коммите 59ff9150.
+ *
+ * Правила `.auth-link`, `.auth-link-muted:hover`, `.auth-otp-cell`,
+ * `.auth-eye-toggle:hover` живут ТОЛЬКО на входе и не тронуты намеренно — их
+ * красит тот же инлайн `.auth-shell`, и это предмет отдельной ветки.
+ *
+ * Роль выбрана по эталону rose: `font-body` → `--color-text` (rose body:
+ * `color: rgb(var(--color-text, 0 0 0))`), `font-heading` → `--color-heading`
+ * (.rose-title, .rose-heading-plain, заголовок LoginSection).
+ *
+ * Гард: src/themes/__tests__/account-foreground-token.spec.ts
+ * (pnpm test:account-foreground).
+ */
 .auth-label {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .auth-required {
@@ -329,7 +366,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 300;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-foreground, var(--color-text, 0 0 0)));
   outline: 1px solid rgb(var(--color-text-muted, var(--color-muted, 163 163 163)));
   outline-offset: -1px;
   background: transparent;
@@ -549,12 +586,19 @@ blockquote {
   gap: 0.25rem;
 }
 
+/*
+ * Тот же мёртвый `--color-foreground` красил и страницы аккаунта: заголовок,
+ * метки формы, активную ссылку навигации, номер заказа, имя и цену товара,
+ * значение в карточке информации. Все они теперь читают роль схемы —
+ * `--color-heading` для `font-heading`, `--color-text` для `font-body`
+ * (подробный разбор и числа замера — в комментарии над `.auth-label` выше).
+ */
 .account-title h1 {
   font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 400;
   text-transform: uppercase;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-heading, 0 0 0));
   margin: 0;
 }
 
@@ -626,7 +670,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .account-actions {
@@ -650,7 +694,7 @@ blockquote {
 }
 
 .account-nav-links a.active {
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .account-nav-links a:hover {
@@ -672,7 +716,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .account-order-row .order-info .order-date {
@@ -733,7 +777,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .account-product-card .product-prices {
@@ -746,7 +790,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 600;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .account-product-card .product-price-old {
@@ -807,7 +851,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  color: rgb(var(--color-foreground));
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 @media (max-width: 640px) {

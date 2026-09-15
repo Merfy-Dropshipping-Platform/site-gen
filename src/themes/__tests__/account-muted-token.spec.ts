@@ -47,12 +47,22 @@ const themeFile = (theme: string, rel: string) =>
   resolve(SITES_ROOT, "themes", theme, "src", rel);
 
 const render = (theme: string, block: string): string => {
-  const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+  const mf = resolve(
+    SITES_ROOT,
+    "dist",
+    "theme-sections",
+    theme,
+    "manifest.json",
+  );
   if (!existsSync(mf)) return "";
   const rows = JSON.parse(
     execFileSync(
       "node",
-      [RENDERER, theme, JSON.stringify([{ block, props: { id: `${block}-1` } }])],
+      [
+        RENDERER,
+        theme,
+        JSON.stringify([{ block, props: { id: `${block}-1` } }]),
+      ],
       { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 128 * 1024 * 1024 },
     ),
   ) as Array<{ html?: string; error?: string; missing?: boolean }>;
@@ -88,50 +98,68 @@ describe("секции аккаунта — приглушённый текст 
     expect(html).toContain(`var(${ALIVE}`);
   });
 
-  it.each(THEMES)("%s: «Личный кабинет» не красит текст мёртвым токеном", (theme) => {
-    const html = render(theme, "AccountSection");
-    if (!html) return;
-    const dead = html.split(DEAD).length - 1;
-    expect(`${theme}: вхождений ${DEAD} в разметке = ${dead}`).toBe(
-      `${theme}: вхождений ${DEAD} в разметке = 0`,
-    );
-    expect(html).toContain(`var(${ALIVE}`);
-  });
+  it.each(THEMES)(
+    "%s: «Личный кабинет» не красит текст мёртвым токеном",
+    (theme) => {
+      const html = render(theme, "AccountSection");
+      if (!html) return;
+      const dead = html.split(DEAD).length - 1;
+      expect(`${theme}: вхождений ${DEAD} в разметке = ${dead}`).toBe(
+        `${theme}: вхождений ${DEAD} в разметке = 0`,
+      );
+      expect(html).toContain(`var(${ALIVE}`);
+    },
+  );
 });
 
 describe("вёрстка страниц аккаунта — тот же живой токен", () => {
-  it.each(THEMES)("%s: ни одно правило .account-* не висит на мёртвом токене", (theme) => {
-    const css = readFileSync(themeFile(theme, "styles/global.css"), "utf-8");
-    const broken = accountRules(css).filter((r) => r.includes(DEAD));
-    expect(
-      `${theme}: правил .account-* с ${DEAD} = ${broken.length}${
-        broken.length ? ` (${broken.map((r) => r.split("{")[0]).join(", ")})` : ""
-      }`,
-    ).toBe(`${theme}: правил .account-* с ${DEAD} = 0`);
-  });
+  it.each(THEMES)(
+    "%s: ни одно правило .account-* не висит на мёртвом токене",
+    (theme) => {
+      const css = readFileSync(themeFile(theme, "styles/global.css"), "utf-8");
+      const broken = accountRules(css).filter((r) => r.includes(DEAD));
+      expect(
+        `${theme}: правил .account-* с ${DEAD} = ${broken.length}${
+          broken.length
+            ? ` (${broken.map((r) => r.split("{")[0]).join(", ")})`
+            : ""
+        }`,
+      ).toBe(`${theme}: правил .account-* с ${DEAD} = 0`);
+    },
+  );
 
-  it.each(THEMES)("%s: .auth-input даёт фолбэк на схему (страница входа не меняется)", (theme) => {
-    const css = readFileSync(themeFile(theme, "styles/global.css"), "utf-8");
-    const rules = css.match(/\.auth-input[^{]*\{[^}]*\}/g) ?? [];
-    const withDead = rules.filter((r) => r.includes(DEAD));
-    // Правило может опираться на локальный `--color-text-muted` (его объявляет
-    // `.auth-shell` страницы входа), но ОБЯЗАНО иметь запасной путь на схему —
-    // иначе на странице аккаунта, где `.auth-shell` нет, обводка и подсказка
-    // инпута обнуляются.
-    const withoutFallback = withDead.filter((r) => !r.includes(`var(${ALIVE}`));
-    expect(
-      `${theme}: правил .auth-input с ${DEAD} без фолбэка на ${ALIVE} = ${withoutFallback.length}`,
-    ).toBe(`${theme}: правил .auth-input с ${DEAD} без фолбэка на ${ALIVE} = 0`);
-    expect(rules.length).toBeGreaterThan(0);
-  });
+  it.each(THEMES)(
+    "%s: .auth-input даёт фолбэк на схему (страница входа не меняется)",
+    (theme) => {
+      const css = readFileSync(themeFile(theme, "styles/global.css"), "utf-8");
+      const rules = css.match(/\.auth-input[^{]*\{[^}]*\}/g) ?? [];
+      const withDead = rules.filter((r) => r.includes(DEAD));
+      // Правило может опираться на локальный `--color-text-muted` (его объявляет
+      // `.auth-shell` страницы входа), но ОБЯЗАНО иметь запасной путь на схему —
+      // иначе на странице аккаунта, где `.auth-shell` нет, обводка и подсказка
+      // инпута обнуляются.
+      const withoutFallback = withDead.filter(
+        (r) => !r.includes(`var(${ALIVE}`),
+      );
+      expect(
+        `${theme}: правил .auth-input с ${DEAD} без фолбэка на ${ALIVE} = ${withoutFallback.length}`,
+      ).toBe(
+        `${theme}: правил .auth-input с ${DEAD} без фолбэка на ${ALIVE} = 0`,
+      );
+      expect(rules.length).toBeGreaterThan(0);
+    },
+  );
 
-  it.each(THEMES)("%s: страница заказа не красит текст мёртвым токеном", (theme) => {
-    const file = themeFile(theme, "pages/account/order.astro");
-    if (!existsSync(file)) return;
-    const src = readFileSync(file, "utf-8");
-    const dead = src.split(DEAD).length - 1;
-    expect(`${theme}: вхождений ${DEAD} в order.astro = ${dead}`).toBe(
-      `${theme}: вхождений ${DEAD} в order.astro = 0`,
-    );
-  });
+  it.each(THEMES)(
+    "%s: страница заказа не красит текст мёртвым токеном",
+    (theme) => {
+      const file = themeFile(theme, "pages/account/order.astro");
+      if (!existsSync(file)) return;
+      const src = readFileSync(file, "utf-8");
+      const dead = src.split(DEAD).length - 1;
+      expect(`${theme}: вхождений ${DEAD} в order.astro = ${dead}`).toBe(
+        `${theme}: вхождений ${DEAD} в order.astro = 0`,
+      );
+    },
+  );
 });

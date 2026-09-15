@@ -38,7 +38,13 @@ const CHOSEN = "/uploads/b19-chosen-by-merchant.jpg";
 const LEGACY = "/uploads/b19-stale-legacy.jpg";
 
 const renderSlideshow = (theme: string): string => {
-  const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+  const mf = resolve(
+    SITES_ROOT,
+    "dist",
+    "theme-sections",
+    theme,
+    "manifest.json",
+  );
   if (!existsSync(mf)) return "";
   const props = {
     id: "Slideshow-1",
@@ -69,22 +75,28 @@ const renderSlideshow = (theme: string): string => {
 };
 
 describe("слайд-шоу — выбранный медиафайл доезжает до разметки", () => {
-  it.each(THEMES)("%s: в разметке стоит выбранное фото, а не скрытое легаси", (theme) => {
-    const html = renderSlideshow(theme);
-    if (!html) return;
-    const chosen = html.split(CHOSEN).length - 1;
-    const legacy = html.split(LEGACY).length - 1;
-    expect(`${theme}: выбранное=${chosen} легаси=${legacy}`).toBe(
-      `${theme}: выбранное=1 легаси=0`,
-    );
-  });
+  it.each(THEMES)(
+    "%s: в разметке стоит выбранное фото, а не скрытое легаси",
+    (theme) => {
+      const html = renderSlideshow(theme);
+      if (!html) return;
+      const chosen = html.split(CHOSEN).length - 1;
+      const legacy = html.split(LEGACY).length - 1;
+      expect(`${theme}: выбранное=${chosen} легаси=${legacy}`).toBe(
+        `${theme}: выбранное=1 легаси=0`,
+      );
+    },
+  );
 
-  it.each(THEMES)("%s: порт читает image раньше imageUrl (§11 Контракта секции)", (theme) => {
-    const html = renderSlideshow(theme);
-    if (!html) return;
-    // Дублирующая формулировка того же требования на случай, если тема начнёт
-    // печатать адрес дважды (фон + <img>): легаси не должно быть НИ РАЗУ.
-    expect(html).toContain(CHOSEN);
-    expect(html).not.toContain(LEGACY);
-  });
+  it.each(THEMES)(
+    "%s: порт читает image раньше imageUrl (§11 Контракта секции)",
+    (theme) => {
+      const html = renderSlideshow(theme);
+      if (!html) return;
+      // Дублирующая формулировка того же требования на случай, если тема начнёт
+      // печатать адрес дважды (фон + <img>): легаси не должно быть НИ РАЗУ.
+      expect(html).toContain(CHOSEN);
+      expect(html).not.toContain(LEGACY);
+    },
+  );
 });

@@ -40,7 +40,10 @@ type FieldCanon = {
   itemFields?: Record<string, FieldCanon>;
 };
 
-const dump = (): Record<string, Record<string, { fields: Record<string, FieldCanon> }>> =>
+const dump = (): Record<
+  string,
+  Record<string, { fields: Record<string, FieldCanon> }>
+> =>
   JSON.parse(
     execFileSync("node", [CANON_DUMP], {
       cwd: resolve(__dirname, "..", "..", ".."),
@@ -73,7 +76,9 @@ describe("«Раздел» — подписи и контролы пункта �
     (theme) => {
       const mine = shape(itemFields(theme));
       const ref = shape(itemFields(REFERENCE));
-      expect(`${theme}: ${mine.join(" / ")}`).toBe(`${theme}: ${ref.join(" / ")}`);
+      expect(`${theme}: ${mine.join(" / ")}`).toBe(
+        `${theme}: ${ref.join(" / ")}`,
+      );
     },
   );
 });

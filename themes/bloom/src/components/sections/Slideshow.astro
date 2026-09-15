@@ -74,12 +74,12 @@ const slideTextCls = (s: string | undefined) =>
 			? "font-inter text-[12px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[14px]"
 			: "font-inter text-[14px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[16px]";
 
-// Реальный слайд мерчанта без фото = ПУСТАЯ surface-карточка (ветка
-// s.image ? <img> : <div bg-surface> ниже), а НЕ мок-ассет верстальщика
-// (контракт Figma 1:19335). Мок-фолбэки /images/hero-background.webp … УБРАНЫ:
-// слайд без imageUrl/image теперь даёт image="" → пустая surface-плитка. В ПУСТОМ
-// состоянии (!hasSlides) слайд-плейсхолдер несёт дизайн-ассет landscape-slideshow.png
-// (PLACEHOLDER_SLIDE выше).
+// Мок-фолбэки верстальщика (/images/hero-background.webp …) УБРАНЫ и не
+// возвращаются: контракт картиночных секций запрещает выдавать мок за данные.
+// Слайд без фото — и в пустом состоянии (!hasSlides), и у мерчанта — несёт
+// ДИЗАЙН-АССЕТ landscape-slideshow.png (Figma 1:19335, паритет rose). Прежняя
+// пустая surface-карточка в bloom была неотличима от фона: --color-surface
+// равен --color-bg во всех четырёх схемах темы.
 
 // Канон position (9 точек сетки 3×3) — РАЗМЕЩЕНИЕ контент-блока на полотне слайда.
 // Нормализуем полную строку position в вертикаль + горизонталь (порт rose
@@ -130,10 +130,17 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 		// скрытого legacy «Изображение (старое)» (imageUrl). Раньше legacy читался
 		// ПЕРВЫМ, а он всегда заполнен дефолтом слайда — из-за этого выбранная
 		// мерчантом картинка слайда не применялась вообще.
+		// Слот без фото несёт ДИЗАЙН-АССЕТ, а не пустую поверхность (ориентир —
+		// rose, владелец 2026-09-15; там же `merchantImage || PLACEHOLDER`).
+		// В bloom пустая поверхность вдобавок невидима: --color-surface равен
+		// --color-bg во всех четырёх схемах темы, поэтому слайд читался как
+		// «сплошная заливка без изображения» (баг-репорт). Внутри самой темы
+		// это ещё и рассогласование: пустая плитка «Галереи» и пустое медиа
+		// «Изображения с текстом» ассет получают, слайд — нет.
 		image:
 			(typeof s.image === "string" && s.image.trim()) ||
 			(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
-			"",
+			PLACEHOLDER_SLIDE_IMAGE,
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
 		subtitle:

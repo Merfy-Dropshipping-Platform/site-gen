@@ -4,6 +4,8 @@
 @import "../../../../packages/theme-base/styles/base.css";
 /* Строка фильтров каталога на узком экране (тап-таргет 44px + панель не за экраном) — общий источник. */
 @import "../../../../packages/theme-base/styles/catalog-filters.css";
+/* Переключение раскладок каталога top ⇄ side (на <lg всегда top) — общий источник. */
+@import "../../../../packages/theme-base/styles/catalog-layout.css";
 /* paths fixed for sites/themes/rose/src/styles → sites node_modules */
 @source "../../../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 @source "../components/**/*.{astro,ts,tsx}";

@@ -176,14 +176,11 @@ const totalCount = catalogProducts.length;
 </Layout>
 
 <style is:global>
-	/* Переключение раскладок каталога: в HTML запечены обе, видимой остаётся
-	   только активная по data-catalog-layout на section. */
-	[data-catalog-layout="top"] [data-catalog-variant="side"] {
-		display: none;
-	}
-	[data-catalog-layout="side"] [data-catalog-variant="top"] {
-		display: none;
-	}
+	/* Переключение раскладок каталога (top ⇄ side) — ЕДИНЫЙ источник:
+	   packages/theme-base/styles/catalog-layout.css (подключён из
+	   themes/flux/src/styles/global.css). Здесь копии БЫТЬ НЕ ДОЛЖНО: она
+	   жила без @media, доживала до страницы каталога вместе с блочной и
+	   на узком экране они вдвоём прятали ОБА варианта — каталог был пустой. */
 
 	/* ——— Токены цветовых схем в зонах фильтров ———
 	   DS-компоненты (node_modules) не правим — переопределяем снаружи по

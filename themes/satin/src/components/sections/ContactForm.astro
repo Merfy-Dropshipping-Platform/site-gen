@@ -108,12 +108,20 @@ const darkBtnCls =
 // Классы полей ветки fields — манера NtTextField (h-14, бордер чёрный,
 // focus → токен текста) на токенах; радиус полей — rounded-[var(--radius-input,0px)].
 const fieldLabelCls = "font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]";
+// ФОН ПОЛЯ ВВОДА — «Фон» СХЕМЫ, а не палитра Tailwind. Было `bg-white`, а
+// Tailwind 4 печатает его как var(--color-white): переменная ЕСТЬ, но её нет ни
+// в одной схеме мерчанта, поэтому поля «Контактной формы» замирали белыми при
+// любой схеме — при том что корень секции вокруг них уже ехал. Замер матрицы
+// (`pnpm scheme-matrix:bad`, схемы-зонды 1 → 4, «Фон» 17,0,0 → 0,17,0): поле
+// #fff → #fff. Болезнь общая для всех пяти тем. Роль та же, что у поля
+// промокода «Сводки заказа» (fix b19). Фолбэк 255_255_255 = прежний вид.
+// Сторож: pnpm test:scheme-targets.
 const fieldInputCls =
-	"box-border h-14 min-h-[56px] w-full rounded-[var(--radius-input,0px)] border border-solid border-[rgb(var(--color-text,0_0_0))] bg-white px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]";
+	"box-border h-14 min-h-[56px] w-full rounded-[var(--radius-input,0px)] border border-solid border-[rgb(var(--color-text,0_0_0))] bg-[rgb(var(--color-bg,255_255_255))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]";
 // Textarea — литерал страницы (contacts.astro:62-67): min-h-[176px], бордер
 // muted, focus → токен текста.
 const textareaCls =
-	"min-h-[176px] w-full flex-1 rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] bg-white p-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]";
+	"min-h-[176px] w-full flex-1 rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] bg-[rgb(var(--color-bg,255_255_255))] p-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]";
 
 // Уникальные id внутри секции (страница использует литерал contacts-question —
 // канон не должен с ним конфликтовать при соседстве на одной странице).

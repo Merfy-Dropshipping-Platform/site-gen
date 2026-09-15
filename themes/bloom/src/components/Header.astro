@@ -698,7 +698,16 @@ const headerHeartSvg =
 	<div
 		id="bloom-burger"
 		class:list={[
-			"fixed z-[55] hidden overflow-y-auto bg-white",
+			// Полотно шторки — «Фон» СХЕМЫ, а не палитра Tailwind. `bg-white` Tailwind 4
+			// печатает как `var(--color-white)`: переменная ЕСТЬ, но её нет ни в одной
+			// схеме мерчанта, поэтому шторка замирает белой при любой схеме. Замер
+			// (матрица `pnpm scheme-matrix:bad`, схемы-зонды 1 → 4, «Фон» 17,0,0 →
+			// 0,17,0): полотно #fff → #fff, пока сама шапка выше уже едет
+			// (`bg-[rgb(var(--color-bg,255_255_255))]` на <header>). У bloom это ещё и
+			// невидимое меню: на заводской схеме bloom «Фон» розовый, а «Текст» белый —
+			// белые пункты лежали на белом полотне. Фолбэк 255_255_255 = прежний вид.
+			// Сторож: pnpm test:scheme-targets.
+			"fixed z-[55] hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
 			isSidebar
 				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
 				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 md:hidden",

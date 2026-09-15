@@ -84,12 +84,20 @@ const buttonText =
 // h-14 rounded-[4px] (ЛИТЕРАЛ 4px, НЕ токен — theme.json --radius-input: 0px
 // расходится со служебным радиусом формы) border #000000 bg-white, текст →
 // токен text, focus-рамка → токен accent (#3A4530 у верстальщика).
+// ФОН ПОЛЯ ВВОДА — «Фон» СХЕМЫ, а не палитра Tailwind. Было `bg-white`, а
+// Tailwind 4 печатает его как var(--color-white): переменная ЕСТЬ, но её нет ни
+// в одной схеме мерчанта, поэтому поля «Контактной формы» замирали белыми при
+// любой схеме — при том что корень секции вокруг них уже ехал. Замер матрицы
+// (`pnpm scheme-matrix:bad`, схемы-зонды 1 → 4, «Фон» 17,0,0 → 0,17,0): поле
+// #fff → #fff. Болезнь общая для всех пяти тем. Роль та же, что у поля
+// промокода «Сводки заказа» (fix b19). Фолбэк 255_255_255 = прежний вид.
+// Сторож: pnpm test:scheme-targets.
 const labelCls = "font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-muted,68_68_68))]";
 const inputCls =
-	"box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-white px-4 font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-text,10_10_10))] outline-none focus-visible:border-[rgb(var(--color-accent,58_69_48))]";
+	"box-border h-14 w-full min-h-[56px] rounded-[4px] border border-solid border-[#000000] bg-[rgb(var(--color-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-text,10_10_10))] outline-none focus-visible:border-[rgb(var(--color-accent,58_69_48))]";
 const inputPlaceholderCls = `${inputCls} placeholder:text-[#999999]`;
 const textareaCls =
-	"box-border min-h-[232px] w-full flex-1 resize-none rounded-[4px] border border-solid border-[#000000] bg-white p-4 font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-text,10_10_10))] outline-none placeholder:text-[#999999] focus-visible:border-[rgb(var(--color-accent,58_69_48))] lg:min-h-0";
+	"box-border min-h-[232px] w-full flex-1 resize-none rounded-[4px] border border-solid border-[#000000] bg-[rgb(var(--color-bg,255_255_255))] p-4 font-vanilla-arsenal text-base font-normal leading-normal text-[rgb(var(--color-text,10_10_10))] outline-none placeholder:text-[#999999] focus-visible:border-[rgb(var(--color-accent,58_69_48))] lg:min-h-0";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding

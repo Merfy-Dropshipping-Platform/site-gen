@@ -28,7 +28,13 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	data-puck-component-id={id}
 	data-block="cart-section"
 	class:list={[
-		"vanilla-pad w-full bg-white",
+		// Фон секции — «Фон» СХЕМЫ (эталон rose: bg-[rgb(var(--color-bg,255_255_255))]).
+		// Было `bg-white`: Tailwind 4 печатает его как var(--color-white) — переменная
+		// есть, схемы в ней нет, и полотно «Корзины» замирало белым, хотя на корне
+		// секции ВИСИТ класс схемы (schemeClass ниже). Замер матрицы (схемы-зонды
+		// 1 → 4, «Фон» 17,0,0 → 0,17,0): #fff → #fff. Фолбэк 255_255_255 = прежний
+		// вид. Сторож: pnpm test:cart-scheme, pnpm test:scheme-targets.
+		"vanilla-pad w-full bg-[rgb(var(--color-bg,255_255_255))]",
 		schemeClass,
 		padStyle ? "" : "py-12 md:py-16 lg:py-20",
 	]}

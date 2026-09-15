@@ -121,7 +121,18 @@ const columnTitle = (col: any): string | undefined =>
 	typeof col?.title === "string" && col.title.trim() ? col.title : undefined;
 const navColTitle = columnTitle(p.navigationColumn);
 const infoColTitle = columnTitle(p.informationColumn);
-const columnTitleCls = "font-vanilla-arsenal text-base font-normal uppercase leading-none text-white";
+// Краска надписей ПОЛОТНА подвала — «Текст» СХЕМЫ. Корень <footer> ниже уже
+// объявляет ровно эту роль (`text-[rgb(var(--color-text,255_255_255))]`), но
+// каждый заголовок колонки, ссылка и копирайт перебивали её своим `text-white`,
+// а Tailwind 4 печатает его как var(--color-white): переменная ЕСТЬ, схемы в ней
+// нет. Замер матрицы (схемы-зонды 1 → 4): надписи #fff → #fff, тогда как полоса
+// под ними (`bg-[rgb(var(--color-bg,38_49_28))]`) шла 17,0,0 → 0,17,0 — подвал
+// ехал, буквы стояли. Блок подписки ВЫШЕ не трогаем: его полоса сидит на алиасе
+// темы --vanilla-header-bg (вердикт theme-var, чужой срез), и увести надпись в
+// схему в одиночку значило бы посадить тёмный текст на тёмно-зелёное.
+// Фолбэк 255_255_255 = прежний вид. Сторож: pnpm test:scheme-targets.
+const footerInkCls = "text-[rgb(var(--color-text,255_255_255))]";
+const columnTitleCls = `font-vanilla-arsenal text-base font-normal uppercase leading-none ${footerInkCls}`;
 
 // Канон socialColumn.socialLinks (enum платформ) → white-иконки верстальщика;
 // fallback = литеральный набор верстальщика дословно (TG/VK/TikTok/YouTube/Дзен).
@@ -305,7 +316,7 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 							<li>
 								<a
 									href={link.href}
-									class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+									class={`font-vanilla-arsenal text-base font-normal leading-none ${footerInkCls} transition-opacity hover:opacity-70`}
 								>
 									{link.label}
 								</a>
@@ -324,7 +335,7 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 						{phone && (
 						<a
 							href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+							class={`font-vanilla-arsenal text-base font-normal leading-none ${footerInkCls} transition-opacity hover:opacity-70`}
 						>
 							{phone}
 						</a>
@@ -332,13 +343,13 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 						{email && (
 						<a
 							href={`mailto:${email}`}
-							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+							class={`font-vanilla-arsenal text-base font-normal leading-none ${footerInkCls} transition-opacity hover:opacity-70`}
 						>
 							{email}
 						</a>
 						)}
 						{contactFields.map((f) => (
-						<div class="font-vanilla-arsenal text-base font-normal leading-none text-white">
+						<div class={`font-vanilla-arsenal text-base font-normal leading-none ${footerInkCls}`}>
 							<span>{f.label}:</span> {f.value}
 						</div>
 						))}
@@ -374,7 +385,7 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 				class="flex flex-col gap-4 max-sm:items-center max-sm:text-center md:flex-row md:items-center md:justify-between"
 			>
 				<p
-					class="font-vanilla-arsenal text-[14px] font-normal leading-[1.35] text-white md:text-base md:leading-none"
+					class={`font-vanilla-arsenal text-[14px] font-normal leading-[1.35] ${footerInkCls} md:text-base md:leading-none`}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="993"
 					data-puck-subsection-field="copyright"
@@ -393,7 +404,7 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 					{(infoLinks ?? []).map((link) => (
 						<a
 							href={link.href}
-							class="font-vanilla-arsenal text-base font-normal leading-none text-white transition-opacity hover:opacity-70"
+							class={`font-vanilla-arsenal text-base font-normal leading-none ${footerInkCls} transition-opacity hover:opacity-70`}
 						>
 							{link.label}
 						</a>

@@ -296,7 +296,16 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				<input type="search" name="q" placeholder="Поиск..." aria-label="Поиск" autocomplete="off" class="min-w-0 flex-1 bg-transparent font-manrope text-sm font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none" />
 				<button type="submit" class="flex h-8 shrink-0 items-center justify-center bg-[#000000] px-4 font-manrope text-[12px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-95">Найти</button>
 			</form>
-			<div data-search-results role="listbox" aria-label="Подсказки поиска" class="satin-container mt-1 hidden flex-col border border-[#DDDDDD] bg-white"></div>
+			{/* Подсказки поиска — «Фон» СХЕМЫ, как у ПАНЕЛИ, в которой они лежат
+			    ([data-search-panel] выше уже на bg-[rgb(var(--color-bg,255_255_255))]).
+			    Было `bg-white`: Tailwind 4 печатает его как var(--color-white) —
+			    переменная есть, схемы в ней нет, и выпадашка замирала белой, пока
+			    её собственная панель ехала за схемой (замер матрицы, схемы-зонды
+			    1 → 4: #fff → #fff против 17,0,0 → 0,17,0 у панели). Поле и кнопку
+			    поиска НЕ трогаем: их владелец 15.09 прибил к Схеме 1 правилом
+			    form[role="search"] в tokens-css (сторож search-always-scheme-1).
+			    Фолбэк 255_255_255 = прежний вид. Сторож: pnpm test:scheme-targets. */}
+			<div data-search-results role="listbox" aria-label="Подсказки поиска" class="satin-container mt-1 hidden flex-col border border-[#DDDDDD] bg-[rgb(var(--color-bg,255_255_255))]"></div>
 		</div>
 	</header>
 	</div>
@@ -342,7 +351,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						<NtIcon name="user" sizeClass="size-6" />
 					</a>
 				</div>
-				<div data-search-results role="listbox" aria-label="Подсказки поиска" class="mt-2 hidden flex-col border border-[#DDDDDD] bg-white"></div>
+				<div data-search-results role="listbox" aria-label="Подсказки поиска" class="mt-2 hidden flex-col border border-[#DDDDDD] bg-[rgb(var(--color-bg,255_255_255))]"></div>
 			</>
 		)}
 

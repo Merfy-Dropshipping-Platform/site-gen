@@ -55,15 +55,28 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					Вы пока не добавили товар в корзину
 				</p>
 			</div>
+			{/* Кнопка — «Кнопка» СХЕМЫ (эталон rose, CartSection.astro:54; та же роль,
+			    что у кнопки слайда flux после fix b19). Было `bg-black` + `text-white`:
+			    Tailwind 4 печатает их как var(--color-black)/var(--color-white) —
+			    переменные есть, схемы в них нет, и кнопка замирала (замер матрицы,
+			    схемы-зонды 1 → 4: #000 → #000 и #fff → #fff). Фолбэки = прежний вид.
+			    Сторож: pnpm test:cart-scheme, pnpm test:scheme-targets. */}
 			<a
 				href="/catalog"
-				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-black px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
+				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 			>
 				Продолжить покупки
 			</a>
+			{/* «Войти» и «Итого» — «Заголовок» СХЕМЫ, а НЕ «Текст»: у flux
+			    --color-text это вторичный серый #999999 (им набраны абзацы), и на нём
+			    выделенная надпись выцвела бы — тот же разбор, что у активного пункта
+			    меню (Header.astro, navActiveCls). Было `text-black`: Tailwind 4
+			    печатает его как var(--color-black) — переменная есть, схемы в ней нет
+			    (замер матрицы, схемы-зонды 1 → 4: #000 → #000). Фолбэк 0_0_0 =
+			    прежний вид. Сторож: pnpm test:cart-scheme. */}
 			<p class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">
 				Есть аккаунт?
-				<a href="/login" class="text-black hover:opacity-80">Войти</a>
+				<a href="/login" class="text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80">Войти</a>
 			</p>
 		</div>
 
@@ -90,14 +103,19 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 						Налоги, скидки и стоимость доставки рассчитываются при оформлении заказа
 					</p>
 					<div class="flex items-center gap-3">
-						<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">Итого</span>
-						<span data-cart-page-total class="font-roboto-flex text-[20px] font-light leading-normal text-black">0 ₽</span>
+						<span class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]">Итого</span>
+						<span data-cart-page-total class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]">0 ₽</span>
 					</div>
 				</div>
+				{/* «Оформить заказ» — та же пара ролей, что у кнопки выше. Надпись
+				    стояла на `text-white` (var(--color-white) у Tailwind 4: переменная
+				    есть, схемы нет), заливка — на фирменном оранжевом `bg-[#FA5109]`.
+				    Переводим ПАРОЙ, фолбэк 250_81_9 сохраняет оранжевый flux.
+				    Сторож: pnpm test:cart-scheme. */}
 				<button
 					type="button"
 					data-action="checkout"
-					class="inline-flex h-[56px] w-full items-center justify-center rounded-[6px] bg-[#FA5109] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-white transition-opacity hover:opacity-90"
+					class="inline-flex h-[56px] w-full items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,250_81_9))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 				>
 					Оформить заказ
 				</button>

@@ -22,9 +22,14 @@ const safe = rawContent ? sanitizePageContent(rawContent) : '';
 const hSize: 'small' | 'medium' | 'large' =
   headingSize === 'small' || headingSize === 'large' ? headingSize : 'medium';
 
+// `colorScheme` доезжает СТРОКОЙ `'scheme-N'` только из сырого Puck-дефолта.
+// Живая цепочка (adaptLegacyProps, src/themes/page-blocks.ts) нормализует ЛЮБОЙ
+// блок к ЧИСЛУ до рендера — `typeof === 'string'` пропускал бы её мимо, и
+// собственный класс секции остался бы без роли схемы (баг-репорт [28,42]).
+// `String(...)` понимает оба вида, как AccountSection.astro.
 const schemeClass =
-  typeof colorScheme === 'string' && colorScheme
-    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+  colorScheme !== undefined && colorScheme !== null && colorScheme !== ''
+    ? `color-scheme-${String(colorScheme).replace('scheme-', '')}`
     : '';
 const paddingStyle = padding
   ? `padding-top:${padding.top}px;padding-bottom:${padding.bottom}px;`

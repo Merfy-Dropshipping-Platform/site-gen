@@ -22,6 +22,14 @@
  * (проверено по `schemeToVars` в `src/themes/tokens-css.ts`) и за схемой не
  * пошёл бы. Границы — `--color-muted` с прозрачностью, тем же приёмом, что
  * алиасы дровера vanilla.
+ *
+ * Надпись с названием магазина — `--color-text`, а не `--color-accent`. Выбор
+ * по замеру контраста к фону окна на 10 сочетаниях тема×схема: accent тонет в
+ * трёх (vanilla scheme-1 — 1.27, bloom scheme-1 — 1.27, satin scheme-4 — 2.12),
+ * muted — в двух (flux scheme-3 — 1.54, bloom scheme-1 — 2.83), text не падает
+ * ниже 3.08. Порог контраста НЕ вводим и цвет мерчанта не подменяем: там, где
+ * пара схемы сама малоконтрастна (bloom scheme-1), окно выглядит ровно как
+ * панель корзины на той же схеме — это её собственный выбор.
  */
 ---
 
@@ -48,7 +56,7 @@
 			<div class="flex min-w-0 flex-col gap-1">
 				<p
 					data-cart-modal-brand
-					class="hidden truncate font-[family-name:var(--font-body)] text-[12px] font-light uppercase leading-none tracking-[0.08em] text-[rgb(var(--color-accent,var(--color-heading,0_0_0)))]"
+					class="hidden truncate font-[family-name:var(--font-body)] text-[12px] font-light uppercase leading-none tracking-[0.08em] text-[rgb(var(--color-text,0_0_0))]"
 				></p>
 				<h2
 					id="cart-added-title"

@@ -1321,6 +1321,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // (Rose делает hot-replace, другие темы fallback на полный iframe reload).
   var currentThemeId = '';
   var currentSiteId = '';
+  // Контекст коллекции страницы page-collection. Его кладёт в <head> GET-превью
+  // (injectPreviewCollectionGlobal) ровно для коллекционных маршрутов
+  // collections/preview и collections/<slug>. Возвращаем его серверу в
+  // теле POST /preview/block, чтобы ТОЧЕЧНЫЙ перерендер секции подставил
+  // {{COLLECTION_NAME}} так же, как целая страница и как живая витрина. Читаем
+  // ЛЕНИВО (функцией, а не константой): глобал ставит другой инжектор, порядок
+  // инжектов не гарантирован. На обычных страницах глобала нет → undefined →
+  // JSON.stringify выкидывает ключ, тело запроса прежнее.
+  function collectionCtx() {
+    var c = window.__MERFY_COLLECTION_CTX__;
+    return (c && typeof c === 'object') ? c : undefined;
+  }
 
   // Spec 090 — local-patch state. Хранит последний known props per blockId
   // чтобы compute diff при следующем update-block.
@@ -2299,7 +2311,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       fetch('/api/sites/' + currentSiteId + '/preview/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId }),
+        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId, collectionContext: collectionCtx() }),
       })
         .then(function (r) {
           if (!r.ok) {
@@ -2497,7 +2509,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return fetch('/api/sites/' + currentSiteId + '/preview/block', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId }),
+          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId, collectionContext: collectionCtx() }),
         })
           .then(function (r) { return r.ok ? r.text() : null; })
           .then(function (html) {

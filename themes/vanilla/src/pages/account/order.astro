@@ -23,8 +23,8 @@ const apiUrl = "https://gateway.merfy.ru/api";
       <span class="account-subtitle" id="order-subtitle">Загрузка...</span>
     </div>
 
-    <div id="order-loading" style="color: rgb(var(--color-text-muted)); font-family: var(--font-body);">Загрузка...</div>
-    <div id="order-not-found" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-text-muted));">
+    <div id="order-loading" style="color: rgb(var(--color-muted, 153 153 153)); font-family: var(--font-body);">Загрузка...</div>
+    <div id="order-not-found" class="hidden" style="font-family: var(--font-body); color: rgb(var(--color-muted, 153 153 153));">
       Заказ не найден. <a href="/account/orders" class="account-text-link" style="font-size: 0.875rem;">Вернуться к заказам</a>
     </div>
 
@@ -40,7 +40,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
     <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem;">
       <div style="background: rgb(var(--color-background)); border-radius: var(--radius-card); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 28rem; width: 100%; padding: 1.5rem;">
         <h3 style="font-family: var(--font-heading); font-size: 1.125rem; margin: 0 0 0.5rem;">Отмена заказа</h3>
-        <p style="font-family: var(--font-body); font-size: 0.875rem; color: rgb(var(--color-text-muted)); margin: 0 0 1rem;">После отмены восстановить заказ невозможно.</p>
+        <p style="font-family: var(--font-body); font-size: 0.875rem; color: rgb(var(--color-muted, 153 153 153)); margin: 0 0 1rem;">После отмены восстановить заказ невозможно.</p>
         <textarea id="cancel-reason" rows="3" maxlength="500" required placeholder="Укажите причину отмены" class="auth-input" style="height: auto; padding: 0.75rem 1rem; resize: none; margin-bottom: 0.5rem;"></textarea>
         <p id="cancel-error" class="hidden" style="font-family: var(--font-body); font-size: 0.75rem; color: rgb(var(--color-error)); margin: 0 0 0.75rem;"></p>
         <div style="display: flex; gap: 0.75rem;">

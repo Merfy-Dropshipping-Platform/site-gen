@@ -55,9 +55,15 @@ const SLIDE_FALLBACKS = [
 	"/images/vanilla-hero-slide-3.webp",
 ];
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => ({
+	// §11 Контракта секции: видимое поле панели «Изображение» (image) приоритетнее
+	// скрытого легаси «Изображение (старое)» (imageUrl). Раньше legacy читался
+	// ПЕРВЫМ, а он всегда заполнен дефолтом слайда — из-за этого выбранная
+	// мерчантом картинка слайда не применялась вообще (тестировщик, пункт 61).
+	// Тот же порядок уже стоит в flux/satin/bloom (коммит d7cc0ff8, 08.09).
+	// Гард: src/themes/__tests__/slideshow-merchant-image.spec.ts.
 	image:
-		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 		(typeof s.image === "string" && s.image.trim()) ||
+		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 		(hasSlides ? SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length] : ""),
 	title: (typeof s.heading === "string" ? s.heading : s.heading?.text) ?? "",
 	subtitle:

@@ -286,6 +286,15 @@ function stepBuild(o, ctx) {
 
 function stepInventory(o, ctx) {
   step('инвентарь конформанса satin');
+  // Перегенерация отказывается работать при грязном дереве — и правильно
+  // делает: иначе инвентарь снимется с незакоммиченной правки. Проверяем сами,
+  // чтобы причина называлась нашими словами, а не хвостом чужого вывода.
+  const dirty = git(ctx.root, 'status', '--porcelain').out.trim();
+  if (dirty) {
+    throw new Stop(5, `дерево испачкалось во время прогона: ${dirty.split('\n').length} файл(ов)`,
+      'кто-то правил файлы, пока шли шаги 3–4. Закоммитьте или уберите правку и запустите поезд заново — инвентарь, снятый с незакоммиченного, обманет и вас, и CI.',
+      tail(dirty, 12));
+  }
   const r = sh('pnpm conformance:satin:refresh-inventory', { cwd: ctx.root });
   if (r.code !== 0) throw new Stop(5, 'перегенерация инвентаря упала', 'см. вывод: pnpm conformance:satin:refresh-inventory', tail(r.all, 25));
   const file = 'conformance/inventory/satin.generated.json';
@@ -299,15 +308,15 @@ function stepInventory(o, ctx) {
 }
 
 function buildGuardSet(o, ctx) {
-  if (o.guards === 'none') return [];
   const scripts = JSON.parse(readFileSync(resolve(ctx.root, 'package.json'), 'utf-8')).scripts ?? {};
-  let list;
+  let list = [];
   if (o.guards === 'ci') list = collectGuards(ctx.root);
-  else {
+  else if (o.guards !== 'none') {
     if (!existsSync(o.guards)) throw new Stop(6, `файл со списком гардов не найден: ${o.guards}`, 'укажите существующий файл или --guards ci');
     const raw = JSON.parse(readFileSync(o.guards, 'utf-8'));
     list = (raw.guards ?? []).map((cmd) => classify({ label: cmd, cmd, cwd: null, job: 'файл' }, scripts));
   }
+  // `--guards none --guard <команда>` — прогнать ровно названное и ничего больше.
   for (const cmd of o.extraGuards) list.push(classify({ label: cmd, cmd, cwd: null, job: '--guard' }, scripts));
   return list;
 }

@@ -30,6 +30,8 @@ import {
 import { migrateRevisionData } from "./utils/revision-migrations";
 import { buildSiteHost, buildSitePublicUrl } from "./common/site-domain";
 import { resolveAssetUrls } from "./themes/asset-resolver";
+import { filterSeededPagesOnWrite } from "./utils/revision-write-filter";
+import { seedContentPagesFromTheme } from "./themes/content-page-seed";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
 import { SitesEventsService } from "./events/events.service";
@@ -1502,6 +1504,14 @@ export class SitesDomainService {
         this.logger.warn(`PageResolver.normalizeRevision failed for site ${siteId}: ${e instanceof Error ? e.message : e}`);
       }
     }
+    // B17: контент-страницы («О нас»/«Доставка»/«Контакты») досеиваются из
+    // ПАКЕТА ТЕМЫ здесь, а не выдумываются конструктором пустым блоком
+    // «Страница». Записать этот сид обратно в ревизию не даёт
+    // revision-write-filter, поэтому правки темы продолжают доходить.
+    normalizedData = await seedContentPagesFromTheme(
+      normalizedData as Record<string, unknown>,
+      site.themeId,
+    );
     // Resolve relative asset paths → absolute URLs (via site.publicUrl) so
     // constructor sidebar image previews load directly. Merchant uploads
     // are already absolute → helper skips them. Single URL contract across
@@ -1573,6 +1583,48 @@ export class SitesDomainService {
     }
   }
 
+  /**
+   * B17: убирает из сохраняемой ревизии страницы, которые сервер и так
+   * досеивает при чтении. Подробный разбор — в utils/revision-write-filter.ts.
+   *
+   * Читает ПРЕДЫДУЩУЮ сохранённую ревизию в сыром виде (без migrateRevisionData)
+   * — эталон сида должен считаться от того, что реально лежит в БД, иначе он
+   * вычислялся бы из тех же досеянных данных, которые мы проверяем.
+   */
+  private async stripSeededPages(
+    site: { id: string; themeId?: string | null; publicUrl?: string | null; currentRevisionId?: string | null },
+    data: any,
+  ): Promise<any> {
+    try {
+      let storedPrev: Record<string, unknown> | null = null;
+      if (site.currentRevisionId) {
+        const [prev] = await this.db
+          .select({ data: schema.siteRevision.data })
+          .from(schema.siteRevision)
+          .where(eq(schema.siteRevision.id, site.currentRevisionId));
+        storedPrev = (prev?.data as Record<string, unknown> | undefined) ?? null;
+      }
+      const res = await filterSeededPagesOnWrite(
+        data as Record<string, unknown>,
+        storedPrev,
+        site.themeId ?? null,
+        site.publicUrl ?? null,
+      );
+      if (res.dropped.length || res.unfrozen.length) {
+        this.logger.log(
+          `revision write filter site=${site.id}: не вморожено ${res.dropped.length} [${res.dropped.join(",")}], разморожено ${res.unfrozen.length} [${res.unfrozen.join(",")}]`,
+        );
+      }
+      return res.data;
+    } catch (e) {
+      // Фильтр — оптимизация, а не условие записи. Упал — пишем как прислали.
+      this.logger.warn(
+        `revision write filter failed for site ${site.id}: ${e instanceof Error ? e.message : e}`,
+      );
+      return data;
+    }
+  }
+
   async createRevision(params: {
     tenantId: string;
     siteId: string;
@@ -1581,17 +1633,28 @@ export class SitesDomainService {
     actorUserId?: string;
     setCurrent?: boolean;
     expectedCurrentRevisionId?: string | null;
+    /**
+     * B17: включает серверный фильтр сида (revision-write-filter). Ставится
+     * ТОЛЬКО на внешнем пути сохранения (конструктор → sites.revisions.create).
+     * Внутренние вызовы (создание сайта, reseed при смене темы) пишут
+     * эталонный контент темы намеренно и фильтроваться не должны.
+     */
+    filterSeededPages?: boolean;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
     const id = crypto.randomUUID();
+    let dataToPersist = params.data;
+    if (params.filterSeededPages) {
+      dataToPersist = await this.stripSeededPages(site, params.data);
+    }
     if (params.setCurrent && params.expectedCurrentRevisionId !== undefined) {
       const expectedCurrentRevisionId = params.expectedCurrentRevisionId;
       await this.db.transaction(async (tx) => {
         await tx.insert(schema.siteRevision).values({
           id,
           siteId: params.siteId,
-          data: params.data ?? {},
+          data: dataToPersist ?? {},
           meta: params.meta ?? {},
           createdAt: new Date(),
           createdBy: params.actorUserId,
@@ -1621,7 +1684,7 @@ export class SitesDomainService {
     await this.db.insert(schema.siteRevision).values({
       id,
       siteId: params.siteId,
-      data: params.data ?? {},
+      data: dataToPersist ?? {},
       meta: params.meta ?? {},
       createdAt: new Date(),
       createdBy: params.actorUserId,

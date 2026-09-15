@@ -91,7 +91,7 @@ const textCls =
 			: "font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
 
 // Канон imagePosition left/right: 'left' (canon-default) и отсутствие = крупная
-// плитка слева; 'right' зеркалит раскладку lg:grid-cols-2 через lg:order.
+// плитка слева; 'right' зеркалит раскладку через lg:order + смену колонок.
 const mirror = p.imagePosition === "right";
 const heroOrderCls = mirror ? " lg:order-2" : "";
 const sideOrderCls = mirror ? " lg:order-1" : "";
@@ -231,7 +231,23 @@ const sideTiles = galleryTiles.slice(1);
 // Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
 // половину рядом с пустотой.
 const soloTile = galleryTiles.length === 1;
-const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
+// Баг владельца (2026-09-16, скриншот): «фото + товар + коллекция» — плитка
+// товара стояла СПРАВА-СВЕРХУ, плитка коллекции СПРАВА-СНИЗУ (стопка), а не
+// рядом друг с другом. Прежний `lg:grid-cols-2` делил секцию 50/50 и рисовал
+// боковые плитки в СВОЮ строку (`grid grid-cols-2`, бок о бок) — структурно
+// другая раскладка, чем у rose/bloom: там колонка справа УЗКАЯ
+// (`minmax(280px,429px)`), большая плитка забирает остаток (`minmax(0,1fr)`),
+// а боковые плитки СТОПКОЙ (`flex flex-col`) друг под другом. 154px пустоты
+// под парой карточек (прошлый замер, 4d4a11ce) были симптомом ЭТОЙ же
+// структурной разницы — заплатка `lg:h-full`/`lg:flex-1` закрыла ЧИСЛО (0px),
+// но не саму раскладку, и колонка в две плитки в ряд рядом с почти квадратной
+// большой плиткой продолжала выглядеть «рассыпанной». Колонки и стопка теперь
+// 1-в-1 структура rose/bloom (только цвета/радиусы/шрифты — свои, manner satin).
+const gridLayoutCls = soloTile
+	? "lg:grid-cols-1"
+	: mirror
+		? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
+		: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
 // Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
 // В паре с боковой колонкой высоту большой плитке задаёт СТРОКА
 // (`lg:h-full` + `lg:flex-1` на медиа), а не собственный аспект: иначе низы
@@ -349,7 +365,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`grid grid-cols-2 gap-4${sideOrderCls}`}>
+				// Стопка (`flex flex-col`), не ряд: паритет rose/bloom (боковая
+				// колонка узкая, плитки одна над другой — «товар сверху, коллекция
+				// снизу», а не бок о бок). Было `grid grid-cols-2` — баг владельца.
+				<div class={`flex min-h-0 min-w-0 flex-col gap-4${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}
@@ -363,7 +382,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-index={i + 1}
 							data-puck-subsection-field="items"
 						>
-							<div class="aspect-[430/564] w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+							{/* Было aspect-[430/564] (портретная, под узкую ПОЛОВИНУ колонки
+							    в ряду). Колонка теперь на всю ширину бокового трека
+							    (minmax(280px,429px)) — почти квадрат, паритет bloom (652/594),
+							    чтобы стопка из двух плиток не выходила вдвое выше большой. */}
+							<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
 								{tile.url && (
 									<img
 										src={tile.url}

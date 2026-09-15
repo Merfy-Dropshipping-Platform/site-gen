@@ -30,10 +30,22 @@ function slotSet(raw: unknown): boolean {
 // реальных слайдов у мерчанта (p.slides[] непустой). Нет ни одного слайда →
 // пустое состояние = ПЛЕЙСХОЛДЕР (НЕ 3 мок-слайда «Там, где классика…» с фото-
 // кампаниями верстальщика /images/4x/*.png).
+// §11 Контракта секции: видимое поле панели «Изображение» (image) приоритетнее
+// скрытого легаси «Изображение (старое)» (imageUrl) — тот же порядок, что и в
+// маппинге slides ниже (строки ~95-97). Раньше ЭТОТ гейт (в отличие от рендера)
+// читал imageUrl ПЕРВЫМ: слайд со старым легаси-путём верстальщика
+// (/images/4x/…) и ОЧИЩЕННЫМ заголовком получал `image` = легаси-путь ДО того,
+// как проверялось реальное фото мерчанта — slotImage() гасил легаси-путь в "",
+// и .some() решал, что во ВСЕХ слайдах нет сигнала, заменяя их ЦЕЛИКОМ на
+// ПЛЕЙСХОЛДЕР (PLACEHOLDER_SLIDE) — мерчант выбирал фото, а секция показывала
+// заглушку «Слайд-шоу»/«Добавь несколько изображений…» (баг владельца
+// 2026-09-16: «медиафайл в слайде применяется только в Bloom»). Живой пруф:
+// POST /preview/block с {image:"<реальное>", imageUrl:"/images/4x/…",
+// heading:""} — до правки 0 вхождений выбранного фото, 1 плейсхолдер.
 const hasSlides =
 	Array.isArray(p.slides) &&
 	p.slides.some((s: any) => {
-		const image = (typeof s?.imageUrl === "string" && s.imageUrl) || (typeof s?.image === "string" && s.image) || "";
+		const image = (typeof s?.image === "string" && s.image) || (typeof s?.imageUrl === "string" && s.imageUrl) || "";
 		const heading = typeof s?.heading === "string" ? s.heading : s?.heading?.text;
 		return !!slotImage(image) || slotSet(typeof heading === "string" ? heading : "");
 	});

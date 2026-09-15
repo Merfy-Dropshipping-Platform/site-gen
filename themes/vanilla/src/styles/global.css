@@ -4,6 +4,8 @@
 @import "../../../../packages/theme-base/styles/base.css";
 /* Строка фильтров каталога на узком экране (тап-таргет 44px + панель не за экраном) — общий источник. */
 @import "../../../../packages/theme-base/styles/catalog-filters.css";
+/* Переключение раскладок каталога top ⇄ side (на <lg всегда top) — общий источник. */
+@import "../../../../packages/theme-base/styles/catalog-layout.css";
 @source "../../../DesignSystemsTheme/src/**/*.{astro,ts,tsx,js,jsx}";
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */

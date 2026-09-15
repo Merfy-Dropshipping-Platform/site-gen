@@ -28,7 +28,11 @@ import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
-import { adaptLegacyProps, extractPageBlocks } from '../themes/page-blocks';
+import {
+  adaptLegacyProps,
+  extractPageBlocks,
+  applyCollectionContextToProps,
+} from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
 import { getSystemPageRoute, getChromeKind, getChromeKindByPageId, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from '../themes/page-registry';
@@ -43,6 +47,10 @@ import { migrateRevisionData } from '../utils/revision-migrations';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
 import { injectPreviewAccountGlobal } from '../common/preview-account-inline';
+import {
+  injectPreviewCollectionGlobal,
+  type PreviewCollectionContext,
+} from '../common/preview-collection-inline';
 import { createRenderContext, type RenderContext } from '../render/create-render-context';
 import { applyPageBinding } from '../render/page-transclude';
 import { fetchPublications } from '../generator/data-fetcher';
@@ -57,6 +65,14 @@ interface RenderBlockBody {
   blockType: string;
   props: Record<string, unknown>;
   themeId?: string | null;
+  /**
+   * Контекст коллекции для страницы `page-collection` — агент превью
+   * возвращает сюда глобал `__MERFY_COLLECTION_CTX__`, который GET-превью
+   * положило в <head> отдаваемой страницы. Есть → секция рендерится с
+   * подставленными {{COLLECTION_*}} (как целая страница и как live); нет →
+   * страница не коллекционная, поведение прежнее.
+   */
+  collectionContext?: PreviewCollectionContext | null;
 }
 
 /**
@@ -308,26 +324,34 @@ export class PreviewController {
       !unifiedCart &&
       !unifiedAccount &&
       !unifiedLogin;
+
+    // Контекст коллекции считаем ДО развилки v2/блоб: он нужен не только для
+    // подстановки {{COLLECTION_*}} в блоки v2-страницы, но и для глобала
+    // __MERFY_COLLECTION_CTX__ в <head> — его агент превью возвращает в
+    // POST /preview/block, чтобы ТОЧЕЧНЫЙ перерендер секции подставлял
+    // коллекцию так же, как целая страница (баг владельца 15.09: правка в
+    // панели «Группа товаров» показывала сырой {{COLLECTION_NAME}}).
+    // Маршруты коллекций: `collections/preview` — пресет шаблона,
+    // `collections/<slug>` — конкретная коллекция; иначе null и всё как раньше.
+    const collectionSlug = this.collectionSlugFromRoute(route);
+    const collectionContext =
+      collectionSlug !== null
+        ? await this.resolveCollectionContextForPreview(
+            loaded.data,
+            collectionSlug,
+            siteId,
+            loaded.tenantId,
+            collectionNameOverride,
+          )
+        : undefined;
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
         // блоки страницы page-collection (а не отдельной page-<slug>): извлекаем
-        // блоки по этому ключу, а slug кладём в collectionContext, чтобы
-        // плейсхолдеры {{COLLECTION_*}} в строковых props подставились (зеркало
-        // generatePuckCollectionsSlugPage на live).
-        const collectionSlug = this.collectionSlugFromRoute(route);
+        // блоки по этому ключу. Сам slug и контекст коллекции подняты выше —
+        // они нужны и блоб-пути (глобал __MERFY_COLLECTION_CTX__).
         const pageKeyForBlocks =
           collectionSlug !== null ? 'page-collection' : page;
-        const collectionContext =
-          collectionSlug !== null
-            ? await this.resolveCollectionContextForPreview(
-                loaded.data,
-                collectionSlug,
-                siteId,
-                loaded.tenantId,
-                collectionNameOverride,
-              )
-            : undefined;
         const v2Blocks = await extractPageBlocks(
           loaded.data,
           pageKeyForBlocks,
@@ -381,6 +405,7 @@ export class PreviewController {
               this.productBlockIdFromRevision(loaded.data),
               PreviewService.bareThemeKey(loaded.themeId!),
               this.productSectionFromRevision(loaded.data),
+              collectionContext,
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -570,6 +595,7 @@ export class PreviewController {
         this.productBlockIdFromRevision(loaded.data),
         PreviewService.bareThemeKey(loaded.themeId!),
         this.productSectionFromRevision(loaded.data),
+        collectionContext,
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -729,12 +755,32 @@ export class PreviewController {
       // причина, по которой ниже футеру дают applyFooterData: у этого пути не
       // было общей нормализации. publicUrl не передаём — URL этому маршруту
       // переписывает rewriteRootUrlsToPrefix ниже, поведение ссылок прежнее.
+      // Страница коллекции — ШАБЛОН: её props несут {{COLLECTION_NAME}} /
+      // {{COLLECTION_DESCRIPTION}} / {{COLLECTION_IMAGE}}, а не готовый текст.
+      // Подставляем ТОЙ ЖЕ функцией и в ТОМ ЖЕ порядке (после adaptLegacyProps),
+      // что и путь целой страницы (extractPageBlocks) и live (substituteVars в
+      // collections/[slug].astro). Пока подстановки здесь не было, точечный
+      // перерендер секции — а им идёт ЛЮБАЯ правка панели, включая «Выбор
+      // коллекции», — подменял нарисованный заголовок сырым плейсхолдером
+      // (баг владельца 15.09: `{{COLLECTION_NAME}}` в «Группе товаров»).
+      //
+      // Контекст приходит глобалом __MERFY_COLLECTION_CTX__, который GET-превью
+      // положило в <head> ЭТОЙ ЖЕ страницы: источник истины — маршрут, как на
+      // витрине (там `collectionSlug={slug}` перебивает проп секции). Контекста
+      // нет → страница не коллекционная, всё как раньше.
+      const collectionCtx =
+        body.collectionContext && typeof body.collectionContext === 'object'
+          ? (body.collectionContext as PreviewCollectionContext)
+          : undefined;
+      const adaptedProps = adaptLegacyProps(
+        (body.props ?? {}) as Record<string, unknown>,
+        null,
+        body.blockType,
+      );
       const propsWithContext: Record<string, unknown> = {
-        ...adaptLegacyProps(
-          (body.props ?? {}) as Record<string, unknown>,
-          null,
-          body.blockType,
-        ),
+        ...(collectionCtx
+          ? applyCollectionContextToProps(body.blockType, adaptedProps, collectionCtx)
+          : adaptedProps),
         siteId,
       };
       const loaded = await this.loadRevisionData(siteId);
@@ -1025,6 +1071,7 @@ export class PreviewController {
     productBlockId?: string | null,
     themeName?: string | null,
     productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
+    collectionContext?: PreviewCollectionContext | undefined,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
@@ -1044,6 +1091,11 @@ export class PreviewController {
     // гость по-прежнему уходит на /login. Почему это не утечка — в шапке
     // src/common/preview-account-inline.ts.
     html = injectPreviewAccountGlobal(html);
+    // Контекст коллекции для ТОЧЕЧНОГО перерендера секции: агент превью читает
+    // этот глобал и кладёт его в тело POST /preview/block. Без него hot-render
+    // рисовал сырой {{COLLECTION_NAME}} вместо имени коллекции. На не
+    // коллекционных страницах контекста нет — HTML не меняется.
+    html = injectPreviewCollectionGlobal(html, collectionContext);
     const dadataToken = process.env.DADATA_API_KEY;
     if (dadataToken) {
       html = html.replace(

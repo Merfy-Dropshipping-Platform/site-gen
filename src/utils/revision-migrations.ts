@@ -668,6 +668,64 @@ const LEGACY_CHECKOUT_TYPES: ReadonlySet<string> = new Set<string>([
   'CheckoutTerms',
 ]);
 
+/**
+ * b35 (16.09, локальный стенд): «Цветовая схема» чекаута (CheckoutForm /
+ * CheckoutSummary) сидировалась платформенной константой `'scheme-2'`,
+ * которая молча предполагала, что вторая схема темы всегда светлая. Неверно —
+ * у vanilla заводская Схема 2 тёмно-оливковая (`58 69 48`), у bloom розовая
+ * (`227 142 159`); мерчант открывал чекаут (и превью, и витрину — оба пути
+ * стампуют класс из ОДНОГО этого значения, см. `chrome-assembler.
+ * patchCheckoutColumnScheme`) и видел его перекрашенным в акцент темы.
+ *
+ * `scheme-checkout` — своя, НЕЧИСЛОВАЯ «схема»: не входит в редактируемый
+ * мерчантом список 1..5, поэтому не путается с реальным выбором, и её CSS
+ * (`CHECKOUT_SCHEME_CSS`, `src/themes/tokens-css.ts`) фиксированно светлый —
+ * не зависит от темы (Figma 1:13398 — чекаут всегда светлый). Кнопка/акцент
+ * не переопределяются в этом правиле — наследуются от `:root`, то есть от
+ * схемы магазина по умолчанию.
+ *
+ * Зеркало (держать байт-в-байт синхронно при переименовании):
+ * `CHECKOUT_SCHEME_ID` в `src/themes/tokens-css.ts` — `scheme-checkout` минус
+ * префикс `scheme-` (снимает `schemeIdOf`/`schemeIdFromProp`) даёт ровно её.
+ */
+const CHECKOUT_SCHEME_PROP = 'scheme-checkout';
+
+/** Прежнее сидовое значение — только ЕГО retag красит в новую схему (осознанный выбор мерчанта не трогаем, тот же приём что `dropSeededCartScheme`). */
+const CHECKOUT_SEED_SCHEME = 'scheme-2';
+const CHECKOUT_BLOCK_TYPES = new Set(['CheckoutForm', 'CheckoutSummary']);
+
+/**
+ * Ретроактивный аналог `dropSeededCartScheme`, но для чекаута: существующие
+ * ревизии, засеянные до b35 литералом `'scheme-2'` на CheckoutForm/
+ * CheckoutSummary, переводим на `CHECKOUT_SCHEME_PROP`. В отличие от корзины —
+ * БЕЗ гейта по теме: чекаут не «принадлежит теме» (см. коммент у
+ * `dropSeededCartScheme`), Figma 1:13398 требует светлый чекаут на ВСЕХ пяти
+ * темах одинаково, поэтому замена применяется универсально.
+ *
+ * Снимается ТОЛЬКО точное `'scheme-2'` (значение сида) — если мерчант явно
+ * выбрал в панели именно Схему 2, значение неотличимо от сида и тоже
+ * переедет; это тот же принятый компромисс, что и в `dropSeededCartScheme`.
+ */
+function retagSeededCheckoutScheme(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  const page =
+    (pagesData['page-checkout'] as PageData | undefined) ??
+    (pagesData['checkout'] as PageData | undefined);
+  if (!page || !Array.isArray(page.content)) return pagesData;
+  let changed = false;
+  const content = page.content.map((block) => {
+    const b = block as { type?: string; props?: Record<string, unknown> };
+    if (!b?.type || !CHECKOUT_BLOCK_TYPES.has(b.type) || !b.props) return block;
+    if (b.props.colorScheme !== CHECKOUT_SEED_SCHEME) return block;
+    changed = true;
+    return { ...b, props: { ...b.props, colorScheme: CHECKOUT_SCHEME_PROP } };
+  });
+  if (!changed) return pagesData;
+  const patchedPage = { ...(page as object), content };
+  return { ...pagesData, 'page-checkout': patchedPage, checkout: patchedPage };
+}
+
 function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   // Constructor uses `page-checkout` key, live `pages/checkout.astro` reads
   // `checkout`. Keep BOTH keys in sync (migrate either source → both).
@@ -724,11 +782,16 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
       },
       {
         type: 'CheckoutForm',
-        props: { id: `CheckoutForm-${ts0 + 1}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 0 } },
+        // b35: НЕ 'scheme-2' — платформенная константа молча считала вторую
+        // схему темы светлой (у vanilla она тёмно-оливковая, у bloom —
+        // розовая). `scheme-checkout` — отдельная, нечисловая схема с
+        // фиксированными светлыми токенами (Figma 1:13398), см.
+        // `CHECKOUT_SCHEME_CSS` в `tokens-css.ts`.
+        props: { id: `CheckoutForm-${ts0 + 1}`, colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
       },
       {
         type: 'CheckoutSummary',
-        props: { id: `CheckoutSummary-${ts0 + 2}`, colorScheme: 'scheme-2', padding: { top: 0, bottom: 0 } },
+        props: { id: `CheckoutSummary-${ts0 + 2}`, colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
       },
       footer ?? getHomeChrome(pagesData).footerBlock,
     ];
@@ -760,7 +823,8 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
       type: 'CheckoutForm',
       props: {
         id: `CheckoutForm-${ts + 1}`,
-        colorScheme: 'scheme-2',
+        // b35: НЕ 'scheme-2' — см. `retagSeededCheckoutScheme` ниже.
+        colorScheme: CHECKOUT_SCHEME_PROP,
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
     },
@@ -768,7 +832,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
       type: 'CheckoutSummary',
       props: {
         id: `CheckoutSummary-${ts + 2}`,
-        colorScheme: 'scheme-2',
+        colorScheme: CHECKOUT_SCHEME_PROP,
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
     },
@@ -2398,6 +2462,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateCheckoutPage(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = retagSeededCheckoutScheme(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = migrateVanillaHomePage(out.pagesData as Record<string, unknown>, themeId);

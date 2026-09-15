@@ -69,10 +69,23 @@ function seedThemeSettings(theme: string): Record<string, unknown> {
   return (seed.themeSettings ?? {}) as Record<string, unknown>;
 }
 
-/** Правила `.color-scheme-N` собранного tokens-css: id → тело правила. */
+/**
+ * Правила `.color-scheme-N` собранного tokens-css: id → тело правила.
+ *
+ * ТОЛЬКО числовые id (1..5, редактируемые мерчантом схемы темы). b35 завёл
+ * `.color-scheme-checkout` — отдельную, НЕЧИСЛОВУЮ «схему» чекаута
+ * (`CHECKOUT_SCHEME_CSS`, `tokens-css.ts`), фиксированный платформенный
+ * константный набор из 5 переменных (специально БЕЗ `--color-input-border` —
+ * состав дословно повторяет прежнюю инлайн-заплатку bloom). Она не входит в
+ * мерчантский список схем и не обязана нести тот же набор переменных, что
+ * schemeToVars даёт каждой из 1..5 — если ловить её этим сканом, «21 связка
+ * (5 тем)» ниже превратилась бы в 26, а «рамка объявлена у каждой схемы»
+ * ловила бы chекаут как схему без рамки. Гард на саму `.color-scheme-checkout`
+ * — отдельный файл `checkout-scheme-parity.spec.ts`.
+ */
 function schemeRules(css: string): Map<string, string> {
   const out = new Map<string, string>();
-  const re = /\.color-scheme-([A-Za-z0-9_-]+)\s*\{([^}]*)\}/g;
+  const re = /\.color-scheme-([0-9]+)\s*\{([^}]*)\}/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(css))) out.set(m[1], m[2]);
   return out;

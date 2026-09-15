@@ -15,7 +15,10 @@ import { resolve } from "node:path";
  *   • satin  — те же 13;
  *   • vanilla — 17 из 18 (фон 255,255,255, весь текст 10,10,10);
  *   • flux   — 16 из 18 на момент замера; фон корня починен веткой flux-product
- *              (main fc58e01b), литералы внутри секций остались (см. ниже);
+ *              (main fc58e01b), литералы ВНУТРИ секций сняты веткой
+ *              fix/b17-flux-cart-literals — кнопки, значок скидки, счётчик и
+ *              тексты переведены на токены схемы (пара --color-button-*,
+ *              --color-text, акцент темы для значка скидки);
  *   • rose   — эталон, едет полностью.
  *
  * Причины оказались РАЗНЫЕ, поэтому сторожей два:
@@ -41,24 +44,12 @@ const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const THEMES = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
 const SECTIONS = ["CartBody", "CartSummary"] as const;
 
-/**
- * Темы, где корзина ЕЩЁ красится литералом, и это чинит другой агент в своей
- * ветке. Держим как ДОЛГ, а не как «разрешено»: когда ветка вольётся, тест
- * «долг ещё на месте» упадёт и заставит убрать тему отсюда.
- * Долг flux ЗАКРЫТ ЧАСТИЧНО. Ветка fix/b13-flux-product-scheme-layout влита в
- * main (fc58e01b) и перевела на токен схемы ФОН КОРНЯ секций корзины — эту
- * проверку flux теперь проходит наравне со всеми. Внутри секций у него
- * остались литералы (кнопка «Оформить заказ» bg-[#FA5109], кнопки bg-black,
- * значок скидки, плашка превью) — это отдельная задача, и до неё факт держится
- * инвертированной проверкой ниже: починят — она упадёт и заставит снять
- * исключение.
- */
-const FLUX_INNER_DEBT = "flux";
-
 /** Литералы, которые остаются законными (совпадают с эталоном rose). */
 const ALLOWED = [
   {
-    line: /size-\d+ shrink-0 overflow-hidden[^"]*bg-\[#F5F5F5\]/,
+    // size-20 (rose) либо size-[207px] (flux) — важно, что это квадратная
+    // обрезанная плашка превью, а не произвольный серый фон.
+    line: /size-(?:\d+|\[[^\]]+\]) shrink-0 overflow-hidden[^"]*bg-\[#F5F5F5\]/,
     why: "плейсхолдер превью товара — серая плашка под картинкой, как в rose",
   },
   {
@@ -107,7 +98,7 @@ function rootTag(src: string): string {
 }
 
 describe("секции корзины едут за цветовой схемой", () => {
-  describe.each(THEMES.filter((t) => t !== FLUX_INNER_DEBT))("%s", (theme) => {
+  describe.each(THEMES)("%s", (theme) => {
     it.each(SECTIONS)("%s — ни одной постоянной краски литералом", (section) => {
       const bad = literalPaintLines(sectionSource(theme, section));
       expect(bad).toEqual([]);
@@ -153,12 +144,4 @@ describe("секции корзины едут за цветовой схемо�
     });
   });
 
-
-  // Долг: внутри секций flux краска всё ещё литералом (кнопки, значок, плашка).
-  describe(`${FLUX_INNER_DEBT} — известный долг внутри секций`, () => {
-    it("литералы ВНУТРИ корзины ещё на месте (починят — убрать исключение)", () => {
-      const bad = SECTIONS.flatMap((sec) => literalPaintLines(sectionSource(FLUX_INNER_DEBT, sec)));
-      expect(bad.length).toBeGreaterThan(0);
-    });
-  });
 });

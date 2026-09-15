@@ -43,6 +43,12 @@
  * global.css) из `--color-button-bg` / `--color-button-text` схемы. У магазина
  * без своих схем вид не меняется: заводская «Кнопка» темы это и есть прежний
  * чёрный. Сторож: `pnpm test:scheme-targets`.
+ *
+ * ПЯТЫЙ ПАРАМЕТР «Кнопка» (репорт тестера 15.09, пункт [5], владелец: «можно
+ * взять из секции Изображение с текстом») — доп. CTA-ссылка над формой,
+ * канон {text, href|link} и визуал скопированы дословно с solid-варианта
+ * ImageWithText.astro (rose). Пустой текст СКРЫВАЕТ кнопку — на сайтах, где
+ * поле не задано, вид не меняется.
  */
 import { schemeIdOf } from "../../lib/color-scheme";
 
@@ -52,6 +58,7 @@ interface Props {
 	text?: string;
 	colorScheme?: number | string;
 	padding?: { top?: number; bottom?: number };
+	button?: { text?: string; href?: string; link?: string | { href?: string } };
 }
 const {
 	id,
@@ -59,6 +66,7 @@ const {
 	text = "Введите e-mail — пришлём ссылку для входа. Войдём в аккаунт или создадим новый.",
 	colorScheme,
 	padding,
+	button,
 } = Astro.props as Props;
 
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
@@ -66,6 +74,15 @@ const shopId = "";
 const apiUrl = "https://gateway.merfy.ru/api";
 const schemeClass = `color-scheme-${schemeIdOf(colorScheme) || "2"}`;
 const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padding?.bottom ?? 80}px;`;
+
+// Кнопка: канон button {text, href|link}, дословно как в ImageWithText —
+// пустой текст скрывает кнопку (нет регрессии на сайтах без настройки).
+const btnText = typeof button?.text === "string" && button.text.trim() ? button.text : undefined;
+const btnHref =
+	(typeof button?.href === "string" && button.href ? button.href : undefined) ??
+	(typeof button?.link === "object" ? button?.link?.href : undefined) ??
+	(typeof button?.link === "string" && button.link ? button.link : undefined) ??
+	"/catalog";
 ---
 
 <section
@@ -98,6 +115,16 @@ const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padd
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));">{text}</p>
 				)}
 			</div>
+
+			{btnText && (
+				<a
+					href={btnHref}
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="button"
+					class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+				>{btnText}</a>
+			)}
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
 				<div class="flex flex-col items-start gap-2 w-full">

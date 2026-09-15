@@ -6,11 +6,16 @@
  * решистрацию/вход. У секции Вход два парметра Заголовок и Текст. У секции в
  * сайдбаре Цветовая схема и отступы».
  *
- * Итого РОВНО ЧЕТЫРЕ параметра: heading, text, colorScheme, padding. Ни одного
- * сверх — состав панели канон (`conformance/panel-canon.json` +
- * `pnpm test:panel-canon`). Обратите внимание на разницу с соседями: у
- * «Избранного» два параметра, у «Личного кабинета» и «Заказов» — один. Это не
- * описка и не повод «унифицировать»: каждый состав назван владельцем отдельно.
+ * БЫЛО РОВНО ЧЕТЫРЕ параметра: heading, text, colorScheme, padding. 15.09
+ * владелец расширил состав пунктом [5] репорта тестера: «В секции Вход
+ * добавить параметр кнопка. Можно взять из секции Изображение с текстом».
+ * Пятый параметр — `button`, формат {text, link} дословно как у ImageWithText
+ * (суб-панель, hiddenInMainPanel). Состав панели по-прежнему канон
+ * (`conformance/panel-canon.json` + `pnpm test:panel-canon`), просто теперь
+ * пять полей, а не четыре — пересъёмка канона отдельным коммитом.
+ * Обратите внимание на разницу с соседями: у «Избранного» два параметра, у
+ * «Личного кабинета» и «Заказов» — один. Это не описка и не повод
+ * «унифицировать»: каждый состав назван владельцем отдельно.
  *
  * Три требования ломаются тремя разными способами, и каждое проверяется:
  *   • состав панели — правится в одном puckConfig, а видит владелец через день;
@@ -55,16 +60,17 @@ const SLUG = "/login";
 const SEED_FILE = "pages/login.json";
 
 /**
- * Ровно четыре параметра в этом порядке. Порядок — тот, в котором владелец их
+ * Ровно пять параметров в этом порядке. Порядок — тот, в котором владелец их
  * назвал: сперва содержимое («Заголовок», «Текст»), потом оформление
- * («Цветовая схема», «Отступы»).
+ * («Цветовая схема», «Отступы»), пятым — «Кнопка» (репорт тестера [5], 15.09).
  */
-const EXPECTED_FIELDS = ["heading", "text", "colorScheme", "padding"] as const;
+const EXPECTED_FIELDS = ["heading", "text", "colorScheme", "padding", "button"] as const;
 const EXPECTED_LABELS: Record<string, string> = {
   heading: "Заголовок",
   text: "Текст",
   colorScheme: "Цветовая схема",
   padding: "Отступы",
+  button: "Кнопка",
 };
 
 type FieldCanon = {
@@ -137,7 +143,7 @@ describe("секция «Вход» — панель", () => {
     expect(panels[theme]?.[BLOCK]?.label).toBe("Вход");
   });
 
-  it.each(THEMES)("%s: РОВНО четыре параметра, в назначенном порядке", (theme) => {
+  it.each(THEMES)("%s: РОВНО пять параметров, в назначенном порядке", (theme) => {
     if (!distReady) return;
     const fields = Object.keys(panels[theme]?.[BLOCK]?.fields ?? {});
     // Сообщение важнее равенства: лишний параметр надо назвать по имени.
@@ -180,6 +186,24 @@ describe("секция «Вход» — панель", () => {
     expect(fields.heading?.visibility).toBe("panel");
     expect(fields.text?.visibility).toBe("panel");
   });
+
+  it.each(THEMES)(
+    "%s: «Кнопка» — суб-панель дословно как у ImageWithText (репорт [5])",
+    (theme) => {
+      if (!distReady) return;
+      const mine = panels[theme]?.[BLOCK]?.fields?.button;
+      const reference = panels[theme]?.ImageWithText?.fields?.button;
+      expect(mine?.label).toBe("Кнопка");
+      expect(mine?.type).toBe(reference?.type);
+      expect(mine?.visibility).toBe(reference?.visibility);
+      // Владелец назвал источник буквально: та же форма суб-панели.
+      expect(Object.keys(mine?.objectFields ?? {})).toEqual(
+        Object.keys(reference?.objectFields ?? {}),
+      );
+      expect(mine?.objectFields?.text?.type).toBe(reference?.objectFields?.text?.type);
+      expect(mine?.objectFields?.link?.type).toBe(reference?.objectFields?.link?.type);
+    },
+  );
 });
 
 describe("секция «Вход» — рендер", () => {
@@ -250,6 +274,35 @@ describe("секция «Вход» — рендер", () => {
     // измениться у тех, кто ничего не настраивал.
     expect(html).toContain("Вход в аккаунт");
     expect(html).toContain("Введите e-mail");
+  });
+
+  it.each(THEMES)("%s: без пропа «Кнопка» ничего лишнего не рисует (нет регрессии)", (theme) => {
+    const html = renderSection(theme, { id: `${BLOCK}-1` });
+    if (html === null) return;
+    // Пятый параметр добавлен ПОСЛЕ живых сайтов — сайт без настройки обязан
+    // выглядеть как прежде: без пропа кнопки нет вовсе.
+    expect(html).not.toContain('data-puck-subsection-field="button"');
+  });
+
+  it.each(THEMES)("%s: «Кнопка» доезжает текстом и ссылкой до разметки", (theme) => {
+    const html = renderSection(theme, {
+      id: `${BLOCK}-1`,
+      button: { text: "КНОПКА-ПРУФ-42", link: "/proof-link-42" },
+    });
+    if (html === null) return;
+    expect(html).toContain("КНОПКА-ПРУФ-42");
+    expect(html).toContain("/proof-link-42");
+    expect(html).toContain('data-puck-subsection-field="button"');
+  });
+
+  it.each(THEMES)("%s: «Кнопка» с пустым текстом СКРЫТА", (theme) => {
+    const html = renderSection(theme, {
+      id: `${BLOCK}-1`,
+      button: { text: "", link: "/proof-link-42" },
+    });
+    if (html === null) return;
+    expect(html).not.toContain("/proof-link-42");
+    expect(html).not.toContain('data-puck-subsection-field="button"');
   });
 });
 

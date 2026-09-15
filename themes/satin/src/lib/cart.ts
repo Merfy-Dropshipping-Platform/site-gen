@@ -1,17 +1,56 @@
 /**
- * Корзина Satin — локальная реализация {@link createNtCart} (`nt-cart-satin.ts`),
- * превью строк с WebP в drawer, поддержка `variantCombinationId` и совместимость
- * API с DS.
+ * Корзина Satin — ЕДИНОЕ ядро nt-cart (`packages/theme-base/runtime/nt-cart`) +
+ * только satin-разметка строки дровера.
+ *
+ * Была локальная копия ядра (`nt-cart-satin.ts`). Она разошлась с общим на 309
+ * строк и не имела reconcile-самолечения, variantImage и хука разметки строки.
+ * Мигрировано тем же путём, что flux (theme-registry/CART-WISHLIST.md):
+ * storageKey/eventPrefix НЕ менялись — корзины покупателей живы.
  */
 import {
 	createNtCart,
 	type NtCartLine,
 	type NtCartLineVariant,
-} from "./nt-cart-satin";
+} from "../../../../packages/theme-base/runtime/nt-cart";
+import { cartLineThumbPictureHtml } from "./cart-thumb-html";
 
 const api = createNtCart({
 	storageKey: "satin:cart:v1",
 	eventPrefix: "satin:cart",
+	// Само-лечение корзины из каталога — как у rose (эталон). У локальной копии
+	// ядра его не было: корзина могла показывать старую цену.
+	catalogUrl: "/data/products.json",
+	// Разметка строки дровера — дословно из прежней локальной копии (вид satin
+	// сохранён байт-в-байт): шрифт manrope, скруглённое превью, рамка #F5F5F5.
+	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
+		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+		const pHref = `${productPathPrefix}/${line.productId}`;
+		const thumb = cartLineThumbPictureHtml(line.image, line.name);
+		return `
+					<li class="flex items-start gap-4" data-line-id="${line.id}">
+						<a href="${pHref}" class="block size-20 shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
+							${thumb}
+						</a>
+						<div class="flex flex-1 flex-col gap-2">
+							<div class="flex items-start justify-between gap-2">
+								<div class="flex flex-col gap-1">
+									<a href="${pHref}" class="font-manrope text-[16px] font-normal leading-normal text-[#000000] hover:opacity-80">${line.name}</a>
+									${variant ? `<span class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
+								</div>
+								<button type="button" data-cart-remove data-id="${line.id}" class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:text-[#000000]" aria-label="Удалить">Удалить</button>
+							</div>
+							<div class="flex items-center justify-between">
+								<div class="inline-flex h-9 items-center rounded-[4px] border border-[#F5F5F5]">
+									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Уменьшить">−</button>
+									<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
+									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Увеличить">+</button>
+								</div>
+								<span class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">${formatPrice(line.price * line.quantity)}</span>
+							</div>
+						</div>
+					</li>
+				`;
+	},
 });
 
 export type CartLine = NtCartLine;

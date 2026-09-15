@@ -1,0 +1,140 @@
+---
+/**
+ * Окно «Товар добавлен в корзину» — ОДНА разметка на все пять тем.
+ *
+ * Подключается один раз из storefront-рантайма темы (rose —
+ * `StorefrontRuntime.astro`, остальные — `Layout.astro`). Механика живёт в
+ * `runtime/cart-added-modal.ts` и дёргается делегатом `nt-cart.ts`; здесь
+ * только разметка и контракт data-атрибутов.
+ *
+ * Вид следует своей теме без единого per-theme файла: цвета — схемные токены
+ * (`--color-*`, их проставляет `applyCartSchemeTo` с того же источника, что
+ * красит корзину), шрифты — `--font-heading` / `--font-body`, скругления —
+ * `--radius-button` / `--radius-card` / `--radius-media`. Поэтому у bloom окно
+ * остаётся с круглыми кнопками (её `--radius-button` = 100px), у vanilla и
+ * satin — с прямыми углами (0px), у rose — 8px, у flux — 4px.
+ *
+ * Хексов и rgb()-литералов здесь нет: правило `packages/theme-base/CLAUDE.md`.
+ * Единственное исключение — затемнение подложки (`bg-black/30`): это не цвет
+ * темы, а нейтральная вуаль, ровно как было в bloom.
+ *
+ * `--color-border` сознательно НЕ используется: он не попадает в правила схем
+ * (проверено по `schemeToVars` в `src/themes/tokens-css.ts`) и за схемой не
+ * пошёл бы. Границы — `--color-muted` с прозрачностью, тем же приёмом, что
+ * алиасы дровера vanilla.
+ */
+---
+
+<div
+	data-cart-added-modal
+	class="fixed inset-0 z-[120] hidden items-center justify-center px-4 py-8"
+	aria-hidden="true"
+>
+	<button
+		type="button"
+		data-cart-modal-overlay
+		class="absolute inset-0 bg-black/30"
+		aria-label="Закрыть окно"
+	></button>
+
+	<section
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="cart-added-title"
+		data-cart-modal-card
+		class="relative z-10 flex w-full max-w-[430px] translate-y-3 flex-col gap-6 rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.3)] bg-[rgb(var(--color-bg,255_255_255))] p-5 text-[rgb(var(--color-text,0_0_0))] opacity-0 shadow-[0_24px_80px_rgb(var(--color-heading,0_0_0)/0.18)] transition-[opacity,transform] duration-300 ease-out md:max-w-[520px] md:p-6"
+	>
+		<div class="flex items-start justify-between gap-4">
+			<div class="flex min-w-0 flex-col gap-1">
+				<p
+					data-cart-modal-brand
+					class="hidden truncate font-[family-name:var(--font-body)] text-[12px] font-light uppercase leading-none tracking-[0.08em] text-[rgb(var(--color-accent,var(--color-heading,0_0_0)))]"
+				></p>
+				<h2
+					id="cart-added-title"
+					class="font-[family-name:var(--font-heading)] text-[20px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]"
+				>
+					Товар добавлен в корзину
+				</h2>
+			</div>
+			<button
+				type="button"
+				data-cart-modal-close
+				class="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-surface,245_245_245))] text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80"
+				aria-label="Закрыть"
+			>
+				<svg
+					width="20"
+					height="20"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="round"
+					aria-hidden="true"
+				>
+					<path d="M6 6l12 12M18 6L6 18"></path>
+				</svg>
+			</button>
+		</div>
+
+		<div
+			class="flex gap-4 rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.2)] bg-[rgb(var(--color-surface,245_245_245))] p-3"
+		>
+			<a
+				href="#"
+				data-cart-modal-product-link
+				class="group block size-[96px] shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-bg,255_255_255))] md:size-[112px]"
+			>
+				<img
+					src=""
+					alt=""
+					data-cart-modal-image
+					width="112"
+					height="112"
+					decoding="async"
+					class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+				/>
+			</a>
+			<div class="flex min-w-0 flex-1 flex-col justify-center gap-2">
+				<a
+					href="#"
+					data-cart-modal-name
+					class="font-[family-name:var(--font-body)] text-[16px] font-light leading-[1.2] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[18px]"
+				></a>
+				<p
+					data-cart-modal-volume
+					class="hidden font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+				></p>
+				<p
+					data-cart-modal-price
+					class="font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]"
+				></p>
+			</div>
+		</div>
+
+		<div class="grid gap-3">
+			<a
+				href="/cart"
+				data-cart-modal-cart-link
+				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-5 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+			>
+				В корзину
+			</a>
+			<button
+				type="button"
+				data-cart-modal-buy-now
+				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-secondary-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-secondary-bg,255_255_255))] px-5 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-button-secondary-text,0_0_0))] transition-opacity hover:opacity-90"
+			>
+				Купить сейчас
+			</button>
+			<button
+				type="button"
+				data-cart-modal-continue
+				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.35)] bg-[rgb(var(--color-surface,245_245_245))] px-5 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80"
+			>
+				Продолжить покупки
+			</button>
+		</div>
+	</section>
+</div>

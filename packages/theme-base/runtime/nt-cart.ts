@@ -21,6 +21,8 @@
  * Новая тема = свой renderDrawerItem + `createNtCart({prefix, renderDrawerItem})`.
  */
 
+import { createCartAddedModal } from "./cart-added-modal";
+
 export interface NtCartLineVariant {
 	color?: string;
 	size?: string;
@@ -336,8 +338,32 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 
 	const formatCartPrice = formatPrice;
 
+	/**
+	 * Строка корзины, отвечающая карточке списка. У SSR-карточки нет
+	 * combinationId (демо-разметка их не несёт), поэтому сопоставляем по
+	 * productId + цвет + размер, игнорируя combinationId. Перенесено из bloom
+	 * вместе с toggle-кнопками карточек.
+	 */
+	const findCardLine = (productId: string, variant?: NtCartLineVariant) =>
+		getCart().find(
+			(line) =>
+				line.productId === productId &&
+				(line.variant?.color ?? "") === (variant?.color ?? "") &&
+				(line.variant?.size ?? "") === (variant?.size ?? ""),
+		);
+
+	/** Префикс темы из eventPrefix (`bloom:cart` → `bloom`) — ключ `<тема>:buynow`. */
+	const themeKey = eventPrefix.split(":")[0] ?? "";
+
 	const initCartUI = () => {
 		if (typeof window === "undefined") return;
+
+		const addedModal = createCartAddedModal({
+			formatPrice,
+			getCartCount: () => getCartCount(),
+			productPathPrefix,
+			themeKey,
+		});
 
 		const renderBadges = () => {
 			const count = getCartCount();
@@ -378,41 +404,106 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			total.textContent = formatPrice(getCartTotal(lines));
 		};
 
+		/**
+		 * Toggle-состояние карточек списка (перенесено из bloom вместе с флоу):
+		 * кнопка отражает, лежит ли выбранный вариант в корзине. Работает только
+		 * у кнопок с data-cart-toggle — у остальных тем это no-op.
+		 */
+		const syncProductCards = () => {
+			document
+				.querySelectorAll<HTMLButtonElement>("[data-add-to-cart][data-cart-toggle]")
+				.forEach((btn) => {
+					const inCart = Boolean(
+						findCardLine(btn.dataset.productId ?? "", {
+							color: btn.dataset.variantColor || undefined,
+							size: btn.dataset.variantSize || undefined,
+						}),
+					);
+					btn.dataset.inCart = inCart ? "true" : "false";
+					btn.setAttribute("aria-pressed", inCart ? "true" : "false");
+					const label = inCart ? btn.dataset.labelInCart : btn.dataset.labelDefault;
+					if (label) btn.textContent = label;
+				});
+		};
+
 		const onClick = (event: MouseEvent) => {
 			const target = event.target as HTMLElement;
+
+			// Клик внутри окна «Товар добавлен» разбирает его собственный рантайм.
+			if (addedModal.handleClick(target)) return;
+
+			// Свотч цвета на карточке списка (перенесено из bloom): выбирает вариант
+			// для кнопки «В корзину». Корень карточки ищем суффиксным селектором —
+			// тем же приёмом, что tokens.css красит `[data-nt$="-product-card"]`,
+			// поэтому работает у любой темы, а не только у bloom.
+			const swatch = target.closest<HTMLButtonElement>("[data-card-color]");
+			if (swatch) {
+				const card = swatch.closest<HTMLElement>('[data-nt$="-product-card"]');
+				if (!card) return;
+				card.querySelectorAll<HTMLButtonElement>("[data-card-color]").forEach((b) => {
+					b.setAttribute("aria-checked", b === swatch ? "true" : "false");
+				});
+				card
+					.querySelector<HTMLButtonElement>("[data-add-to-cart]")
+					?.setAttribute("data-variant-color", swatch.dataset.cardColor ?? "");
+				syncProductCards();
+				return;
+			}
 
 			const addBtn = target.closest<HTMLButtonElement>("[data-add-to-cart]");
 			if (addBtn) {
 				event.preventDefault();
+				const variant = {
+					color: addBtn.dataset.variantColor || undefined,
+					size: addBtn.dataset.variantSize || undefined,
+					variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
+				};
+				const productId = addBtn.dataset.productId ?? "";
+
+				// Toggle-кнопки карточек (перенесено из bloom): повторный клик по товару,
+				// который уже в корзине, удаляет его — и окно тогда не показываем.
+				// Кнопки без data-cart-toggle (PDP, гидрация) всегда добавляют.
+				if (addBtn.hasAttribute("data-cart-toggle")) {
+					const existing = findCardLine(productId, variant);
+					if (existing) {
+						removeFromCart(existing.id);
+						return;
+					}
+				}
+
 				addToCart({
-					productId: addBtn.dataset.productId ?? "",
+					productId,
 					name: addBtn.dataset.name ?? "",
 					price: addBtn.dataset.price ?? "0",
 					oldPrice: addBtn.dataset.oldPrice,
 					image: addBtn.dataset.image ?? "",
 					quantity: Number(addBtn.dataset.quantity ?? "1"),
-					variant: {
-						color: addBtn.dataset.variantColor || undefined,
-						size: addBtn.dataset.variantSize || undefined,
-						variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
-					},
+					variant,
 				});
-				// In-button фидбек («показывайся прямо в кнопке»): кнопка кратко
-				// показывает «Добавлено ✓», затем возвращает исходный текст. Работает в
-				// любом режиме корзины и на всех add-кнопках (Product, PopularProducts, каталог).
-				if (addBtn.dataset.ntFeedback !== "1") {
-					const originalHtml = addBtn.innerHTML;
-					addBtn.dataset.ntFeedback = "1";
-					addBtn.innerHTML =
-						'<span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Добавлено</span>';
-					window.setTimeout(() => {
-						addBtn.innerHTML = originalHtml;
-						addBtn.removeAttribute("data-nt-feedback");
-					}, 1600);
+
+				// Флоу bloom, теперь общий (владелец, 15.09 — «да, везде окно»): после
+				// добавления показываем окно «Товар добавлен в корзину», а сайдбар сам
+				// НЕ открывается. Он остаётся доступен по иконке корзины в шапке.
+				// Прежний in-button фидбек «Добавлено ✓» убран: под оверлеем окна его
+				// не видно (решение владельца там же).
+				if (addedModal.exists()) {
+					const line = getCart().find((l) => l.id === makeLineId(productId, variant));
+					addedModal.open({
+						productId,
+						name: addBtn.dataset.name ?? "",
+						price: addBtn.dataset.price ?? "0",
+						image: addBtn.dataset.image ?? "",
+						volume: addBtn.dataset.volume || undefined,
+						lineTotal: line ? line.price * line.quantity : undefined,
+						quantity: line?.quantity ?? 1,
+						origin: addBtn,
+					});
+					return;
 				}
-				// Корзина «Страница» (--cart-type=page): не открывать дровер — товар просто
-				// кладётся (бейдж обновится), на /cart уходим по клику на иконку. drawer
-				// (дефолт) — открываем панель как раньше.
+
+				// Фолбэк для страниц БЕЗ разметки окна (тема ещё не подключила
+				// компонент, одиночный preview/block): прежнее поведение — сайдбар,
+				// кроме вида корзины «Страница».
 				if (
 					getComputedStyle(document.documentElement)
 						.getPropertyValue("--cart-type")
@@ -443,9 +534,16 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		};
 
 		document.addEventListener("click", onClick);
+		// Окно закрывается по Escape и при уходе со страницы (View Transitions):
+		// иначе оверлей переживал бы навигацию и блокировал витрину.
+		document.addEventListener("keydown", (event) => {
+			if ((event as KeyboardEvent).key === "Escape") addedModal.close();
+		});
+		document.addEventListener("astro:before-swap", () => addedModal.close());
 		window.addEventListener(evUpdated, () => {
 			renderBadges();
 			renderDrawer();
+			syncProductCards();
 		});
 		// View Transitions: модульный init-скрипт НЕ перезапускается после client-side
 		// навигации, а DOM шапки/дровера на новой странице — другой. Без перерисовки на
@@ -456,12 +554,14 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		document.addEventListener("astro:page-load", () => {
 			renderBadges();
 			renderDrawer();
+			syncProductCards();
 			// Само-лечение при client-side навигации (VT не перезапускает init-модуль).
 			if (catalogUrl) void reconcileCart(catalogUrl);
 		});
 
 		renderBadges();
 		renderDrawer();
+		syncProductCards();
 		// Само-лечение цен/наличия из каталога → корзина всегда актуальна (= оформлению).
 		if (catalogUrl) void reconcileCart(catalogUrl);
 	};

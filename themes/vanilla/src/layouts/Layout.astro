@@ -5,10 +5,6 @@ import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
 import LoginDrawer from "../components/LoginDrawer.astro";
 import VanillaCartDrawer from "../components/VanillaCartDrawer.astro";
-// Окно «Товар добавлен в корзину» — ОБЩИЙ компонент theme-base (флоу bloom,
-// поднятый в общий слой). Разметка и механика одни на пять тем; вид идёт за
-// схемой/шрифтами/скруглениями этой темы.
-import CartAddedModal from "../../../../packages/theme-base/primitives/CartAddedModal.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -60,7 +56,11 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		{header !== "checkout" && <Footer />}
 		<LoginDrawer />
 		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
-		<CartAddedModal />
+		{/* Окно «Товар добавлен в корзину» (theme-base/primitives/CartAddedModal.astro)
+		    СНЯТО у vanilla (владелец, 16.09 — «работать только в bloom и flux
+		    должно»). Без разметки окна `addedModal.exists()` в nt-cart.ts
+		    возвращает false, и клик по «В корзину» падает на прежний фолбэк —
+		    автооткрытие дровера (кроме вида корзины «Страница»). */}
 		<script>
 			import { initCartUI } from "../lib/cart";
 			import { initWishlistUI } from "../lib/wishlist";

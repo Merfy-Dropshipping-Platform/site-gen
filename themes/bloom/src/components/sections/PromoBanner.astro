@@ -72,9 +72,15 @@ const textCls =
 		? `font-inter ${sz.text} font-normal uppercase leading-normal text-[rgb(var(--color-text,255_255_255))]`
 		: `font-inter ${sz.text} font-normal leading-normal text-[rgb(var(--color-text,255_255_255))]`;
 
-// «Отступы» убраны (Figma 648:57318): высоту полосы задаёт ТОЛЬКО «Размер»
-// (min-h 32/40/48). padding из ревизии НЕ применяется — иначе старые баннеры
-// с padding {12,12} выходят за макетную высоту (полоса толще макета). Эталон rose.
+// Канон «Отступы» {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
+// rose/flux/vanilla T11). «Размер» задаёт минимальную высоту полосы, «Отступы»
+// добавляют вертикальные поля поверх неё. Легаси-значение старого сида {12,12}
+// снимается миграцией ревизий (normalizePromoBannerPadding) — вид ненастроенных
+// баннеров тот же. До этой правки паддинг молча игнорировался (замер стенда:
+// проп {60,60} → на экране 8/8, py-2 из rootCls/плейсхолдера не отпускал).
+const paddingStyle = p.padding
+	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
+	: undefined;
 
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
@@ -102,6 +108,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   (классы/токены rootCls + textCls байт-в-байт, поведение не меняется). */
 		<div
 			class={rootCls + selfSchemeClass}
+			style={paddingStyle}
 			role="region"
 			aria-live="polite"
 			data-bloom-announcement
@@ -133,6 +140,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   и НЕ дефолт-акция «Бесплатная доставка…»). Эталон rose PromoBanner.astro. */
 		<div
 			class="flex min-h-12 w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 py-2 text-center md:px-20 xl:px-[300px] 2xl:px-[680px]"
+			style={paddingStyle}
 			role="region"
 			aria-live="polite"
 			data-bloom-announcement

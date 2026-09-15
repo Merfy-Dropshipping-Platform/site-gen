@@ -1,49 +1,36 @@
 /**
- * Размерные настройки темы обязаны доезжать до вёрстки bloom.
+ * Размерные настройки темы: канал «Кегль заголовка Hero»/«Кегль пунктов меню»
+ * у bloom СНЯТ, у розы остаётся эталоном.
  *
- * Жалоба владельца 2026-09-15: «в теме bloom размеры всей темы и всех секций не
- * совпадают ни с чем — она в разы меньше всех настроек и остальных тем».
- * Эталон для разбора багов тем — РОЗА (уточнение владельца от 2026-09-15).
+ * История. Жалоба владельца 2026-09-15: «в теме bloom размеры всей темы и всех
+ * секций не совпадают ни с чем — она в разы меньше всех настроек и остальных
+ * тем». 21473d98 подключил у bloom оба канала (`--size-hero-heading`,
+ * `--size-nav-link`) точно по каналу розы.
  *
- * ЗАМЕР «ДО» (живые стенды, playwright, окно 1440×1400, образ 8b18a896):
- *
- *   тема      настройка «Кегль заголовка Hero»   нарисовано   коэффициент
- *   bloom              48px                         20px         0.42
- *   satin              48px                         32px         0.67
- *   flux               48px                         48px         1.00
- *   vanilla            20px                         24px         1.20
- *
- * Общего множителя НЕТ: корневой кегль 16px, `zoom: 1`, `transform: none`,
- * `--container-max-width: 1320px`, абзац 16px — одинаковы у всех пяти тем.
- * Отношение bloom к эталону равно 1.00 по каждому из этих параметров и 0.42
- * ровно в одном месте — заголовке героя. Беда локальная, а не масштаб темы.
- *
- * ВНИМАНИЕ: роза и flux расходятся по КАНАЛУ этой настройки, и расхождение
- * здесь зафиксировано намеренно, а не сглажено:
- *
- *   тема    переменная                  где читается            запас
- *   rose    --size-hero-heading         только дефолтная ступень 40px
- *   bloom   --size-hero-heading         только дефолтная ступень 20px  ← по розе
- *   flux    --merchant-hero-heading     все три ступени          17/20/24px
- *
- * `--size-hero-heading` эмитится всегда (мерчант → манифест темы → 48px),
- * `--merchant-hero-heading` — только когда мерчант сам двинул ползунок.
- * bloom приведён к розе: её канал, её место (одна дефолтная ступень), её
- * правило «значение по умолчанию = собственный литерал темы».
+ * Владелец, 2026-09-16 (откат): «вернуть размеры темы… размеры слетели не
+ * текстов» + «верни типографику, если её увеличение было ошибочным — сверься…
+ * с тем, как было до 21473d98». Разбор показал: дефолт темы (theme.json) уже
+ * был верным (20px, чинился ОТДЕЛЬНЫМ коммитом d7acff5b 13.09, ДО 21473d98) —
+ * магазины без правки настройки не двигались ни на пиксель. Но у ЖИВОГО
+ * тестового стенда f7593c5f8f8f настройка уже стояла нештатно ДО 21473d98
+ * (замер :root на 16.09 — `--size-hero-heading: 48px`, `--size-nav-link: 14px`;
+ * сам 21473d98 фиксировал то же самое как «настройка 48px/14px, нарисовано
+ * 20px/16px» — то есть канал был подключён к уже нештатным данным одного
+ * тестового сайта). Подключение канала сделало эти нештатные данные видимыми
+ * (h1 48px, кегль меню 14px) — визуально «типографика увеличилась», хотя
+ * дефолт темы не сдвигался. Правку живых данных этого сайта агент делать не
+ * вправе (правило `AGENTS.md` — не писать в живые сайты), поэтому канал снят:
+ * bloom больше НЕ читает ни `--size-hero-heading`, ни `--size-nav-link` —
+ * ровно так же, как flux/satin/vanilla не читают `--size-hero-heading`
+ * (единственное отличие — flux ДОПОЛНИТЕЛЬНО читает мерчантский
+ * `--merchant-hero-heading`, см. ниже).
  *
  * Что сторожим — СЛЕДСТВИЕ, а не имя класса: классы отрисованного заголовка
  * разрешаем по НАСТОЯЩЕМУ собранному CSS темы (dist/theme-css/<тема>.css) и
- * смотрим объявления `font-size`, которые доедут до браузера. Проверка ловит и
- * случай «строку в разметку вписали, а утилиту tailwind не сгенерил» — тогда
- * объявления просто нет.
+ * смотрим объявления `font-size`, которые доедут до браузера.
  *
- * Вторая половина не менее важна: значение по умолчанию внутри `var(…, …)`
- * обязано совпадать с литералом вёрстки. Без неё «починка» подгонкой кегля
- * (18→48) прошла бы зелёной и увела бы тему от макета во всех магазинах, где
- * ползунок не трогали.
- *
- * Роза и flux держатся в проверке живыми образцами: сломают канал в общем
- * месте — красной станет не одна тема, а все три.
+ * Роза и flux держатся в проверке живыми образцами (канал розы — эталон на
+ * будущее, если решат подключать другие темы осознанно).
  *
  * Требует сборки (тот же порядок, что в CI):
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
@@ -65,13 +52,17 @@ type Size = "small" | "medium" | "large";
  *
  * Значение по умолчанию — литерал вёрстки самой темы: магазин, где ползунок не
  * трогали, обязан остаться на прежнем кегле.
+ *
+ * bloom: `variable: null` — канал СНЯТ 16.09 (откат 21473d98, см. шапку файла).
+ * `rungs: {}` выключает обе под-проверки «ступень читает переменную» и
+ * «дефолт внутри var(…) = литерал» для ВСЕХ трёх ступеней разом.
  */
 const HERO_CHANNEL: Record<
   Theme,
-  { variable: string; rungs: Partial<Record<Size, string>>; placeholderReads: boolean }
+  { variable: string | null; rungs: Partial<Record<Size, string>>; placeholderReads: boolean }
 > = {
   rose: { variable: "--size-hero-heading", rungs: { large: "40px" }, placeholderReads: true },
-  bloom: { variable: "--size-hero-heading", rungs: { large: "20px" }, placeholderReads: true },
+  bloom: { variable: null, rungs: {}, placeholderReads: false },
   flux: {
     variable: "--merchant-hero-heading",
     rungs: { small: "17px", medium: "20px", large: "24px" },
@@ -109,6 +100,11 @@ const HERO_LADDER: Record<Theme, Record<Size, [string, string]>> = {
 
 /** Литерал пункта меню шапки — он же значение по умолчанию `--size-nav-link`. */
 const NAV_FALLBACK: Record<Theme, string> = { rose: "16px", bloom: "16px", flux: "16px" };
+/**
+ * Читает ли тема `--size-nav-link` вообще. bloom — нет (канал снят 16.09,
+ * см. шапку файла); rose/flux читали канал ещё до 21473d98 и не затронуты.
+ */
+const NAV_CHANNEL: Record<Theme, boolean> = { rose: true, bloom: false, flux: true };
 
 const THEMES: Theme[] = ["rose", "bloom", "flux"];
 const SIZES: Size[] = ["small", "medium", "large"];
@@ -318,20 +314,23 @@ describe("размерные настройки темы доезжают до �
     describe.each(SIZES)("«Кегль заголовка Hero», ступень %s", (size) => {
       const fallback = channel.rungs[size];
 
-      if (fallback) {
-        it(`ступень читает ${channel.variable}`, () => {
+      // rungs непустой ⇒ канал этой темы подключён ⇒ variable гарантированно строка
+      // (bloom, у которой канал снят, идёт с rungs: {} и сюда не заходит вовсе).
+      const variable = channel.variable;
+      if (fallback && variable) {
+        it(`ступень читает ${variable}`, () => {
           const decls = fontSizeDecls(theme, classesOf(heroHeadingTag(theme, size)));
-          const reading = decls.filter((d) => readsVar(d, channel.variable));
+          const reading = decls.filter((d) => readsVar(d, variable));
           expect({
             тема: theme,
             ступень: size,
-            переменная: channel.variable,
+            переменная: variable,
             объявленияFontSize: decls,
             читающихНастройку: reading.length,
           }).toEqual({
             тема: theme,
             ступень: size,
-            переменная: channel.variable,
+            переменная: variable,
             объявленияFontSize: decls,
             читающихНастройку: expect.any(Number),
           });
@@ -343,11 +342,25 @@ describe("размерные настройки темы доезжают до �
           const found = decls
             .map(
               (d) =>
-                new RegExp(`var\\(\\s*${channel.variable}\\s*,\\s*([^)]+)\\)`).exec(d)?.[1]?.trim(),
+                new RegExp(`var\\(\\s*${variable}\\s*,\\s*([^)]+)\\)`).exec(d)?.[1]?.trim(),
             )
             .filter((v): v is string => Boolean(v));
           expect(found.length).toBeGreaterThan(0);
           for (const value of found) expect(value).toBe(fallback);
+        });
+      } else {
+        // Ступень БЕЗ канала (rose small/medium — намеренно; ВСЕ ступени bloom —
+        // канал снят 16.09). Негативная сторона той же проверки: НИ ОДНО
+        // объявление font-size этой ступени не смеет читать var(--size-*) —
+        // иначе саботаж «тихо вернуть канал» прошёл бы мимо гарда незамеченным
+        // (проверено: возврат `lg:text-[length:var(--size-hero-heading,20px)]`
+        // в bloom Hero.astro красит именно эту проверку).
+        it("ступень БЕЗ канала — ни одно объявление не читает var(--size-*)", () => {
+          const decls = fontSizeDecls(theme, classesOf(heroHeadingTag(theme, size)));
+          const reading = decls.filter((d) => /var\(\s*--size-[a-z0-9-]+/.test(d));
+          expect({ тема: theme, ступень: size, объявленияFontSize: decls, читающихVar: reading }).toEqual(
+            { тема: theme, ступень: size, объявленияFontSize: decls, читающихVar: [] },
+          );
         });
       }
 
@@ -361,7 +374,12 @@ describe("размерные настройки темы доезжают до �
 
     it("пустой герой (плейсхолдер): читает настройку кегля ровно так, как записано", () => {
       const decls = fontSizeDecls(theme, classesOf(heroPlaceholderTag(theme)));
-      const reading = decls.filter((d) => readsVar(d, channel.variable));
+      // Канал снят (variable === null, bloom) — сторожим ЛЮБОЙ var(--size-*), а
+      // не только конкретное имя: тест обязан покраснеть и при возврате СТАРОГО
+      // канала, и при подключении НОВОГО под другим именем.
+      const reading = channel.variable
+        ? decls.filter((d) => readsVar(d, channel.variable!))
+        : decls.filter((d) => /var\(\s*--size-[a-z0-9-]+/.test(d));
       expect({
         тема: theme,
         переменная: channel.variable,
@@ -375,7 +393,7 @@ describe("размерные настройки темы доезжают до �
       });
     });
 
-    it("«Кегль пунктов меню» доезжает до ссылок десктопного меню", () => {
+    it(`«Кегль пунктов меню» ${NAV_CHANNEL[theme] ? "доезжает до ссылок десктопного меню" : "СНЯТ — ссылки остаются на литерале"}`, () => {
       const all = navLinkClasses(theme);
       const reading = all.filter((cls) =>
         fontSizeDecls(theme, cls.split(/\s+/).filter(Boolean)).some((d) =>
@@ -387,34 +405,48 @@ describe("размерные настройки темы доезжают до �
         ссылокВМеню: all.length,
         читающихНастройку: expect.any(Number),
       });
-      expect(reading.length).toBeGreaterThanOrEqual(NAV_MIN_READERS);
+      if (NAV_CHANNEL[theme]) {
+        expect(reading.length).toBeGreaterThanOrEqual(NAV_MIN_READERS);
+      } else {
+        // bloom, 16.09: канал снят — ни одна ссылка не читает переменную,
+        // кегль пункта меню = чистый литерал вёрстки на любом магазине.
+        expect(reading.length).toBe(0);
+      }
     });
 
     it("значение по умолчанию пункта меню = литерал вёрстки", () => {
-      const fallbacks = navLinkClasses(theme)
-        .flatMap((cls) => fontSizeDecls(theme, cls.split(/\s+/).filter(Boolean)))
-        .map((d) => /var\(\s*--size-nav-link\s*,\s*([^)]+)\)/.exec(d)?.[1]?.trim())
-        .filter((v): v is string => Boolean(v));
-      expect(fallbacks.length).toBeGreaterThanOrEqual(NAV_MIN_READERS);
-      for (const value of fallbacks) expect(value).toBe(NAV_FALLBACK[theme]);
+      const classes = navLinkClasses(theme).flatMap((cls) => cls.split(/\s+/).filter(Boolean));
+      if (NAV_CHANNEL[theme]) {
+        const fallbacks = fontSizeDecls(theme, classes)
+          .map((d) => /var\(\s*--size-nav-link\s*,\s*([^)]+)\)/.exec(d)?.[1]?.trim())
+          .filter((v): v is string => Boolean(v));
+        expect(fallbacks.length).toBeGreaterThanOrEqual(NAV_MIN_READERS);
+        for (const value of fallbacks) expect(value).toBe(NAV_FALLBACK[theme]);
+      } else {
+        // Канал снят: сам литерал text-[16px] обязан остаться в классах ссылок
+        // (тот же порог NAV_MIN_READERS — иначе саботаж «стёр литерал совсем»
+        // прошёл бы мимо этой проверки незамеченным).
+        const literalReaders = classes.filter((cls) => cls === `text-[${NAV_FALLBACK[theme]}]`);
+        expect(literalReaders.length).toBeGreaterThanOrEqual(NAV_MIN_READERS);
+      }
     });
   });
 
   /**
-   * Расхождение розы и flux по каналу настройки — факт, а не недосмотр.
-   * Сторожим сам факт: если кто-то сведёт темы к одному каналу, проверка
-   * покраснеет и заставит принять это решение осознанно, а не мимоходом.
+   * Расхождение розы, flux и bloom по каналу настройки — факт, а не недосмотр.
+   * Сторожим сам факт: если кто-то снова подключит канал bloom без явного
+   * решения владельца, проверка покраснеет и заставит принять это осознанно.
    */
-  it("канал «Кегля заголовка Hero» у розы и flux РАЗНЫЙ (известное расхождение)", () => {
+  it("канал «Кегля заголовка Hero» у розы, flux и bloom РАЗНЫЙ (известное расхождение)", () => {
     expect({
       rose: HERO_CHANNEL.rose.variable,
       bloom: HERO_CHANNEL.bloom.variable,
       flux: HERO_CHANNEL.flux.variable,
     }).toEqual({
       rose: "--size-hero-heading",
-      bloom: "--size-hero-heading",
+      bloom: null,
       flux: "--merchant-hero-heading",
     });
-    expect(Object.keys(HERO_CHANNEL.bloom.rungs)).toEqual(Object.keys(HERO_CHANNEL.rose.rungs));
+    expect(HERO_CHANNEL.bloom.rungs).toEqual({});
   });
 });

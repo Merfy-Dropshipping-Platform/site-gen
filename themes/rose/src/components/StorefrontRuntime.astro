@@ -6,14 +6,14 @@
 // этот блок жил только в Layout.astro → страницы на BlogPost (например /about
 // до миграции, посты блога) оставались без скриптов витрины.
 import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
-// Окно «Товар добавлен в корзину» — ОБЩИЙ компонент theme-base (флоу bloom,
-// поднятый в общий слой). Разметка и механика одни на пять тем; вид идёт за
-// схемой/шрифтами/скруглениями этой темы.
-import CartAddedModal from "../../../../packages/theme-base/primitives/CartAddedModal.astro";
+// Окно «Товар добавлен в корзину» (packages/theme-base/primitives/CartAddedModal.astro)
+// СНЯТО у rose (владелец, 16.09 — «работать только в bloom и flux должно»).
+// Без разметки окна `addedModal.exists()` в nt-cart.ts возвращает false, и клик
+// по «В корзину» падает на прежний фолбэк темы — автооткрытие дровера (кроме
+// вида корзины «Страница») — устройство самого рантайма, не отдельная ветка.
 ---
 
 <NtCartDrawer rootId="cart-drawer-root" eventPrefix="rose:cart" />
-<CartAddedModal />
 {/* Тексты панели корзины из настроек темы («Заголовок панели», «Текст кнопки
     оформления», «Текст пустой корзины»). У настроек не было ни одного читателя:
     панель сохраняла значения, витрина показывала литералы дизайн-пакета.

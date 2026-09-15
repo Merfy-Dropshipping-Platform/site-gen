@@ -60,7 +60,6 @@
  * Popular/FluxProductDetail).
  */
 import { inlineFormat } from "../../lib/rich-text";
-import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import FluxPicture from "../img/FluxPicture.astro";
 import {
 	deriveVariantGroups,
@@ -71,6 +70,32 @@ import {
 	resolveComboPricing,
 	toPriceNumber,
 } from "../../lib/storefront-hydrate";
+
+// Иконки счётчика/стрелок/«Поделиться» — ИНЛАЙН SVG, не <NtIcon> (жалоба
+// владельца, пункт 5: «иконки»). `NtIcon` рендерит `<img src="/icons/X.svg">`
+// — сам файл несёт `stroke="var(--stroke-0, black)"`, задуман перекрашиваемым,
+// но у внешне подключённого через <img> SVG нет доступа к CSS-переменным
+// страницы: `var()` внутри такого файла ВСЕГДА берёт свой фолбэк (`black`),
+// сколько бы схему ни меняли. На тёмной схеме («Фон»/«Кнопка» близки к
+// чёрному) это буквально чёрная иконка на чёрном — невидима. Инлайн + `stroke:
+// currentColor` возвращает иконку в обычный каскад: `color` берёт цвет с
+// класса кнопки/обёртки, тот — с роли схемы. `NtIcon` (design-systems-theme,
+// общий на ВСЕ пять тем) не тронут — правка узкая, только эта секция.
+const MINUS_ICON_SVG =
+	'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+	'<path d="M5 12h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>';
+const PLUS_ICON_SVG =
+	'<svg viewBox="0 0 13.2 13.2" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+	'<path d="M6.60004 6.6H0.6M6.60004 6.6H12.6M6.60004 6.6V12.6M6.60004 6.6V0.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>';
+const SHARE_ICON_SVG =
+	'<svg viewBox="0 0 14.5333 17.2" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+	'<path d="M4.76667 3.26667L7.26667 0.6M7.26667 0.6L9.76667 3.26667M7.26667 0.6V9.48889M3.10019 6.82222C2.32362 6.82222 1.93534 6.82222 1.62905 6.95755C1.22067 7.13798 0.896024 7.48427 0.726868 7.91988C0.6 8.24658 0.6 8.66055 0.6 9.48889V13.7556C0.6 14.7512 0.6 15.2487 0.781656 15.629C0.941445 15.9635 1.19623 16.236 1.50983 16.4064C1.866 16.6 2.3325 16.6 3.26409 16.6H11.2696C12.2012 16.6 12.6671 16.6 13.0232 16.4064C13.3368 16.236 13.5921 15.9635 13.7519 15.629C13.9333 15.2491 13.9333 14.752 13.9333 13.7583V9.48889C13.9333 8.66055 13.9332 8.24658 13.8064 7.91988C13.6372 7.48427 13.3129 7.13798 12.9045 6.95755C12.5982 6.82222 12.2099 6.82222 11.4333 6.82222" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ARROW_LEFT_ICON_SVG =
+	'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+	'<path d="M15 7l-6 5 6 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ARROW_RIGHT_ICON_SVG =
+	'<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+	'<path d="M9 7l6 5-6 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 const p = Astro.props as Record<string, any>;
 const id = p.id;
@@ -89,7 +114,8 @@ const productIdRef = typeof p.productId === "string" ? p.productId.trim() : "";
 // Layout switch (Figma 648:55733 семантика, канон theme-base Product.puckConfig).
 // Все четыре значения панели работают (галерейные ветки ниже):
 //   carousel/дефолт — вёрстка как есть (главное фото + ряд миниатюр снизу);
-//   stacked — миниатюры СЕТКОЙ 3×N; split — миниатюры КОЛОНКОЙ слева;
+//   stacked — миниатюры СЕТКОЙ 2×N (канон theme-base ProductGallery, правка
+//   16.09 — было самодельных 3×N); split — миниатюры КОЛОНКОЙ слева;
 //   two-columns — все фото равной сеткой 2×N без главного.
 // Ранее layout нормализовался до stacked|carousel — «Макет» молчал на 2 из 4
 // значений, и настройка выглядела мёртвой.
@@ -270,9 +296,20 @@ const isTwoCols = layout === "two-columns";
 // 15.09, Chromium: у остальных четырёх тем «Сложенный» — 552 из 552 (100 %),
 // и у самого flux «Карусель» 596/652 (91 %), «2 колонки» — сетка во всю
 // ширину. То есть из четырёх макетов не заполнял колонку ровно «Сложенный».
+//
+// КОЛОНОК — ДВЕ, не три (жалоба владельца 16.09, пункт 5: «макет „Сложенный“
+// отображается неверно»). `grid-cols-3` был собственным изобретением порта —
+// канон «Сложенного» задаёт `packages/theme-base/blocks/Product/
+// ProductGallery.astro` (rose/bloom/satin/vanilla заходят сюда все через один
+// компонент): `data-thumbs-axis="grid"` → `grid grid-cols-2 gap-3 w-full`.
+// Три колонки делали плитку у flux заметно МЕЛЬЧЕ и ряд другой высоты, чем на
+// остальных четырёх темах при ОДНОЙ и той же настройке «Макет: Сложенный» —
+// разъехавшийся паритет, а не альтернативный дизайн (эталон платформы —
+// theme-base/rose, «Товара» напрямую в rose нет, но сетка миниатюр — общий
+// компонент). Сторож: pnpm test:scheme-targets («flux · Товар · Сложенный»).
 const thumbsTrackCls =
 	layout === "stacked"
-		? "grid w-full grid-cols-3 gap-3"
+		? "grid w-full grid-cols-2 gap-3"
 		: isSplit
 			? "flex flex-col items-start gap-3"
 			: "no-scrollbar flex flex-1 items-center gap-3 overflow-x-auto";
@@ -443,8 +480,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							))}
 						</div>
 						{thumbs.length >= 5 && layout !== "stacked" && !isSplit && (
-							<button type="button" class="flex size-11 shrink-0 items-center justify-center transition-opacity hover:opacity-70" data-cfg-thumbs-next aria-label="Следующие изображения">
-								<NtIcon name="arrow-slide-right" sizeClass="size-6" />
+							<button type="button" class="flex size-11 shrink-0 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70" data-cfg-thumbs-next aria-label="Следующие изображения">
+								<span class="block size-6" set:html={ARROW_RIGHT_ICON_SVG} />
 							</button>
 						)}
 					</div>
@@ -508,12 +545,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<!-- Счётчик -->
 				{quantityVisible && !isFieldHidden('quantity') && (
 					<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
-						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
-							<NtIcon name="minus" sizeClass="size-4" />
+						<button type="button" class="flex size-11 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
+							<span class="block size-4" set:html={MINUS_ICON_SVG} />
 						</button>
 						<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))]" data-cfg-qty-value>1</span>
-						<button type="button" class="flex size-11 items-center justify-center transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
-							<NtIcon name="plus" sizeClass="size-4" />
+						<button type="button" class="flex size-11 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
+							<span class="block size-4" set:html={PLUS_ICON_SVG} />
 						</button>
 					</div>
 				)}
@@ -563,7 +600,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70"
 					aria-label={shareText}
 				>
-					<NtIcon name="share" sizeClass="size-6" />
+					<span class="block size-6" set:html={SHARE_ICON_SVG} />
 					<span>{shareText}</span>
 				</button>
 				)}
@@ -590,11 +627,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 				{galleryImages.length > 1 && (
 					<>
-						<button type="button" class="absolute left-2 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center transition-opacity hover:opacity-70" data-cfg-prev aria-label="Предыдущее изображение">
-							<NtIcon name="arrow-slide-left" sizeClass="size-6" />
+						<button type="button" class="absolute left-2 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70" data-cfg-prev aria-label="Предыдущее изображение">
+							<span class="block size-6" set:html={ARROW_LEFT_ICON_SVG} />
 						</button>
-						<button type="button" class="absolute right-2 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center transition-opacity hover:opacity-70" data-cfg-next aria-label="Следующее изображение">
-							<NtIcon name="arrow-slide-right" sizeClass="size-6" />
+						<button type="button" class="absolute right-2 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70" data-cfg-next aria-label="Следующее изображение">
+							<span class="block size-6" set:html={ARROW_RIGHT_ICON_SVG} />
 						</button>
 					</>
 				)}
@@ -636,12 +673,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<!-- Счётчик -->
 			{quantityVisible && !isFieldHidden('quantity') && (
 				<div class="inline-flex w-fit items-center gap-3" data-cfg-qty data-puck-subsection-parent={id} data-puck-subsection-index="104" data-puck-subsection-field="quantity">
-					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
-						<NtIcon name="minus" sizeClass="size-4" />
+					<button type="button" class="flex size-8 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Уменьшить количество" data-cfg-qty-dec>
+						<span class="block size-4" set:html={MINUS_ICON_SVG} />
 					</button>
 					<span class="min-w-6 text-center font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))]" data-cfg-qty-value>1</span>
-					<button type="button" class="flex size-8 items-center justify-center transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
-						<NtIcon name="plus" sizeClass="size-4" />
+					<button type="button" class="flex size-8 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-60" aria-label="Увеличить количество" data-cfg-qty-inc>
+						<span class="block size-4" set:html={PLUS_ICON_SVG} />
 					</button>
 				</div>
 			)}
@@ -687,7 +724,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				class="inline-flex min-h-11 w-fit items-center gap-2 font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70"
 				aria-label={shareText}
 			>
-				<NtIcon name="share" sizeClass="size-6" />
+				<span class="block size-6" set:html={SHARE_ICON_SVG} />
 				<span>{shareText}</span>
 			</button>
 			)}

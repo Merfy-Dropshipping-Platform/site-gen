@@ -85,7 +85,8 @@ type Case = {
     | "--color-heading"
     | "--color-text"
     | "--color-button-bg"
-    | "--color-button-text";
+    | "--color-button-text"
+    | "--color-muted";
 };
 
 const THEMES_5 = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
@@ -96,6 +97,11 @@ const CASES: Case[] = [
   { theme: "flux", block: "Product", label: "Товар", target: "цена", marker: "data-cfg-price", prop: "color", expect: "--color-heading" },
   { theme: "flux", block: "Product", label: "Товар", target: "фон динамической кнопки", marker: "data-cfg-buy", prop: "background-color", expect: "--color-button-bg" },
   { theme: "flux", block: "Product", label: "Товар", target: "текст динамической кнопки", marker: "data-cfg-buy", prop: "color", expect: "--color-button-text" },
+  // [5] «Товар» — цена ДО скидки (пункт 5, владелец 16.09). Проверено: УЖЕ
+  // идёт за «Приглушённым» (эталон rose WishlistSection: та же роль на той
+  // же паре «цена/старая цена»), sabotage-числами подтверждено отдельно
+  // (HANDOFF b34) — держим кейсом, чтобы регрессия сюда не проскочила молча.
+  { theme: "flux", block: "Product", label: "Товар", target: "цена ДО скидки", marker: "data-cfg-oldprice", prop: "color", expect: "--color-muted" },
   { theme: "flux", block: "Product", label: "Товар", target: "фон основной кнопки", marker: "data-add-to-cart", prop: "background-color", expect: "--color-bg" },
   { theme: "flux", block: "Product", label: "Товар", target: "текст основной кнопки", marker: "data-add-to-cart", prop: "color", expect: "--color-button-bg" },
   { theme: "flux", block: "CartSection", label: "Корзина", target: "фон секции", marker: 'data-block="cart-section"', prop: "background-color", expect: "--color-bg" },
@@ -391,6 +397,146 @@ describe("мишени, которые рисует инлайн-скрипт с
   });
 });
 
+describe("vanilla · карточка товара РЕАЛЬНОЙ коллекции · имя/цена идут за «Текстом»", () => {
+  /**
+   * [11] «Коллекция товаров» у vanilla: названия и цены реальных товаров
+   * мелкие и тёмные вместо роли «Текст» схемы (жалоба владельца 16.09,
+   * магазин со схемой «Фон» #26311c / «Текст» #FF0909).
+   *
+   * ПОЧЕМУ СУЩЕСТВУЮЩИЙ КЕЙС ВЫШЕ («текст:Товар» / «текст:2 500 ₽») ЭТОТ БАГ
+   * НЕ ЛОВИЛ. `renderLive("vanilla", "PopularProducts")` не передаёт
+   * `collection`/`siteId`, поэтому Popular.astro всегда падает в ветку
+   * ПУСТОГО СОСТОЯНИЯ (плейсхолдер-куртка, Figma 1:19335) — та ветка уже
+   * чинена 15.09 и стоит на `--color-text`. Карточка РЕАЛЬНОГО товара —
+   * другой узел (`VanillaProductCard.astro`, `data-nt="vanilla-product-card"`,
+   * рендерится когда `realProducts.length > 0`) — и стояла на литеральном
+   * `text-black` нетронутой. Второй узел с ТЕМ ЖЕ литералом — `renderCardHtml`
+   * в `lib/storefront-hydrate.ts`: карточки Popular/Collections/Wishlist на
+   * ЖИВОМ сайте перерисовывает инлайн-скрипт из `/data/products.json` уже в
+   * браузере (README ловушка №1 «часть краски рисуется инлайн-скриптом») —
+   * статический SSR-рендер его не видит вовсе, поэтому класс берём ИЗ
+   * ИСХОДНИКА, тем же приёмом, что у плитки корзины выше.
+   *
+   * Замер qa:probe scheme (Chromium 1440, схемы демо-зонда 1→2, «Текст»
+   * 255,255,255 → 0,0,0): ДО правки имя и цена SSR-карточки — «замерла»,
+   * оба замера rgb(0,0,0) (см. HANDOFF b34, замер зафиксирован числами при
+   * саботаже ниже). Эталон rose — `.rose-product-name`/`.rose-product-price`
+   * → `text-[rgb(var(--color-text,0_0_0))]`.
+   */
+  const SRC_CARD = resolve(
+    SITES_ROOT,
+    "themes/vanilla/src/components/products/VanillaProductCard.astro",
+  );
+  const SRC_HYDRATE = resolve(SITES_ROOT, "themes/vanilla/src/lib/storefront-hydrate.ts");
+
+  const assertFollowsText = (where: string, cls: string | undefined) => {
+    expect({ where, найден: !!cls }).toEqual({ where, найден: true });
+    const { token } = declaredVar(themeCss("vanilla"), cls!.split(/\s+/).filter(Boolean), "color");
+    expect({ where, литерал: token === null }).toEqual({ where, литерал: false });
+    expect({ where, token }).toEqual({ where, token: "--color-text" });
+    const tokens = tokensCssFor("vanilla", SCHEMES);
+    const a = schemeValue(tokens, SCHEME_A, token!);
+    const b = schemeValue(tokens, SCHEME_B, token!);
+    expect({ where, нетA: a === null, нетB: b === null }).toEqual({ where, нетA: false, нетB: false });
+    expect({ where, одинаково: a === b }).toEqual({ where, одинаково: false });
+  };
+
+  it("SSR-компонент VanillaProductCard.astro · имя товара", () => {
+    if (!built("vanilla")) throw new Error("тема vanilla не собрана");
+    const src = readFileSync(SRC_CARD, "utf8");
+    const cls = /<a\s+href=\{href\}\s+class="([^"]+)"\s*>\s*\{product\.name\}/s.exec(src)?.[1];
+    assertFollowsText("vanilla/VanillaProductCard/имя", cls);
+  });
+
+  it("SSR-компонент VanillaProductCard.astro · цена товара", () => {
+    const src = readFileSync(SRC_CARD, "utf8");
+    const cls = /<span class="([^"]+)">\s*\{product\.price\}/s.exec(src)?.[1];
+    assertFollowsText("vanilla/VanillaProductCard/цена", cls);
+  });
+
+  it("инлайн-гидрация storefront-hydrate.renderCardHtml · имя товара", () => {
+    const src = readFileSync(SRC_HYDRATE, "utf8");
+    const cls = /class="([^"]+)">\$\{name\}<\/a>/.exec(src)?.[1];
+    assertFollowsText("vanilla/renderCardHtml/имя", cls);
+  });
+
+  it("инлайн-гидрация storefront-hydrate.renderCardHtml · цена товара", () => {
+    const src = readFileSync(SRC_HYDRATE, "utf8");
+    const cls = /class="([^"]+)">\$\{price\}<\/span>/.exec(src)?.[1];
+    assertFollowsText("vanilla/renderCardHtml/цена", cls);
+  });
+});
+
+describe("vanilla · «Вход»/«Заказы»/«Личный кабинет» · наведение читает hover-роль схемы", () => {
+  /**
+   * [12] «Кнопки „Вход“, „Заказы“, „Личный кабинет“: текст в кнопке и кнопка
+   * при наведении — все настройки не работают» (владелец, пункт 12). Фон и
+   * базовый текст кнопки чинили 15.09 (см. комментарий у `.auth-button-primary`
+   * выше и кейсы `btn-magic`/`btn-save` в CASES) — они на `--color-button-bg`/
+   * `--color-button-text` и уже проверены. НЕ чинили НАВЕДЕНИЕ: обе кнопки
+   * («Вход» = `.auth-button-primary`, «Заказы»/«Личный кабинет» =
+   * `.account-button`, общий класс — см. OrdersSection «Перейти» и
+   * AccountSection `btn-save`) стояли на `filter: brightness(0.85)`, который
+   * не читает ни `--color-button-bg-hover`, ни `--color-button-text-hover` —
+   * настройки панели «Фон / При наведении», «Текст / При наведении» ни на что
+   * не влияли.
+   *
+   * Замер (Playwright, синтетическая кнопка теми же классами, схема с явно
+   * заданными backgroundHover/textHover, ДВЕ различимые схемы): ДО правки
+   * `getComputedStyle` на `:hover` был БИТ-В-БИТ равен состоянию покоя на
+   * ОБЕИХ схемах (фон 32,64,32 / текст 238,238,238 — не менялся вовсе, потому
+   * что `filter` не трогает вычисленный `background-color`/`color`). После —
+   * наведение даёт ИМЕННО заданный мерчантом hover-цвет и отличается между
+   * схемами. Здесь CSS-класс — общий (не привязан к конкретному рендеру
+   * блока), поэтому проверяем ПРАВИЛО в исходнике, тем же приёмом, что у
+   * плитки корзины/карточки товара выше.
+   */
+  const src = readFileSync(
+    resolve(SITES_ROOT, "themes/vanilla/src/styles/global.css"),
+    "utf8",
+  );
+
+  const hoverRuleOf = (cls: string): string => {
+    const re = new RegExp(
+      `\\.${cls.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}:hover:not\\(:disabled\\)\\s*\\{([^}]*)\\}`,
+    );
+    const body = re.exec(src)?.[1];
+    expect({ cls, найдено: !!body }).toEqual({ cls, найдено: true });
+    return body!;
+  };
+
+  it.each(["auth-button-primary", "account-button"])("%s · наведение НЕ на filter/brightness", (cls) => {
+    const body = hoverRuleOf(cls);
+    expect({ cls, filter: /filter\s*:/.test(body) }).toEqual({ cls, filter: false });
+  });
+
+  it.each(["auth-button-primary", "account-button"])("%s · фон наведения — --color-button-bg-hover", (cls) => {
+    const body = hoverRuleOf(cls);
+    expect(/background-color\s*:\s*rgb\(var\(--color-button-bg-hover/.test(body)).toBe(true);
+  });
+
+  it.each(["auth-button-primary", "account-button"])("%s · текст наведения — --color-button-text-hover", (cls) => {
+    const body = hoverRuleOf(cls);
+    expect(/color\s*:\s*rgb\(var\(--color-button-text-hover/.test(body)).toBe(true);
+  });
+
+  it("контроль: роль объявлена в МЕРЧАНТСКОЙ схеме, а не только в :root", () => {
+    // buildTokensCss печатает --color-button-bg-hover/-text-hover в
+    // .color-scheme-N ТОЛЬКО когда tokens-css.ts реально эмитит роль —
+    // проверяем на тестовых схемах репозитория (те же SCHEME_A/SCHEME_B).
+    const tokens = tokensOfStandalone();
+    for (const role of ["--color-button-bg-hover", "--color-button-text-hover"]) {
+      const a = schemeValue(tokens, SCHEME_A, role);
+      const b = schemeValue(tokens, SCHEME_B, role);
+      expect({ role, нетA: a === null, нетB: b === null }).toEqual({ role, нетA: false, нетB: false });
+    }
+  });
+
+  function tokensOfStandalone(): string {
+    return tokensCssFor("vanilla", SCHEMES);
+  }
+});
+
 describe("flux · «Товар» · макет «Сложенный» заполняет колонку", () => {
   const trackOf = (html: string) => classesOf(html, "data-cfg-thumbs-track");
   const thumbOf = (html: string) => classesOf(html, "data-cfg-thumb");
@@ -429,5 +575,141 @@ describe("flux · «Товар» · макет «Сложенный» запол
     const html = renderLive("rose", "Product", "stacked");
     const cls = classesOf(html, 'data-thumbs-axis="grid"');
     expect(cls).toContain("w-full");
+  });
+
+  it("[16.09] сетка — ДВЕ колонки, паритет с эталоном (было самодельных 3)", () => {
+    // Жалоба владельца, пункт 5: «макет „Сложенный“ отображается неверно».
+    // Канон — тот же общий theme-base/ProductGallery.astro, что и в тесте
+    // выше: `data-thumbs-axis="grid"` → `grid-cols-2`. У flux было
+    // `grid-cols-3` — заметно мельче плитка и другая высота ряда при ОДНОЙ и
+    // той же настройке «Макет: Сложенный», чем у остальных четырёх тем.
+    const cls = trackOf(renderLive("flux", "Product", "stacked"));
+    expect(cls).toContain("grid-cols-2");
+    expect(cls).not.toContain("grid-cols-3");
+    const refCls = classesOf(renderLive("rose", "Product", "stacked"), 'data-thumbs-axis="grid"');
+    expect(refCls).toContain("grid-cols-2");
+  });
+});
+
+describe("flux · «Товар» · иконки идут инлайн-SVG (currentColor), не <img>", () => {
+  /**
+   * [5] «иконки» (владелец, пункт 5). `NtIcon` (design-systems-theme, общая
+   * на все пять тем) рендерит `<img src="/icons/X.svg">`. Сам файл несёт
+   * `stroke="var(--stroke-0, black)"` — задуман перекрашиваемым переменной,
+   * но у SVG, подключённого через <img>, нет доступа к CSS-переменным
+   * страницы: внутри такого документа `var()` ВСЕГДА берёт свой фолбэк
+   * (`black`), какую бы схему ни выбрал мерчант. На тёмной схеме («Фон»/
+   * «Кнопка» у чёрного) — чёрная иконка на чёрном, невидима (счётчик
+   * количества, «Поделиться», стрелки галереи — все четыре иконки этой
+   * секции). Правка — ТОЛЬКО эта секция (инлайн SVG + `currentColor` +
+   * явный класс-роль на кнопке); `NtIcon`/`design-systems-theme` не тронуты
+   * (используются другими темами, других секций этой темы, менять их — вне
+   * узкой просьбы).
+   *
+   * Замер (Chromium 1440, дублирующая тестовая схема с тёмным «Фоном», см.
+   * HANDOFF b34): ДО правки `getComputedStyle` иконки — `rgb(0, 0, 0)`
+   * НЕЗАВИСИМО от схемы (константа файла); ПОСЛЕ — цвет узла берёт роль
+   * `--color-heading` и меняется между схемами (скриншот-пруф
+   * `/tmp/flux-product-stacked-dark-v2.png`, иконки читаемы на тёмном фоне).
+   */
+  const src = readFileSync(
+    resolve(SITES_ROOT, "themes/flux/src/components/sections/FeaturedProduct.astro"),
+    "utf8",
+  );
+
+  it("NtIcon (img-иконка) в файле не используется", () => {
+    // `<NtIcon ` (с пробелом перед атрибутом) — реальный JSX-вызов компонента;
+    // комментарий выше в исходнике пишет `<NtIcon>` без пробела и потому не
+    // совпадает с этой регуляркой (саботаж намеренно проверен: убрать пробел
+    // из паттерна — тест ловит собственный комментарий и краснеет вечно).
+    expect(/<NtIcon\s/.test(src)).toBe(false);
+    expect(src.includes('from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro"')).toBe(
+      false,
+    );
+  });
+
+  it.each(["MINUS_ICON_SVG", "PLUS_ICON_SVG", "SHARE_ICON_SVG", "ARROW_LEFT_ICON_SVG", "ARROW_RIGHT_ICON_SVG"])(
+    "%s — свой stroke=\"currentColor\", не литерал",
+    (constName) => {
+      const re = new RegExp(`const ${constName} =[\\s\\S]*?</svg>'`);
+      const decl = re.exec(src)?.[0];
+      expect({ constName, найден: !!decl }).toEqual({ constName, найден: true });
+      expect(decl).toContain('stroke="currentColor"');
+      expect(decl).not.toMatch(/stroke="(black|#000000|var\(--stroke-0)/);
+    },
+  );
+
+  it.each([
+    ["qty-dec", "data-cfg-qty-dec"],
+    ["qty-inc", "data-cfg-qty-inc"],
+    ["thumbs-next", "data-cfg-thumbs-next"],
+    ["carousel-prev", "data-cfg-prev"],
+    ["carousel-next", "data-cfg-next"],
+  ])("кнопка %s несёт явную роль цвета на классе", (_label, attr) => {
+    // Маркер — АТРИБУТ узла (не text/css), достаточно найти окружающий
+    // класс регуляркой по атрибуту — те же гарантии, что и `classesOfAll`
+    // (кнопка встречается 1 раз в файле на desktop-дереве, кроме qty/next,
+    // где по 2 — оба должны нести роль, `g`-флаг проверяет оба).
+    const re = new RegExp(`class="([^"]*)"[^>]*${attr}(?!-)`, "g");
+    const matches = [...src.matchAll(re)];
+    expect({ attr, найдено: matches.length }).toEqual({ attr, найдено: matches.length > 0 ? matches.length : "НОЛЬ — не найдено" });
+    for (const m of matches) {
+      expect({ attr, cls: m[1] }).toEqual({ attr, cls: expect.stringContaining("--color-heading") });
+    }
+  });
+});
+
+describe("flux · «Товар» · вариации идут токеном схемы, не #000000/white", () => {
+  /**
+   * [5] «вариации» (владелец, пункт 5). Чипы/свотчи вариантов
+   * (`renderVariantGroupsHtml`/`renderVariantSelectsHtml`/
+   * `renderVariantListHtml`, `themes/flux/src/lib/storefront-hydrate.ts`)
+   * стояли на литералах `#000000`/`white` — чёрно-белые НА ЛЮБОЙ схеме
+   * магазина. Роль выбрана по эталону кнопки «Добавить в корзину» этой же
+   * секции (уже едет за схемой): выбран = заливка button-bg/button-text,
+   * не выбран = обводка+текст button-bg на фоне bg. Функция общая с PDP
+   * (`FluxProductDetail.astro`) — фолбэк-триплеты РАВНЫ прежним литералам
+   * (`0_0_0`/`255_255_255`), поэтому там, где нет обёртки схемы, вид не
+   * меняется (README ловушка №19).
+   */
+  const src = readFileSync(resolve(SITES_ROOT, "themes/flux/src/lib/storefront-hydrate.ts"), "utf8");
+  const variantsSection = src.slice(
+    src.indexOf("const VARIANT_BTN_BASE"),
+    src.indexOf("export function renderVariantsHtml"),
+  );
+
+  it("секция вариантов найдена (VARIANT_BTN_* … до renderVariantsHtml)", () => {
+    expect(variantsSection.length).toBeGreaterThan(200);
+  });
+
+  it("ни одного #000000/#ffffff литерала не осталось", () => {
+    const literalHex = [...variantsSection.matchAll(/#(000000|ffffff)\b/gi)].map((m) => m[0]);
+    expect(literalHex).toEqual([]);
+  });
+
+  it("bg-white / border-[#000000] / color:#000000 текстом — не осталось", () => {
+    expect(variantsSection).not.toMatch(/\bbg-white\b/);
+    expect(variantsSection).not.toContain("border-[#000000]");
+    expect(variantsSection).not.toContain("color:#000000");
+    expect(variantsSection).not.toContain("background:#ffffff");
+  });
+
+  it("выбранный чип — заливка --color-button-bg/--color-button-text", () => {
+    expect(variantsSection).toMatch(/--color-button-bg,0_0_0/);
+    expect(variantsSection).toMatch(/--color-button-text,255_255_255/);
+  });
+
+  it("невыбранный чип/дропдаун — --color-bg / --color-button-bg на обводке", () => {
+    expect(variantsSection).toMatch(/border-\[rgb\(var\(--color-button-bg/);
+    expect(variantsSection).toMatch(/--color-bg,255_255_255/);
+  });
+
+  it("сторож общей обёртки-лейбла группы («Цвет»/«Размер») — --color-heading", () => {
+    const wrapperSrc = src.slice(
+      src.indexOf("function renderVariantGroupWrapper"),
+      src.indexOf("function renderVariantGroupWrapper") + 500,
+    );
+    expect(wrapperSrc).toContain("text-[rgb(var(--color-heading,0_0_0))]");
+    expect(wrapperSrc).not.toContain("text-[#000000]");
   });
 });

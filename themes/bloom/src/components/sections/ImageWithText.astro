@@ -148,7 +148,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div
-		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2${containerSchemeCls}`}
+		{/* lg:gap-10 — зазор пары по эталону rose (владелец 2026-09-15: «как пример работы можешь брать у розы»). rose держит 40px при всех трёх «Ширинах» в обоих блоках семьи; у bloom было 16px (`gap-4` без lg-ступени).
+		    Мобильный `gap-4` не трогаем — на 375px пара стоит в стопку. */}
+		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-10${containerSchemeCls}`}
 		data-animate
 	>
 		{!isFieldHidden('image') && (

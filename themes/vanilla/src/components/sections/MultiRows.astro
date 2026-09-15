@@ -263,7 +263,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								/>
 							)}
 						</div>
-						<div class={`flex w-full flex-col ${alignCls} lg:self-center${r.right ? " lg:order-1" : ""}${containerSchemeCls}`}>
+						{/* ВНИМАНИЕ: класс, стоящий в шаблонной строке ВПЛОТНУЮ перед
+						    `${`, до CSS не доезжает — сканер Tailwind берёт кандидата
+						    вместе с `$` и отбрасывает его. Так `lg:self-center` жил в
+						    разметке с нулём правил в обоих бандлах: текст ряда никогда
+						    не центрировался по вертикали. Поэтому подстановки идут
+						    ПЕРЕД хвостом из литеральных классов. */}
+						<div class={`flex w-full flex-col ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls} lg:self-center`}>
 							{r.heading && (
 								<h3
 									class={`font-vanilla-bitter ${r.headingCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}

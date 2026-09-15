@@ -6,29 +6,33 @@
  * наоборот». Секция — семья «медиа + текст»: «Изображение с текстом»
  * (ImageWithText) и «Мультиряды» (MultiRows, чередование сторон по индексу).
  *
- * ЗАМЕР «ДО» (Chromium, окна 1920/1440/375, пять тем × два блока × три «Ширины»
- * × обе стороны чередования = 60 клеток на окно; рендер — скомпилированным
- * модулем темы, CSS — тот же, что в превью):
+ * ЭТАЛОН — rose. Владелец 2026-09-15, дословно: «как пример работы можешь брать
+ * у розы для всех багов темы». Замер rose (Chromium 1920, оба блока, обе стороны
+ * чередования): доли медиа:текст = 1.000 при ВСЕХ трёх «Ширинах»
+ * (370/370, 520/520, 640/640) и зазор 40px в каждой клетке. То есть жалоба —
+ * НЕ про задумку блока: у эталона ни «соприкасания», ни связанных ширин нет.
  *
- *   блок              тема     медиа/текст/зазор при «Ширина»=small → large
- *   ImageWithText     rose     370/370/40 → 640/640/40
- *   ImageWithText     vanilla  388/352/40 → 652/352/40   ← доли ПЛЫВУТ
- *   ImageWithText     bloom    382/382/16 → 652/652/16
- *   ImageWithText     satin    390/390/ 0 → 660/660/ 0   ← зазора НЕТ
- *   ImageWithText     flux     370/370/40 → 620/620/40
- *   MultiRows         rose     370/370/40 → 640/640/40
- *   MultiRows         vanilla  640/640/40 → 640/640/40   ← «Ширина» МЕРТВА
- *   MultiRows         bloom    382/382/16 → 652/652/16
- *   MultiRows         satin    370/370/40 → 640/640/40
- *   MultiRows         flux     374/374/32 → 624/624/32
+ * ЗАМЕР «ДО» (те же окна; пять тем × два блока × три «Ширины» × обе стороны =
+ * 60 клеток на окно; рендер — скомпилированным модулем темы, CSS — тот же,
+ * что в превью). Медиа/текст/зазор при «Ширина» small → large:
  *
- * Отсюда три требования, каждое — от числа, а не от вкуса:
- *   1) зазор пары НЕ нулевой (девять клеток из десяти его имеют; ноль только у
- *      satin/ImageWithText — это и есть «соприкасаются»);
- *   2) колонки пары не заморожены РАЗНЫМИ пиксельными потолками: иначе «Ширина»
- *      не масштабирует пару, а перекладывает место между медиа и контейнером
- *      (vanilla/ImageWithText: текст стоял в max-w-[352px], медиа была lg:flex-1
- *      и одна отдавала весь остаток — 388/352 против 652/352);
+ *   блок              тема     до правки                    расхождение с rose
+ *   ImageWithText     rose     370/370/40 → 640/640/40      — эталон
+ *   ImageWithText     vanilla  388/352/40 → 652/352/40      доли ПЛЫВУТ (1.102 → 1.852)
+ *   ImageWithText     bloom    382/382/16 → 652/652/16      зазор 16 вместо 40
+ *   ImageWithText     satin    390/390/ 0 → 660/660/ 0      зазора НЕТ
+ *   ImageWithText     flux     370/370/40 → 620/620/40      — совпадает
+ *   MultiRows         rose     370/370/40 → 640/640/40      — эталон
+ *   MultiRows         vanilla  640/640/40 → 640/640/40      «Ширина» МЕРТВА
+ *   MultiRows         bloom    382/382/16 → 652/652/16      зазор 16 вместо 40
+ *   MultiRows         satin    370/370/40 → 640/640/40      — совпадает
+ *   MultiRows         flux     374/374/32 → 624/624/32      зазор 32 вместо 40
+ *
+ * Отсюда три требования, каждое — от эталона rose, а не от вкуса:
+ *   1) зазор пары равен зазору rose в том же блоке (40px) и не нулевой;
+ *   2) колонки пары — РОВНО ПОЛОВИНЫ: ни одна не заморожена собственным
+ *      потолком/базисом, иначе «Ширина» не масштабирует пару, а перекладывает
+ *      место между медиа и контейнером (vanilla давала 388/352 против 652/352);
  *   3) «Ширина» жива: потолок контейнера при small ≠ потолок при large
  *      (vanilla/MultiRows давала 1320px на всех трёх значениях, потому что
  *      нелокализованный `.vanilla-container` перебивал утилиту max-w-*).
@@ -219,10 +223,21 @@ function minWidthOf(prelude: string): number {
   return m[2] === "rem" ? Number(m[1]) * 16 : Number(m[1]);
 }
 
-const specificityOf = (selector: string): number =>
-  (selector.match(/\\?\./g) ?? []).length +
-  (selector.match(/\[/g) ?? []).length * 1 +
-  (selector.match(/#/g) ?? []).length * 100;
+/**
+ * Специфичность селектора. Экранированные символы гасим ПЕРЕД подсчётом: в
+ * `.max-w-\[652px\]` скобки — часть ИМЕНИ класса, а не селектор атрибута.
+ * Без этого утилита с произвольным значением получала специфичность 2 и
+ * незаслуженно била `lg:`-вариант того же свойства (поймано саботажем:
+ * `lg:max-w-none` проигрывал `max-w-[652px]`).
+ */
+const specificityOf = (selector: string): number => {
+  const bare = selector.replace(/\\./g, "\u0000");
+  return (
+    (bare.match(/\./g) ?? []).length +
+    (bare.match(/\[/g) ?? []).length +
+    (bare.match(/#/g) ?? []).length * 100
+  );
+};
 
 type Bundle = { rules: Rule[]; vars: Record<string, string>; layerOrder: string[] };
 
@@ -313,7 +328,7 @@ function parseBundle(cssRaw: string, startOrder: number): Bundle {
       // Обычное правило. В неминифицированном выводе v4 @media лежит ВНУТРИ него.
       const own = declsOf(body);
       for (const [k, v] of Object.entries(own)) if (k.startsWith("--")) vars[k] = v;
-      for (const sel of prelude.split(",")) {
+      for (const sel of prelude.split(/(?<!\\),/)) {
         const s = sel.trim();
         if (!s) continue;
         rules.push({
@@ -340,7 +355,7 @@ function parseBundle(cssRaw: string, startOrder: number): Bundle {
         const inner = body.slice(nOpen + 1, k - 1);
         const innerMin = Math.max(minWidth, minWidthOf(m[0]));
         const innerDecls = declsOf(inner);
-        for (const sel of prelude.split(",")) {
+        for (const sel of prelude.split(/(?<!\\),/)) {
           const s = sel.trim();
           if (!s) continue;
           rules.push({
@@ -458,49 +473,50 @@ const maxWidthPx = (theme: Theme, classes: string[]): number | null =>
 // ───────────────────────────── проверки ─────────────────────────────
 
 describe("пара «медиа + текст»: зазор, доли колонок, живая «Ширина»", () => {
-  describe("1) зазор пары не нулевой", () => {
-    for (const theme of THEMES) {
-      for (const block of BLOCKS) {
-        it(`${theme} / ${block}: колонки не соприкасаются на ${DESKTOP_PX}px`, () => {
+  describe("1) зазор пары равен зазору эталона rose", () => {
+    for (const block of BLOCKS) {
+      const reference = () => {
+        const { pair } = pairParts("rose", block, "large");
+        return gapPx("rose", classesOf(pair));
+      };
+      for (const theme of THEMES) {
+        it(`${theme} / ${block}: тот же зазор, что у rose, и не ноль`, () => {
           const { pair } = pairParts(theme, block, "large");
           const gap = gapPx(theme, classesOf(pair));
-          expect({ theme, block, gap }).toEqual({ theme, block, gap: expect.any(Number) });
+          const rose = reference();
+          expect({ theme, block, gap }).toEqual({ theme, block, gap: rose });
           expect(gap as number).toBeGreaterThan(0);
         });
       }
     }
   });
 
-  describe("2) колонки пары не заморожены разными потолками", () => {
+  describe("2) колонки пары — ровно половины", () => {
     for (const theme of THEMES) {
       for (const block of BLOCKS) {
-        it(`${theme} / ${block}: «Ширина» масштабирует пару, а не перекладывает место`, () => {
-          const { media, text } = pairParts(theme, block, "large");
-          const mediaCap = maxWidthPx(theme, classesOf(media));
-          const textCap = maxWidthPx(theme, classesOf(text));
-          // Разные пиксельные потолки допустимы только если обе колонки ещё и
-          // ужимаются пропорционально (flex-basis той же пары чисел).
-          if (mediaCap !== textCap) {
-            const basis = (el: typeof media) =>
-              toPx(bundle(theme, true), winner(bundle(theme, true), classesOf(el), ["flex-basis", "flex"], DESKTOP_PX)?.value ?? null);
-            expect({
+        it(`${theme} / ${block}: ни медиа, ни контейнер не забирают чужую долю`, () => {
+          const { pair, media, text } = pairParts(theme, block, "large");
+          const b = bundle(theme, true);
+          const recipe = (el: typeof media) => ({
+            cap: toPx(b, winner(b, classesOf(el), ["max-width"], DESKTOP_PX)?.value ?? null),
+            basis: winner(b, classesOf(el), ["flex-basis"], DESKTOP_PX)?.value ?? null,
+            grow: winner(b, classesOf(el), ["flex-grow", "flex"], DESKTOP_PX)?.value ?? null,
+            width: winner(b, classesOf(el), ["width"], DESKTOP_PX)?.value ?? null,
+          });
+          // Грид: две дорожки обязаны быть ОДИНАКОВЫМИ (repeat(2, …)).
+          const template = winner(b, classesOf(pair), ["grid-template-columns"], DESKTOP_PX)?.value ?? null;
+          if (template !== null) {
+            expect({ theme, block, template }).toEqual({
               theme,
               block,
-              mediaCap,
-              textCap,
-              mediaBasis: basis(media),
-              textBasis: basis(text),
-            }).toEqual({
-              theme,
-              block,
-              mediaCap,
-              textCap,
-              mediaBasis: mediaCap,
-              textBasis: textCap,
+              template: expect.stringMatching(/^repeat\(\s*2\s*,/),
             });
-          } else {
-            expect(mediaCap).toBe(textCap);
           }
+          expect({ theme, block, ...recipe(media) }).toEqual({
+            theme,
+            block,
+            ...recipe(text),
+          });
         });
       }
     }
@@ -531,18 +547,38 @@ describe("пара «медиа + текст»: зазор, доли колон�
     }
   });
 
-  describe("4) бандл темы содержит классы своих портов", () => {
+  describe("4) в разметке пары нет классов-призраков", () => {
+    /**
+     * Класс, которого нет в СОБСТВЕННОМ бандле темы, — тихий ноль: на живой
+     * витрине другого CSS нет, а в превью его подменяет соседний класс из
+     * preview-tailwind.css, и конструктор показывает не то, что увидит
+     * покупатель. Поймано дважды за одну смену: (1) vanilla/«Мультиряды»
+     * показывали зазор 16px вместо живых 40px — в бандле темы не было
+     * `md:gap-10`, потому что в global.css не хватало `@source ../components`;
+     * (2) `lg:basis-1/2` и `lg:basis-full` НЕ генерируются в этой сборке вовсе
+     * (в бандле ноль вхождений «basis») — класс стоял в разметке и не делал
+     * ничего.
+     */
+    const MARKERS = /^(group|peer|color-scheme-\d+|sr-only|[a-z]+-(pad|page))$/;
     for (const theme of THEMES) {
       for (const block of BLOCKS) {
-        it(`${theme} / ${block}: зазор пары читается из бандла темы без preview-tailwind`, () => {
-          const { pair } = pairParts(theme, block, "large");
-          const withPreview = gapPx(theme, classesOf(pair), true);
-          const themeOnly = gapPx(theme, classesOf(pair), false);
-          expect({ theme, block, withPreview, themeOnly }).toEqual({
+        it(`${theme} / ${block}: каждый класс пары есть в бандле темы`, () => {
+          const { pair, media, text } = pairParts(theme, block, "large");
+          const themeOnly = bundle(theme, false);
+          const known = new Set<string>();
+          for (const r of themeOnly.rules) {
+            for (const c of r.selector.match(/\.((?:\\.|[^.\s:[])+)/g) ?? []) {
+              known.add(c.slice(1).replace(/\\/g, ""));
+            }
+          }
+          const phantom = [pair, media, text]
+            .flatMap(classesOf)
+            .filter((c) => !MARKERS.test(c))
+            .filter((c) => !known.has(c));
+          expect({ theme, block, phantom: [...new Set(phantom)] }).toEqual({
             theme,
             block,
-            withPreview,
-            themeOnly: withPreview,
+            phantom: [],
           });
         });
       }

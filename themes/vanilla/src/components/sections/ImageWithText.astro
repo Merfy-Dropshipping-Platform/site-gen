@@ -176,15 +176,21 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		class={`mx-auto flex w-full ${widthCls} flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10${containerSchemeCls}`}
 		data-animate
 	>
-		{/* Текстовая колонка. `lg:basis-[352px] lg:shrink lg:min-w-0` рядом с
-		   `lg:basis-[652px]` у медиа держит пропорцию пары 652:352 постоянной при
-		   ЛЮБОЙ «Ширине»: нехватку места flex раздаёт пропорционально базисам.
-		   До правки текст был заморожен потолком 352px, а медиа несла `lg:flex-1`
-		   и одна отдавала/забирала весь остаток (замер: «Ширина»=small 388/352,
-		   medium и large 652/352) — это и есть жалоба «если медиа маленького
-		   размера, контейнер берёт на себя больше места». Потолки max-w оставлены:
-		   на medium/large пара упирается в них и выглядит ровно как до правки. */}
-		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls} lg:min-w-0 lg:shrink lg:grow-0 lg:basis-[352px]${imageLeft ? " lg:order-2" : ""}`}>
+		{/* Текстовая колонка = РОВНО ПОЛОВИНА пары, как у rose (владелец
+		   2026-09-15: «как пример работы можешь брать у розы»). Эталон rose держит
+		   доли медиа:текст = 1.000 при всех трёх «Ширинах» (370/370, 520/520,
+		   640/640 — замер Chromium 1920). У vanilla текст стоял в max-w-[352px], а
+		   медиа несла lg:flex-1 и одна отдавала/забирала весь остаток: «Ширина»=small
+		   давала 388/352, medium и large — 652/352. Это и есть жалоба «если медиа
+		   маленького размера, контейнер берёт на себя больше места». Типографская
+		   мера care-бэнда (352px) НЕ потеряна — она ушла на внутреннюю обёртку,
+		   как это сделано у satin (колонка-половина + max-w-[420px] внутри).
+		   Равный базис даёт `w-full` на ОБЕИХ колонках: flex-basis:auto берёт
+		   width:100%, базисы равны, значит нехватку места на `lg:shrink` они
+		   делят поровну. Классы `basis-*` в этой сборке НЕ генерируются вовсе
+		   (в бандле ноль вхождений «basis») — на них опираться нельзя. */}
+		<div class={`flex w-full flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""} lg:min-w-0 lg:shrink lg:grow-0`}>
+		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}`}>
 			{
 				heading && !isFieldHidden('heading') && (
 					<h2
@@ -221,9 +227,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 		</div>
+		</div>
 		{!isFieldHidden('image') && (
 		<div
-			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] lg:min-w-0 lg:shrink lg:grow-0 lg:basis-[652px]${imageLeft ? " lg:order-1" : ""}`}
+			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]${imageLeft ? " lg:order-1" : ""} lg:min-w-0 lg:max-w-none lg:shrink lg:grow-0`}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="103"
 			data-puck-subsection-field="image"

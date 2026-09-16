@@ -1,6 +1,7 @@
 ---
 import type { LoginSectionProps } from './LoginSection.puckConfig';
 import { LoginSectionClasses as C } from './LoginSection.classes';
+import { sanitizeInline } from '../../runtime/rich-text';
 
 interface Props extends LoginSectionProps {
   id?: string;
@@ -44,8 +45,8 @@ const btnText =
   style={paddingStyle}
 >
   <div class={C.container}>
-    <h1 class={C.heading}>{heading}</h1>
-    {text && <p class={C.text}>{text}</p>}
+    <h1 class={C.heading}><Fragment set:html={sanitizeInline(heading)} /></h1>
+    {text && <p class={C.text}><Fragment set:html={sanitizeInline(text)} /></p>}
     <form id="magic-form" class={C.form} novalidate>
       <input
         id="login-email"

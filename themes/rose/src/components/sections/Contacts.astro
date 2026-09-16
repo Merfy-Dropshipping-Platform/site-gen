@@ -33,6 +33,15 @@ const placeholderHeading =
 // нет абзаца), начертания «Ж»/«К» доезжают разметкой через RoseSectionHeading
 // (там же inlineFormat + allow-list), подзаголовок он рисует ровно теми же
 // классами, что у «Коллекций» и «Галереи» — своя манера не выдумывается.
+// «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
+// добавить список размер текста, как сверху с размером заголовка». Механика та
+// же, что у заголовка строкой выше: NtSectionHeading размера не принимает,
+// поэтому кегль уезжает CSS-переменной, а правило живёт в global.css темы.
+// Средняя ступень = 16px — ровно то, что секция рисовала до просьбы.
+const textSizeRaw = p.textSize ?? p.text?.size ?? p.subtitleSize;
+const textFontSize =
+	textSizeRaw === "small" ? "14px" : textSizeRaw === "large" ? "19px" : "16px";
+
 const description =
 	(typeof p.description === "string" ? p.description : p.description?.content) ?? "";
 const descriptionText = typeof description === "string" ? description.trim() : "";
@@ -98,7 +107,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-[60px] pt-12 sm:px-5 md:px-10 md:pb-[80px] md:pt-20 lg:px-16 xl:px-20 2xl:px-[280px]"
 	aria-labelledby="contacts-title"
 	data-puck-component-id={id}
-	style={`${paddingStyle ?? ""};--contacts-title-size:${headingFontSize}`}
+	style={`${paddingStyle ?? ""};--contacts-title-size:${headingFontSize};--contacts-text-size:${textFontSize}`}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки

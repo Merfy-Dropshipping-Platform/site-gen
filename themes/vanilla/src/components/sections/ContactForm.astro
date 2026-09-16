@@ -34,6 +34,15 @@ const headingCls = `font-vanilla-arsenal ${headingSizeCls} font-normal leading-n
 const description =
 	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
 
+// «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
+// добавить список размер текста, как сверху с размером заголовка». Ступени
+// сняты с flux (ContactForm.astro:45-51), где поле читалось и до просьбы:
+// small 14 / medium 16 / large 19. Дефолт = medium, он равен прежнему жёсткому
+// размеру абзаца, поэтому секции без выбранного размера выглядят как раньше.
+const textSizeRaw = p.textSize ?? p.text?.size ?? p.subtitleSize;
+const textSizeCls =
+	textSizeRaw === "small" ? "text-[14px]" : textSizeRaw === "large" ? "text-[19px]" : "text-[16px]";
+
 // Flat-пропсы оживления: контакты магазина (dl-блок над формой — рендер только
 // при заданных; у about-формы их нет → дефолт без блока).
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : undefined;
@@ -140,7 +149,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			}
 			{
 				description && (
-					<p class="font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]">
+					<p class={`font-vanilla-arsenal ${textSizeCls} font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]`}>
 						<Fragment set:html={inlineFormat(description)} />
 					</p>
 				)

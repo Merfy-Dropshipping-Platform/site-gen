@@ -55,6 +55,10 @@
  * где поле не задано, вид не меняется.
  */
 import { schemeIdOf } from "../../lib/color-scheme";
+// «Заголовок»/«Текст» секции — наш контрол aiText (просьба владельца 2026-09-16),
+// значит в значении может прийти <strong>/<em> от кнопок «Ж»/«К». Без разбора
+// они напечатались бы тегами — тот же класс бага, что сторожит test:rich-text-fields.
+import { inlineFormat } from "../../lib/rich-text";
 
 interface Props {
 	id?: string;
@@ -117,9 +121,9 @@ const btnText =
 				<h1
 					class="font-heading text-xl uppercase font-normal"
 					style="color: rgb(var(--color-heading, 0 0 0));"
-				>{heading}</h1>
+				><Fragment set:html={inlineFormat(heading)} /></h1>
 				{text && (
-					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));">{text}</p>
+					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
 

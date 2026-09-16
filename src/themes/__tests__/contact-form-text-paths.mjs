@@ -52,35 +52,40 @@ const SHELL = [
 ].join('');
 
 /** Ревизия с одной страницей «Контакты» и одной секцией. */
-const revisionFor = (description) => ({
+const revisionFor = (description, textSize) => ({
   pagesData: {
     [PAGE_KEY]: {
       content: [
         {
           type: BLOCK,
-          props:
-            description === undefined
-              ? { id: BLOCK_ID }
-              : { id: BLOCK_ID, description },
+          props: {
+            id: BLOCK_ID,
+            ...(description === undefined ? {} : { description }),
+            ...(textSize === undefined ? {} : { textSize }),
+          },
         },
       ],
     },
   },
 });
 
-async function renderHot(svc, theme, description) {
+async function renderHot(svc, theme, description, textSize) {
   const { adaptLegacyProps } = load('themes/page-blocks.js');
-  const raw = description === undefined ? { id: BLOCK_ID } : { id: BLOCK_ID, description };
+  const raw = {
+    id: BLOCK_ID,
+    ...(description === undefined ? {} : { description }),
+    ...(textSize === undefined ? {} : { textSize }),
+  };
   // Дословно ветка контроллера: adaptLegacyProps(props, null, blockType) + siteId.
   const props = { ...adaptLegacyProps(raw, null, BLOCK), siteId: 'b13-site' };
   return svc.renderBlock({ blockName: BLOCK, props, themeId: theme });
 }
 
-async function renderComposed(svc, theme, description, { live }) {
+async function renderComposed(svc, theme, description, { live, textSize }) {
   const { extractPageBlocks } = load('themes/page-blocks.js');
   const { composeV2Page } = load('themes/v2-page-composer.js');
   const blocks = await extractPageBlocks(
-    revisionFor(description),
+    revisionFor(description, textSize),
     PAGE_KEY,
     null,
     theme,
@@ -116,6 +121,18 @@ export async function collect(theme) {
   // рисовал бы пустой абзац и ломал вертикальный ритм секции.
   out.empty.blank = await renderHot(svc, theme, '');
   out.empty.absent = await renderHot(svc, theme, undefined);
+  // «Размер текста» (`textSize`) — просьба владельца 2026-09-16. Меряем те же
+  // пути: поле, которое рисуется в панели, но не доезжает до витрины, — это
+  // ровно тот класс бага, ради которого коллектор и написан.
+  out.sizes = {};
+  out.sizesLive = {};
+  for (const size of ['small', 'medium', 'large']) {
+    out.sizes[size] = await renderHot(svc, theme, PAYLOAD, size);
+    out.sizesLive[size] = await renderComposed(svc, theme, PAYLOAD, {
+      live: true,
+      textSize: size,
+    });
+  }
   return out;
 }
 

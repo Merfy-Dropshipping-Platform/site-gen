@@ -1316,3 +1316,15 @@ input[type="search"]::-webkit-search-results-decoration {
     font-size: var(--contacts-title-size, 20px) !important;
   }
 }
+
+/* «Размер текста» секции «Контактная форма» (просьба владельца 2026-09-16) —
+   та же механика, что у заголовка выше: подзаголовок рисует NtSectionHeading
+   (важной утилитой !text-[16px]), размера он не принимает, поэтому порт кладёт
+   выбранный кегль в --contacts-text-size на секции. Средняя ступень = 16px,
+   то есть секции без выбранного размера выглядят как раньше.
+   Селектор — сосед заголовка: подзаголовок стоит тем же <p> сразу за h2. */
+@layer base {
+  #contacts-title ~ p {
+    font-size: var(--contacts-text-size, 16px) !important;
+  }
+}

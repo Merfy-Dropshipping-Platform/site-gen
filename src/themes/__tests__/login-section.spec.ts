@@ -178,14 +178,32 @@ describe("секция «Вход» — панель", () => {
   it.each(THEMES)("%s: «Заголовок» и «Текст» — вводимые поля", (theme) => {
     if (!distReady) return;
     const fields = panels[theme]?.[BLOCK]?.fields ?? {};
-    // Однострочный заголовок и многострочный текст. Не `custom`/`object`:
-    // владелец просил два простых параметра, а не подпанель.
-    expect(fields.heading?.type).toBe("text");
-    expect(fields.text?.type).toBe("textarea");
+    // Просьба владельца 2026-09-16: «во всех секциях сайдбар Вход не наш по
+    // инпутам, привести к виду инпуты». До неё здесь стояли голые
+    // `text`/`textarea` — эта секция была ЕДИНСТВЕННОЙ контентной, где так, у
+    // соседей везде `aiText` (наш контрол с «Ж»/«К» и плейсхолдером). Состав
+    // панели не изменился: те же два поля, те же подписи, другой ТИП КОНТРОЛА.
+    expect(fields.heading?.type).toBe("aiText");
+    expect(fields.text?.type).toBe("aiText");
     // Оба видны в панели, а не спрятаны за «глазом».
     expect(fields.heading?.visibility).toBe("panel");
     expect(fields.text?.visibility).toBe("panel");
   });
+
+  it.each(THEMES)(
+    "%s: контрол ТОТ ЖЕ, что у соседней секции, а не свой особенный",
+    (theme) => {
+      if (!distReady) return;
+      const fields = panels[theme]?.[BLOCK]?.fields ?? {};
+      // Эталон-сосед: «Текст» «Контактной формы» — такой же ввод описания.
+      const neighbour = panels[theme]?.ContactForm?.fields?.description;
+      expect(neighbour?.type).toBe("aiText");
+      expect(fields.text?.type).toBe(neighbour?.type);
+      // Заголовок сверяем с заголовком соседа.
+      const neighbourHeading = panels[theme]?.ContactForm?.fields?.heading;
+      expect(fields.heading?.type).toBe(neighbourHeading?.type);
+    },
+  );
 
   it.each(THEMES)(
     "%s: «Кнопка» — суб-панель как у ImageWithText, но БЕЗ ссылки",

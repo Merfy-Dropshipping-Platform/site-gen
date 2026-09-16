@@ -68,6 +68,18 @@ const headingSizeClass =
   headingSizeResolved === 'large' ? 'text-3xl md:text-4xl' :
   headingSizeResolved === 'medium' ? 'text-2xl md:text-3xl' :
   headingSizeResolved === 'small' ? 'text-xl md:text-2xl' : '';
+// «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
+// добавить список размер текста, как сверху с размером заголовка».
+// Средняя ступень РАВНА прежнему жёсткому размеру абзаца (12px/15px из
+// ContactForm.classes.ts) — значит секции, где мерчант размер не выбирал,
+// выглядят ровно как раньше, а панель честно показывает «Средний». Соседние
+// ступени — шаг вниз и вверх от неё, в манере rose (мелкая типографика секции:
+// её заголовок 14px).
+const descriptionSize = raw.textSize as string | undefined;
+const descriptionSizeClass =
+  descriptionSize === 'large' ? 'text-[15px] leading-[19px]' :
+  descriptionSize === 'small' ? 'text-[11px] leading-[14px]' :
+  'text-[12px] leading-[15px]';
 
 // Constructor passes enabled/required as "true"/"false" strings — normalize.
 const toBool = (v: unknown, fallback = false): boolean =>
@@ -105,7 +117,7 @@ const norm = {
           подстановкой. Голая подстановка печатала бы `<strong><em>…` текстом —
           ровно та жалоба тестера, из-за которой заведён test:rich-text-fields. */}
       {description && (
-        <p class={C.description} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description"><Fragment set:html={sanitizeInline(description)} /></p>
+        <p class:list={[C.description, descriptionSizeClass]} data-puck-subsection-parent={id} data-puck-subsection-index="101" data-puck-subsection-field="description"><Fragment set:html={sanitizeInline(description)} /></p>
       )}
       <form class={C.form} method="POST" action="/api/contact/submit">
         <div class={C.leftColumn}>

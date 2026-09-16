@@ -65,8 +65,27 @@ export const LoginSectionPuckConfig: BlockPuckConfig<LoginSectionProps> = {
   // Порядок полей — тот, в котором их назвал владелец: сперва содержимое
   // («Заголовок», «Текст»), затем оформление («Цветовая схема», «Отступы»).
   fields: {
-    heading: { type: 'text', label: 'Заголовок' },
-    text: { type: 'textarea', label: 'Текст' },
+    // Просьба владельца 2026-09-16: «во всех секциях сайдбар Вход не наш по
+    // инпутам, привести к виду инпуты». Замер: это была ЕДИНСТВЕННАЯ контентная
+    // секция, где верхнеуровневые «Заголовок»/«Текст» объявлены голыми
+    // `text`/`textarea` — у соседей (Gallery, Collections, ContactForm, Hero,
+    // MainText) везде `aiText`, наш контрол с панелькой начертаний «Ж»/«К» и
+    // плейсхолдером «Ввести текст...». Состав панели не меняется: те же два
+    // поля, те же подписи, меняется ТИП КОНТРОЛА.
+    // Рендер обоих полей переведён на sanitizeInline/inlineFormat тем же
+    // коммитом — иначе нажатое «Ж» печаталось бы тегами (test:rich-text-fields).
+    heading: {
+      type: 'aiText',
+      label: 'Заголовок',
+      fieldType: 'title',
+      placeholder: 'Ввести текст...',
+    } as any,
+    text: {
+      type: 'aiText',
+      label: 'Текст',
+      fieldType: 'description',
+      placeholder: 'Ввести текст...',
+    } as any,
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Суб-панель, формат один-в-один с ImageWithText.puckConfig.ts (button).

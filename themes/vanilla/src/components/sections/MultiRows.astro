@@ -142,6 +142,24 @@ const widthCls =
 				? "max-w-none"
 				: "max-w-[1320px]";
 
+// Владелец 2026-09-17 (дословно): «контейнер и медиа соприкасаются, если медиа
+// маленького размера, контейнер берёт на себя больше места и так же наоборот».
+// Тот же топ-уровневый проп «Ширина» (widthCls выше не трогаем — он держит
+// потолок ряда) теперь ДОПОЛНИТЕЛЬНО задаёт ДОЛЮ медиа внутри пары: small —
+// медиа уже текста (2:3 ⇒ 40%), medium — примерно половина (1:1, эталон
+// владельца), large — медиа шире текста (3:2 ⇒ 60%). Доли — литералы в
+// ОБЪЕКТЕ (не конкатенация числа в шаблонной строке): сканер Tailwind ищет
+// ЦЕЛЫЙ класс текстом в исходнике, а `grid-cols-[${a}fr_${b}fr]` с
+// подставленным числом в бандл не попадёт (тот же класс-призрак, что уже
+// ловили на lg:basis-1/2 — см. media-text-pair.spec.ts).
+const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; textFirst: string }> = {
+	small: { mediaFirst: "lg:grid-cols-[2fr_3fr]", textFirst: "lg:grid-cols-[3fr_2fr]" },
+	medium: { mediaFirst: "lg:grid-cols-[1fr_1fr]", textFirst: "lg:grid-cols-[1fr_1fr]" },
+	large: { mediaFirst: "lg:grid-cols-[3fr_2fr]", textFirst: "lg:grid-cols-[2fr_3fr]" },
+};
+const rowSplitKey: "small" | "medium" | "large" =
+	p.width === "small" ? "small" : p.width === "large" ? "large" : "medium";
+
 // Канон alignment — выравнивание текстовой колонки рядов (отсутствие = left,
 // манера vanilla — всё слева, items-start).
 const alignCls =
@@ -243,14 +261,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				rows.map((r, i) => (
 					<li
-						class={`grid w-full grid-cols-1 gap-4 md:gap-10 lg:grid-cols-2${rowBoxCls}`}
+						class={`grid w-full grid-cols-1 gap-4 md:gap-10 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${rowBoxCls}`}
 						data-animate
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="rows"
 					>
 						<div
-							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,0px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,0px)]"}`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (

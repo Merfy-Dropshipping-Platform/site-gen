@@ -1,47 +1,65 @@
 /**
  * Пара «медиа + текст»: зазор, доли колонок, живая «Ширина».
  *
- * Жалоба владельца 2026-09-15 (дословно): «контейнер и медиа соприкасаются;
- * если медиа маленького размера, контейнер берёт на себя больше места, и так же
- * наоборот». Секция — семья «медиа + текст»: «Изображение с текстом»
- * (ImageWithText) и «Мультиряды» (MultiRows, чередование сторон по индексу).
+ * Секция — семья «медиа + текст»: «Изображение с текстом» (ImageWithText) и
+ * «Мультиряды» (MultiRows, чередование сторон по индексу). У ДВУХ блоков —
+ * РАЗНЫЙ канон (разбор владельца по каждому — раздельный, см. ниже), и с
+ * 2026-09-17 они больше не проверяются одной и той же геометрией.
  *
- * ЭТАЛОН — rose. Владелец 2026-09-15, дословно: «как пример работы можешь брать
- * у розы для всех багов темы». Замер rose (Chromium 1920, оба блока, обе стороны
- * чередования): доли медиа:текст = 1.000 при ВСЕХ трёх «Ширинах»
- * (370/370, 520/520, 640/640) и зазор 40px в каждой клетке. То есть жалоба —
- * НЕ про задумку блока: у эталона ни «соприкасания», ни связанных ширин нет.
+ * ── ImageWithText: канон эталона rose (жалоба владельца 2026-09-15) ──
+ * «Контейнер и медиа соприкасаются» — для ЭТОГО блока эталон rose (owner,
+ * 2026-09-15: «как пример работы можешь брать у розы для всех багов темы»)
+ * показал: доли медиа:текст = 1.000 при ВСЕХ трёх «Ширинах» (370/370, 520/520,
+ * 640/640) и зазор 40px в каждой клетке — то есть у ЭТОГО блока ни
+ * «соприкасания», ни связанных с «Шириной» долей нет, только скейл пары
+ * целиком. До правки 2026-09-15 расходились: vanilla (доли ПЛЫВУТ 1.102→1.852),
+ * bloom (зазор 16 вместо 40), satin (зазора НЕТ). ImageWithText в РАМКАХ ЭТОГО
+ * файла НЕ меняется задачей 2026-09-17 — требования 1-2 ниже остаются его
+ * канон без изменений.
  *
- * ЗАМЕР «ДО» (те же окна; пять тем × два блока × три «Ширины» × обе стороны =
- * 60 клеток на окно; рендер — скомпилированным модулем темы, CSS — тот же,
- * что в превью). Медиа/текст/зазор при «Ширина» small → large:
+ * ── MultiRows: канон 2026-09-17 (НОВАЯ жалоба, отменяет канон 2026-09-15) ──
+ * Владелец, 2026-09-17, дословно (со скриншотами): «Мультиряды размерность
+ * контейнера поправить... контейнер и медиа соприкасаются, если медиа
+ * маленького размера, контейнер берёт на себя больше места и так же
+ * наоборот». Наш вид на скриншоте ДО — ровно rose-канон 2026-09-15 (две
+ * плитки со скруглением, зазор 40, доли 1.000 при любой «Ширине») — и он
+ * оказался НЕПРАВИЛЬНЫМ для этого блока: владелец показал чужой редактор, где
+ * медиа и текст стыкуются БЕЗ зазора и без скругления на внутренней границе, а
+ * «Ширина» двигает ДОЛЮ медиа (small уже, medium ≈ половина, large шире).
+ * Значит для MultiRows старый rose-канон (пункты 1-2 старой версии этого
+ * файла) был диагнозом самой жалобы, а не эталоном — правило «сверяться с
+ * rose» здесь неприменимо, потому что rose сам был багом.
  *
- *   блок              тема     до правки                    расхождение с rose
- *   ImageWithText     rose     370/370/40 → 640/640/40      — эталон
- *   ImageWithText     vanilla  388/352/40 → 652/352/40      доли ПЛЫВУТ (1.102 → 1.852)
- *   ImageWithText     bloom    382/382/16 → 652/652/16      зазор 16 вместо 40
- *   ImageWithText     satin    390/390/ 0 → 660/660/ 0      зазора НЕТ
- *   ImageWithText     flux     370/370/40 → 620/620/40      — совпадает
- *   MultiRows         rose     370/370/40 → 640/640/40      — эталон
- *   MultiRows         vanilla  640/640/40 → 640/640/40      «Ширина» МЕРТВА
- *   MultiRows         bloom    382/382/16 → 652/652/16      зазор 16 вместо 40
- *   MultiRows         satin    370/370/40 → 640/640/40      — совпадает
- *   MultiRows         flux     374/374/32 → 624/624/32      зазор 32 вместо 40
+ * Замер «до» (реальный Chromium 1920, pnpm exec tsx через playwright,
+ * компилированный модуль темы — тот же, что уходит на витрину): ВСЕ пять тем
+ * давали 370/370/40 → 520/520/40 → 640/640/40 (rose/vanilla/bloom/satin;
+ * flux — 374/374/40 → 624/624/40, потолок секции чуть теснее) — то есть сам
+ * баг был идентичен на всех пяти темах, «Ширина» меняла только общий масштаб
+ * пары, а не долю медиа.
  *
- * Отсюда три требования, каждое — от эталона rose, а не от вкуса:
- *   1) зазор пары равен зазору rose в том же блоке (40px) и не нулевой;
- *   2) колонки пары — РОВНО ПОЛОВИНЫ: ни одна не заморожена собственным
- *      потолком/базисом, иначе «Ширина» не масштабирует пару, а перекладывает
- *      место между медиа и контейнером (vanilla давала 388/352 против 652/352);
- *   3) «Ширина» жива: потолок контейнера при small ≠ потолок при large
- *      (vanilla/MultiRows давала 1320px на всех трёх значениях, потому что
- *      нелокализованный `.vanilla-container` перебивал утилиту max-w-*).
+ * Правка (эта задача): widthCls (потолок ряда 780/1080/1320) НЕ трогаем — он
+ * уже жил (см. требование 3). ДОБАВЛЕНО: тот же проп «Ширина» задаёт ДОЛЮ
+ * медиа через `grid-template-columns` пары — small 2fr:3fr (медиа 40%),
+ * medium 1fr:1fr (медиа ≈ половина — точка опоры владельца), large 3fr:2fr
+ * (медиа 60%); зазор ряда на брейкпоинте, где пара становится двухколоночной
+ * (lg: у rose/vanilla/bloom/flux, md: у satin), обнулён; скругление медиа —
+ * ТОЛЬКО на внешних углах (rounded-l/rounded-r), на стыке — `rounded-*-none`.
  *
- * Плюс четвёртое, инфраструктурное: каждый класс, который порт реально пишет в
- * разметку, обязан существовать в СОБСТВЕННОМ бандле темы. На живой витрине
- * другого CSS нет; а в превью недостающий класс подменяется соседним из
- * preview-tailwind.css, и конструктор показывает не то, что увидит покупатель
- * (так vanilla/«Мультиряды» показывали зазор 16px вместо живых 40px).
+ * Отсюда для MultiRows ТРИ НОВЫХ требования (описаны в блоках 1-2 и 5 ниже):
+ *   1) зазор пары РОВНО НОЛЬ (не «как у rose» — у rose теперь тоже ноль);
+ *   2) «Ширина» меняет ДОЛЮ медиа в `grid-template-columns`: small уже text,
+ *      large шире text, medium — паритет (обе доли равны);
+ *   5) скругление медиа на стороне СТЫКА с текстом — ноль, на внешней — нет.
+ *
+ * Требование 3 («Ширина» жива — потолок контейнера small ≠ large) — ОБЩЕЕ для
+ * обоих блоков и НЕ менялось: widthCls остался прежним для обоих.
+ *
+ * Плюс четвёртое, инфраструктурное (тоже общее): каждый класс, который порт
+ * реально пишет в разметку, обязан существовать в СОБСТВЕННОМ бандле темы. На
+ * живой витрине другого CSS нет; а в превью недостающий класс подменяется
+ * соседним из preview-tailwind.css, и конструктор показывает не то, что
+ * увидит покупатель (так vanilla/«Мультиряды» показывали зазор 16px вместо
+ * живых 40px до правки 2026-09-15).
  *
  * ЧТО СТОРОЖИМ. Не наличие строки в исходнике, а ПОБЕДИТЕЛЯ КАСКАДА в реальных
  * собранных бандлах для реальных узлов реального рендера. Проверка «есть класс»
@@ -68,7 +86,11 @@ const DESKTOP_PX = 1440;
 
 // ─────────────────────────────── рендер ───────────────────────────────
 
-const propsFor = (block: Block, width: "small" | "medium" | "large") =>
+const propsFor = (
+  block: Block,
+  width: "small" | "medium" | "large",
+  rowsPosition: "left" | "right" = "left",
+) =>
   block === "MultiRows"
     ? {
         id: "MultiRows-guard",
@@ -76,7 +98,7 @@ const propsFor = (block: Block, width: "small" | "medium" | "large") =>
         padding: { top: 40, bottom: 40 },
         width,
         size: "small",
-        rowsPosition: "left",
+        rowsPosition,
         heading: "Мультиряды",
         alignment: "left",
         rows: [
@@ -108,11 +130,16 @@ const propsFor = (block: Block, width: "small" | "medium" | "large") =>
 
 const htmlCache = new Map<string, string>();
 
-function renderPair(theme: Theme, block: Block, width: "small" | "medium" | "large"): string {
-  const key = `${theme}/${block}/${width}`;
+function renderPair(
+  theme: Theme,
+  block: Block,
+  width: "small" | "medium" | "large",
+  rowsPosition: "left" | "right" = "left",
+): string {
+  const key = `${theme}/${block}/${width}/${rowsPosition}`;
   const ready = htmlCache.get(key);
   if (ready !== undefined) return ready;
-  const jobs = [{ block, cascade: true, live: true, props: propsFor(block, width) }];
+  const jobs = [{ block, cascade: true, live: true, props: propsFor(block, width, rowsPosition) }];
   const raw = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
     cwd: SITES_ROOT,
     encoding: "utf-8",
@@ -158,8 +185,13 @@ function findPair(root: HTMLElement): HTMLElement {
   throw new Error("пара «медиа + текст» в разметке не найдена");
 }
 
-function pairParts(theme: Theme, block: Block, width: "small" | "medium" | "large") {
-  const section = parse(renderPair(theme, block, width));
+function pairParts(
+  theme: Theme,
+  block: Block,
+  width: "small" | "medium" | "large",
+  rowsPosition: "left" | "right" = "left",
+) {
+  const section = parse(renderPair(theme, block, width, rowsPosition));
   const root =
     section.querySelector("[data-puck-component-id]") ??
     (section.firstChild as HTMLElement);
@@ -201,54 +233,121 @@ const maxWidthPx = (theme: Theme, el: HTMLElement): number | null =>
 const declared = (theme: Theme, el: HTMLElement, props: readonly string[]): string | null =>
   declaredValue(bundleOf(theme), el, props, DESKTOP_PX)?.value ?? null;
 
+/**
+ * MultiRows: доли `grid-template-columns` пары как [first, second] (fr).
+ * В фикстуре гарда ряд одиночный (i=0); при rowsPosition="left" media стоит
+ * ПЕРВОЙ дорожкой (DOM-порядок = порядок отрисовки), при "right" — второй
+ * (медиа получает `order-2`/`md:order-2`, текст остаётся `order:0`, и грид
+ * кладёт элементы в order-modified порядке — см. MultiRows.astro комментарий
+ * «Владелец 2026-09-17» в порту темы). Значит first/second — это буквально
+ * дорожки СЛЕВА/СПРАВА, а какая из них медиа — знает вызывающий код (он же
+ * передал rowsPosition).
+ */
+function gridTemplateFrs(
+  theme: Theme,
+  width: "small" | "medium" | "large",
+  rowsPosition: "left" | "right" = "left",
+): { first: number; second: number } {
+  const { pair } = pairParts(theme, "MultiRows", width, rowsPosition);
+  const tpl = declared(theme, pair, ["grid-template-columns"]);
+  const m = tpl?.match(/^(\d+(?:\.\d+)?)fr\s+(\d+(?:\.\d+)?)fr$/);
+  if (!m) {
+    throw new Error(
+      `MultiRows (${theme}, ширина ${width}, ${rowsPosition}): grid-template-columns пары не в виде "Nfr Mfr": ${JSON.stringify(tpl)}`,
+    );
+  }
+  return { first: Number(m[1]), second: Number(m[2]) };
+}
+
 // ───────────────────────────── проверки ─────────────────────────────
 
 describe("пара «медиа + текст»: зазор, доли колонок, живая «Ширина»", () => {
-  describe("1) зазор пары равен зазору эталона rose", () => {
-    for (const block of BLOCKS) {
-      const reference = () => {
-        const { pair } = pairParts("rose", block, "large");
-        return gapPx("rose", pair);
-      };
-      for (const theme of THEMES) {
-        it(`${theme} / ${block}: тот же зазор, что у rose, и не ноль`, () => {
-          const { pair } = pairParts(theme, block, "large");
+  describe("1) зазор пары", () => {
+    // ImageWithText — канон rose 2026-09-15 без изменений: зазор ПАРЫ равен
+    // зазору rose (40px) и не нулевой (см. докстринг файла).
+    const reference = () => {
+      const { pair } = pairParts("rose", "ImageWithText", "large");
+      return gapPx("rose", pair);
+    };
+    for (const theme of THEMES) {
+      it(`${theme} / ImageWithText: тот же зазор, что у rose, и не ноль`, () => {
+        const { pair } = pairParts(theme, "ImageWithText", "large");
+        const gap = gapPx(theme, pair);
+        const rose = reference();
+        expect({ theme, gap }).toEqual({ theme, gap: rose });
+        expect(gap as number).toBeGreaterThan(0);
+      });
+    }
+    // MultiRows — канон 2026-09-17: медиа и текст СТЫКУЮТСЯ, зазор РОВНО ноль
+    // на всех трёх «Ширинах» (не «как у rose» — у rose теперь тоже ноль).
+    for (const theme of THEMES) {
+      for (const width of ["small", "medium", "large"] as const) {
+        it(`${theme} / MultiRows (${width}): зазор пары РОВНО ноль (медиа и текст стыкуются)`, () => {
+          const { pair } = pairParts(theme, "MultiRows", width);
           const gap = gapPx(theme, pair);
-          const rose = reference();
-          expect({ theme, block, gap }).toEqual({ theme, block, gap: rose });
-          expect(gap as number).toBeGreaterThan(0);
+          expect({ theme, width, gap }).toEqual({ theme, width, gap: 0 });
         });
       }
     }
   });
 
-  describe("2) колонки пары — ровно половины", () => {
+  describe("2) доли колонок", () => {
+    // ImageWithText — канон rose 2026-09-15 без изменений: колонки ровно
+    // половины на любой «Ширине» (в фикстуре гарда проверяется large).
     for (const theme of THEMES) {
-      for (const block of BLOCKS) {
-        it(`${theme} / ${block}: ни медиа, ни контейнер не забирают чужую долю`, () => {
-          const { pair, media, text } = pairParts(theme, block, "large");
-          const recipe = (el: typeof media) => ({
-            cap: maxWidthPx(theme, el),
-            basis: declared(theme, el, ["flex-basis"]),
-            grow: declared(theme, el, ["flex-grow", "flex"]),
-            width: declared(theme, el, ["width"]),
-          });
-          // Грид: две дорожки обязаны быть ОДИНАКОВЫМИ (repeat(2, …)).
-          const template = declared(theme, pair, ["grid-template-columns"]);
-          if (template !== null) {
-            expect({ theme, block, template }).toEqual({
-              theme,
-              block,
-              template: expect.stringMatching(/^repeat\(\s*2\s*,/),
-            });
-          }
-          expect({ theme, block, ...recipe(media) }).toEqual({
-            theme,
-            block,
-            ...recipe(text),
-          });
+      it(`${theme} / ImageWithText: ни медиа, ни контейнер не забирают чужую долю`, () => {
+        const { pair, media, text } = pairParts(theme, "ImageWithText", "large");
+        const recipe = (el: typeof media) => ({
+          cap: maxWidthPx(theme, el),
+          basis: declared(theme, el, ["flex-basis"]),
+          grow: declared(theme, el, ["flex-grow", "flex"]),
+          width: declared(theme, el, ["width"]),
         });
-      }
+        const template = declared(theme, pair, ["grid-template-columns"]);
+        if (template !== null) {
+          expect({ theme, template }).toEqual({
+            theme,
+            template: expect.stringMatching(/^repeat\(\s*2\s*,/),
+          });
+        }
+        expect({ theme, ...recipe(media) }).toEqual({ theme, ...recipe(text) });
+      });
+    }
+
+    // MultiRows — канон 2026-09-17: «Ширина» двигает ДОЛЮ медиа в паре, а не
+    // общий потолок ряда (тот проверяет требование 3 — он не менялся).
+    // small — медиа УЖЕ текста; medium — доли РАВНЫ (опорная точка владельца
+    // «средняя ≈ половина»); large — медиа ШИРЕ текста; small ≠ large (иначе
+    // «Ширина» опять мертва для доли, пусть потолок и живой).
+    for (const theme of THEMES) {
+      it(`${theme} / MultiRows: «Ширина» двигает долю медиа (small уже, medium=половина, large шире)`, () => {
+        const small = gridTemplateFrs(theme, "small");
+        const medium = gridTemplateFrs(theme, "medium");
+        const large = gridTemplateFrs(theme, "large");
+        // rowsPosition="left" (фикстура) → media = первая дорожка (first).
+        expect({ theme, width: "small", mediaFr: small.first, textFr: small.second }).toEqual({
+          theme,
+          width: "small",
+          mediaFr: expect.any(Number),
+          textFr: expect.any(Number),
+        });
+        expect(small.first).toBeLessThan(small.second);
+        expect(medium.first).toBe(medium.second);
+        expect(large.first).toBeGreaterThan(large.second);
+        expect(small.first / small.second).not.toBe(large.first / large.second);
+      });
+
+      it(`${theme} / MultiRows: доля медиа зеркалится с rowsPosition="right"`, () => {
+        // Медиа теперь ВТОРАЯ дорожка (текст первой) — доли те же, стороны
+        // поменялись местами. Ловит регресс порядка "order" (см. MultiRows.astro).
+        const leftSmall = gridTemplateFrs(theme, "small", "left");
+        const rightSmall = gridTemplateFrs(theme, "small", "right");
+        expect({ theme, media: rightSmall.second, text: rightSmall.first }).toEqual({
+          theme,
+          media: leftSmall.first,
+          text: leftSmall.second,
+        });
+      });
     }
   });
 
@@ -305,6 +404,41 @@ describe("пара «медиа + текст»: зазор, доли колон�
           });
         });
       }
+    }
+  });
+
+  describe("5) MultiRows: скругление медиа — только на внешней стороне", () => {
+    /**
+     * Требование владельца 2026-09-17: «без скруглений на внутренней
+     * границе». Медиа держит скругление радиуса темы на ВНЕШНЕЙ стороне (там,
+     * где ряд граничит с полем секции) и НОЛЬ на стороне СТЫКА с текстом —
+     * иначе стык снова читается как две отдельные плитки, даже если зазор уже
+     * ноль. rowsPosition="left" (фикстура) → медиа слева → стык справа
+     * (border-*-right-radius = 0, border-*-left-radius > 0 ИЛИ отсутствует
+     * объявление совсем — у satin/vanilla радиус темы 0px, скруглять нечего).
+     */
+    for (const theme of THEMES) {
+      it(`${theme} / MultiRows: скругление у стыка (справа) — ноль, снаружи (слева) — не меньше`, () => {
+        const { media } = pairParts(theme, "MultiRows", "large");
+        // Лонгхенд (наш directional override, lg:rounded-{l,r}-*) ищем ПЕРВЫМ —
+        // он бьёт конкретный угол; если его нет вовсе (регресс убрал override и
+        // остался только базовый `rounded-[var(--radius-media)]`), откатываемся
+        // на шорткат `border-radius` — иначе отсутствующий лонгхенд молча
+        // читается как 0 и маскирует ровно ту порчу, которую гард обязан ловить
+        // (поймано саботажем: убрали override → тест остался зелёным, пока не
+        // добавили шорткат вторым кандидатом).
+        const seamPx = (long: string) =>
+          pxOf(bundleOf(theme, false), media, [long, "border-radius"], DESKTOP_PX) ?? 0;
+        const seamTop = seamPx("border-top-right-radius");
+        const seamBottom = seamPx("border-bottom-right-radius");
+        const outerTop = seamPx("border-top-left-radius");
+        const outerBottom = seamPx("border-bottom-left-radius");
+        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
+        // Внешняя сторона не обязана быть > 0 (satin/vanilla — радиус темы
+        // 0px), но обязана быть >= стыка — регресс "весь rounded-none" не проходит.
+        expect(outerTop).toBeGreaterThanOrEqual(seamTop);
+        expect(outerBottom).toBeGreaterThanOrEqual(seamBottom);
+      });
     }
   });
 });

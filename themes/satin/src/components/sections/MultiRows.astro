@@ -223,6 +223,25 @@ const widthCls =
 					? "w-full"
 					: "satin-container";
 
+// Владелец 2026-09-17 (дословно): «контейнер и медиа соприкасаются, если медиа
+// маленького размера, контейнер берёт на себя больше места и так же наоборот».
+// Тот же топ-уровневый проп «Ширина» (widthCls выше не трогаем — он держит
+// потолок ряда) теперь ДОПОЛНИТЕЛЬНО задаёт ДОЛЮ медиа внутри пары: small —
+// медиа уже текста (2:3 ⇒ 40%), medium — примерно половина (1:1, эталон
+// владельца), large — медиа шире текста (3:2 ⇒ 60%). Доли — литералы в
+// ОБЪЕКТЕ (не конкатенация числа в шаблонной строке): сканер Tailwind ищет
+// ЦЕЛЫЙ класс текстом в исходнике, а `grid-cols-[${a}fr_${b}fr]` с
+// подставленным числом в бандл не попадёт (тот же класс-призрак, что уже
+// ловили на lg:basis-1/2 — см. media-text-pair.spec.ts). satin переходит на
+// две колонки на md: (не lg:, как остальные темы) — паритет CollectionRows.
+const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; textFirst: string }> = {
+	small: { mediaFirst: "md:grid-cols-[2fr_3fr]", textFirst: "md:grid-cols-[3fr_2fr]" },
+	medium: { mediaFirst: "md:grid-cols-[1fr_1fr]", textFirst: "md:grid-cols-[1fr_1fr]" },
+	large: { mediaFirst: "md:grid-cols-[3fr_2fr]", textFirst: "md:grid-cols-[2fr_3fr]" },
+};
+const rowSplitKey: "small" | "medium" | "large" =
+	p.width === "small" ? "small" : p.width === "large" ? "large" : "medium";
+
 // Канон alignment текст-колонки: left/отсутствие = ЛИТЕРАЛ (без классов —
 // контент слева, CollectionRows.astro:62); center/right двигают содержимое.
 const alignCls =
@@ -328,7 +347,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				rows.map((row, i) => (
 					<div
 						class:list={[
-							"grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10",
+							"grid grid-cols-1 items-stretch gap-8 md:gap-0",
+							ROW_SPLIT[rowSplitKey][row.right ? "textFirst" : "mediaFirst"],
 							rowBoxCls,
 						]}
 						data-puck-subsection-parent={hasRealRows ? id : undefined}

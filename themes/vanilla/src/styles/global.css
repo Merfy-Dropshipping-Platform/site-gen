@@ -547,11 +547,20 @@ footer[data-vanilla-footer]::after {
    именно это: vanilla-b41-scheme-container-button.spec.ts). Фолбэк = текущий
    (не-hover) цвет кнопки → без заданного мерчантом hover эффект прежний
    (только дим). */
-[data-block="cart-body"][class*="color-scheme-"] .vanilla-button-cart:hover,
-[data-block="cart-summary"][class*="color-scheme-"] .vanilla-button-cart:hover,
-[data-block="cart-section"] .vanilla-button-cart:hover,
-[data-block="wishlist-section"] .vanilla-button-wishlist:hover,
-[data-block="catalog"] [data-action="load-more"]:hover {
+/* Селекторы НАЧИНАЮТСЯ с класса намеренно: `check:css-layers` заворачивает в
+   @layer base любое unlayered-правило, чей селектор начинается с элемента или
+   атрибута (та же форма, что у preflight-сбросов — из-за них когда-то «лого на
+   всю высоту»). Внутри @layer base это правило не работает по причине из
+   комментария выше, поэтому область действия перенесена в `:is(…)`, а слева
+   стоит класс — правило остаётся unlayered и гард молчит. Специфичность от
+   этого только выросла, поведение то же. Запятых ВНУТРИ `:is(…)` быть не
+   должно: гард режет список селекторов по запятым, и кусок из середины
+   скобок читался бы как отдельный селектор, начинающийся с атрибута. */
+.vanilla-button-cart:is([data-block="cart-body"][class*="color-scheme-"] *):hover,
+.vanilla-button-cart:is([data-block="cart-summary"][class*="color-scheme-"] *):hover,
+.vanilla-button-cart:is([data-block="cart-section"] *):hover,
+.vanilla-button-wishlist:is([data-block="wishlist-section"] *):hover,
+.inline-flex[data-action="load-more"]:hover {
   background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 58 69 48)));
   border-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 58 69 48)));
   color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));

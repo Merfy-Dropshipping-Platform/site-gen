@@ -1,17 +1,7 @@
 {
   "generated": "node src/themes/__tests__/scheme-matrix.mjs --debt-out <файл>",
-  "total": 35,
+  "total": 31,
   "entries": [
-    {
-      "key": "bloom|AccountSection|текст кнопки (:hover)|color|account-button",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-text))",
-      "role": "--color-button-text",
-      "chain": [
-        "--color-button-text"
-      ],
-      "where": "themes/bloom/src/components/sections/AccountSection.astro:90"
-    },
     {
       "key": "bloom|AccountSection|текст кнопки (:hover)|color|account-text-link",
       "verdict": "frozen",
@@ -21,16 +11,6 @@
         "--color-muted"
       ],
       "where": "themes/bloom/src/components/sections/AccountSection.astro:83"
-    },
-    {
-      "key": "bloom|AccountSection|фон кнопки (:hover)|background-color|account-button",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-bg, var(--color-primary)))",
-      "role": "--color-button-bg",
-      "chain": [
-        "--color-button-bg"
-      ],
-      "where": "themes/bloom/src/components/sections/AccountSection.astro:90"
     },
     {
       "key": "bloom|Collections|фон контейнера|background-color|[data-nt=\"bloom-product-card\"]",
@@ -51,26 +31,6 @@
         "--color-white"
       ],
       "where": "themes/bloom/src/components/Header.astro:274"
-    },
-    {
-      "key": "bloom|LoginSection|текст кнопки (:hover)|color|auth-button-primary",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-text))",
-      "role": "--color-button-text",
-      "chain": [
-        "--color-button-text"
-      ],
-      "where": "themes/bloom/src/components/sections/LoginSection.astro:46"
-    },
-    {
-      "key": "bloom|LoginSection|фон кнопки (:hover)|background-color|auth-button-primary",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-bg, var(--color-primary)))",
-      "role": "--color-button-bg",
-      "chain": [
-        "--color-button-bg"
-      ],
-      "where": "themes/bloom/src/components/sections/LoginSection.astro:46"
     },
     {
       "key": "bloom|PopularProducts|фон контейнера|background-color|[data-nt=\"bloom-product-card\"]",

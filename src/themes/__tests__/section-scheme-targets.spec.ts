@@ -94,7 +94,11 @@ const THEMES_5 = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
 const CASES: Case[] = [
   { theme: "flux", block: "Product", label: "Товар", target: "фон секции", marker: 'data-block="featured-product"', prop: "background-color", expect: "--color-bg" },
   { theme: "flux", block: "Product", label: "Товар", target: "заголовок", marker: "data-cfg-name", prop: "color", expect: "--color-heading" },
-  { theme: "flux", block: "Product", label: "Товар", target: "цена", marker: "data-cfg-price", prop: "color", expect: "--color-heading" },
+  // Цена ждёт роль «текст», а не «заголовок»: прямая просьба владельца
+  // 2026-09-16 — «Цена должна принимать цвет текста». До неё стояла роль
+  // заголовка, и на схемах, где заголовок и текст разные, цена шла за чужим
+  // цветом (замер до правки: rgb(0,0,0) вместо rgb(153,153,153)).
+  { theme: "flux", block: "Product", label: "Товар", target: "цена", marker: "data-cfg-price", prop: "color", expect: "--color-text" },
   { theme: "flux", block: "Product", label: "Товар", target: "фон динамической кнопки", marker: "data-cfg-buy", prop: "background-color", expect: "--color-button-bg" },
   { theme: "flux", block: "Product", label: "Товар", target: "текст динамической кнопки", marker: "data-cfg-buy", prop: "color", expect: "--color-button-text" },
   // [5] «Товар» — цена ДО скидки (пункт 5, владелец 16.09). Проверено: УЖЕ

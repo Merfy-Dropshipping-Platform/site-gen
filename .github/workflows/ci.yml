@@ -190,13 +190,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
-      # Собранный dist/ + themes/satin/dist/ (pnpm build + build:blocks +
-      # build:theme-sections:all, с сателлитами satin, + build:preview-
-      # tailwind + astro build самой темы satin) — из джобы satin-build, один
-      # раз на весь прогон. path: . (не path: dist!) — артефакт несёт ДВА
-      # корневых каталога (dist/ И themes/satin/dist/), и path: dist
-      # ошибочно вложил бы themes/satin/dist ПОД dist/ вместо восстановления
-      # на своём месте (так уже ловили красный прогон 35145471675).
+      # Собранный dist/ + themes/satin/dist/ + themes/satin/.astro/ (pnpm
+      # build + build:blocks + build:theme-sections:all, с сателлитами satin,
+      # + build:preview-tailwind + astro build самой темы satin) — из джобы
+      # satin-build, один раз на весь прогон. path: . (не path: dist!) —
+      # артефакт несёт ТРИ корневых каталога, и path: dist ошибочно вложил бы
+      # их ПОД dist/ вместо восстановления на своём месте (так уже ловили
+      # красный прогон 35145471675).
       - uses: actions/download-artifact@v4
         with:
           name: satin-dist
@@ -1197,17 +1197,31 @@ jobs:
       # меняет ВЫХОД сборки, и кэш обязан протухнуть вместе с ней — иначе
       # прогон тихо отдал бы устаревший dist/ всем джобам ниже.
       #
-      # ДВА пути, не один: `pnpm exec tsx scripts/run-theme-build.ts satin`
+      # ТРИ пути, не один: `pnpm exec tsx scripts/run-theme-build.ts satin`
       # (ThemeBuildService) гоняет astro build ВНУТРИ themes/satin/ и кладёт
       # результат в themes/satin/dist/ (сама тема), А ОТДЕЛЬНО копирует его в
       # dist/theme-preview/satin и dist/theme-live/satin (общий репозиторный
       # dist/). satin-conformance-source-snapshot.spec.ts (satin-dictated-
       # conformance) проверяет themes/satin/dist/index.html НАПРЯМУЮ — первая
       # версия этой ветки кэшировала и артефактила только dist/ и уводила эту
-      # проверку в КРАСНОЕ на чистом чекауте (живой прогон 35145471675, живой
-      # пруф раздела «красный прогон» в отчёте); themes/satin/dist уже
-      # существовал только потому, что build-джоба и джобы-потребители были
-      # ОДНОЙ и той же джобой на одном раннере до этой ветки.
+      # проверку в КРАСНОЕ на чистом чекауте (живой прогон 35145471675).
+      #
+      # themes/satin/.astro/ — тоже обязателен, отдельным живым красным
+      # прогоном (35146219166): `pnpm conformance:satin` хеширует ВСЮ папку
+      # themes/satin рекурсивно (SATIN_THEME_DIGEST_INPUTS в
+      # satin-source-adapter.ts), а DIGEST_EXCLUDES в source-snapshot.ts
+      # исключает только node_modules/dist/conformance-* — не .astro. Кэш
+      # Astro на диске существует и участвует в дайджесте у ЛЮБОГО раннера,
+      # который прогнал astro build; отслеживаемый инвентарь
+      # conformance/inventory/satin.generated.json пинит байты С учётом этого
+      # кэша. На чистом чекауте satin-dictated-conformance без .astro в
+      # артефакте дайджест по этим путям молча отсутствовал (ENOENT-
+      # tolerant — не «0 байт», а «путь пропущен»), из-за чего кандидат не
+      # совпал с зафиксированным инвентарём: «tracked inventory is stale
+      # (byte mismatch with the current candidate)». Раньше это не всплывало,
+      # потому что build-джоба и джоба-потребитель были ОДНОЙ и той же джобой
+      # на одном раннере — .astro/ всегда был на месте, когда считался
+      # дайджест.
       - name: Кэш dist по хэшу исходников тем
         id: dist-cache
         uses: actions/cache@v4
@@ -1215,6 +1229,7 @@ jobs:
           path: |
             dist
             themes/satin/dist
+            themes/satin/.astro
           key: >-
             satin-dist-${{ hashFiles('themes/**', 'packages/**', 'src/**',
             'scripts/compile-astro-blocks.mjs', 'scripts/compile-theme-sections.mjs',
@@ -1245,6 +1260,7 @@ jobs:
           path: |
             dist
             themes/satin/dist
+            themes/satin/.astro
           retention-days: 1
 
   # b51-ci-speed2: дословный хвост джобы satin-structural-conformance,
@@ -1281,9 +1297,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
-      # path: . (не path: dist!) — артефакт несёт dist/ И themes/satin/dist/;
-      # satin-conformance-source-snapshot.spec.ts (test:conformance:satin
-      # ниже) читает themes/satin/dist/index.html напрямую.
+      # path: . (не path: dist!) — артефакт несёт dist/, themes/satin/dist/ И
+      # themes/satin/.astro/. satin-conformance-source-snapshot.spec.ts
+      # (test:conformance:satin ниже) читает themes/satin/dist/index.html
+      # напрямую, а `pnpm conformance:satin` (тоже ниже) хеширует ВСЮ папку
+      # themes/satin рекурсивно, включая .astro/ — без него дайджест не
+      # совпадает с отслеживаемым conformance/inventory/satin.generated.json
+      # («tracked inventory is stale», живой красный прогон 35146219166).
       - uses: actions/download-artifact@v4
         with:
           name: satin-dist

@@ -344,6 +344,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				    эмитит <source srcset=*.webp> → 404 + <picture> не откатывается
 				    (баг project_cart_thumb_image_bug). Реальное фото(-а) мерчанта —
 				    SatinPicture, как в сплит-ветке ниже (webp/responsive). */}
+				{/* Гейт — heroSlots.primary, а НЕ merchantBackground (тот проверяет ТОЛЬКО
+				   слот 1 backgroundImages.url1/backgroundImage): фото, положенное ТОЛЬКО во
+				   второй слот, проваливалось в плейсхолдер-ветку ниже, хотя backgroundImage
+				   (из heroSlots) уже корректно указывал на фото мерчанта — мерчант видел
+				   design-плейсхолдер вместо своего фото. Саботаж-тест
+				   satin-b39-render-scheme-guards.spec.ts («фото ТОЛЬКО во втором слоте»). */}
 				{
 					backgroundImage2 ? (
 						<div class="absolute inset-0 grid grid-cols-2">
@@ -362,7 +368,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								class="size-full object-cover object-center"
 							/>
 						</div>
-					) : merchantBackground ? (
+					) : heroSlots.primary ? (
 						<SatinPicture
 							src={backgroundImage}
 							alt=""

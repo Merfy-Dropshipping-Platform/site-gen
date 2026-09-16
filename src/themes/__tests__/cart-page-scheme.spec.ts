@@ -144,4 +144,41 @@ describe("секции корзины едут за цветовой схемо�
     });
   });
 
+  // Баг владельца 16.09 (дословно): «Баг секция Корзина в теме Bloom — Не
+  // применяется цветовая схема: Заголовок, цены, плашка количества». Заголовок
+  // и цены уже покрыты проверками выше (literalPaintLines + мишени
+  // measure-cart-scheme.mjs); «плашка количества» — счётчик и кнопки ±
+  // строки товара — не мерилась вообще ни одним сторожем (замер 15.09,
+  // 17 мишеней, не включал её). bloom красил соседние элементы строки
+  // (название, цена, «Удалить») токеном --color-text/--color-muted, а
+  // <span>{line.quantity}</span> и data-cart-dec/-inc — нет, полагаясь на
+  // унаследованный цвет. Эталон — rose: там все три мишени несут явный
+  // text-[rgb(var(--color-text,0_0_0))]. Сторож держит ИСХОДНИК bloom.
+  //
+  // CartSection.astro — legacy-«комбо» версия страницы корзины (до раздела
+  // на CartBody+CartSummary спекой 110), но она ОСТАЁТСЯ адресуемым типом
+  // блока (компилируется в dist/theme-sections — см. манифест сборки) и
+  // несла ТОЧНО ТАКОЙ ЖЕ пробел, поэтому проверяется тем же приёмом.
+  describe.each(["CartBody", "CartSection"] as const)("bloom %s — плашка количества и кнопки ± едут за схемой", (section) => {
+    const src = sectionSource("bloom", section);
+    // Строка «<span class="…">${line.quantity}</span>» — без якоря по
+    // содержимому регэксп поймает случайный соседний span, поэтому ищем
+    // ИМЕННО тот, что держит `${line.quantity}`.
+    const qtySpan = /<span class="([^"]*)">\$\{line\.quantity\}<\/span>/.exec(src)?.[1] ?? "";
+    const decBtn = /<button type="button" data-cart-dec[^>]*class="([^"]*)"/.exec(src)?.[1] ?? "";
+    const incBtn = /<button type="button" data-cart-inc[^>]*class="([^"]*)"/.exec(src)?.[1] ?? "";
+
+    it("плашка количества найдена в исходнике", () => {
+      expect(qtySpan).not.toBe("");
+    });
+
+    it.each([
+      ["плашка количества (span)", () => qtySpan],
+      ["кнопка «минус» (data-cart-dec)", () => decBtn],
+      ["кнопка «плюс» (data-cart-inc)", () => incBtn],
+    ])("%s несёт text-[rgb(var(--color-text", (_label, getCls) => {
+      expect(getCls()).toMatch(/text-\[rgb\(var\(--color-text/);
+    });
+  });
+
 });

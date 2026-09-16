@@ -82,6 +82,14 @@ const EXPECT = {
   'цена товара': { prop: 'color', token: '--color-text' },
   'подпись варианта': { prop: 'color', token: '--color-muted' },
   'кнопка «Удалить»': { prop: 'color', token: '--color-muted' },
+  // Баг владельца 16.09 («Секция Корзина в Bloom — не применяется цветовая
+  // схема: … плашка количества») — эти три мишени раньше не мерились вовсе,
+  // отсюда и слепая зона. bloom оставлял <span>${line.quantity}</span> и
+  // кнопки data-cart-dec/-inc БЕЗ text-[rgb(var(--color-text,…))], полагаясь
+  // на унаследованный цвет — эталон rose красит их явным токеном.
+  'плашка количества': { prop: 'color', token: '--color-text' },
+  'кнопка «минус»': { prop: 'color', token: '--color-text' },
+  'кнопка «плюс»': { prop: 'color', token: '--color-text' },
   'разделитель строк': { prop: 'border-bottom-color', token: '--color-muted' },
   'примечание сводки': { prop: 'color', token: '--color-muted' },
   'надпись «Итого»': { prop: 'color', token: '--color-text' },
@@ -182,12 +190,15 @@ const PROBE = `(() => {
     const variantEl = [...li.querySelectorAll('span,p')].find((e) => /Чёрный|black|, M$|^M$|Белый/.test(e.textContent.trim()));
     put('подпись варианта', variantEl, 'color');
     put('кнопка «Удалить»', li.querySelector('[data-cart-remove]'), 'color');
+    put('плашка количества', li.querySelector('[data-cart-dec]')?.nextElementSibling ?? null, 'color');
+    put('кнопка «минус»', li.querySelector('[data-cart-dec]'), 'color');
+    put('кнопка «плюс»', li.querySelector('[data-cart-inc]'), 'color');
     const borderHost = [li, ...li.querySelectorAll('*')].find(
       (e) => getComputedStyle(e).borderBottomWidth !== '0px',
     );
     put('разделитель строк', borderHost, 'border-bottom-color');
   } else {
-    for (const k of ['название товара', 'цена товара', 'подпись варианта', 'кнопка «Удалить»', 'разделитель строк'])
+    for (const k of ['название товара', 'цена товара', 'подпись варианта', 'кнопка «Удалить»', 'разделитель строк', 'плашка количества', 'кнопка «минус»', 'кнопка «плюс»'])
       out[k] = 'СТРОКА ТОВАРА НЕ ОТРИСОВАНА';
   }
 

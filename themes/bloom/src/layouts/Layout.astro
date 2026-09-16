@@ -114,32 +114,41 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 			// Аккаунт покупателя — красит [data-auth-link] и грузит профиль.
 			initAuthUI();
 
-			// Корзина-дровер тянет настройки корзины из конструктора: цветовую схему,
-			// дисклеймер и редактируемые тексты (build-глобалы __MERFY_CART_DRAWER_*).
+			// Корзина-дровер тянет из конструктора дисклеймер и редактируемые тексты
+			// (build-глобалы __MERFY_CART_DRAWER_*). Цветовую схему дровера этот блок
+			// БОЛЬШЕ НЕ красит через classList — баг-репорт владельца 16.09: «боковая
+			// панель корзины (дровер) в bloom неправильно тянет на себя цветовую схему
+			// секции Корзина». Причина была ровно здесь: __MERFY_CART_DRAWER_SCHEME__
+			// резолвится (`resolveCartDrawerGlobals`, src/themes/cart-drawer-contract.ts)
+			// из явной настройки «Настройки темы → Корзина → Цветовая схема» И, если она
+			// не задана, ИЗ ЗАПАСНОГО ВАРИАНТА — colorScheme блока CartBody/CartSummary
+			// САМОЙ СЕКЦИИ «Корзина» страницы /cart. Мерчант красит страницу корзины —
+			// дровер молча перекрашивался следом, хотя ничего в настройках дровера не
+			// трогал. У rose такого канала нет вовсе (грепом по themes/rose/src —
+			// ни одного __MERFY_CART_DRAWER_SCHEME__), и её дровер ведёт СЕБЯ ОДНИМ
+			// каналом: tokens.css правило `[data-nt$="cart-drawer"]`
+			// (cartDrawerSchemeRule, src/themes/tokens-css.ts), которое читает ТОЛЬКО
+			// явную настройку cartDrawerScheme — без секционного фолбэка. Этот канал
+			// живёт у bloom ровно так же (общий для всех тем), поэтому явная настройка
+			// дровера продолжает работать без единой строчки JS. Убираем только
+			// classList-ветку ниже — она была ВТОРЫМ, лишним каналом красителя и
+			// единственным источником секционного фолбэка.
 			const applyCartDrawerSettings = () => {
 				const w = window as unknown as {
-					__MERFY_CART_DRAWER_SCHEME__?: string;
 					__MERFY_CART_DRAWER_DISCLAIMER__?: string;
 					__MERFY_CART_DRAWER_TITLE__?: string;
 					__MERFY_CART_DRAWER_CHECKOUT__?: string;
 					__MERFY_CART_DRAWER_EMPTY__?: string;
 				};
 				const cfg = {
-					scheme: w.__MERFY_CART_DRAWER_SCHEME__,
 					disclaimer: w.__MERFY_CART_DRAWER_DISCLAIMER__,
 					title: w.__MERFY_CART_DRAWER_TITLE__,
 					checkout: w.__MERFY_CART_DRAWER_CHECKOUT__,
 					empty: w.__MERFY_CART_DRAWER_EMPTY__,
 				};
-				if (!cfg.scheme && !cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
+				if (!cfg.disclaimer && !cfg.title && !cfg.checkout && !cfg.empty) return;
 				const root = document.getElementById("bloom-cart-drawer-root");
 				if (!root) return;
-				if (cfg.scheme && /^scheme-\d+$/.test(cfg.scheme)) {
-					Array.from(root.classList).forEach((c) => {
-						if (/^color-scheme-\d+$/.test(c)) root.classList.remove(c);
-					});
-					root.classList.add("color-scheme-" + cfg.scheme.replace("scheme-", ""));
-				}
 				if (cfg.disclaimer) {
 					const summary = root.querySelector("[data-cart-summary]");
 					if (summary && !summary.querySelector(".cart-drawer-disclaimer")) {

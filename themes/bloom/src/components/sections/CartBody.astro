@@ -126,9 +126,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 						</div>
 						<div class="flex items-center justify-between gap-6 md:flex-col md:items-end md:justify-start md:gap-3">
 							<div class="inline-flex h-10 items-center rounded-[4px] border border-[rgb(var(--color-muted,153_153_153)/0.3)]">
-								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
-								<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
-								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
+								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
+								<span class="min-w-[28px] text-center font-manrope text-[14px] text-[rgb(var(--color-text,0_0_0))]">${line.quantity}</span>
+								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
 							</div>
 							<span class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
 						</div>

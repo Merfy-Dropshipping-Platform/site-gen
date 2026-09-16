@@ -188,6 +188,14 @@ body {
   color: rgb(var(--color-button-text));
 }
 
+/* Наведение на .vanilla-button-cart (cart-body/cart-summary/cart-section) и
+   .vanilla-button-wishlist — ДАЛЬШЕ по файлу, UNLAYERED (после @layer base):
+   их базовый цвет красят СОБСТВЕННЫЕ scoped <style> секций (CartBody.astro/
+   CartSummary.astro/CartSection.astro/WishlistSection.astro), которые тоже
+   unlayered — правило внутри @layer ЛЮБОЙ специфичности (даже :hover) не
+   может их перебить (unlayered всегда старше layered). Гард на эту ловушку:
+   vanilla-b41-scheme-container-button.spec.ts. */
+
 /* ОСТАЛЬНЫЕ СЕКЦИИ vanilla: ремап алиасов темы на роли схемы — ОДНО правило.
    Матрица схем (pnpm scheme-matrix:bad) нашла 12 замерших мишеней в «Корзине»
    (старый цельный порт cart-section), «Избранном», «Каталоге» и Шапке: разметка
@@ -218,7 +226,23 @@ body {
   --vanilla-dark: rgb(var(--color-heading, 10 10 10));
   --vanilla-muted: rgb(var(--color-muted, 119 119 119));
   --vanilla-header-bg: rgb(var(--color-button-bg, 58 69 48));
+  /* Баг владельца 16.09: кнопка «Корзины»/«Избранного» красит фон схемой
+     (--vanilla-header-bg выше), но ТЕКСТ кнопки (.vanilla-button-cart /
+     .vanilla-button-wishlist читают --vanilla-button-text) никогда не был
+     ремаплен для этих трёх секций — только у cart-body/cart-summary/дровера
+     (тот же приём чуть выше в файле). Без ремапа переменная не объявлена
+     нигде в цепочке каскада → CSS берёт литеральный фолбэк #ffffff у
+     .vanilla-button-cart и ЖЁСТКИЙ #ffffff у .vanilla-button-wishlist —
+     кнопка Избранного не читалась на светлых схемах (белый текст на белой
+     кнопке). Источник тот же, что у остальных алиасов этого блока. */
+  --vanilla-button-text: rgb(var(--color-button-text));
 }
+
+/* Наведение на кнопки этих же трёх секций — ДАЛЬШЕ по файлу, unlayered (см.
+   комментарий у cart-body/cart-summary выше: и astro-scoped <style>
+   CartSection.astro/WishlistSection.astro, и Tailwind-утилита
+   `bg-[var(--vanilla-header-bg)]` Catalog.astro лежат вне @layer/в
+   @layer utilities — оба перебивают правило внутри @layer base). */
 
 /* NB: img/video max-width:100% даёт Tailwind preflight в @layer base (утилиты
    max-w-[..] перекрывают). Unlayered-дубликат бил утилиту лого max-w-[160px]. */
@@ -505,6 +529,32 @@ footer[data-vanilla-footer]::after {
 
 .vanilla-button:hover {
   opacity: 0.78;
+}
+
+/* Наведение кнопок «Продолжить покупки»/«Оформить заказ» (cart-body/
+   cart-summary/cart-section), «Перейти в каталог» (wishlist-section) и
+   «Смотреть ещё» (Catalog) — баг владельца 16.09 («не применяется цветовая
+   схема к кнопке и при наведении»): `.vanilla-button:hover{opacity:.78}`
+   выше только дербит прозрачность, роли «Фон / При наведении» и «Текст / При
+   наведении» схемы (ColorSchemePanel → schemeToVars → --color-button-bg-hover
+   / --color-button-text-hover) кнопка не читала вовсе. Тот же приём, что уже
+   стоит у .auth-button-primary:hover/.account-button:hover в этом файле —
+   и, как у них, ОБЯЗАН быть unlayered (не в @layer base): фон/цвет базового
+   состояния кнопок красят unlayered astro-scoped <style> (CartBody.astro/
+   CartSummary.astro/CartSection.astro/WishlistSection.astro) и Tailwind-
+   утилита `bg-[var(--vanilla-header-bg)]` (Catalog.astro, @layer utilities) —
+   правило внутри @layer base ни то, ни другое не перебивает (гард поймал
+   именно это: vanilla-b41-scheme-container-button.spec.ts). Фолбэк = текущий
+   (не-hover) цвет кнопки → без заданного мерчантом hover эффект прежний
+   (только дим). */
+[data-block="cart-body"][class*="color-scheme-"] .vanilla-button-cart:hover,
+[data-block="cart-summary"][class*="color-scheme-"] .vanilla-button-cart:hover,
+[data-block="cart-section"] .vanilla-button-cart:hover,
+[data-block="wishlist-section"] .vanilla-button-wishlist:hover,
+[data-block="catalog"] [data-action="load-more"]:hover {
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 58 69 48)));
+  border-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 58 69 48)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .vanilla-button-dark {

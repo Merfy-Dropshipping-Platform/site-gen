@@ -161,7 +161,7 @@
       "name": "1",
       "tokens": {
         "--color-bg": "38 49 28",
-        "--color-surface": "38 49 28",
+        "--color-surface": "46 58 35",
         "--color-heading": "255 255 255",
         "--color-text": "255 255 255",
         "--color-muted": "200 200 200",
@@ -180,7 +180,7 @@
       "name": "2",
       "tokens": {
         "--color-bg": "58 69 48",
-        "--color-surface": "58 69 48",
+        "--color-surface": "68 80 55",
         "--color-heading": "255 255 255",
         "--color-text": "255 255 255",
         "--color-muted": "200 200 200",
@@ -199,7 +199,7 @@
       "name": "3",
       "tokens": {
         "--color-bg": "238 238 238",
-        "--color-surface": "238 238 238",
+        "--color-surface": "229 229 229",
         "--color-heading": "38 49 28",
         "--color-text": "38 49 28",
         "--color-muted": "68 68 68",
@@ -218,7 +218,7 @@
       "name": "4",
       "tokens": {
         "--color-bg": "255 255 255",
-        "--color-surface": "255 255 255",
+        "--color-surface": "251 251 251",
         "--color-heading": "38 49 28",
         "--color-text": "38 49 28",
         "--color-muted": "68 68 68",

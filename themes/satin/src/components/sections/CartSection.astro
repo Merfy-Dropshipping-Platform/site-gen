@@ -133,6 +133,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 		itemsEl.innerHTML = lines
 			.map((line, index, arr) => {
+				// Плашка количества (баг владельца, секция «Корзина»): −/N/+ не несли цвет
+				// вовсе и наследовали `body { color: var(--satin-black) }` — тема, не схема.
+				// text-[rgb(var(--color-text,...))]` на обёртке ниже красит цифру и обе
+				// кнопки-глифа схемой («Текст»), фолбэк 0 0 0 = прежний вид.
 				const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
 				const borderClass = index === arr.length - 1 ? "" : "border-b border-[rgb(var(--color-muted,153_153_153)/0.3)] pb-6";
 				return `
@@ -148,7 +152,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 							</div>
 						</div>
 						<div class="flex items-center justify-between gap-6 md:flex-col md:items-end md:justify-start md:gap-3">
-							<div class="inline-flex h-10 items-center rounded-[4px] border border-[rgb(var(--color-muted,153_153_153)/0.3)]">
+							<div class="inline-flex h-10 items-center rounded-[4px] border border-[rgb(var(--color-muted,153_153_153)/0.3)] text-[rgb(var(--color-text,0_0_0))]">
 								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Уменьшить">−</button>
 								<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
 								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Увеличить">+</button>

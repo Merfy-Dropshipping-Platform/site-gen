@@ -195,9 +195,17 @@ main {
 }
 
 .satin-button-light {
-  color: var(--satin-black);
+  /* Кнопка-контур (secondary/«дополнительная»). Была литералом --satin-black
+     (тема, не схема) — мишень «Кнопка» второго стиля стояла на #000000 при
+     любой схеме мерчанта (баг-репорт владельца, секция «Коллекция товаров»:
+     «Смотреть еще» не красится схемой; тот же класс красит другие secondary-
+     кнопки темы). Токен --color-button-2-* — тот самый, которым уже красится
+     вторая кнопка Hero (BTN_LIGHT, themes/satin/.../Hero.astro) и который
+     редактируется в панели «Цветовая схема» → «Дополнительная кнопка».
+     Фолбэки 0 0 0 = прежний литерал --satin-black, вид без схемы не меняется. */
+  color: rgb(var(--color-button-2-text, 0 0 0));
   background: transparent;
-  border-color: var(--satin-black);
+  border-color: rgb(var(--color-button-2-border, var(--color-button-2-text, 0 0 0)));
 }
 .sr-only {
   border: 0;

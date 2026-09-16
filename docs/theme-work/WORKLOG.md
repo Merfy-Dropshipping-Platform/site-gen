@@ -7085,3 +7085,134 @@ pnpm build:preview-tailwind`, затем: `test:section-snapshots` 155/155
 
 Живьём на стендах НЕ проверялось (правка не выкачена — воркдерево
 `.worktrees/b33-satin`, ветка `fix/b33-satin`, не запушено, не смержено).
+
+## 2026-09-16 — платформа: расследование «требуется reload на всех темах кроме Rose»
+
+Задача владельца (п.4, «самый важный баг платформы»): при изменении секции
+или параметра для vanilla/bloom/satin/flux правка видна только после
+перезагрузки превью; на Rose работает без reload. Worktree
+`.worktrees/b37-preview-hot`, ветка `fix/b37-preview-hot-update` (не
+запушено).
+
+### Воспроизведение
+
+Локальный стенд: `docker exec merfy-postgres` (локальная БД `sites_service`,
+не прод), уже запущенный процесс sites на :3114 (worktree `b30-local`,
+чужой — не трогал). Полный стек (gateway+user+billing+constructor) поднять
+не удалось: `user`/`billing` дист локально не совместим со схемой БД
+(Better Auth oauth-provider, 42P01 undefined_table) — не чинил, вне скоупа
+задачи, инфраструктурный дрейф несвязанных сервисов.
+
+1. **Прямые HTTP-вызовы** `POST /api/sites/:id/preview/block` по реальным
+   test-сайтам каждой темы (rose `e03dd420-…`, vanilla `13a40348-…`, bloom
+   `10df1c3a-…`, satin `57ac2ede-…`, flux `4d8ebde5-c55c-…`) — Hero heading/
+   colorScheme меняются, ответ 200, `data-puck-component-id` совпадает,
+   маркер темы (не theme-base) присутствует. Обошёл ВСЕ канонические блоки
+   каждой темы (15–24 типа) тем же способом — везде чисто.
+2. **chrome-devtools MCP**, `GET /preview` без авторизации (auth-free роут),
+   смоделирован `window.postMessage` ТОЧНО по протоколу из
+   `constructor/src/components/editor/PreviewFrame.tsx` (`init` →
+   `update-block`/`reconcile`) — для vanilla и rose текстовая правка Hero
+   применяется одинаково (~4.2 с). `reconcile` для структурных правок падает
+   на ОБЕИХ темах одинаково (`document.querySelector('main')` = null) — не
+   theme-специфично, причина: `dist/theme-preview/` не собран в ЭТОМ
+   локальном стенде (в проде/Docker собирается — `Dockerfile:61-73`), это
+   гэп конкретного dev-стенда, не бага в коде.
+3. **Юнит-тесты конструктора** (`PreviewFrame.test.tsx`,
+   `AstroBlockBridge.test.tsx`, `postMessageProtocol.test.ts`) — 144/144
+   зелёные во ВСЕХ параллельных worktree конструктора (их сейчас минимум 7 —
+   активная многоагентная работа).
+
+**Вывод:** баг НЕ воспроизводится в текущем коде `origin/main` ни в sites,
+ни в constructor.
+
+### История регрессии этого класса
+
+`git log --oneline --grep=reload` в sites нашёл три исторических случая,
+ВСЕ с идентичной сигнатурой «rose работает, остальные — нет» (причина:
+`packages/theme-base` — это, по сути, rose-порт, поэтому тихий откат на base
+незаметен для rose и ломает всё для остальных):
+
+- `121b7202` (10.05.2026) — client-side allowlist `HOT_UPDATE_ALLOWED_THEMES
+  = ['rose','vanilla']` в inline-агенте `preview.service.ts`, снят.
+- `7a33f4c` (10.05.2026, репо constructor) — `AstroBlockBridge` был объявлен
+  render-функцией в puck-config, но НИКОГДА не монтировался (`<Puck.Preview/>`
+  заменён на кастомный `<PreviewFrame>`, который рендерит iframe сам) — 0
+  postMessage `update-block` уходило вообще. Логика перенесена в
+  `PreviewFrame.tsx` напрямую.
+- WORKLOG W-013 (01.09.2026) — `blockId.split('-')[0]` вместо `blockType`
+  (`header-satin` → `header` → theme-base Header вместо satin-порта);
+  заметка сессии говорит «Commit не делали», но эквивалентный код
+  (`ev.data.blockType || LAST_TYPES[blockId]`, case-insensitive
+  `resolveV2Section`) уже на HEAD — либо перенесено позже, либо запись
+  устарела.
+
+Все три подтверждённо ОТСУТСТВУЮТ в текущем коде (grep по allowlist/
+prefix-parsing — пусто в обоих репо; `git merge-base --is-ancestor` для
+121b7202/7a33f4c → true).
+
+### Системная дыра — найдена и закрыта
+
+`src/services/__tests__/flux-v2-home-sections.spec.ts` (spec 111, task-10)
+уже был именно таким гардом — «тихий откат resolveV2Section → theme-base» —
+но ТОЛЬКО для flux, и **не был подключён ни в одну job `.github/workflows/
+ci.yml`** (проверено: только 2 отдельных файла из `src/services/__tests__/`
+упомянуты в ci.yml поимённо — `preview-agent-frame-scroll.spec.ts` и
+`preview-checkout-column-scheme.spec.ts`; `build-and-test` job гоняет jest
+только по `src/utils/__tests__/` и `packages/theme-contract`;
+`satin-structural-conformance` — explicit allowlist `pnpm test:xxx`. То есть
+flux-гард был чисто декоративным с даты создания). Тот же паттерн уже
+документирован для `test:slide-media` (запись 15.09 выше).
+
+**Сделано:**
+- `src/services/__tests__/theme-v2-no-silent-fallback.spec.ts` — та же
+  механика (`render-probe.mjs` + сравнение с `packages/theme-base/blocks/
+  <Type>` источником) для vanilla (`vanilla-pad`, единый маркер на все 6
+  канонических блоков), bloom (карта по типу блока — `data-bloom-announcement`
+  /`data-bloom-header`/`bloom-product-name`/`2xl:px-[300px]`, единого маркера
+  на все 8 не нашлось), satin (`font-manrope`, единый на все 5), rose
+  (облегчённая версия — манифест + `data-puck-component-id`, БЕЗ
+  marker-проверки: программно перебраны все class-токены реального
+  V2-рендера всех 7 канонических блоков rose — ни один не отсутствует в
+  theme-base одновременно для всех 7, что само по себе подтверждает
+  «rose ≈ theme-base» и объясняет исторический паттерн бага).
+- npm-скрипт `test:v2-no-silent-fallback` (гоняет новую спеку + flux-спеку,
+  169 проверок), подключён строкой в `.github/workflows/ci.yml`
+  (`satin-structural-conformance` job, после `build:theme-sections:all`).
+- **Саботаж (руками, обязательно по правилу владельца):** `python3` вырезал
+  `Header`+`PopularProducts` из `dist/theme-sections/bloom/manifest.json`
+  (build-артефакт, не трекается git) → `pnpm test:v2-no-silent-fallback`
+  красный, 8 из 120 упали (manifest-completeness ×2, resolve-success ×2,
+  `data-puck-component-id` ×2, marker ×2) с внятным сообщением про откат на
+  theme-base. Манифест восстановлен из бэкапа → 120/120 снова зелёные.
+- Локальная пересборка для проверки: `pnpm install`, `pnpm build:blocks`,
+  `pnpm build:theme-sections:all` — все 5 тем скомпилировались чисто.
+
+### Не починили
+
+Сам баг «нужен reload» в КОДЕ не найден и не почищен — нечего чинить.
+Рабочая гипотеза для владельца: sites-service не имеет автодеплоя
+(`reference_sites_ci_is_the_deploy_gate`), правки 10.05/01.09 могли не
+доехать до прода; тестировщик по протоколу ПРОДАКШН РЕЖИМА работает ТОЛЬКО
+с продом. Проверить деплой не удалось — токен Coolify не в окружении агента.
+**Следующий шаг за владельцем:** сверить дату последнего деплоя sites в
+Coolify с 10.05.2026 (fix 121b7202/7a33f4c) и передеплоить main, если старше.
+
+### Побочные находки (не чинили, вне скоупа)
+
+- `src/services/__tests__/resolve-block-scheme.spec.ts` — красный ДО моих
+  правок (свежий `pnpm install` в новом worktree, без моего теста), обращается
+  к несуществующему `themeDefaultsCache` на `PreviewService` — стухший тест,
+  не трогал.
+- `src/controllers/__tests__/preview-page-routing.spec.ts` — 1 красный тест
+  (`__MERFY_CART_DRAWER_SCHEME__` global), тоже до моих правок, не трогал.
+- Локальный стенд `b30-local` на :3114 не собирал `dist/theme-preview/`
+  (production-only build step, `Dockerfile`) — `renderV2ContentPage` там
+  всегда падает на blob-fallback, из-за чего `<main>` отсутствует в живом DOM
+  и `reconcile` для СТРУКТУРНЫХ правок (не param-правок) всегда шлёт «тихий
+  reload» ack — но одинаково для rose и vanilla, не объясняет жалобу
+  владельца. Не чинил (это gap конкретного dev-стенда, не кода).
+
+Файлы: `src/services/__tests__/theme-v2-no-silent-fallback.spec.ts` (новый),
+`package.json` (+1 скрипт), `.github/workflows/ci.yml` (+1 шаг). Ничего в
+`preview.service.ts`/`preview.controller.ts`/constructor не менял.

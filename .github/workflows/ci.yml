@@ -1253,6 +1253,14 @@ jobs:
         run: pnpm build:theme-sections:all
       - if: steps.dist-cache.outputs.cache-hit != 'true'
         run: pnpm build:preview-tailwind
+      # include-hidden-files: true — ОБЯЗАТЕЛЕН. По умолчанию (false)
+      # actions/upload-artifact молча вырезает из архива любой путь с
+      # dot-компонентом — themes/satin/.astro целиком, без единого
+      # предупреждения в логе. Живой пруф (третий красный прогон,
+      # 35147152463): cache path из тех же трёх строк восстанавливал .astro
+      # корректно (actions/cache архивирует через голый tar, dotfiles не
+      # фильтрует), а artifact — нет, поэтому кэш-хит был бы зелёным, а
+      # холодная сборка (артефакт) — снова «tracked inventory is stale».
       - name: Артефакт dist для остальных джоб
         uses: actions/upload-artifact@v4
         with:
@@ -1261,6 +1269,7 @@ jobs:
             dist
             themes/satin/dist
             themes/satin/.astro
+          include-hidden-files: true
           retention-days: 1
 
   # b51-ci-speed2: дословный хвост джобы satin-structural-conformance,

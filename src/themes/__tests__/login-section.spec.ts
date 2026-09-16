@@ -278,33 +278,41 @@ describe("секция «Вход» — рендер", () => {
     expect(html).toContain("Введите e-mail");
   });
 
-  it.each(THEMES)("%s: без пропа «Кнопка» ничего лишнего не рисует (нет регрессии)", (theme) => {
+  it.each(THEMES)("%s: без пропа кнопка формы несёт прежнюю подпись", (theme) => {
     const html = renderSection(theme, { id: `${BLOCK}-1` });
     if (html === null) return;
-    // Пятый параметр добавлен ПОСЛЕ живых сайтов — сайт без настройки обязан
-    // выглядеть как прежде: без пропа кнопки нет вовсе.
-    expect(html).not.toContain('data-puck-subsection-field="button"');
+    // Параметр «Кнопка» с 2026-09-16 задаёт надпись на КНОПКЕ ФОРМЫ входа, а не
+    // рисует отдельную ссылку над ней (владелец: «нужно нижнюю кнопку
+    // синхронизировать с инпутом, а не верхнюю, и её менять»). Сайт, где
+    // параметр не трогали, обязан выглядеть как прежде.
+    expect(html).toContain("Получить ссылку для входа");
+    // Второй кнопки быть не должно — именно она и была лишней.
+    expect(html).not.toMatch(/<a[^>]*data-puck-subsection-field="button"/);
   });
 
-  it.each(THEMES)("%s: «Кнопка» доезжает текстом и ссылкой до разметки", (theme) => {
+  it.each(THEMES)("%s: текст параметра встаёт на кнопку формы", (theme) => {
     const html = renderSection(theme, {
       id: `${BLOCK}-1`,
-      button: { text: "КНОПКА-ПРУФ-42", link: "/proof-link-42" },
+      button: { text: "КНОПКА-ПРУФ-42" },
     });
     if (html === null) return;
     expect(html).toContain("КНОПКА-ПРУФ-42");
-    expect(html).toContain("/proof-link-42");
+    // Прежняя подпись уступает место мерчантской, а не соседствует с ней.
+    expect(html).not.toContain("Получить ссылку для входа");
+    // Клик по кнопке в превью открывает вкладку параметра.
     expect(html).toContain('data-puck-subsection-field="button"');
+    expect(html).not.toMatch(/<a[^>]*data-puck-subsection-field="button"/);
   });
 
-  it.each(THEMES)("%s: «Кнопка» с пустым текстом СКРЫТА", (theme) => {
+  it.each(THEMES)("%s: пустой текст возвращает подпись по умолчанию", (theme) => {
     const html = renderSection(theme, {
       id: `${BLOCK}-1`,
-      button: { text: "", link: "/proof-link-42" },
+      button: { text: "" },
     });
     if (html === null) return;
-    expect(html).not.toContain("/proof-link-42");
-    expect(html).not.toContain('data-puck-subsection-field="button"');
+    // Кнопку входа скрывать нельзя — без неё страница перестаёт работать.
+    // Пустое поле значит «верни как было», а не «убери кнопку».
+    expect(html).toContain("Получить ссылку для входа");
   });
 });
 

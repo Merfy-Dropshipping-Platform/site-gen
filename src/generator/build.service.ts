@@ -1,4 +1,8 @@
 /**
+ * b51-ci-speed2 SABOTAGE MARKER — deliberate, temporary edit to prove the CI
+ * satin inventory guard still catches a stale inventory in the new job
+ * layout. Reverted in the very next commit.
+ *
  * Build Pipeline — orchestrates the full site generation pipeline.
  *
  * 7 stages:

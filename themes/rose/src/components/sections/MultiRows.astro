@@ -143,8 +143,14 @@ const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; text
 	medium: { mediaFirst: "lg:grid-cols-[1fr_1fr]", textFirst: "lg:grid-cols-[1fr_1fr]" },
 	large: { mediaFirst: "lg:grid-cols-[3fr_2fr]", textFirst: "lg:grid-cols-[2fr_3fr]" },
 };
+// Отсутствие значения ведёт себя как «Большая» — ровно так же, как потолок
+// ряда выше (widthCls: без width = max-w-[1320px], то есть large). Раньше доля
+// при отсутствии падала в "medium", и секция без настройки брала потолок
+// большой ширины с долей средней — два разных ответа на один и тот же «проп не
+// задан». Гард дефолтов панели это и поймал: рендер со значением и без него
+// расходился (pnpm test:panel-defaults, MultiRows.width).
 const rowSplitKey: "small" | "medium" | "large" =
-	p.width === "small" ? "small" : p.width === "large" ? "large" : "medium";
+	p.width === "small" ? "small" : p.width === "medium" ? "medium" : "large";
 
 // Канон alignment — выравнивание текстовой колонки рядов.
 // Мобилка (<sm=640): тема форсит заголовки по центру (global.css .rose-title

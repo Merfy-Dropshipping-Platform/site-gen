@@ -24,14 +24,25 @@ const cmdOf = (g) => g.cmd ?? g.body;
 
 const j = (o) => JSON.stringify(o);
 
-/** Прогоняет батч jest-гардов одним запуском и раскладывает счётчики по гардам. */
-export function runJestBatch(guards, { repoRoot, log }) {
+/**
+ * Прогоняет батч jest-гардов одним запуском и раскладывает счётчики по гардам.
+ *
+ * `jestArgs` по умолчанию — `--runInBand` (как раньше, для локального
+ * pre-push/train.mjs: один процесс, предсказуемо, без лишних воркеров на
+ * ноутбуке). В CI это оказалось МЕДЛЕННЕЕ: замер 15.09 (ci: collapse 74 jest
+ * starts, 470142b1) — один прогон --runInBand 14 мин 32 с против 6 мин 04 с
+ * на --maxWorkers=2. Причина не в стартах процессов (их уже один), а в GC:
+ * восемьдесят с лишним сьют подряд в общей куче упираются в сборку мусора;
+ * два воркера — отдельные дочерние процессы со своей кучей, которые jest
+ * перезапускает сам. Вызывающий (CI-скрипт) передаёт свои jestArgs.
+ */
+export function runJestBatch(guards, { repoRoot, log, jestArgs = ['--runInBand'] }) {
   if (!guards.length) return [];
   const paths = [...new Set(guards.flatMap((g) => g.paths))];
   const tmp = mkdtempSync(join(tmpdir(), 'release-train-'));
   const outFile = join(tmp, 'jest.json');
-  log(`   один прогон jest на ${guards.length} гард(ов), ${paths.length} путь(ей)…`);
-  const r = run('pnpm', ['exec', 'jest', '--runInBand', '--json', `--outputFile=${outFile}`, ...paths], { cwd: repoRoot, env: env(repoRoot) });
+  log(`   один прогон jest (${jestArgs.join(' ')}) на ${guards.length} гард(ов), ${paths.length} путь(ей)…`);
+  const r = run('pnpm', ['exec', 'jest', ...jestArgs, '--json', `--outputFile=${outFile}`, ...paths], { cwd: repoRoot, env: env(repoRoot) });
   let report = null;
   try { report = JSON.parse(readFileSync(outFile, 'utf-8')); } catch { /* jest не дошёл до отчёта */ }
   rmSync(tmp, { recursive: true, force: true });
@@ -119,14 +130,14 @@ export function runOpaque(g, { repoRoot }) {
 }
 
 /** Прогоняет весь набор и печатает таблицу. Возвращает {results, red, empty, totals}. */
-export function runGuards(guards, { repoRoot, log }) {
+export function runGuards(guards, { repoRoot, log, jestArgs }) {
   const batch = guards.filter((g) => g.kind === 'jest-batch');
   const rest = guards.filter((g) => g.kind !== 'jest-batch');
   const started = Date.now();
   const results = [];
 
   const batchStart = Date.now();
-  const batchRes = runJestBatch(batch, { repoRoot, log });
+  const batchRes = runJestBatch(batch, { repoRoot, log, ...(jestArgs ? { jestArgs } : {}) });
   const batchMs = Date.now() - batchStart;
   results.push(...batchRes.map((r) => ({ ...r, ms: r.ms ?? Math.round(batchMs / Math.max(1, batchRes.length)) })));
 

@@ -47,7 +47,7 @@ export function parseWorkflowSteps(yamlText) {
     const stepM = line.match(/^(\s*)- ([A-Za-z0-9_-]+):\s?(.*)$/);
     if (stepM && job) {
       flushStep();
-      cur = { job, indent: stepM[1].length, name: null, run: null, cwd: null, continueOnError: false };
+      cur = { job, indent: stepM[1].length, name: null, run: null, cwd: null, continueOnError: false, ifCond: null };
       applyKey(cur, stepM[2], stepM[3], stepM[1].length + 2, (p) => { pending = p; });
       continue;
     }
@@ -72,7 +72,7 @@ function applyKey(step, key, value, indent, setPending) {
   if (k === 'continueOnError') step.continueOnError = /true/i.test(v);
   else if (k) step[k] = stripQuotes(v);
 }
-const mapKey = (k) => ({ run: 'run', name: 'name', 'working-directory': 'cwd', 'continue-on-error': 'continueOnError' }[k] ?? null);
+const mapKey = (k) => ({ run: 'run', name: 'name', 'working-directory': 'cwd', 'continue-on-error': 'continueOnError', if: 'ifCond' }[k] ?? null);
 const stripQuotes = (v) => v.replace(/^"(.*)"$/s, '$1').replace(/^'(.*)'$/s, '$1');
 
 /** Шаги, которые НЕ проверка: инфраструктура, сборка, выкатка. */
@@ -93,7 +93,7 @@ export function guardsFromWorkflow(yamlText, { skipJobs = ['deploy-to-coolify'],
     .filter((s) => !s.continueOnError)
     .filter((s) => !NOT_A_GUARD.some((re) => re.test(s.run)))
     .filter((s) => !requireTestish || LOOKS_LIKE_GUARD.test(s.run))
-    .map((s) => ({ label: s.name || s.run, cmd: s.run, cwd: s.cwd || null, job: s.job }));
+    .map((s) => ({ label: s.name || s.run, cmd: s.run, cwd: s.cwd || null, job: s.job, ifCond: s.ifCond || null }));
 }
 
 /** Разворачивает `pnpm test:x` в тело скрипта из package.json (до 4 раз). */

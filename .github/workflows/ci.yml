@@ -1384,4 +1384,4 @@ jobs:
       # только проверить, что deploy-to-coolify получает статус "skipped",
       # когда один из needs красный, а не проверить сам деплой.
       - name: (ЗАГЛУШКА на время проверки) Deploy through the Coolify API
-        run: echo "заглушка b51-ci-speed2: сюда бы не добрались, needs красные"
+        run: echo "заглушка b51-ci-speed2 — сюда бы не добрались, needs красные"

@@ -28,17 +28,24 @@ function getHomeChrome(pagesData: Record<string, unknown>): {
 } {
   const home = pagesData['home'] as PageData | undefined;
   const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
-  const ts = Date.now();
+  // b45-fix: ids детерминированы (не Date.now()) — эта функция запускается
+  // read-time на КАЖДЫЙ GET без персиста (см. PreviewController.loadRevisionData).
+  // Конструктор загружает данные редактора и iframe грузит /preview ДВУМЯ
+  // отдельными HTTP-запросами; Date.now()-id на каждом из них давал РАЗНЫЙ id
+  // для одного и того же блока → update-block/postMessage бил мимо DOM
+  // (querySelector не находил узел, правка терялась молча). Детерминированный
+  // id стабилен на любое число независимых вызовов над одними и теми же
+  // неперсистентными данными.
   return {
     headerBlock:
       homeContent.find((b) => b?.type === 'Header') ?? {
         type: 'Header',
-        props: { id: `Header-${ts}` },
+        props: { id: 'Header-fallback' },
       },
     footerBlock:
       homeContent.find((b) => b?.type === 'Footer') ?? {
         type: 'Footer',
-        props: { id: `Footer-${ts + 1}` },
+        props: { id: 'Footer-fallback' },
       },
   };
 }
@@ -237,7 +244,6 @@ function migrateCartPage(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
   const existing = pagesData['page-cart'] as PageData | undefined;
-  const ts = Date.now();
 
   const makePair = (source?: Block[]): Block[] => {
     // Настройки берём (в порядке приоритета) у прежних CartBody/CartSummary, затем
@@ -255,7 +261,9 @@ function migrateCartPage(
         type: 'CartBody',
         props: {
           ...(body ?? {}),
-          id: (body?.['id'] as string) ?? `CartBody-${ts}`,
+          // b45-fix: детерминированный id (не Date.now()) — см. коммент у
+          // getHomeChrome. Совпадает с сидом theme.json (`CartBody-1`).
+          id: (body?.['id'] as string) ?? 'CartBody-1',
           ...(scheme !== undefined ? { colorScheme: scheme } : {}),
           padding:
             cartPadding(body?.['padding']) ??
@@ -266,7 +274,7 @@ function migrateCartPage(
         type: 'CartSummary',
         props: {
           ...(summary ?? {}),
-          id: (summary?.['id'] as string) ?? `CartSummary-${ts + 1}`,
+          id: (summary?.['id'] as string) ?? 'CartSummary-1',
           ...(summaryScheme !== undefined ? { colorScheme: summaryScheme } : {}),
           padding:
             cartPadding(summary?.['padding']) ??
@@ -762,14 +770,15 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
   // 11 inner blocks (functionality сохраняется т.к. CheckoutForm рендерит
   // их через Astro imports с теми же дефолтами).
   if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutLayout')) {
-    const ts0 = Date.now();
+    // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+    // getHomeChrome. Совпадает с сидом theme.json (`CheckoutHeader-1` и т.д.).
     const header = source.content.find((b) => b?.type === 'CheckoutHeader');
     const footer = source.content.find((b) => b?.type === 'Footer');
     const collapsed: Block[] = [
       header ?? {
         type: 'CheckoutHeader',
         props: {
-          id: `CheckoutHeader-${ts0}`,
+          id: 'CheckoutHeader-1',
           siteTitle: 'Мой магазин',
           logoMode: 'text',
           logoImage: null,
@@ -787,11 +796,11 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
         // розовая). `scheme-checkout` — отдельная, нечисловая схема с
         // фиксированными светлыми токенами (Figma 1:13398), см.
         // `CHECKOUT_SCHEME_CSS` в `tokens-css.ts`.
-        props: { id: `CheckoutForm-${ts0 + 1}`, colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
+        props: { id: 'CheckoutForm-1', colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
       },
       {
         type: 'CheckoutSummary',
-        props: { id: `CheckoutSummary-${ts0 + 2}`, colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
+        props: { id: 'CheckoutSummary-1', colorScheme: CHECKOUT_SCHEME_PROP, padding: { top: 0, bottom: 0 } },
       },
       footer ?? getHomeChrome(pagesData).footerBlock,
     ];
@@ -803,12 +812,13 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
   // Figma 1:19998 — 2 mega-блока «Оформление заказа» + «Сводка заказа».
   // Inner config (Contact / Delivery / Payment fields, terms text, etc) —
   // hardcoded в CheckoutForm.astro / CheckoutSummary.astro defaults.
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json (`CheckoutHeader-1` и т.д.).
   const seedBlocks: Block[] = [
     {
       type: 'CheckoutHeader',
       props: {
-        id: `CheckoutHeader-${ts}`,
+        id: 'CheckoutHeader-1',
         siteTitle: 'Мой магазин',
         logoMode: 'text',
         logoImage: null,
@@ -822,7 +832,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
     {
       type: 'CheckoutForm',
       props: {
-        id: `CheckoutForm-${ts + 1}`,
+        id: 'CheckoutForm-1',
         // b35: НЕ 'scheme-2' — см. `retagSeededCheckoutScheme` ниже.
         colorScheme: CHECKOUT_SCHEME_PROP,
         padding: { top: 0, bottom: 0 },
@@ -831,7 +841,7 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
     {
       type: 'CheckoutSummary',
       props: {
-        id: `CheckoutSummary-${ts + 2}`,
+        id: 'CheckoutSummary-1',
         colorScheme: CHECKOUT_SCHEME_PROP,
         padding: { top: 0, bottom: 0 },
       } as Record<string, unknown>,
@@ -878,13 +888,14 @@ function seedCheckoutResultPage(
   );
   if (hasContent && hasMeta) return out; // already present — no-op (idempotent)
 
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json (`CheckoutHeader-1` и т.д.).
   const seedPage: PageData = {
     content: [
       {
         type: 'CheckoutHeader',
         props: {
-          id: `CheckoutHeader-${ts}`,
+          id: 'CheckoutHeader-1',
           siteTitle: 'Мой магазин',
           logoMode: 'text',
           logoImage: null,
@@ -898,7 +909,7 @@ function seedCheckoutResultPage(
       {
         type: 'OrderConfirmation',
         props: {
-          id: `OrderConfirmation-${ts + 1}`,
+          id: 'OrderConfirmation-1',
           colorScheme: 'scheme-2',
           padding: { top: 0, bottom: 0 },
         } as Record<string, unknown>,
@@ -2109,7 +2120,8 @@ function seedProfilePage(out: Record<string, unknown>): Record<string, unknown> 
   );
   if (hasContent && hasMeta) return out;
 
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json (`Header-profile`/`Footer-profile`).
   const chrome = getHomeChrome(pagesData);
   const newPagesData = hasContent
     ? pagesData
@@ -2118,8 +2130,8 @@ function seedProfilePage(out: Record<string, unknown>): Record<string, unknown> 
         'page-profile': {
           // Свои id — Puck ломается на дубликатах между страницами.
           content: [
-            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: `Header-profile-${ts}` } },
-            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-profile-${ts}` } },
+            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-profile' } },
+            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-profile' } },
           ],
           root: { props: { meta: { title: 'Основные данные' } } },
           zones: {},
@@ -2178,7 +2190,8 @@ function seedWishlistPage(out: Record<string, unknown>): Record<string, unknown>
   );
   if (hasContent && hasMeta) return out;
 
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json.
   const chrome = getHomeChrome(pagesData);
   const newPagesData = hasContent
     ? pagesData
@@ -2186,16 +2199,16 @@ function seedWishlistPage(out: Record<string, unknown>): Record<string, unknown>
         ...pagesData,
         'page-wishlist': {
           content: [
-            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: `Header-wishlist-${ts}` } },
+            { ...chrome.headerBlock, props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-wishlist' } },
             {
               type: 'WishlistSection',
               props: {
-                id: `WishlistSection-${ts}`,
+                id: 'WishlistSection-1',
                 colorScheme: 2,
                 padding: { top: 80, bottom: 80 },
               },
             },
-            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-wishlist-${ts}` } },
+            { ...chrome.footerBlock, props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-wishlist' } },
           ],
           root: { props: { title: 'Избранное' } },
           zones: {},
@@ -2256,7 +2269,8 @@ function seedAccountPageSections(
     ? (out.pages as Array<Record<string, unknown>>)
     : [];
   let changed = false;
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json.
 
   // ── 1. Страница «Заказы» ────────────────────────────────────────────────
   const ordersHasMeta = pages.some(
@@ -2286,11 +2300,11 @@ function seedAccountPageSections(
         content: [
           {
             ...chrome.headerBlock,
-            props: { ...(chrome.headerBlock.props ?? {}), id: `Header-orders-${ts}` },
+            props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-orders' },
           },
           {
             ...chrome.footerBlock,
-            props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-orders-${ts}` },
+            props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-orders' },
           },
         ],
         root: { props: { meta: { title: 'Мои заказы' } } },
@@ -2312,7 +2326,7 @@ function seedAccountPageSections(
     if (content.some((b) => b?.type === block)) continue;
     const section: Block = {
       type: block,
-      props: { id: `${block}-${ts}`, colorScheme: 2 },
+      props: { id: `${block}-1`, colorScheme: 2 },
     };
     const footerIdx = content.findIndex((b) => b?.type === 'Footer');
     const next =
@@ -2367,7 +2381,8 @@ function seedLoginPageSection(
     ? (out.pages as Array<Record<string, unknown>>)
     : [];
   let changed = false;
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json.
 
   // ── 1. Страница «Вход» ──────────────────────────────────────────────────
   const hasMeta = pages.some(
@@ -2397,11 +2412,11 @@ function seedLoginPageSection(
         content: [
           {
             ...chrome.headerBlock,
-            props: { ...(chrome.headerBlock.props ?? {}), id: `Header-login-${ts}` },
+            props: { ...(chrome.headerBlock.props ?? {}), id: 'Header-login' },
           },
           {
             ...chrome.footerBlock,
-            props: { ...(chrome.footerBlock.props ?? {}), id: `Footer-login-${ts}` },
+            props: { ...(chrome.footerBlock.props ?? {}), id: 'Footer-login' },
           },
         ],
         root: { props: { meta: { title: 'Вход' } } },
@@ -2419,7 +2434,7 @@ function seedLoginPageSection(
       const section: Block = {
         type: 'LoginSection',
         props: {
-          id: `LoginSection-${ts}`,
+          id: 'LoginSection-1',
           colorScheme: 2,
           padding: { top: 80, bottom: 80 },
         },

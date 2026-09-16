@@ -2412,7 +2412,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
           if ((APPLIED_SEQ[blockId] || 0) >= mySeq) return; // stale — новее уже применён
           APPLIED_SEQ[blockId] = mySeq;
           var el = document.querySelector('[data-puck-component-id="' + blockId + '"]');
-          if (!el) return;
+          if (!el) {
+            // b45-fix: раньше выход был молчаливым — правка терялась без следа
+            // в консоли, владелец не мог отличить «баг починен» от «баг воспроизвёлся
+            // снова». Сервер прислал валидный HTML именно для blockId (проверка выше
+            // прошла), но в ЖИВОМ DOM узла с таким data-puck-component-id нет — типовая
+            // причина: id, который конструктор знает для этого блока, разошёлся с id
+            // в текущей разметке (например бэкфилл служебной страницы пересчитал id
+            // заново на отдельном HTTP-запросе, не совпадающем с тем, что видел
+            // конструктор — см. revision-migrations.ts).
+            console.error('[preview] update-block: node not found for blockId=' + blockId + ' blockType=' + blockType + ' — edit dropped, DOM unchanged');
+            return;
+          }
           // 097: при наличии scheme wrapper — обновляем его class в соответствии
           // с newProps.colorScheme. Раньше wrapper class был frozen от initial
           // render, поэтому смена colorScheme в Puck не меняла внешнюю

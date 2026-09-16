@@ -514,9 +514,16 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{displayName}
 					</h1>
 					)}
+					<!-- Цена — роль СХЕМЫ «Текст», не «Заголовок» (жалоба владельца 16.09,
+					     п.1: «Цена должна принимать цвет текста»). Было `--color-heading`:
+					     в схемах 1/3/4 heading==text и цена «ехала» случайно, в схеме 2
+					     (heading 0,0,0 / text 153,153,153) цена оставалась чёрной вместо
+					     серого текста схемы. Замер scheme-2 до правки: color=rgb(0,0,0)
+					     (роль heading); после — rgb(153,153,153) (роль text). Тот же узел
+					     в мобильной раскладке ниже — тот же фикс. -->
 					{!isFieldHidden('price') && (
 					<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
-						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))] md:text-[20px]" data-cfg-price>
+						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[20px]" data-cfg-price>
 							{displayPrice}
 						</span>
 						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
@@ -649,7 +656,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)}
 				{!isFieldHidden('price') && (
 				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
-					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]" data-cfg-price>{displayPrice}</span>
+					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))]" data-cfg-price>{displayPrice}</span>
 					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
 				</div>
 				)}

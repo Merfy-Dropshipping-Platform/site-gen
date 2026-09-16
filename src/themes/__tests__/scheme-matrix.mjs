@@ -94,17 +94,26 @@ export function discoverBlocks() {
  * не совпало ни внутри схемы, ни между схемами: тогда по итоговому значению
  * однозначно читается РОЛЬ, на которой висит мишень.
  */
+// `backgroundHover`/`textHover` (жалоба владельца 16.09: «Вход»/«Заказы»/
+// «Личный кабинет» — кнопка не принимает схему ПРИ НАВЕДЕНИИ) заданы ОТДЕЛЬНО
+// от базовых `background`/`text` и ТОЖЕ различаются между PROBE_A/PROBE_B —
+// без этого «навёл — цвет не поменялся» и «навёл — цвет поменялся, потому что
+// поехала БАЗОВАЯ роль» неразличимы: обе дают «схема сменилась → цвет
+// сменился». Мишень наведения сравнивает HOVER-состояние с БАЗОВЫМ ВНУТРИ ОДНОЙ
+// схемы (см. `winningDeclAmong`/hover-ветку в `buildMatrix`), и только эта пара
+// значений обязана реально отличаться от базовой, чтобы «залипшее» наведение
+// (`filter: brightness()`, не читающее `--color-button-*-hover`) было видно.
 export const PROBE_A = {
   id: 'scheme-1', name: '1',
   background: '#110000', surfaceBg: '#220000', heading: '#330000', text: '#440000', accent: '#550000',
-  primaryButton: { background: '#660000', text: '#770000', border: '#880000' },
-  secondaryButton: { background: '#990000', text: '#aa0000', border: '#bb0000' },
+  primaryButton: { background: '#660000', text: '#770000', border: '#880000', backgroundHover: '#661a1a', textHover: '#771a1a' },
+  secondaryButton: { background: '#990000', text: '#aa0000', border: '#bb0000', backgroundHover: '#991a1a', textHover: '#aa1a1a' },
 };
 export const PROBE_B = {
   id: 'scheme-4', name: '4',
   background: '#001100', surfaceBg: '#002200', heading: '#003300', text: '#004400', accent: '#005500',
-  primaryButton: { background: '#006600', text: '#007700', border: '#008800' },
-  secondaryButton: { background: '#009900', text: '#00aa00', border: '#00bb00' },
+  primaryButton: { background: '#006600', text: '#007700', border: '#008800', backgroundHover: '#116611', textHover: '#117711' },
+  secondaryButton: { background: '#009900', text: '#00aa00', border: '#00bb00', backgroundHover: '#119911', textHover: '#11aa11' },
 };
 export const SCHEME_A = '1';
 export const SCHEME_B = '4';
@@ -421,11 +430,104 @@ export function winningDecl(node, prop, index) {
     cands.push({ value: raw.replace(/\s*!important$/i, ''), important: /!important/i.test(raw), spec: 1e6, layer: '', order: 1e9, sel: 'style=', source: 'style=' });
   }
   for (const r of index.byProp.get(prop) ?? []) {
-    const d = new RegExp(`(?:^|[;{\\s])${prop}\\s*:\\s*([^;]+)`, 'i').exec(r.body);
-    if (!d) continue;
+    const d = declValue(r.body, prop);
+    if (d == null) continue;
     const spec = selectorMatches(node, r.sel);
     if (spec == null) continue;
-    const raw = d[1].trim();
+    const raw = d.trim();
+    cands.push({ value: raw.replace(/\s*!important$/i, '').trim(), important: /!important/i.test(raw), spec, layer: r.layer, order: r.order, sel: r.sel, source: r.source });
+  }
+  if (!cands.length) return null;
+  cands.sort((a, b) =>
+    Number(b.important) - Number(a.important) ||
+    Number(!b.layer) - Number(!a.layer) ||
+    b.spec - a.spec ||
+    b.order - a.order);
+  return cands[0];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2b. Наведение: то же каскадное правило, но `:hover` — не «не базовое
+//     состояние», а ОТДЕЛЬНАЯ мишень (жалоба владельца 16.09: «кнопка не
+//     принимает схему ПРИ НАВЕДЕНИИ»). `matchOne`/`selectorMatches` выше
+//     сознательно отбраковывают `:hover` (комментарий «hover/focus — не
+//     базовое состояние») — это верно для БАЗОВОЙ мишени и специально
+//     сохранено, а не переиспользуется здесь.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Компаунд узла разрешён как hover-мишень: несёт РОВНО `:hover` (плюс
+ * опционально `:not(:disabled)`/`:not([disabled])` — обычная охрана
+ * disabled-состояния на кнопке, не меняющая, ЧТО ищем). Любой другой
+ * интерактивный/структурный псевдокласс — отказ: недосчитать честнее, чем
+ * приписать узлу чужую краску (тот же принцип, что у `selectorMatches`).
+ */
+function stripHoverPseudo(compound) {
+  const s = compound.trim();
+  if (!/:hover\b/.test(s)) return null;
+  const stripped = s
+    .replace(/:hover\b/g, '')
+    .replace(/:not\(\s*:disabled\s*\)/gi, '')
+    .replace(/:not\(\s*\[disabled\]\s*\)/gi, '');
+  if (
+    /:(?:focus|active|visited|focus-within|focus-visible|checked|target|disabled|nth-[a-z-]+\(|first-child|last-child|only-child|first-of-type|last-of-type|only-of-type|empty|not\(|has\(|lang\()/i.test(
+      stripped,
+    )
+  ) {
+    return null;
+  }
+  return stripped;
+}
+
+function matchOneHover(node, sel) {
+  const parts = sel.trim().split(/\s*>\s*|\s+/).filter(Boolean);
+  const lastStripped = stripHoverPseudo(parts[parts.length - 1]);
+  if (lastStripped == null) return null;
+  const last = parseCompound(lastStripped || '*');
+  if (!compoundMatches(node, last)) return null;
+  let idx = node.ancestors.length - 1;
+  for (let p = parts.length - 2; p >= 0; p--) {
+    const need = parseCompound(parts[p]);
+    if (need.pseudoState) return null; // предок сам по себе hover — не наш случай
+    let found = false;
+    while (idx >= 0) {
+      if (compoundMatches(node.ancestors[idx], need)) { found = true; idx--; break; }
+      idx--;
+    }
+    if (!found) return null;
+  }
+  return specificity(sel);
+}
+
+/** Матчинг `:hover`-селектора на узел — зеркало `selectorMatches`, но именно для наведения. */
+export function selectorMatchesHover(node, sel) {
+  if (!/:hover\b/.test(sel)) return null;
+  if (/::/.test(sel)) return null;
+  if (/:host\b/i.test(sel) || /::slotted/i.test(sel)) return null;
+  if (/[+~]/.test(sel.replace(/\[[^\]]*\]/g, '').replace(/\([^)]*\)/g, ''))) return null;
+  const expanded = expandIsWhere(sel);
+  let best = null;
+  for (const variant of expanded) {
+    const res = matchOneHover(node, variant);
+    if (res != null && (best == null || res > best)) best = res;
+  }
+  return best;
+}
+
+/**
+ * Победившее hover-объявление свойства СРЕДИ ПРАВИЛ, УЖЕ ОТФИЛЬТРОВАННЫХ по
+ * узлу (`nodeHoverRules` — см. `buildMatrix`: узел обязан иметь ХОТЯ БЫ одно
+ * подходящее `:hover`-правило, иначе мишени нет вовсе — кнопка без единой
+ * интерактивной строки в CSS не обязана её иметь).
+ */
+export function winningDeclAmong(node, prop, rules) {
+  const cands = [];
+  for (const r of rules) {
+    const d = declValue(r.body, prop);
+    if (d == null) continue;
+    const spec = selectorMatchesHover(node, r.sel);
+    if (spec == null) continue;
+    const raw = d.trim();
     cands.push({ value: raw.replace(/\s*!important$/i, '').trim(), important: /!important/i.test(raw), spec, layer: r.layer, order: r.order, sel: r.sel, source: r.source });
   }
   if (!cands.length) return null;
@@ -460,8 +562,35 @@ export function indexRules(rules) {
       if (!bag.has(key)) bag.set(key, []);
       bag.get(key).push(r);
     }
+    // Фон пишут СОКРАЩЁННО (`background: rgb(var(--color-button-bg,…))`), а не
+    // `background-color:` — семантические классы кнопок (`.auth-button-primary`,
+    // `.account-button`) объявлены именно так. `background-color`-регэксп выше
+    // такую запись не видит: подстроки `background-color` в тексте нет вовсе, и
+    // узел выглядит «не красит себя сам» — кнопка выпадает из матрицы целиком.
+    // Та же ловушка, что у `scripts/qa/lib` (`declaredVar()` trap 23), здесь она
+    // не была обойдена. `background-image`/`-position`/… не подходят под этот
+    // регэксп («background» сразу за которым `-», а не «:»/пробел), поэтому
+    // ложных срабатываний на другие `background-*` свойства нет.
+    if (/(?:^|[;{\s])background\s*:/.test(r.body)) {
+      if (!byProp.has('background-color')) byProp.set('background-color', []);
+      byProp.get('background-color').push(r);
+    }
   }
   return { byProp, byVar };
+}
+
+/**
+ * Значение объявления свойства в теле правила — с фолбэком на сокращённую
+ * запись `background:` для `background-color` (см. комментарий в `indexRules`).
+ */
+function declValue(body, prop) {
+  const direct = new RegExp(`(?:^|[;{\\s])${prop}\\s*:\\s*([^;]+)`, 'i').exec(body);
+  if (direct) return direct[1];
+  if (prop === 'background-color') {
+    const shorthand = /(?:^|[;{\s])background\s*:\s*([^;]+)/i.exec(body);
+    if (shorthand) return shorthand[1];
+  }
+  return null;
 }
 
 function splitTopComma(s) {
@@ -674,9 +803,10 @@ export const ALLOWED = [
   },
   {
     id: 'counter-badge',
-    why: 'счётчик корзины и избранного в шапке — ПАРА «плашка + цифра» фирменного цвета темы, и вторая её половина лежит ВНЕ вердикта palette: плашку красит алиас темы (rose, bg-rose-primary — вердикт theme-var) или литерал (#e38e9f у bloom, #1e2952 у flux, #000000 у satin), а у vanilla пара зеркальная — белая плашка с тёмной надписью на алиасе --vanilla-dark. Перекрасить одну половину значит сделать счётчик нечитаемым (белая цифра на белой плашке). ВАЖНО: правило держится ровно до тех пор, пока плашку красит фирменный литерал; как только её переведут на роль схемы, правило надо снять, а цифру перевести на --color-button-text',
+    why: 'ПЛАШКА (фон) счётчика корзины и избранного в шапке — фирменный цвет темы, не роль схемы: rose bg-rose-primary (вердикт theme-var), литерал #e38e9f у bloom / #1e2952 у flux / #000000 у satin, у vanilla пара зеркальная — белая плашка с тёмной надписью на алиасе --vanilla-dark. Перекрасить фон значит поменять фирменный узнаваемый вид плашки — не дефект. СУЖЕНО ДО ФОНА 16.09 (было — и фон, и цифра): цифра — это отдельная роль (--color-button-text), она читаема на плашке ЛЮБОГО цвета и обязана следовать схеме сама по себе; белым списком больше не прикрыта — «плашка количества» из жалобы владельца теперь настоящая мишень матрицы',
     test: (c) =>
       c.verdict === 'palette' &&
+      c.prop === 'background-color' &&
       ('data-cart-count' in c.node.attrs || 'data-wishlist-count' in c.node.attrs),
   },
   {
@@ -842,6 +972,10 @@ export function buildMatrix({ themes = THEMES, blocks = discoverBlocks() } = {})
       const { nodes, styles } = walk(row.html);
       const rules = withOrder([...baseRules, ...styles.flatMap((st) => collectRules(st, `<style> блока ${block}`))]);
       const index = indexRules(rules);
+      // Правила с `:hover` в компаунде — заранее, одним проходом на блок (а не
+      // на узел): их немного, и `selectorMatchesHover` ещё предстоит гонять по
+      // каждой кнопке.
+      const hoverRules = rules.filter((r) => /:hover\b/.test(r.sel));
       let targets = 0;
       for (const raw of nodes) {
         const nodeA = { ...raw, ancestors: [wrapA, ...raw.ancestors] };
@@ -885,6 +1019,54 @@ export function buildMatrix({ themes = THEMES, blocks = discoverBlocks() } = {})
           cell.verdict = verdictOf(cell, rule);
           cells.push(cell);
         }
+        // ── Наведение (жалоба владельца 16.09, п.2/3/4: «Вход»/«Заказы»/
+        // «Личный кабинет» — кнопка не принимает схему ПРИ НАВЕДЕНИИ). Мишень
+        // заводится ТОЛЬКО если у узла есть хотя бы одно ПОДХОДЯЩЕЕ `:hover`-
+        // правило (иначе кнопка без единой интерактивной строки в CSS не
+        // обязана её иметь — недосчитать честнее). «Едет» здесь значит другое,
+        // чем у базовой мишени: не «отличается между схемой A и B», а
+        // «отличается ОТ БАЗОВОГО состояния ВНУТРИ одной схемы» — иначе
+        // `filter: brightness()` (не трогающий background-color/color вовсе)
+        // выглядел бы «едущим» просто потому, что база сама едет за схемой.
+        if (rule.kind === 'button' && hoverRules.length) {
+          const nodeHoverRules = hoverRules.filter((r) => selectorMatchesHover(nodeA, r.sel) != null);
+          if (nodeHoverRules.length) {
+            for (const prop of ['background-color', 'color']) {
+              const baseWin = paint[prop];
+              if (!baseWin) continue;
+              const hoverWin = winningDeclAmong(nodeA, prop, nodeHoverRules) ?? baseWin;
+              const label = prop === 'background-color' ? 'фон кнопки (:hover)' : 'текст кнопки (:hover)';
+              targets++;
+              const resHover = substituteVars(hoverWin.value, nodeA, index);
+              const resBase = substituteVars(baseWin.value, nodeA, index);
+              const trailH = resHover.trail;
+              const roleEntryH = [...trailH].reverse().find((t) => schemeRoles.has(t.token));
+              const cellH = {
+                theme, block, kind: 'button-hover', target: label, prop,
+                cls: needleOf(hoverWin) ?? hoverWin.sel,
+                selector: hoverWin.sel,
+                value: hoverWin.value,
+                nodeClasses: raw.classes.join(' '),
+                node: raw,
+                chain: trailH.map((t) => t.token),
+                trail: trailH,
+                role: roleEntryH?.token ?? (trailH.length ? trailH[trailH.length - 1].token : null),
+                hasSchemeRole: !!roleEntryH,
+                roleFromScheme: roleEntryH ? /^\.color-scheme-\d+$/.test((roleEntryH.sel ?? '').trim()) : false,
+                pinnedBy: roleEntryH && !/^\.color-scheme-\d+$/.test((roleEntryH.sel ?? '').trim()) ? (roleEntryH.sel ?? 'фолбэк var()') : null,
+                undeclared: trailH.filter((t) => !t.sel && t.fallback == null).map((t) => t.token),
+                // «a» — цвет ПРИ НАВЕДЕНИИ, «b» — базовый (не «схема A/B»,
+                // как у обычных мишеней): у этой мишени сравнение идёт
+                // внутри одной и той же схемы.
+                a: resHover.value.trim(),
+                b: resBase.value.trim(),
+                moves: norm(resHover.value) !== norm(resBase.value),
+              };
+              cellH.verdict = verdictOfHover(cellH);
+              cells.push(cellH);
+            }
+          }
+        }
       }
       renderFacts.push({ theme, block, ok: true, nodes: nodes.length, targets });
     }
@@ -924,6 +1106,23 @@ function verdictOf(cell, rule) {
   return 'theme-var';
 }
 
+/**
+ * Приговор HOVER-мишени. Сравнение здесь не «схема A против схемы B» (та же
+ * запись CSS, разные числа), а «НАВЕДЕНИЕ против БАЗЫ внутри одной схемы» —
+ * поэтому «едет» и «есть переменная» проверяются НЕЗАВИСИМО, в отличие от
+ * `verdictOf`: там литерал физически не может «поехать» между схемами
+ * (текст один и тот же), а здесь ЛИТЕРАЛЬНЫЙ цвет наведения (`:hover{color:
+ * #ff0000}`) тривиально «отличается» от базового var()-цвета, но остаётся
+ * тем же дефектом — прибитым числом, а не ролью схемы. Поэтому цепочка
+ * переменных проверяется ПЕРВОЙ и решает исход независимо от `moves`.
+ */
+function verdictOfHover(cell) {
+  if (!cell.chain.length) return 'hex';
+  if (cell.undeclared.length) return 'undeclared';
+  if (!cell.moves) return cell.hasSchemeRole ? (cell.roleFromScheme ? 'frozen' : 'pinned') : 'theme-var';
+  return 'ok';
+}
+
 /** Одинаковые клетки (та же краска в том же месте) схлопываются: 4 карточки — одна строка. */
 function dedupe(cells, renderFacts) {
   const byKey = new Map();
@@ -947,15 +1146,26 @@ export const cellKey = (c) => `${c.theme}|${c.block}|${c.target}|${c.prop}|${c.c
 
 /** Строка отчёта: тема · секция · мишень · что пришло вместо схемы · файл:строка. */
 export function reportLine(c) {
-  const got = {
-    hex: `литерал ${c.value}`,
-    palette: `палитра Tailwind: ${c.chain.join(' → ')} = ${c.a}`,
-    'theme-var': `переменная темы ${c.chain.join(' → ')} = ${c.a} (схема её не двигает)`,
-    pinned: `роль ${c.role} прибита правилом «${c.pinnedBy}» — обе схемы дают ${c.a}`,
-    frozen: `роль ${c.role} даёт одно число в обеих схемах: ${c.a}`,
-    undeclared: `переменная ${c.undeclared.join(', ')} не объявлена НИГДЕ — цвет невалиден, узел наследует чужой`,
-    role: `роль ${c.role} — мишень ждёт другую (${c.a})`,
-  }[c.verdict] ?? c.verdict;
+  // Hover-мишень сравнивает НАВЕДЕНИЕ с БАЗОЙ внутри одной схемы, не схему A
+  // со схемой B — «обе схемы дают …» здесь было бы неправдой.
+  const isHover = c.kind === 'button-hover';
+  const got = isHover
+    ? ({
+        hex: `литерал ${c.value} на :hover`,
+        'theme-var': `переменная темы ${c.chain.join(' → ')} = ${c.a} (не роль схемы)`,
+        pinned: `роль ${c.role} прибита правилом «${c.pinnedBy}» — наведение и база дают одно число: ${c.a}`,
+        frozen: `наведение НЕ меняет цвет: и там и там ${c.a} (роль ${c.role} есть, но :hover её не читает — типично для \`filter: brightness()\`)`,
+        undeclared: `переменная ${c.undeclared.join(', ')} не объявлена НИГДЕ — цвет невалиден`,
+      }[c.verdict] ?? c.verdict)
+    : ({
+        hex: `литерал ${c.value}`,
+        palette: `палитра Tailwind: ${c.chain.join(' → ')} = ${c.a}`,
+        'theme-var': `переменная темы ${c.chain.join(' → ')} = ${c.a} (схема её не двигает)`,
+        pinned: `роль ${c.role} прибита правилом «${c.pinnedBy}» — обе схемы дают ${c.a}`,
+        frozen: `роль ${c.role} даёт одно число в обеих схемах: ${c.a}`,
+        undeclared: `переменная ${c.undeclared.join(', ')} не объявлена НИГДЕ — цвет невалиден, узел наследует чужой`,
+        role: `роль ${c.role} — мишень ждёт другую (${c.a})`,
+      }[c.verdict] ?? c.verdict);
   const where = locate(c.theme, c.cls, c.block) ?? '—';
   return `${c.theme} · ${c.block} · ${c.target} · ${got} · ${where}`;
 }

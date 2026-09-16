@@ -408,7 +408,7 @@ blockquote {
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 400;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -416,8 +416,18 @@ blockquote {
   cursor: pointer;
 }
 
+/* Наведение — «Фон/Текст при наведении» СХЕМЫ (жалоба владельца 16.09, п.2:
+   «Вход» — не применяется цветовая схема к кнопке при наведении). Было
+   `filter: brightness(0.85)`: генерик-затемнение, не читающее ни
+   `--color-button-bg-hover`, ни `--color-button-text-hover` — настройки
+   мерчанта из панели «Фон / При наведении», «Текст / При наведении» не
+   влияли на вид кнопки никак. Тот же баг и тот же фикс уже применён у vanilla
+   (d109da90) — эта копия до сегодня не была тронута. Фолбэк — базовый цвет
+   кнопки, если мерчант hover не задавал. Сторож: pnpm test:scheme-matrix
+   (мишени button-bg/button-text + :hover). */
 .auth-button-primary:hover:not(:disabled) {
-  filter: brightness(0.85);
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .auth-button-primary:disabled {
@@ -612,11 +622,16 @@ blockquote {
   gap: 0.625rem;
   border: none;
   cursor: pointer;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
+/* Наведение — та же роль схемы, тот же баг, что у `.auth-button-primary»
+   выше (жалоба владельца 16.09, п.3/п.4: «Заказы»/«Личный кабинет» — кнопка
+   «Перейти»/«Сохранить» не принимает цветовую схему при наведении). Сторож:
+   pnpm test:scheme-matrix. */
 .account-button:hover:not(:disabled) {
-  filter: brightness(0.85);
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .account-button:disabled {

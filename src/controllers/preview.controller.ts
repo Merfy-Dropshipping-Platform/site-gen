@@ -1131,6 +1131,28 @@ export class PreviewController {
         (m) => `${m}<script>window.__MERFY_THEME__ = ${JSON.stringify(themeName)};</script>`,
       );
     }
+    // Баг-репорт владельца (16.09, п.3): «иконка корзины на странице Корзина
+    // сломалась» — 404 у иконки «Удалить товар» (и +/−) на /cart В ПРЕВЬЮ
+    // конструктора. Причина: `themes/<t>/src/lib/with-base.ts` (withBase) читает
+    // `import.meta.env.BASE_URL` — Astro-константу, запечённую В СБОРКУ во время
+    // `build:theme-preview` ("/"). Она читается КАЖДЫЙ раз, когда клиентский
+    // скрипт строки корзины (`cart-thumb-html.ts` → cartLinePictureHtml, дергает
+    // withBase на каждой отрисовке позиции) собирает `<img src>` ДИНАМИЧЕСКИ В
+    // БРАУЗЕРЕ — то есть уже ПОСЛЕ того, как серверный `rewriteHtmlAssets`/
+    // `rewriteRootUrlsToPrefix` (только он переписывает `/icons/*` → `/__theme/
+    // <тема>/icons/*` для превью) отработал над статичным HTML ответа. Витрина
+    // не задета: там сайт владеет своим корнем, и голый `/icons/x.svg` резолвится
+    // верно. Фикс — БЕЗ правки сборки (в каждой .ts правку дублировать нельзя,
+    // видно у withBase.ts дословных копий пять): withBase читает ЭТОТ рантайм-
+    // глобал ПЕРВЫМ, и только затем падает на запечённый BASE_URL — витрина его
+    // не получает и ведёт себя как раньше. Гард: with-base-runtime-prefix.spec.ts.
+    if (themeName) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) =>
+          `${m}<script>window.__MERFY_ASSET_BASE__ = ${JSON.stringify(`/__theme/${themeName}`)};</script>`,
+      );
+    }
     // «Выбор товара» из конструктора: статичная PDP темы (built-theme путь)
     // гидрируется по ?id=, а без него — по этому глобалу (фоллбек: первый товар).
     if (defaultProductId) {

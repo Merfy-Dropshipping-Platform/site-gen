@@ -211,11 +211,13 @@ const video = parseVideo(videoUrl);
           {/* 084 vanilla pilot: 44×44 white play overlay centered absolutely
               per Figma 1:18989. Native browser play indicator sits bottom-
               center which looked like "broken arc / spinner" off-center.
-              Overlay shows when paused, hides on play. Click triggers play. */}
+              Overlay shows when paused, hides on play, toggles on click —
+              разводка живёт в едином скрипте ниже (wirePlayback), общем с
+              async-веткой B. НЕ decorative: реальный клик ставит на паузу. */}
           <button
             type="button"
             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-white pointer-events-auto z-10 transition-opacity"
-            aria-label="Воспроизвести видео"
+            aria-label="Воспроизвести или поставить на паузу видео"
             data-media-play-overlay
           >
             <svg width="44" height="44" viewBox="0 0 44 44" fill="none" aria-hidden="true">
@@ -223,26 +225,6 @@ const video = parseVideo(videoUrl);
               <path d="M18 14L30 22L18 30Z" fill="currentColor"/>
             </svg>
           </button>
-          <script is:inline define:vars={{ blockId: id }}>
-            (() => {
-              // Spec 102 — скоуп к своей секции: при 2+ «Видео» иначе двоились бы
-              // play-обработчики (querySelectorAll по всем [data-media-target]).
-              const root = window.__merfyRoot(blockId);
-              if (!root) return;
-              const wraps = root.querySelectorAll('[data-media-target]');
-              wraps.forEach((wrap) => {
-                const v = wrap.querySelector('video[data-media-video]');
-                const btn = wrap.querySelector('[data-media-play-overlay]');
-                if (!v || !btn) return;
-                const hide = () => { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; };
-                const show = () => { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; };
-                btn.addEventListener('click', (e) => { e.preventDefault(); v.setAttribute('controls', ''); v.play().catch(() => {}); });
-                v.addEventListener('play', hide);
-                v.addEventListener('pause', show);
-                v.addEventListener('ended', show);
-              });
-            })();
-          </script>
         </>
       )}
       {!video.embedUrl && (
@@ -279,12 +261,53 @@ const video = parseVideo(videoUrl);
   // live storefront (window.__MERFY__/hostname) AND constructor preview iframe
   // (siteId prop injected by preview controller) — so конструктор ≡ live for
   // Video.
+  //
+  // Баг-репорт (16.09, владелец, п.4): «При загруженном видео, не отображает
+  // его в сайдбаре бесконечная загрузка + видео не ставится на паузу и при
+  // просмотре всегда кнопка плей стоит по середине». Три симптома одной
+  // причины — тот же диагноз, что уже чинили в vanilla-порте 15.09 (см.
+  // themes/vanilla/src/components/sections/Video.astro): play-кнопка была
+  // ДЕКОРАТИВНОЙ (ветка A — click ВСЕГДА звал `v.play()`, никогда не звал
+  // `v.pause()`) и не рисовалась вовсе в ветке B (асинхронный hydrator ниже
+  // создавал голый `<video controls>` без кнопки и без разводки событий) —
+  // если видео уже играет, а кнопка не спрятана (или наоборот), это читается
+  // как «завис». `wirePlayback` — ЕДИНАЯ разводка для ОБЕИХ веток: toggle
+  // play/pause по клику, hide на `play`, show на `pause`/`ended`, и
+  // СИНХРОНИЗАЦИЯ стартового состояния (`v.paused` на момент навешивания) —
+  // кнопка никогда не «стоит по середине» вопреки реальному состоянию плеера.
   (function () {
     if (!blockId) return;
     var section = window.__merfyRoot(blockId); // Spec 102 — свой корень по id
     if (!section) return;
     var target = section.querySelector('[data-media-target]');
     if (!target) return;
+
+    function wirePlayback(video, btn) {
+      if (!video || !btn || btn.dataset.merfyWired === '1') return;
+      btn.dataset.merfyWired = '1';
+      var show = function () { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; };
+      var hide = function () { btn.style.opacity = '0'; btn.style.pointerEvents = 'none'; };
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        video.setAttribute('controls', '');
+        if (video.paused) video.play().catch(function () {});
+        else video.pause();
+      });
+      video.addEventListener('play', hide);
+      video.addEventListener('pause', show);
+      video.addEventListener('ended', show);
+      // Не предполагаем «спрятана»: если автоплея нет (или он заблокирован
+      // политикой браузера), видео стоит на паузе с самого начала — кнопка
+      // обязана быть видна сразу, а не молчать до первого события.
+      if (video.paused) show(); else hide();
+    }
+
+    // Ветка A: SSR уже отрисовал реальное видео (build-time videoUrl/video.url
+    // в пропсах ревизии) — разводка сразу, без ожидания сети.
+    wirePlayback(
+      target.querySelector('video[data-media-video]'),
+      target.querySelector('[data-media-play-overlay]'),
+    );
 
     // Resolve effective siteId: explicit prop wins (set by build pipeline /
     // preview controller), fall back to window globals, then hostname slug.
@@ -314,18 +337,31 @@ const video = parseVideo(videoUrl);
             existingVideo.setAttribute('src', data.url);
             existingVideo.load();
           }
+          if (data.coverImage) existingVideo.poster = data.coverImage;
+          wirePlayback(existingVideo, target.querySelector('[data-media-play-overlay]'));
           return;
         }
-        // Replace placeholder with a real <video>.
+        // Ветка B: заменяем плейсхолдер РЕАЛЬНЫМ видео + ТОЙ ЖЕ кнопкой-
+        // оверлеем, что и ветка A (раньше здесь был голый `<video controls>`
+        // без кнопки — «завис» + «плей по центру» выше объясняют, почему так
+        // нельзя). controls добавляется по клику внутри wirePlayback, не сразу.
         target.innerHTML = '';
         var v = document.createElement('video');
         v.className = 'absolute inset-0 h-full w-full object-cover';
         v.setAttribute('data-media-video', '');
-        v.setAttribute('controls', '');
         v.setAttribute('preload', 'metadata');
+        v.setAttribute('playsinline', '');
         v.src = data.url;
         if (data.coverImage) v.poster = data.coverImage;
         target.appendChild(v);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Воспроизвести или поставить на паузу видео');
+        btn.setAttribute('data-media-play-overlay', '');
+        btn.className = 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-white pointer-events-auto z-10 transition-opacity';
+        btn.innerHTML = '<svg width="44" height="44" viewBox="0 0 44 44" fill="none" aria-hidden="true"><circle cx="22" cy="22" r="21" stroke="currentColor" stroke-width="1.5"/><path d="M18 14L30 22L18 30Z" fill="currentColor"/></svg>';
+        target.appendChild(btn);
+        wirePlayback(v, btn);
       })
       .catch(function () { /* silent — placeholder stays */ });
   })();

@@ -188,6 +188,89 @@ export const CHECKOUT_SCHEME_CSS =
   ' }';
 
 /**
+ * БАГ-РЕПОРТ ВЛАДЕЛЬЦА (16.09, п.1), дословно: «чекаут нигде не должен
+ * применяться цвет текста и заголовка. Идут только от нас. Цвет текста
+ * только к юр инфе.»
+ *
+ * КОНТЕКСТ. `CHECKOUT_SCHEME_CSS` выше — константа для узлов, у которых
+ * «Цветовая схема» НЕ задана (сид `scheme-checkout`). Но «Оформление заказа»/
+ * «Сводка заказа»/«Шапка оформления» — обычные Puck-блоки с полем «Цветовая
+ * схема» (канон, не убираем), и мерчант МОЖЕТ выбрать там реальную схему
+ * 1..5. `chrome-assembler.patchCheckoutColumnScheme`/`patchCheckoutBlockScheme`
+ * тогда стампуют `.color-scheme-N` ПРЯМО на колонку/кнопку/шапку — а
+ * `.color-scheme-N` объявляет ВСЕ токены схемы разом, включая
+ * `--color-text`/`--color-heading`. До этой правки выбор мерчанта окрашивал
+ * заголовки полей формы, итоги суммы, шапку оформления и т.д. в текст/
+ * заголовок ЛЮБОЙ схемы темы — платформенная типографика чекаута переставала
+ * быть платформенной. Единственное место, где текст МОЖЕТ прийти из схемы —
+ * юр.инфа (блок условий под кнопкой, узел «Подвал» страницы чекаута,
+ * `checkout-terms`/`data-checkout-slot="terms"`) — её отдельно завела правка
+ * 14.09 («присвоить к юр инфе», см. `chrome-assembler.ts`).
+ *
+ * РЕШЕНИЕ. Форсим `--color-text`/`--color-heading` платформенным чёрным
+ * (тем же значением, что уже в `CHECKOUT_SCHEME_CSS`) на каждом узле, который
+ * умеет нести мерчантский `.color-scheme-N`: обе колонки (`[data-checkout-
+ * pane]`), «Кнопка оплаты» (`checkout-submit` — схема формы ставится и на
+ * неё), «Сводка заказа» (схема ставится и на саму секцию, не только на
+ * колонку) и «Шапка оформления» (`data-checkout-slot="header"` — схема
+ * приходит напрямую пропом в CheckoutHeader.astro, не патчем). Юр.инфа
+ * (`checkout-terms`) ИСКЛЮЧЕНА из лока `--color-text` — ей разрешён цвет
+ * схемы (дословно «Цвет текста только к юр инфе»); `--color-heading`
+ * форсим и там — заголовков в юр.инфе нет, но инвариант «заголовок только
+ * платформенный» держим без исключений, раз владелец не оговорил обратное.
+ *
+ * `!important` — тот же приём, что у `typographyOverrides` выше в этом же
+ * файле: гарантирует победу над `.color-scheme-N` независимо от того, в каком
+ * порядке они окажутся в итоговом CSS (схемы эмитятся раньше, но полагаться
+ * на порядок — хрупко, а `!important` делает инвариант структурным).
+ *
+ * Гард: `checkout-typography-lock.spec.ts`.
+ */
+export const CHECKOUT_TYPOGRAPHY_LOCK_CSS =
+  '[data-checkout-pane],' +
+  '[data-checkout-slot="header"],' +
+  '[data-block="checkout-summary"],' +
+  '[data-block="checkout-submit"],' +
+  '[data-block="checkout-terms"]' +
+  '{--color-heading:0 0 0!important}' +
+  '[data-checkout-pane],' +
+  '[data-checkout-slot="header"],' +
+  '[data-block="checkout-summary"],' +
+  '[data-block="checkout-submit"]' +
+  '{--color-text:0 0 0!important}';
+
+/**
+ * БАГ-РЕПОРТ ВЛАДЕЛЬЦА (16.09, п.2), дословно: «Кнопка не должна применять
+ * на себя при наведении цвет кнопки при наведении, но выбранный цвет кнопки
+ * должен оживлять когда на него наводишь.»
+ *
+ * КОНТЕКСТ. `CheckoutSubmit.classes.ts` (packages/theme-base — общий блок,
+ * все пять тем зовут его verbatim, своих портов кнопки оплаты нет) раньше
+ * красил `:hover` отдельными токенами схемы `--color-button-bg-hover`/
+ * `--color-button-text-hover` — ровно то «применяет цвет кнопки при
+ * наведении», которое владелец запретил. Правка снимает эти классы
+ * (`CheckoutSubmit.classes.ts`, `buttonFill`) и заменяет их этим правилом:
+ * на `:hover` фон кнопки — её ЖЕ выбранный `--color-button-bg`, смешанный с
+ * белым (`color-mix`) — «оживление» БЕЗ обращения к отдельному hover-токену
+ * схемы. `color-mix`, а не `filter:brightness()`: у чекаута по Figma
+ * дефолтная кнопка чёрная (`#000000`), а `brightness()` не меняет чистый
+ * чёрный (0×любое=0) — эффекта не было бы вовсе на дефолтном виде.
+ * `color-mix(...,white)` осветляет ЛЮБОЙ цвет, включая чёрный.
+ *
+ * `.checkout-submit-btn-fill` — маркер-класс ТОЛЬКО на `buttonFill` (см.
+ * `CheckoutSubmit.classes.ts`): `outline`/`gradient` этот баг не имели
+ * (outline уже осветлял `--color-text` на hover, gradient hover не красил
+ * вовсе) — не расширяем правку туда, где её не просили.
+ *
+ * Гард: `checkout-submit-hover-lighten.spec.ts` (+ DOM-саботаж на
+ * `!important`/селектор).
+ */
+export const CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS =
+  '.checkout-submit-btn-fill:hover:not(:disabled){' +
+  'background-color:color-mix(in srgb, rgb(var(--color-button-bg)) 82%, white)!important' +
+  '}';
+
+/**
  * Превью-вариант токенов: тот же CSS + @import Google Fonts, когда мерчант выбрал
  * шрифты. Пришло из main (там его зовут preview.service и тест preview-fonts);
  * при слиянии линий разработки функция была только на той стороне.
@@ -862,6 +945,14 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     // Чекаут ВСЕГДА светлый (Figma 1:13398) — константа, не завязанная ни на
     // одну мерчантскую схему темы. Разбор — у CHECKOUT_SCHEME_CSS.
     CHECKOUT_SCHEME_CSS,
+    // Текст/заголовок чекаута — ТОЛЬКО платформенные, независимо от того,
+    // какую схему мерчант выбрал для формы/сводки/шапки/кнопки (владелец,
+    // 16.09, п.1). Разбор — у CHECKOUT_TYPOGRAPHY_LOCK_CSS.
+    CHECKOUT_TYPOGRAPHY_LOCK_CSS,
+    // Кнопка оплаты «оживает» на hover своим ЖЕ цветом (не отдельным hover-
+    // токеном схемы) — владелец, 16.09, п.2. Разбор — у
+    // CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS.
+    CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS,
   ]
     .filter(Boolean)
     .join('\n');

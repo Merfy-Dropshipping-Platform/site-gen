@@ -58,7 +58,14 @@ function normaliseGallery(p: RawProduct, productName: string): GalleryView {
   if (!heroUrl) return { hero: null, thumbs: [] };
 
   const hero: GalleryImageView = { src: heroUrl, alt: productName };
-  const thumbs: GalleryImageView[] = urls.slice(1, 4).map((src, idx) => ({
+  // Берём ВСЕ фото товара, а не первые четыре. Здесь стояло `slice(1, 4)`:
+  // главное фото + ровно три миниатюры, всё остальное отбрасывалось молча —
+  // мерчант грузил пять и больше, а на витрину попадали четыре, и ни в
+  // конструкторе, ни в админке об этом не сообщалось. Владелец 2026-09-17:
+  // «надо убрать это ограничение». Лента миниатюр прокручивается
+  // (ProductGallery.astro: overflow-x-auto по горизонтали и overflow-y-auto в
+  // вертикальном макете), поэтому длинный список не ломает раскладку.
+  const thumbs: GalleryImageView[] = urls.slice(1).map((src, idx) => ({
     src,
     alt: `${productName} — фото ${idx + 2}`,
   }));

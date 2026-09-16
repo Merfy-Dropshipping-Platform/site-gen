@@ -5,6 +5,11 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  # Ручной запуск для замера времени джоб на ЛЮБОЙ ветке без PR и без пуша
+  # в main (задача b48: «замерь на живом прогоне», но «PR не создавать»).
+  # Ничего не меняет в push/pull_request-поведении — только добавляет кнопку
+  # Run workflow / gh workflow run.
+  workflow_dispatch:
 
 permissions:
   contents: read

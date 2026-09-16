@@ -188,7 +188,7 @@ describe("секция «Вход» — панель", () => {
   });
 
   it.each(THEMES)(
-    "%s: «Кнопка» — суб-панель дословно как у ImageWithText (репорт [5])",
+    "%s: «Кнопка» — суб-панель как у ImageWithText, но БЕЗ ссылки",
     (theme) => {
       if (!distReady) return;
       const mine = panels[theme]?.[BLOCK]?.fields?.button;
@@ -196,12 +196,14 @@ describe("секция «Вход» — панель", () => {
       expect(mine?.label).toBe("Кнопка");
       expect(mine?.type).toBe(reference?.type);
       expect(mine?.visibility).toBe(reference?.visibility);
-      // Владелец назвал источник буквально: та же форма суб-панели.
-      expect(Object.keys(mine?.objectFields ?? {})).toEqual(
-        Object.keys(reference?.objectFields ?? {}),
-      );
+      // Источник формы владелец назвал буквально («из секции можно взять
+      // Изображение с текстом»), но ссылку той же просьбой убрал 2026-09-16:
+      // на странице входа кнопка ведёт по своей логике, выбирать чужой адрес
+      // мерчанту здесь незачем. Поэтому от образца остаётся ровно «Текст»,
+      // и контрол у него тот же, что у образца.
+      expect(Object.keys(mine?.objectFields ?? {})).toEqual(["text"]);
       expect(mine?.objectFields?.text?.type).toBe(reference?.objectFields?.text?.type);
-      expect(mine?.objectFields?.link?.type).toBe(reference?.objectFields?.link?.type);
+      expect(mine?.objectFields?.link).toBeUndefined();
     },
   );
 });

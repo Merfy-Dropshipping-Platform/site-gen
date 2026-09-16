@@ -420,9 +420,21 @@ function dropHiddenArrayItems(out: Record<string, unknown>): void {
  * colorScheme "scheme-N" strings are converted to numbers.
  */
 function coerceGenericLegacyProps(out: Record<string, unknown>): void {
+  // Кнопки запоминаем ДО общей развёртки конвертов: правило «{text, size?,
+  // enabled?, alignment?} → text» схлопывает в СТРОКУ и кнопку, у которой
+  // мерчант задал только текст (ссылку не трогал). Порты тем читают кнопку
+  // объектом — `button?.text` — и строку не понимают: замер 2026-09-16 по всем
+  // пяти темам давал пустой рендер на `button: { text: 'ПРОБА' }`, то есть
+  // «текст к кнопке не принимается» (жалоба владельца). Строку не ждёт ни один
+  // из 32 портов, где кнопка рисуется, поэтому конверт возвращаем.
+  const buttonsBefore: Record<string, unknown> = {};
+  for (const key of BUTTON_ENVELOPE_KEYS) {
+    if (isPlainObject(out[key])) buttonsBefore[key] = out[key];
+  }
   for (const [k, v] of Object.entries(out)) {
     out[k] = coerceLegacyValue(v);
   }
+  restoreButtonEnvelopes(out, buttonsBefore);
   if (typeof out.colorScheme === 'string') {
     out.colorScheme = coerceSchemeNumber(out.colorScheme);
   }
@@ -560,6 +572,35 @@ function coercePublicationCount(value: unknown, fallback = 3): number {
       ? Math.trunc(value)
       : fallback;
   return Math.min(4, Math.max(1, numeric));
+}
+
+/** Поля, которые порты тем читают ОБЪЕКТОМ `{text, href}`, а не строкой. */
+const BUTTON_ENVELOPE_KEYS = ['button', 'primaryButton', 'secondaryButton', 'cta'] as const;
+
+/**
+ * Возвращает кнопке форму объекта, если общая развёртка конвертов схлопнула её
+ * в строку. Ссылку берём из исходного значения — она могла быть строкой
+ * (`link`/`href`) или объектом (`link: { href }`), как у пикера страниц.
+ */
+function restoreButtonEnvelopes(
+  out: Record<string, unknown>,
+  before: Record<string, unknown>,
+): void {
+  for (const key of BUTTON_ENVELOPE_KEYS) {
+    const raw = before[key];
+    if (!isPlainObject(raw)) continue;
+    const now = out[key];
+    if (typeof now !== 'string') continue; // объект уцелел — трогать нечего
+    const src = raw as Record<string, unknown>;
+    const link = src.link;
+    const href =
+      (typeof src.href === 'string' && src.href) ||
+      (typeof link === 'string' && link) ||
+      (isPlainObject(link) && typeof (link as Record<string, unknown>).href === 'string'
+        ? ((link as Record<string, unknown>).href as string)
+        : '');
+    out[key] = href ? { text: now, href } : { text: now };
+  }
 }
 
 function coerceLegacyValue(v: unknown): unknown {

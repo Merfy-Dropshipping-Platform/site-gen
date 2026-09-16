@@ -2297,11 +2297,6 @@
                 "type": "text",
                 "label": "Текст",
                 "visibility": "panel"
-              },
-              "link": {
-                "type": "pagePicker",
-                "label": "Ссылка",
-                "visibility": "panel"
               }
             }
           }
@@ -5449,11 +5444,6 @@
               "text": {
                 "type": "text",
                 "label": "Текст",
-                "visibility": "panel"
-              },
-              "link": {
-                "type": "pagePicker",
-                "label": "Ссылка",
                 "visibility": "panel"
               }
             }
@@ -8604,11 +8594,6 @@
                 "type": "text",
                 "label": "Текст",
                 "visibility": "panel"
-              },
-              "link": {
-                "type": "pagePicker",
-                "label": "Ссылка",
-                "visibility": "panel"
               }
             }
           }
@@ -11748,11 +11733,6 @@
                 "type": "text",
                 "label": "Текст",
                 "visibility": "panel"
-              },
-              "link": {
-                "type": "pagePicker",
-                "label": "Ссылка",
-                "visibility": "panel"
               }
             }
           }
@@ -14891,11 +14871,6 @@
               "text": {
                 "type": "text",
                 "label": "Текст",
-                "visibility": "panel"
-              },
-              "link": {
-                "type": "pagePicker",
-                "label": "Ссылка",
                 "visibility": "panel"
               }
             }

@@ -74,9 +74,13 @@ export const LoginSectionPuckConfig: BlockPuckConfig<LoginSectionProps> = {
       type: 'object',
       label: 'Кнопка',
       hiddenInMainPanel: true,
+      // Только «Текст»: ссылку владелец убрал 2026-09-16 («ссылку убрать») —
+      // на странице входа кнопка ведёт по своей логике, выбор чужого адреса
+      // мерчанту здесь не нужен. Проп `link` из схемы НЕ удалён (ниже, в
+      // z-схеме): сайты, где ссылку успели задать, продолжают рендериться как
+      // прежде — меняется только состав панели.
       objectFields: {
         text: { type: 'text', label: 'Текст' },
-        link: { type: 'pagePicker', label: 'Ссылка' },
       },
     } as any,
   },

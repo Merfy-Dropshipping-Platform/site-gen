@@ -34,17 +34,26 @@ async function renderWith(svc, theme, button) {
   return String(html ?? '');
 }
 
+/** Подпись по умолчанию — ровно то, что было на кнопке до появления параметра. */
+export const SUBMIT_FALLBACK = 'Получить ссылку для входа';
+
 export async function collect(theme) {
   const { PreviewService } = load('services/preview.service.js');
   const svc = new PreviewService();
   const onlyText = await renderWith(svc, theme, { text: MARKER });
   const withLink = await renderWith(svc, theme, { text: MARKER, link: '/catalog' });
+  const noProp = await renderWith(svc, theme, undefined);
+  // Текст обязан стоять на КНОПКЕ ФОРМЫ (id="btn-magic"), а не на отдельной
+  // ссылке над ней: владелец 2026-09-16 — «нужно нижнюю кнопку… и её менять».
+  const submitChunk = onlyText.slice(onlyText.indexOf('btn-magic'));
   return {
     theme,
     marker: MARKER,
     withText: onlyText.includes(MARKER),
     withTextAndLink: withLink.includes(MARKER),
-    linkHref: (withLink.match(/<a[^>]*href="([^"]*)"[^>]*>[^<]*CFBTN01Z/) || [])[1] ?? null,
+    onSubmitButton: submitChunk.includes(MARKER),
+    extraAnchors: (onlyText.match(/<a[^>]*data-puck-subsection-field="button"/g) || []).length,
+    fallbackWhenEmpty: noProp.includes(SUBMIT_FALLBACK),
   };
 }
 

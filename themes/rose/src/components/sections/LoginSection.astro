@@ -77,12 +77,15 @@ const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padd
 
 // Кнопка: канон button {text, href|link}, дословно как в ImageWithText —
 // пустой текст скрывает кнопку (нет регрессии на сайтах без настройки).
-const btnText = typeof button?.text === "string" && button.text.trim() ? button.text : undefined;
-const btnHref =
-	(typeof button?.href === "string" && button.href ? button.href : undefined) ??
-	(typeof button?.link === "object" ? button?.link?.href : undefined) ??
-	(typeof button?.link === "string" && button.link ? button.link : undefined) ??
-	"/catalog";
+// Параметр «Кнопка» задаёт надпись на КНОПКЕ ФОРМЫ входа — той, что отправляет
+// письмо со ссылкой. Владелец, 2026-09-16: «нужно нижнюю кнопку синхронизировать
+// с инпутом, а не верхнюю, и её менять». До этого параметр рисовал ОТДЕЛЬНУЮ
+// ссылку-кнопку над формой, и на странице получались две кнопки — лишняя сверху
+// и настоящая снизу. Ссылку из панели убрали там же: кнопка входа ведёт по
+// своей логике, чужой адрес ей не нужен.
+const SUBMIT_FALLBACK = "Получить ссылку для входа";
+const btnText =
+	typeof button?.text === "string" && button.text.trim() ? button.text.trim() : SUBMIT_FALLBACK;
 ---
 
 <section
@@ -116,15 +119,6 @@ const btnHref =
 				)}
 			</div>
 
-			{btnText && (
-				<a
-					href={btnHref}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="100"
-					data-puck-subsection-field="button"
-					class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-				>{btnText}</a>
-			)}
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>
 				<div class="flex flex-col items-start gap-2 w-full">
@@ -154,13 +148,16 @@ const btnHref =
 					form="magic-form"
 					class="auth-button-primary"
 					data-testid="btn-magic"
+					data-puck-subsection-parent={id}
+					data-puck-subsection-index="100"
+					data-puck-subsection-field="button"
 					style="border-radius:var(--radius-button,8px);"
 				>
 					<span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
 						<span class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
 						<span>Отправляем...</span>
 					</span>
-					<span class="auth-button-text" data-button-text>Получить ссылку для входа</span>
+					<span class="auth-button-text" data-button-text>{btnText}</span>
 				</button>
 			</div>
 		</div>

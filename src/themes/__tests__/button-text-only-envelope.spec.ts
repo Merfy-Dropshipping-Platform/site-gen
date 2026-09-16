@@ -98,7 +98,9 @@ describe("кнопка с одним лишь текстом не теряет �
     const row = JSON.parse(raw) as {
       withText: boolean;
       withTextAndLink: boolean;
-      linkHref: string | null;
+      onSubmitButton: boolean;
+      extraAnchors: number;
+      fallbackWhenEmpty: boolean;
     };
     // Главное: кнопка только с текстом рисуется. И кнопка со ссылкой тоже —
     // чтобы правка не вылечила один случай ценой другого.
@@ -107,6 +109,20 @@ describe("кнопка с одним лишь текстом не теряет �
       толькоТекст: true,
       сСсылкой: true,
     });
-    expect(row.linkHref).toBe("/catalog");
+    // Текст обязан стоять на КНОПКЕ ФОРМЫ входа, а не на отдельной ссылке над
+    // ней (владелец 2026-09-16: «нужно нижнюю кнопку синхронизировать с
+    // инпутом, а не верхнюю»). Раньше параметр рисовал вторую кнопку, и на
+    // странице их было две.
+    expect({
+      тема: theme,
+      наКнопкеФормы: row.onSubmitButton,
+      лишнихКнопок: row.extraAnchors,
+      подписьПоУмолчанию: row.fallbackWhenEmpty,
+    }).toEqual({
+      тема: theme,
+      наКнопкеФормы: true,
+      лишнихКнопок: 0,
+      подписьПоУмолчанию: true,
+    });
   }, 120_000);
 });

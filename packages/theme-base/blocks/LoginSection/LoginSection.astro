@@ -19,16 +19,16 @@ const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
 
-// Пятый параметр «Кнопка» (репорт тестера 15.09, пункт [5]): канон
-// {text, href|link} один-в-один с ImageWithText. Пустой текст скрывает
-// кнопку. Реально рендерят её порты тем (themes/<t>/…/LoginSection.astro);
-// этот фолбэк — на случай темы без собственного порта.
-const btnText = typeof button?.text === 'string' && button.text.trim() ? button.text : '';
-const btnHref =
-  (typeof button?.href === 'string' && button.href ? button.href : undefined) ??
-  (typeof button?.link === 'object' ? (button?.link as { href?: string })?.href : undefined) ??
-  (typeof button?.link === 'string' && button.link ? button.link : undefined) ??
-  '/catalog';
+// Параметр «Кнопка» задаёт надпись на КНОПКЕ ФОРМЫ входа — той, что отправляет
+// письмо со ссылкой. Владелец, 2026-09-16: «нужно нижнюю кнопку синхронизировать
+// с инпутом, а не верхнюю, и её менять».
+// Раньше параметр рисовал ОТДЕЛЬНУЮ ссылку-кнопку над формой (канон
+// ImageWithText.button, репорт тестера 15.09 п.[5]) — на странице входа
+// получались две кнопки: лишняя сверху и настоящая снизу. Отдельную убрали,
+// ссылку из панели убрали там же: кнопка входа ведёт по своей логике.
+const SUBMIT_FALLBACK = 'Получить ссылку для входа';
+const btnText =
+  typeof button?.text === 'string' && button.text.trim() ? button.text.trim() : SUBMIT_FALLBACK;
 // Общий скаффолд (зеркало CartSection.astro / WishlistSection.astro): живую
 // форму входа рисует ПОРТ темы —
 // themes/<t>/src/components/sections/LoginSection.astro. Сюда попадают только
@@ -46,15 +46,6 @@ const btnHref =
   <div class={C.container}>
     <h1 class={C.heading}>{heading}</h1>
     {text && <p class={C.text}>{text}</p>}
-    {btnText && (
-      <a
-        href={btnHref}
-        class={C.button}
-        data-puck-subsection-parent={id}
-        data-puck-subsection-index="100"
-        data-puck-subsection-field="button"
-      >{btnText}</a>
-    )}
     <form id="magic-form" class={C.form} novalidate>
       <input
         id="login-email"
@@ -65,9 +56,14 @@ const btnHref =
         required
       />
       <div id="login-error" class="hidden text-center" role="alert"></div>
-      <button id="btn-magic" type="submit" form="magic-form">
-        Получить ссылку для входа
-      </button>
+      <button
+        id="btn-magic"
+        type="submit"
+        form="magic-form"
+        data-puck-subsection-parent={id}
+        data-puck-subsection-index="100"
+        data-puck-subsection-field="button"
+      >{btnText}</button>
     </form>
   </div>
 </section>

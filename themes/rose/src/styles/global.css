@@ -823,8 +823,17 @@ input[type="search"]::-webkit-search-results-decoration {
   cursor: pointer;
 }
 
+/* Наведение читает роли схемы, а не затемняет базовый цвет. Было
+   `filter: brightness(0.85)`: фильтр не меняет вычисляемые background-color и
+   color, поэтому настройки мерчанта «Фон / При наведении» и «Текст / При
+   наведении» не влияли ни на что — жалоба владельца 2026-09-16 «по ховеру в
+   этой кнопке цвета не меняются». Тот же фикс уже стоял у vanilla (d109da90),
+   flux и bloom; rose и satin оставались с фильтром. Фолбэк — базовый цвет
+   кнопки, если мерчант наведение не задавал. Сторож: pnpm test:scheme-matrix
+   (мишени «фон кнопки (:hover)» / «текст кнопки (:hover)»). */
 .auth-button-primary:hover:not(:disabled) {
-  filter: brightness(0.85);
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .auth-button-primary:disabled {
@@ -1022,8 +1031,10 @@ input[type="search"]::-webkit-search-results-decoration {
   transition: filter 0.15s ease, opacity 0.15s ease;
 }
 
+/* То же для кнопок личного кабинета и заказов — см. комментарий выше. */
 .account-button:hover:not(:disabled) {
-  filter: brightness(0.85);
+  background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0)));
+  color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
 }
 
 .account-button:disabled {

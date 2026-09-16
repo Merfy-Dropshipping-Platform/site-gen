@@ -1,6 +1,6 @@
 {
   "generated": "node src/themes/__tests__/scheme-matrix.mjs --debt-out <файл>",
-  "total": 31,
+  "total": 23,
   "entries": [
     {
       "key": "bloom|AccountSection|текст кнопки (:hover)|color|account-text-link",
@@ -63,16 +63,6 @@
       "where": "themes/flux/src/components/Header.astro:140"
     },
     {
-      "key": "rose|AccountSection|текст кнопки (:hover)|color|account-button",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-text))",
-      "role": "--color-button-text",
-      "chain": [
-        "--color-button-text"
-      ],
-      "where": "themes/rose/src/components/sections/AccountSection.astro:90"
-    },
-    {
       "key": "rose|AccountSection|текст кнопки (:hover)|color|account-text-link",
       "verdict": "frozen",
       "value": "rgb(var(--color-muted, 153 153 153))",
@@ -81,16 +71,6 @@
         "--color-muted"
       ],
       "where": "themes/rose/src/components/sections/AccountSection.astro:83"
-    },
-    {
-      "key": "rose|AccountSection|фон кнопки (:hover)|background-color|account-button",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-bg, var(--color-primary)))",
-      "role": "--color-button-bg",
-      "chain": [
-        "--color-button-bg"
-      ],
-      "where": "themes/rose/src/components/sections/AccountSection.astro:90"
     },
     {
       "key": "rose|ContactForm|текст кнопки (:hover)|color|rose-btn-primary",
@@ -123,36 +103,6 @@
       "where": "themes/rose/src/components/Header.astro:203"
     },
     {
-      "key": "rose|LoginSection|текст кнопки (:hover)|color|auth-button-primary",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-text))",
-      "role": "--color-button-text",
-      "chain": [
-        "--color-button-text"
-      ],
-      "where": "themes/rose/src/components/sections/LoginSection.astro:42"
-    },
-    {
-      "key": "rose|LoginSection|фон кнопки (:hover)|background-color|auth-button-primary",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-bg, var(--color-primary)))",
-      "role": "--color-button-bg",
-      "chain": [
-        "--color-button-bg"
-      ],
-      "where": "themes/rose/src/components/sections/LoginSection.astro:42"
-    },
-    {
-      "key": "satin|AccountSection|текст кнопки (:hover)|color|account-button",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-text))",
-      "role": "--color-button-text",
-      "chain": [
-        "--color-button-text"
-      ],
-      "where": "themes/satin/src/components/sections/AccountSection.astro:90"
-    },
-    {
       "key": "satin|AccountSection|текст кнопки (:hover)|color|account-text-link",
       "verdict": "frozen",
       "value": "rgb(var(--color-muted, 153 153 153))",
@@ -161,16 +111,6 @@
         "--color-muted"
       ],
       "where": "themes/satin/src/components/sections/AccountSection.astro:83"
-    },
-    {
-      "key": "satin|AccountSection|фон кнопки (:hover)|background-color|account-button",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-bg, var(--color-primary)))",
-      "role": "--color-button-bg",
-      "chain": [
-        "--color-button-bg"
-      ],
-      "where": "themes/satin/src/components/sections/AccountSection.astro:90"
     },
     {
       "key": "satin|Catalog|текст кнопки (:hover)|color|[data-catalog-layout] .satin-button-light",
@@ -191,26 +131,6 @@
         "--color-white"
       ],
       "where": "themes/satin/src/components/Header.astro:124"
-    },
-    {
-      "key": "satin|LoginSection|текст кнопки (:hover)|color|auth-button-primary",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-text))",
-      "role": "--color-button-text",
-      "chain": [
-        "--color-button-text"
-      ],
-      "where": "themes/satin/src/components/sections/LoginSection.astro:46"
-    },
-    {
-      "key": "satin|LoginSection|фон кнопки (:hover)|background-color|auth-button-primary",
-      "verdict": "frozen",
-      "value": "rgb(var(--color-button-bg, var(--color-primary)))",
-      "role": "--color-button-bg",
-      "chain": [
-        "--color-button-bg"
-      ],
-      "where": "themes/satin/src/components/sections/LoginSection.astro:46"
     },
     {
       "key": "satin|PopularProducts|текст кнопки (:hover)|color|satin-button-dark",

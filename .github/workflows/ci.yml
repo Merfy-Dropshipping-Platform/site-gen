@@ -190,15 +190,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
-      # Собранный dist/ (pnpm build + build:blocks + build:theme-sections:all,
-      # с сателлитами satin, + build:preview-tailwind) — из джобы satin-build,
-      # один раз на весь прогон. Снимки HTML секций по пяти темам (ниже) и
-      # остальные батч-гарды сравнивают темы между собой, поэтому нужен dist
-      # ВСЕХ пяти тем, а не только satin.
+      # Собранный dist/ + themes/satin/dist/ (pnpm build + build:blocks +
+      # build:theme-sections:all, с сателлитами satin, + build:preview-
+      # tailwind + astro build самой темы satin) — из джобы satin-build, один
+      # раз на весь прогон. path: . (не path: dist!) — артефакт несёт ДВА
+      # корневых каталога (dist/ И themes/satin/dist/), и path: dist
+      # ошибочно вложил бы themes/satin/dist ПОД dist/ вместо восстановления
+      # на своём месте (так уже ловили красный прогон 35145471675).
       - uses: actions/download-artifact@v4
         with:
           name: satin-dist
-          path: dist
+          path: .
       - if: false
         run: pnpm test:section-snapshots
       # Глаз у именованного параметра: секция рендерится дважды — обычно и со
@@ -1194,11 +1196,25 @@ jobs:
       # scripts/compile-*.mjs (или апдейт зависимости) без правки темы тоже
       # меняет ВЫХОД сборки, и кэш обязан протухнуть вместе с ней — иначе
       # прогон тихо отдал бы устаревший dist/ всем джобам ниже.
+      #
+      # ДВА пути, не один: `pnpm exec tsx scripts/run-theme-build.ts satin`
+      # (ThemeBuildService) гоняет astro build ВНУТРИ themes/satin/ и кладёт
+      # результат в themes/satin/dist/ (сама тема), А ОТДЕЛЬНО копирует его в
+      # dist/theme-preview/satin и dist/theme-live/satin (общий репозиторный
+      # dist/). satin-conformance-source-snapshot.spec.ts (satin-dictated-
+      # conformance) проверяет themes/satin/dist/index.html НАПРЯМУЮ — первая
+      # версия этой ветки кэшировала и артефактила только dist/ и уводила эту
+      # проверку в КРАСНОЕ на чистом чекауте (живой прогон 35145471675, живой
+      # пруф раздела «красный прогон» в отчёте); themes/satin/dist уже
+      # существовал только потому, что build-джоба и джобы-потребители были
+      # ОДНОЙ и той же джобой на одном раннере до этой ветки.
       - name: Кэш dist по хэшу исходников тем
         id: dist-cache
         uses: actions/cache@v4
         with:
-          path: dist
+          path: |
+            dist
+            themes/satin/dist
           key: >-
             satin-dist-${{ hashFiles('themes/**', 'packages/**', 'src/**',
             'scripts/compile-astro-blocks.mjs', 'scripts/compile-theme-sections.mjs',
@@ -1226,7 +1242,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: satin-dist
-          path: dist
+          path: |
+            dist
+            themes/satin/dist
           retention-days: 1
 
   # b51-ci-speed2: дословный хвост джобы satin-structural-conformance,
@@ -1263,10 +1281,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+      # path: . (не path: dist!) — артефакт несёт dist/ И themes/satin/dist/;
+      # satin-conformance-source-snapshot.spec.ts (test:conformance:satin
+      # ниже) читает themes/satin/dist/index.html напрямую.
       - uses: actions/download-artifact@v4
         with:
           name: satin-dist
-          path: dist
+          path: .
       - run: pnpm test:conformance:shared
       - run: pnpm test:conformance:satin
       - run: node --test scripts/__tests__/block-source-layout.test.mjs

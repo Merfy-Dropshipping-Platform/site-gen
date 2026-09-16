@@ -422,13 +422,21 @@ describe('расчёт доезжает до кнопки', () => {
     expect(src).toContain('__merfyCheckoutButtonColors');
   });
 
-  it('результат кладётся в токены кнопки, а не в inline-style мимо hover', () => {
-    // Через --color-button-bg/-text работают и обычное, и hover-состояние —
-    // иначе при наведении кнопка возвращала бы невидимый цвет.
+  it('результат кладётся в базовые токены кнопки — hover наследует их через color-mix, не отдельный hover-токен', () => {
+    // 16.09, п.2 (владелец): «кнопка не должна применять на себя при
+    // наведении цвет кнопки при наведении» — старое решение (эта же строка
+    // до правки) держало ОТДЕЛЬНЫЕ --color-button-bg-hover/-text-hover,
+    // синхронизируя их с базовыми, чтобы hover не возвращал невидимый цвет.
+    // Теперь тот же инвариант («на hover кнопка не бледнеет добела») держит
+    // CSS: CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS (tokens-css.ts) считает hover-фон
+    // через color-mix() ИЗ --color-button-bg — того же токена, который эта
+    // ветка контраста уже поправила. Отдельных hover-токенов в астро-исходнике
+    // больше НЕТ — их присутствие означало бы возврат старого, запрещённого
+    // владельцем механизма (см. checkout-submit-hover-lighten.spec.ts).
     const src = read('packages/theme-base/blocks/CheckoutSubmit/CheckoutSubmit.astro');
     expect(src).toContain('--color-button-bg');
-    expect(src).toContain('--color-button-bg-hover');
-    expect(src).toContain('--color-button-text-hover');
+    expect(src).not.toContain('--color-button-bg-hover');
+    expect(src).not.toContain('--color-button-text-hover');
   });
 
   it('панель не получила новых полей (состав параметров — канон)', () => {

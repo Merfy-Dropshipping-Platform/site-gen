@@ -422,7 +422,12 @@ const schemeClass = schemeClassOf(colorScheme);
       || document.querySelector('[data-block="checkout-submit"]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
     if (!section || typeof window.__merfyCheckoutButtonColors !== 'function') return;
 
-    var OVERRIDES = ['--color-button-bg', '--color-button-text', '--color-button-bg-hover', '--color-button-text-hover'];
+    // 16.09, п.2: hover больше не читает отдельную пару hover-токенов схемы —
+    // CHECKOUT_SUBMIT_HOVER_LIGHTEN_CSS (tokens-css.ts) осветляет hover ИЗ
+    // базового --color-button-bg через color-mix(), поэтому исправлять хватает
+    // только базовые токены; контраст на hover наследуется автоматически
+    // (color-mix читает УЖЕ исправленный --color-button-bg).
+    var OVERRIDES = ['--color-button-bg', '--color-button-text'];
 
     function apply() {
       // СНАЧАЛА снимаем свой прошлый результат. Иначе второй проход прочитал бы
@@ -455,15 +460,16 @@ const schemeClass = schemeClassOf(colorScheme);
         button2Bg: role('--color-button-2-bg')
       }, column);
 
-      // Кладём в ТОКЕНЫ, а не в inline-style кнопки: классы блока читают
-      // --color-button-bg/-text и их hover-варианты, поэтому при наведении
-      // кнопка не вернётся к невидимому цвету. Никаких новых переменных.
+      // Кладём в ТОКЕНЫ, а не в inline-style кнопки: класс блока читает
+      // --color-button-bg/-text (обычное состояние), а hover — тот же
+      // --color-button-bg через CSS color-mix() (CHECKOUT_SUBMIT_HOVER_
+      // LIGHTEN_CSS), поэтому при наведении кнопка не вернётся к невидимому
+      // цвету — она наследует уже исправленный базовый. Никаких hover-
+      // переменных отдельно не пишем (16.09, п.2 — см. OVERRIDES выше).
       var plate = out.plate.join(' ');
       var label = out.label.join(' ');
       section.style.setProperty('--color-button-bg', plate);
       section.style.setProperty('--color-button-text', label);
-      section.style.setProperty('--color-button-bg-hover', plate);
-      section.style.setProperty('--color-button-text-hover', label);
       section.setAttribute('data-checkout-submit-contrast', out.source + (out.shaded ? '+shade' : ''));
     }
 

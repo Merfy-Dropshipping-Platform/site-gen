@@ -148,26 +148,34 @@ jobs:
         run: pnpm exec jest --config jest.config.ts --runInBand
 
   satin-structural-conformance:
+    needs: satin-build
     runs-on: ubuntu-latest
     # Без лимита зависший шаг доживает до общего потолка в шесть часов, и
     # гейт не даёт ни зелёного, ни красного — прод в это время выкатить
     # нечем (см. также b20-ci-speed, 470142b1).
     timeout-minutes: 20
-    # Три сегмента на трёх независимых раннерах вместо одного: раннер
+    # ПЯТЬ сегментов на пяти независимых раннерах вместо одного: раннер
     # двухъядерный, поэтому больше двух jest-воркеров НА ОДНОМ раннере уже
     # не ускоряют (см. ci-satin-guards.mjs) — а вот несколько раннеров дают
-    # почти линейный выигрыш, так как у каждого своё CPU/RAM. Дословные шаги
-    # ниже (test:conformance:shared/satin, node --test, четыре точечных jest,
-    # conformance:satin, check:css-layers, validate:page-seeds — их порядок
-    # дословно сторожит scripts/__tests__/ci-theme-conformance-layout.test.mjs)
-    # идут ТОЛЬКО в сегменте 1, чтобы не гонять их трижды: deploy-to-coolify
-    # ждёт ВСЕ сегменты матрицы (needs: satin-structural-conformance), поэтому
-    # сегменту 1 достаётся своя доля батча ПЛЮС этот дословный хвост, а
-    # сегментам 2 и 3 — только их доля батча.
+    # почти линейный выигрыш, так как у каждого своё CPU/RAM.
+    #
+    # b51-ci-speed2: сборка (pnpm build/build:blocks/build:theme-sections/
+    # run-theme-build/build:preview-tailwind) больше НЕ повторяется в каждом
+    # сегменте — её один раз делает джоба satin-build, а сюда dist/ приезжает
+    # артефактом (download-artifact ниже). Раньше три сегмента трижды
+    # выполняли одну и ту же сборку (~65-70 с на сегмент), это была чистая
+    # потеря. Дословный хвост (test:conformance:shared/satin, node --test,
+    # точечные jest, conformance:satin, check:css-layers, validate:page-seeds
+    # — их порядок сторожит scripts/__tests__/ci-theme-conformance-layout.
+    # test.mjs) тоже здесь больше не живёт — он переехал в отдельную джобу
+    # satin-dictated-conformance, которая гоняется ПАРАЛЛЕЛЬНО этим сегментам
+    # (а не сериализованно внутри сегмента 1, как раньше). Из-за этого все
+    # пять сегментов теперь получают РОВНО свою долю батча и ничего сверху —
+    # раньше сегмент 1 несоразмерно раздувался и держал весь прогон.
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
@@ -182,16 +190,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
-      - run: pnpm build
-      - run: pnpm build:blocks
-      - run: pnpm build:theme-sections satin
-      - run: pnpm exec tsx scripts/run-theme-build.ts satin
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
-      # Снимки HTML секций по пяти темам: ловят «починили одно — сломали три»
-      # в момент правки, а не через день у тестера. Секции собираются для всех
-      # тем, а не только для satin, иначе сравнивать не с чем.
-      - run: pnpm build:theme-sections:all
+      # Собранный dist/ (pnpm build + build:blocks + build:theme-sections:all,
+      # с сателлитами satin, + build:preview-tailwind) — из джобы satin-build,
+      # один раз на весь прогон. Снимки HTML секций по пяти темам (ниже) и
+      # остальные батч-гарды сравнивают темы между собой, поэтому нужен dist
+      # ВСЕХ пяти тем, а не только satin.
+      - uses: actions/download-artifact@v4
+        with:
+          name: satin-dist
+          path: dist
       - if: false
         run: pnpm test:section-snapshots
       # Глаз у именованного параметра: секция рендерится дважды — обычно и со
@@ -435,8 +442,9 @@ jobs:
       # победителем каскада в dist/preview-tailwind.css + dist/theme-css/<тема>.css
       # и инлайн-стилем узла: порт flux доставляет слой инлайном, theme-base —
       # утилитами, и «есть класс z-20» слепо на одном из двух.
-      # Нужен бандл превью — витринные сборки его не содержат.
-      - run: pnpm build:preview-tailwind
+      # Нужен бандл превью — витринные сборки его не содержат. Раньше строился
+      # здесь (`pnpm build:preview-tailwind`), теперь приезжает в составе
+      # артефакта satin-dist (джоба satin-build собирает его один раз).
       # ЕДИНЫЙ прогон jest на все гарды тем и секций этого сегмента матрицы.
       # До 16.09 джоба гоняла ~90 отдельных `pnpm test:*`/`pnpm exec jest`
       # шагов по одному — 15 из ~17 минут джобы уходили не на сами проверки
@@ -457,9 +465,12 @@ jobs:
       # больше воркеров НА ОДНОМ раннере не ускоряют (замер 15.09:
       # --runInBand 14 мин 32 с против --maxWorkers=2 6 мин 04 с на одном
       # раннере) — а несколько раннеров (matrix.shard ниже) дают уже
-      # почти линейный выигрыш.
-      - name: Гарды тем и секций — сегмент ${{ matrix.shard }}/3 (один прогон jest)
-        run: node scripts/release/ci-satin-guards.mjs --shard ${{ matrix.shard }}/3
+      # почти линейный выигрыш. b51-ci-speed2: раннеров стало пять (было три)
+      # — сборка больше не съедает время сегмента 1 (см. комментарий у
+      # strategy выше), поэтому доля батча на раннер стала главным временем
+      # джобы, и её можно резать дальше числом сегментов.
+      - name: Гарды тем и секций — сегмент ${{ matrix.shard }}/5 (один прогон jest)
+        run: node scripts/release/ci-satin-guards.mjs --shard ${{ matrix.shard }}/5
       - if: false
         run: pnpm test:variant-overlap
       # Карточка товара в сетке «Коллекции товаров» (жалобы тестировщика 13.09):
@@ -911,57 +922,15 @@ jobs:
       # rgb(10,10,10) → цвет схемы, 24 клетки из 24).
       - if: false
         run: pnpm test:hero-over-photo
-      # Ниже — дословный хвост джобы: гарды, которых ci-satin-guards.mjs
-      # НЕ трогает вовсе (не bare jest --runInBand: свои конфиги, node --test,
-      # конформанс/линт-скрипты), плюс один, который ТЕХНИЧЕСКИ подошёл бы под
-      # батч (test:conformance:satin), но дословно закреплён порядком в
-      # scripts/__tests__/ci-theme-conformance-layout.test.mjs — его порядок и
-      # текст менять нельзя. `if: matrix.shard == 1` — гоняем один раз, а не
-      # трижды (по разу на каждый сегмент матрицы): deploy-to-coolify всё
-      # равно ждёт ВСЕ сегменты (needs: satin-structural-conformance).
-      - if: matrix.shard == 1
-        run: pnpm test:conformance:shared
-      - if: matrix.shard == 1
-        run: pnpm test:conformance:satin
-      - if: matrix.shard == 1
-        run: node --test scripts/__tests__/block-source-layout.test.mjs
-      - if: matrix.shard == 1
-        run: node --test scripts/__tests__/workspace-docker-layout.test.mjs
-      # Остальные node:test-проверки из scripts/__tests__. Раннер у них
-      # встроенный (node --test), конфига им не нужно — и ровно поэтому их
-      # никто не подхватывал: в CI руками были вписаны только две строки выше.
-      # 16 файлов, 647 проверок, ~11 c. Зелёные на origin/main.
-      #
-      # Вне списка сознательно оставлен flux-header-reference-contract.test.mjs:
-      # он красный и ловит настоящее расхождение (Header главной flux уехал на
-      # scheme-2 ревертом d6d9b1ca, а blockDefaults.PromoBanner.colorScheme
-      # перебивает фирменный navy). Это правка тем, не теста.
-      - name: Контракты исходников и утилит сборки (node:test)
-        if: matrix.shard == 1
-        run: >-
-          node --test
-          scripts/__tests__/catalog-block-aspects.test.mjs
-          scripts/__tests__/ci-theme-conformance-layout.test.mjs
-          scripts/__tests__/compute-ranges.test.mjs
-          scripts/__tests__/flux-home-contract.test.mjs
-          scripts/__tests__/flux-section-source-contract.test.mjs
-          scripts/__tests__/github-source.test.mjs
-          scripts/__tests__/index-ts.test.mjs
-          scripts/__tests__/migrate-block-to-tokens.test.mjs
-          scripts/__tests__/registry.test.mjs
-          scripts/__tests__/rewrite-base-classes.test.mjs
-          scripts/__tests__/scheme-color-filter.test.mjs
-          scripts/__tests__/snapshot-container.test.mjs
-          scripts/__tests__/structural-dimension-filter.test.mjs
-          scripts/__tests__/transform-utilities.test.mjs
-          scripts/__tests__/utility-classify.test.mjs
-          scripts/__tests__/validate-token-completeness.test.mjs
-      - if: matrix.shard == 1
-        run: pnpm exec jest --runInBand src/generator/__tests__/pnpm-invocation.spec.ts
-      - if: matrix.shard == 1
-        run: pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts
-      - if: matrix.shard == 1
-        run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts
+      # b51-ci-speed2: дословный хвост джобы (test:conformance:shared/satin,
+      # оба node --test, четыре точечных jest, conformance:satin,
+      # check:css-layers, validate:page-seeds — порядок сторожит
+      # scripts/__tests__/ci-theme-conformance-layout.test.mjs) переехал в
+      # отдельную джобу satin-dictated-conformance: он и так гонялся только
+      # ОДИН раз (matrix.shard == 1), но сериализованно ПОСЛЕ батча этого
+      # сегмента — раздувал именно сегмент 1. Отдельная джоба идёт
+      # ПАРАЛЛЕЛЬНО всем пяти сегментам, поэтому общее время прогона теперь
+      # определяет самый длинный из них, а не сегмент 1 плюс этот хвост.
       # Цветовая схема сайдбара корзины (просьба владельца 13.09). Сторожит не
       # «поле появилось», а ЖИВОСТЬ: настройка обязана быть источником схемы для
       # дровера и красить его во всех пяти темах. Замер в Chromium показал, что
@@ -987,8 +956,6 @@ jobs:
       # старую подпись вернут соседней секцией.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/multirows-button-label.spec.ts
-      - if: matrix.shard == 1
-        run: pnpm exec jest --runInBand src/themes/__tests__/preview-cart-contract.spec.ts
       # Чекаут и корзина, баг-репорт 12/16/17. Сторожат три расстыковки, каждая
       # из которых жила при зелёном CI:
       #   - превью конструктора отдавало чекаут без мерчантской шапки и без схем
@@ -1178,20 +1145,10 @@ jobs:
       # и pnpm build:theme-sections выше по джобу (они там есть).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/checkout-no-storefront-footer.spec.ts
-      - if: matrix.shard == 1
-        run: pnpm conformance:satin
-      - if: matrix.shard == 1
-        run: pnpm check:css-layers
-      - if: matrix.shard == 1
-        run: pnpm validate:page-seeds
-      - name: Upload Satin conformance evidence
-        if: matrix.shard == 1 && failure() && hashFiles('conformance-results/satin/report.json') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: satin-structural-conformance
-          path: conformance-results/satin
-          if-no-files-found: error
-          retention-days: 14
+      # conformance:satin / check:css-layers / validate:page-seeds и загрузка
+      # улик конформанса при падении переехали в satin-dictated-conformance —
+      # они генерируют conformance-results/satin/report.json, и правильное
+      # место для соответствующего upload-artifact теперь там же.
       # Числа каждого сегмента (сколько гардов, сколько проверок прошло) —
       # для сверки «сумма прошедших проверок ДО и ПОСЛЕ совпала», не только
       # для отладки красного. Пишется ci-satin-guards.mjs всегда, не только
@@ -1205,11 +1162,166 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # b51-ci-speed2: сборка тем ОДИН раз для всего прогона вместо одной на
+  # каждый из пяти сегментов satin-structural-conformance плюс ещё одной в
+  # satin-dictated-conformance. Раньше это была чистая потеря: три (теперь
+  # пять) раннера трижды выполняли одну и ту же сборку (~65-70 с каждый).
+  # Результат (dist/) уходит вниз по прогону артефактом satin-dist, который
+  # скачивают обе джобы ниже (needs: satin-build).
+  satin-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.19.0"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack prepare pnpm@10.14.0 --activate
+      - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+      # Кэш dist по хэшу исходников: если ни темы/пакеты/исходники, ни сами
+      # сборочные скрипты не менялись с прошлого прогона (тот же ключ уже
+      # сохранён в кэше веткой/раном ранее), actions/cache восстанавливает
+      # готовый dist/ и все шаги сборки ниже пропускаются целиком. Ключ
+      # включает НЕ ТОЛЬКО themes/**+packages/**+src/**, но и сами
+      # компилирующие скрипты + package.json/pnpm-lock.yaml: правка
+      # scripts/compile-*.mjs (или апдейт зависимости) без правки темы тоже
+      # меняет ВЫХОД сборки, и кэш обязан протухнуть вместе с ней — иначе
+      # прогон тихо отдал бы устаревший dist/ всем джобам ниже.
+      - name: Кэш dist по хэшу исходников тем
+        id: dist-cache
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: >-
+            satin-dist-${{ hashFiles('themes/**', 'packages/**', 'src/**',
+            'scripts/compile-astro-blocks.mjs', 'scripts/compile-theme-sections.mjs',
+            'scripts/compile-preview-tailwind.mjs', 'scripts/run-theme-build.ts',
+            'src/generator/theme-build.service.ts', 'package.json', 'pnpm-lock.yaml') }}
+      - if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: pnpm build
+      - if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: pnpm build:blocks
+      - if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: pnpm build:theme-sections satin
+      - if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: pnpm exec tsx scripts/run-theme-build.ts satin
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+      # Все пять тем — снимки секций и матрица цветовых схем в
+      # satin-structural-conformance сравнивают темы между собой, а
+      # test:conformance:shared (satin-dictated-conformance) держит на себе
+      # ещё и bloom (conformance-source-snapshot.spec.ts). Нужен dist каждой.
+      - if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: pnpm build:theme-sections:all
+      - if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: pnpm build:preview-tailwind
+      - name: Артефакт dist для остальных джоб
+        uses: actions/upload-artifact@v4
+        with:
+          name: satin-dist
+          path: dist
+          retention-days: 1
+
+  # b51-ci-speed2: дословный хвост джобы satin-structural-conformance,
+  # вынесенный в отдельную джобу. Раньше эти шаги гонялись один раз
+  # (`if: matrix.shard == 1`), но СЕРИАЛЬНО после батча сегмента 1 — то есть
+  # добавляли ~80 с строго К СЕГМЕНТУ 1, раздувая его непропорционально
+  # остальным. Здесь они идут ПАРАЛЛЕЛЬНО всем пяти сегментам матрицы —
+  # раньше распараллеливания не было (одна джоба = один runner на сегмент,
+  # хвост жил в том же runner'е, что и батч), теперь это два независимых
+  # раннера.
+  #
+  # Порядок команд ниже (кроме подготовительных checkout/install/download)
+  # дословно сторожит scripts/__tests__/ci-theme-conformance-layout.test.mjs.
+  # Раньше он сторожил их порядок ВНУТРИ satin-structural-conformance, теперь
+  # — порядок ВНУТРИ этой джобы: ни одна команда не пропала и не поменялась
+  # местами относительно других, изменилось только то, на каком раннере она
+  # выполняется. Это НЕ ослабление гарда — оно по-прежнему падает, если кто-то
+  # уберёт шаг, изменит его текст или переставит команды местами.
+  satin-dictated-conformance:
+    needs: satin-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.19.0"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack prepare pnpm@10.14.0 --activate
+      - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: satin-dist
+          path: dist
+      - run: pnpm test:conformance:shared
+      - run: pnpm test:conformance:satin
+      - run: node --test scripts/__tests__/block-source-layout.test.mjs
+      - run: node --test scripts/__tests__/workspace-docker-layout.test.mjs
+      # Остальные node:test-проверки из scripts/__tests__. Раннер у них
+      # встроенный (node --test), конфига им не нужно — и ровно поэтому их
+      # никто не подхватывал: в CI руками были вписаны только две строки выше.
+      # 16 файлов, 647 проверок, ~11 c. Зелёные на origin/main.
+      #
+      # Вне списка сознательно оставлен flux-header-reference-contract.test.mjs:
+      # он красный и ловит настоящее расхождение (Header главной flux уехал на
+      # scheme-2 ревертом d6d9b1ca, а blockDefaults.PromoBanner.colorScheme
+      # перебивает фирменный navy). Это правка тем, не теста.
+      - name: Контракты исходников и утилит сборки (node:test)
+        run: >-
+          node --test
+          scripts/__tests__/catalog-block-aspects.test.mjs
+          scripts/__tests__/ci-theme-conformance-layout.test.mjs
+          scripts/__tests__/compute-ranges.test.mjs
+          scripts/__tests__/flux-home-contract.test.mjs
+          scripts/__tests__/flux-section-source-contract.test.mjs
+          scripts/__tests__/github-source.test.mjs
+          scripts/__tests__/index-ts.test.mjs
+          scripts/__tests__/migrate-block-to-tokens.test.mjs
+          scripts/__tests__/registry.test.mjs
+          scripts/__tests__/rewrite-base-classes.test.mjs
+          scripts/__tests__/scheme-color-filter.test.mjs
+          scripts/__tests__/snapshot-container.test.mjs
+          scripts/__tests__/structural-dimension-filter.test.mjs
+          scripts/__tests__/transform-utilities.test.mjs
+          scripts/__tests__/utility-classify.test.mjs
+          scripts/__tests__/validate-token-completeness.test.mjs
+      - run: pnpm exec jest --runInBand src/generator/__tests__/pnpm-invocation.spec.ts
+      - run: pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts
+      - run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts
+      - run: pnpm exec jest --runInBand src/themes/__tests__/preview-cart-contract.spec.ts
+      - run: pnpm conformance:satin
+      - run: pnpm check:css-layers
+      - run: pnpm validate:page-seeds
+      - name: Upload Satin conformance evidence
+        if: failure() && hashFiles('conformance-results/satin/report.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: satin-structural-conformance
+          path: conformance-results/satin
+          if-no-files-found: error
+          retention-days: 14
+
   deploy-to-coolify:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
       - build-and-test
+      - satin-build
       - satin-structural-conformance
+      - satin-dictated-conformance
     runs-on: ubuntu-latest
     steps:
       - name: Deploy through the Coolify API

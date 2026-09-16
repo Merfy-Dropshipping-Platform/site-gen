@@ -50,31 +50,6 @@ import { runGuards, formatGuardTable } from './lib/guard-runner.mjs';
 
 const REPO_ROOT = process.cwd();
 
-/**
- * Эти пять гардов дословно закреплены в satin-structural-conformance
- * scripts/__tests__/ci-theme-conformance-layout.test.mjs — они стоят
- * ОТДЕЛЬНЫМИ реальными (не if:false) шагами в заданном порядке и здесь
- * НЕ гоняются повторно, чтобы не удваивать работу.
- */
-const DICTATED_CMDS = new Set([
-  'pnpm test:conformance:satin',
-  'pnpm exec jest --runInBand src/generator/__tests__/pnpm-invocation.spec.ts',
-  'pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts',
-  'pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts',
-  'pnpm exec jest --runInBand src/themes/__tests__/preview-cart-contract.spec.ts',
-]);
-
-/**
- * `pnpm test:conformance:shared` — тоже дословный шаг (шестой в списке), но
- * это цепочка `jest --config ... && jest --runInBand <7 файлов>` — ci-guards.mjs
- * разворачивает такую цепочку в ДВА отдельных гарда с метками
- * `... [1/2]`/`... [2/2]`, и вторая половина сама по себе выглядит как
- * bare `jest --runInBand <paths>` (kind: jest-batch). Исключаем по префиксу
- * метки, а не только точным `cmd`, иначе эти 7 файлов гонялись бы дважды —
- * один раз дословным шагом test:conformance:shared, второй раз здесь.
- */
-const isDictatedChainChild = (g) => g.label.startsWith('pnpm test:conformance:shared [');
-
 function parseShard(argv) {
   const i = argv.indexOf('--shard');
   if (i === -1) return { index: 1, total: 1 };
@@ -92,10 +67,19 @@ function main() {
 
   // Гарды ТОЛЬКО джобы satin-structural-conformance: build-and-test и
   // deploy-to-coolify гоняются (или не гоняются) отдельно от этого прогона.
-  const all = guardsFromWorkflow(wfText, { skipJobs: ['deploy-to-coolify', 'build-and-test'] })
-    .flatMap((g) => expandChain(g, scripts));
+  // satin-build и satin-dictated-conformance (b51-ci-speed2) — тоже отдельные
+  // джобы: satin-build только собирает (никаких гардов), а дословный хвост
+  // (test:conformance:shared/satin, оба node --test, точечные jest,
+  // conformance:satin, check:css-layers, validate:page-seeds — порядок
+  // сторожит scripts/__tests__/ci-theme-conformance-layout.test.mjs) целиком
+  // переехал в satin-dictated-conformance и гоняется там РЕАЛЬНЫМИ шагами
+  // (без if:false) — раньше нужен был отдельный список DICTATED_CMDS, чтобы
+  // не задваивать их здесь; теперь достаточно не сканировать их job вовсе.
+  const all = guardsFromWorkflow(wfText, {
+    skipJobs: ['deploy-to-coolify', 'build-and-test', 'satin-build', 'satin-dictated-conformance'],
+  }).flatMap((g) => expandChain(g, scripts));
 
-  const batchable = all.filter((g) => g.kind === 'jest-batch' && !DICTATED_CMDS.has(g.cmd) && !isDictatedChainChild(g));
+  const batchable = all.filter((g) => g.kind === 'jest-batch');
   const mine = batchable.filter((_, i) => i % total === index - 1);
 
   // Настоящий риск потери покрытия: шаг помечен `if: false` (в CI не
@@ -112,7 +96,7 @@ function main() {
     return;
   }
 
-  console.log(`сегмент ${index}/${total}: ${mine.length} гард(ов) из ${batchable.length} (+${DICTATED_CMDS.size} дословных стоят отдельными шагами), файлов: ${new Set(mine.flatMap((g) => g.paths)).size}`);
+  console.log(`сегмент ${index}/${total}: ${mine.length} гард(ов) из ${batchable.length} (дословный хвост — отдельная джоба satin-dictated-conformance), файлов: ${new Set(mine.flatMap((g) => g.paths)).size}`);
 
   const res = runGuards(mine, {
     repoRoot: REPO_ROOT,

@@ -15,11 +15,21 @@
 //     conformance` (matching the upstream ordering) and its `run` command list
 //     must be pinned byte-for-byte via a real fixture at that time.
 //
-// Everything else follows the reviewed Task 6 spec: the Satin gate is a
-// self-contained job with an exact ordered `run` command list, deploy depends
-// on the Satin gate, and `src/themes/__tests__` owns exactly the eight
-// `satin-conformance-*` real-artifact tests with no `conformance-satin-*`
-// counterparts.
+// Everything else follows the reviewed Task 6 spec: the Satin gate keeps an
+// exact ordered `run` command list, deploy depends on the Satin gate, and
+// `src/themes/__tests__` owns exactly the eight `satin-conformance-*`
+// real-artifact tests with no `conformance-satin-*` counterparts.
+//
+// b51-ci-speed2: the Satin gate is no longer ONE self-contained job. It is
+// three — `satin-build` (builds dist/ once), `satin-structural-conformance`
+// (matrix-sharded batched guards, downloads dist/ as an artifact) and
+// `satin-dictated-conformance` (the order-pinned conformance tail, also
+// downloads dist/) — so the pinned command list below is split across the
+// two jobs that actually run `run:` steps, at the exact point where the old
+// single list crossed from "build" to "test:conformance:shared". The set of
+// commands and their relative order are unchanged; only which job runs them
+// changed, and `needs: satin-build` on both downstream jobs is asserted
+// explicitly so a broken artifact hand-off fails this test too.
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -29,13 +39,25 @@ import test from 'node:test';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
 
-const expectedSatinCommands = [
+// b51-ci-speed2: до этой ветки все 17 команд ниже жили ОДНОЙ пинned-
+// подпоследовательностью внутри satin-structural-conformance. Теперь сборка
+// гоняется один раз в отдельной джобе satin-build (а не по разу на каждый
+// сегмент матрицы), а дословный хвост-конформанс — в отдельной джобе
+// satin-dictated-conformance (а не сериально ПОСЛЕ батча сегмента 1). Набор
+// команд и их относительный порядок НЕ изменились — изменилось только то, в
+// какой job они физически стоят, поэтому список пинов расщеплён на две части
+// строго по этой границе (после `run-theme-build.ts satin`, перед
+// `test:conformance:shared`), а не переписан заново.
+const expectedSatinBuildCommands = [
   'corepack prepare pnpm@10.14.0 --activate',
   'pnpm install --frozen-lockfile',
   'pnpm build',
   'pnpm build:blocks',
   'pnpm build:theme-sections satin',
   'pnpm exec tsx scripts/run-theme-build.ts satin',
+];
+
+const expectedSatinDictatedCommands = [
   'pnpm test:conformance:shared',
   'pnpm test:conformance:satin',
   'node --test scripts/__tests__/block-source-layout.test.mjs',
@@ -173,35 +195,57 @@ function runCommands(job) {
   return job.runs;
 }
 
-test('adds an isolated Satin gate wired into deploy (Bloom job absent in this lineage)', () => {
-  const workflow = loadWorkflow('.github/workflows/ci.yml');
-
-  // The Satin gate exists and keeps the required commands in this order.
-  //
-  // Раньше здесь стояло точное равенство со списком `expectedSatinCommands`.
-  // Из-за него гард краснел на КАЖДОМ добавлении проверки в джобу — а проверки
-  // в неё добавляют постоянно, это её назначение. В итоге файл выкинули из CI,
-  // и он перестал сторожить хоть что-нибудь (замер 13.09: в джобе 14 шагов,
-  // которых нет в списке). Поэтому сверяем не полное равенство, а ПОДПОСЛЕДО-
-  // ВАТЕЛЬНОСТЬ: все обязательные команды на месте и идут в заданном порядке
-  // (сборка перед конформансом), а новые шаги между ними разрешены.
-  assert.ok(
-    workflow.jobs['satin-structural-conformance'],
-    'satin-structural-conformance job must exist',
-  );
-  const actualSatinCommands = runCommands(workflow.jobs['satin-structural-conformance']);
+function assertOrderedSubsequence(jobName, workflow, expected) {
+  assert.ok(workflow.jobs[jobName], `${jobName} job must exist`);
+  const actual = runCommands(workflow.jobs[jobName]);
   let cursor = 0;
-  for (const required of expectedSatinCommands) {
-    const at = actualSatinCommands.indexOf(required, cursor);
+  for (const required of expected) {
+    const at = actual.indexOf(required, cursor);
     assert.notEqual(
       at,
       -1,
-      `в джобе satin-structural-conformance нет обязательного шага "${required}" ` +
-        'после уже найденных — либо он пропал, либо уехал вверх по списку. ' +
-        `Фактический список: ${JSON.stringify(actualSatinCommands, null, 2)}`,
+      `в джобе ${jobName} нет обязательного шага "${required}" после уже ` +
+        'найденных — либо он пропал, либо уехал вверх по списку. ' +
+        `Фактический список: ${JSON.stringify(actual, null, 2)}`,
     );
     cursor = at + 1;
   }
+}
+
+test('adds an isolated Satin gate wired into deploy (Bloom job absent in this lineage)', () => {
+  const workflow = loadWorkflow('.github/workflows/ci.yml');
+
+  // Раньше здесь стояло точное равенство со списком `expectedSatinCommands`
+  // внутри ОДНОЙ джобы satin-structural-conformance. Из-за точного равенства
+  // гард краснел на КАЖДОМ добавлении проверки в джобу — а проверки в неё
+  // добавляют постоянно, это её назначение. В итоге файл выкинули из CI, и он
+  // перестал сторожить хоть что-нибудь (замер 13.09: в джобе 14 шагов,
+  // которых нет в списке). Поэтому сверяем не полное равенство, а
+  // ПОДПОСЛЕДОВАТЕЛЬНОСТЬ: все обязательные команды на месте и идут в
+  // заданном порядке, а новые шаги между ними разрешены.
+  //
+  // b51-ci-speed2: сборка и дословный конформанс-хвост разъехались по ДВУМ
+  // джобам (satin-build, satin-dictated-conformance) — команды и их
+  // относительный порядок те же, что были в едином списке, граница ровно там,
+  // где заканчивается сборка и начинается test:conformance:shared. Это НЕ
+  // ослабление: гард по-прежнему падает на пропавшем, переименованном или
+  // переставленном шаге — только теперь смотрит на два места вместо одного,
+  // и ДОПОЛНИТЕЛЬНО проверяет, что обе джобы реально ждут sat­in-build через
+  // `needs`, иначе гарды могли бы начать читать dist до того, как он собран.
+  assertOrderedSubsequence('satin-build', workflow, expectedSatinBuildCommands);
+  assertOrderedSubsequence('satin-dictated-conformance', workflow, expectedSatinDictatedCommands);
+  assert.ok(workflow.jobs['satin-structural-conformance'], 'satin-structural-conformance job must exist');
+
+  assert.deepEqual(
+    workflow.jobs['satin-structural-conformance'].needs,
+    ['satin-build'],
+    'satin-structural-conformance must wait for satin-build (dist/ artifact) before running',
+  );
+  assert.deepEqual(
+    workflow.jobs['satin-dictated-conformance'].needs,
+    ['satin-build'],
+    'satin-dictated-conformance must wait for satin-build (dist/ artifact) before running',
+  );
 
   // Adaptation for this Satin-independent lineage: no Bloom CI job was landed
   // here, so the byte-for-byte `bloom-structural-commands.json` fixture is
@@ -217,12 +261,15 @@ test('adds an isolated Satin gate wired into deploy (Bloom job absent in this li
       'deploy-to-coolify.needs before satin-structural-conformance',
   );
 
-  // Deploy depends on the base build and the Satin gate. If/when the Bloom job
-  // lands, the expected list becomes
-  // ['build-and-test','bloom-structural-conformance','satin-structural-conformance'].
+  // Deploy depends on the base build and BOTH Satin gate jobs (b51-ci-speed2
+  // split the old single gate into satin-build + satin-structural-conformance
+  // + satin-dictated-conformance — deploy must wait for all three, not just
+  // the matrix job, or a red dictated-conformance job would ship anyway).
   assert.deepEqual(workflow.jobs['deploy-to-coolify'].needs, [
     'build-and-test',
+    'satin-build',
     'satin-structural-conformance',
+    'satin-dictated-conformance',
   ]);
 });
 

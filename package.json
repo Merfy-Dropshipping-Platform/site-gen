@@ -75,6 +75,7 @@
     "conformance:satin:refresh-inventory": "node scripts/refresh-satin-inventory.mjs",
     "conformance:satin:refresh": "pnpm build:blocks && pnpm build:theme-sections satin && pnpm exec tsx scripts/run-theme-build.ts satin && pnpm conformance:satin:refresh-inventory && pnpm conformance:satin",
     "test:v2-no-silent-fallback": "jest --runInBand src/services/__tests__/theme-v2-no-silent-fallback.spec.ts src/services/__tests__/flux-v2-home-sections.spec.ts",
+    "test:preview-handshake": "jest --runInBand src/services/__tests__/preview-agent-init-handshake.spec.ts src/services/__tests__/preview-agent-regex.spec.ts",
     "test:hidden-list-items": "jest --runInBand src/themes/__tests__/hidden-list-items.spec.ts",
     "test:media-order": "jest --runInBand src/themes/__tests__/product-media-order.spec.ts",
     "test:zoom-wiring": "jest --runInBand src/themes/__tests__/product-zoom-wiring.spec.ts",

@@ -1336,6 +1336,52 @@ const PREVIEW_NAV_AGENT_INLINE = `
   // (Rose делает hot-replace, другие темы fallback на полный iframe reload).
   var currentThemeId = '';
   var currentSiteId = '';
+  // Рукопожатие с конструктором: iframe шлёт 'ready', родитель отвечает 'init'
+  // с темой и сайтом. До 'init' hot-обновления применять НЕЛЬЗЯ (некуда слать
+  // themeId), и раньше они просто отбрасывались — молчаливым выходом из
+  // обработчика, без единого следа в консоли. Если 'ready' не заставал родителя
+  // слушающим (он вешает обработчик в useEffect, iframe из кеша успевает
+  // выстрелить раньше), правки молча пропадали ДО ПЕРЕЗАГРУЗКИ — жалоба
+  // владельца 2026-09-16 «во всех темах требуется перезагрузка». Перезагрузка
+  // «лечила» именно потому, что переигрывала гонку.
+  // Лечение из двух частей: 'ready' повторяется, пока не пришёл 'init', а
+  // обновления, пришедшие раньше него, копятся и проигрываются после.
+  var INIT_DONE = false;
+  var PENDING_BEFORE_INIT = [];
+  var READY_TIMER = null;
+  function askInit() {
+    if (INIT_DONE) return;
+    post({ type: 'ready' });
+  }
+  function startReadyRetry() {
+    if (READY_TIMER || INIT_DONE) return;
+    var tries = 0;
+    READY_TIMER = setInterval(function () {
+      tries++;
+      if (INIT_DONE || tries > 40) {
+        clearInterval(READY_TIMER);
+        READY_TIMER = null;
+        if (!INIT_DONE) console.error('[preview] init не пришёл за 12 с — правки применяться не будут, нужна перезагрузка');
+        return;
+      }
+      askInit();
+    }, 300);
+  }
+  /** Отложить сообщение, пришедшее до 'init'. На блок держим только последнее. */
+  function deferUntilInit(msg) {
+    if (msg && msg.type === 'update-block' && msg.blockId) {
+      for (var qi = 0; qi < PENDING_BEFORE_INIT.length; qi++) {
+        var q = PENDING_BEFORE_INIT[qi];
+        if (q && q.type === 'update-block' && q.blockId === msg.blockId) {
+          PENDING_BEFORE_INIT[qi] = msg;
+          startReadyRetry();
+          return;
+        }
+      }
+    }
+    if (PENDING_BEFORE_INIT.length < 50) PENDING_BEFORE_INIT.push(msg);
+    startReadyRetry();
+  }
   // Контекст коллекции страницы page-collection. Его кладёт в <head> GET-превью
   // (injectPreviewCollectionGlobal) ровно для коллекционных маршрутов
   // collections/preview и collections/<slug>. Возвращаем его серверу в
@@ -2260,6 +2306,8 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Parent шлёт init после iframe ready (см. PreviewFrame.tsx).
       currentThemeId = (ev.data.themeId || '') + '';
       currentSiteId = (ev.data.siteId || '') + '';
+      INIT_DONE = true;
+      if (READY_TIMER) { clearInterval(READY_TIMER); READY_TIMER = null; }
       // 091 — populate LAST_PROPS из initial data чтобы первый update-block
       // мог сразу пойти через local-patch (без fetch + outerHTML replace).
       // До этого фикса первый edit любого блока вызывал re-fetch → image flicker.
@@ -2274,11 +2322,24 @@ const PREVIEW_NAV_AGENT_INLINE = `
           }
         }
       }
+      // Проигрываем правки, которые пришли ДО рукопожатия. LAST_PROPS уже
+      // заполнены выше, поэтому отложенное обрабатывается ровно так же, как
+      // если бы пришло сейчас: сначала попытка локальной правки, потом сервер.
+      if (PENDING_BEFORE_INIT.length) {
+        var queued = PENDING_BEFORE_INIT;
+        PENDING_BEFORE_INIT = [];
+        for (var pi = 0; pi < queued.length; pi++) {
+          (function (msg) {
+            setTimeout(function () { window.postMessage(msg, '*'); }, 0);
+          })(queued[pi]);
+        }
+      }
     } else if (ev.data.type === 'update-block') {
       // Hot-replace включён для всех тем после консолидации на packages/theme-base
       // (2026-05-10). До этого был allowlist [rose, vanilla].
-      // Если currentThemeId пустой (init не пришёл) — пропускаем.
-      if (!currentThemeId) return;
+      // 'init' ещё не пришёл — НЕ теряем правку: откладываем и напоминаем о себе.
+      // Раньше здесь стоял молчаливый выход, и правка пропадала навсегда.
+      if (!currentThemeId) { deferUntilInit(ev.data); return; }
       var blockId = ev.data.blockId;
       if (!blockId || !currentSiteId) return;
       var blockType = (typeof ev.data.blockType === 'string' && ev.data.blockType)
@@ -2557,6 +2618,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
 
   // Signal readiness so the parent can send 'init'.
   post({ type: 'ready' });
+  // Родитель вешает слушателя в useEffect — если iframe поднялся из кеша и
+  // выстрелил раньше, единственный 'ready' пропадает вместе со всеми будущими
+  // правками. Повторяем, пока не придёт 'init' (до 12 с), и умолкаем сразу после.
+  startReadyRetry();
 
   // ── Inline (in-canvas) editing (Spec 101) — секция «Страница» heading/content.
   // [data-edit-field] → contenteditable; на blur постим в конструктор → Puck

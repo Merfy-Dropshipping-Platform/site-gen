@@ -43,12 +43,17 @@ const subtitleRaw =
 	"";
 const subtitleText = typeof subtitleRaw === "string" ? subtitleRaw.trim() : "";
 const subtitleSizeRaw = p.subtitle?.size ?? p.text?.size ?? p.textSize ?? p.subtitleSize;
+// «Размер текста» — просьба владельца 2026-09-16 («под инпутом добавить список
+// размер текста»). Панель этой секции показывает «Средний», когда мерчант
+// размер не выбирал, поэтому СРЕДНЯЯ ступень обязана совпадать с тем, что
+// секция рисовала до просьбы (14/16) — иначе панель врала бы про flux. Соседние
+// ступени — шаг вниз и вверх в лестнице темы.
 const subtitleSizeCls =
-	subtitleSizeRaw === "medium"
-		? "text-[16px] md:text-[19px]"
+	subtitleSizeRaw === "small"
+		? "text-[13px] md:text-[14px]"
 		: subtitleSizeRaw === "large"
-			? "text-[19px] md:text-[23px]"
-			: "text-[14px] md:text-[16px]"; // small (canon-default) + absent
+			? "text-[16px] md:text-[19px]"
+			: "text-[14px] md:text-[16px]"; // medium (canon-default) + absent
 const subtitleCls = `font-roboto-flex font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${subtitleSizeCls}`;
 
 // Канон fields {name,email,phone,message} (каждое {enabled,required,label}) —

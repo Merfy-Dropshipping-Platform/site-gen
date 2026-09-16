@@ -48,8 +48,16 @@ const placeholderHeading =
 const description =
 	(typeof p.description === "string" ? p.description : p.description?.content) ?? "";
 const descriptionText = typeof description === "string" ? description.trim() : "";
+// «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
+// добавить список размер текста, как сверху с размером заголовка». Ступени
+// сняты с flux (ContactForm.astro:45-51), где поле читалось и до просьбы:
+// small 14 / medium 16 / large 19. Дефолт = medium, он равен прежнему жёсткому
+// размеру абзаца, поэтому секции без выбранного размера выглядят как раньше.
+const textSizeRaw = p.textSize ?? p.text?.size ?? p.subtitleSize;
+const textSizeCls =
+	textSizeRaw === "small" ? "text-[14px]" : textSizeRaw === "large" ? "text-[19px]" : "text-[16px]";
 const descriptionCls =
-	"font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]";
+	`font-inter ${textSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`;
 
 // Лестница §9 заголовка bloom (Urbanist uppercase, color-heading): base medium = 20,
 // small ≈ 0.9× = 18, large ≈ 1.2× = 24. Совпадает с манерой Collections/Popular.

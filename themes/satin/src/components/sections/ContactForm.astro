@@ -52,6 +52,15 @@ const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-
 const descriptionRaw = typeof p.description === "string" && p.description.trim() ? p.description : undefined;
 const description = contentSet("description", descriptionRaw) ? descriptionRaw : undefined;
 
+// «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
+// добавить список размер текста, как сверху с размером заголовка». Ступени
+// сняты с flux (ContactForm.astro:45-51), где поле читалось и до просьбы:
+// small 14 / medium 16 / large 19. Дефолт = medium, он равен прежнему жёсткому
+// размеру абзаца, поэтому секции без выбранного размера выглядят как раньше.
+const textSizeRaw = p.textSize ?? p.text?.size ?? p.subtitleSize;
+const textSizeCls =
+	textSizeRaw === "small" ? "text-[14px]" : textSizeRaw === "large" ? "text-[19px]" : "text-[16px]";
+
 // Flat-пропсы контактов магазина (addresses/phone/email) — блок «Свяжитесь
 // с нами» (contacts.astro:12-38, dl-манера: label muted 16 / значение
 // font-light 0_0_0) рендерится ТОЛЬКО при непустых пропсах; дефолт-ветка
@@ -186,7 +195,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				description && !isFieldHidden('description') && (
 					<p
-						class="font-manrope text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+						class={`font-manrope ${textSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="101"
 						data-puck-subsection-field="description"

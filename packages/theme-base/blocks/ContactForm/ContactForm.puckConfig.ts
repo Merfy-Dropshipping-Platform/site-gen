@@ -21,6 +21,7 @@ export const ContactFormSchema = z.object({
     }),
   ]).optional(),
   description: z.string(),
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
   fields: z.object({
     name: FieldSchema,
     email: FieldSchema,
@@ -82,6 +83,20 @@ export const ContactFormPuckConfig: BlockPuckConfig<ContactFormProps> = {
       fieldType: 'description',
       placeholder: 'Ввести текст...',
     } as any,
+    // «Размер текста» — вторая половина той же просьбы владельца 2026-09-16:
+    // «под инпутом добавить список размер текста, как сверху с размером
+    // заголовка». Контрол, список, ИМЯ ПРОПА и место сняты с Gallery.textSize
+    // дословно — flux уже читает `textSize` (ContactForm.astro:45), поэтому
+    // своё имя завело бы шестой синоним размера вместо общего.
+    textSize: {
+      type: 'select',
+      label: 'Размер текста',
+      options: [
+        { label: 'Маленький', value: 'small' },
+        { label: 'Средний', value: 'medium' },
+        { label: 'Большой', value: 'large' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     padding: { type: 'padding', label: 'Отступы' },
     // Hidden — нет в Figma 314-35069.

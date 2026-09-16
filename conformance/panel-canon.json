@@ -1981,6 +1981,16 @@
             "label": "Текст",
             "visibility": "panel"
           },
+          "textSize": {
+            "type": "select",
+            "label": "Размер текста",
+            "visibility": "panel",
+            "options": [
+              "small=Маленький",
+              "medium=Средний",
+              "large=Большой"
+            ]
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -2269,12 +2279,12 @@
         "label": "Вход",
         "fields": {
           "heading": {
-            "type": "text",
+            "type": "aiText",
             "label": "Заголовок",
             "visibility": "panel"
           },
           "text": {
-            "type": "textarea",
+            "type": "aiText",
             "label": "Текст",
             "visibility": "panel"
           },
@@ -5129,6 +5139,16 @@
             "label": "Текст",
             "visibility": "panel"
           },
+          "textSize": {
+            "type": "select",
+            "label": "Размер текста",
+            "visibility": "panel",
+            "options": [
+              "small=Маленький",
+              "medium=Средний",
+              "large=Большой"
+            ]
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -5417,12 +5437,12 @@
         "label": "Вход",
         "fields": {
           "heading": {
-            "type": "text",
+            "type": "aiText",
             "label": "Заголовок",
             "visibility": "panel"
           },
           "text": {
-            "type": "textarea",
+            "type": "aiText",
             "label": "Текст",
             "visibility": "panel"
           },
@@ -8278,6 +8298,16 @@
             "label": "Текст",
             "visibility": "panel"
           },
+          "textSize": {
+            "type": "select",
+            "label": "Размер текста",
+            "visibility": "panel",
+            "options": [
+              "small=Маленький",
+              "medium=Средний",
+              "large=Большой"
+            ]
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -8566,12 +8596,12 @@
         "label": "Вход",
         "fields": {
           "heading": {
-            "type": "text",
+            "type": "aiText",
             "label": "Заголовок",
             "visibility": "panel"
           },
           "text": {
-            "type": "textarea",
+            "type": "aiText",
             "label": "Текст",
             "visibility": "panel"
           },
@@ -11417,6 +11447,16 @@
             "label": "Текст",
             "visibility": "panel"
           },
+          "textSize": {
+            "type": "select",
+            "label": "Размер текста",
+            "visibility": "panel",
+            "options": [
+              "small=Маленький",
+              "medium=Средний",
+              "large=Большой"
+            ]
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -11705,12 +11745,12 @@
         "label": "Вход",
         "fields": {
           "heading": {
-            "type": "text",
+            "type": "aiText",
             "label": "Заголовок",
             "visibility": "panel"
           },
           "text": {
-            "type": "textarea",
+            "type": "aiText",
             "label": "Текст",
             "visibility": "panel"
           },
@@ -14556,6 +14596,16 @@
             "label": "Текст",
             "visibility": "panel"
           },
+          "textSize": {
+            "type": "select",
+            "label": "Размер текста",
+            "visibility": "panel",
+            "options": [
+              "small=Маленький",
+              "medium=Средний",
+              "large=Большой"
+            ]
+          },
           "colorScheme": {
             "type": "colorScheme",
             "label": "Цветовая схема",
@@ -14844,12 +14894,12 @@
         "label": "Вход",
         "fields": {
           "heading": {
-            "type": "text",
+            "type": "aiText",
             "label": "Заголовок",
             "visibility": "panel"
           },
           "text": {
-            "type": "textarea",
+            "type": "aiText",
             "label": "Текст",
             "visibility": "panel"
           },

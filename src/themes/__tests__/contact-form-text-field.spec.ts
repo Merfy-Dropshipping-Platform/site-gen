@@ -87,12 +87,23 @@ const FIELDS_BEFORE = [
   "buttonText",
 ] as const;
 
+/**
+ * Состав ПОСЛЕ второй просьбы владельца (2026-09-16, дословно): «под инпутом
+ * добавить список размер текста, как сверху с размером заголовка». В отличие от
+ * «Текста», здесь прибавляется НОВОЕ имя пропа — `textSize`. Имя не выдумано:
+ * так же зовётся это поле у соседей (`Gallery.textSize`, `Collections`), и
+ * именно его порт flux читал ещё до просьбы (ContactForm.astro:45). Ровно одно
+ * имя сверх — больше ничего.
+ */
+const FIELDS_AFTER = [...FIELDS_BEFORE, "textSize"] as const;
+
 /** Порядок контролов «Содержания» после правки: Текст идёт за Размером заголовка. */
 const PANEL_ORDER_AFTER = [
   "_contentSection",
   "heading",
   "headingSize",
   "description",
+  "textSize",
   "colorScheme",
   "padding",
 ] as const;
@@ -108,6 +119,8 @@ type PathsRow = {
   theme: string;
   paths: { hot: string | null; preview: string | null; live: string | null };
   empty: { blank: string; absent: string };
+  sizes: Record<"small" | "medium" | "large", string | null>;
+  sizesLive: Record<"small" | "medium" | "large", string | null>;
 };
 
 const built =
@@ -238,13 +251,15 @@ describe("«Контактная форма» — поле «Текст» в п�
     (theme: Theme) => {
       if (!built) return;
       const now = Object.keys(panel[theme][BLOCK].fields).sort();
-      // Имена не изменились: `description` был и остался, поменялась ВИДИМОСТЬ.
-      expect(now).toEqual([...FIELDS_BEFORE].sort());
+      // `description` был и остался — у него поменялась только ВИДИМОСТЬ.
+      // Сверх него прибавилось ровно одно имя — `textSize` (просьба 2026-09-16).
+      expect(now).toEqual([...FIELDS_AFTER].sort());
       const visibleCount = Object.values(panel[theme][BLOCK].fields).filter(
         (f) => f.visibility !== "off",
       ).length;
-      // Было 5 контролов (+ заголовок раздела), стало 6.
-      expect(visibleCount).toBe(6);
+      // Было 5 контролов (+ заголовок раздела), после «Текста» 6, после
+      // «Размера текста» 7.
+      expect(visibleCount).toBe(7);
       expect(panel[theme][BLOCK].label).toBe("Контактная форма");
     },
   );
@@ -283,4 +298,61 @@ describe("«Контактная форма» — текст доезжает д
       expect(blank).toBe(absent);
     },
   );
+});
+
+/**
+ * «Размер текста» — просьба владельца 2026-09-16. Панель, которая показывает
+ * список, а размер до витрины не доезжает, — тот же класс бага, ради которого
+ * написан коллектор путей: мерчант выбирает «Большой», сохраняет, на сайте
+ * ничего не меняется.
+ *
+ * Сравниваем разметку целиком: у каждой темы своя лестница кеглей (satin
+ * 14/16/19, bloom 14/16/20 и т.д.), поэтому сторожится не конкретный класс
+ * темы, а ФАКТ различия — три выбора дают три разных абзаца, и одинаково на
+ * точечном рендере и на собранной витрине.
+ */
+describe("«Контактная форма» — «Размер текста» доезжает до рендера", () => {
+  /**
+   * «След размера» — то, чем тема отличает один выбор от другого. У четырёх тем
+   * это класс самого абзаца; у rose подзаголовок рисует общий компонент
+   * RoseSectionHeading важной утилитой `!text-[16px]`, поэтому кегль уезжает
+   * CSS-переменной `--contacts-text-size` на секции, а абзац остаётся прежним.
+   * Сравнивать только абзац значило бы объявить работающую тему сломанной.
+   */
+  const sizePrintOf = (html: string | null): string => {
+    const paragraph = html?.match(/<p[^>]*>[\s\S]*?<\/p>/)?.[0] ?? "";
+    const cssVar = html?.match(/--[a-z-]*text-size:\s*[^;"']+/)?.[0] ?? "";
+    return paragraph + "|" + cssVar;
+  };
+  const paragraphOf = (html: string | null): string => sizePrintOf(html);
+
+  it.each(THEMES)("%s: три размера дают три разных абзаца (hot-render)", (theme: Theme) => {
+    if (!built) return;
+    const { small, medium, large } = paths[theme].sizes;
+    const got = [small, medium, large].map(paragraphOf);
+    expect(got.every((p) => p.length > 0)).toBe(true);
+    expect(new Set(got).size).toBe(3);
+  });
+
+  it.each(THEMES)("%s: то же на собранной витрине", (theme: Theme) => {
+    if (!built) return;
+    const { small, medium, large } = paths[theme].sizesLive;
+    const got = [small, medium, large].map(paragraphOf);
+    expect(got.every((p) => p.length > 0)).toBe(true);
+    expect(new Set(got).size).toBe(3);
+  });
+
+  it.each(THEMES)("%s: без выбора размер равен одной из ступеней, а не пуст", (theme: Theme) => {
+    if (!built) return;
+    const withoutSize = paragraphOf(paths[theme].paths.hot);
+    const steps = [
+      paths[theme].sizes.small,
+      paths[theme].sizes.medium,
+      paths[theme].sizes.large,
+    ].map(paragraphOf);
+    expect(withoutSize.length).toBeGreaterThan(0);
+    // Дефолт обязан совпадать с одной из ступеней: иначе у секций, где мерчант
+    // размер не выбирал, вид поехал бы от самой правки.
+    expect(steps).toContain(withoutSize);
+  });
 });

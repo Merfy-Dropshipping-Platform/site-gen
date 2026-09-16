@@ -12,8 +12,12 @@ export const ContactFormClasses = {
     'mx-auto max-w-[1200px]',
   heading:
     '[font-family:var(--font-heading)] text-[14px] leading-[16px] tracking-[0.1em] uppercase text-[rgb(var(--color-heading))] mb-8',
+  // Размер вынесен в ContactForm.astro (descriptionSizeClass): поле «Размер
+  // текста» панели (просьба владельца 2026-09-16) должно его ЗАМЕНЯТЬ, а не
+  // соревноваться с ним за приоритет утилит. Без пропа применяется ступень
+  // «Маленький» — она равна прежним 12px/15px, вид старых секций не меняется.
   description:
-    '[font-family:var(--font-body)] text-[12px] leading-[15px] text-[rgb(var(--color-text))]/60 mb-8',
+    '[font-family:var(--font-body)] text-[rgb(var(--color-text))]/60 mb-8',
   form:
     'grid grid-cols-1 lg:grid-cols-[429px_1fr] gap-4',
   leftColumn:

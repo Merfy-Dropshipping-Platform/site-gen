@@ -136,6 +136,15 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		itemsEl.innerHTML = lines
 			.map((line) => {
 				const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+				const totalCurrent = formatCartPrice(line.price * line.quantity);
+				// Старая (зачёркнутая) цена — жалоба владельца 17.09: «не отображается
+				// цена без скидки». Эталон rose/flux CartSection.astro: line.oldPrice
+				// сравнивается с line.price (сумма на количество, как totalCurrent),
+				// красится --color-muted (та же роль, что у варианта/«Удалить»).
+				const totalOld =
+					typeof line.oldPrice === "number" && line.oldPrice > line.price
+						? formatCartPrice(line.oldPrice * line.quantity)
+						: "";
 				return `
 					<li class="flex flex-col gap-4 border-b border-[rgb(var(--color-muted,153_153_153)/0.3)] pb-6 md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
 						<div class="flex gap-4">
@@ -154,7 +163,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								<span class="min-w-[28px] text-center font-manrope text-[14px] text-[rgb(var(--color-text,0_0_0))]">${line.quantity}</span>
 								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
 							</div>
-							<span class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
+							<div class="flex items-baseline gap-2">
+								<span class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">${totalCurrent}</span>
+								${totalOld ? `<span class="font-manrope text-[13px] font-light text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[16px]">${totalOld}</span>` : ""}
+							</div>
 						</div>
 					</li>
 				`;

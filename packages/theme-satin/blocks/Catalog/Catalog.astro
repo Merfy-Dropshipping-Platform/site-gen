@@ -487,6 +487,17 @@ const skeletons = Array.from({ length: skeletonCount });
     color: rgb(var(--color-text, 0 0 0));
     border-color: rgb(var(--color-text, 0 0 0));
   }
+  /* Наведение на ту же кнопку — «Текст при наведении» ДОПОЛНИТЕЛЬНОЙ кнопки
+     схемы. Общее правило `.satin-button-light:hover` из global.css сюда не
+     достаёт: базовый цвет задан ЗДЕСЬ, правилом выше, а оно unlayered и бьёт
+     всё, что лежит в @layer base. Без этой строки «Смотреть ещё» каталога при
+     наведении не меняла цвет ни при какой схеме (матрица схем, мишень
+     «текст кнопки (:hover)»). Фолбэк — базовый цвет из правила выше, то есть
+     без заданного мерчантом наведения вид прежний. */
+  [data-catalog-layout] .satin-button-light:hover {
+    color: rgb(var(--color-button-2-text-hover, var(--color-text, 0 0 0)));
+    border-color: rgb(var(--color-button-2-text-hover, var(--color-text, 0 0 0)));
+  }
 </style>
 
 <script is:inline define:vars={{ siteId, pageSize, showCartBtn, cardContainerOn, cardAspectClass, cardBtnStyleAttr, nextPhotoOn, nextPhotoMode }}>

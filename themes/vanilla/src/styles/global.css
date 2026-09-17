@@ -551,16 +551,23 @@ footer[data-vanilla-footer]::after {
    @layer base любое unlayered-правило, чей селектор начинается с элемента или
    атрибута (та же форма, что у preflight-сбросов — из-за них когда-то «лого на
    всю высоту»). Внутри @layer base это правило не работает по причине из
-   комментария выше, поэтому область действия перенесена в `:is(…)`, а слева
-   стоит класс — правило остаётся unlayered и гард молчит. Специфичность от
-   этого только выросла, поведение то же. Запятых ВНУТРИ `:is(…)` быть не
-   должно: гард режет список селекторов по запятым, и кусок из середины
-   скобок читался бы как отдельный селектор, начинающийся с атрибута. */
-.vanilla-button-cart:is([data-block="cart-body"][class*="color-scheme-"] *):hover,
-.vanilla-button-cart:is([data-block="cart-summary"][class*="color-scheme-"] *):hover,
-.vanilla-button-cart:is([data-block="cart-section"] *):hover,
-.vanilla-button-wishlist:is([data-block="wishlist-section"] *):hover,
-.inline-flex[data-action="load-more"]:hover {
+   комментария выше — поэтому слева стоит класс, и правило остаётся unlayered.
+   БЫЛО: `.vanilla-button-cart:is([data-block="cart-body"] *):hover` и т.д. —
+   зона действия обводилась через `:is(…)`. Браузер такое читает (проверено
+   chromium: покой rgb(119 0 0) → наведение rgb(119 26 26)), а сканер схем —
+   нет: `:is(…)` с комбинатором внутри он разворачивает подстановкой и получает
+   бессмыслицу, поэтому четыре мишени «Корзины» числились замершими, хотя
+   краска ехала. Обводка зоны больше не нужна: `.vanilla-button-cart` живёт
+   ТОЛЬКО в CartBody/CartSummary/CartSection, `.vanilla-button-wishlist` —
+   только в WishlistSection (замер grep по themes/vanilla/src), то есть список
+   зон и список классов совпадают один в один. `.vanilla-button-load-more` —
+   тот же приём вместо `.inline-flex[data-action="load-more"]`: имя класса
+   вместо пары «класс + атрибут». Специфичность (0,2,0) по-прежнему бьёт
+   astro-scoped `:where(.astro-…)` (0,1,0), а правило схемы из @layer base —
+   тем, что остаётся unlayered. */
+.vanilla-button-cart:hover,
+.vanilla-button-wishlist:hover,
+.vanilla-button-load-more:hover {
   background-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 58 69 48)));
   border-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 58 69 48)));
   color: rgb(var(--color-button-text-hover, var(--color-button-text, 255 255 255)));
@@ -1063,8 +1070,18 @@ blockquote {
   padding: 0;
 }
 
+/* Наведение читает роль схемы, а не остаётся приглушённым. Было только
+   `text-decoration: underline`: цвет на :hover брался из БАЗОВОГО правила
+   (`--color-muted`), то есть «Изменить» и «Выйти из аккаунта» при наведении
+   не меняли цвет ни при какой схеме мерчанта (матрица схем, мишень
+   «текст кнопки (:hover)»). Роль выбрана по эталону rose: приглушённая
+   ссылка при наведении доходит до основного текста — ровно так же, как
+   `.auth-link-muted:hover` в этом же файле (`--color-foreground`, который на
+   входе и есть текст). Фолбэк 0 0 0 = прежний вид без схемы.
+   Сторож: pnpm test:scheme-matrix. */
 .account-text-link:hover {
   text-decoration: underline;
+  color: rgb(var(--color-text, 0 0 0));
 }
 
 .account-form {

@@ -992,10 +992,39 @@ export function buildMatrix({ themes = THEMES, blocks = discoverBlocks() } = {})
           if (!winA) continue;
           const label = rule.labels[prop];
           if (!label) continue;
-          targets++;
           const resA = substituteVars(winA.value, nodeA, index);
           const winB = winningDecl(nodeB, prop, index) ?? winA;
           const resB = substituteVars(winB.value, nodeB, index);
+          // ПРОЗРАЧНЫЙ ФОН — НЕ КРАСКА. Тот же принцип, что у `NOT_A_PAINT`
+          // выше, но по РАЗРЕШЁННОМУ значению: `background: var(--product-card-bg,
+          // transparent)` литералом не выглядит и проверку сырого значения
+          // проходит, а подстановка даёт ровно `transparent` — узел не красит
+          // себя ничем, и спрашивать с него нечего ровно так же, как с узла,
+          // который цвет наследует.
+          // Ловушка: карточка товара bloom/satin в стиле «Обычная» числилась
+          // «мимо схемы» (3 клетки долга), хотя chromium печатает у неё
+          // rgba(0, 0, 0, 0) в ОБЕИХ схемах — подложки нет вовсе, менять
+          // нечего.
+          // ⚠️ ОТДЕЛЬНЫЙ ДЕФЕКТ, этой строкой НЕ закрытый: в стиле «Карточка»
+          // подложка появляется, но за схемой СЕКЦИИ всё равно не едет —
+          // `--product-card-bg` объявлен в `:root` (src/themes/tokens-css.ts),
+          // а var() внутри кастомного свойства подставляется на элементе
+          // ОБЪЯВЛЕНИЯ, то есть карточка получает `--color-surface` схемы
+          // по умолчанию. Замер chromium: bloom/satin в стиле «Карточка» —
+          // rgb(34, 0, 0) и в схеме 1, и в схеме 4; flux (у него «Карточка» —
+          // дефолт манифеста) — rgb(251, 251, 251) в обеих. Матрица этого НЕ
+          // видит и красит клетку зелёным: она резолвит переменную на самом
+          // узле, а не на `:root`. Чинится в tokens-css (объявлять токен на
+          // `[data-nt$="-product-card"]`, как это уже делает
+          // `productCardSchemeRule`), и это ветка другого агента.
+          if (
+            prop === 'background-color' &&
+            NOT_A_PAINT.test(resA.value.trim()) &&
+            NOT_A_PAINT.test(resB.value.trim())
+          ) {
+            continue;
+          }
+          targets++;
           const trail = resA.trail;
           const roleEntry = [...trail].reverse().find((t) => schemeRoles.has(t.token));
           const cell = {

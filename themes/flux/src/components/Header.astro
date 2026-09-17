@@ -134,10 +134,15 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 
-// Бейдж счётчика (корзина) — эталон верстальщика: -right-1 -top-1,
-// h-[18px] min-w-[18px], bg-[#1e2952], Roboto Flex 11px белый.
+// Бейдж счётчика (корзина и избранное) — эталон верстальщика: -right-1 -top-1,
+// h-[18px] min-w-[18px], bg-[#1e2952], Roboto Flex 11px.
+// ЦИФРА — роль схемы «Текст кнопки», а не `text-white`: белым списком матрицы
+// прикрыта только ПЛАШКА (фирменный #1e2952 — узнаваемый цвет темы), а цифра
+// читаема на плашке любого цвета и обязана следовать выбору мерчанта
+// (решение владельца 15.09, сужение исключения `counter-badge`).
+// Фолбэк 255_255_255 = прежний белый — вид без схемы не меняется.
 const badgeCls =
-	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#1e2952] px-1 font-roboto-flex text-[11px] font-normal leading-none text-white data-[empty=true]:hidden";
+	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#1e2952] px-1 font-roboto-flex text-[11px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden";
 
 // Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
 // якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.

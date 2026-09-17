@@ -147,3 +147,50 @@ describe("build.service.ts — источник домешивает фолбэ�
     expect(around).toContain("resolveCartDrawerSchemeId(ctx.revisionData)");
   });
 });
+
+/**
+ * Часть 2 (17.09, тот же баг — другой путь): тестер проверяет баги в
+ * КОНСТРУКТОРЕ (customize.merfy.ru/?siteId=…&page=page-cart), не только на
+ * живой витрине. Превью красит tokens.css тремя своими вызовами
+ * buildTokensCss (preview.controller.ts) — все три несли ровно тот же пробел,
+ * что live-сборка до первой части фикса: читали только явную настройку
+ * cartDrawerScheme, без фолбэка на CartBody/CartSummary страницы корзины.
+ *
+ * Общий резолвер один — resolveCartDrawerSchemeId (cart-drawer-contract.ts).
+ * В preview.controller.ts домешивание собрано в одном приватном хелпере
+ * withCartDrawerSchemeFallback, чтобы не копировать логику слияния трижды —
+ * гард проверяет, что все три вызова buildTokensCss идут ЧЕРЕЗ этот хелпер.
+ */
+describe("preview.controller.ts — все пути превью домешивают фолбэк дровера", () => {
+  const src = readFileSync(
+    resolve(__dirname, "..", "..", "controllers", "preview.controller.ts"),
+    "utf8",
+  );
+
+  it("resolveCartDrawerSchemeId импортирован", () => {
+    expect(src).toMatch(
+      /import\s*\{\s*resolveCartDrawerSchemeId\s*\}\s*from\s*['"]\.\.\/themes\/cart-drawer-contract['"]/,
+    );
+  });
+
+  it("withCartDrawerSchemeFallback объявлен и зовёт resolveCartDrawerSchemeId (не копирует логику)", () => {
+    const idx = src.indexOf("withCartDrawerSchemeFallback(");
+    expect(idx).toBeGreaterThan(-1);
+    const decl = src.slice(
+      src.indexOf("private withCartDrawerSchemeFallback"),
+      src.indexOf("private withCartDrawerSchemeFallback") + 600,
+    );
+    expect(decl).toContain("resolveCartDrawerSchemeId(revisionData)");
+  });
+
+  it.each([
+    ["tokensCssFromSettings — основной рендер страницы превью (page-cart и любая другая)", "private tokensCssFromSettings(", "buildTokensCss(\n      this.withCartDrawerSchemeFallback"],
+    ["injectTokensIntoBlobPage — built-theme blob-страницы превью", "private injectTokensIntoBlobPage(", "buildTokensCss(\n      this.withCartDrawerSchemeFallback"],
+    ["renderTokensCss — POST /preview/tokens-css, живой хот-свап настроек", "async renderTokensCss(", "buildTokensCss(\n        this.withCartDrawerSchemeFallback"],
+  ])("%s зовёт buildTokensCss через фолбэк-хелпер", (_label, anchor, expectedCallStart) => {
+    const at = src.indexOf(anchor);
+    expect(at).toBeGreaterThan(-1);
+    const body = src.slice(at, at + 900);
+    expect(body).toContain(expectedCallStart);
+  });
+});

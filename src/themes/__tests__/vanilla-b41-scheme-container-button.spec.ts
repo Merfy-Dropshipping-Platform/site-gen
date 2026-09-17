@@ -208,24 +208,61 @@ describe('Наведение на кнопки схемы (Корзина/Изб
     return layerDepth !== null;
   }
 
-  it('правило hover для .vanilla-button-cart/.vanilla-button-wishlist/[data-action="load-more"] объявляет обе роли hover', () => {
-    const idx = globalCss.indexOf('[data-block="cart-body"][class*="color-scheme-"] .vanilla-button-cart:hover');
-    expect(idx).toBeGreaterThan(-1);
-    const braceOpen = globalCss.indexOf('{', idx);
+  /**
+   * ⚠️ ЭТОТ ГАРД БЫЛ МЁРТВ. До 17.09 обе проверки искали в файле строку
+   * `[data-block="cart-body"][class*="color-scheme-"] .vanilla-button-cart:hover`
+   * — форму селектора, которой в `global.css` не было НИ ОДНОГО дня после
+   * того, как правило переписали на `:is(…)` ради `check:css-layers`.
+   * `indexOf` возвращал −1, `expect(idx).toBeGreaterThan(-1)` падал, и суита
+   * просто числилась красной, ничего не сторожа. Привязка к ТЕКСТУ селектора
+   * и есть ловушка: правило имеет право менять форму, а сторожить надо
+   * СВОЙСТВА — какие роли объявлены, на какие классы, и лежит ли правило вне
+   * слоя. Ниже проверки переписаны именно так и проверены саботажем.
+   *
+   * Текущая форма (17.09): `:is(…)` снят — браузер его читал, а сканер схем
+   * (`scheme-matrix.mjs`) разворачивает `:is()` подстановкой и на комбинаторе
+   * внутри получал бессмыслицу, из-за чего четыре мишени «Корзины» числились
+   * замершими. Обводка зоны не нужна: эти классы живут только в своих блоках.
+   */
+  const HOVER_SEL = '.vanilla-button-cart:hover';
+
+  /** Правило наведения целиком: от первого селектора до закрывающей скобки. */
+  function hoverRule(): { selectors: string; body: string; at: number } {
+    const at = globalCss.indexOf(HOVER_SEL);
+    const braceOpen = globalCss.indexOf('{', at);
     const braceClose = globalCss.indexOf('}', braceOpen);
-    const rule = globalCss.slice(idx, braceClose);
-    expect(rule).toContain('[data-block="cart-section"] .vanilla-button-cart:hover');
-    expect(rule).toContain('[data-block="wishlist-section"] .vanilla-button-wishlist:hover');
-    expect(rule).toContain('[data-block="catalog"] [data-action="load-more"]:hover');
-    const body = globalCss.slice(braceOpen + 1, braceClose);
+    return {
+      at,
+      selectors: globalCss.slice(at, braceOpen),
+      body: globalCss.slice(braceOpen + 1, braceClose),
+    };
+  }
+
+  it('правило hover покрывает корзину, избранное и «Смотреть ещё» и объявляет обе роли hover', () => {
+    const { at, selectors, body } = hoverRule();
+    expect(at).toBeGreaterThan(-1);
+    expect(selectors).toContain('.vanilla-button-wishlist:hover');
+    expect(selectors).toContain('.vanilla-button-load-more:hover');
     expect(body).toMatch(/background-color:\s*rgb\(var\(--color-button-bg-hover/);
     expect(body).toMatch(/color:\s*rgb\(var\(--color-button-text-hover/);
   });
 
   it('ЛОВУШКА: правило hover обязано быть unlayered — иначе astro-scoped <style> и Tailwind @layer utilities его перебивают', () => {
-    const idx = globalCss.indexOf('[data-block="cart-body"][class*="color-scheme-"] .vanilla-button-cart:hover');
-    expect(idx).toBeGreaterThan(-1);
-    expect(isInsideNamedLayer(globalCss, idx)).toBe(false);
+    const { at } = hoverRule();
+    expect(at).toBeGreaterThan(-1);
+    expect(isInsideNamedLayer(globalCss, at)).toBe(false);
+  });
+
+  it('класс .vanilla-button-load-more действительно стоит на кнопке «Смотреть ещё» — правило не осиротело', () => {
+    // Без этой проверки селектор можно переименовать в что угодно, и гард
+    // выше останется зелёным, сторожа правило, которое ни на что не попадает.
+    const catalog = readFileSync(
+      resolve(SITES_ROOT, 'packages/theme-vanilla/blocks/Catalog/Catalog.astro'),
+      'utf-8',
+    );
+    const buttons = catalog.match(/<button[^>]*data-action="load-more"[^>]*>/g) ?? [];
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const b of buttons) expect(b).toContain('vanilla-button-load-more');
   });
 
   it('для сравнения: уже рабочий .account-button:hover в этом файле ТОЖЕ unlayered (не ложное правило проверки)', () => {

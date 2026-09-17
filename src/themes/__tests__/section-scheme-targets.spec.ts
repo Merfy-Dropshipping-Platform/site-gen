@@ -171,6 +171,15 @@ const CASES: Case[] = [
   { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "фон кнопки слайда", marker: "текст:Кнопка", prop: "background-color", expect: "--color-button-bg" },
   { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "текст кнопки слайда", marker: "текст:Кнопка", prop: "color", expect: "--color-button-text" },
 
+  // [b64-1] Владелец, 17.09: «Секция слайд-шоу поломана» в bloom — заголовок
+  // красный, подзаголовок зелёный, кнопка бордовая на голубом фоне (Схема 3).
+  // Пустое состояние (плейсхолдер, без слайдов мерчанта) — ровно тот экран,
+  // что видел владелец. Роли те же, что у flux выше + заголовок/подзаголовок.
+  { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "заголовок слайда", marker: "текст:Слайд-шоу", prop: "color", expect: "--color-heading" },
+  { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "подзаголовок слайда", marker: "текст:Добавь несколько изображений с информацией о своём бренде", prop: "color", expect: "--color-text" },
+  { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "фон кнопки слайда", marker: "текст:Кнопка", prop: "background-color", expect: "--color-button-bg" },
+  { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "текст кнопки слайда", marker: "текст:Кнопка", prop: "color", expect: "--color-button-text" },
+
   // [47] Цена карточки «Коллекции товаров» у vanilla. До: 0,0,0 → 0,0,0
   // (`text-black`; Tailwind 4 печатает его как `var(--color-black)` — переменная
   // есть, но её нет ни в одной схеме). Имя карточки стояло на ТОМ ЖЕ литерале

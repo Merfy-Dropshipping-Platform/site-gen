@@ -9,6 +9,10 @@ import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 import { resolveBlockProps } from '../render/resolve-props';
 import { getBlockPuckDefaults } from '../render/block-defaults';
 import { checkoutSplitMarkup } from '../../packages/theme-base/blocks/CheckoutLayout/checkout-split';
+import {
+  patchCheckoutColumnScheme,
+  patchCheckoutBlockScheme,
+} from '../themes/chrome-assembler';
 import type { RenderContext } from '../render/create-render-context';
 
 const HTML_ESCAPE_MAP: Record<string, string> = {
@@ -777,7 +781,7 @@ export class PreviewService {
           const wrapped = schemeId
             ? `<div class="color-scheme-${schemeId}"${wrapStyle} data-block-scheme="${schemeId}">${html}</div>`
             : html;
-          return { type: b.type, wrapped };
+          return { type: b.type, html, schemeId, wrapped };
         }),
       );
 
@@ -795,26 +799,46 @@ export class PreviewService {
         let headerHtml = '';
         let formHtml = '';
         let summaryHtml = '';
-        for (const { type, wrapped } of renderedBlocks) {
+        // «Цветовая схема» CheckoutForm/CheckoutSummary — НЕ обёртка блока
+        // (та ветка ниже, `wrapped`, годится для обычных секций, но красит
+        // «пятно» ограниченного размера внутри колонки чекаута — канон
+        // «схема красит КОЛОНКУ» этого не допускает, баг-репорт «тёмные
+        // очертания по периметру»). Держим id голыми, патчим ПОСЛЕ сборки
+        // сетки — тем же приёмом, что живая витрина
+        // (chrome-assembler.injectCheckoutChromeIntoHtml).
+        let formSchemeId: string | null = null;
+        let summarySchemeId: string | null = null;
+        const pushCheckoutGrid = () => {
+          let grid = this.wrapCheckoutGrid(formHtml, summaryHtml, headerHtml);
+          grid = patchCheckoutColumnScheme(grid, 'summary', summarySchemeId);
+          grid = patchCheckoutBlockScheme(grid, 'checkout-summary', summarySchemeId);
+          grid = patchCheckoutColumnScheme(grid, 'form', formSchemeId);
+          parts.push(grid);
+          headerHtml = '';
+          formHtml = '';
+          summaryHtml = '';
+          formSchemeId = null;
+          summarySchemeId = null;
+        };
+        for (const { type, html, schemeId, wrapped } of renderedBlocks) {
           if (type === 'CheckoutHeader') {
             headerHtml = wrapped;
           } else if (type === 'CheckoutForm') {
-            formHtml = wrapped;
+            formHtml = html;
+            formSchemeId = schemeId;
           } else if (type === 'CheckoutSummary') {
-            summaryHtml = wrapped;
+            summaryHtml = html;
+            summarySchemeId = schemeId;
           } else if (formHtml && summaryHtml) {
             // After grid pair found — push grid then continue with this block
-            parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml, headerHtml));
-            headerHtml = '';
-            formHtml = '';
-            summaryHtml = '';
+            pushCheckoutGrid();
             parts.push(wrapped);
           } else {
             parts.push(wrapped);
           }
         }
         if (formHtml && summaryHtml) {
-          parts.push(this.wrapCheckoutGrid(formHtml, summaryHtml, headerHtml));
+          pushCheckoutGrid();
         } else if (formHtml) {
           parts.push(headerHtml + formHtml);
         } else if (summaryHtml) {

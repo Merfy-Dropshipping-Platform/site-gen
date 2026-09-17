@@ -61,8 +61,29 @@ export function resolveCartDrawerSchemeId(data: unknown): string | undefined {
   try {
     const rev = data as CartDrawerRevisionShape | null;
     const cartContent = rev?.pagesData?.["page-cart"]?.content;
-    const validScheme = (v: unknown): string | undefined =>
-      typeof v === "string" && /^scheme-\d+$/.test(v) ? v : undefined;
+    // 18.09, баг тестера №20 («цв схема не применяется к заголовку, цене…»,
+    // третий заход): этот резолвер принимал ТОЛЬКО полную строку "scheme-N" —
+    // ровно тот же паттерн `typeof v === 'string'`, который уже задокументирован
+    // как системная дыра в `packages/theme-base/runtime/color-scheme.ts`
+    // (`schemeIdOf`/`schemeClassOf`): панель конструктора шлёт "scheme-2" ИЛИ
+    // голую "1" (разные контролы), а живая нормализация ревизии переводит это
+    // в ЧИСЛО. CartBody.astro каждой темы уже переживает оба случая
+    // (`String(colorScheme ?? 2).replace('scheme-','')` — замер live/tokens.css
+    // подтвердил `color-scheme-2` на секции), а ЭТОТ резолвер — нет: число/голую
+    // строку отбрасывал молча, `cartDrawerPaintRule` не рождался, и панель
+    // дровера (фон/заголовок/итого/кнопки) навсегда оставалась на литералах
+    // NtCartDrawer.astro (#000000/#999999/bg-white) независимо от схемы
+    // страницы «Корзина». Живой замер (u9fpo33bkmsd.merfy.ru, флюкс): секция
+    // CartBody несёт `color-scheme-2`, а `tokens.css` не содержит ни одного
+    // правила `cart-drawer` — то есть резолвер молчал именно так.
+    const validScheme = (v: unknown): string | undefined => {
+      if (typeof v === "number" && Number.isFinite(v)) return `scheme-${v}`;
+      if (typeof v === "string") {
+        if (/^scheme-\d+$/.test(v)) return v;
+        if (/^\d+$/.test(v)) return `scheme-${v}`;
+      }
+      return undefined;
+    };
     const findScheme = (t: string): string | undefined => {
       const blk = Array.isArray(cartContent)
         ? cartContent.find((b) => b?.type === t)

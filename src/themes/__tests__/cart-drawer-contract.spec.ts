@@ -70,11 +70,33 @@ describe('resolveCartDrawerGlobals', () => {
     expect(g2).toEqual({});
   });
 
-  it('non-string scheme value is ignored', () => {
+  // Баг тестера №20 (18.09, третий заход): живая нормализация ревизии
+  // переводит "scheme-N" в число ДО того, как этот резолвер его видит
+  // (см. коммент в cart-drawer-contract.ts). Раньше тест здесь требовал
+  // ИГНОРИРОВАТЬ число — это и было причиной, по которой панель дровера
+  // никогда не красилась: мерчант выбирал схему, `coerceGenericLegacyProps`
+  // отдавала число, а резолвер отбрасывал его молча.
+  it('numeric scheme value (post-normalisation shape) is accepted, normalised to scheme-N', () => {
     const g = resolveCartDrawerGlobals(
       withCart([{ type: 'CartBody', props: { colorScheme: 3 } }]),
     );
-    expect(g).toEqual({});
+    expect(g.__MERFY_CART_DRAWER_SCHEME__).toBe('scheme-3');
+  });
+
+  it('bare numeric string scheme value ("2", no "scheme-" prefix) is accepted', () => {
+    const g = resolveCartDrawerGlobals(
+      withCart([{ type: 'CartBody', props: { colorScheme: '2' } }]),
+    );
+    expect(g.__MERFY_CART_DRAWER_SCHEME__).toBe('scheme-2');
+  });
+
+  it('non-numeric garbage is still rejected (NaN, words, "scheme-" alone)', () => {
+    expect(
+      resolveCartDrawerGlobals(withCart([{ type: 'CartBody', props: { colorScheme: 'blue' } }])),
+    ).toEqual({});
+    expect(
+      resolveCartDrawerGlobals(withCart([{ type: 'CartBody', props: { colorScheme: NaN } }])),
+    ).toEqual({});
   });
 
   it('adds TITLE/CHECKOUT/EMPTY independently from trimmed theme settings only', () => {

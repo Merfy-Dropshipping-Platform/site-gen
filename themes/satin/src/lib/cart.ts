@@ -50,11 +50,18 @@ const api = createNtCart({
 							</div>
 							<div class="flex items-center justify-between">
 								<div class="inline-flex h-9 items-center rounded-[4px] border border-[rgb(var(--color-muted,153_153_153)/0.3)]">
-									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Уменьшить">−</button>
-									<span class="min-w-[28px] text-center font-manrope text-[14px]">${line.quantity}</span>
-									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center" aria-label="Увеличить">+</button>
+									<button type="button" data-cart-dec data-id="${line.id}" class="flex h-9 w-9 items-center justify-center text-[rgb(var(--color-text,0_0_0))]" aria-label="Уменьшить">−</button>
+									<span class="min-w-[28px] text-center font-manrope text-[14px] text-[rgb(var(--color-text,0_0_0))]">${line.quantity}</span>
+									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>
 								</div>
-								<span class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
+								<div class="flex items-baseline gap-2">
+									<span class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
+									${
+										typeof line.oldPrice === "number" && line.oldPrice > line.price
+											? `<span class="font-manrope text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through">${formatPrice(line.oldPrice * line.quantity)}</span>`
+											: ""
+									}
+								</div>
 							</div>
 						</div>
 					</li>

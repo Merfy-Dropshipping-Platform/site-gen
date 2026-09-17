@@ -7854,3 +7854,61 @@ theme-manifest.test.ts` 9/9. `packages/theme-contract` jest 418/419 (1
 Ветка `fix/b67-bloom-slideshow-layout`, worktree
 `.worktrees/b67-bloom-slideshow`, база `origin/main` `b7d4395a`, коммит
 `8e55aa97`. НЕ запушено. Другие темы не трогались.
+
+## 2026-09-17 — bloom: старая цена в корзине (повтор жалобы после 15-16.09)
+
+Владелец повторил жалобу дважды и уточнил: «Заголовок, количество, цена в
+корзине — это в теме Bloom. Плюс не отображается цена без скидки, тоже в
+корзине.»
+
+Замер по мишеням (страница CartBody.astro, легаси-монолит CartSection.astro,
+дровер cart.ts renderDrawerItem):
+
+| мишень | схема A | схема B | вердикт |
+|---|---|---|---|
+| заголовок «Корзина» (h1) | --color-heading | --color-heading | едет (уже было) |
+| название товара | --color-text | --color-text | едет (уже было) |
+| количество (степпер) | --color-text | --color-text | едет (уже было) |
+| текущая цена | --color-text | --color-text | едет (уже было) |
+| «Итого» (CartSummary) | --color-text | --color-text | едет (уже было) |
+| кнопки | --color-button-bg/text | --color-button-bg/text | едет (уже было) |
+| дровер: заголовок/панель/пусто/CTA | tokens.css cartDrawerPaintRule | тот же | едет (уже было) |
+| дровер: название/цена/счётчик строки | --color-text/--color-accent | тот же | едет (уже было) |
+| **старая цена (compareAt/oldPrice)** | **не рисуется вовсе** | **не рисуется вовсе** | **ДЕФЕКТ — единственный реальный** |
+
+Заголовок/количество/цена уже следуют схеме на этой ветке — фиксы 15-16.09
+(коммиты 8315a137, 8c2e7c32, 75895b45) стоят в origin/main, гварды
+`cart-page-scheme.spec.ts` / `cart-drawer-items-scheme.spec.ts` /
+`cart-drawer-scheme.spec.ts` / `bloom-cart-drawer-no-section-fallback.spec.ts`
+зелёные (82/82) ещё ДО моей правки. Единственный настоящий дефект — вторая
+половина жалобы: `line.oldPrice` существует в данных строки корзины, но
+bloom нигде его не рендерил (ни на странице, ни в легаси-секции), хотя
+rose и flux показывают его (`line-through`, `--color-muted`) в обоих местах.
+
+Правка: `themes/bloom/src/components/sections/CartBody.astro` и
+`CartSection.astro` — добавлен расчёт `totalOld` (`line.oldPrice >
+line.price ? formatCartPrice(line.oldPrice*line.quantity) : ""`) и разметка
+рядом с текущей ценой, паттерн один в один с rose/flux. Дровер (`cart.ts`)
+НЕ трогался: у rose/flux там тоже нет старой цены — трогать значило бы
+вводить новое расхождение, а не паритет.
+
+Сторож: новый `src/themes/__tests__/bloom-cart-old-price.spec.ts` (8
+проверок: наличие `line.oldPrice`, класс `line-through`, токен
+`--color-muted` вместо литерала). Саботирован руками ДО фикса — 6/8
+красных ровно на line-through/oldPrice/токене; после фикса — 8/8 зелёных.
+
+Проверено: `pnpm run build:theme-sections:all bloom` (пересобран, `grep
+line-through dist/theme-css/bloom.css` → 3 вхождения, `items-baseline` → 2);
+`bash ~/…/tools/pre-push.sh` — `test:section-snapshots` 155/155 (1
+осознанное обновление снимка bloom CartBody), конформанс satin красный —
+ПРЕДСУЩЕСТВУЮЩИЙ (satin не трогался); `packages/theme-vanilla
+theme-manifest.test.ts` 9/9; `packages/theme-contract` jest 418/419 (1
+предсуществующий красный `cli-validate.test.ts` про bloom
+`--product-card-padding`, не мой). Живьём на стендах и в конструкторе НЕ
+проверялось — не пушили, только скомпилированный рендер + jest. Состав
+панели/секций не менялся (canon). Другие темы, `tokens-css.ts`,
+`scheme-matrix.mjs`, Slideshow/MultiRows/MultiColumns не трогались.
+
+Ветка `fix/b72-bloom-cart-scheme-price`, worktree
+`.worktrees/b72-bloom-cart`, база `origin/main` `03fa8f7e`, коммит
+`bd31b20b`. НЕ запушено.

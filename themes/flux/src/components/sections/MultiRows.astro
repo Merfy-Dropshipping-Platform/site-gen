@@ -252,7 +252,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class={containerCls} style={paddingStyle}>
 		{/* Контентный контейнер widthCls (1320 канон) + ритм: группа [заголовок→ряды]
-		    gap-8 md:gap-12, между рядами gap-12 md:gap-16 (манера flux). */}
+		    gap-8 md:gap-12. МЕЖДУ РЯДАМИ — см. <ul> ниже: канон владельца
+		    2026-09-17 (Shopify Row, скриншоты редактора) — ряды идут ВПЛОТНУЮ,
+		    низ ряда N = верх ряда N+1, зазор РОВНО ноль на брейкпоинте, где ряд
+		    становится двухколоночным (lg:, тот же порог, что у стыка медиа/текста
+		    внутри ряда — media-text-pair.spec.ts). На мобильном (одна колонка)
+		    зазор НЕ убираем — иначе кнопка ряда N упирается прямо в фото ряда N+1
+		    и ряды читаются кашей (сторож multirows-row-gap.spec.ts). */}
 		<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12`}>
 			{
 				heading && !isFieldHidden('heading') && (
@@ -267,7 +273,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</h2>
 				)
 			}
-			<ul class="flex w-full flex-col gap-12 md:gap-16" role="list">
+			<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 				{
 					rows.map((r, i) => (
 						<li

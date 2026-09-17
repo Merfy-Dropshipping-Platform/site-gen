@@ -38,18 +38,52 @@ const SCHEMES = [
   scheme(3, '#111111', '#222222', '#ffffff'),
 ];
 
-/** Правило для карточки товара целиком (или '' если его нет). */
+/**
+ * ВСЕ правила карточки товара по порядку появления в CSS (может быть одно —
+ * безусловная самопривязка `--product-card-bg`, — или два, когда мерчант ещё
+ * и явно выбрал схему ИМЕННО для карточки: тогда второе правило переобъявляет
+ * ту же переменную поверх первого, и при равной специфичности побеждает ПО
+ * ПОРЯДКУ — оно идёт в CSS позже).
+ */
+function allCardRules(css: string): string[] {
+  const rules: string[] = [];
+  let from = 0;
+  for (;;) {
+    const at = css.indexOf('[data-nt$="-product-card"]', from);
+    if (at < 0) break;
+    const end = css.indexOf('}', at);
+    rules.push(css.slice(at, end + 1));
+    from = end + 1;
+  }
+  return rules;
+}
+
+/** Правило, которое РЕАЛЬНО побеждает на карточке (последнее в каскаде). */
 function cardRule(css: string): string {
-  const at = css.indexOf('[data-nt$="-product-card"]');
-  if (at < 0) return '';
-  const end = css.indexOf('}', at);
-  return css.slice(at, end + 1);
+  const rules = allCardRules(css);
+  return rules[rules.length - 1] ?? '';
 }
 
 describe('Настройки темы → «Карточки товара» → цветовая схема', () => {
-  it('без выбора схемы правило не появляется (ноль регрессии у существующих сайтов)', () => {
-    const css = buildTokensCss({ colorSchemes: SCHEMES }, 'rose');
-    expect(cardRule(css)).toBe('');
+  // b60 (2026-09-17): подложка карточки НЕ следовала схеме СЕКЦИИ, в которой
+  // карточка стоит (каталог/популярные товары/коллекции), а замирала на
+  // дефолтной схеме сайта — та же причина (`var()` внутри кастомного свойства
+  // резолвится на :root, где объявлен `--product-card-bg`), но проявляется
+  // БЕЗ какого-либо мерчантского выбора productCardScheme: обычная секция со
+  // своей `.color-scheme-N` — уже достаточное условие для бага. Замер в
+  // браузере (playwright, dist/theme-css/*.css + buildTokensCss) до фикса:
+  // rose/vanilla/bloom/satin/flux — во всех пяти computed background-color
+  // карточки совпадал между схемой 1 и схемой 4 (2 у flux), хотя сама
+  // `--color-surface` на карточке уже была верной для каждой схемы.
+  it('без выбора схемы правило всё равно есть — самопривязка --product-card-bg к своей секции', () => {
+    const css = buildTokensCss({ colorSchemes: SCHEMES, productCardStyle: 'card' }, 'rose');
+    const rules = allCardRules(css);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]).toContain('--product-card-bg:');
+    // Без явного мерчантского выбора схемы карточки самопривязка НЕ красит
+    // остальную палитру (bg/heading/text/кнопки) — только подложку. Полный
+    // оверрайд остаётся эксклюзивом productCardScheme (ниже).
+    expect(rules[0]).not.toMatch(/--color-bg:|--color-heading:|--color-text:/);
   });
 
   it('выбранная схема красит карточку своими цветами', () => {
@@ -90,11 +124,44 @@ describe('Настройки темы → «Карточки товара» → 
     expect(cardRule(css)).toContain('--product-card-bg: transparent');
   });
 
-  it('несуществующая схема ничего не ломает', () => {
+  it('несуществующая схема — только самопривязка, без цветового оверрайда', () => {
     const css = buildTokensCss(
-      { colorSchemes: SCHEMES, productCardScheme: 'scheme-99' },
+      { colorSchemes: SCHEMES, productCardScheme: 'scheme-99', productCardStyle: 'card' },
       'rose',
     );
-    expect(cardRule(css)).toBe('');
+    const rules = allCardRules(css);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]).toContain('--product-card-bg:');
+    expect(rules[0]).not.toMatch(/--color-bg:|--color-heading:|--color-text:/);
+  });
+});
+
+describe('b60: подложка карточки следует схеме СЕКЦИИ (без явного productCardScheme)', () => {
+  // Сторож главного бага задачи: карточка стоит в секции со своей
+  // `.color-scheme-N` (владелец выбрал схему для каталога/популярных
+  // товаров/коллекции), продуктовая схема КАРТОЧКИ мерчант не трогал. Правило
+  // самопривязки обязано резолвить `--color-surface` НА САМОЙ КАРТОЧКЕ (а не
+  // на :root), иначе оно бесполезно и баг возвращается молча.
+  it.each(['rose', 'vanilla', 'bloom', 'satin', 'flux'] as const)(
+    '%s: правило карточки читает var(--color-surface), а не литерал/чужую схему',
+    (theme) => {
+      const css = buildTokensCss({ productCardStyle: 'card' }, theme);
+      const rule = cardRule(css);
+      expect(rule).toContain('--product-card-bg:');
+      // Обязательно var(--color-surface — резолвится ПО МЕСТУ (на карточке),
+      // а не константа схемы по умолчанию, посчитанная заранее.
+      expect(rule).toMatch(/--product-card-bg:\s*rgb\(var\(--color-surface/);
+    },
+  );
+
+  it('regression guard: если --product-card-bg вернётся ТОЛЬКО в :root (без правила на карточке), тест обязан покраснеть', () => {
+    // Позитивная сторона того же инварианта: правило карточки — единственное
+    // место, где `--product-card-bg` резолвится в контексте секции. Если его
+    // убрать, `:root`-значение снова "заморозится" на дефолтной схеме сайта.
+    const css = buildTokensCss({ productCardStyle: 'card' }, 'rose');
+    const cardRuleText = cardRule(css);
+    const rootBlock = css.slice(0, css.indexOf('}') + 1);
+    expect(rootBlock).toContain('--product-card-bg:');
+    expect(cardRuleText).toContain('--product-card-bg:');
   });
 });

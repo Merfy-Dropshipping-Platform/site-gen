@@ -347,8 +347,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)
 		}
-		{/* Ряды: внешний gap-12 md:gap-20, ряд grid items-stretch gap-8 md:grid-cols-2 md:gap-10 (литерал CollectionRows.astro:50-52). */}
-		<div class="flex flex-col gap-12 md:gap-20">
+		{/* Ряд: grid items-stretch gap-8 md:grid-cols-2 md:gap-10 (литерал
+		    CollectionRows.astro:50-52). Зазор МЕЖДУ рядами — канон владельца
+		    2026-09-17 (Shopify Row): ряды ВПЛОТНУЮ, зазор РОВНО ноль на md:
+		    (satin переходит на двухколоночную раскладку ряда на md:, а не lg:,
+		    как остальные темы — media-text-pair.spec.ts). На мобильном (одна
+		    колонка) зазор оставлен, иначе ряды сливаются в кашу
+		    (multirows-row-gap.spec.ts). */}
+		<div class="flex flex-col gap-8 md:gap-0">
 			{
 				rows.map((row, i) => (
 					<div

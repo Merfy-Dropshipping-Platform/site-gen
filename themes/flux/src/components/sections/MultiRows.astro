@@ -277,11 +277,19 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</h2>
 				)
 			}
+			{/* Владелец 2026-09-17 (баг «раскладка ломается»): `lg:items-center` СНИМАЛ
+			    дефолтное растяжение grid-элементов на высоту ряда — медиа (фикс-аспект)
+			    и текст (высота по контенту) переставали совпадать по высоте на ЛЮБОЙ
+			    ширине ≥lg и ЛЮБОЙ комбинации Высота/Ширина/per-row size (паритет rose,
+			    см. её MultiRows.astro). Без items-center grid растягивает оба узла
+			    (align-items:normal ⇒ stretch), img внутри — object-cover (absolute
+			    inset-0 size-full), обрезается по новой высоте без искажений. Сторож:
+			    multirows-row-stretch.spec.ts. */}
 			<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 				{
 					rows.map((r, i) => (
 						<li
-							class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:items-center lg:gap-0${cardSurfaceCls}`}
+							class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${cardSurfaceCls}`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="rows"

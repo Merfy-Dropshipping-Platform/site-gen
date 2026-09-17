@@ -305,7 +305,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						    центрировался. Поэтому подстановки идут ПЕРЕД хвостом из
 						    литеральных классов. Имена классов в комментариях НЕ писать:
 						    сканер берёт их как кандидатов и маскирует такую пропажу. */}
-						<div class={`flex w-full flex-col ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)} lg:self-center`}>
+						{/* Владелец 2026-09-17 (баг «раскладка ломается»): `lg:self-center`
+						    снимал дефолтное растяжение ТОЛЬКО у текстовой колонки (медиа без
+						    оверрайда и так растягивалось grid'ом) — на ЛЮБОЙ комбинации
+						    Высота/Ширина/per-row size текст оставался высотой по контенту, а
+						    медиа тянулось на всю высоту ряда: два разных ответа на «высота
+						    ряда» у соседних колонок. Без self-center обе колонки растягиваются
+						    (align-items:normal ⇒ stretch), паритет rose/flux/bloom/satin.
+						    Сторож: multirows-row-stretch.spec.ts. */}
+						<div class={`flex w-full flex-col ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 							{r.heading && (
 								<h3
 									class={`font-vanilla-bitter ${r.headingCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}

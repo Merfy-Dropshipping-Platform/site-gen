@@ -8247,3 +8247,75 @@ image-подобным ключом на любой глубине, включа
 общий и бьёт так же по Hero, Gallery, MultiRows, ImageWithText, Video,
 MultiColumns, Collections. Ветка `fix/b88-slideshow-media`, коммит
 `c542d368`, залит в `main`.
+
+## 2026-09-18 (b90) — «Слайд-шоу»: кнопка не берёт цвет схемы при наведении
+
+Владелец 18.09, п.5: «не применяется цв схема к кнопке при наведении» (секция
+«Слайд-шоу», один сайт, темы переключаются).
+
+### Замер ДО
+
+Реальный `:hover` (Playwright, chromium, `page.locator(...).hover()`,
+рендер CTA слайда через `renderBlock` — та же лестница, что у витрины),
+две различимые тестовые схемы, все 5 тем:
+
+- `buttonStyle=solid` (канон-дефолт rose/vanilla/bloom/flux): фон УЖЕ ехал
+  за схемой (`bg 204,49,49 → 210,74,74`) — общий подстрочный фикс
+  `[class*="bg-[rgb(var(--color-button-bg"]:hover` (волна 17.09) его уже
+  покрывал. Здесь «замерла» не воспроизвелась.
+- `buttonStyle=outlined` (канон-дефолт satin, опция всех тем): рамка И
+  текст — ОБА красятся одним токеном `--color-button-bg` (заливки нет).
+  На `:hover` — БИТ-В-БИТ равны покою на ОБЕИХ схемах у rose/bloom/flux
+  (satin — своя ветка разметки, см. ниже; vanilla — отдельный дефект,
+  см. «Не починено»). Причина та же, что у прошлых волн: `hover:opacity-*`
+  не читает `border-color`/`color`, только альфу композитинга.
+
+### Починено
+
+`[class*="border-[rgb(var(--color-button-bg"]:hover` и
+`[class*="text-[rgb(var(--color-button-bg"]:hover` — те же два правила
+(подстрока класса, `!important`, фолбэк на покой), что уже стояли для
+`bg-`/`text-` пар `button`/`button-2`, добавлены в `@layer base` пяти
+`themes/<t>/src/styles/global.css` (rose, vanilla, satin, bloom, flux).
+Механизм общий и системный (не патч одного файла порта) — тем же приёмом
+чинится ЛЮБАЯ обведённая кнопка на `--color-button-bg`, включая Hero
+(тот же паттерн, тот же файл, `FeaturedProduct`/`MultiRows`/`Popular`/
+`ContactForm`/`MainText`/`ImageWithText`/`Newsletter`/`TextBlock`).
+
+Замер ПОСЛЕ (те же условия): rose/bloom/flux/satin — рамка и текст едут
+`204,49,49 → 210,74,74` (схема 1) / `0,0,0 → 31,31,31` (схема 2).
+
+### Не починено (отдельный дефект, вне бюджета б90)
+
+vanilla: `outlined`-CTA «Слайд-шоу» красит рамку/текст `--color-primary`
+(паттерн «care-бэнда», общий с Gallery), а `--color-primary` мерчантская
+схема (`schemeToVars`) вообще НЕ печатает — покой тоже не едет за схемой,
+не только наведение. Шире Slideshow, требует отдельной задачи на
+`--color-primary`/схему.
+
+### Сторож
+
+`src/themes/__tests__/section-scheme-targets.spec.ts`, describe
+`[б90] «Слайд-шоу» · CTA outlined · наведение читает --color-button-bg-hover`
+(8 тестов): по source читает `border-`/`text-` catch-all правила в
+global.css четырёх тем (rose/bloom/flux/satin), и живым рендером Slideshow
+(`buttonStyle=outlined`) проверяет, что CTA-класс реально содержит
+подстроку, под которую подпадает фикс (rose/vanilla/bloom/flux — vanilla
+явно фиксируется на `--color-primary`, чтобы не выдать ложный зелёный по
+чужому токену).
+
+Саботаж руками: убрал обе новые строки из `themes/rose/.../global.css` —
+упал ровно ожидаемый тест (`rose · … найденоBorder/найденоText: false`),
+имя темы и цели видно в diff. Восстановлено → снова зелёный, 8/8.
+
+### Проверки
+
+`section-scheme-targets.spec.ts` 159/159 (весь файл, включая старые
+кейсы — регрессий нет). Все существующие `slideshow-*`/
+`satin-conformance-slideshow-renderer` сюиты — 120/120. `scheme-matrix.mjs
+--bad` — один оставшийся «плохой» кейс (`flux Product фон кнопки :hover`,
+`FeaturedProduct.astro:454`) — файл не трогался этой задачей, это чужой
+долг, не регрессия.
+
+Ветка `fix/b90-slide-button-hover` (worktree `/tmp/b90-slide-hover`),
+**НЕ запушена**.

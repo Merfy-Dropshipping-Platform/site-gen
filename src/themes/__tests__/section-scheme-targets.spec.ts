@@ -904,3 +904,92 @@ describe("flux · «Товар» · дополнительная (динамич
     });
   });
 });
+
+/**
+ * [б90] «Слайд-шоу»: не применяется цветовая схема к кнопке при наведении
+ * (владелец 18.09, п.5). CTA слайда в стиле `buttonStyle=solid` уже читал
+ * `--color-button-bg-hover` через общий подстрочный фикс `[class*="bg-[rgb(
+ * var(--color-button-bg"]:hover` (global.css, волна 17.09) — «замерла» там не
+ * воспроизводится. Ловится «обведённый» стиль (`outlined`) — канон-дефолт
+ * satin и опция всех тем: рамка И текст красятся ОДНИМ токеном
+ * `--color-button-bg` (заливки нет), а его подстрока — `text-[rgb(var(--
+ * color-button-bg` / `border-[rgb(var(--color-button-bg` — под старый фикс не
+ * попадала (он ловит только `bg-[rgb(var(--color-button-bg` и `text-[rgb(var(
+ * --color-button-text`). Кнопка оставалась на голом `hover:opacity-*`,
+ * который не трогает `border-color`/`color` — замер (chromium, реальный
+ * `:hover`, ДВЕ различимые схемы): рамка/текст были БИТ-В-БИТ равны покою на
+ * ОБЕИХ схемах. Фикс — тот же приём подстроки класса, что уже стоит для
+ * `bg-`/`text-`-button/button-2 пар.
+ *
+ * vanilla — отдельный случай: её `outlined` CTA красит рамку/текст
+ * `--color-primary` (паттерн Gallery, НЕ `--color-button-bg`), а
+ * `--color-primary` мерчантская схема вообще не печатает (see «мишени секций
+ * … НЕ считается токеном схемы» выше) — покой тоже не едет за схемой. Это
+ * отдельный, более широкий дефект вне бюджета б90; сторож её сюда не тянет.
+ */
+describe("[б90] «Слайд-шоу» · CTA outlined · наведение читает --color-button-bg-hover", () => {
+  const THEMES_WITH_FIX = ["rose", "bloom", "flux", "satin"] as const;
+
+  const globalCssOf = (theme: string): string =>
+    readFileSync(
+      resolve(SITES_ROOT, "themes", theme, "src", "styles", "global.css"),
+      "utf8",
+    );
+
+  it.each(THEMES_WITH_FIX)("%s · global.css несёт подстрочный фикс border/text по --color-button-bg", (theme) => {
+    const css = globalCssOf(theme);
+    const borderRule = /\[class\*="border-\[rgb\(var\(--color-button-bg"\]:hover\s*\{([^}]*)\}/.exec(css)?.[1];
+    const textRule = /\[class\*="text-\[rgb\(var\(--color-button-bg"\]:hover\s*\{([^}]*)\}/.exec(css)?.[1];
+    expect({ theme, найденоBorder: !!borderRule, найденоText: !!textRule }).toEqual({
+      theme,
+      найденоBorder: true,
+      найденоText: true,
+    });
+    expect(borderRule).toMatch(/border-color\s*:\s*rgb\(var\(--color-button-bg-hover/);
+    expect(textRule).toMatch(/color\s*:\s*rgb\(var\(--color-button-bg-hover/);
+    // Саботаж «вернули на filter/opacity» ловится буквально: без rgb(var(…
+    // --color-button-bg-hover…)) правило не считается найденным.
+  });
+
+  it.each(["rose", "vanilla", "bloom", "flux"] as const)(
+    "%s · живой рендер Slideshow(outlined) — CTA класс реально ловится фиксом (подстрока есть в разметке)",
+    (theme) => {
+      if (!built(theme)) throw new Error(`тема ${theme} не собрана`);
+      const html = renderBlock(theme, "Slideshow", {
+        colorScheme: `scheme-${SCHEME_A}`,
+        buttonStyle: "outlined",
+        slides: [
+          {
+            id: "s1",
+            imageUrl: "https://example.test/a.jpg",
+            heading: "Слайд-шоу",
+            buttonText: "Кнопка",
+            buttonLink: "/x",
+            button: { text: "Кнопка", link: "/x" },
+          },
+        ],
+      });
+      const doc = require("node-html-parser").parse(html);
+      const cta = doc
+        .querySelectorAll("a")
+        .find((el: { text: string }) => el.text.trim() === "Кнопка");
+      expect({ theme, найдена: !!cta }).toEqual({ theme, найдена: true });
+      const cls = cta!.getAttribute("class") ?? "";
+      if (theme === "vanilla") {
+        // vanilla оставлена на --color-primary (см. комментарий выше) — фикс
+        // этого дефекта в бюджет б90 не входит, гард это не должен скрывать
+        // ложным зелёным по чужому классу.
+        expect(cls).toContain("border-[rgb(var(--color-primary");
+        return;
+      }
+      expect({ theme, cls }).toEqual({
+        theme,
+        cls: expect.stringContaining("border-[rgb(var(--color-button-bg"),
+      });
+      expect({ theme, cls }).toEqual({
+        theme,
+        cls: expect.stringContaining("text-[rgb(var(--color-button-bg"),
+      });
+    },
+  );
+});

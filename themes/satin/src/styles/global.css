@@ -1021,4 +1021,20 @@ blockquote {
   [class*="text-[rgb(var(--color-button-2-text"]:hover {
     color: rgb(var(--color-button-2-text-hover, var(--color-button-2-text, 255 255 255))) !important;
   }
+  /* «Обведённая» кнопка (buttonStyle=outlined) красит рамку И текст ОДНИМ
+     токеном --color-button-bg (заливки нет — рамка/текст несут её роль на
+     прозрачном фоне), поэтому наведение должно читать --color-button-bg-hover,
+     а не -text-hover. У ContactForm/MainText/Hero/ImageWithText/MultiRows/
+     Newsletter/TextBlock рамка/текст оставались на hover:opacity-* и не
+     меняли цвет при наведении вовсе (тот же дефект, что владелец поймал у
+     секции «Слайд-шоу» 18.09, п.5 — satin-CTA слайд-шоу его не несёт, у неё
+     свой `.satin-slide-cta:hover`, но остальные секции идут этим же паттерном).
+     Тот же приём подстроки класса, что у пары правил выше. */
+  [class*="border-[rgb(var(--color-button-bg"]:hover {
+    border-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0))) !important;
+  }
+  [class*="text-[rgb(var(--color-button-bg"]:hover {
+    color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0))) !important;
+    opacity: 1 !important;
+  }
 }

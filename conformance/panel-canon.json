@@ -4274,13 +4274,23 @@
             "label": "Выравнивание",
             "visibility": "panel"
           },
-          "containerEnabled": {
+          "layout": {
             "type": "toggle",
-            "label": "Контейнер",
+            "label": "Раскладка",
             "visibility": "panel",
             "options": [
-              "true=Показать",
-              "false=Скрыть"
+              "no-overlap=Без наложения",
+              "overlap=С наложением"
+            ]
+          },
+          "position": {
+            "type": "select",
+            "label": "Положение",
+            "visibility": "panel",
+            "options": [
+              "top=Сверху",
+              "middle=По центру",
+              "bottom=Снизу"
             ]
           },
           "colorScheme": {

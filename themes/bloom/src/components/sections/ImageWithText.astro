@@ -98,23 +98,42 @@ const widthCls =
 				? "max-w-none"
 				: "max-w-[1320px]";
 
-// Пункт [23] репорта тестера 15.09: тумблер «Контейнер» (containerEnabled) —
-// ТОЛЬКО у bloom (владелец). Формат и дефолт ('false') дословно как у
-// MultiColumns/MultiRows/CollapsibleSection (канон дизайнера Nikita,
-// project_container_canon_audit): ВКЛ → surface-бокс на текстовую колонку
-// (единственный «элемент» пары image+text, аналог Hero boxedCls под текстом);
-// ВЫКЛ (дефолт) → без подложки, как было — нет регрессии у существующих секций.
-const containerEnabled = String(p.containerEnabled ?? "false") === "true";
-const containerSurfaceCls = containerEnabled
-	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8"
+// Владелец 2026-09-17, дословно: «У Shopify видишь какие состояния у текста
+// с изображением. <…> у нас это настройка контейнер. И нужно сделать так же,
+// чтобы менялись расположения. И сделать пока это только на Bloom» — тумблер
+// «Контейнер» (пункт [23] репорта 15.09) заменён на Shopify-раскладку.
+// `layout`: 'no-overlap' (дефолт, прежнее поведение — колонки бок о бок) |
+// 'overlap' (карточка наезжает на фото). Легаси `containerEnabled` читается
+// как fallback — сайты, сохранённые между 15.09 и сегодня с ВКЛ тумблером,
+// получают 'overlap' (тот же смысл «карточка выделена поверх»).
+const layout =
+	p.layout === "overlap" || String(p.containerEnabled ?? "") === "true" ? "overlap" : "no-overlap";
+const isOverlap = layout === "overlap";
+// Канон position: 'top' | 'middle' (дефолт, прежнее lg:items-center) | 'bottom'
+// — вертикальное положение карточки относительно фото (Shopify Position).
+const position = p.position === "top" ? "top" : p.position === "bottom" ? "bottom" : "middle";
+const positionItemsCls =
+	position === "top" ? "lg:items-start" : position === "bottom" ? "lg:items-end" : "lg:items-center";
+const positionAbsCls =
+	position === "top" ? "lg:top-6" : position === "bottom" ? "lg:bottom-6" : "lg:top-1/2 lg:-translate-y-1/2";
+
+// Карточка с подложкой в режиме наложения (иначе текст нечитаем на фото) —
+// тот же surface-класс, что раньше давал тумблер «Контейнер».
+const containerSurfaceCls = isOverlap
+	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8 shadow-xl"
 	: "";
-// Канон containerColorScheme (hidden): класс схемы на внутреннем контейнере,
-// ТОЛЬКО пока «Контейнер» включён (канон Nikita: при ВЫКЛ боксов нет → работает
-// основная секционная схема, а не схема контейнера).
 const containerSchemeCls =
-	containerEnabled && typeof p.containerColorScheme === "string" && p.containerColorScheme
+	isOverlap && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
+
+// Ширина карточки при наложении — Shopify Width меняет пропорцию
+// карточка/фото (узкая карточка → фото крупнее; широкая — карточка почти во
+// всю ширину). В режиме «Без наложения» `width` работает как раньше —
+// ограничивает max-width всего блока (widthCls ниже), пропорция колонок 50/50.
+const overlapCardWidthCls =
+	p.width === "small" ? "lg:w-[36%]" : p.width === "large" ? "lg:w-[62%]" : "lg:w-[46%]";
+const overlapSideCls = imageLeft ? "lg:right-4 xl:right-8" : "lg:left-4 xl:left-8";
 
 // Кнопка: canon button {text, href|link} — розовый pill манеры §3. Мерчант задал
 // текст → его; пусто → дословный Figma-плейсхолдер «Кнопка» (1:19335). Кнопка
@@ -165,16 +184,20 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div
 		{/* lg:gap-10 — зазор пары по эталону rose (владелец 2026-09-15: «как пример работы можешь брать у розы»). rose держит 40px при всех трёх «Ширинах» в обоих блоках семьи; у bloom было 16px (`gap-4` без lg-ступени).
-		    Мобильный `gap-4` не трогаем — на 375px пара стоит в стопку. */}
-		{/* Порядок как у rose: `lg:items-center` НЕ последний перед интерполяцией.
+		    Мобильный `gap-4` не трогаем — на 375px пара стоит в стопку (и при layout='overlap' наезда на мобиле НЕТ — карточка идёт обычным блоком под фото). */}
+		{/* Порядок как у rose: `lg:items-center`/`positionItemsCls` НЕ последний перед интерполяцией.
 		    Класс, приклеенный к `${`, сканер Tailwind не извлекает — утилита не попадает
 		    в бандл темы, и правило молча не работает (у bloom так и было после main 4d4a11ce). */}
-		class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 lg:items-center lg:gap-10`}
+		class={
+			isOverlap
+				? `relative mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-1 lg:gap-0`
+				: `mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 ${positionItemsCls} lg:gap-10`
+		}
 		data-animate
 	>
 		{!isFieldHidden('image') && (
 		<div
-			class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}`}
+			class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${isOverlap ? "" : imageLeft ? "" : " lg:order-2"}`}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"
@@ -191,7 +214,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		)}
 
 		<div
-			class={`flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`}
+			class={
+				isOverlap
+					? `relative z-10 flex w-full flex-col gap-6 lg:absolute ${overlapCardWidthCls} ${positionAbsCls} ${overlapSideCls}${containerSurfaceCls}${containerSchemeCls}`
+					: `flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
+			}
 		>
 			{!isFieldHidden('heading') && (
 				<h2

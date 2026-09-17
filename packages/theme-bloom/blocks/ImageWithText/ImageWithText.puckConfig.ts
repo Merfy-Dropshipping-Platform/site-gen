@@ -8,12 +8,18 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
  * packages/theme-satin/blocks/ImageWithText/ImageWithText.puckConfig.ts, иначе
  * compile-astro-blocks.mjs падает).
  *
- * Единственное отличие от канона — поле `containerEnabled` (репорт тестера
- * 15.09, пункт [23]: «В Изображении с текстом у bloom добавить в сайдбар
- * тумблер контейнера (вкл/выкл)», владелец: «только в этой теме»). Формат
- * ТОТ ЖЕ toggle, что у MultiColumns/MultiRows/CollapsibleSection (канон
- * дизайнера Nikita, project_container_canon_audit): значения 'true'/'false',
- * дефолт 'false', контейнер = surface-бокс на текстовую колонку. Рендер —
+ * Отличия от канона — раскладка «как у Shopify», ТОЛЬКО bloom (владелец,
+ * 2026-09-17, дословно): «У Shopify видишь какие состояния у текста с
+ * изображением. То есть тут какая-то вот настройка layout, а у нас это
+ * настройка контейнер. И нужно сделать так же, чтобы менялись расположения.
+ * И сделать пока это только на Bloom». Тумблер «Контейнер» (пункт [23]
+ * репорта 15.09) заменён на:
+ *   - `layout`: 'no-overlap' (дефолт, как раньше) | 'overlap' — карточка
+ *     наезжает на фото (Shopify Layout: No overlap / Overlap);
+ *   - `position`: 'top' | 'middle' (дефолт) | 'bottom' — положение карточки
+ *     по вертикали (Shopify Position).
+ * `width` (уже был в каноне) при `layout: 'overlap'` дополнительно меняет
+ * пропорцию карточка/фото (Shopify Width). Рендер —
  * themes/bloom/src/components/sections/ImageWithText.astro.
  */
 export const ImageWithTextSchema = z.object({
@@ -45,8 +51,9 @@ export const ImageWithTextSchema = z.object({
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   colorScheme: z.string().optional(),
-  // Пункт [23]: тумблер «Контейнер» — только у bloom.
-  containerEnabled: z.enum(['true', 'false']).optional(),
+  // Shopify-раскладка — только у bloom (владелец, 2026-09-17).
+  layout: z.enum(['no-overlap', 'overlap']).optional(),
+  position: z.enum(['top', 'middle', 'bottom']).optional(),
   containerColorScheme: z.string().optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
@@ -95,16 +102,24 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       ],
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },
-    // Пункт [23] репорта тестера 15.09 — тумблер «Контейнер», ТОЛЬКО bloom.
-    // Формат дословно как у MultiColumns/MultiRows/CollapsibleSection.
-    containerEnabled: {
+    // Владелец 2026-09-17 — Shopify-раскладка, ТОЛЬКО bloom.
+    layout: {
       type: 'toggle',
-      label: 'Контейнер',
+      label: 'Раскладка',
       options: [
-        { label: 'Показать', value: 'true' },
-        { label: 'Скрыть', value: 'false' },
+        { label: 'Без наложения', value: 'no-overlap' },
+        { label: 'С наложением', value: 'overlap' },
       ],
     } as any,
+    position: {
+      type: 'select',
+      label: 'Положение',
+      options: [
+        { label: 'Сверху', value: 'top' },
+        { label: 'По центру', value: 'middle' },
+        { label: 'Снизу', value: 'bottom' },
+      ],
+    },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
     containerColorScheme: { type: 'hidden', label: '' },
     padding: { type: 'padding', label: 'Отступы' },
@@ -163,10 +178,11 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     alignment: 'left',
     size: 'medium',
     width: 'large',
-    // Дефолт ВЫКЛ (канон Nikita: containerEnabled default 'false' —
-    // паритет с MultiColumns/MultiRows/CollapsibleSection). Существующие
-    // секции bloom без этого поля рисуют как прежде — нет регрессии.
-    containerEnabled: 'false',
+    // Дефолты сохраняют текущий вид (нет регрессии для существующих секций
+    // bloom без этих полей): 'no-overlap' — прежняя раскладка бок о бок,
+    // 'middle' — прежнее вертикальное центрирование (lg:items-center).
+    layout: 'no-overlap',
+    position: 'middle',
   },
   schema: ImageWithTextSchema,
   maxInstances: null,

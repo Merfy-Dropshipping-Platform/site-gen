@@ -2,8 +2,9 @@
 import { inlineFormat } from "../../lib/rich-text";
 // Фаза B: новая канон-секция Slideshow в манере bloom (см. themes/bloom/MANNER.md;
 // процесс-эталон — rose T17 Slideshow). Схема полей = packages/theme-base/blocks/
-// Slideshow/Slideshow.puckConfig.ts. Композиция = полотно Hero bloom: лестница
-// аспектов героя, контент блоком max-w-[330px] в левом нижнем углу, розовая
+// Slideshow/Slideshow.puckConfig.ts. Композиция = полотно Hero bloom: контент
+// блоком (max-w-[480px], поднято с 330 багом b67 2026-09-17 — своя лестница
+// шрифтов у Slideshow, см. slideHeadingCls) в левом нижнем углу, розовая
 // pill-CTA (токены кнопки-1), каскад hero-animate-1/2/3 на активном слайде.
 // Параметры скрипту — ТОЛЬКО data-атрибуты (define:vars компилятором секций не
 // поддерживается); идемпотентность — data-slideshow-hydrated; реинициализация —
@@ -57,16 +58,27 @@ const PLACEHOLDER_SLIDE = {
 const hasSlides = Array.isArray(p.slides) && p.slides.length > 0;
 const rawSlides = hasSlides ? p.slides : [PLACEHOLDER_SLIDE];
 
-// Заголовок слайда — лестница hero h1 манеры (§9): large (canon-носитель
-// blockDefaults Hero) и отсутствие = литерал верстальщика 18/md:20;
-// medium 15/17, small 13/14. Цвета — токены с фоллбеком родного #E38E9F.
+// Заголовок слайда — жалоба владельца 2026-09-17 (баг b67): заголовок слайд-шоу
+// был РОВНО той же лестницей, что вспомогательный hero-подзаголовок Hero.astro
+// (§9) — 18/md:20 против текста 14/md:16, то есть заголовок читался как обычный
+// текст, а не как заголовок секции. Слайд-шоу — самостоятельная секция (не Hero,
+// делить с ним лестницу шрифтов не обязано), поэтому здесь лестница ПОДНЯТА
+// отдельно от Hero (Hero не трогаем — его типографику владелец зафиксировал
+// коммитом ba285785). Эталон поведения — rose/flux (там заголовок слайд-шоу
+// заметно крупнее текста), но без копирования их пиксельных значений — цвета,
+// шрифт (font-urbanist) и манера bloom (низ-лево, розовый pill) сохранены.
+// large/отсутствие 28/md:34 (было 18/20), medium 22/md:27 (было 15/17),
+// small 16/md:19 (было 13/14).
 const slideHeadingCls = (s: string | undefined) =>
 	s === "small"
-		? "font-urbanist text-[13px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[14px]"
+		? "font-urbanist text-[16px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[19px]"
 		: s === "medium"
-			? "font-urbanist text-[15px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[17px]"
-			: "font-urbanist text-[18px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[20px]";
-// Текст слайда — лестница hero-подзаголовка (§9): 14/16 литерал → 12/14 → 10/11.
+			? "font-urbanist text-[22px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[27px]"
+			: "font-urbanist text-[28px] font-normal leading-none text-[rgb(var(--color-heading,227_142_159))] md:text-[34px]";
+// Текст слайда — лестница НЕ трогается жалобой b67 (владелец указал заголовок,
+// ширину блока и кнопку; текст-абзац уже читался нормальным текстом, только
+// заголовок путался с ним по размеру). large/отсутствие 14/16, medium 12/14,
+// small 10/11.
 const slideTextCls = (s: string | undefined) =>
 	s === "small"
 		? "font-inter text-[10px] font-light leading-[1.2] text-[rgb(var(--color-text,227_142_159))] md:text-[11px]"
@@ -211,12 +223,17 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: solid (canon-default) = розовая pill-CTA героя дословно
-// (токены кнопки-1 §3); outlined = контурный pill ветки героя.
+// Канон buttonStyle: solid (canon-default) = розовая pill-CTA героя (токены
+// кнопки-1 §3); outlined = контурный pill ветки героя. Жалоба владельца
+// 2026-09-17 (баг b67): px-4 БЕЗ минимальной ширины давал 85×48 на коротком
+// «Кнопка» — pill выглядел обрезанным по подписи. Добавлен min-w-[150px] и
+// увеличены паддинг (px-6) и высота (h-[52px], было h-12=48) — то же
+// направление, что у rose/flux (там кнопка тоже не уже ~120-160px), розовый
+// pill-стиль bloom (rounded-full, font-inter) не меняется.
 const ctaCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95"
-		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95";
+		? "inline-flex h-[52px] min-w-[150px] items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95"
+		: "inline-flex h-[52px] min-w-[150px] items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -260,13 +277,19 @@ const paddingStyle = p.padding
 								aria-hidden="true"
 							/>
 						)}
-						{/* Контент в нижнем углу полотна — манера героя bloom (блок 330px,
-						    поля px-4 md:px-20 2xl:px-[300px], pb-8/12/20). */}
+						{/* Контент в нижнем углу полотна — манера героя bloom (поля
+						    px-4 md:px-20 2xl:px-[300px], pb-8/12/20). Ширина блока —
+						    жалоба владельца 2026-09-17 (баг b67): 330px (унаследовано
+						    от Hero) зажимало поднятый заголовок (см. slideHeadingCls
+						    выше) в узкую колонку — 3-4 переноса строки на десктопе.
+						    Поднято до 480px — Слайд-шоу самостоятельная секция, ширина
+						    Hero (330) не трогается. Угол (низ-лево) — манера bloom —
+						    сохранён, только блок дышит просторнее. */}
 						<div
 							class={`relative z-10 flex h-full w-full px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px] ${s.posCls}`}
 						>
 							<div
-								class={`flex w-full max-w-[330px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6" : ""}`}
+								class={`flex w-full max-w-[480px] flex-col gap-4 ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))]/90 p-6" : ""}`}
 							>
 								<div class={`flex flex-col gap-2 ${s.alignCls}`}>
 									{s.heading && <h2 class={`hero-animate-1 ${s.headingCls}`} set:html={inlineFormat(s.heading)} />}

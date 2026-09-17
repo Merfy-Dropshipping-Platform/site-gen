@@ -115,7 +115,11 @@ describe("«Настройки темы» → «Корзина» → цвето�
     });
 
     it("мусор в настройке не съедает запасной источник", () => {
-      for (const bad of ["", "   ", "scheme-", "schema-2", 42, null, {}]) {
+      // 42 убран из списка «мусора» баг-тестера №20 (18.09, третий заход):
+      // живая нормализация ревизии переводит "scheme-N" в ЧИСЛО ДО того, как
+      // этот резолвер его видит — число теперь ЗАКОННАЯ форма схемы, не мусор
+      // (см. отдельный тест ниже и коммент в cart-drawer-contract.ts).
+      for (const bad of ["", "   ", "scheme-", "schema-2", null, {}, NaN]) {
         const g = resolveCartDrawerGlobals({
           themeSettings: { cartDrawerScheme: bad },
           pagesData: {
@@ -128,6 +132,22 @@ describe("«Настройки темы» → «Корзина» → цвето�
         });
         expect(g.__MERFY_CART_DRAWER_SCHEME__).toBe("scheme-1");
       }
+    });
+
+    // Баг тестера №20 (18.09, третий заход, дословно): «цв схема не
+    // применяется к заголовку, цене, количества кнопка и цифры». Живой замер
+    // (flux, свежий стенд u9fpo33bkmsd.merfy.ru, СОБРАННЫЙ 18.09): секция
+    // CartBody на /cart несёт `color-scheme-2` (то есть проп ЖИВ), а
+    // `tokens.css` витрины не содержит НИ ОДНОГО правила `cart-drawer` —
+    // резолвер молчал. Явную настройку конструктор тоже может прислать
+    // числом (та же «голая N» форма, что описана в
+    // packages/theme-base/runtime/color-scheme.ts) — раньше resolveCartDrawer
+    // GlobalsBackward отбрасывал число молча.
+    it("числовая настройка cartDrawerScheme (пост-нормализация) принимается, а не отбрасывается", () => {
+      const g = resolveCartDrawerGlobals({
+        themeSettings: { cartDrawerScheme: 2 },
+      });
+      expect(g.__MERFY_CART_DRAWER_SCHEME__).toBe("scheme-2");
     });
 
     it("пустая настройка и пустая корзина по-прежнему дают ноль глобалов", () => {

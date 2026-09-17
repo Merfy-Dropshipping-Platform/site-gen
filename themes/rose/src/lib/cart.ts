@@ -50,7 +50,14 @@ const api = createNtCart({
 									<span class="min-w-[28px] text-center font-manrope text-[14px] text-[rgb(var(--color-text,0_0_0))]">${line.quantity}</span>
 									<button type="button" data-cart-inc data-id="${line.id}" class="flex h-9 w-9 items-center justify-center font-manrope text-[16px] text-[rgb(var(--color-text,0_0_0))]" aria-label="Увеличить">+</button>
 								</div>
-								<span class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
+								<div class="flex items-baseline gap-2">
+									<span class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
+									${
+										typeof line.oldPrice === "number" && line.oldPrice > line.price
+											? `<span class="font-manrope text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] line-through">${formatPrice(line.oldPrice * line.quantity)}</span>`
+											: ""
+									}
+								</div>
 							</div>
 						</div>
 					</li>

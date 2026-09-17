@@ -63,6 +63,29 @@ describe("resolveCartDrawerSchemeId — резолвит схему дровер
     expect(resolveCartDrawerSchemeId(PAGE_CART_WITH_SCHEME)).toBe("scheme-3");
   });
 
+  // Баг тестера №20 (18.09, третий заход): фикстура выше (PAGE_CART_WITH_SCHEME)
+  // берёт УЖЕ нормализованную строку "scheme-3" — ровно та форма, которую
+  // резолвер и раньше принимал, поэтому этот файл был зелёным, пока живой
+  // дровер оставался белым (гард проверял правильную проводку НЕПРАВИЛЬной
+  // формой данных — «зелёный гард ничего не доказывает»). Живой замер
+  // (flux, u9fpo33bkmsd.merfy.ru, свежая сборка 18.09): CartBody на /cart
+  // несёт `color-scheme-2`, а `props.colorScheme`, который реально долетает
+  // до `ctx.revisionData` на этой стадии сборки, — ЧИСЛО, не строка
+  // "scheme-N" (тот же паттерн, что и `schemeIdOf`/`schemeClassOf` в
+  // packages/theme-base/runtime/color-scheme.ts документируют для блоков).
+  it("CartBody.colorScheme числом (пост-нормализация) — фолбэк тоже резолвится", () => {
+    expect(
+      resolveCartDrawerSchemeId({
+        pagesData: {
+          "page-cart": {
+            content: [{ type: "CartBody", props: { colorScheme: 2 } }],
+          },
+        },
+        themeSettings: {},
+      }),
+    ).toBe("scheme-2");
+  });
+
   it("без CartBody — фолбэк на CartSummary", () => {
     expect(
       resolveCartDrawerSchemeId({
@@ -107,6 +130,27 @@ describe("buildTokensCss + фолбэк CartBody — панель дровера
       { colorSchemes: [SCHEME], cartDrawerScheme },
       "flux",
     );
+    const rule = css.match(/\[data-nt\$="cart-drawer"\][^{]*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule).not.toBe("");
+    expect(rule).toContain("--color-bg: 17 17 17");
+    expect(rule).toContain("--color-heading: 255 255 255");
+  });
+
+  // Полная цепочка бага №20: revisionData с ЧИСЛОВЫМ colorScheme (реальная
+  // пост-нормализация, не тестовая строка) → resolveCartDrawerSchemeId →
+  // buildTokensCss всё ещё красит правило дровера конца в конец.
+  it("та же цепочка, но CartBody.colorScheme — число (реальная форма прод-данных)", () => {
+    const cartDrawerScheme = resolveCartDrawerSchemeId({
+      pagesData: {
+        "page-cart": {
+          content: [{ type: "CartBody", props: { colorScheme: 3 } }],
+        },
+      },
+      themeSettings: {},
+    });
+    expect(cartDrawerScheme).toBe("scheme-3");
+
+    const css = buildTokensCss({ colorSchemes: [SCHEME], cartDrawerScheme }, "flux");
     const rule = css.match(/\[data-nt\$="cart-drawer"\][^{]*\{[^}]*\}/)?.[0] ?? "";
     expect(rule).not.toBe("");
     expect(rule).toContain("--color-bg: 17 17 17");

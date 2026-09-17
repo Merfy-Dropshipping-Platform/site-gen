@@ -380,6 +380,14 @@ const paddingStyle = p.padding
 	? `padding-top:${Math.min(Number(p.padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(p.padding.bottom) || 0, 160)}px;`
 	: undefined;
 const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-", "")}`;
+// «Купить сейчас» — ДОПОЛНИТЕЛЬНАЯ (динамическая) кнопка, канон
+// `packages/theme-base/blocks/Product/ProductActions.astro`: свой набор токенов
+// `--color-button-secondary-*` (не общий `--color-button-*` основной кнопки) +
+// явный onmouseover/onmouseout свап на `-hover` пару, как у эталона rose.
+// Жалоба владельца 17.09: «к дополнительной кнопке [цвет при наведении] нет» —
+// было `hover:opacity-90`, который НЕ меняет rgb() фона/текста, только альфу.
+const SEC_BG_FALLBACK = "30 41 82";
+const SEC_TEXT_FALLBACK = "255 255 255";
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -579,7 +587,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<button
 								type="button"
 								data-cfg-buy
-								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,30_41_82))] px-6 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] px-6 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+								style={`background:rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK})); color:rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}));`}
+								onmouseover={`this.style.background='rgb(var(--color-button-secondary-bg-hover, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text-hover, ${SEC_TEXT_FALLBACK}))';`}
+								onmouseout={`this.style.background='rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}))';`}
 							>
 								{buyBtnText}
 							</button>
@@ -704,7 +715,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</button>
 					)}
 					{showBuyNow && (
-						<button type="button" data-cfg-buy class="inline-flex h-14 w-full items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90">
+						<button
+							type="button"
+							data-cfg-buy
+							class="inline-flex h-14 w-full items-center justify-center rounded-[4px] px-4 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+							style={`background:rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK})); color:rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}));`}
+							onmouseover={`this.style.background='rgb(var(--color-button-secondary-bg-hover, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text-hover, ${SEC_TEXT_FALLBACK}))';`}
+							onmouseout={`this.style.background='rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}))';`}
+						>
 							{buyBtnText}
 						</button>
 					)}

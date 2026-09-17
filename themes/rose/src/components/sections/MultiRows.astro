@@ -195,9 +195,16 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // цвет, на том же узле нужны фон/текст, читающие их; h-full + justify-center
 // растягивают контейнер на высоту ряда, радиус/отступ — манера контейнера темы
 // (те же, что у rowSurfaceCls выше).
-const containerSchemeCls = containerSchemeId
-	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,8px)] p-6 md:p-8`
-	: "";
+// Шов НЕ скругляется (владелец 2026-09-17, перепроверка): текстовый контейнер
+// стоит впритык к медиа (lg:gap-0, см. ниже) зеркально медиа-скруглению —
+// сторона СТЫКА всегда rounded-*-none, скругление темы только на ВНЕШНЕЙ
+// стороне ряда. Раньше был один класс на все ряды без учёта r.right — отсюда
+// щель в форме скругления на стыке (media-text-pair.spec.ts §5 ловил только
+// медиа, не контейнер).
+const containerSchemeCls = (right: boolean) =>
+	containerSchemeId
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,8px)] p-6 md:p-8 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,8px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,8px)]"}`
+		: "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
@@ -260,7 +267,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<img src={r.image} alt={r.heading || "Ряд"} loading="lazy" class="!h-full !w-full object-cover" />
 							)}
 						</div>
-						<div class={`flex w-full flex-col gap-6 items-center text-center ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls}`}>
+						<div class={`flex w-full flex-col gap-6 items-center text-center ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={inlineFormat(r.heading)} />}
 							{r.text && (
 								<div

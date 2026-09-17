@@ -238,7 +238,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</h2>
 			)
 		}
-		<ul class="flex w-full flex-col gap-10 md:gap-14" role="list">
+		{/* Зазор МЕЖДУ рядами — канон владельца 2026-09-17 (Shopify Row): ряды
+		    ВПЛОТНУЮ, зазор РОВНО ноль на lg: (там же, где ряд становится
+		    двухколоночным — media-text-pair.spec.ts). На мобильном (одна колонка)
+		    зазор оставлен, иначе ряды сливаются в кашу (multirows-row-gap.spec.ts). */}
+		<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 			{
 				rows.map((r, i) => (
 					<li

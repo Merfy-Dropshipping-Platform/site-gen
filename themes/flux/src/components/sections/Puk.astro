@@ -91,11 +91,18 @@ const text =
 	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
 	"Они здесь. Устройства, которые изменят завтра, уже сегодня в нашем потоке новинок. Смотрите, тестируйте, погружайтесь в будущее, которое стало реальностью. Только в Flux.";
 // Ступени textSize (эталон 16; паритет rose MainText): medium/отсутствие = 16,
-// small 14, large 19. Тело — Roboto Flex light, мут-цвет (#999 фоллбек).
+// small 14, large 19. Тело — Roboto Flex light, #999 фоллбек-пиксель без
+// схемы. b74: роль ПЕРЕВЕДЕНА с `--color-muted` на `--color-text` (эталон rose
+// ImageWithText.astro:160) — жалоба «не применяется цветовая схема к секции»
+// (владелец): текст менял цвет вслед за мерчантской схемой (--color-muted тоже
+// объявлен в theme.json), но на ЧУЖОЙ роли — заголовок/кнопка ехали за
+// heading/button-2, а абзац оставался приглушённо-серым и визуально «не
+// красился» на фоне остальных мишеней секции. Фоллбэк 153_153_153 сохранён —
+// без выбранной схемы пиксель-вид не меняется.
 const textSize = p.textSize ?? p.text?.size;
 const textSizeCls =
 	textSize === "small" ? "text-[14px]" : textSize === "large" ? "text-[19px]" : "text-[16px]";
-const textCls = `max-w-[1320px] font-roboto-flex font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] ${textSizeCls}`;
+const textCls = `max-w-[1320px] font-roboto-flex font-light leading-normal text-[rgb(var(--color-text,153_153_153))] ${textSizeCls}`;
 
 // Канон textStyle (hidden, паритет rose/sibling ImageWithText.astro): italic →
 // курсив заголовка+текста. Аддитивно — undefined/'normal' не меняет дефолт.

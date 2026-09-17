@@ -86,6 +86,8 @@ type Case = {
     | "--color-text"
     | "--color-button-bg"
     | "--color-button-text"
+    | "--color-button-2-bg"
+    | "--color-button-2-text"
     | "--color-muted";
 };
 
@@ -254,6 +256,39 @@ const CASES: Case[] = [
     { theme, block: "WishlistSection", label: "Избранное", target: "фон кнопки", marker: "текст:Перейти в каталог", prop: "background-color", expect: "--color-button-bg" },
     { theme, block: "WishlistSection", label: "Избранное", target: "текст кнопки", marker: "текст:Перейти в каталог", prop: "color", expect: "--color-button-text" },
   ] as Case[]),
+
+  // ── b74 17.09: «Изображение с текстом» flux — рендерится Puk.astro (НЕ
+  // sibling ImageWithText.astro), до этой волны проверен только фон секции.
+  // Заголовок/кнопка уже были на токенах (--color-heading/--color-button-2-*);
+  // «текст»-абзац стоял на `--color-muted` — реально ехал вместе со схемой
+  // (роль объявлена во всех схемах), но НЕ той ролью, что заголовок/кнопка —
+  // рядом с перекрашенным заголовком/кнопкой абзац выглядел «не тронутым».
+  // Эталон rose (ImageWithText.astro:160) — тело секции на `--color-text`.
+  { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "заголовок", marker: 'data-puck-subsection-field="heading"', prop: "color", expect: "--color-heading" },
+  { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "текст", marker: 'data-puck-subsection-field="text"', prop: "color", expect: "--color-text" },
+  { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "фон кнопки", marker: 'data-puck-subsection-field="button"', prop: "background-color", expect: "--color-button-2-bg" },
+  { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "текст кнопки", marker: 'data-puck-subsection-field="button"', prop: "color", expect: "--color-button-2-text" },
+
+  // ── b74 17.09: «Подвал» flux — заголовок колонки (`FooterColumn.astro`,
+  // «Навигация»/«Информация») стоял на литерале `text-black`: на ЛЮБОЙ схеме
+  // оставался чёрным, пока фон подвала и ссылки колонки уже ехали. Эталон
+  // rose — тот же узел красится ролью «Заголовок» через общий `.rose-title`.
+  { theme: "flux", block: "Footer", label: "Подвал", target: "заголовок колонки", marker: "css:h3", prop: "color", expect: "--color-heading" },
+
+  // ── b74 17.09: «Слайд-шоу» flux — заголовок/подзаголовок пустого слайда УЖЕ
+  // ехали токеном (`slideHeadingCls`/`slideTextCls`), но кейса на них не было —
+  // ставим сторож, чтобы регрессия не проскочила молча (кнопка слайда уже
+  // сторожилась выше, CASES «фон/текст кнопки слайда»).
+  { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "заголовок слайда", marker: "текст:Слайд-шоу", prop: "color", expect: "--color-heading" },
+  { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "подзаголовок слайда", marker: "текст:Добавь несколько изображений с информацией о своём бренде", prop: "color", expect: "--color-text" },
+
+  // ── b74 17.09: «Личный кабинет»/«Заказы» flux — ссылка «Вернуться назад»
+  // (`.account-back-link`, global.css) — текст ВНЕ кнопки, жалоба владельца
+  // [12] звучит и про текст, не только про кнопку. Заголовки (`<h1>` без
+  // класса, красится ролью через descendant-селектор `.account-title h1`) —
+  // отдельный describe ниже (общая таблица не умеет descendant-селекторы).
+  { theme: "flux", block: "AccountSection", label: "Личный кабинет", target: "ссылка «Вернуться назад»", marker: "css:.account-back-link", prop: "color", expect: "--color-muted" },
+  { theme: "flux", block: "OrdersSection", label: "Заказы", target: "ссылка «Вернуться назад»", marker: "css:.account-back-link", prop: "color", expect: "--color-muted" },
 ];
 
 const THEMES = [...new Set(CASES.map((c) => c.theme))];
@@ -372,6 +407,69 @@ describe("мишени секций красятся токеном МЕРЧАН
       expect(schemeValue(tokensOf.get(theme)!, SCHEME_A, "--color-primary")).toBeNull();
     }
   });
+});
+
+/**
+ * b74 17.09: заголовок/подпись «Вход» и заголовки «Личный кабинет»/«Заказы» —
+ * текст ВНЕ кнопки секций аккаунта (жалоба владельца [12] «текст в кнопке И
+ * ТЕКСТ» — до этой волны сторожилась только кнопка). Общая таблица CASES их не
+ * ловит по двум разным причинам:
+ *   • «Вход» красит заголовок/подпись ИНЛАЙНОМ (`style="color: rgb(var(...))"`)
+ *     — сам инлайн ссылается на переменную схемы (не литерал), но общая
+ *     проверка «инлайн обязан отсутствовать» рассчитана на литералы-константы
+ *     (`style="color:#000"`) и на любой инлайн падает — здесь нужен отдельный
+ *     разбор «на что именно ссылается инлайн»;
+ *   • «Личный кабинет»/«Заказы» красят заголовок descendant-селектором
+ *     `.account-title h1` — сам `<h1>` без класса, `declaredVar()` ищет
+ *     правило СРЕДИ КЛАССОВ УЗЛА и падает («ни один класс не объявляет»).
+ *
+ * Расследование подтвердило: обе секции УЖЕ токенизированы (см.
+ * `.account-title h1`/`.auth-label` в themes/flux/src/styles/global.css и
+ * инлайн LoginSection.astro) — здесь только сторож, не правка.
+ */
+describe("flux · «Вход»/«Личный кабинет»/«Заказы» · текст ВНЕ кнопки идёт токеном схемы", () => {
+  const followsRole = (
+    where: string,
+    inline: string | null,
+    expectToken: "--color-heading" | "--color-muted",
+  ) => {
+    const m = inline ? /var\((--color-[a-z-]+)/.exec(inline) : null;
+    expect({ where, найден: !!m, инлайн: inline }).toEqual({ where, найден: true, инлайн: inline });
+    expect({ where, token: m![1] }).toEqual({ where, token: expectToken });
+    const tokens = tokensCssFor("flux", SCHEMES);
+    const a = schemeValue(tokens, SCHEME_A, expectToken);
+    const b = schemeValue(tokens, SCHEME_B, expectToken);
+    expect({ where, нетA: a === null, нетB: b === null }).toEqual({ where, нетA: false, нетB: false });
+    expect({ where, одинаково: a === b }).toEqual({ where, одинаково: false });
+  };
+
+  it("«Вход» · заголовок · инлайн ссылается на --color-heading", () => {
+    if (!built("flux")) throw new Error("тема flux не собрана");
+    const html = renderLive("flux", "LoginSection");
+    const styles = inlineStylesOfAllMarker(html, "css:h1");
+    followsRole("Вход/заголовок", inlineDecl(styles[0] ?? "", "color"), "--color-heading");
+  });
+
+  it("«Вход» · подпись · инлайн ссылается на --color-muted", () => {
+    const html = renderLive("flux", "LoginSection");
+    const styles = inlineStylesOfAllMarker(html, "css:p");
+    followsRole("Вход/подпись", inlineDecl(styles[0] ?? "", "color"), "--color-muted");
+  });
+
+  it.each(["AccountSection", "OrdersSection"] as const)(
+    "%s · заголовок (.account-title h1) · CSS-правило объявляет --color-heading",
+    (block) => {
+      const css = themeCss("flux");
+      const rule = /\.account-title\s+h1\s*\{([^}]*)\}/.exec(css)?.[1];
+      expect({ block, найдено: !!rule }).toEqual({ block, найдено: true });
+      expect(rule).toMatch(/color:\s*rgb\(var\(--color-heading/);
+      const tokens = tokensCssFor("flux", SCHEMES);
+      const a = schemeValue(tokens, SCHEME_A, "--color-heading");
+      const b = schemeValue(tokens, SCHEME_B, "--color-heading");
+      expect({ block, нетA: a === null, нетB: b === null }).toEqual({ block, нетA: false, нетB: false });
+      expect({ block, одинаково: a === b }).toEqual({ block, одинаково: false });
+    },
+  );
 });
 
 describe("мишени, которые рисует инлайн-скрипт секции", () => {

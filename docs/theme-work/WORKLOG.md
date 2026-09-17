@@ -7783,3 +7783,74 @@ theme-manifest.test.ts` (9/9), `packages/theme-contract` jest (418/419 —
 
 Ветка `feat/b66-bloom-image-text-layout`, worktree
 `.worktrees/b66-bloom-imagetext`, коммит `427ad649`. НЕ запушено.
+
+## 2026-09-17 — bloom: секция «Слайд-шоу» (баг b67)
+
+**Жалоба владельца**: «Баг в теме Bloom: секция слайд-шоу поломана, придать
+нормальный вид. Смотри, как в розе и как в блуме.» Замер владельца (Chromium
+1280×720, пустое состояние): заголовок 20px/left/y=439 vs rose 40px/
+center/y=192; абзац 16px/w330 vs rose 20px/w560; кнопка 85×48 vs rose
+160×52; блок max-w-330 в левом нижнем углу vs rose max-w-640 по центру.
+Цвета не трогались — обе темы уже роль-схемные.
+
+**Причина**: `slideHeadingCls` в `themes/bloom/src/components/sections/
+Slideshow.astro` копировал лестницу ВСПОМОГАТЕЛЬНОГО подзаголовка Hero
+(18/md:20 — тот же диапазон, что и текст 14/md:16) — заголовок читался
+обычным текстом. Блок был ограничен `max-w-330` (ширина Hero), кнопка —
+без `min-width` (px-4 на «Кнопка» = 85px, визуально впритык).
+
+**Правка (ТОЛЬКО Slideshow.astro; Hero.astro НЕ трогался — его типографику
+владелец зафиксировал коммитом `ba285785`)**:
+- `slideHeadingCls`: large/отсутствие 28/md:34 (было 18/20), medium 22/27
+  (было 15/17), small 16/19 (было 13/14).
+- контент-блок: `max-w-[330px]` → `max-w-[480px]`.
+- кнопка: добавлен `min-w-[150px]`, высота `h-12`→`h-[52px]`, паддинг
+  `px-4`→`px-6`.
+- `slideTextCls` (абзац) НЕ трогался — владелец не жаловался на него
+  отдельно, ratio заголовок:текст после правки 34:16≈2.1.
+
+Эталон — rose/flux ПО ПОВЕДЕНИЮ (заголовок явно крупнее текста, блок не в
+узкой колонке, кнопка не режет подпись), а не пиксель-в-пиксель: манера
+bloom (низ-лево, розовый pill rounded-full, font-urbanist) сохранена.
+
+**Замер ПОСЛЕ** (реальный Chromium через playwright на статичном HTML +
+собранный `dist/theme-css/bloom.css`, рендер через
+`render-theme-sections.mjs`):
+- 1280×720, пустое состояние: заголовок 34px/x80/y388, текст 16px, кнопка
+  150×52/x80/y486, блок 480px/x80/y388.
+- 375×812, пустое состояние: заголовок 28px (base-ступень), кнопка/блок
+  помещаются без переполнения (низ блока 780px = высота вьюпорта минус
+  `pb-8`=32px).
+- Реальный слайд (заголовок+текст+CTA) + второй слайд + пагинация «Числа»
+  (canon-default) на 1280 и 375 — стрелки/точки не перекрывают контент-блок.
+
+**Новый сторож**: `src/themes/__tests__/bloom-slideshow-layout.spec.ts`
+(5 проверок, рендер СКОМПИЛИРОВАННОГО bloom-порта через
+`render-theme-sections.mjs` + замер каскада через `scripts/qa/lib`):
+заголовок/текст ≥1.6× (было 1.25×), заголовок ≥28px абсолютный пол,
+max-width блока ≥400px, min-width/height кнопки ≥140/48px, классы реально
+в бандле темы (не фантомы preview-tailwind). Саботировано руками (откат
+`slideHeadingCls` на `text-[18px]…md:text-[20px]` + блок на `max-w-[330px]`,
+пересборка `node scripts/compile-theme-sections.mjs bloom`) → 2 из 5 тестов
+покраснели ровно на заголовке (1.25 вместо ≥1.6) и ширине блока (330 вместо
+≥400); откат исходника восстановлен, пересборка — снова 5/5.
+
+**Пруф «не задеты соседние гарды»**: `pnpm run build:theme-sections:all`,
+`test:section-snapshots` 155/155 (1 осознанное обновление снимка bloom
+Slideshow — диф только по новым Tailwind-классам), `test:scheme-matrix`
+9/9, `slideshow-merchant-image.spec.ts` + `slideshow-slide-overlay.spec.ts`
++ `slideshow-slide-panel.spec.ts` + `page-blocks-slideshow.spec.ts` — 116/116
+не задеты. `bash ~/…/tools/pre-push.sh` зелёный. `packages/theme-vanilla
+theme-manifest.test.ts` 9/9. `packages/theme-contract` jest 418/419 (1
+предсуществующий красный `cli-validate.test.ts` против bloom
+`--product-card-padding`, НЕ мой — тот же красный, что и в прошлых сессиях
+на чистом origin/main). Панель Slideshow (`Slideshow.puckConfig.ts`) НЕ
+менялась — состав/имена параметров канон, не тронуты.
+
+**НЕ проверено живьём** (25-минутный бюджет, не пушили): реальный
+конструктор :3200 / live-стенд bloom через браузер — только скомпилированный
+рендер + реальный Chromium (playwright) на статичном HTML+CSS бандла.
+
+Ветка `fix/b67-bloom-slideshow-layout`, worktree
+`.worktrees/b67-bloom-slideshow`, база `origin/main` `b7d4395a`, коммит
+`8e55aa97`. НЕ запушено. Другие темы не трогались.

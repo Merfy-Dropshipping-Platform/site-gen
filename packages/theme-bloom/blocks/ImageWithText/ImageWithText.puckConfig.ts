@@ -13,13 +13,21 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
  * изображением. То есть тут какая-то вот настройка layout, а у нас это
  * настройка контейнер. И нужно сделать так же, чтобы менялись расположения.
  * И сделать пока это только на Bloom». Тумблер «Контейнер» (пункт [23]
- * репорта 15.09) заменён на:
- *   - `layout`: 'no-overlap' (дефолт, как раньше) | 'overlap' — карточка
- *     наезжает на фото (Shopify Layout: No overlap / Overlap);
+ * репорта 15.09) заменён на `layout`/`position`, но владелец в тот же день
+ * (b79, дословно) вернул НАЗВАНИЕ и ФОРМУ: «Давай по 22-му назовём не
+ * "Раскладка", а "Контейнер", как везде. То есть вместо раскладки контейнер.
+ * Вот этот, который вкл-выкл наш». Итог:
+ *   - `containerEnabled`: 'false' (дефолт, как раньше) | 'true' — карточка
+ *     наезжает на фото. Toggle вкл/выкл «Показать»/«Скрыть» — тот же вид,
+ *     что у MultiColumns/MultiRows/CollapsibleSection (канон);
  *   - `position`: 'top' | 'middle' (дефолт) | 'bottom' — положение карточки
- *     по вертикали (Shopify Position).
- * `width` (уже был в каноне) при `layout: 'overlap'` дополнительно меняет
- * пропорцию карточка/фото (Shopify Width). Рендер —
+ *     по вертикали (Shopify Position, владелец про него ничего не говорил —
+ *     оставлено без изменений).
+ * `width` (уже был в каноне) при `containerEnabled: 'true'` дополнительно
+ * меняет пропорцию карточка/фото (бывший Shopify Width). Легаси `layout`
+ * ('no-overlap'/'overlap', сохранён у сайтов между 15.09 и 17.09) остаётся
+ * в schema как fallback для обратной совместимости — не в `fields` (панель
+ * его больше не показывает). Рендер —
  * themes/bloom/src/components/sections/ImageWithText.astro.
  */
 export const ImageWithTextSchema = z.object({
@@ -51,7 +59,11 @@ export const ImageWithTextSchema = z.object({
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   colorScheme: z.string().optional(),
-  // Shopify-раскладка — только у bloom (владелец, 2026-09-17).
+  // Тумблер «Контейнер» — только у bloom (владелец, 2026-09-17/b79).
+  containerEnabled: z.enum(['true', 'false']).optional(),
+  // Легаси: значения 'no-overlap'/'overlap', сохранённые 15-17.09 (до
+  // переименования обратно в «Контейнер»). Держим в schema для обратной
+  // совместимости чтения — в `fields` (панель) не выведено.
   layout: z.enum(['no-overlap', 'overlap']).optional(),
   position: z.enum(['top', 'middle', 'bottom']).optional(),
   containerColorScheme: z.string().optional(),
@@ -102,13 +114,14 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       ],
     },
     alignment: { type: 'alignment', label: 'Выравнивание' },
-    // Владелец 2026-09-17 — Shopify-раскладка, ТОЛЬКО bloom.
-    layout: {
+    // Владелец 2026-09-17/b79 — «Контейнер» как везде (MultiColumns/MultiRows/
+    // CollapsibleSection): toggle вкл/выкл, ТОЛЬКО bloom.
+    containerEnabled: {
       type: 'toggle',
-      label: 'Раскладка',
+      label: 'Контейнер',
       options: [
-        { label: 'Без наложения', value: 'no-overlap' },
-        { label: 'С наложением', value: 'overlap' },
+        { label: 'Показать', value: 'true' },
+        { label: 'Скрыть', value: 'false' },
       ],
     } as any,
     position: {
@@ -179,9 +192,9 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     size: 'medium',
     width: 'large',
     // Дефолты сохраняют текущий вид (нет регрессии для существующих секций
-    // bloom без этих полей): 'no-overlap' — прежняя раскладка бок о бок,
-    // 'middle' — прежнее вертикальное центрирование (lg:items-center).
-    layout: 'no-overlap',
+    // bloom без этих полей): 'false' — прежняя раскладка бок о бок (без
+    // наложения), 'middle' — прежнее вертикальное центрирование (lg:items-center).
+    containerEnabled: 'false',
     position: 'middle',
   },
   schema: ImageWithTextSchema,

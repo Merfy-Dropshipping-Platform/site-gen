@@ -1,12 +1,19 @@
 /**
- * Сторож Shopify-раскладки «Изображение с текстом» — ТОЛЬКО bloom.
+ * Сторож тумблера «Контейнер» «Изображение с текстом» — ТОЛЬКО bloom.
  *
- * Владелец, 2026-09-17, дословно: «У Shopify видишь какие состояния у текста
- * с изображением. То есть тут какая-то вот настройка layout, а у нас это
- * настройка контейнер. И нужно сделать так же, чтобы менялись расположения.
- * И сделать пока это только на Bloom». Тумблер «Контейнер» заменён на
- * `layout` (no-overlap/overlap) + `position` (top/middle/bottom); `width`
- * при наложении меняет пропорцию карточка/фото.
+ * 1. b73, владелец, 2026-09-17, дословно: «У Shopify видишь какие состояния
+ *    у текста с изображением. То есть тут какая-то вот настройка layout, а
+ *    у нас это настройка контейнер. И нужно сделать так же, чтобы менялись
+ *    расположения. И сделать пока это только на Bloom». Тумблер «Контейнер»
+ *    заменили на `layout` (no-overlap/overlap) + `position` (top/middle/
+ *    bottom).
+ * 2. b79, тот же день, владелец дословно: «Давай по 22-му назовём не
+ *    "Раскладка", а "Контейнер", как везде. То есть вместо раскладки
+ *    контейнер. Вот этот, который вкл-выкл наш» — название и форма контрола
+ *    вернулись: поле снова `containerEnabled` ('false'|'true'), toggle
+ *    Показать/Скрыть, как у MultiColumns/MultiRows/CollapsibleSection.
+ *    Поведение (карточка наезжает на фото при включении) НЕ менялось.
+ *    `position` владелец не трогал — оставлено как есть.
  *
  * Рендерим РЕАЛЬНЫЙ скомпилированный порт bloom (dist/theme-sections/bloom),
  * не исходный текст — сторож должен ловить регрессию сборки, а не только кода.
@@ -39,23 +46,37 @@ const base = {
   button: { text: "MK_BTN", href: "/catalog" },
 };
 
-describe("bloom ImageWithText — Shopify layout (layout/position/width)", () => {
+describe("bloom ImageWithText — «Контейнер» (containerEnabled/position/width)", () => {
   const rows = render([
-    { block: "ImageWithText", props: { ...base, layout: "no-overlap" } },
-    { block: "ImageWithText", props: { ...base, layout: "overlap" } },
-    { block: "ImageWithText", props: { ...base, layout: "overlap", width: "small" } },
-    { block: "ImageWithText", props: { ...base, layout: "overlap", width: "large" } },
-    { block: "ImageWithText", props: { ...base, layout: "overlap", position: "top" } },
-    { block: "ImageWithText", props: { ...base, layout: "overlap", position: "bottom" } },
-    // Легаси данные (containerEnabled='true', сохранены 15-16.09) должны
-    // по-прежнему давать наложение — backward-compat fallback.
+    { block: "ImageWithText", props: { ...base, containerEnabled: "false" } },
     { block: "ImageWithText", props: { ...base, containerEnabled: "true" } },
+    { block: "ImageWithText", props: { ...base, containerEnabled: "true", width: "small" } },
+    { block: "ImageWithText", props: { ...base, containerEnabled: "true", width: "large" } },
+    { block: "ImageWithText", props: { ...base, containerEnabled: "true", position: "top" } },
+    { block: "ImageWithText", props: { ...base, containerEnabled: "true", position: "bottom" } },
+    // Легаси данные `layout` (сохранены 15-17.09, до переименования обратно
+    // в «Контейнер») должны по-прежнему давать наложение — backward-compat
+    // fallback №2 (приоритет №1 — сегодняшний containerEnabled).
+    { block: "ImageWithText", props: { ...base, layout: "overlap" } },
+    { block: "ImageWithText", props: { ...base, layout: "no-overlap" } },
+    // Ещё более старые данные (containerEnabled='true' до 15.09) читаются напрямую.
+    { block: "ImageWithText", props: { ...base, containerEnabled: "true", layout: "no-overlap" } },
   ]);
 
-  const [noOverlap, overlap, overlapSmall, overlapLarge, posTop, posBottom, legacyContainer] = rows;
+  const [
+    off,
+    on,
+    onSmall,
+    onLarge,
+    posTop,
+    posBottom,
+    legacyLayoutOverlap,
+    legacyLayoutNoOverlap,
+    newPriorityOverLegacy,
+  ] = rows;
 
   it("рендер не падает ни на одном job (0 проверок — тоже провал)", () => {
-    expect(rows).toHaveLength(7);
+    expect(rows).toHaveLength(9);
     for (const r of rows) {
       expect(r.error).toBeUndefined();
       expect(r.missing).toBeUndefined();
@@ -63,31 +84,41 @@ describe("bloom ImageWithText — Shopify layout (layout/position/width)", () =>
     }
   });
 
-  it("layout='no-overlap' НЕ включает наложение (нет lg:absolute на карточке)", () => {
-    expect(noOverlap.html).not.toMatch(/lg:absolute/);
+  it("containerEnabled='false' НЕ включает наложение (нет lg:absolute на карточке)", () => {
+    expect(off.html).not.toMatch(/lg:absolute/);
   });
 
-  it("layout='overlap' ВКЛЮЧАЕТ наложение (карточка lg:absolute поверх фото)", () => {
-    expect(overlap.html).toMatch(/lg:absolute/);
+  it("containerEnabled='true' ВКЛЮЧАЕТ наложение (карточка lg:absolute поверх фото)", () => {
+    expect(on.html).toMatch(/lg:absolute/);
   });
 
   it("наезд включается и выключается — разметка двух состояний различается", () => {
-    expect(overlap.html).not.toBe(noOverlap.html);
+    expect(on.html).not.toBe(off.html);
   });
 
-  it("width при наложении меняет ПРОПОРЦИЮ карточки (small ≠ large)", () => {
-    expect(overlapSmall.html).toMatch(/lg:w-\[36%\]/);
-    expect(overlapLarge.html).toMatch(/lg:w-\[62%\]/);
-    expect(overlapSmall.html).not.toBe(overlapLarge.html);
+  it("width при включённом контейнере меняет ПРОПОРЦИЮ карточки (small ≠ large)", () => {
+    expect(onSmall.html).toMatch(/lg:w-\[36%\]/);
+    expect(onLarge.html).toMatch(/lg:w-\[62%\]/);
+    expect(onSmall.html).not.toBe(onLarge.html);
   });
 
-  it("position меняет вертикальное положение карточки (top ≠ bottom)", () => {
+  it("position меняет вертикальное положение карточки (top ≠ bottom) — не тронуто b79", () => {
     expect(posTop.html).toMatch(/lg:top-6/);
     expect(posBottom.html).toMatch(/lg:bottom-6/);
     expect(posTop.html).not.toBe(posBottom.html);
   });
 
-  it("легаси containerEnabled='true' по-прежнему даёт наложение (backward-compat)", () => {
-    expect(legacyContainer.html).toMatch(/lg:absolute/);
+  it("легаси layout='overlap' (данные 15-17.09) по-прежнему даёт наложение (backward-compat fallback)", () => {
+    expect(legacyLayoutOverlap.html).toMatch(/lg:absolute/);
+  });
+
+  it("легаси layout='no-overlap' по-прежнему НЕ даёт наложение", () => {
+    expect(legacyLayoutNoOverlap.html).not.toMatch(/lg:absolute/);
+  });
+
+  it("containerEnabled имеет приоритет над легаси layout, если оба присутствуют", () => {
+    // containerEnabled='true' + layout='no-overlap' одновременно → наложение
+    // включено (containerEnabled — источник истины №1).
+    expect(newPriorityOverLegacy.html).toMatch(/lg:absolute/);
   });
 });

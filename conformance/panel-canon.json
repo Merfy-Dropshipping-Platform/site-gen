@@ -4274,13 +4274,13 @@
             "label": "Выравнивание",
             "visibility": "panel"
           },
-          "layout": {
+          "containerEnabled": {
             "type": "toggle",
-            "label": "Раскладка",
+            "label": "Контейнер",
             "visibility": "panel",
             "options": [
-              "no-overlap=Без наложения",
-              "overlap=С наложением"
+              "true=Показать",
+              "false=Скрыть"
             ]
           },
           "position": {

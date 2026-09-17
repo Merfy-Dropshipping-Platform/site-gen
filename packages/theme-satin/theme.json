@@ -111,9 +111,13 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "238 238 238"
+        "--color-button-2-border": "238 238 238",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "0 0 0"
       }
     },
     {
@@ -130,9 +134,13 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "238 238 238"
+        "--color-button-2-border": "238 238 238",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "0 0 0"
       }
     },
     {
@@ -149,9 +157,13 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "238 238 238"
+        "--color-button-2-border": "238 238 238",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "0 0 0"
       }
     },
     {
@@ -168,9 +180,13 @@
         "--color-button-bg": "255 255 255",
         "--color-button-text": "0 0 0",
         "--color-button-border": "255 255 255",
+        "--color-button-bg-hover": "224 224 224",
+        "--color-button-text-hover": "0 0 0",
         "--color-button-2-bg": "8 2 0",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "68 68 68"
+        "--color-button-2-border": "68 68 68",
+        "--color-button-2-bg-hover": "38 32 31",
+        "--color-button-2-text-hover": "255 255 255"
       }
     }
   ],

@@ -170,9 +170,13 @@
         "--color-button-bg": "58 69 48",
         "--color-button-text": "255 255 255",
         "--color-button-border": "58 69 48",
+        "--color-button-bg-hover": "82 91 73",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-2-bg": "238 238 238",
         "--color-button-2-text": "38 49 28",
-        "--color-button-2-border": "200 200 200"
+        "--color-button-2-border": "200 200 200",
+        "--color-button-2-bg-hover": "209 209 209",
+        "--color-button-2-text-hover": "38 49 28"
       }
     },
     {
@@ -189,9 +193,13 @@
         "--color-button-bg": "255 255 255",
         "--color-button-text": "58 69 48",
         "--color-button-border": "255 255 255",
+        "--color-button-bg-hover": "224 224 224",
+        "--color-button-text-hover": "58 69 48",
         "--color-button-2-bg": "38 49 28",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "80 90 70"
+        "--color-button-2-border": "80 90 70",
+        "--color-button-2-bg-hover": "64 74 55",
+        "--color-button-2-text-hover": "255 255 255"
       }
     },
     {
@@ -208,9 +216,13 @@
         "--color-button-bg": "58 69 48",
         "--color-button-text": "255 255 255",
         "--color-button-border": "58 69 48",
+        "--color-button-bg-hover": "82 91 73",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-2-bg": "238 238 238",
         "--color-button-2-text": "38 49 28",
-        "--color-button-2-border": "200 200 200"
+        "--color-button-2-border": "200 200 200",
+        "--color-button-2-bg-hover": "209 209 209",
+        "--color-button-2-text-hover": "38 49 28"
       }
     },
     {
@@ -227,9 +239,13 @@
         "--color-button-bg": "58 69 48",
         "--color-button-text": "255 255 255",
         "--color-button-border": "58 69 48",
+        "--color-button-bg-hover": "82 91 73",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "38 49 28",
-        "--color-button-2-border": "200 200 200"
+        "--color-button-2-border": "200 200 200",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "38 49 28"
       }
     }
   ],

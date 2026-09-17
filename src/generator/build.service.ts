@@ -21,7 +21,7 @@ import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
 // Shared cart-drawer globals resolver — same export the preview controller
 // uses, so live ≡ preview byte-for-byte (F-054).
-import { resolveCartDrawerGlobals } from "../themes/cart-drawer-contract";
+import { resolveCartDrawerGlobals, resolveCartDrawerSchemeId } from "../themes/cart-drawer-contract";
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as fsSync from "fs";
@@ -1596,8 +1596,22 @@ export async function runBuildPipeline(
       // buildTokensCss что в превью → превью = live.
       const { buildTokensCss } = await import("../themes/tokens-css");
       const { injectTokensCssIntoDist } = await import("../themes/tokens-inject");
+      const v2ThemeSettings = (ctx.revisionData as Record<string, unknown> | null)?.themeSettings;
+      // Баг тестера 17.09 «Корзина — не применяется цветовая схема»: правило
+      // дровера в buildTokensCss читает ТОЛЬКО явную настройку
+      // themeSettings.cartDrawerScheme — почти никем не заполняется. Мерчант
+      // выбирает схему НА СТРАНИЦЕ корзины (CartBody/CartSummary), и туда же
+      // падает window-глобал (resolveCartDrawerGlobals ниже) — но красящее
+      // CSS-правило в tokens.css об этом фолбэке не знало и молчало, оставляя
+      // панель дровера белой. Довозим тот же резолвинг сюда.
+      const v2CartDrawerScheme =
+        (v2ThemeSettings && typeof v2ThemeSettings === "object"
+          ? (v2ThemeSettings as { cartDrawerScheme?: unknown }).cartDrawerScheme
+          : undefined) ?? resolveCartDrawerSchemeId(ctx.revisionData);
       const v2TokensCss = buildTokensCss(
-        (ctx.revisionData as Record<string, unknown> | null)?.themeSettings,
+        v2ThemeSettings && typeof v2ThemeSettings === "object"
+          ? { ...(v2ThemeSettings as Record<string, unknown>), cartDrawerScheme: v2CartDrawerScheme }
+          : { cartDrawerScheme: v2CartDrawerScheme },
         bareTheme,
       );
       const tokenized = await injectTokensCssIntoDist(ctx.distDir, v2TokensCss);

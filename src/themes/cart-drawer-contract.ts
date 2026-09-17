@@ -40,15 +40,24 @@ interface CartDrawerRevisionShape {
 }
 
 /**
- * Resolve the cart-drawer window globals from a revision's `data`. Returns a
- * (possibly empty) record of `__MERFY_CART_DRAWER_*__` → string.
+ * Резолвит ИД схемы дровера (`"scheme-N"`) по тем же правилам, что и весь
+ * контракт: явная настройка `themeSettings.cartDrawerScheme`, иначе —
+ * `colorScheme` секции CartBody страницы `page-cart`, иначе — CartSummary.
+ * `undefined`, если ни одного валидного источника нет.
  *
- * Never throws: any structural surprise yields `{}` (theme default drawer).
+ * Вынесено отдельно от {@link resolveCartDrawerGlobals}, потому что у
+ * `buildTokensCss` (см. `tokens-css.ts`) есть СВОЙ, более старый канал
+ * покраски дровера — CSS-правило вне `@layer`, единственное, что реально
+ * перебивает утилиту `bg-white` на панели (см. комментарий в tokens-css.ts
+ * рядом с `cartDrawerPaintRule`). Раньше это правило читало ТОЛЬКО явную
+ * настройку `s.cartDrawerScheme` — без фолбэка на CartBody, которым дровер
+ * пользовался для window-глобала. Итог: у магазина, где мерчант просто выбрал
+ * схему НА СТРАНИЦЕ корзины (обычный путь — отдельная настройка дровера почти
+ * никем не трогается), класс `.color-scheme-N` на дровер вешался (mechanism
+ * 1), но красящее правило (mechanism 2) не рождалось — и панель оставалась
+ * белой. Баг тестера 17.09 «Корзина — не применяется цветовая схема».
  */
-export function resolveCartDrawerGlobals(
-  data: unknown,
-): Record<string, string> {
-  const g: Record<string, string> = {};
+export function resolveCartDrawerSchemeId(data: unknown): string | undefined {
   try {
     const rev = data as CartDrawerRevisionShape | null;
     const cartContent = rev?.pagesData?.["page-cart"]?.content;
@@ -67,10 +76,30 @@ export function resolveCartDrawerGlobals(
     // страница корзины была схлопнута в один блок, схема до дровера не
     // доезжала вовсе; магазины, где она выбрана в CartBody/CartSummary, после
     // этой правки продолжают работать ровно как раньше.
-    const scheme =
+    return (
       validScheme(ts?.cartDrawerScheme) ??
       findScheme("CartBody") ??
-      findScheme("CartSummary");
+      findScheme("CartSummary")
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Resolve the cart-drawer window globals from a revision's `data`. Returns a
+ * (possibly empty) record of `__MERFY_CART_DRAWER_*__` → string.
+ *
+ * Never throws: any structural surprise yields `{}` (theme default drawer).
+ */
+export function resolveCartDrawerGlobals(
+  data: unknown,
+): Record<string, string> {
+  const g: Record<string, string> = {};
+  try {
+    const rev = data as CartDrawerRevisionShape | null;
+    const scheme = resolveCartDrawerSchemeId(data);
+    const ts = rev?.themeSettings;
     const trim = (v: unknown): string | undefined =>
       typeof v === "string" && v.trim() ? v.trim() : undefined;
     if (scheme) {

@@ -7912,3 +7912,118 @@ theme-manifest.test.ts` 9/9; `packages/theme-contract` jest 418/419 (1
 Ветка `fix/b72-bloom-cart-scheme-price`, worktree
 `.worktrees/b72-bloom-cart`, база `origin/main` `03fa8f7e`, коммит
 `bd31b20b`. НЕ запушено.
+## 2026-09-17 — bloom + flux: пагинация Slideshow съезжала вправо (баг b71)
+
+Жалоба владельца: «На блуме и флюкс стрелки справа, а не по центру» /
+«нумерация при добавлении медиа уезжает». Замер рендером
+`dist/theme-sections/<тема>` (без браузера, node-html-parser) подтвердил:
+bloom — пагинация центрирована в пустом состоянии, но `right-4
+md:right-20 2xl:right-[300px]` (правый край) как только появляются ≥2
+слайда с картинкой; flux — `right-4 md:right-20 2xl:right-80`
+(`navEdgeCls`) в ОБОИХ состояниях. Стрелки (`data-slide-prev/next`) в
+обеих темах уже совпадали с rose (`left-4/right-4 top-1/2
+-translate-y-1/2`) — не трогал.
+
+Правка: bloom — класс реальной пагинации `right-4 …` →
+`left-1/2 -translate-x-1/2` (тот же паттерн, что уже жил в пустом
+состоянии этого же файла); flux — `navEdgeCls` заменён константой
+`"left-1/2 -translate-x-1/2"` (правит оба места использования разом).
+Канон — rose `Slideshow.astro`. Панель/состав пропов не менялись.
+
+Сторож: новый `src/themes/__tests__/slideshow-nav-centered.spec.ts` (6
+проверок: bloom/flux × empty/with-image — пагинация центр, не `right-*`;
++ стрелки не сдвинуты). Саботирован `git stash` на исходный (баговый)
+код + пересборка — 3/6 красных ровно на прежних баговых кейсах (bloom
+EMPTY остался зелёным — он и был уже верным). Восстановил (`git stash
+pop`) — снова 6/6.
+
+Прогон: `build:theme-sections:all` (5/5), `slideshow-nav-centered` 6/6,
+`bloom-slideshow-layout` (гард b67) 5/5 — не сломан, `slideshow-merchant-
+image`/`slideshow-slide-overlay`/`slideshow-slide-panel`/`page-blocks-
+slideshow`/`satin-conformance-slideshow-renderer` 120/120 не задеты,
+`pre-push.sh` (`test:section-snapshots` 155/155) зелёный,
+`packages/theme-vanilla theme-manifest.test.ts` 9/9,
+`packages/theme-contract` jest 418/419 (1 предсуществующий красный
+`cli-validate.test.ts` против bloom `--product-card-padding`, НЕ мой,
+ровно тот, что указан в задаче).
+
+**НЕ проверено живьём** (25-минутный бюджет): реальный конструктор/
+live-стенд через браузер — MCP playwright не подключился в этой сессии;
+проверка только рендером портов темы + собранным `dist/theme-css/<тема>.css`.
+
+Ветка `fix/b71-slideshow-arrows-pager`, worktree
+`.worktrees/b71-slideshow-nav`, база `origin/main` (`03fa8f7e`). НЕ
+запушено. MultiRows/MultiColumns, tokens-css.ts, scheme-matrix.mjs и
+цветовые роли flux не трогались.
+## 2026-09-17 (b70) shue — Мультиряды: шов контейнера-текста, вторая попытка
+
+Владелец: «шов не должен скругляться... в настройках темы есть настройка
+скругления медиа, но шов между ними не должен скругляться в этой секции».
+Прошлая правка того же дня чинила только медиа (media-text-pair.spec.ts §5);
+текстовый контейнер (`containerColorScheme`) остался с безусловным
+`rounded-[var(--radius-card)]` на все 4 угла — щель на стыке сохранялась.
+
+Правка: `containerSchemeCls` в rose/vanilla/bloom/flux MultiRows.astro стал
+функцией стороны (`right: boolean`), зеркалит уже существующий split у медиа.
+satin не трогал — там радиус контейнера и так 0 (манера). MultiColumns
+проверил рендером с `containerEnabled=true` — card оборачивает ВЕСЬ column
+одним паддингом (p-6/8/10), картинка не касается края card, шва там нет —
+фиксить нечего, это не тот же баг.
+
+Гард: media-text-pair.spec.ts §6, 10 тестов (rowsPosition left/right ×
+5 тем), саботаж на rose подтверждён (падал на 8px вместо 0, затем восстановил).
+pre-push.sh зелёный. Ветка НЕ запушена.
+## 2026-09-17 — flux: наведение доп. кнопки «Купить сейчас» (b69, частично)
+
+Владелец перепроверил список из 15.09/16.09 и сказал «НЕ сделано» по пяти
+секциям flux + отдельно наведение доп. кнопки. 25-минутный бюджет.
+
+**Замер:** прогнал существующий `section-scheme-targets.spec.ts` (сторож с
+предыдущей волны) — сначала ловушка: без `pnpm build:blocks` рендер
+`CheckoutSummary` падает `missing:true` и роняет `beforeAll`, из-за чего ВСЕ
+137 кейсов красные независимо от реального состояния кода. После полной
+сборки (`pnpm build && pnpm build:blocks && pnpm run compile-theme-sections
+flux`) — 30/30 существующих flux-кейсов зелёные: фон/заголовок/цена/кнопки
+«Товар», «Корзина», «Избранное», «Вход», «Личный кабинет», «Подвал»,
+«Изображение с текстом» (фон), «Слайд-шоу» (кнопка), «Сводка заказа»,
+«Шапка», «Контактная форма». Т.е. базовые мишени УЖЕ чинились раньше и
+регрессии нет.
+
+**Реальный дефект, подтверждённый и починенный:** «Купить сейчас»
+(Product.puckConfig `dynamicButton`, Figma-роль «Динамическая кнопка» —
+она же «дополнительная» кнопка из жалобы) в `FeaturedProduct.astro` красилась
+основными токенами `--color-button-bg/-text` и гасила наведение
+`hover:opacity-90` — opacity НЕ меняет значение `background-color`/`color`,
+только альфу композитинга, поэтому «цвет при наведении» объективно не менялся.
+Эталон rose (через `packages/theme-base/blocks/Product/ProductActions.astro`)
+красит эту же кнопку СЕКОНДАРИ-токенами (`--color-button-secondary-bg/-text`)
+и меняет их на `-hover` пару через `onmouseover`/`onmouseout`. Перевёл обе
+ветки разметки flux (desktop/mobile) на тот же паттерн.
+
+**Сторож:** заменил 2 старых кейса в CASES (ожидали `--color-button-bg` на
+`data-cfg-buy` — устарели по смыслу правки) на отдельный `describe` в конце
+файла: 3 проверки (узлы есть; покой = secondary-токены, не примари, не
+литерал; onmouseover меняет НА `-hover` пару, onmouseout возвращает базу).
+Саботаж: подменил `onmouseover` на `this.style.opacity='0.9'` (буквально
+старый баг) → упал ровно тест с именем «...наведение...» (1 из 3 в блоке),
+остальное осталось зелёным. Откат восстановлен, полный прогон
+`-t flux` — 55 passed / 0 failed / 83 skipped (skipped = кейсы других тем,
+которые не строил в этом заходе).
+
+**НЕ успел (честно):** не построил требуемую таблицу «секция·мишень·схема-A·
+схема-B·вердикт» по ВСЕМ 12 заявленным целям — только по одной, самой
+конкретной (наведение доп. кнопки «Товар»). Не проверил поштучно:
+заголовок/текст/доп. кнопку «Изображение с текстом»; заголовок/подзаголовок
+«Слайд-шоу» (у flux таких кейсов в сторожe вообще нет, у bloom — есть, это
+дыра теста, не обязательно бага); колонки/ссылки/разделители «Подвал»
+(проверен только общий фон); текст ВНЕ кнопки на «Вход»/«Личный кабинет»/
+«Заказы» (формы идут через общий `AuthShell`/`AuthInput`, не осмотрен
+построчно). `pnpm run build:theme-sections:all` (все 5 тем) не гонял — только
+flux+rose по отдельности, значит vanilla/satin/bloom не пересобирались и не
+проверялись на регрессию от правки (правка их файлов не касалась, но полный
+прогон матрицы не подтверждён).
+
+Ветка `fix/b69-flux-section-schemes`, worktree `.worktrees/b69-flux-schemes`,
+база `origin/main` `03fa8f7e`. НЕ запушено, НЕ задеплоено. Изменены только 2
+файла: `themes/flux/src/components/sections/FeaturedProduct.astro`,
+`src/themes/__tests__/section-scheme-targets.spec.ts`.

@@ -197,7 +197,7 @@ const pdpHeartSvg =
 			</div>
 			{thumbs.length > 0 && (
 				<div class="grid grid-cols-3 gap-4" data-pdp-thumbs-row>
-					{[mainImage, ...thumbs].slice(0, 6).map((img) => (
+					{[mainImage, ...thumbs].map((img) => (
 						<button
 							type="button"
 							class="aspect-square w-full overflow-hidden bg-[#F5F5F5] transition-opacity hover:opacity-90"
@@ -853,7 +853,7 @@ const pdpHeartSvg =
 				var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
 				if (thumbsRow) {
 					// bloom-сетка миниатюр: grid-cols-3, квадрат, bg-[#F5F5F5] (как demo-разметка).
-					var thumbUrls = arr.slice(0, 6);
+					var thumbUrls = arr;
 					if (thumbUrls.length > 1) {
 						thumbsRow.innerHTML = thumbUrls
 							.map(function (u) {

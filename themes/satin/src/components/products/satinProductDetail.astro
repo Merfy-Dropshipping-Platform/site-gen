@@ -90,7 +90,7 @@ const displayOldPrice = isPlaceholder ? undefined : product.oldPrice;
 
 const galleryImages = (
 	isPlaceholder ? [PLACEHOLDER_PRODUCT_IMAGE] : product.gallery && product.gallery.length > 0 ? product.gallery : [product.image]
-).slice(0, 4);
+);
 const single = galleryImages.length === 1;
 const cartVariantColor = isPlaceholder ? "" : (product.colors?.[0] ?? "");
 ---

@@ -62,3 +62,81 @@ describe("галерея товара не режет список фото", ()
     expect(view.gallery).toEqual({ hero: null, thumbs: [] });
   });
 });
+
+/**
+ * ВТОРОЙ ЭТАЖ, 17.09 вечер. Проверки выше сторожили ОДИН путь — нормализацию
+ * данных в `Product.headless`. Владелец в тот же день сообщил, что ограничение
+ * живо, и был прав: страницы товара (PDP) у четырёх тем режут список ЕЩЁ РАЗ,
+ * уже в своей разметке, после всякой нормализации.
+ *
+ * ЗАМЕР ДО (grep по исходникам, 17.09): bloom `[mainImage, ...thumbs].slice(0, 6)`
+ * и `arr.slice(0, 6)` в клиентском скрипте · flux то же самое плюс
+ * `galleryImages.slice(0, 5)` в секции «Товар» · satin `.slice(0, 4)` на самом
+ * списке галереи · vanilla `arr.slice(0, 5)` — причём с комментарием
+ * «показываем все фото», то есть ограничение уже считали снятым. У rose (эталон)
+ * ограничения не было ни в одном месте.
+ *
+ * Это ровно тот класс, на который мы наступали: гард сторожит путь, который
+ * трогал его автор, а соседние порты той же фичи остаются голыми. Поэтому здесь
+ * сторожится КАЖДЫЙ файл, который рисует фото товара, а не только общий блок.
+ *
+ * Критерий: в коде, готовящем список фото к выводу, нет верхней границы —
+ * никакого `.slice(<число>, <число>)` на галерее. Отсечка вида `.slice(1)`
+ * («всё, кроме главного») разрешена: она не ограничивает сверху.
+ */
+describe("PDP тем не режет список фото повторно", () => {
+  const { readFileSync: read } = require("node:fs") as typeof import("node:fs");
+  const { join: j } = require("node:path") as typeof import("node:path");
+  const ROOT = j(__dirname, "..", "..", "..");
+
+  // Каждый файл, который выводит фото товара на витрину.
+  const PORTS: Array<[string, string]> = [
+    ["bloom · страница товара", "themes/bloom/src/components/products/BloomProductDetail.astro"],
+    ["flux · страница товара", "themes/flux/src/components/products/FluxProductDetail.astro"],
+    ["vanilla · страница товара", "themes/vanilla/src/components/products/VanillaProductDetail.astro"],
+    ["satin · страница товара", "themes/satin/src/components/products/satinProductDetail.astro"],
+    ["flux · секция «Товар»", "themes/flux/src/components/sections/FeaturedProduct.astro"],
+    ["общий блок · секция «Товар»", "packages/theme-base/blocks/Product/Product.astro"],
+    ["общий блок · галерея", "packages/theme-base/blocks/Product/ProductGallery.astro"],
+  ];
+
+  // Имена, за которыми в этих файлах ходит список фото.
+  const GALLERY = /(gallery|galleryImages|thumbs|thumbUrls|images|imgs|arr|urls|photos)/i;
+
+  /**
+   * Строки с верхней границей — без комментариев.
+   *
+   * Критерий намеренно НЕ требует, чтобы перед `.slice` стояло «галерейное»
+   * имя: у satin граница висела прямо на выражении — `(… ? a : b).slice(0, 4)`,
+   * и первая версия этого сторожа её пропустила (саботаж 17.09 не покраснел).
+   * В перечисленных файлах отсечка «с N по M» бывает только у списка фото,
+   * поэтому ловим любую — в этом и есть смысл сторожа. Появится законная
+   * (обрезка строки, hex-цвет) — её будет видно по красному тесту, и тогда её
+   * надо назвать здесь явным исключением, а не ослаблять критерий.
+   */
+  const limitsIn = (file: string): string[] => {
+    const src = read(j(ROOT, file), "utf-8");
+    return src
+      .split("\n")
+      .map((line, i) => [i + 1, line] as const)
+      .filter(([, line]) => {
+        const code = line.replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "");
+        return /\.slice\(\s*\d+\s*,\s*\d+\s*\)/.test(code);
+      })
+      .map(([i, line]) => `${i}: ${line.trim()}`);
+  };
+
+  it.each(PORTS)("%s — фото выводятся без верхней границы", (_name: string, file: string) => {
+    expect(limitsIn(file)).toEqual([]);
+  });
+
+  it("САБОТАЖ: проверка не пуста — она действительно читает файлы и видит в них галерею", () => {
+    const seen = PORTS.map(([, file]) => read(j(ROOT, file), "utf-8")).filter((src) =>
+      GALLERY.test(src),
+    );
+    expect(seen).toHaveLength(PORTS.length);
+    // И сам критерий умеет находить границу, если её вернуть.
+    const probe = "const thumbs = galleryImages.slice(0, 5);";
+    expect(probe.match(/([\w$.\]]+)\s*\.slice\(\s*\d+\s*,\s*\d+\s*\)/)?.[1]).toBe("galleryImages");
+  });
+});

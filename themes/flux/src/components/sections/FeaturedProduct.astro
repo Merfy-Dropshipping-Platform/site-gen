@@ -267,8 +267,11 @@ const salePercentText =
 		: "";
 const showBadges = !!salePercentText;
 
-// — Галерея. thumbs = первые 5 фото ВКЛЮЧАЯ главное (буквально как в пине:
-//   `const [mainImage] = gallery; const thumbs = gallery.slice(0, 5);`). —
+// — Галерея. thumbs = ВСЕ фото товара, включая главное. В пине верстальщиков
+//   стояло `gallery.slice(0, 5)`, и шестое фото мерчанта молча не доезжало до
+//   витрины — владелец 17.09: «надо убрать это ограничение». Лента миниатюр
+//   прокручивается, поэтому длинный список раскладку не ломает. Сторож —
+//   src/themes/__tests__/product-gallery-no-limit.spec.ts. —
 const realImages: string[] = isPlaceholder
 	? []
 	: Array.isArray(realProduct.images)
@@ -276,7 +279,7 @@ const realImages: string[] = isPlaceholder
 		: [];
 const galleryImages = realImages.length > 0 ? realImages : [PLACEHOLDER_IMAGE];
 const [mainImage] = galleryImages;
-const thumbs = galleryImages.slice(0, 5);
+const thumbs = galleryImages;
 const href = isPlaceholder ? "/catalog" : productHref(realProduct);
 
 // «Макет» — семантика theme-base Product (Figma 648:55733), натянутая на

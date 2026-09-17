@@ -869,7 +869,7 @@ const pdpHeartSvg =
 				if (buyCta) buyCta.setAttribute("data-image", mainSrc);
 				var thumbsRow = section.querySelector("[data-pdp-thumbs-row]");
 				if (thumbsRow) {
-					var thumbUrls = arr.slice(0, 5); // показываем все фото как миниатюры (первая — активная)
+					var thumbUrls = arr; // показываем ВСЕ фото как миниатюры (первая — активная)
 					if (thumbUrls.length > 1) {
 						// Сохраняем вложенную структуру vanilla (scroll-контейнер + кнопки
 						// с ring-активностью). Плоский <img> с полным URL (MinIO, без webp).

@@ -232,12 +232,18 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-secondary-bg": "255 255 255",
         "--color-button-secondary-text": "0 0 0",
         "--color-button-secondary-border": "0 0 0",
+        "--color-button-secondary-bg-hover": "224 224 224",
+        "--color-button-secondary-text-hover": "0 0 0",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "0 0 0"
+        "--color-button-2-border": "0 0 0",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "0 0 0"
       }
     },
     {
@@ -255,12 +261,18 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "255 255 255",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-secondary-bg": "255 255 255",
         "--color-button-secondary-text": "0 0 0",
         "--color-button-secondary-border": "0 0 0",
+        "--color-button-secondary-bg-hover": "224 224 224",
+        "--color-button-secondary-text-hover": "0 0 0",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "0 0 0"
+        "--color-button-2-border": "0 0 0",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "0 0 0"
       }
     },
     {
@@ -277,12 +289,18 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "245 240 235",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "245 240 235",
         "--color-button-secondary-bg": "245 240 235",
         "--color-button-secondary-text": "26 26 26",
         "--color-button-secondary-border": "26 26 26",
+        "--color-button-secondary-bg-hover": "216 211 207",
+        "--color-button-secondary-text-hover": "26 26 26",
         "--color-button-2-bg": "245 240 235",
         "--color-button-2-text": "26 26 26",
-        "--color-button-2-border": "26 26 26"
+        "--color-button-2-border": "26 26 26",
+        "--color-button-2-bg-hover": "216 211 207",
+        "--color-button-2-text-hover": "26 26 26"
       }
     },
     {
@@ -299,12 +317,18 @@
         "--color-button-bg": "255 255 255",
         "--color-button-text": "0 0 0",
         "--color-button-border": "255 255 255",
+        "--color-button-bg-hover": "224 224 224",
+        "--color-button-text-hover": "0 0 0",
         "--color-button-secondary-bg": "0 0 0",
         "--color-button-secondary-text": "255 255 255",
         "--color-button-secondary-border": "255 255 255",
+        "--color-button-secondary-bg-hover": "31 31 31",
+        "--color-button-secondary-text-hover": "255 255 255",
         "--color-button-2-bg": "0 0 0",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "255 255 255"
+        "--color-button-2-border": "255 255 255",
+        "--color-button-2-bg-hover": "31 31 31",
+        "--color-button-2-text-hover": "255 255 255"
       }
     },
     {
@@ -322,12 +346,18 @@
         "--color-button-bg": "0 0 0",
         "--color-button-text": "245 245 245",
         "--color-button-border": "0 0 0",
+        "--color-button-bg-hover": "31 31 31",
+        "--color-button-text-hover": "245 245 245",
         "--color-button-secondary-bg": "245 245 245",
         "--color-button-secondary-text": "0 0 0",
         "--color-button-secondary-border": "0 0 0",
+        "--color-button-secondary-bg-hover": "216 216 216",
+        "--color-button-secondary-text-hover": "0 0 0",
         "--color-button-2-bg": "245 245 245",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "0 0 0"
+        "--color-button-2-border": "0 0 0",
+        "--color-button-2-bg-hover": "216 216 216",
+        "--color-button-2-text-hover": "0 0 0"
       }
     }
   ],

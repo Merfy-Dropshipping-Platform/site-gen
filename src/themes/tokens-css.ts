@@ -1125,6 +1125,35 @@ function buildThemeSchemeRule(
   // Опоры темы приходят параметром: `buildThemeSchemeRule` манифеста не видит.
   const inputBorder = inputBorderOf(inputAnchors?.border ?? null, inputAnchors?.bg ?? null);
   if (inputBorder) tokens['--color-input-border'] = inputBorder;
+  // Наведение для схем, которые мерчант не переопределял. Значения приезжают из
+  // `theme.json` как есть (все 21 схема пяти тем их объявляют с 17.09); вывод
+  // из самого цвета кнопки — запасной путь для темы, которая их не объявила:
+  // иначе `--color-button-*-hover` на уровне схемы не было бы ВОВСЕ и кнопка
+  // наследовала бы наведение из `:root`, то есть цвет ЧУЖОЙ схемы по умолчанию
+  // (замер 17.09: у bloom кнопка схемы 3 при наведении становилась белой —
+  // это цвет кнопки схемы 1).
+  //
+  // Выводим ТОЛЬКО для тех семейств, чей обычный цвет эта схема объявляет.
+  // Иначе у vanilla/bloom/satin, где `--color-button-secondary-bg` на уровне
+  // схемы нет, покой брался бы из `:root`, а наведение — из схемы, и кнопка
+  // прыгала бы между двумя разными источниками.
+  for (const family of ['--color-button', '--color-button-secondary', '--color-button-2']) {
+    const bg = tokens[`${family}-bg`];
+    if (!bg) continue;
+    const text = tokens[`${family}-text`];
+    if (!tokens[`${family}-bg-hover`]) {
+      const derived = deriveHoverTriple(normTriple(bg), normTriple(text));
+      if (derived) tokens[`${family}-bg-hover`] = derived;
+    }
+    if (text && !tokens[`${family}-text-hover`]) {
+      const derived = deriveHoverText(
+        normTriple(text),
+        normTriple(bg),
+        normTriple(tokens[`${family}-bg-hover`]),
+      );
+      if (derived) tokens[`${family}-text-hover`] = derived;
+    }
+  }
   const pairs = Object.entries(tokens).map(([k, v]) => `${k}: ${v}`);
   if (pairs.length === 0) return '';
   return `.color-scheme-${schemeClassId(scheme.id)} { ${pairs.join('; ')}; }`;
@@ -1156,15 +1185,66 @@ export function themeSchemeToMerchantShape(scheme: {
     // conversion стрипит их при сериализации в CSS.
     accent: rgbTripleToHex(t['--color-accent']),
     muted: rgbTripleToHex(t['--color-muted']),
+    // Наведение. До 17.09 конвертер переносил у кнопок только background/text/
+    // border — и это был ПЕРВЫЙ разрыв цепочки «тема → редактор схем → CSS».
+    // Именно отсюда конструктор сидирует палитру мерчанта
+    // (`theme-puck-config.controller.ts`), поэтому поля «При наведении» в
+    // редакторе схем стояли пустыми во всех темах — не потому, что их некуда
+    // записать, а потому, что значению неоткуда было взяться. Пустое поле и
+    // приводило к `?? background` в `schemeToVars`, то есть к наведению,
+    // неотличимому от покоя. Значения берём из `theme.json`; если тема их не
+    // объявила — выводим из самого цвета кнопки, чтобы поле не осталось пустым.
     primaryButton: {
       background: rgbTripleToHex(t['--color-button-bg']),
       text: rgbTripleToHex(t['--color-button-text']),
       border: rgbTripleToHex(t['--color-button-border']),
+      backgroundHover: rgbTripleToHex(
+        t['--color-button-bg-hover'] ??
+          deriveHoverTriple(
+            normTriple(t['--color-button-bg']),
+            normTriple(t['--color-button-text']),
+          ) ??
+          undefined,
+      ),
+      textHover: rgbTripleToHex(
+        t['--color-button-text-hover'] ??
+          deriveHoverText(
+            normTriple(t['--color-button-text']),
+            normTriple(t['--color-button-bg']),
+            normTriple(t['--color-button-bg-hover']) ??
+              deriveHoverTriple(
+                normTriple(t['--color-button-bg']),
+                normTriple(t['--color-button-text']),
+              ),
+          ) ??
+          undefined,
+      ),
     },
     secondaryButton: {
       background: rgbTripleToHex(t['--color-button-2-bg']),
       text: rgbTripleToHex(t['--color-button-2-text']),
       border: rgbTripleToHex(t['--color-button-2-border']),
+      backgroundHover: rgbTripleToHex(
+        t['--color-button-2-bg-hover'] ??
+          deriveHoverTriple(
+            normTriple(t['--color-button-2-bg']),
+            normTriple(t['--color-button-2-text']),
+          ) ??
+          undefined,
+      ),
+      textHover: rgbTripleToHex(
+        t['--color-button-2-text-hover'] ??
+          deriveHoverText(
+            normTriple(t['--color-button-2-text']),
+            normTriple(t['--color-button-2-bg']),
+            normTriple(t['--color-button-2-bg-hover']) ??
+              deriveHoverTriple(
+                normTriple(t['--color-button-2-bg']),
+                normTriple(t['--color-button-2-text']),
+              ),
+          ) ??
+          undefined,
+      ),
     },
   };
 }
@@ -1327,9 +1407,21 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (primaryBg) parts.push(`--color-button-bg: ${primaryBg}`);
   if (primaryText) parts.push(`--color-button-text: ${primaryText}`);
   if (primaryBorder) parts.push(`--color-button-border: ${primaryBorder}`);
-  // Hover variants — fallback на non-hover если backgroundHover/textHover не задан.
-  const primaryBgHover = hexToRgbTriple(primary.backgroundHover) ?? primaryBg;
-  const primaryTextHover = hexToRgbTriple(primary.textHover) ?? primaryText;
+  // Наведение. Раньше здесь стоял `?? primaryBg` — «нет своего наведения,
+  // значит берём обычный цвет», и наведение было мертво у КАЖДОЙ схемы, у
+  // которой поле не заполнено (а не заполнено оно было везде: значение туда не
+  // доезжало — см. `themeSchemeToMerchantShape`). Теперь запасной путь —
+  // ВЫВЕСТИ цвет из самого фона кнопки, чтобы наведение работало и у схем,
+  // сохранённых мерчантом до правки, и у любого цвета, который мерчант выберет,
+  // не тронув поле наведения. Явно заданное значение по-прежнему сильнее вывода.
+  const primaryBgHover =
+    hexToRgbTriple(primary.backgroundHover) ??
+    deriveHoverTriple(primaryBg, primaryText) ??
+    primaryBg;
+  const primaryTextHover =
+    hexToRgbTriple(primary.textHover) ??
+    deriveHoverText(primaryText, primaryBg, primaryBgHover) ??
+    primaryText;
   if (primaryBgHover) parts.push(`--color-button-bg-hover: ${primaryBgHover}`);
   if (primaryTextHover) parts.push(`--color-button-text-hover: ${primaryTextHover}`);
   const secondaryBg = hexToRgbTriple(secondary.background);
@@ -1338,8 +1430,14 @@ function schemeToVars(scheme: Record<string, unknown>): string {
   if (secondaryBg) parts.push(`--color-button-secondary-bg: ${secondaryBg}`);
   if (secondaryText) parts.push(`--color-button-secondary-text: ${secondaryText}`);
   if (secondaryBorder) parts.push(`--color-button-secondary-border: ${secondaryBorder}`);
-  const secondaryBgHover = hexToRgbTriple(secondary.backgroundHover) ?? secondaryBg;
-  const secondaryTextHover = hexToRgbTriple(secondary.textHover) ?? secondaryText;
+  const secondaryBgHover =
+    hexToRgbTriple(secondary.backgroundHover) ??
+    deriveHoverTriple(secondaryBg, secondaryText) ??
+    secondaryBg;
+  const secondaryTextHover =
+    hexToRgbTriple(secondary.textHover) ??
+    deriveHoverText(secondaryText, secondaryBg, secondaryBgHover) ??
+    secondaryText;
   if (secondaryBgHover) parts.push(`--color-button-secondary-bg-hover: ${secondaryBgHover}`);
   if (secondaryTextHover) parts.push(`--color-button-secondary-text-hover: ${secondaryTextHover}`);
   // Алиасы button-2 ≡ secondary: .color-scheme-N правила theme.json несут --color-button-2-*,
@@ -1373,6 +1471,131 @@ function mixRgbTriples(
   if ([...pa, ...pb].some((n) => !Number.isFinite(n))) return null;
   const mix = pa.map((v, i) => Math.round(v * ratio + pb[i] * (1 - ratio)));
   return mix.join(' ');
+}
+
+/**
+ * Величина сдвига цвета кнопки при наведении — доля пути до белого (для
+ * тёмной кнопки) или до чёрного (для светлой). 0.12 = 12 %.
+ *
+ * ПОЧЕМУ 12 %. Замер по всем 42 кнопкам 21 схемы пяти тем (17.09): при 12 %
+ * САМАЯ вялая кнопка набора сдвигается на ΔE76 = 7.7 — это ~3.3 порога
+ * различимости (JND ≈ 2.3), то есть наведение видно на КАЖДОЙ кнопке, а не
+ * «на глаз кажется». Медиана 10.8, максимум 12.5. Меньшие величины подходят
+ * к порогу вплотную (8 % → ΔE76 4.0 у худшей кнопки), бОльшие (18–22 %) уже
+ * читаются как смена цвета, а не как подсветка.
+ */
+export const HOVER_SHIFT = 0.12;
+
+/**
+ * Порог читаемости надписи на кнопке (WCAG AA для обычного текста).
+ * Ниже него наведение считаем сломавшим надпись и чиним.
+ */
+const READABLE_CR = 4.5;
+
+/** Относительная яркость (WCAG) тройки «R G B»; null — если не разобралась. */
+function relLuminance(triple: string | null): number | null {
+  if (!triple) return null;
+  const parts = triple.trim().split(/\s+/).map(Number);
+  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+  const lin = parts.map((c) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+/** Контраст (WCAG) двух троек «R G B»; null — если хоть одна не разобралась. */
+export function contrastRatio(a: string | null, b: string | null): number | null {
+  const la = relLuminance(a);
+  const lb = relLuminance(b);
+  if (la === null || lb === null) return null;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** Сдвинуть тройку на `HOVER_SHIFT` в сторону полюса («255 255 255» / «0 0 0»). */
+function towards(triple: string | null, pole: string): string | null {
+  return mixRgbTriples(triple, pole, 1 - HOVER_SHIFT);
+}
+
+/**
+ * Фон кнопки при наведении, выведенный из её же обычного цвета.
+ *
+ * Правило: тёмный фон осветляем, светлый затемняем — на `HOVER_SHIFT`.
+ *
+ * Зачем выводить, если значения теперь лежат в `theme.json`. Это запасной путь
+ * для схем, у которых своего наведения нет: схемы мерчанта, сохранённые ДО
+ * 17.09 (у них поля наведения пустые — их и удалял коммит `9b1f685` в
+ * конструкторе, вместо того чтобы наполнить), и любой цвет, который мерчант
+ * выберет сам, не тронув поле наведения. Без вывода такая кнопка получала бы
+ * `?? primaryBg`, то есть наведение, равное покою.
+ *
+ * ИСКЛЮЧЕНИЕ одно, и оно вынужденное. Направление ведёт фон НАВСТРЕЧУ тексту
+ * (у кнопки текст контрастен фону), поэтому надпись слегка теряет контраст.
+ * Обычно это незаметно — запас огромен (худший случай 7.12 при пороге 4.5).
+ * Но у светло-розовой кнопки bloom с БЕЛЫМ текстом (контраст 3.08 уже в покое)
+ * осветление роняет его до 2.65, а увести текст дальше некуда: он уже белый,
+ * то есть в самом полюсе. Для такой кнопки — и только для неё — направление
+ * переворачиваем: фон темнеет, и контраст надписи РАСТЁТ (3.08 → 3.91).
+ * Замер 17.09: переворот срабатывает у 4 кнопок из 42, все — bloom.
+ *
+ * `text` не передан (цвет надписи неизвестен) — работает голое правило.
+ */
+export function deriveHoverTriple(
+  base: string | null,
+  text: string | null = null,
+): string | null {
+  const lum = relLuminance(base);
+  if (lum === null || !base) return null;
+  const pole = lum < 0.5 ? '255 255 255' : '0 0 0';
+  const direct = towards(base, pole);
+  if (!text || !direct) return direct;
+  const crDirect = contrastRatio(text, direct);
+  if (crDirect === null || crDirect >= READABLE_CR) return direct;
+  // Надпись перестаёт читаться. Сперва надежда на сдвиг самого текста
+  // (`deriveHoverText`) — он возможен, только если тексту есть куда двигаться.
+  const directLum = relLuminance(direct);
+  if (directLum === null) return direct;
+  const textPole = directLum < 0.5 ? '255 255 255' : '0 0 0';
+  if (normTriple(text) !== textPole) return direct;
+  // Двигать нечего — переворачиваем фон.
+  const flipped = towards(base, pole === '0 0 0' ? '255 255 255' : '0 0 0');
+  const crFlipped = contrastRatio(text, flipped);
+  return crFlipped !== null && crFlipped > crDirect ? flipped : direct;
+}
+
+/**
+ * Цвет НАДПИСИ кнопки при наведении.
+ *
+ * Меняем его ТОЛЬКО когда иначе теряется читаемость: если на новом фоне
+ * контраст остаётся ≥ 4.5, текст не трогаем вовсе — так ведут себя 40 кнопок
+ * из 42. Где контраст падает ниже порога, отводим текст от фона тем же шагом
+ * `HOVER_SHIFT`, пока не дотянем до 4.5 либо — если 4.5 недостижимо, потому
+ * что кнопка и в покое была ниже порога (палитра bloom: розовая надпись на
+ * белом, 3.08 и 2.43) — хотя бы до контраста покоя. Ухудшать нельзя.
+ */
+export function deriveHoverText(
+  text: string | null,
+  bgRest: string | null,
+  bgHover: string | null,
+): string | null {
+  const crRest = contrastRatio(text, bgRest);
+  const crHover = contrastRatio(text, bgHover);
+  if (crRest === null || crHover === null || !text || !bgHover) return text;
+  if (crHover >= READABLE_CR) return text;
+  const target = Math.min(READABLE_CR, crRest);
+  if (crHover >= target) return text;
+  const hoverLum = relLuminance(bgHover);
+  if (hoverLum === null) return text;
+  const pole = hoverLum < 0.5 ? '255 255 255' : '0 0 0';
+  let candidate = text;
+  for (let step = 0; step < 8; step++) {
+    const next = towards(candidate, pole);
+    if (!next || next === candidate) break;
+    candidate = next;
+    const cr = contrastRatio(candidate, bgHover);
+    if (cr !== null && cr >= target) return candidate;
+  }
+  return candidate;
 }
 
 /** «26  26   26» → «26 26 26». Для сверки токена темы с цветом мерчанта. */

@@ -30,6 +30,18 @@ export const TOKEN_REGISTRY = {
   // Декларированы в CartCheckoutButton.tokens.ts, но не были в registry.
   '--color-button-bg-hover':   { category: 'color', scope: 'scheme' },
   '--color-button-text-hover': { category: 'color', scope: 'scheme' },
+  // Наведение дополнительной кнопки и семейство `secondary` — их выпускает
+  // `schemeToVars` (src/themes/tokens-css.ts): `--color-button-2-*` объявлены
+  // алиасами secondary, и с оживлением наведения обе пары получили `-hover`.
+  // В реестре их не было, поэтому строгая ThemeManifestSchema роняла тест
+  // манифеста темы («Unknown token»), хотя CSS собирался верно.
+  '--color-button-2-bg-hover':         { category: 'color', scope: 'scheme' },
+  '--color-button-2-text-hover':       { category: 'color', scope: 'scheme' },
+  '--color-button-secondary-bg':       { category: 'color', scope: 'scheme' },
+  '--color-button-secondary-text':     { category: 'color', scope: 'scheme' },
+  '--color-button-secondary-border':   { category: 'color', scope: 'scheme' },
+  '--color-button-secondary-bg-hover': { category: 'color', scope: 'scheme' },
+  '--color-button-secondary-text-hover': { category: 'color', scope: 'scheme' },
   '--color-border':            { category: 'color', scope: 'scheme' },
   '--color-link':              { category: 'color', scope: 'scheme' },
   '--color-input-bg':          { category: 'color', scope: 'scheme' },

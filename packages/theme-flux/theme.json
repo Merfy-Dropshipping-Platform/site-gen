@@ -205,12 +205,18 @@
         "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
         "--color-button-border": "30 41 82",
+        "--color-button-bg-hover": "57 67 103",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-secondary-bg": "255 255 255",
         "--color-button-secondary-text": "0 0 0",
         "--color-button-secondary-border": "255 255 255",
+        "--color-button-secondary-bg-hover": "224 224 224",
+        "--color-button-secondary-text-hover": "0 0 0",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "0 0 0",
-        "--color-button-2-border": "255 255 255"
+        "--color-button-2-border": "255 255 255",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "0 0 0"
       }
     },
     {
@@ -227,12 +233,18 @@
         "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
         "--color-button-border": "30 41 82",
+        "--color-button-bg-hover": "57 67 103",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-secondary-bg": "0 0 0",
         "--color-button-secondary-text": "255 255 255",
         "--color-button-secondary-border": "0 0 0",
+        "--color-button-secondary-bg-hover": "31 31 31",
+        "--color-button-secondary-text-hover": "255 255 255",
         "--color-button-2-bg": "0 0 0",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "0 0 0"
+        "--color-button-2-border": "0 0 0",
+        "--color-button-2-bg-hover": "31 31 31",
+        "--color-button-2-text-hover": "255 255 255"
       }
     },
     {
@@ -249,12 +261,18 @@
         "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
         "--color-button-border": "30 41 82",
+        "--color-button-bg-hover": "57 67 103",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-secondary-bg": "0 0 0",
         "--color-button-secondary-text": "255 255 255",
         "--color-button-secondary-border": "0 0 0",
+        "--color-button-secondary-bg-hover": "31 31 31",
+        "--color-button-secondary-text-hover": "255 255 255",
         "--color-button-2-bg": "0 0 0",
         "--color-button-2-text": "255 255 255",
-        "--color-button-2-border": "0 0 0"
+        "--color-button-2-border": "0 0 0",
+        "--color-button-2-bg-hover": "31 31 31",
+        "--color-button-2-text-hover": "255 255 255"
       }
     },
     {
@@ -271,12 +289,18 @@
         "--color-button-bg": "30 41 82",
         "--color-button-text": "255 255 255",
         "--color-button-border": "30 41 82",
+        "--color-button-bg-hover": "57 67 103",
+        "--color-button-text-hover": "255 255 255",
         "--color-button-secondary-bg": "255 255 255",
         "--color-button-secondary-text": "11 11 11",
         "--color-button-secondary-border": "255 255 255",
+        "--color-button-secondary-bg-hover": "224 224 224",
+        "--color-button-secondary-text-hover": "11 11 11",
         "--color-button-2-bg": "255 255 255",
         "--color-button-2-text": "11 11 11",
-        "--color-button-2-border": "255 255 255"
+        "--color-button-2-border": "255 255 255",
+        "--color-button-2-bg-hover": "224 224 224",
+        "--color-button-2-text-hover": "11 11 11"
       }
     }
   ],

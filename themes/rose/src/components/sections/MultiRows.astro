@@ -248,12 +248,23 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		{/* Зазор МЕЖДУ рядами — канон владельца 2026-09-17 (Shopify Row): ряды
 		    ВПЛОТНУЮ, зазор РОВНО ноль на lg: (там же, где ряд становится
 		    двухколоночным — media-text-pair.spec.ts). На мобильном (одна колонка)
-		    зазор оставлен, иначе ряды сливаются в кашу (multirows-row-gap.spec.ts). */}
+		    зазор оставлен, иначе ряды сливаются в кашу (multirows-row-gap.spec.ts).
+		    Владелец 2026-09-17 (баг «раскладка ломается»): `lg:items-center` СНИМАЛ
+		    дефолтное растяжение grid-элементов на высоту ряда — медиа (фикс-аспект)
+		    и текст (высота по контенту) переставали совпадать по высоте на ЛЮБОЙ
+		    ширине ≥lg и ЛЮБОЙ комбинации Высота/Ширина/per-row size, не только на
+		    промежуточных ширинах окна. Без items-center grid растягивает оба узла
+		    (align-items:normal ⇒ stretch), img внутри — object-cover (!h-full
+		    !w-full), поэтому просто обрезается по новой высоте без искажений.
+		    Эталон — bloom/satin (там items-center на ряду никогда не было).
+		    Сторож: multirows-row-stretch.spec.ts (несколько ширин + сочетаний
+		    настроек — три прежних гарда проверяли одно состояние на одной ширине
+		    и пропустили баг). */}
 		<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:items-center lg:gap-0${rowSurfaceCls}`}
+						class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${rowSurfaceCls}`}
 						data-animate
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}

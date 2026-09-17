@@ -8027,3 +8027,92 @@ flux+rose по отдельности, значит vanilla/satin/bloom не п�
 база `origin/main` `03fa8f7e`. НЕ запушено, НЕ задеплоено. Изменены только 2
 файла: `themes/flux/src/components/sections/FeaturedProduct.astro`,
 `src/themes/__tests__/section-scheme-targets.spec.ts`.
+
+## 2026-09-17 — b78: корзина bloom не обновлялась в превью без перезагрузки
+
+### Жалоба
+
+Владелец дословно: «20 обновляется только после перезагрузки» — 20 = секция
+«Корзина» темы bloom, по которой до этого уже жаловался на заголовок,
+количество, цену и отсутствующую цену без скидки (см. запись выше про
+`fix/b72-bloom-cart-scheme-price`).
+
+### Воспроизведение
+
+Живьём, customize.merfy.ru, тестовый bloom-сайт
+`53e9152f-c313-4fa4-9657-dd5d5db25191`, страница «Корзина» (уже была открыта
+на этом siteId другими параллельными агентами — работал в изолированном
+контексте `b78-cart-hot`, не трогал их вкладки). Клик по секции «Корзина» →
+«Цветовая схема» → «Схема 1»: подпись в панели меняется, превью остаётся
+чёрным (Схема 3) — обновляется только после ручной перезагрузки iframe.
+Сеть: НИ ОДНОГО запроса `/preview/block` при смене схемы (проверено
+`list_network_requests`).
+
+### Причина
+
+Страница `page-cart` рендерится тем же `v2-page-composer`, что и главная
+(`CART_UNIFIED_THEMES` — все пять тем уже в списке), а он оборачивает КАЖДЫЙ
+блок в `<div class="color-scheme-N" data-block-scheme="N">` (curl
+`/preview?page=page-cart` подтвердил: обёртка `data-block-scheme="3"`,
+секция `CartBody-1` внутри тоже `color-scheme-3`). У обычных секций (напр.
+«Мультиколонны») любая правка идёт на сервер (`POST /preview/block`), и код
+после fetch (097-фикс, 2026-09-09) синхронизирует ИМЕННО эту обёртку. Но
+CartBody/CartSummary с spec 110 получили ЛОКАЛЬНЫЙ патч в
+`LOCAL_PATCH_REGISTRY` (padding + colorScheme патчатся точечно в DOM, без
+fetch — иначе слайдер отступов перефетчивал блок и пересоздавал список
+товаров, вызывая сдвиг/моргание). Этот патч менял `class` ТОЛЬКО на самой
+секции, никогда не трогая родительскую scheme-обёртку — та застывала на
+схеме первого рендера. Секция сама фон не красит (красит ближайшая обёртка с
+`--color-bg`), поэтому правка была невидима до reload. Баг общий для всех
+пяти тем (CartBody/CartSummary — общий `theme-base`), не bloom-специфика;
+воспроизводил и чинил на bloom по заданию.
+
+### Фикс
+
+`src/services/preview.service.ts`, `LOCAL_PATCH_REGISTRY.CartBody.colorScheme`
+и `CartSummary.colorScheme`: после патча `class` секции — синхронизация
+`class`/атрибута обёртки (`el.parentElement`), если она есть (`data-block-`
++ `'scheme'`, конкатенация — иначе литерал ловит существующий тест
+`preview.service.spec.ts` «does NOT add wrapper when colorScheme prop
+missing», сканирующий готовый HTML агента). Fetch НЕ добавлялся — поведение
+spec 110 (без re-fetch/re-mount списка товаров) сохранено и закреплено новым
+тестом.
+
+Чекаут (`isMegaCheckout`, ветка `applyCheckoutColumnScheme` /
+`applyCheckoutTermsScheme`) НЕ трогался — недавно правили (`8bf0df6e`),
+гард `preview-checkout-mega-block-column-scheme.spec.ts` остался зелёным
+(6/6 без изменений).
+
+### Сторож
+
+Новый `src/services/__tests__/preview-cart-hot-reload.spec.ts` — тем же
+приёмом, что `preview-agent-block-not-found.spec.ts`: поднимает РЕАЛЬНОЕ
+тело `PREVIEW_NAV_AGENT_INLINE` в jsdom (не копию кода), с
+`__MERFY_LOCAL_PATCH_ENABLED=true` и DOM-разметкой один в один с живым
+`/preview?page=page-cart`. Саботаж руками (`git stash` правки
+`preview.service.ts`, тест не трогался) — красный ровно на
+`wrapper.getAttribute('data-block-scheme')` (ждали «1», получили «3»),
+восстановлено — зелёный. Заодно проверяет, что fetch на `/preview/block` НЕ
+уходит (spec 110 не нарушен).
+
+### Проверки
+
+Полная пересборка `pnpm build && pnpm build:blocks && pnpm run
+build:theme-sections:all` (без неё `conformance:satin` красный на стухшем
+`dist/` — не баг, гоча замера). `pre-push.sh` зелёный
+(`test:section-snapshots` 155/155, `conformance:satin` зелёный на свежей
+сборке). `packages/theme-vanilla theme-manifest.test.ts` 9/9.
+`packages/theme-contract` jest 418/419 (1 предсуществующий красный
+`cli-validate.test.ts` против bloom `--product-card-padding` — подтверждён и
+без моей правки, не мой). Смежные превью-гарды (checkout mega/column scheme,
+`preview-agent-*`, `preview.service.spec`, `preview-cart-contract`) — 72/72
+зелёные, включая новый. `preview-block-controller.spec.ts` красный и на
+чистом origin/main (`this.db.select is not a function` — инфраструктурная
+проблема мока БД в этом окружении, не связана с правкой).
+
+### Не делали
+
+Не пушили. Не проверяли живьём rose/flux/satin/vanilla (код общий
+`theme-base`, но задание — конкретно bloom, 25 минут). Панель/состав секций
+не менялся. Ветка `fix/b78-cart-hot-reload`, worktree
+`.worktrees/b78-cart-hot`, база `origin/main` `72a568d4`, коммит `4a5d1a45`.

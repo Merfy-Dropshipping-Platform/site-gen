@@ -1752,6 +1752,19 @@ const PREVIEW_NAV_AGENT_INLINE = `
     // 110 — корзина: отступы/схема патчатся ТОЧЕЧНО (без re-fetch/replace). Иначе
     // слайдер отступов перефетчивал блок и пересоздавал список товаров → сдвиг/моргание.
     // Меняем только padding/класс самой секции → реактивно, двигается лишь корзина.
+    //
+    // b78-fix: страница «Корзина» рендерится тем же v2-page-composer, что и главная
+    // (unifiedCart), а он оборачивает КАЖДЫЙ блок в <div class="color-scheme-N"
+    // ...scheme="N"> (см. v2-page-composer.ts wrapScheme; атрибут-маркер собран
+    // ниже из двух кусков строки — литерал в комментарии здесь НЕ пишем, тест
+    // preview.service.spec.ts «does NOT add wrapper when colorScheme prop
+    // missing» сканирует итоговый HTML агента на его отсутствие). Локальный
+    // патч менял class ТОЛЬКО на самой секции — обёртка оставалась
+    // замороженной на схеме первого рендера, поэтому смена «Цветовой схемы» у
+    // Корзины была не видна в превью до перезагрузки (жалоба владельца). Тот
+    // же класс бага уже чинили для остальных секций 2026-09-09 (097-фикс) на
+    // server-fetch ветке; здесь — зеркально для local-patch ветки Cart.
+    // Устойчивый сторож: preview-cart-hot-reload.spec.ts.
     CartBody: {
       padding: function (el, _oldVal, newVal) {
         var v = newVal || { top: 0, bottom: 0 };
@@ -1760,8 +1773,15 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return true;
       },
       colorScheme: function (el, _oldVal, newVal) {
+        var schemeId = String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', '');
         el.className = el.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();
-        el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
+        el.classList.add('color-scheme-' + schemeId);
+        var wrapper = el.parentElement;
+        var wrapperSchemeAttr = 'data-block-' + 'scheme';
+        if (wrapper && wrapper.hasAttribute(wrapperSchemeAttr)) {
+          wrapper.className = 'color-scheme-' + schemeId;
+          wrapper.setAttribute(wrapperSchemeAttr, schemeId);
+        }
         return true;
       }
     },
@@ -1773,8 +1793,15 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return true;
       },
       colorScheme: function (el, _oldVal, newVal) {
+        var schemeId = String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', '');
         el.className = el.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();
-        el.classList.add('color-scheme-' + String(newVal != null && newVal !== '' ? newVal : 2).replace('scheme-', ''));
+        el.classList.add('color-scheme-' + schemeId);
+        var wrapper = el.parentElement;
+        var wrapperSchemeAttr = 'data-block-' + 'scheme';
+        if (wrapper && wrapper.hasAttribute(wrapperSchemeAttr)) {
+          wrapper.className = 'color-scheme-' + schemeId;
+          wrapper.setAttribute(wrapperSchemeAttr, schemeId);
+        }
         return true;
       }
     },

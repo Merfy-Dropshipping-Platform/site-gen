@@ -3,6 +3,129 @@
 Append-only. Исправление прошлой записи — новая запись со ссылкой на неё.
 Не писать пароли и токены.
 
+## 2026-09-18 — B89 — дровер корзины: старая цена + схема на счётчике/заголовке, все пять тем (`fix/b89-cart-targets`)
+
+### Задача (баг №20, ТРЕТИЙ заход)
+
+Владелец, 18.09, дословно: «20 - цена до скидки не отображается + цв схема
+не применяется к заголовку, цене, количества кнопка и цифры».
+
+Две прошлые попытки (17.09, `bd31b20b`, `ceebe77a`, `87e9d5af`) чинили
+СТРАНИЦУ `/cart` (CartBody.astro) и ФОН панели дровера. Жалоба про СТРОКУ
+ТОВАРА в дровере и его ЗАГОЛОВОК — отдельная разметка, которую те правки не
+трогали.
+
+### Замер до правки
+
+Живой браузер (Playwright), сайт владельца `https://7b64b7a527d2.merfy.ru` —
+скриншот показал тему **FLUX** (логотип «FLUX», оранжевая шапка), не bloom,
+как было в задании (задание, видимо, устарело — тема переключена после
+18.09-обхода). Перепроверено по всем пяти темам, не только flux.
+
+Добавил в корзину настоящий товар со скидкой (990 ₽ / 8800 ₽, `bhbjhbbj`),
+открыл дровер (`[data-cart-open]` → `[data-cart-panel]`):
+- HTML строки товара: `990 ₽`, **нигде** ни `8800`, ни `line-through` —
+  старая цена не рендерится вовсе.
+- Кнопки `data-cart-dec`/`data-cart-inc` и цифра `${line.quantity}`:
+  `class="flex h-9 w-9 items-center justify-center"` — **ни одного**
+  цветового класса.
+- Заголовок дровера `<h2>`: `class="font-comfortaa text-[20px] ... text-
+  [#000000]"` — литеральный чёрный, `getComputedStyle` → `rgb(0,0,0)`
+  в обеих проверенных схемах. Панель `bg-white`, `rootClasses` без
+  `.color-scheme-N`.
+- Проверено на СВЕЖЕМ стенде (не только у владельца): `u9fpo33bkmsd.merfy.ru`
+  (flux, сборка 18.09 00:20) — тот же результат. `tokens.css` этого стенда
+  не содержит ни одной подстроки `cart-drawer` — правило вообще не
+  генерируется, хотя `/cart` секция CartBody несёт `color-scheme-2`
+  (`document.querySelector('[data-block="cart-body"]').className`).
+
+### Три независимых причины
+
+1. **Старая цена.** `renderDrawerItem` (`themes/<t>/src/lib/cart.ts`) во
+   ВСЕХ пяти темах считает `line.oldPrice` (nt-cart core уже кладёт его в
+   строку), но никогда не выводит его в HTML. `/cart` страница
+   (`CartBody.astro`) показывает старую цену у rose/bloom с 17.09 — дровер
+   отдельная разметка, её никто не трогал.
+
+2. **Пустые цветовые классы у flux/satin.** У этих двух тем кнопки
+   `data-cart-dec`/`data-cart-inc` и `<span>` количества не несли ни
+   литерала, ни токена — просто ничего. Соседний гард
+   `cart-drawer-items-scheme.spec.ts` ловит только ПОСТОЯННУЮ КРАСКУ
+   ЛИТЕРАЛОМ (`bg-[#hex]`, `text-black`…) — отсутствие класса он пропускает,
+   поэтому оставался зелёным всю дорогу. rose/bloom/vanilla уже несли
+   `--color-text`/`--color-accent`.
+
+3. **Корень «заголовок не применяется».** `resolveCartDrawerSchemeId`
+   (`src/themes/cart-drawer-contract.ts`) — резолвер, который домешивает
+   схему CartBody/CartSummary в `tokens.css`, когда мерчант не трогал
+   отдельную настройку «Корзина → Цветовая схема сайдбара» (фикс
+   `ceebe77a`/`87e9d5af`, 17.09). Его `validScheme` принимал ТОЛЬКО полную
+   строку `"scheme-N"` (`typeof v === "string" && /^scheme-\d+$/`). Но
+   `props.colorScheme`, который реально доезжает до `ctx.revisionData` на
+   этой стадии сборки, — тот же паттерн, что уже задокументирован как
+   системная дыра в `packages/theme-base/runtime/color-scheme.ts`
+   (`schemeIdOf`/`schemeClassOf`): панель шлёт «scheme-2» ИЛИ голую «1»,
+   живая нормализация переводит это в ЧИСЛО. Резолвер отбрасывал и число, и
+   голую цифровую строку молча → `cartDrawerPaintRule` не рождался →
+   `[data-cart-panel]`, `h2`, `[data-cart-summary]` навсегда на литералах
+   внешнего пакета `@merfy-dropshipping-platform/design-systems-theme`
+   (`NtCartDrawer.astro` — `#000000`/`#999999`/`bg-white`, вне этого репо,
+   правкой не достать иначе, чем этим CSS-перебоем).
+
+### Правка
+
+- `src/themes/cart-drawer-contract.ts` — `validScheme` принимает число,
+  голую цифровую строку («2») и полную «scheme-N», нормализует к
+  «scheme-N». Остальной резолвинг (приоритет настройки → CartBody →
+  CartSummary) не менялся.
+- `themes/{rose,bloom,flux,satin,vanilla}/src/lib/cart.ts` —
+  `renderDrawerItem` рисует текущую цену + условную зачёркнутую старую
+  (`oldPrice > price`, `line-through`, `--color-muted`, тот же паттерн, что
+  уже есть на /cart).
+- `themes/{flux,satin}/src/lib/cart.ts` — `data-cart-dec`/`data-cart-inc`/
+  `<span>` количества получили `--color-text`, как у трёх других тем.
+
+### Сторож
+
+Новый `src/themes/__tests__/cart-drawer-item-targets.spec.ts` (22 проверки:
+5 тем × 4 мишени + 2 саботажных). Саботирован руками (откат
+`themes/{flux,satin}/src/lib/cart.ts` на исходную версию через
+`git stash`/оригинал) — 8/22 красных ровно на старой цене и на кнопках/
+цифре flux+satin, откат зелёный.
+
+Расширены существующие `cart-drawer-contract.spec.ts` (2 новых теста +
+переписан «non-string scheme value is ignored» → число теперь ЗАКОННАЯ
+форма, не мусор), `cart-drawer-scheme.spec.ts` (убрал `42` из списка
+«мусора», добавил тест на числовую настройку), `cart-drawer-paint-fallback.
+spec.ts` (числовая фикстура сквозь `buildTokensCss`). Все три файла раньше
+были зелёными, потому что их фикстуры несли УЖЕ нормализованную строку
+`"scheme-N"` — не ту форму данных, что реально приходит на живом пути; это
+и объясняет, почему резолвер-баг три раза проезжал мимо зелёных гардов.
+Саботаж (откат `validScheme` на старую версию) — 5 тестов из этих трёх
+файлов красные, поимённо на `__MERFY_CART_DRAWER_SCHEME__`.
+
+### Проверки
+
+`pnpm build && pnpm build:blocks && pnpm build:theme-sections:all` — зелёно.
+Все связанные cart-гарды (`cart-drawer-contract`, `cart-drawer-scheme`,
+`cart-drawer-paint-fallback`, `cart-drawer-items-scheme`,
+`cart-drawer-item-targets`, `cart-page-scheme`, `bloom-cart-old-price`,
+`bloom-cart-drawer-no-section-fallback`, `preview-cart-contract`,
+`cart-added-modal`, `scheme-prop-wiring`, `revision-migrations-cart`) —
+185+152 прогонов, все зелёные. `scripts/qa/measure-cart-scheme.mjs` (все
+пять тем, /cart страница) — без регрессий, все мишени по-прежнему едут за
+схемой (то, что уже было починено раньше, не сломано).
+
+### Не проверено
+
+Живьём на стендах/у владельца НЕ перепубликовано — правка НЕ запушена
+(worktree `/tmp/b89-cart-targets`, ветка `fix/b89-cart-targets`, коммит
+`db08faee`). Панель заголовка/итого дровера (мишени за пределами строки
+товара — фон панели, «Итого», кнопка «Оформить») зависит от механизма 3
+(резолвер) — фикс проверен юнит-тестами до `buildTokensCss`, но НЕ
+перепроверен живым `pnpm build` полного сайта с реальной ревизией БД
+(нет доступа к прод-БД конкретного сайта владельца в этой сессии).
+
 ## 2026-09-16 — B40 — дровер корзины + плашка количества, bloom (`fix/b40-bloom`)
 
 ### Пачка от владельца (4 пункта, только bloom)

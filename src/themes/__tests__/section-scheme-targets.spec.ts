@@ -99,8 +99,11 @@ const CASES: Case[] = [
   // заголовка, и на схемах, где заголовок и текст разные, цена шла за чужим
   // цветом (замер до правки: rgb(0,0,0) вместо rgb(153,153,153)).
   { theme: "flux", block: "Product", label: "Товар", target: "цена", marker: "data-cfg-price", prop: "color", expect: "--color-text" },
-  { theme: "flux", block: "Product", label: "Товар", target: "фон динамической кнопки", marker: "data-cfg-buy", prop: "background-color", expect: "--color-button-bg" },
-  { theme: "flux", block: "Product", label: "Товар", target: "текст динамической кнопки", marker: "data-cfg-buy", prop: "color", expect: "--color-button-text" },
+  // Фон/текст покоя и наведения «дополнительной» (динамической, «Купить
+  // сейчас») кнопки — на канон `--color-button-secondary-*` через инлайн
+  // (та же схема, что у theme-base ProductActions.astro) — проверяет
+  // отдельный блок ниже: "дополнительная кнопка «Купить сейчас» несёт
+  // токены секондари + меняет цвет при наведении".
   // [5] «Товар» — цена ДО скидки (пункт 5, владелец 16.09). Проверено: УЖЕ
   // идёт за «Приглушённым» (эталон rose WishlistSection: та же роль на той
   // же паре «цена/старая цена»), sabotage-числами подтверждено отдельно
@@ -724,5 +727,82 @@ describe("flux · «Товар» · вариации идут токеном с�
     );
     expect(wrapperSrc).toContain("text-[rgb(var(--color-heading,0_0_0))]");
     expect(wrapperSrc).not.toContain("text-[#000000]");
+  });
+});
+
+/**
+ * Жалоба владельца 17.09: «частично [наведение красится схемой]. К
+ * дополнительной кнопке нет» — секция «Товар» flux, кнопка «Купить сейчас»
+ * (Figma-роль «Динамическая кнопка», см. `ProductActions.astro` — там она
+ * СЕКОНДАРИ, а не примари).
+ *
+ * ЗАМЕР ДО: класс `hover:opacity-90` — читает getComputedStyle, `opacity`
+ * ≠ `background-color`/`color`: свойство не меняет СВОЁ числовое значение на
+ * hover вовсе, только альфу композитинга. Кнопка не «оживала цветом».
+ *
+ * КАНОН — `packages/theme-base/blocks/Product/ProductActions.astro`
+ * (эталон rose верстает Product через него): у «Купить сейчас» токены
+ * `--color-button-secondary-bg/-text` в покое и `-hover` пара на
+ * onmouseover/onmouseout (Tailwind class `hover:` тут не подходит — кнопка
+ * управляется инлайном, как и канон).
+ *
+ * Сторож ловит и «залип на примари» (после правки марта секондари не должна
+ * тайком читать `--color-button-bg`), и «наведение не меняет значение».
+ */
+describe("flux · «Товар» · дополнительная (динамическая) кнопка «Купить сейчас» — секондари + наведение", () => {
+  const html = built("flux") ? renderBlock("flux", "Product", {
+    id: "Product-1",
+    productId: "p1",
+    colorScheme: `scheme-${SCHEME_A}`,
+  }) : "";
+
+  beforeAll(() => {
+    if (!built("flux")) throw new Error("тема flux не собрана");
+  });
+
+  it("оба узла (desktop+mobile) существуют", () => {
+    const nodes = classesOfAllMarker(html, "data-cfg-buy");
+    expect(nodes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("покой: инлайн ссылается на --color-button-secondary-bg/-text, НЕ на примари и НЕ на литерал", () => {
+    const styles = inlineStylesOfAllMarker(html, "data-cfg-buy");
+    styles.forEach((style, i) => {
+      const where = `узел №${i + 1}`;
+      expect({ where, style }).toEqual({
+        where,
+        style: expect.stringContaining("--color-button-secondary-bg"),
+      });
+      expect({ where, style }).toEqual({
+        where,
+        style: expect.stringContaining("--color-button-secondary-text"),
+      });
+      // Залип на примари — регрессия к старому багу (владелец 15.09), которую
+      // эта правка НЕ должна тайком воскресить.
+      expect(style).not.toMatch(/background:rgb\(var\(--color-button-bg,/);
+    });
+  });
+
+  it("наведение: onmouseover переключает НА -hover пару токенов (значение реально меняется)", () => {
+    const doc = require("node-html-parser").parse(html);
+    const nodes = doc.querySelectorAll("[data-cfg-buy]");
+    expect(nodes.length).toBeGreaterThanOrEqual(1);
+    nodes.forEach((el: { getAttribute: (n: string) => string | null }, i: number) => {
+      const where = `узел №${i + 1}`;
+      const over = el.getAttribute("onmouseover") ?? "";
+      const out = el.getAttribute("onmouseout") ?? "";
+      expect({ where, over }).toEqual({
+        where,
+        over: expect.stringContaining("--color-button-secondary-bg-hover"),
+      });
+      expect({ where, over }).toEqual({
+        where,
+        over: expect.stringContaining("--color-button-secondary-text-hover"),
+      });
+      // onmouseout обязан вернуть РОВНО состояние покоя — иначе кнопка
+      // «залипает» в hover-цвете после первого наведения.
+      expect(out).toContain("--color-button-secondary-bg");
+      expect(out).not.toContain("-hover");
+    });
   });
 });

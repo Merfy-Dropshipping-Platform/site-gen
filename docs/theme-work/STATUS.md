@@ -1000,6 +1000,69 @@ satin — шапки объявляют свои пределы (`max-w-[1920px]
   скомпилированный рендер + реальный Chromium (playwright) на статичном HTML+CSS. Другие
   темы НЕ трогались (задача явно ограничена bloom).
 
+### bloom + flux (2026-09-17, b71-slideshow-nav, WIP — worktree не смёржен)
+
+- **Жалоба владельца:** «На блуме и флюкс стрелки справа, а не по центру» / «съехали
+  пункты, какой там элемент слайд-шоу первый, второй, третий — они справа, а не по
+  центру» / «нумерация при добавлении медиа уезжает». Скриншот: круглые стрелки на краях
+  кадра (штатно), пагинация «1 / 2» в правом нижнем углу вместо центра снизу.
+- **Замер ДО** (рендер `dist/theme-sections/<тема>` через `render-theme-sections.mjs`,
+  node-html-parser, классы разметки — то, что реально уедет покупателю):
+  - bloom: пустое состояние (`slides:[]`) — пагинация уже `absolute bottom-5 left-1/2
+    -translate-x-1/2 …` (центр, ок); ≥2 слайда с картинкой — `absolute bottom-5 right-4
+    md:right-20 2xl:right-[300px]` (правый край) — ровно «уезжает при добавлении медиа».
+  - flux: пустое состояние И с картинкой — оба `absolute bottom-5 right-4 md:right-20
+    2xl:right-80` (fullscreen) / `right-5 md:right-8` (contained) через `navEdgeCls` —
+    прижато вправо в ОБОИХ состояниях.
+  - Стрелки (`data-slide-prev/next`) в обеих темах уже совпадали с rose (`absolute
+    left-4/right-4 top-1/2 …-translate-y-1/2` — вертикально центрированы у краёв кадра);
+    реальной регрессии в стрелках не нашлось, саму пагинацию владелец, видимо, тоже
+    называл «стрелками».
+- **Причина:** bloom — реальный блок пагинации (`pagination !== "none"`, ветка с ≥2
+  слайдами) был написан с `right-4 md:right-20 2xl:right-[300px]`, тогда как соседний
+  декоративный блок пустого состояния (`!hasSlides`, чуть ниже) уже использовал канон
+  `left-1/2 -translate-x-1/2` — расхождение внутри одного файла. flux — переменная
+  `navEdgeCls` изначально была задумана как «низ-право» (комментарий в исходнике) и
+  использовалась в обоих местах (реальная пагинация + декоративная пустого состояния).
+- **Правка (ТОЛЬКО блок пагинации, стрелки и остальная вёрстка не тронуты):**
+  - `themes/bloom/src/components/sections/Slideshow.astro`: класс реальной пагинации
+    `right-4 md:right-20 2xl:right-[300px]` → `left-1/2 -translate-x-1/2` (тот же, что уже
+    жил в пустом состоянии).
+  - `themes/flux/src/components/sections/Slideshow.astro`: `navEdgeCls` переопределён с
+    `contained ? "right-5 md:right-8" : "right-4 md:right-20 2xl:right-80"` на константу
+    `"left-1/2 -translate-x-1/2"` — правит оба места использования разом.
+  - Канон — rose `Slideshow.astro` (`absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2
+    …`). Панель/состав пропов (`Slideshow.puckConfig.ts`) НЕ менялись — только Tailwind-
+    классы позиционирования.
+- **Замер ПОСЛЕ** (тот же рендер): bloom и flux, оба состояния (пусто / ≥2 слайда с
+  картинкой) — пагинация `absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 …`, без
+  `right-*`. Проверено на классах разметки (ширинонезависимые Tailwind-утилиты — центр не
+  зависит от 1280 vs 375).
+- **Сторож:** `src/themes/__tests__/slideshow-nav-centered.spec.ts` (новый, 6 проверок:
+  bloom/flux × empty/with-image — пагинация содержит `left-1/2` и `-translate-x-1/2`, НЕ
+  содержит `right-*`; плюс проверка, что стрелки prev/next остались `left-4`/`right-4` +
+  `top-1/2` + `-translate-y-1/2`, как у rose). Саботирован руками (`git stash` вернул
+  добаговый исходник, пересборка `compile-theme-sections.mjs bloom/flux`) → 3/6 красных
+  ровно на прежних баговых кейсах (bloom WITH_IMAGE, flux EMPTY, flux WITH_IMAGE; bloom
+  EMPTY был уже корректен и остался зелёным) — саботаж поймал именно баг из жалобы;
+  правка восстановлена (`git stash pop`), пересборка — снова 6/6.
+- **Прогон:** `pnpm run build:theme-sections:all` (5/5 тем), `slideshow-nav-centered`
+  6/6, `bloom-slideshow-layout` (гард b67, не сломан) 5/5, `slideshow-merchant-image` /
+  `slideshow-slide-overlay` / `slideshow-slide-panel` / `page-blocks-slideshow` /
+  `satin-conformance-slideshow-renderer` 120/120 не задеты, `pre-push.sh`
+  (`test:section-snapshots` 155/155) зелёный, `packages/theme-vanilla
+  theme-manifest.test.ts` 9/9, `packages/theme-contract` jest 418/419 (1
+  предсуществующий красный `cli-validate.test.ts` против bloom
+  `--product-card-padding`, не мой — известное чужое красное из инструкции задачи).
+- **Ветка:** `fix/b71-slideshow-arrows-pager` в `.worktrees/b71-slideshow-nav`, база
+  `origin/main` (HEAD `03fa8f7e` на момент создания worktree). НЕ запушено (в main пуш не
+  делался).
+- **Хвост:** живьём на стендах/в конструкторе/через реальный браузер не проверялось —
+  только рендер портов темы + собранный `dist/theme-css/<тема>.css` (без Chromium/
+  Playwright — MCP playwright не подключился в этой сессии). MultiRows/MultiColumns,
+  `tokens-css.ts`, `scheme-matrix.mjs` и цветовые роли flux НЕ трогались (не в зоне
+  задачи).
+
 ### bloom (2026-09-16, b40-bloom, WIP — worktree не смёржен)
 
 - **Статус:** 2 из 4 пунктов владельца УЖЕ БЫЛИ починены более ранними коммитами main

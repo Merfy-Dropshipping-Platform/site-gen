@@ -7854,3 +7854,47 @@ theme-manifest.test.ts` 9/9. `packages/theme-contract` jest 418/419 (1
 Ветка `fix/b67-bloom-slideshow-layout`, worktree
 `.worktrees/b67-bloom-slideshow`, база `origin/main` `b7d4395a`, коммит
 `8e55aa97`. НЕ запушено. Другие темы не трогались.
+
+## 2026-09-17 — bloom + flux: пагинация Slideshow съезжала вправо (баг b71)
+
+Жалоба владельца: «На блуме и флюкс стрелки справа, а не по центру» /
+«нумерация при добавлении медиа уезжает». Замер рендером
+`dist/theme-sections/<тема>` (без браузера, node-html-parser) подтвердил:
+bloom — пагинация центрирована в пустом состоянии, но `right-4
+md:right-20 2xl:right-[300px]` (правый край) как только появляются ≥2
+слайда с картинкой; flux — `right-4 md:right-20 2xl:right-80`
+(`navEdgeCls`) в ОБОИХ состояниях. Стрелки (`data-slide-prev/next`) в
+обеих темах уже совпадали с rose (`left-4/right-4 top-1/2
+-translate-y-1/2`) — не трогал.
+
+Правка: bloom — класс реальной пагинации `right-4 …` →
+`left-1/2 -translate-x-1/2` (тот же паттерн, что уже жил в пустом
+состоянии этого же файла); flux — `navEdgeCls` заменён константой
+`"left-1/2 -translate-x-1/2"` (правит оба места использования разом).
+Канон — rose `Slideshow.astro`. Панель/состав пропов не менялись.
+
+Сторож: новый `src/themes/__tests__/slideshow-nav-centered.spec.ts` (6
+проверок: bloom/flux × empty/with-image — пагинация центр, не `right-*`;
++ стрелки не сдвинуты). Саботирован `git stash` на исходный (баговый)
+код + пересборка — 3/6 красных ровно на прежних баговых кейсах (bloom
+EMPTY остался зелёным — он и был уже верным). Восстановил (`git stash
+pop`) — снова 6/6.
+
+Прогон: `build:theme-sections:all` (5/5), `slideshow-nav-centered` 6/6,
+`bloom-slideshow-layout` (гард b67) 5/5 — не сломан, `slideshow-merchant-
+image`/`slideshow-slide-overlay`/`slideshow-slide-panel`/`page-blocks-
+slideshow`/`satin-conformance-slideshow-renderer` 120/120 не задеты,
+`pre-push.sh` (`test:section-snapshots` 155/155) зелёный,
+`packages/theme-vanilla theme-manifest.test.ts` 9/9,
+`packages/theme-contract` jest 418/419 (1 предсуществующий красный
+`cli-validate.test.ts` против bloom `--product-card-padding`, НЕ мой,
+ровно тот, что указан в задаче).
+
+**НЕ проверено живьём** (25-минутный бюджет): реальный конструктор/
+live-стенд через браузер — MCP playwright не подключился в этой сессии;
+проверка только рендером портов темы + собранным `dist/theme-css/<тема>.css`.
+
+Ветка `fix/b71-slideshow-arrows-pager`, worktree
+`.worktrees/b71-slideshow-nav`, база `origin/main` (`03fa8f7e`). НЕ
+запушено. MultiRows/MultiColumns, tokens-css.ts, scheme-matrix.mjs и
+цветовые роли flux не трогались.

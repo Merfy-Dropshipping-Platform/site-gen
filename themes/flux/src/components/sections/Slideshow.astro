@@ -176,9 +176,13 @@ const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]"
 const contentPadCls = contained
 	? "px-6 py-10 md:px-12 md:py-14"
 	: "px-4 py-8 md:px-20 md:py-10 2xl:px-80";
-// Навигация (точки/числа/счётчик) — низ-право; в fullscreen выровнена по сетке
-// секции, в contained — скромный отступ от края рамки.
-const navEdgeCls = contained ? "right-5 md:right-8" : "right-4 md:right-20 2xl:right-80";
+// Навигация (точки/числа/счётчик) — низ-центр (баг b71, жалоба владельца
+// 2026-09-17): было прижато к правому краю (right-4/md:right-20/2xl:right-80
+// fullscreen, right-5/md:right-8 contained) — «пункты справа, а не по центру»
+// что в пустом состоянии, что при добавленных слайдах. Канон — rose
+// Slideshow.astro (left-1/2 + -translate-x-1/2), contained/fullscreen на
+// центрирование не влияют.
+const navEdgeCls = "left-1/2 -translate-x-1/2";
 
 // Канон overlay 0-100 — «Затемнение» PER-SLIDE (хелпер slideOverlayN объявлен ВЫШЕ,
 // перед маппингом slides, т.к. используется в нём; overlayN теперь поле слайда).

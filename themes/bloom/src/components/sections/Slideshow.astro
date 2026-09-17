@@ -239,6 +239,14 @@ const ctaCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
+// Картинки слайдов грузятся НЕМЕДЛЕННО (loading="eager"), а не лениво, и это
+// касается всех слайдов, а не только первого. Слайды лежат друг на друге
+// (absolute inset-0) и переключаются сменой opacity: у скрытого слайда браузер
+// ленивую картинку не грузит, а когда слайд показывают — уже не начинает,
+// наблюдатель видимости от смены opacity не пересчитывается. Мерчант выбирал
+// фото во втором слайде и не видел его до перезагрузки страницы (жалоба
+// владельца 18.09, п.26 «не применяется медиафайл»). Слайдов максимум пять —
+// экономить на их загрузке нечего. Сторож — slideshow-slide-eager.spec.ts.
 ---
 
 <section
@@ -264,7 +272,7 @@ const paddingStyle = p.padding
 							<img
 								src={s.image}
 								alt={s.heading || "Слайд"}
-								loading={i === 0 ? "eager" : "lazy"}
+								loading="eager"
 								class="absolute inset-0 !h-full !w-full object-cover object-center"
 							/>
 						) : (

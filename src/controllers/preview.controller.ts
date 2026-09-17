@@ -28,6 +28,7 @@ import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss } from '../themes/tokens-css';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
+import { resolveCartDrawerSchemeId } from '../themes/cart-drawer-contract';
 import {
   adaptLegacyProps,
   extractPageBlocks,
@@ -600,6 +601,7 @@ export class PreviewController {
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
         (loaded.data as Record<string, unknown> | null)?.themeSettings,
+        loaded.data,
       );
       this.logger.log(
         `[preview] v2 served built theme page for site=${siteId} theme=${loaded.themeId} route=${route || '(root)'} (${html.length} bytes)`,
@@ -935,7 +937,10 @@ export class PreviewController {
           .send('/* tokens-css render error: site has no themeId */');
         return;
       }
-      const css = buildTokensCss(body.themeSettings ?? {}, loaded.themeId);
+      const css = buildTokensCss(
+        this.withCartDrawerSchemeFallback(body.themeSettings ?? {}, loaded.data),
+        loaded.themeId,
+      );
       res.type('text/css').send(css);
     } catch (err: unknown) {
       const e = err as Error;
@@ -1055,11 +1060,39 @@ export class PreviewController {
     }
   }
 
+  /**
+   * Домешивает в `themeSettings` фолбэк-схему дровера (F-085 / баг тестера
+   * 17.09 «Корзина — не применяется цветовая схема», часть 2). `buildTokensCss`
+   * красит дровер CSS-правилом вне `@layer` ТОЛЬКО когда `cartDrawerScheme`
+   * непуст (см. `cartDrawerPaintRule` в tokens-css.ts) — а читает он только
+   * явную настройку. Явная настройка почти никем не трогается; обычный путь —
+   * мерчант выбирает схему НА СТРАНИЦЕ корзины (CartBody/CartSummary). Живая
+   * сборка (`build.service.ts`) это уже домешивает; превью конструктора — нет,
+   * поэтому тестер по ссылке `customize.merfy.ru/?...&page=page-cart` видел
+   * тот же баг, только на другом пути. Один резолвер на все пути —
+   * `resolveCartDrawerSchemeId` (cart-drawer-contract.ts).
+   */
+  private withCartDrawerSchemeFallback(
+    themeSettings: unknown,
+    revisionData: unknown,
+  ): Record<string, unknown> {
+    const ts =
+      themeSettings && typeof themeSettings === 'object'
+        ? (themeSettings as Record<string, unknown>)
+        : {};
+    const explicit = (ts as { cartDrawerScheme?: unknown }).cartDrawerScheme;
+    const cartDrawerScheme = explicit ?? resolveCartDrawerSchemeId(revisionData);
+    return { ...ts, cartDrawerScheme };
+  }
+
   private tokensCssFromSettings(
     data: Record<string, unknown>,
     themeId: string | null,
   ): string {
-    return buildTokensCss(data.themeSettings, themeId);
+    return buildTokensCss(
+      this.withCartDrawerSchemeFallback(data.themeSettings, data),
+      themeId,
+    );
   }
 
   /** Инжекты в HTML превью: shopId, DaData-токен, siteId для гидрации товаров. */
@@ -1332,8 +1365,17 @@ export class PreviewController {
 
   /** Фаза 3: сложные страницы v2 (блоб) получают tokens.css статикой +
    * мини-слушатель update-tokens (selection-агента у блоба нет и не нужно). */
-  private injectTokensIntoBlobPage(htmlIn: string, siteId: string, themeId: string, themeSettings: unknown): string {
-    const css = buildTokensCss(themeSettings ?? {}, themeId);
+  private injectTokensIntoBlobPage(
+    htmlIn: string,
+    siteId: string,
+    themeId: string,
+    themeSettings: unknown,
+    revisionData?: unknown,
+  ): string {
+    const css = buildTokensCss(
+      this.withCartDrawerSchemeFallback(themeSettings, revisionData),
+      themeId,
+    );
     const listener = `window.addEventListener('message',function(ev){if(!ev.data||ev.data.type!=='update-tokens')return;fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})}).then(function(r){return r.text()}).then(function(t){var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;}).catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
     htmlIn = injectTokensCssIntoHtml(htmlIn, css);
     return htmlIn.replace(/<\/head>/i, `<script>${listener}</script></head>`);

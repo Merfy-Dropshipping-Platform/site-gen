@@ -7724,3 +7724,62 @@ Header/Footer/MainText/Collections по собственному коммент�
 
 Ветка `fix/b62-multirows-spacing`, worktree `.worktrees/b62-multirows-gaps`,
 коммиты `f3ffa73e` (правка портов + новый гард) + `cfe7550d` (инвентарь satin).
+
+## 2026-09-17 — bloom «Изображение с текстом»: Shopify-раскладка (layout/position/width)
+
+Владелец, дословно: «У Shopify видишь какие состояния у текста с изображением.
+То есть тут какая-то вот настройка layout, а у нас это настройка контейнер. И
+нужно сделать так же, чтобы менялись расположения. И сделать пока это только
+на Bloom». ТОЛЬКО bloom — остальные 4 темы не трогались.
+
+**Было**: тумблер «Контейнер» (containerEnabled true/false) — просто
+surface-бокс на текстовой колонке, никакого наезда карточки на фото, `width`
+менял только max-width всего блока (780/1080/1320/none), колонки всегда 50/50,
+вертикаль жёстко `lg:items-center`.
+
+**Стало** — 2 новых поля в bloom-only puckConfig (заменили `containerEnabled`):
+- `layout` (toggle): «Без наложения» (no-overlap, дефолт — прежний вид,
+  колонки бок о бок) / «С наложением» (overlap — карточка `lg:absolute`
+  наезжает на фото, surface-подложка + shadow-xl, обязательна для читаемости).
+- `position` (select): Сверху / По центру (дефолт, = прежний items-center) /
+  Снизу — вертикальное положение карточки.
+- `width` (уже был в каноне) при `layout=overlap` ДОПОЛНИТЕЛЬНО управляет
+  пропорцией карточка/фото: small=36%, medium=46%, large=62% ширины карточки
+  (при no-overlap работает как раньше — max-width блока, 50/50).
+
+Легаси `containerEnabled='true'` (сайты, сохранённые 15-16.09) на рендере
+падает fallback'ом в `layout='overlap'` — обратная совместимость.
+
+Дефолты (`no-overlap` + `middle`) дают БИТ-В-БИТ прежнюю разметку — снимок
+`section-html-snapshot.spec.ts` (75 снимков) прошёл БЕЗ обновления.
+
+**Пруф «остальные темы не задеты»**: `build:theme-sections:all` до/после
+правки, `diff -rq` по `dist/theme-sections/{rose,satin,flux,vanilla}` и
+`diff dist/theme-css/{rose,satin,flux,vanilla}.css` — 0 отличий. Только
+`bloom/…ImageWithText…mjs` и `bloom.css` изменились.
+
+**Новый сторож**: `src/themes/__tests__/bloom-image-with-text-layout.spec.ts`
+(7 проверок) — рендерит СКОМПИЛИРОВАННЫЙ bloom-порт: no-overlap не даёт
+`lg:absolute`, overlap даёт; width меняет `lg:w-[36%]`/`lg:w-[62%]`; position
+меняет `lg:top-6`/`lg:bottom-6`; легаси containerEnabled='true' даёт overlap.
+Саботировано руками (`isOverlap` зашит в `false`) → 5 из 7 покраснели, вернул
+— снова 7/7.
+
+**Канон**: `conformance/panel-canon.json` обновлён `pnpm panel-canon:refresh`
+(санкция владельца 2026-09-17, только bloom → ImageWithText →
+containerEnabled заменён на layout+position). `test:panel-canon` 203/203.
+
+**Проверено**: `pnpm run build:theme-sections:all`, `test:panel-canon`
+(203), `hidden-named-fields.spec.ts` (без регрессии), `bash
+~/…/tools/pre-push.sh` (снимки 75/75 без изменений), `packages/theme-vanilla
+theme-manifest.test.ts` (9/9), `packages/theme-contract` jest (418/419 —
+1 предсуществующий красный `cli-validate.test.ts` против bloom
+`--product-card-padding`, НЕ мой, подтверждён на чистом origin/main).
+
+**НЕ проверено живьём** (не пушили, времени не было): реальный конструктор
+:3200 / live-стенд bloom через браузер — только рендер компилированного
+порта. Конструктору новых типов полей не понадобилось (`toggle` и `select`
+уже существуют в дереве панели).
+
+Ветка `feat/b66-bloom-image-text-layout`, worktree
+`.worktrees/b66-bloom-imagetext`, коммит `427ad649`. НЕ запушено.

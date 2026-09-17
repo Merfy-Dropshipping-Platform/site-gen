@@ -22,9 +22,15 @@ const qaMode = quickAdd ?? "standard";
 const qaLabel =
 	typeof quickAddText === "string" && quickAddText.trim() ? quickAddText : "В корзину";
 // Степпер в манере bloom: пилюля той же высоты, что кнопка, розовый бордер инпутов.
-// Карточка bloom жёстко светлая (bg-[#fdf4f6], текст text-[#000000]) и не
-// участвует в цветовой схеме секции — степпер тоже фиксированных цветов:
-// с токенами --color-text «− 1 +» пропадали белым на белом (как во flux).
+// ТОЛЬКО СТЕППЕР — фиксированных цветов (не роль схемы): с токенами --color-text
+// «− 1 +» пропадали белым на белом (как во flux). Имя/цена/бейдж/сердце карточки
+// ЭТУ отговорку больше не разделяют (b61, 17.09) — сканер `scheme-matrix.mjs`
+// раньше не видел их вовсе (баг разбора escaped-класса `.bg-\[\#e38e9f\]`), и
+// когда починили разбор, выяснилось, что соседний пакетный компонент
+// `packages/theme-bloom/blocks/Catalog/BloomProductCard.astro` (и rose-эталон
+// `RoseProductCard.astro`) уже показывают: следовать схеме здесь безопасно.
+// Переведены на роли: bg-[#e38e9f] → --color-accent (bloom default 227 142 159
+// = #e38e9f, число то же), text-[#000000] → --color-text.
 const qaStepperCls =
 	"mb-2 flex h-12 w-full items-center justify-between rounded-full border border-solid border-[#FFD4E5] px-1";
 const qaStepBtnCls =
@@ -72,7 +78,7 @@ const swatchColors: Record<string, string> = {
 			/>
 			{product.discount && (
 				<span
-					class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[#e38e9f] px-1.5 font-inter text-[12px] font-normal leading-none text-white"
+					class="absolute left-2 top-2 inline-flex h-6 items-center rounded-[16px] bg-[rgb(var(--color-accent,227_142_159))] px-1.5 font-inter text-[12px] font-normal leading-none text-white"
 				>
 					Скидка
 				</span>
@@ -97,7 +103,7 @@ const swatchColors: Record<string, string> = {
 			data-product-id={product.id}
 			aria-pressed="false"
 			aria-label="В избранное"
-			class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80"
+			class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[rgb(var(--color-text,0_0_0))] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80"
 		>
 			<span data-wishlist-icon class="block size-[18px]" set:html={wishlistOutlineSvg} />
 		</button>
@@ -105,12 +111,12 @@ const swatchColors: Record<string, string> = {
 	<div class="flex flex-col gap-2">
 		<a
 			href={href}
-			class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70"
+			class="bloom-product-name font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
 		>
 			{product.name}
 		</a>
 		<div class="flex flex-wrap items-baseline gap-2">
-			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">
+			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">
 				{product.price}
 			</span>
 			{product.oldPrice && (

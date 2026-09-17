@@ -133,7 +133,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-index={0}
 								data-puck-subsection-field="fields"
 							>
-								<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								<label for="nt-field-name" class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
 									{formFields.name.label}{formFields.name.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 								</label>
 								<div class="relative w-full">
@@ -143,7 +143,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										type="text"
 										autocomplete="name"
 										required={formFields.name.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[rgb(var(--color-bg,255_255_255))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -156,7 +156,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-index={1}
 								data-puck-subsection-field="fields"
 							>
-								<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								<label for="nt-field-email" class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
 									{formFields.email.label}{formFields.email.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 								</label>
 								<div class="relative w-full">
@@ -166,7 +166,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										type="email"
 										autocomplete="email"
 										required={formFields.email.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[rgb(var(--color-bg,255_255_255))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -179,7 +179,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-index={2}
 								data-puck-subsection-field="fields"
 							>
-								<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+								<label for="nt-field-phone" class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
 									{formFields.phone.label}{formFields.phone.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 								</label>
 								<div class="relative w-full">
@@ -189,7 +189,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										type="tel"
 										autocomplete="tel"
 										required={formFields.phone.required}
-										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[#FFFFFF] px-4 font-manrope text-[16px] font-normal leading-normal text-[#000000] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
+										class="box-border h-14 w-full min-h-[56px] rounded-[var(--radius-input,8px)] border border-solid bg-[rgb(var(--color-bg,255_255_255))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[#999999] focus-visible:border-[#000000] border-[#000000]"
 									/>
 								</div>
 							</div>
@@ -211,7 +211,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-index={3}
 							data-puck-subsection-field="fields"
 						>
-							<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+							<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
 								{formFields.message.label}{formFields.message.required && <span class="ml-1 text-[rgb(var(--color-error,255_148_148))]">*</span>}
 							</label>
 							{/* Фон поля — «Фон» СХЕМЫ, надпись в нём — «Текст» СХЕМЫ. Было `bg-white` и
@@ -232,7 +232,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)
 				) : (
 				<div class="flex flex-col gap-2">
-					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[#000000]">
+					<label for="contacts-question" class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
 						Комментарий
 					</label>
 					<textarea

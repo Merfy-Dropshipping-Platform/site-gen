@@ -398,14 +398,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				   «2 500 ₽». Без data-add-to-cart/сердца — это не реальный товар. */
 				<li data-product-id={product.id}>
 					<article
-						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[#FBFBFB] p-3 transition-transform duration-300 hover:-translate-y-1"
+						class="group flex h-full w-full flex-col gap-4 rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))] p-3 transition-transform duration-300 hover:-translate-y-1"
 						data-nt="flux-product-card"
 						aria-label={product.name}
 					>
 						<a
 							href="/catalog"
 							data-nt="flux-card-media"
-							class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[#FBFBFB]"
+							class="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,251_251_251))]"
 							aria-label={product.name}
 						>
 							<img
@@ -416,10 +416,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							/>
 						</a>
 						<div class="flex flex-1 flex-col gap-1">
-							<span class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+							<span class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 								{product.name}
 							</span>
-							<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">
+							<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">
 								{product.price}
 							</span>
 						</div>

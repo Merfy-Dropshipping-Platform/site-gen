@@ -223,6 +223,11 @@ describe("матрица «тема × секция × мишень» проти
       // тёмной при любой схеме — цвет текста над фото берёт схема, читаемость
       // держит затемнение (packages/theme-base/styles/hero-over-photo.css).
       "hero-overlay-veil",
+      // Заведено 17.09 (b61, починка разбора класса в scheme-matrix.mjs):
+      // тёмный холст satin ПОД full-bleed фото (Hero/ImageWithText/MultiRows/
+      // Slideshow) — фиксированный #111111, согласованный паттерн темы, а не
+      // роль схемы. См. объяснение в ALLOWED.
+      "satin-photo-canvas",
       "search-always-scheme-1",
       "slide-over-photo",
     ]);

@@ -769,7 +769,7 @@ const skeletons = Array.from({ length: skeletonCount });
     // Кнопка-сердце — sibling <a> (button-in-anchor невалиден). rounded-full = манера bloom.
     const heartBtn =
       `<button type="button" data-wishlist-toggle data-product-id="${escapeHtml(p.id)}" aria-pressed="${wished ? "true" : "false"}" aria-label="В избранное" ` +
-      `class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[#000000] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">` +
+      `class="absolute right-2 top-2 z-20 flex size-9 items-center justify-center rounded-full bg-white/90 text-[rgb(var(--color-text,0_0_0))] shadow-[0_2px_8px_rgba(0,0,0,0.10)] backdrop-blur-sm transition-opacity hover:opacity-80">` +
       `<span data-wishlist-icon class="block size-[18px]">${heartInner}</span></button>`;
     return `<article class="group flex w-full flex-col gap-4" data-nt="bloom-product-card" aria-label="${name}" style="${CARD_CONTAINER_STYLE}">
   <div class="relative w-full">
@@ -779,9 +779,9 @@ const skeletons = Array.from({ length: skeletonCount });
   ${heartBtn}
   </div>
   <div class="flex w-full flex-col gap-2 text-left">
-    <a href="${href}" class="bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70">${name}</a>
+    <a href="${href}" class="bloom-product-name block w-full font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${name}</a>
     <div class="flex w-full flex-wrap items-baseline gap-2">
-      <span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">${price}</span>
+      <span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">${price}</span>
       ${oldPrice}
     </div>
   </div>

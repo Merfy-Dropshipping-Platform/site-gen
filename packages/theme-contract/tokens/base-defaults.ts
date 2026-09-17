@@ -22,6 +22,17 @@ export const BASE_DEFAULTS: Record<TokenKey, string> = {
   // RGB-триплеты повторяют значения --color-text / --color-bg.
   '--color-button-bg-hover': '51 51 51',
   '--color-button-text-hover': '255 255 255',
+  // Дополнительная кнопка: `--color-button-2-*` и `--color-button-secondary-*`
+  // — одно семейство (алиасы, см. schemeToVars в src/themes/tokens-css.ts),
+  // поэтому дефолты у них совпадают. Наведение светлой кнопки — затемнение
+  // на 12% пути до чёрного: тот же сдвиг, каким оживлены схемы тем.
+  '--color-button-2-bg-hover': '224 224 224',
+  '--color-button-2-text-hover': '17 17 17',
+  '--color-button-secondary-bg': '255 255 255',
+  '--color-button-secondary-text': '17 17 17',
+  '--color-button-secondary-border': '200 200 200',
+  '--color-button-secondary-bg-hover': '224 224 224',
+  '--color-button-secondary-text-hover': '17 17 17',
   '--color-border': '230 230 230',
   '--color-link': '17 17 17',
   '--color-input-bg': '255 255 255',

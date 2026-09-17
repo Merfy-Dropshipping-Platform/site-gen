@@ -212,9 +212,13 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // цвет, на том же узле нужны фон/текст, читающие их; h-full + justify-center
 // растягивают контейнер на высоту ряда, радиус/отступ — манера контейнера темы
 // (те же, что у cardSurfaceCls выше).
-const containerSchemeCls = containerSchemeId
-	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,12px)] p-6 md:p-10`
-	: "";
+// Шов НЕ скругляется (владелец 2026-09-17, перепроверка): сторона СТЫКА
+// текстового контейнера с медиа всегда rounded-*-none, скругление темы — на
+// внешней стороне ряда (зеркально медиа-скруглению, см. cardSurfaceCls/медиа выше).
+const containerSchemeCls = (right: boolean) =>
+	containerSchemeId
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,12px)] p-6 md:p-10 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,12px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,12px)]"}`
+		: "";
 
 // Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
 // (паттерн MainText): тогда py-классы контейнера снимаются (нет двойного отступа).
@@ -295,7 +299,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								)}
 							</div>
-							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls}`}>
+							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 								{r.heading && (
 									<h3
 										class={`font-roboto-flex ${r.headingCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}

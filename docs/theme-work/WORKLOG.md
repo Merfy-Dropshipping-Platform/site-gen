@@ -7854,3 +7854,22 @@ theme-manifest.test.ts` 9/9. `packages/theme-contract` jest 418/419 (1
 Ветка `fix/b67-bloom-slideshow-layout`, worktree
 `.worktrees/b67-bloom-slideshow`, база `origin/main` `b7d4395a`, коммит
 `8e55aa97`. НЕ запушено. Другие темы не трогались.
+
+## 2026-09-17 (b70) shue — Мультиряды: шов контейнера-текста, вторая попытка
+
+Владелец: «шов не должен скругляться... в настройках темы есть настройка
+скругления медиа, но шов между ними не должен скругляться в этой секции».
+Прошлая правка того же дня чинила только медиа (media-text-pair.spec.ts §5);
+текстовый контейнер (`containerColorScheme`) остался с безусловным
+`rounded-[var(--radius-card)]` на все 4 угла — щель на стыке сохранялась.
+
+Правка: `containerSchemeCls` в rose/vanilla/bloom/flux MultiRows.astro стал
+функцией стороны (`right: boolean`), зеркалит уже существующий split у медиа.
+satin не трогал — там радиус контейнера и так 0 (манера). MultiColumns
+проверил рендером с `containerEnabled=true` — card оборачивает ВЕСЬ column
+одним паддингом (p-6/8/10), картинка не касается края card, шва там нет —
+фиксить нечего, это не тот же баг.
+
+Гард: media-text-pair.spec.ts §6, 10 тестов (rowsPosition left/right ×
+5 тем), саботаж на rose подтверждён (падал на 8px вместо 0, затем восстановил).
+pre-push.sh зелёный. Ветка НЕ запушена.

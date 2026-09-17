@@ -441,4 +441,100 @@ describe("пара «медиа + текст»: зазор, доли колон�
       });
     }
   });
+
+  describe("6) MultiRows: текстовый контейнер (containerColorScheme) — тот же запрет скругления на стыке", () => {
+    /**
+     * Владелец перепроверил 2026-09-17 (b70): пункт 5 выше сторожил ТОЛЬКО
+     * медиа — у текстового контейнера (проп `containerColorScheme`, задаёт
+     * bg/text/rounded-[var(--radius-card)] на текстовой колонке ряда) радиус
+     * был ОДНИМ классом на все ряды, без учёта стороны стыка. На стыке рядом
+     * с медиа (у которого стык уже был квадратным) текстовый контейнер
+     * оставался скруглённым — ровно щель в форме скругления со скриншотов
+     * владельца («у картинки свой радиус, у карточки свой»). Тут — то же
+     * измерение, что в §5, но для второго элемента пары: сторона СТЫКА текста
+     * с медиа обязана быть 0, независимо от rowsPosition (лево/право).
+     */
+    const propsForContainerScheme = (rowsPosition: "left" | "right") => ({
+      id: "MultiRows-container-guard",
+      colorScheme: "1",
+      containerColorScheme: "2",
+      padding: { top: 40, bottom: 40 },
+      width: "medium",
+      size: "small",
+      rowsPosition,
+      heading: "Мультиряды",
+      alignment: "left",
+      rows: [
+        {
+          id: "row-1",
+          title: "Ряд 1",
+          description: "Текст ряда",
+          image: "",
+          size: "small",
+          headingSize: "small",
+          textSize: "small",
+          button: { text: "Кнопка", link: "/catalog" },
+        },
+      ],
+    });
+
+    const containerHtmlCache = new Map<string, string>();
+    const renderContainerPair = (theme: Theme, rowsPosition: "left" | "right"): string => {
+      const key = `${theme}/MultiRows/containerScheme/${rowsPosition}`;
+      const ready = containerHtmlCache.get(key);
+      if (ready !== undefined) return ready;
+      const jobs = [
+        { block: "MultiRows", cascade: true, live: true, props: propsForContainerScheme(rowsPosition) },
+      ];
+      const raw = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
+        cwd: SITES_ROOT,
+        encoding: "utf-8",
+        maxBuffer: 64 * 1024 * 1024,
+      });
+      const row = (JSON.parse(raw) as Record<string, string>[])[0];
+      if (row.html === undefined) {
+        throw new Error(
+          `рендер MultiRows (${theme}, containerScheme, ${rowsPosition}) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`,
+        );
+      }
+      containerHtmlCache.set(key, row.html);
+      return row.html;
+    };
+
+    const containerTextEl = (theme: Theme, rowsPosition: "left" | "right"): HTMLElement => {
+      const section = parse(renderContainerPair(theme, rowsPosition));
+      const root =
+        section.querySelector("[data-puck-component-id]") ?? (section.firstChild as HTMLElement);
+      const pair = findPair(root);
+      const kids = elementChildren(pair);
+      const media = kids.find(looksLikeMedia) ?? kids[0];
+      return kids.find((k) => k !== media) as HTMLElement;
+    };
+
+    for (const theme of THEMES) {
+      it(`${theme} / MultiRows: containerColorScheme слева (медиа слева) — стык у текста СЛЕВА, ноль`, () => {
+        const text = containerTextEl(theme, "left");
+        const seamPx = (long: string) =>
+          pxOf(bundleOf(theme, false), text, [long, "border-radius"], DESKTOP_PX) ?? 0;
+        // rowsPosition="left" → медиа слева, текст справа → стык текста слева.
+        const seamTop = seamPx("border-top-left-radius");
+        const seamBottom = seamPx("border-bottom-left-radius");
+        const outerTop = seamPx("border-top-right-radius");
+        const outerBottom = seamPx("border-bottom-right-radius");
+        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
+        expect(outerTop).toBeGreaterThanOrEqual(seamTop);
+        expect(outerBottom).toBeGreaterThanOrEqual(seamBottom);
+      });
+
+      it(`${theme} / MultiRows: containerColorScheme зеркалится с rowsPosition="right" — стык у текста СПРАВА, ноль`, () => {
+        const text = containerTextEl(theme, "right");
+        const seamPx = (long: string) =>
+          pxOf(bundleOf(theme, false), text, [long, "border-radius"], DESKTOP_PX) ?? 0;
+        // rowsPosition="right" → медиа справа, текст слева → стык текста справа.
+        const seamTop = seamPx("border-top-right-radius");
+        const seamBottom = seamPx("border-bottom-right-radius");
+        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
+      });
+    }
+  });
 });

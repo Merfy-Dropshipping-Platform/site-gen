@@ -1907,6 +1907,45 @@ function valueContainsDemoImage(value: unknown): boolean {
   return false;
 }
 
+/** Prop keys that carry an actual media URL (as opposed to text/links). */
+const IMAGE_LIKE_KEY = /image|poster|videourl/i;
+
+/**
+ * True when a NON-demo, non-empty media URL is present anywhere under an
+ * image-bearing key (`image`/`imageUrl`/`backgroundImage(s)`/`poster`/
+ * `videoUrl`), at any depth — including individual items of an array field
+ * (Slideshow `slides`, Gallery/MultiRows/MultiColumns items/rows/columns).
+ *
+ * Bug (владелец 17.09, «Слайд-шоу — не применяется медиафайл в слайде»):
+ * `valueContainsDemoImage` above walks the WHOLE block props and returns
+ * true if ANY value anywhere still matches a known demo URL. A Slideshow
+ * has up to 5 independent slides — a merchant routinely edits ONE slide and
+ * leaves the rest on the untouched seed. `clearDemoImageSections` then
+ * treated "some slide still has a demo photo" as "the whole section is
+ * untouched" and deleted `props.slides` ENTIRELY, wiping the merchant's
+ * freshly-picked image along with the untouched sibling's placeholder.
+ * `keyHint` carries the enclosing object key down through arrays/objects so
+ * plain text (heading/subtitle/button text) is never mistaken for a media
+ * URL.
+ */
+function hasMerchantImage(value: unknown, keyHint?: string): boolean {
+  if (typeof value === 'string') {
+    if (!keyHint || !IMAGE_LIKE_KEY.test(keyHint)) return false;
+    const v = value.trim();
+    if (!v) return false;
+    return !(DEMO_IMAGE_URLS.has(v) || v.includes('images.unsplash.com'));
+  }
+  if (Array.isArray(value)) {
+    return value.some((item) => hasMerchantImage(item, keyHint));
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>).some(([k, v]) =>
+      hasMerchantImage(v, k),
+    );
+  }
+  return false;
+}
+
 function clearDemoImageSections(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -1922,6 +1961,10 @@ function clearDemoImageSections(
       if (!DEMO_IMAGE_SECTION_TYPES.has(b.type)) return b;
       const props = b.props;
       if (!props || !valueContainsDemoImage(props)) return b;
+      // A real merchant image somewhere in the block (e.g. one Slideshow
+      // slide out of five) means the section is PARTIALLY edited, not
+      // untouched demo seed — keep everything, don't wipe their choice.
+      if (hasMerchantImage(props)) return b;
       const cleaned: Record<string, unknown> = { ...props };
       for (const p of DEMO_CONTENT_PROPS) delete cleaned[p];
       pageMutated = true;

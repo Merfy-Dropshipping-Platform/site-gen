@@ -262,7 +262,7 @@ const skeletons = Array.from({ length: skeletonCount });
 
       {/* Раскладка top — фильтры строкой над гридом (родной вид rose) */}
       <div class="flex flex-col gap-6 lg:gap-8" data-catalog-variant="top">
-        <div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters">
+        <div class="relative z-30 hidden items-center justify-between gap-3 lg:flex lg:flex-wrap lg:gap-4" data-nt="catalog-filters">
           <div class="flex flex-wrap items-center gap-3">
             {filterVisible && (
               <>
@@ -338,6 +338,75 @@ const skeletons = Array.from({ length: skeletonCount });
             </details>
           )}
         </div>
+
+        {/* Мобильный адаптив (<lg): вместо строки details-дропдаунов — одна
+            строка «Фильтры и сортировка (N)», открывающая нижнюю панель.
+            Канон — rose.merfy.ru/catalog (сайт верстальщиков): триггер и
+            панель переиспользуют ТУ ЖЕ разметку/data-атрибуты (data-filters-open/
+            -close/-apply, id="rose-filters-sheet"), а внутри — та же
+            NtFilterSidebar, что и в раскладке side (общая JS-биндинг логика
+            ниже уже обходит все [data-nt="filter-sidebar"] через querySelectorAll,
+            поэтому вторая инстанс подключается без доп. проводки). */}
+        {(filterVisible || sortVisible) && (
+          <button
+            type="button"
+            data-filters-open
+            aria-controls="rose-filters-sheet"
+            aria-expanded="false"
+            class="flex w-fit items-center gap-2 lg:hidden"
+          >
+            <img
+              src="/icons/icon-filter.svg"
+              alt=""
+              class="pointer-events-none size-6 shrink-0 object-contain"
+              width="24"
+              height="24"
+              aria-hidden="true"
+            />
+            <span class="font-manrope text-[12px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">Фильтры и сортировка</span>
+            <span
+              data-filters-count
+              class="font-manrope text-[12px] font-normal uppercase leading-none text-[rgb(var(--color-text,0_0_0))]"
+              style="display:none;"
+            >(0)</span>
+          </button>
+        )}
+
+        {(filterVisible || sortVisible) && (
+          <div
+            id="rose-filters-sheet"
+            class="fixed inset-0 z-[55] hidden w-full overflow-y-auto bg-white px-4 pt-4 pb-8 sm:px-5 md:px-10 lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Фильтры и сортировка"
+            data-nt="rose-filters-sheet"
+          >
+            <div class="flex items-center justify-between pb-5">
+              <p class="font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">Фильтры и сортировка</p>
+              <button
+                type="button"
+                data-filters-close
+                class="flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-70"
+                aria-label="Закрыть"
+              >
+                <img src="/icons/menu-close.svg" alt="" class="pointer-events-none size-4 shrink-0 object-contain" width="24" height="24" aria-hidden="true" />
+              </button>
+            </div>
+            <NtFilterSidebar class="!w-full !max-w-full" sortVisible={sortVisible} />
+            <div class="mt-8 flex items-center gap-3">
+              <button
+                type="button"
+                data-filters-apply
+                class="inline-flex h-14 flex-1 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+              >Показать</button>
+              <button
+                type="button"
+                data-filters-close
+                class="flex h-14 flex-1 items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-text,0_0_0))] bg-white font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+              >Закрыть</button>
+            </div>
+          </div>
+        )}
 
         <ul
           class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"
@@ -1050,7 +1119,22 @@ const skeletons = Array.from({ length: skeletonCount });
 
   function resetPageAndRender() {
     filters.page = 1;
+    syncMobileFilterCount(); // счётчик «(N)» на мобильном триггере — до рендера, не ждёт fetch
     renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
+  }
+
+  // Счётчик применённых фильтров на мобильном триггере «Фильтры и сортировка (N)»
+  // (канон rose.merfy.ru/catalog). Сортировка НЕ считается фильтром (там же на
+  // эталоне «По популярности» — дефолт сортировки — не входит в счётчик).
+  function syncMobileFilterCount() {
+    var n = 0;
+    if (filters.stock !== "all") n += 1;
+    if (filters.priceMin != null || filters.priceMax != null) n += 1;
+    if (Array.isArray(filters.colors) && filters.colors.length > 0) n += 1;
+    for (var el of document.querySelectorAll("[data-filters-count]")) {
+      el.textContent = "(" + n + ")";
+      el.style.display = n > 0 ? "" : "none";
+    }
   }
 
   // ─────────── Наличие (top: <p> в NtFilterPanel[stock]; side: radio) ───────────
@@ -1588,6 +1672,7 @@ const skeletons = Array.from({ length: skeletonCount });
       // Начальное активное состояние контролов.
       syncStockUi();
       syncSortUi();
+      syncMobileFilterCount();
       // Первая страница товаров (REPLACE) + кнопка «Смотреть ещё» — реальный fetch.
       await renderCatalog(false);
       // UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).
@@ -1600,4 +1685,63 @@ const skeletons = Array.from({ length: skeletonCount });
   hydrateCatalog();
   document.addEventListener("astro:page-load", hydrateCatalog);
   })();
+</script>
+
+{/* Мобильная панель «Фильтры и сортировка» — открытие/закрытие + lock скролла.
+    Канон rose.merfy.ru/catalog: отдельный небольшой скрипт (не завязан на
+    filters-state), только DOM-toggle через data-filters-open/-close/-apply и
+    id="rose-filters-sheet". Счётчик «(N)» считает состояние filters внутри
+    основного скрипта выше (syncMobileFilterCount, вызывается из
+    resetPageAndRender + один раз при гидрации). */}
+<script is:inline>
+(function () {
+  var SHEET_ID = "rose-filters-sheet";
+
+  function setTriggerExpanded(expanded) {
+    document.querySelectorAll("[data-filters-open]").forEach(function (t) {
+      t.setAttribute("aria-expanded", String(expanded));
+    });
+  }
+
+  function setSheetOpen(open) {
+    var sheet = document.getElementById(SHEET_ID);
+    if (!sheet) return;
+    sheet.classList.toggle("hidden", !open);
+    setTriggerExpanded(open);
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+
+  function closeOnInit() {
+    var sheet = document.getElementById(SHEET_ID);
+    if (!sheet) return;
+    document.body.style.overflow = "";
+    sheet.classList.add("hidden");
+    setTriggerExpanded(false);
+  }
+
+  var initialized = false;
+  function init() {
+    if (initialized) return;
+    initialized = true;
+    document.addEventListener("click", function (ev) {
+      var target = ev.target instanceof Element ? ev.target : null;
+      if (!target) return;
+      if (target.closest("[data-filters-open]")) {
+        var sheet = document.getElementById(SHEET_ID);
+        if (!sheet) return;
+        ev.preventDefault();
+        setSheetOpen(sheet.classList.contains("hidden"));
+        return;
+      }
+      if (target.closest("[data-filters-close]") || target.closest("[data-filters-apply]")) {
+        ev.preventDefault();
+        setSheetOpen(false);
+      }
+    });
+  }
+
+  init();
+  document.addEventListener("astro:page-load", closeOnInit);
+  closeOnInit();
+})();
 </script>

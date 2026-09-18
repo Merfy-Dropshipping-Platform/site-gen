@@ -1149,7 +1149,15 @@ function applyCheckoutColumnScheme(el, schemeId) {
   var next = [];
   var classes = String(pane.className || '').split(/\\s+/);
   for (var i = 0; i < classes.length; i++) {
-    if (classes[i] && !/^color-scheme-\\d+$/.test(classes[i])) next.push(classes[i]);
+    // b98: было \\d+$ — снимало только "color-scheme-N" (мерчантские 1..5), но
+    // НЕ снимало платформенный дефолт "color-scheme-checkout" (см.
+    // CHECKOUT_SCHEME_ID/CHECKOUT_SCHEME_CSS в tokens-css.ts), которым сидируется
+    // колонка ДО первого выбора мерчанта. Первая же живая правка схемы копила
+    // оба класса на одной колонке — а .color-scheme-checkout объявлен ПОЗЖЕ
+    // .color-scheme-N в собранном CSS и побеждал по порядку правил, поэтому
+    // выбор мерчанта визуально не менял ничего до перезагрузки (баг-репорт
+    // 18.09 «не применяется цветовая схема Rose», live-репро на customize.merfy.ru).
+    if (classes[i] && !/^color-scheme-/.test(classes[i])) next.push(classes[i]);
   }
   if (schemeId) next.push('color-scheme-' + schemeId);
   pane.className = next.join(' ');
@@ -1161,7 +1169,10 @@ function applyCheckoutTermsScheme(el, schemeId) {
   var next = [];
   var classes = String(el.className || '').split(/\\s+/);
   for (var i = 0; i < classes.length; i++) {
-    if (classes[i] && !/^color-scheme-\\d+$/.test(classes[i])) next.push(classes[i]);
+    // b98: та же починка, что у applyCheckoutColumnScheme выше — снимаем ЛЮБОЙ
+    // существующий color-scheme-* (числовой ИЛИ платформенный "checkout"),
+    // не только числовой.
+    if (classes[i] && !/^color-scheme-/.test(classes[i])) next.push(classes[i]);
   }
   if (schemeId) next.push('color-scheme-' + schemeId);
   el.className = next.join(' ');

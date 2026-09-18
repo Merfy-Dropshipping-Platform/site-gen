@@ -38,6 +38,21 @@ const loadApply = (): Apply => {
   return factory();
 };
 
+type TermsNode = { className: string; getAttribute: (name: string) => string | null };
+type ApplyTerms = (el: TermsNode | null, schemeId: string) => TermsNode | null;
+
+const loadApplyTerms = (): ApplyTerms => {
+  const factory = new Function(
+    `${PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE}\nreturn applyCheckoutTermsScheme;`,
+  ) as () => ApplyTerms;
+  return factory();
+};
+
+const termsNode = (className: string): TermsNode => ({
+  className,
+  getAttribute: (name: string) => (name === 'data-block' ? 'checkout-terms' : null),
+});
+
 /**
  * jsdom в этом сервисе нет (`testEnvironment: 'node'`), поэтому кадр
  * изображаем минимальными двойниками: функции нужны ровно `closest`,
@@ -154,6 +169,24 @@ describe('горячая смена схемы: ЛЕВАЯ колонка кра
     apply(section, '4');
     expect(pane.className).toContain('color-scheme-4');
   });
+
+  it('b98: платформенный дефолт color-scheme-checkout снимается первым же выбором мерчанта', () => {
+    // Живой репро 18.09 (Rose, customize.merfy.ru): колонка сидируется
+    // "color-scheme-checkout" (CHECKOUT_SCHEME_ID, tokens-css.ts) ДО того, как
+    // мерчант вообще открыл панель. Первая живая правка «Цветовой схемы» на
+    // "Схема 4" раньше ДОБАВЛЯЛА "color-scheme-4" рядом со старым классом
+    // (регэксп \\d+$ его не ловил) — оба класса оставались на колонке, и
+    // .color-scheme-checkout (объявлен позже в собранном CSS) продолжал
+    // побеждать: выбор мерчанта визуально не менял ничего до перезагрузки.
+    const { pane, section } = frame(
+      'form',
+      'mfy-checkout-pane mfy-checkout-pane--form color-scheme-checkout',
+    );
+    apply(section, '4');
+    expect(pane.className).toContain('color-scheme-4');
+    expect(pane.className).not.toContain('color-scheme-checkout');
+    expect(pane.className).toContain('mfy-checkout-pane--form');
+  });
 });
 
 describe('горячая смена схемы: разводка агента', () => {
@@ -169,5 +202,33 @@ describe('горячая смена схемы: разводка агента', 
   it('хелпер уходит в кадр вместе с агентом, а не лежит рядом', () => {
     const service = readFileSync(join(__dirname, '..', 'preview.service.ts'), 'utf8');
     expect(service).toContain('${PREVIEW_CHECKOUT_COLUMN_SCHEME_SOURCE}');
+  });
+});
+
+/**
+ * b98: та же проверка для «Подвала» (юр.инфы, `checkout-terms`) — общий
+ * хелпер снимает старый класс схемы той же логикой, что и колонки выше.
+ */
+describe('горячая смена схемы: юр.инфа (checkout-terms)', () => {
+  const applyTerms = loadApplyTerms();
+
+  it('прошлая числовая схема снимается, а не копится', () => {
+    const el = termsNode('w-full color-scheme-2');
+    applyTerms(el, '4');
+    expect(el.className).toContain('color-scheme-4');
+    expect(el.className).not.toContain('color-scheme-2');
+  });
+
+  it('b98: платформенный дефолт color-scheme-checkout снимается первым же выбором мерчанта', () => {
+    const el = termsNode('w-full color-scheme-checkout');
+    applyTerms(el, '4');
+    expect(el.className).toContain('color-scheme-4');
+    expect(el.className).not.toContain('color-scheme-checkout');
+    expect(el.className).toContain('w-full');
+  });
+
+  it('узел вне checkout-terms не трогается', () => {
+    const notTerms: TermsNode = { className: 'x', getAttribute: () => null };
+    expect(loadApplyTerms()(notTerms, '4')).toBeNull();
   });
 });

@@ -73,6 +73,41 @@ describe('migrateCheckoutPage', () => {
     ]);
   });
 
+  it('b98: preserves the merchant colorScheme saved on page-checkout, not the stale checkout duplicate', () => {
+    // Живой репро (18.09, Rose, siteId 53e9152f…): конструктор сохраняет
+    // POST /revisions с обновлённым `page-checkout` (мерчант выбрал
+    // "Схема 4"), но соседний дубликат `checkout` остаётся на старом
+    // "scheme-checkout". Следующая загрузка (превью ИЛИ живая сборка) не
+    // должна затирать свежую схему содержимым устаревшего дубликата.
+    const stalePage = {
+      content: [
+        { type: 'CheckoutHeader', props: { id: 'CheckoutHeader-1' } },
+        { type: 'CheckoutForm', props: { id: 'CheckoutForm-1', colorScheme: 'scheme-checkout' } },
+        { type: 'CheckoutSummary', props: { id: 'CheckoutSummary-1', colorScheme: 'scheme-checkout' } },
+        { type: 'Footer', props: { id: 'Footer-1' } },
+      ],
+    };
+    const freshPage = {
+      content: [
+        { type: 'CheckoutHeader', props: { id: 'CheckoutHeader-1' } },
+        { type: 'CheckoutForm', props: { id: 'CheckoutForm-1', colorScheme: 'scheme-4' } },
+        { type: 'CheckoutSummary', props: { id: 'CheckoutSummary-1', colorScheme: 'scheme-checkout' } },
+        { type: 'Footer', props: { id: 'Footer-1' } },
+      ],
+    };
+    const out = migrateRevisionData({
+      pagesData: { 'page-checkout': freshPage, checkout: stalePage },
+    });
+    const pages = out.pagesData as Record<string, any>;
+    for (const key of ['page-checkout', 'checkout']) {
+      const form = pages[key].content.find((b: any) => b.type === 'CheckoutForm');
+      expect(form.props.colorScheme).toBe('scheme-4');
+    }
+    // Оба ключа держатся синхронизированными и после фикса — оба указывают
+    // на СВЕЖИЙ page-checkout, а не наоборот.
+    expect(pages['checkout']).toEqual(pages['page-checkout']);
+  });
+
   it('is idempotent — running twice keeps the same shape', () => {
     const first = migrateRevisionData({ pagesData: { home: { content: [] } } });
     const second = migrateRevisionData(first);

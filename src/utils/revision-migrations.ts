@@ -737,10 +737,25 @@ function retagSeededCheckoutScheme(
 function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   // Constructor uses `page-checkout` key, live `pages/checkout.astro` reads
   // `checkout`. Keep BOTH keys in sync (migrate either source → both).
+  //
+  // БАГ-РЕПОРТ ВЛАДЕЛЬЦА (18.09): «Сводка и оформление заказа — не
+  // применяется цветовая схема Rose». Живой замер (customize.merfy.ru, Rose,
+  // siteId 53e9152f…): конструктор шлёт `POST /revisions` с обновлённым
+  // `pagesData['page-checkout']` (CheckoutForm.colorScheme = "scheme-4"), но
+  // держит соседний дубликат `pagesData['checkout']` НЕ синхронизированным —
+  // тот остаётся на прежнем "scheme-checkout". Эта функция раньше отдавала
+  // приоритет ИМЕННО `checkout` (`fromNew`), когда у него есть контент —
+  // и на КАЖДОЙ следующей загрузке (превью, живая сборка — обе идут через
+  // `migrateRevisionData`) переписывала свежий `page-checkout` СТАРЫМ
+  // содержимым `checkout`, стирая выбор мерчанта молча (без ошибок, без
+  // расхождения путей превью/витрина — обе читают одну и ту же испорченную
+  // ревизию). Источник истины — `page-checkout` (см. комментарий выше:
+  // «Constructor uses page-checkout key»); `checkout` — производный дубликат
+  // для legacy-рендера темы, не должен затирать актуальные правки.
   const out: Record<string, unknown> = { ...pagesData };
   const fromLegacy = out['page-checkout'] as PageData | undefined;
   const fromNew = out['checkout'] as PageData | undefined;
-  const source = fromNew?.content?.length ? fromNew : fromLegacy;
+  const source = fromLegacy?.content?.length ? fromLegacy : fromNew;
 
   // Уже консолидирован в 2 mega-блока (новый Figma 1:19998 layout) — no-op.
   if (source && Array.isArray(source.content) && source.content.some((b) => b?.type === 'CheckoutForm')) {

@@ -9,6 +9,7 @@ interface Props extends CartSectionProps {
 const {
   id,
   padding,
+  colorScheme,
 } = Astro.props as Props;
 
 const paddingStyle = padding
@@ -16,10 +17,20 @@ const paddingStyle = padding
   : '';
 // NOTE: Real cart items are hydrated in Phase 1c via React island
 // (reads from localStorage cart-store + orders API for server totals).
+
+// Цветовая схема секции (зеркало CartBody.astro / CartSummary.astro): поле
+// «Цветовая схема» есть в puckConfig, но раньше не доходило до рендера — панель
+// его показывала, а вид не менялся («не применяется цветовая схема», баг
+// владельца по темам bloom/satin). Тот же способ вычисления класса, что и у
+// соседних блоков корзины.
+const schemeClass =
+  typeof colorScheme === 'string' && colorScheme
+    ? `color-scheme-${colorScheme.replace('scheme-', '')}`
+    : '';
 ---
 <section
   id="cart-section"
-  class={C.root}
+  class:list={[C.root, schemeClass]}
   data-puck-component-id={id}
   data-block="cart-section"
   style={paddingStyle}

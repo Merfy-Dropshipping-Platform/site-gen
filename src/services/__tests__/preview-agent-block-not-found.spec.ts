@@ -90,13 +90,16 @@ const attached: Array<[string, EventListenerOrEventListenerObject]> = [];
  * isValidBlockHtml), но в текущем документе узла с таким id нет — ровно то,
  * что давал рассинхрон двух независимых read-time миграций.
  */
-function bootAgent(opts: { domHasMatchingNode: boolean }): Ctx {
+function bootAgent(opts: { domHasMatchingNode: boolean; twoOfType?: boolean }): Ctx {
   const fetches: string[] = [];
   const errors: unknown[][] = [];
 
   document.body.innerHTML = opts.domHasMatchingNode
     ? '<section data-puck-component-id="AccountSection-1"><h1>Старое</h1></section>'
-    : '<section data-puck-component-id="AccountSection-stale-id"><h1>Старое</h1></section>';
+    : opts.twoOfType
+      ? '<section data-puck-component-id="AccountSection-stale-a"><h1>Старое</h1></section>' +
+        '<section data-puck-component-id="AccountSection-stale-b"><h1>Второе</h1></section>'
+      : '<section data-puck-component-id="AccountSection-stale-id"><h1>Старое</h1></section>';
 
   (globalThis as unknown as { fetch: unknown }).fetch = ((url: string) => {
     fetches.push(String(url));
@@ -184,7 +187,16 @@ describe("превью: узел не найден в DOM (blockId разошё�
     expect(ctx.errors).toHaveLength(0);
   });
 
-  it("узла в DOM нет → запрос всё равно уходит (сервер валиден), но правка не применяется И это видно в консоли", async () => {
+  /**
+   * ПЕРЕСМОТР 18.09 (b85). Раньше этот случай проверял, что правка теряется, а
+   * в консоли остаётся след. След — полезен, потеря правки — нет: владелец
+   * видел это как «в секции Страница не применяется цветовая схема». Замер на
+   * живом bloom: конструктор слал update-block с `id: "Page-1"`, в разметке
+   * лежал `Page-1789680745002-2`, сервер отдавал ПРАВИЛЬНЫЙ фрагмент
+   * (`color-scheme-3` в ответе, проверено curl'ом) — применять было некуда.
+   * Теперь при единственном блоке этого типа правка адресуется ему.
+   */
+  it("узла с таким id нет, но блок этого типа на странице ОДИН → правка применяется к нему", async () => {
     const ctx = bootAgent({ domHasMatchingNode: false });
     ctx.send(INIT);
     await tick();
@@ -192,19 +204,38 @@ describe("превью: узел не найден в DOM (blockId разошё�
     await tick();
     await tick();
 
-    // Запрос ушёл — сервер честно отработал по blockId/blockType.
     expect(ctx.fetches.filter((u) => u.includes("/preview/block"))).toHaveLength(1);
-    // DOM НЕ поменялся — старый узел (с другим id) остался как был.
-    expect(document.querySelector('[data-puck-component-id="AccountSection-stale-id"]')?.textContent).toBe(
+    // Правка применена: узел заменён серверным HTML, и id в разметке
+    // подтянулся к тому, который знает конструктор.
+    expect(document.querySelector('[data-puck-component-id="AccountSection-1"]')?.textContent).toBe(
+      "новое",
+    );
+    expect(document.querySelector('[data-puck-component-id="AccountSection-stale-id"]')).toBeNull();
+    // Рассинхрон id — всё ещё повод для записи в консоль, но не ошибкой:
+    // правка не потеряна.
+    expect(ctx.errors).toHaveLength(0);
+  });
+
+  it("узла нет и блоков этого типа ДВА → не угадываем, правка не применяется, в консоли ошибка", async () => {
+    const ctx = bootAgent({ domHasMatchingNode: false, twoOfType: true });
+    ctx.send(INIT);
+    await tick();
+    ctx.send(EDIT);
+    await tick();
+    await tick();
+
+    expect(ctx.fetches.filter((u) => u.includes("/preview/block"))).toHaveLength(1);
+    // Оба узла нетронуты — подменять наугад нельзя, это был бы худший баг:
+    // правка уехала бы в чужую секцию.
+    expect(document.querySelector('[data-puck-component-id="AccountSection-stale-a"]')?.textContent).toBe(
       "Старое",
     );
-    // Раньше здесь падал молчаливый `if (!el) return;` — 0 сообщений в
-    // консоли, владелец полдня искал баг без единой зацепки. Теперь —
-    // обязана быть запись с blockId И blockType.
+    expect(document.querySelector('[data-puck-component-id="AccountSection-stale-b"]')?.textContent).toBe(
+      "Второе",
+    );
     expect(ctx.errors.length).toBeGreaterThan(0);
     const joined = ctx.errors.map((a) => a.join(" ")).join("\n");
     expect(joined).toContain("AccountSection-1");
-    expect(joined).toContain("AccountSection");
     expect(joined.toLowerCase()).toMatch(/not found|не найден/);
   });
 });

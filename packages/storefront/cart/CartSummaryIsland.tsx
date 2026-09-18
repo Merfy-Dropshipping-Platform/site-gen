@@ -29,8 +29,8 @@ export function CartSummaryIsland({ colorScheme, padding }: CartSummaryIslandPro
     <section
       className={`relative w-full ${schemeClass}`}
       style={{
-        background: 'rgb(var(--color-background))',
-        color: 'rgb(var(--color-foreground))',
+        background: 'rgb(var(--color-bg))',
+        color: 'rgb(var(--color-text))',
         paddingTop: padTop,
         paddingBottom: padBottom,
       }}
@@ -53,13 +53,13 @@ export function CartSummaryIsland({ colorScheme, padding }: CartSummaryIslandPro
           <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
             <span
               className="font-body"
-              style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-foreground))' }}
+              style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-text))' }}
             >
               Итого
             </span>
             <span
               className="font-body"
-              style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-foreground))' }}
+              style={{ fontSize: 20, lineHeight: '27px', color: 'rgb(var(--color-text))' }}
             >
               {formatPrice(total)}
             </span>
@@ -76,8 +76,8 @@ export function CartSummaryIsland({ colorScheme, padding }: CartSummaryIslandPro
               fontSize: 20,
               lineHeight: '27px',
               borderRadius: 10,
-              background: 'rgb(var(--color-foreground))',
-              color: 'rgb(var(--color-background))',
+              background: 'rgb(var(--color-text))',
+              color: 'rgb(var(--color-bg))',
               textDecoration: 'none',
             }}
           >

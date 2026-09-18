@@ -95,7 +95,29 @@ const rawBackgroundImage2 =
 			? p.backgroundImage2
 			: undefined;
 const merchantBackground2 = merchantImage(["backgroundImage2"], rawBackgroundImage2) || undefined;
-const hasMerchantCta = contentSet(["buttonText"], rawPrimaryText);
+// b96-fix: `contentSet(["buttonText"], …)` смотрит `merfy.fields.buttonText` —
+// такого ключа НЕТ и не может быть: кнопка Hero лежит в `cta`/`primaryButton`
+// (вложенные объекты), а не в плоском top-level поле `buttonText`
+// (`src/render/field-roles.ts` CONTENT_KEYS знает только плоское имя).
+// `resolveBlockProps` (`src/render/resolve-props.ts`) видит top-level ключ
+// `cta`/`primaryButton` как role="style" → `set` там означает лишь «объект не
+// null», а не «текст не дефолтный». Поэтому `contentSet` всегда проваливался
+// в свой строковый fallback: «строка непустая?» — а `cta.text` дефолт satin
+// ('Кнопка', Hero.puckConfig.ts defaults) НЕПУСТОЙ с рождения. Итог —
+// `hasMerchantCta` был `true` ВСЕГДА, как только `cta`/`primaryButton`
+// материализовались в пропсах (deepMergeBlockProps домешивает дефолты темы в
+// props при ЛЮБОЙ правке панели — не обязательно самой кнопки). Раз кнопка
+// входит в hasMerchantText ниже — сплит-макет (текст-колонка + фото-колонка)
+// включался при смене цветовой схемы/размера/фото, хотя заголовок и
+// подзаголовок оставались дефолтными (баг владельца: «делится на две части
+// при любом изменении, даже при загрузке одного фото»).
+// Чиним сравнением с ЛИТЕРАЛЬНЫМ дефолтом кнопки (VERSTKA_CTA/PH_BUTTON, тот
+// же текст, что и в Hero.puckConfig.ts defaults.cta.text) — так же, как
+// `merchantImage()` выше отличает реальное фото мерчанта от дизайн-заглушки
+// по пути `/placeholders/`. Пока текст кнопки равен дефолту — кнопка не
+// считается заданной мерчантом; сторож: satin-b39-render-scheme-guards.spec.ts
+// («b96: full-bleed ветка НЕ ломается, когда cta уже материализован…»).
+const hasMerchantCta = !!rawPrimaryText.trim() && rawPrimaryText.trim() !== VERSTKA_CTA;
 // Баг владельца (satin, секция «Изображение»): мерчант грузит ОДНО фото и не
 // трогает заголовок/текст/кнопку — полотно всё равно делилось на текст-колонку
 // (пустая, с плейсхолдер-копией) и фото-колонку в 50% ширины. У остальных

@@ -129,6 +129,28 @@ if (built) {
       expect(merchantImgs).toHaveLength(1);
     });
 
+    it("b96: full-bleed ветка НЕ ломается, когда cta уже материализован ДЕФОЛТНЫМ текстом «Кнопка» (deepMergeBlockProps домешивает дефолт темы в props при ЛЮБОЙ правке панели — не обязательно самой кнопки; owner-репорт: «делится на две части при любом изменении, даже при загрузке одного фото»)", () => {
+      const out = html("satin", [
+        {
+          block: "Hero",
+          props: {
+            id: "Hero-b96-1",
+            colorScheme: "scheme-2",
+            cta: { text: "Кнопка", href: "/catalog" },
+            backgroundImages: { url1: "https://cdn.example.test/only-photo.jpg" },
+          },
+          cascade: true,
+          live: true,
+        },
+      ]);
+      expect(out).not.toMatch(/grid-cols-2/);
+      expect(out).not.toContain("satin-bleed-left");
+      const merchantImgs = (out.match(/<img\b[^>]*>/g) ?? []).filter((tag) =>
+        tag.includes("only-photo.jpg"),
+      );
+      expect(merchantImgs).toHaveLength(1);
+    });
+
     it("full-bleed ветка, ДВА фото: деление законно (контроль — не всегда «нет сплита»)", () => {
       const out = html("satin", [
         {

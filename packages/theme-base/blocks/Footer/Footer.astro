@@ -16,6 +16,7 @@ const {
   id,
   variant = 'minimal',
   siteTitle,
+  logo,
   copyright,
   newsletter,
   heading,
@@ -49,6 +50,13 @@ const brandName =
   (copyright?.companyName ?? '').trim() ||
   (siteTitle ?? '').trim() ||
   (isNavLabel ? 'Мой магазин' : navTitle);
+// Логотип магазина в подвале — тот же, что в шапке. Раньше подвал печатал
+// только ТЕКСТ, и текст этот приходил из сида темы: на satin шапка показывала
+// «МОЙ САЙТ», а подвал — «SATIN» (баг владельца 18.09 по satin/bloom/vanilla).
+// Теперь: есть логотип — показываем картинку; нет — название магазина
+// (`siteTitle` приходит из брендинга/названия сайта), и только потом запасное
+// «Мой магазин». Имя ТЕМЫ в подвал не попадает ниоткуда.
+const logoSrc = typeof logo === 'string' ? logo.trim() : '';
 const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
 const showYear = copyright?.showYear !== false;
 const copyText = `© ${showYear ? year + ' ' : ''}${brandName ? brandName + ' ' : ''}Все права защищены.`;
@@ -182,7 +190,11 @@ const CpoweredBy = (C as any).poweredBy ?? {};
     {variant === '2-part' && (
       <section class={Cm.section} aria-label="Информация и навигация">
         <div class={Cm.leftCol}>
-          <div class={(C as any).brand}>{brandName}</div>
+          <div class={(C as any).brand}>
+            {logoSrc
+              ? <img src={logoSrc} alt={brandName} style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" />
+              : brandName}
+          </div>
           {navigationColumn?.links && navigationColumn.links.length > 0 && (
             <nav class={(C as any).navColumn?.root} aria-label="Footer navigation">
               {navigationColumn.links.map((link) => (
@@ -233,7 +245,11 @@ const CpoweredBy = (C as any).poweredBy ?? {};
           {/* LEFT: logo/brand + nav links (items-start, gap=24) */}
           <div class={(C as any).variant?.['2-part-asymmetric']?.left ?? 'flex flex-col gap-6 items-start'}>
             {brandName && (
-              <div class={Cm.leftTitle}>{brandName}</div>
+              <div class={Cm.leftTitle}>
+                {logoSrc
+                  ? <img src={logoSrc} alt={brandName} style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" />
+                  : brandName}
+              </div>
             )}
             {navigationColumn?.links && navigationColumn.links.length > 0 && (
               <nav class="flex flex-col gap-2 items-start" aria-label="Footer navigation">
@@ -302,7 +318,11 @@ const CpoweredBy = (C as any).poweredBy ?? {};
           <div class={Cm.twoPart}>
             <div class={Cm.leftGroup}>
               {brandName && (
-                <span class={Cm.leftTitle}>{brandName}</span>
+                <span class={Cm.leftTitle}>
+                  {logoSrc
+                    ? <img src={logoSrc} alt={brandName} style="height:var(--size-logo-width,36px);max-width:160px;width:auto;object-fit:contain" />
+                    : brandName}
+                </span>
               )}
               <nav class={Cm.leftNav} aria-label="Footer navigation">
                 {(navigationColumn?.links ?? []).map((link) => (

@@ -39,6 +39,12 @@ function candidates(): string[] {
       out.push(`themes/${t}/src/components/products/${name}.astro`);
     }
     out.push(`packages/theme-${t}/blocks/Catalog/Catalog.astro`);
+    // ЧЕТВЁРТЫЙ путь рендера — JS-гидрация карточек на витрине. Найден 19.09
+    // живым замером ПОСЛЕ выкатки: в bloom-корзине рядом с зачёркиванием
+    // остался `--color-muted`, и пришёл он именно отсюда. В `.astro` правка
+    // была, в гидрации — нет.
+    out.push(`themes/${t}/src/lib/storefront-hydrate.ts`);
+    out.push(`packages/theme-${t}/blocks/Catalog/storefront-hydrate.ts`);
     for (const name of [
       "RoseProductCard",
       "BloomProductCard",
@@ -59,7 +65,11 @@ for (const rel of candidates()) {
   const path = resolve(SITES_ROOT, rel);
   if (!existsSync(path)) continue;
   const src = readFileSync(path, "utf-8");
-  const lines = src.split("\n").filter((l) => l.includes("line-through"));
+  // Только строки РАЗМЕТКИ: комментарии тоже упоминают line-through, а
+  // сторожить надо класс, а не прозу.
+  const lines = src
+    .split("\n")
+    .filter((l) => l.includes("line-through") && /class=/.test(l));
   if (lines.length === 0) continue;
   targets.push({ rel, src, lines });
 }
@@ -68,8 +78,9 @@ const BAD = /--color-muted|--color-heading|--vanilla-dark|--vanilla-muted|#99999
 
 describe("старая цена везде следует тексту схемы", () => {
   it("мишени найдены (каталоги, карточки, избранное)", () => {
-    // 5 избранных + 5 карточек тем + 5 каталогов пакетов + карточки пакетов + база
-    expect(targets.length).toBeGreaterThanOrEqual(15);
+    // избранное + карточки тем + каталоги пакетов + карточки пакетов +
+    // гидрация (4-й путь) + база
+    expect(targets.length).toBeGreaterThanOrEqual(22);
   });
 
   it.each(targets.map((t) => [t.rel, t] as const))(

@@ -255,7 +255,7 @@ export function escapeHtml(value: unknown): string {
  * картинка-ссылка + name + price). Плоский `<img>` вместо `<VanillaPicture>`
  * (визуально идентично; webp-конвейер для MinIO-картинок не применяется).
  * Классы/структура 1:1 с темой vanilla: aspect-square, bg var(--vanilla-card),
- * font-vanilla-arsenal uppercase, старая цена #444444 line-through.
+ * font-vanilla-arsenal uppercase, старая цена line-through цветом текста схемы.
  */
 // Товар без фото / битый URL (MinIO 404): surface-плейсхолдер вместо битого
 // <img>. Зеркалит VanillaProductCard.astro (ветка !hasPhoto).
@@ -302,7 +302,7 @@ export function renderCardHtml(p: RealProduct): string {
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
-		? `<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[rgb(var(--color-muted,68_68_68))] line-through">${escapeHtml(oldRaw)}</span>`
+		? `<span class="font-vanilla-arsenal text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	return `<article class="group flex flex-col gap-3" data-nt="vanilla-product-card" aria-label="${name}">
 	<div class="relative w-full">

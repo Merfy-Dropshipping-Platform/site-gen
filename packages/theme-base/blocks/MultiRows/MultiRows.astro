@@ -35,6 +35,21 @@ const sectionSize = (raw.size === 'small' || raw.size === 'large' ? raw.size : '
 const aspectKey = (s: unknown, fallback: 'small' | 'medium' | 'large') =>
   s === 'small' || s === 'medium' || s === 'large' ? s : fallback;
 
+// «Высота» в панели секции не работала: у КАЖДОГО ряда в сиде лежит свой
+// `size: 'small'` (дефолт рядов), а per-row значение приоритетнее секционного —
+// значит секционный регулятор не менял ничего и высотой де-факто управляла
+// настройка «Размер» внутри ряда. Владелец 18.09: «не работает настройка
+// Высота… за высоту почему-то отвечает в параметре Ряд настройка Размер».
+//
+// Отличить «мерчант выбрал ряду свой размер» от «так лёг дефолт сида» в данных
+// нельзя. Но если у ВСЕХ рядов размер одинаков, переопределять нечего — это и
+// есть невыбранный дефолт, и высоту задаёт секция. Как только мерчант меняет
+// размер хотя бы одному ряду, значения перестают совпадать и per-row снова
+// главнее — переопределение сохраняется.
+const rowsList = Array.isArray(rows) ? rows : [];
+const rowSizes = rowsList.map((r: { size?: unknown }) => r?.size);
+const perRowSizesDiffer = rowSizes.some((s) => s !== rowSizes[0]);
+
 const paddingStyle = padding
   ? `padding-top:${padding.top}px; padding-bottom:${padding.bottom}px;`
   : '';
@@ -78,7 +93,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
         const rowDescription = row.description ?? row.text;
         // Per-row size/headingSize/textSize (мирроль rose-порта). Per-row size
         // приоритетнее секционной Высоты; размеры заголовка/текста — per-row.
-        const rowAspectClass = C.imageAspect[aspectKey(row.size, sectionSize)];
+        const rowAspectClass = C.imageAspect[aspectKey(perRowSizesDiffer ? row.size : undefined, sectionSize)];
         const rowHeadingSizeClass = C.rowHeadingSize[aspectKey(row.headingSize, 'medium')];
         const rowTextSizeClass = C.rowTextSize[aspectKey(row.textSize, 'medium')];
         const buttonHref =

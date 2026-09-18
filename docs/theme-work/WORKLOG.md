@@ -8617,3 +8617,71 @@ undefined (reading 'clear')` — инфраструктурный мок).
 `Page-1` в состояние конструктора) не найдена — фолбэк лечит симптом
 безопасно, но корень остаётся. Ветка `fix/b81-cart-scheme`, worktree
 `.worktrees/b81-cart-scheme`.
+
+## 2026-09-18 — «Сводка» и «Оформление заказа» не красились схемой на Rose (b98)
+
+### Жалоба
+
+«Баг. Сводка и оформление заказа — не применяется цветовая схема Rose» —
+в панели «Оформление заказа»/«Сводка заказа» мерчант меняет «Цветовую схему»,
+и ничего не меняется — ни в превью конструктора, ни после сохранения.
+
+### Живой репро (customize.merfy.ru, qa.bloom.170926, siteId 53e9152f…, Rose)
+
+Переключил тему магазина на Rose, открыл `page-checkout`, выбрал у
+«Оформление заказа» Схему 4 (чёрный фон/белый текст) — колонка осталась
+белой. Sohranil, перезагрузил iframe — колонка ОСТАЛАСЬ белой (панель после
+reload снова показывала «Схема 1»). Два независимых бага одновременно:
+
+1. **`src/utils/revision-migrations.ts`, `migrateCheckoutPage`**: у ревизии
+   параллельно живут два ключа — `page-checkout` (пишет конструктор при
+   сохранении) и `checkout` (легаси-дубликат, который конструктор НЕ
+   синхронизирует). Функция брала `source = checkout` всегда, когда у него
+   есть контент, и переписывала ИМ ОБА ключа. `checkout` держал старое
+   `colorScheme: "scheme-checkout"` (платформенный светлый дефолт) —
+   свежий `page-checkout` со `scheme-4` затирался этим дефолтом на КАЖДОЙ
+   загрузке (и превью, и живая сборка идут через `migrateRevisionData`).
+   Пруф: `GET /revisions/:id` после сохранения `scheme-4` вернул
+   `page-checkout.CheckoutForm.colorScheme === "scheme-checkout"`.
+2. **`src/services/preview.service.ts`, `applyCheckoutColumnScheme`/
+   `applyCheckoutTermsScheme`**: регэксп снятия старого класса схемы —
+   `/^color-scheme-\d+$/` — ловил только мерчантские 1..5, не платформенный
+   `color-scheme-checkout` (сидируется на колонке ДО первого выбора).
+   Первая живая правка копила ОБА класса на одной колонке; `.color-scheme-
+   checkout` объявлен ПОЗЖЕ `.color-scheme-N` в собранном CSS (tokens-css.ts)
+   и побеждал по порядку правил — визуально ничего не менялось до полной
+   пересборки.
+
+### Что сделано
+
+Оба фикса — в общем слое sites-service (не в каталоге rose, не в
+tokens-css.ts): `migrateCheckoutPage` теперь предпочитает `page-checkout`,
+когда там есть контент (документированный «источник истины» конструктора);
+регэксп в обоих хелперах снятия схемы стал `/^color-scheme-/` (снимает ЛЮБОЙ
+существующий вариант, а не только числовой).
+
+### Сторож + САБОТАЖ
+
+- `src/utils/__tests__/revision-migrations-checkout.test.ts` — новый тест
+  «preserves the merchant colorScheme saved on page-checkout, not the stale
+  checkout duplicate»: вернул старое предпочтение (`fromNew`) — падает с
+  `Expected: "scheme-4", Received: "scheme-checkout"`; вернул фикс — зелёный.
+- `src/services/__tests__/preview-checkout-column-scheme.spec.ts` — 2 новых
+  теста (колонка формы + `checkout-terms`) на снятие `color-scheme-checkout`.
+  Вернул `\d+$`: падает РОВНО новый тест (11/12 и 14/15 остальных зелёные,
+  ничего не задето); вернул фикс — 15/15.
+- Полный прогон: `checkout*`/`preview-checkout*`/`preview-agent*`/
+  `revision-migrations*` — 775/775 зелёных.
+
+### Общий слой — все 5 тем
+
+Оба файла — `packages/theme-base`-независимый общий код sites-service, не
+theme-специфичный: дефект и фикс касаются ВСЕХ пяти тем (rose/vanilla/bloom/
+flux/satin) одинаково, canvas теста не завязан на конкретную тему.
+
+### Не делали
+
+Не пушили, не публиковали, не трогали `src/themes/tokens-css.ts`,
+`scheme-matrix.mjs`, каталог `packages/theme-rose`. Ветка
+`fix/b98-rose-checkout-scheme`, worktree `.worktrees/b98-rose-checkout-scheme`,
+HEAD `c37aebc9`.

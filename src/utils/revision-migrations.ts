@@ -1373,6 +1373,55 @@ const FOOTER_PLACEHOLDER_EMAIL = /(?:^example@|@example\.|\.example$)/i;
  *  • правовые ссылки с href «#» или «/legal/…» (ведут в никуда) → выкинуть.
  * Реальные данные (введённые мерчантом) под паттерны не попадают и не трогаются.
  */
+/**
+ * Вычищает из подвала имя ТЕМЫ, оставшееся от сида.
+ *
+ * Владелец 18.09: «в подвал должна идти лого из настроек темы, если загружена,
+ * или, если нет, то как в шапке браться с админки, а не отображаться название
+ * темы». Сиды bloom/flux/satin клали блоку Footer
+ * `copyright.companyName` = «Bloom» / «Flux» / «Satin», и это значение первое в
+ * цепочке бренда — подвал писал имя темы при магазине «МОЙ САЙТ».
+ *
+ * Сиды уже почищены, но у сайтов, созданных раньше, значение лежит В РЕВИЗИИ, и
+ * чистка сидов им не помогает: замер живых витрин 19.09 — satin печатает
+ * «SATIN», bloom «Bloom», хотя сборка свежая. Поэтому вычищаем при чтении
+ * ревизии: сравниваем с именем активной темы и, если совпало, убираем — дальше
+ * бренд берётся из названия магазина, как и просил владелец.
+ *
+ * Своё название мерчанта не трогаем: оно совпасть с именем темы может только
+ * буквально, а такой магазин всё равно получит название из админки — то же
+ * самое слово.
+ */
+function stripThemeNameFromFooter(
+  pagesData: Record<string, unknown>,
+  themeId: string | null | undefined,
+): Record<string, unknown> {
+  const theme = (themeId ?? '').trim().toLowerCase();
+  if (!theme) return pagesData;
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    const content = page?.content;
+    if (!Array.isArray(content)) continue;
+    const nextContent = content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> } | undefined;
+      if (b?.type !== 'Footer' || !b.props) return block;
+      const copyright = b.props.copyright as Record<string, unknown> | undefined;
+      const company = typeof copyright?.companyName === 'string' ? copyright.companyName.trim() : '';
+      if (!company || company.toLowerCase() !== theme) return block;
+      changed = true;
+      const nextCopyright = { ...copyright };
+      delete nextCopyright.companyName;
+      return { ...b, props: { ...b.props, copyright: nextCopyright } };
+    });
+    if (nextContent.some((b, i) => b !== content[i])) {
+      out[pageId] = { ...(page as object), content: nextContent };
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 function normalizeFooterContacts(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -2544,6 +2593,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = normalizeFooterContacts(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = stripThemeNameFromFooter(out.pagesData as Record<string, unknown>, themeId);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = normalizePromoBannerPadding(out.pagesData as Record<string, unknown>);

@@ -159,9 +159,21 @@ const tileImage = (entity: any): string => {
 	return typeof entity?.image === "string" ? entity.image : "";
 };
 // Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
-// половину рядом с пустотой.
+// половину рядом с пустотой. От двух плиток и больше — большая плитка слева
+// (или справа при imagePosition:'right') + узкая колонка со стопкой остальных
+// плиток (паритет rose/bloom/satin: `minmax(0,1fr) minmax(280px,429px)`;
+// баг-репорт владельца 2026-09-18 — vanilla делила полотно `grid-cols-2`
+// пополам, три плитки давали неровный «уголок» с дырой, а не большую плитку
+// со стопкой, как в остальных четырёх темах).
 const soloTile = galleryTiles.length === 1;
-const gridLayoutCls = soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2";
+const heroTile = galleryTiles[0];
+const sideTiles = galleryTiles.slice(1);
+const galleryGridCls = mirror
+	? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
+	: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
+const gridLayoutCls = soloTile ? "lg:grid-cols-1" : `${galleryGridCls} lg:items-stretch`;
+const heroOrderCls = mirror ? " lg:order-2" : "";
+const sideOrderCls = mirror ? " lg:order-1" : "";
 const needsResolve = galleryTiles.some(
 	(t) => (t.kind === "product" || t.kind === "collection") && t.ref,
 );
@@ -265,53 +277,100 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<Fragment set:html={inlineFormat(sectionText)} />
 				</p>
 			)}
-			<ul class={`mt-10 grid w-full grid-cols-1 gap-4 text-left ${gridLayoutCls}`} role="list">
-				{galleryTiles.map((tile, i) => (
-					<li class={mirror && i === 0 ? "lg:order-2" : mirror && i === 1 ? "lg:order-1" : undefined}>
-						<a
-							href={tile.href}
-							class="group flex w-full cursor-pointer flex-col gap-3"
-							aria-label={tile.label || tile.alt || "Перейти в каталог"}
-							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
-							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index={i}
-							data-puck-subsection-field="items"
-						>
-							<div class={`relative ${soloTile ? "aspect-[16/9]" : "aspect-square"} w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]`}>
-								{tile.url && (
-									<img
-										src={tile.url}
-										alt={tile.alt || tile.label}
-										loading="lazy"
-										class={`absolute inset-0 size-full ${fitCls(tile, i === 0 ? "group-hover:scale-[1.03]" : "group-hover:scale-[1.05]")}`}
-									/>
+			<div class={`mt-10 grid w-full grid-cols-1 gap-4 text-left ${gridLayoutCls}`} role="list">
+				{heroTile && (
+					<a
+						href={heroTile.href}
+						role="listitem"
+						class={`group flex w-full min-w-0 cursor-pointer flex-col gap-3${soloTile ? "" : " lg:h-full"}${heroOrderCls}`}
+						aria-label={heroTile.label || heroTile.alt || "Перейти в каталог"}
+						data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
+						data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index={0}
+						data-puck-subsection-field="items"
+					>
+						<div class={`relative ${soloTile ? "aspect-[16/9]" : "aspect-square lg:aspect-auto lg:min-h-[280px] lg:flex-1"} w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]`}>
+							{heroTile.url && (
+								<img
+									src={heroTile.url}
+									alt={heroTile.alt || heroTile.label}
+									loading="lazy"
+									class={`absolute inset-0 size-full ${fitCls(heroTile, "group-hover:scale-[1.03]")}`}
+								/>
+							)}
+						</div>
+						{(heroTile.label || heroTile.price) && (
+							<div class="flex flex-col gap-1">
+								{heroTile.label && (
+									<span
+										class={
+											heroTile.kind === "collection"
+												? "vanilla-gallery-collection-title font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+												: "vanilla-gallery-product-title font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+										}
+									>
+										{heroTile.label}
+									</span>
+								)}
+								{heroTile.price && (
+									<span class="vanilla-gallery-product-price font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
+										{heroTile.price}
+									</span>
 								)}
 							</div>
-							{(tile.label || tile.price) && (
-								<div class="flex flex-col gap-1">
-									{tile.label && (
-										<span
-											class={
-												tile.kind === "collection"
-													? "vanilla-gallery-collection-title font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
-													: "vanilla-gallery-product-title font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
-											}
-										>
-											{tile.label}
-										</span>
-									)}
-									{tile.price && (
-										<span class="vanilla-gallery-product-price font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
-											{tile.price}
-										</span>
+						)}
+					</a>
+				)}
+				{sideTiles.length > 0 && (
+					<div class={`flex min-w-0 flex-col gap-4${sideOrderCls}`} role="list">
+						{sideTiles.map((tile, i) => (
+							<a
+								href={tile.href}
+								role="listitem"
+								class="group flex w-full cursor-pointer flex-col gap-3"
+								aria-label={tile.label || tile.alt || "Перейти в каталог"}
+								data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
+								data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index={i + 1}
+								data-puck-subsection-field="items"
+							>
+								<div class="relative aspect-square w-full overflow-hidden bg-[rgb(var(--color-surface,236_235_231))]">
+									{tile.url && (
+										<img
+											src={tile.url}
+											alt={tile.alt || tile.label}
+											loading="lazy"
+											class={`absolute inset-0 size-full ${fitCls(tile, "group-hover:scale-[1.05]")}`}
+										/>
 									)}
 								</div>
-							)}
-						</a>
-					</li>
-				))}
-			</ul>
+								{(tile.label || tile.price) && (
+									<div class="flex flex-col gap-1">
+										{tile.label && (
+											<span
+												class={
+													tile.kind === "collection"
+														? "vanilla-gallery-collection-title font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+														: "vanilla-gallery-product-title font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))] transition-opacity group-hover:opacity-70"
+												}
+											>
+												{tile.label}
+											</span>
+										)}
+										{tile.price && (
+											<span class="vanilla-gallery-product-price font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,240_240_240))]">
+												{tile.price}
+											</span>
+										)}
+									</div>
+								)}
+							</a>
+						))}
+					</div>
+				)}
+			</div>
 		</div>
 	</div>
 

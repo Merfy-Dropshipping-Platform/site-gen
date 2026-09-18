@@ -210,15 +210,22 @@ type GalleryShape = {
   row: HTMLElement;
   side: HTMLElement;
   sideCount: number;
-  /** боковая колонка — стопка (rose/bloom/flux) или ряд (satin) */
+  /** боковая колонка — стопка (rose/bloom/satin/flux/vanilla) или ряд */
   stacked: boolean;
 };
 
 /**
- * Композиция «большая плитка + соседняя колонка». Низами сходятся ОБЕ её формы:
- * стопка (rose/bloom/flux) и ряд из двух карточек (satin). vanilla исключается
- * структурно, а не списком: там все плитки — сиблинги одной сетки, боковой
- * обёртки рядом с большой плиткой нет вовсе.
+ * Композиция «большая плитка + соседняя колонка». Низами сходятся ВСЕ её
+ * формы: стопка (rose/bloom/satin/flux/vanilla).
+ *
+ * Баг-репорт владельца 2026-09-18: у vanilla при трёх плитках верхняя не
+ * делила полотно с соседями — все три были сиблингами ОДНОЙ сетки
+ * `grid-cols-2`, отсюда неровный «уголок» с дырой (замер: 2 плитки в ряд,
+ * третья одна под левой). Порт `themes/vanilla/src/components/sections/
+ * Gallery.astro` перестроен на тот же паттерн, что rose/bloom/satin
+ * (`minmax(0,1fr) minmax(280px,429px)`): большая плитка — прямой сиблинг
+ * строки, остальные — в боковой обёртке `flex flex-col`, тоже сиблинге
+ * строки. С этого момента vanilla ТОЖЕ распознаётся структурно.
  */
 function galleryShape(theme: Theme, html: string): GalleryShape | null {
   const root = parse(html);
@@ -227,9 +234,8 @@ function galleryShape(theme: Theme, html: string): GalleryShape | null {
   const hero = tiles[0];
   const side = tiles[1].parentNode as HTMLElement;
   const row = hero.parentNode as HTMLElement;
-  // Большая плитка и боковая обёртка обязаны быть СОСЕДЯМИ одной строки:
-  // у vanilla каждая плитка лежит в своём <li> общего списка, и «колонки» там
-  // нет вовсе — композиция исключается этим условием, а не списком тем.
+  // Большая плитка и боковая обёртка обязаны быть СОСЕДЯМИ одной строки —
+  // композиция исключается этим условием, а не списком тем.
   if (!side || !row || side === row || side.parentNode !== row) return null;
   const sideKids = side.childNodes.filter(
     (n): n is HTMLElement => (n as HTMLElement).tagName !== undefined,
@@ -245,7 +251,7 @@ function galleryShape(theme: Theme, html: string): GalleryShape | null {
 }
 
 /** Темы с композицией «большая плитка + колонка» — их и проверяем. */
-const COLUMN_GALLERY_THEMES: Theme[] = ["rose", "bloom", "satin", "flux"];
+const COLUMN_GALLERY_THEMES: Theme[] = ["rose", "vanilla", "bloom", "satin", "flux"];
 /**
  * Из них со СТОПКОЙ справа — только им нельзя делить полотно пополам.
  *
@@ -258,8 +264,14 @@ const COLUMN_GALLERY_THEMES: Theme[] = ["rose", "bloom", "satin", "flux"];
  * колонкой (`minmax(280px,429px)`), как rose/bloom/flux. 0px разбега низов при
  * этом получались — заплатка `lg:h-full`/`lg:flex-1` работала, — а состав
  * колонок оставался чужим. Теперь satin — четвёртая тема со стопкой.
+ *
+ * Баг-репорт владельца 2026-09-18: vanilla делила полотно `grid-cols-2`
+ * пополам между ВСЕМИ плитками (не было ни большой плитки, ни колонки вовсе).
+ * После починки (порт зеркалит rose/bloom/satin: `minmax(0,1fr)
+ * minmax(280px,429px)` + боковая `flex flex-col`) vanilla — пятая тема со
+ * стопкой.
  */
-const STACKED_GALLERY_THEMES: Theme[] = ["rose", "bloom", "satin", "flux"];
+const STACKED_GALLERY_THEMES: Theme[] = ["rose", "vanilla", "bloom", "satin", "flux"];
 
 // ───────────────────────────── калибровка ─────────────────────────────
 
@@ -278,7 +290,7 @@ describe("резолвер каскада откалиброван по этал
     }
   });
 
-  it("композиция распознаётся структурно: колонка у rose/bloom/satin/flux, одна сетка у vanilla", () => {
+  it("композиция распознаётся структурно: колонка у всех пяти тем (rose/vanilla/bloom/satin/flux)", () => {
     const found = THEMES.filter(
       (t) => galleryShape(t, render(t, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS })) !== null,
     );

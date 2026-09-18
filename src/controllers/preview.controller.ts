@@ -969,6 +969,12 @@ export class PreviewController {
         publicUrl: schema.site.publicUrl,
         themeId: schema.site.themeId,
         tenantId: schema.site.tenantId,
+        // Название магазина нужно миграции подвала: без него она вычищает имя
+        // темы, но подставить взамен нечего, и подвал печатает запасное «Мой
+        // магазин». Замер bloom 19.09: сервер отдавал ревизию с «Bloom Pilot»
+        // (там getRevision передаёт имя), а превью рисовало заглушку — потому
+        // что ЭТОТ путь чтения имя не передавал.
+        name: schema.site.name,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -983,6 +989,7 @@ export class PreviewController {
     const migrated = migrateRevisionData(
       rev.data as Record<string, unknown>,
       site.themeId ?? null,
+      site.name ?? null,
     );
     // Подтягиваем данные футера (контакты/политики/произвольные поля/касса) из
     // БД в Footer-блоки — чтобы превью конструктора показывало тот же футер, что

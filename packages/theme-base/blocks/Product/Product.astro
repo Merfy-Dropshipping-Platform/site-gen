@@ -673,6 +673,65 @@ const cartImage = view.gallery.hero?.src ?? '';
     }
     wireGalleryMediaSwitch(galleryEl, function () { return heroImg; });
 
+    /**
+     * Стрелки ленты миниатюр («Назад»/«Вперёд» в макетах «Карусель» и
+     * «Миниатюрный»).
+     *
+     * Жалоба владельца 18.09: «Секция товар в макете Карусель и Миниатюрный
+     * не работают слайдеры стрелочки». Кнопки рисовались
+     * (ProductGallery.astro, data-thumbs-prev / data-thumbs-next), но
+     * обработчика клика у них не было НИ ОДНОГО во всём репозитории — мёртвая
+     * разметка в четырёх темах, которые рисуют товар общим блоком. У flux свой
+     * порт со своей стрелкой, там работала только «вперёд».
+     *
+     * Лента переворачивается на больших экранах (на мобиле — строка с
+     * горизонтальной прокруткой, на десктопе — колонка с вертикальной),
+     * поэтому направление выбирается по тому, что реально прокручивается.
+     * Шаг — размер миниатюры плюс зазор, с запасом на дробные значения.
+     * Доехав до конца, лента возвращается в начало: иначе последняя стрелка
+     * выглядит сломанной.
+     *
+     * Гард — src/themes/__tests__/product-thumbs-arrows.spec.ts.
+     */
+    function wireThumbsArrows(galleryRoot) {
+      if (!galleryRoot) return;
+      galleryRoot.querySelectorAll('[data-product-thumbs]').forEach(function (strip) {
+        const track = strip.querySelector('[data-product-thumb]')
+          ? strip.querySelector('[data-product-thumb]').parentElement
+          : null;
+        if (!track) return;
+        const step = function () {
+          const thumb = track.querySelector('[data-product-thumb]');
+          const box = thumb && thumb.getBoundingClientRect ? thumb.getBoundingClientRect() : null;
+          const vertical = track.scrollHeight - track.clientHeight > 1;
+          const size = box ? (vertical ? box.height : box.width) : 88;
+          return Math.round((size || 88) + 8);
+        };
+        const move = function (delta) {
+          const vertical = track.scrollHeight - track.clientHeight > 1;
+          const pos = vertical ? track.scrollTop : track.scrollLeft;
+          const max = vertical
+            ? track.scrollHeight - track.clientHeight
+            : track.scrollWidth - track.clientWidth;
+          let next = pos + delta * step();
+          if (next > max - 1) next = delta > 0 ? 0 : max;
+          if (next < 0) next = delta < 0 ? max : 0;
+          if (track.scrollTo) {
+            track.scrollTo(vertical ? { top: next, behavior: 'smooth' } : { left: next, behavior: 'smooth' });
+          } else if (vertical) {
+            track.scrollTop = next;
+          } else {
+            track.scrollLeft = next;
+          }
+        };
+        const prev = strip.querySelector('[data-thumbs-prev]');
+        const next = strip.querySelector('[data-thumbs-next]');
+        if (prev) prev.addEventListener('click', function () { move(-1); });
+        if (next) next.addEventListener('click', function () { move(1); });
+      });
+    }
+    wireThumbsArrows(galleryEl);
+
     // Variant chip select. Active chip uses primaryButton tokens; inactive
     // uses secondaryButton tokens. Both are scheme-driven via CSS vars.
     var ACTIVE_CHIP_STYLE =

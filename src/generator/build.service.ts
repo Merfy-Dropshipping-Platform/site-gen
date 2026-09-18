@@ -2331,19 +2331,38 @@ async function stageGenerate(
     );
   }
 
-  // Override Header logo with branding logoUrl in page content arrays
+  // Override Header logo with branding logoUrl in page content arrays.
+  // Подвал получает ТО ЖЕ САМОЕ: владелец 18.09 — «в подвал должна идти лого из
+  // настроек темы, если загружена, или, если нет, то как в шапке браться с
+  // админки, а не отображаться название темы». До этого логотип доезжал только
+  // до шапки, а подвал печатал текст из сида темы («SATIN» при магазине «МОЙ
+  // САЙТ»).
   if (ctx.branding?.logoUrl && pages.length > 0) {
     for (const page of pages) {
       const content = page.data.content as any[];
       for (const comp of content) {
-        if (comp?.type === "Header" && comp.props) {
+        if ((comp?.type === "Header" || comp?.type === "Footer") && comp.props) {
           comp.props.logo = ctx.branding.logoUrl;
         }
       }
     }
     logger.log(
-      `[generate] Overriding Header.logo in ${pages.length} page(s) with branding: ${ctx.branding.logoUrl}`,
+      `[generate] Overriding Header/Footer logo in ${pages.length} page(s) with branding: ${ctx.branding.logoUrl}`,
     );
+  }
+
+  // Название магазина из админки — в подвал, если мерчант не задал своё в
+  // настройках секции (`copyright.companyName` сильнее). Без этого подвал
+  // откатывался на siteTitle из сида темы, то есть на имя темы.
+  if (ctx.siteName && pages.length > 0) {
+    for (const page of pages) {
+      const content = page.data.content as any[];
+      for (const comp of content) {
+        if (comp?.type === "Footer" && comp.props && !String(comp.props.siteTitle ?? "").trim()) {
+          comp.props.siteTitle = ctx.siteName;
+        }
+      }
+    }
   }
 
   const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";

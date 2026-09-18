@@ -15,6 +15,17 @@ const SocialLinkSchema = z.object({
 
 export const FooterSchema = z.object({
   siteTitle: z.string().optional(),
+  /**
+   * Логотип магазина — тот же, что в шапке (настройки темы → «Логотип», а без
+   * него — брендинг из админки). Подвал показывал вместо него ТЕКСТ, причём
+   * текст брался из сида темы: на satin в шапке стояло «МОЙ САЙТ», а в подвале
+   * «SATIN» (баг владельца 18.09, темы satin/bloom/vanilla).
+   *
+   * Поле СЛУЖЕБНОЕ: в панель секции оно не выводится (в `fields` его нет —
+   * состав параметров сайдбара это не меняет), заполняет его сборка/брендинг,
+   * ровно как `Header.logo`.
+   */
+  logo: z.string().optional(),
   /** Theme-level layout switch (set via theme.json → blockDefaults.Footer.variant). */
   /**
    * 084 vanilla pilot — additive value `'2-part-asymmetric'` (vanilla

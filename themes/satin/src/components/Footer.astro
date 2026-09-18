@@ -4,7 +4,6 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // Иконки соцсетей — через обёртку темы: карта имён дизайн-системы закрыта, а
 // MAX (просьба владельца 14.09) лежит только в themes/satin/public/icons.
 import SatinNtIcon from "./icons/SatinNtIcon.astro";
-import { SITE_TITLE } from "../consts";
 import { withBase } from "../lib/with-base";
 
 const today = new Date();
@@ -36,7 +35,15 @@ const payments = [
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Satin».
-const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+// Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
+// подвал должна идти лого из настроек темы, если загружена, или, если нет, то
+// как в шапке браться с админки, а не отображаться название темы». Имя темы
+// приезжало сюда ЧЕТВЁРТЫМ путём (после сидов, copyright.companyName и
+// siteTitle в ревизии): порт сам подставлял SITE_TITLE из consts.ts, и подвал
+// печатал «Bloom» при магазине «Bloom Pilot». Название магазина подставляет
+// сборка (build.service) и миграция ревизии; сюда управление доходит, только
+// если магазин безымянный.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";

@@ -1,7 +1,6 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
 import SocialIcon from "./footer/SocialIcon.astro";
-import { SITE_TITLE } from "../consts";
 import { categoryPages } from "../data/categories";
 
 const today = new Date();
@@ -20,7 +19,15 @@ const navColumnDefault = [
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Bloom».
-const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+// Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
+// подвал должна идти лого из настроек темы, если загружена, или, если нет, то
+// как в шапке браться с админки, а не отображаться название темы». Имя темы
+// приезжало сюда ЧЕТВЁРТЫМ путём (после сидов, copyright.companyName и
+// siteTitle в ревизии): порт сам подставлял SITE_TITLE из consts.ts, и подвал
+// печатал «Bloom» при магазине «Bloom Pilot». Название магазина подставляет
+// сборка (build.service) и миграция ревизии; сюда управление доходит, только
+// если магазин безымянный.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
 // Логотип подвала: тот же источник, что у шапки (брендинг мерчанта).
 // Плейсхолдер «/logo.svg» не существует на витрине — считаем его отсутствием.
 const _rawFooterLogo = typeof p.logo === "string" ? p.logo.trim() : "";

@@ -291,7 +291,7 @@ export const createCartAddedModal = (deps: CartAddedModalDeps) => {
 					: payload.price;
 		}
 
-		if (cartLink) cartLink.textContent = `В корзину (${deps.getCartCount()})`;
+		if (cartLink) cartLink.textContent = `Перейти в корзину (${deps.getCartCount()})`;
 
 		// Сначала показываем, потом ставим на место: `anchorToCartIcon` меряет
 		// ширину карточки, а у скрытого окна она нулевая. Оба шага в одном

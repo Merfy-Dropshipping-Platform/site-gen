@@ -47,9 +47,10 @@ const mountDom = (withCartButton: boolean) => {
       </section>
     </div>`;
   const card = document.querySelector<HTMLElement>('[data-cart-modal-card]')!;
-  // Ширина карточки — живой замер (в jsdom раскладки нет): 520px, как max-w от md.
+  // Ширина карточки — живой замер (в jsdom раскладки нет): 379px, как max-w
+  // эталонной вёрстки.
   card.getBoundingClientRect = () =>
-    ({ x: 0, y: 0, width: 520, height: 334, top: 0, right: 520, bottom: 334, left: 0 }) as DOMRect;
+    ({ x: 0, y: 0, width: 379, height: 334, top: 0, right: 379, bottom: 334, left: 0 }) as DOMRect;
   const button = document.querySelector<HTMLElement>('[data-cart-open]');
   if (button) {
     // jsdom не считает раскладку — подставляем прямоугольник живого замера
@@ -75,18 +76,18 @@ describe('окно «Товар добавлен в корзину» — при�
 
     // Верх окна — низ иконки (96) + зазор 12.
     expect(modal.style.getPropertyValue('--cart-modal-top')).toBe('108px');
-    // Ось иконки 1540…1572 → 1556; карточка 520 → правый край 1816,
-    // отступ справа 1920 − 1816 = 104. Владелец, 19.09: «надо правее прям
+    // Ось иконки 1540…1572 → 1556; карточка 379 → правый край 1745,
+    // отступ справа 1920 − 1745 = 175. Владелец, 19.09: «надо правее прям
     // напротив корзины» — равнение по правому краю иконки (348px) уводило окно
     // целиком влево от неё.
-    expect(modal.style.getPropertyValue('--cart-modal-right')).toBe('104px');
+    expect(modal.style.getPropertyValue('--cart-modal-right')).toBe('175px');
   });
 
   it('у самого края экрана прижимает окно к кромке, а не за неё', () => {
     const modal = mountDom(true);
     const button = document.querySelector<HTMLElement>('[data-cart-open]')!;
-    // Иконка вплотную к правому краю: ось 1904, половина карточки 260 —
-    // окно вышло бы за экран на 244px.
+    // Иконка вплотную к правому краю: ось 1904, половина карточки 189.5 —
+    // окно вышло бы за экран.
     button.getBoundingClientRect = () =>
       ({ x: 1888, y: 64, width: 32, height: 32, top: 64, right: 1920, bottom: 96, left: 1888 }) as DOMRect;
     createCartAddedModal(deps).open(payload);

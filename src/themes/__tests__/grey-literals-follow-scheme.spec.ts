@@ -233,6 +233,12 @@ describe("серые надписи витрины следуют цветово
     bloom: "themes/bloom/src/components/products/BloomProductCard.astro",
   } as const;
 
+  // ПОПРАВКА 19.09. Раньше здесь требовался `--color-muted`: гард писался про
+  // «не литерал, а токен схемы», и приглушённый был тогда единственным
+  // кандидатом. Владелец 19.09: «цвет скидки должен быть как у текста, а не
+  // браться из заголовка» — старая цена теперь берёт сам `--color-text`.
+  // Суть гарда не изменилась: литерал по-прежнему запрещён, проверяется, что
+  // цвет приезжает из схемы. Полный сторож — `old-price-follows-text.spec.ts`.
   it.each(THEMES)(
     "%s: цена до скидки в карточке берёт цвет из схемы",
     (theme) => {
@@ -241,7 +247,8 @@ describe("серые надписи витрины следуют цветово
         .split("\n")
         .find((l) => /line-through/.test(l) && /class=/.test(l));
       expect(line).toBeDefined();
-      expect(line).toContain("text-[rgb(var(--color-muted");
+      expect(line).toContain("text-[rgb(var(--color-text");
+      expect(line).not.toMatch(/text-\[#[0-9A-Fa-f]{3,8}\]/);
     },
   );
 });

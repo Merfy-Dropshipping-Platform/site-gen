@@ -491,7 +491,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
                       <div class:list={[cardCaptionClass]} style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{title}</div>
                       <div style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));display:flex;gap:8px;align-items:baseline;">
                         <span>{fmtPriceServer(basePrice)}</span>
-                        {compPrice > basePrice && <span style="text-decoration:line-through;color:rgb(var(--color-muted));font-size:14px;">{fmtPriceServer(compPrice)}</span>}
+                        {compPrice > basePrice && <span style="text-decoration:line-through;color:rgb(var(--color-text));font-size:14px;">{fmtPriceServer(compPrice)}</span>}
                       </div>
                     </div>
                   </a>
@@ -682,7 +682,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
               '<div' + (cardCaptionClass ? ' class="' + cardCaptionClass + '"' : '') + ' style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escAttr(title) + '</div>' +
               '<div style="font-size:16px;font-family:var(--font-body);color:rgb(var(--color-text));display:flex;gap:8px;align-items:baseline;">' +
                 '<span>' + price + '</span>' +
-                (compare ? '<span style="text-decoration:line-through;color:rgb(var(--color-muted));font-size:14px;">' + compare + '</span>' : '') +
+                (compare ? '<span style="text-decoration:line-through;color:rgb(var(--color-text));font-size:14px;">' + compare + '</span>' : '') +
               '</div>' +
             '</div>' +
             memPills +

@@ -257,7 +257,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			var price = escapeHtml(formatPrice(p.price));
 			var oldRaw = formatPrice(p.oldPrice || null);
 			var oldPrice = oldRaw
-				? '<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[14px]">' + escapeHtml(oldRaw) + "</span>"
+				? '<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] line-through md:text-[14px]">' + escapeHtml(oldRaw) + "</span>"
 				: "";
 			var heartInner =
 				(window.__fluxWishlist && window.__fluxWishlist.heartSvg) ? window.__fluxWishlist.heartSvg(true) : WISHLIST_OUTLINE_SVG;

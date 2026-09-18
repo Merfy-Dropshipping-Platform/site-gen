@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -178,6 +178,64 @@ describe("секции корзины едут за цветовой схемо�
       ["кнопка «плюс» (data-cart-inc)", () => incBtn],
     ])("%s несёт text-[rgb(var(--color-text", (_label, getCls) => {
       expect(getCls()).toMatch(/text-\[rgb\(var\(--color-text/);
+    });
+  });
+
+  // Баг b81 (17.09): скаффолд packages/theme-base/blocks/CartSection —
+  // единственный рендер для тем БЕЗ собственного порта — объявлял поле
+  // «Цветовая схема» в puckConfig, но .astro не читал colorScheme из
+  // Astro.props вовсе: панель показывала выбор, вид не менялся ни на пиксель.
+  // Сторож читает ИСХОДНИК (без рендера) — так же, как остальные проверки
+  // этого файла.
+  describe("theme-base CartSection — скаффолд читает colorScheme из пропсов", () => {
+    const src = readFileSync(
+      resolve(
+        SITES_ROOT,
+        "packages/theme-base/blocks/CartSection/CartSection.astro",
+      ),
+      "utf-8",
+    );
+
+    it("colorScheme деструктурируется из Astro.props", () => {
+      expect(src).toMatch(/const\s*\{[\s\S]*?colorScheme[\s\S]*?\}\s*=\s*Astro\.props/);
+    });
+
+    it("класс схемы посчитан из colorScheme (тот же приём, что CartBody/CartSummary)", () => {
+      expect(src).toMatch(
+        /schemeClass\s*=\s*\n?\s*typeof colorScheme === ['"]string['"] && colorScheme[\s\S]*?color-scheme-\$\{colorScheme\.replace\(['"]scheme-['"], ['"]['"]\)\}/,
+      );
+    });
+
+    it("корневая <section> несёт вычисленный schemeClass", () => {
+      const tag = rootTag(src);
+      expect(tag).toMatch(/class:list=\{\[[^\]]*\bschemeClass\b[^\]]*\]\}/);
+    });
+  });
+
+  // Баг b81 (17.09), второй симптом: «Bloom — применяет на себя цветовую
+  // схему корзины для сайдбара» — сайдбар-дровер красился НЕсуществующими
+  // именами `--color-background`/`--color-foreground` (packages/storefront/
+  // cart/*.tsx): канонический генератор (src/themes/tokens-css.ts +
+  // packages/theme-contract/tokens/registry.ts) объявляет ТОЛЬКО
+  // `--color-bg`/`--color-text` для `.color-scheme-N`, поэтому мёртвые имена
+  // не наследовали ничего осмысленного от схемы, в которую попадал дровер.
+  // Сторож держит ОБА мёртвых имени вне всего пакета storefront/cart.
+  describe("packages/storefront/cart — без мёртвых имён --color-background/--color-foreground", () => {
+    const dir = resolve(SITES_ROOT, "packages/storefront/cart");
+    const files = readdirSync(dir).filter((f) => f.endsWith(".tsx") || f.endsWith(".ts"));
+
+    it("директория не пуста (сторож не молчит вхолостую)", () => {
+      expect(files.length).toBeGreaterThan(0);
+    });
+
+    it.each(files)("%s — нет --color-background", (file) => {
+      const src = readFileSync(resolve(dir, file), "utf-8");
+      expect(src).not.toMatch(/--color-background\b/);
+    });
+
+    it.each(files)("%s — нет --color-foreground", (file) => {
+      const src = readFileSync(resolve(dir, file), "utf-8");
+      expect(src).not.toMatch(/--color-foreground\b/);
     });
   });
 

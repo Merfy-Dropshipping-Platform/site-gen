@@ -133,7 +133,7 @@ export function CartItemRow({
                 fontSize: isPageLayout ? 20 : 14,
                 lineHeight: isPageLayout ? '27px' : '18px',
                 textTransform: 'uppercase',
-                color: 'rgb(var(--color-foreground))',
+                color: 'rgb(var(--color-text))',
               }}
             >
               {name}
@@ -144,7 +144,7 @@ export function CartItemRow({
                 style={{
                   fontSize: isPageLayout ? 24 : 14,
                   lineHeight: isPageLayout ? '33px' : '18px',
-                  color: 'rgb(var(--color-foreground))',
+                  color: 'rgb(var(--color-text))',
                 }}
               >
                 {formatPrice(price)}
@@ -227,11 +227,11 @@ export function CartItemRow({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 8,
-                border: '1px solid rgb(var(--color-foreground))',
-                background: 'rgb(var(--color-background))',
+                border: '1px solid rgb(var(--color-text))',
+                background: 'rgb(var(--color-bg))',
                 cursor: qty <= 1 ? 'not-allowed' : 'pointer',
                 opacity: qty <= 1 ? 0.4 : 1,
-                color: 'rgb(var(--color-foreground))',
+                color: 'rgb(var(--color-text))',
               }}
             >
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -246,12 +246,12 @@ export function CartItemRow({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 10,
-                background: 'rgb(var(--color-background))',
+                background: 'rgb(var(--color-bg))',
               }}
             >
               <span
                 className="font-body"
-                style={{ fontSize: 16, lineHeight: '22px', color: 'rgb(var(--color-foreground))' }}
+                style={{ fontSize: 16, lineHeight: '22px', color: 'rgb(var(--color-text))' }}
               >
                 {qty}
               </span>
@@ -266,10 +266,10 @@ export function CartItemRow({
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 8,
-                border: '1px solid rgb(var(--color-foreground))',
-                background: 'rgb(var(--color-background))',
+                border: '1px solid rgb(var(--color-text))',
+                background: 'rgb(var(--color-bg))',
                 cursor: 'pointer',
-                color: 'rgb(var(--color-foreground))',
+                color: 'rgb(var(--color-text))',
               }}
             >
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none">

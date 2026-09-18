@@ -25,8 +25,8 @@ export function CartBodyIsland({
     <section
       className={`relative w-full ${schemeClass}`}
       style={{
-        background: 'rgb(var(--color-background))',
-        color: 'rgb(var(--color-foreground))',
+        background: 'rgb(var(--color-bg))',
+        color: 'rgb(var(--color-text))',
         paddingTop: padTop,
         paddingBottom: padBottom,
       }}
@@ -38,7 +38,7 @@ export function CartBodyIsland({
             fontSize: 24,
             lineHeight: '27px',
             textTransform: 'uppercase',
-            color: 'rgb(var(--color-foreground))',
+            color: 'rgb(var(--color-text))',
             margin: '0 0 25px 0',
           }}
         >
@@ -76,8 +76,8 @@ export function CartBodyIsland({
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '12px 24px',
-                background: 'rgb(var(--color-foreground))',
-                color: 'rgb(var(--color-background))',
+                background: 'rgb(var(--color-text))',
+                color: 'rgb(var(--color-bg))',
                 fontSize: 16,
                 lineHeight: '22px',
                 borderRadius: 8,
@@ -91,7 +91,7 @@ export function CartBodyIsland({
                 Есть аккаунт?{' '}
                 <a
                   href="/login?next=/cart"
-                  style={{ color: 'rgb(var(--color-foreground))', fontWeight: 500 }}
+                  style={{ color: 'rgb(var(--color-text))', fontWeight: 500 }}
                 >
                   Войти
                 </a>

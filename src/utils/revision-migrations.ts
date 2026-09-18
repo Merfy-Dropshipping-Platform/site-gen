@@ -1395,9 +1395,11 @@ const FOOTER_PLACEHOLDER_EMAIL = /(?:^example@|@example\.|\.example$)/i;
 function stripThemeNameFromFooter(
   pagesData: Record<string, unknown>,
   themeId: string | null | undefined,
+  siteName?: string | null,
 ): Record<string, unknown> {
   const theme = (themeId ?? '').trim().toLowerCase();
   if (!theme) return pagesData;
+  const shopName = (siteName ?? '').trim();
   let changed = false;
   const out: Record<string, unknown> = { ...pagesData };
   for (const pageId of Object.keys(pagesData)) {
@@ -1409,11 +1411,28 @@ function stripThemeNameFromFooter(
       if (b?.type !== 'Footer' || !b.props) return block;
       const copyright = b.props.copyright as Record<string, unknown> | undefined;
       const company = typeof copyright?.companyName === 'string' ? copyright.companyName.trim() : '';
-      if (!company || company.toLowerCase() !== theme) return block;
+      const title = typeof b.props.siteTitle === 'string' ? b.props.siteTitle.trim() : '';
+      const companyIsTheme = !!company && company.toLowerCase() === theme;
+      // Имя темы приезжает в подвал ДВУМЯ путями: `copyright.companyName` (сиды
+      // bloom/flux/satin) и `siteTitle` (замер стенда satin 19.09: там лежало
+      // «SATIN» при магазине «Satin Demo»). Чистим оба — иначе вычистишь одно
+      // поле, а подвал продолжит печатать имя темы из второго.
+      const titleIsTheme = !!title && title.toLowerCase() === theme;
+      if (!companyIsTheme && !titleIsTheme) return block;
       changed = true;
-      const nextCopyright = { ...copyright };
-      delete nextCopyright.companyName;
-      return { ...b, props: { ...b.props, copyright: nextCopyright } };
+      const nextProps: Record<string, unknown> = { ...b.props };
+      if (companyIsTheme) {
+        const nextCopyright = { ...copyright };
+        delete nextCopyright.companyName;
+        nextProps.copyright = nextCopyright;
+      }
+      if (titleIsTheme) {
+        // Название магазина из админки — ровно то, что просил владелец. Без
+        // него просто убираем имя темы, дальше сработает запасное «Мой магазин».
+        if (shopName) nextProps.siteTitle = shopName;
+        else delete nextProps.siteTitle;
+      }
+      return { ...b, props: nextProps };
     });
     if (nextContent.some((b, i) => b !== content[i])) {
       out[pageId] = { ...(page as object), content: nextContent };
@@ -2563,6 +2582,8 @@ function seedLoginPageSection(
 export function migrateRevisionData(
   data: Record<string, unknown> | null | undefined,
   themeId?: string | null,
+  /** Название магазина из админки — подставляется в подвал вместо имени темы. */
+  siteName?: string | null,
 ): Record<string, unknown> {
   if (!data || typeof data !== 'object') return {};
   const out: Record<string, unknown> = { ...data };
@@ -2595,7 +2616,7 @@ export function migrateRevisionData(
     out.pagesData = normalizeFooterContacts(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
-    out.pagesData = stripThemeNameFromFooter(out.pagesData as Record<string, unknown>, themeId);
+    out.pagesData = stripThemeNameFromFooter(out.pagesData as Record<string, unknown>, themeId, siteName);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = normalizePromoBannerPadding(out.pagesData as Record<string, unknown>);

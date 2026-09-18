@@ -471,6 +471,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</div>
 				{thumbs.length > 1 && !isTwoCols && (
 					<div class:list={[isSplit ? "flex flex-col gap-3" : "flex w-full items-center gap-3"]}>
+						{/* Стрелка «назад» у ленты миниатюр. Раньше её тут не было
+						    вовсе — листать можно было только вперёд, до конца, и
+						    вернуться нечем (жалоба владельца 18.09: «в макете
+						    Карусель и Миниатюрный не работают слайдеры стрелочки»).
+						    Условия показа те же, что у «вперёд», иначе стрелки
+						    появлялись бы поодиночке. */}
+						{thumbs.length >= 5 && layout !== "stacked" && !isSplit && (
+							<button type="button" class="flex size-11 shrink-0 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70" data-cfg-thumbs-prev aria-label="Предыдущие изображения">
+								<span class="block size-6" set:html={ARROW_LEFT_ICON_SVG} />
+							</button>
+						)}
 						<div class={thumbsTrackCls} data-cfg-thumbs-track>
 							{thumbs.map((img, i) => (
 								<button
@@ -1216,6 +1227,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				if (!track) return;
 				const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
 				track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + 132, behavior: "smooth" });
+			});
+			cfg.querySelector<HTMLButtonElement>("[data-cfg-thumbs-prev]")?.addEventListener("click", () => {
+				if (!track) return;
+				const atStart = track.scrollLeft <= 1;
+				const max = track.scrollWidth - track.clientWidth;
+				track.scrollTo({ left: atStart ? max : Math.max(0, track.scrollLeft - 132), behavior: "smooth" });
 			});
 
 			// Мобильная карусель (prev/next меняют главное фото).

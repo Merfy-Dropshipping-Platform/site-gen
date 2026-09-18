@@ -173,3 +173,29 @@ describe("стрелки ленты миниатюр листают её", () =>
     expect(track.scrollLeft).toBe(0);
   });
 });
+
+/**
+ * Порт flux — своя реализация ленты, поэтому сторожится отдельно.
+ *
+ * До 18.09 у flux была ТОЛЬКО стрелка «вперёд» (`data-cfg-thumbs-next`):
+ * долистав до конца, вернуться было нечем. Кнопку «назад» дорисовали на тех же
+ * условиях показа, что и «вперёд», — иначе стрелки появлялись бы поодиночке.
+ */
+describe("flux: у ленты миниатюр есть обе стрелки", () => {
+  const FLUX = join(SITES_ROOT, "themes/flux/src/components/sections/FeaturedProduct.astro");
+  const src = () => readFileSync(FLUX, "utf8");
+
+  it("кнопка «назад» нарисована и слушает клик", () => {
+    const code = src();
+    expect(code).toMatch(/data-cfg-thumbs-prev/);
+    expect(code).toMatch(/\[data-cfg-thumbs-prev\][^\n]*addEventListener\("click"/);
+  });
+
+  it("обе стрелки показываются по одному и тому же условию", () => {
+    const code = src();
+    const conds = [...code.matchAll(/\{(thumbs\.length >= \d+[^}]*?) && \(\s*<button[^>]*data-cfg-thumbs-(prev|next)/g)]
+      .map((m) => [m[2], m[1].trim()] as const);
+    expect(conds.length).toBe(2);
+    expect(conds[0][1]).toBe(conds[1][1]);
+  });
+});

@@ -116,6 +116,15 @@ const ANCHOR_MIN_SIDE = 16;
  * всегда одна — берём самую правую из непустых прямоугольников. Не нашли ни
  * одной (шапки нет — например, превью отдельного блока) → переменные снимаем,
  * и окно садится на фолбэк из классов.
+ *
+ * Владелец, 19.09 (второй заход, уже по живому проду): «надо правее прям
+ * напротив корзины». Первая версия равняла ПРАВЫЙ край окна по правому краю
+ * иконки — окно целиком уходило влево от корзины. Теперь окно центрируется по
+ * оси иконки: середина карточки под серединой кнопки. Ширину карточки берём
+ * живым замером (max-w у окна разный: 430px на узких, 520px от md), поэтому
+ * функция зовётся ПОСЛЕ снятия `hidden` — у скрытого элемента ширина 0.
+ * Ось у правого края экрана — окно упёрлось бы за кромку, поэтому отступ
+ * снизу ограничен `ANCHOR_MIN_SIDE`.
  */
 const anchorToCartIcon = (modal: HTMLElement) => {
 	const boxes = Array.from(document.querySelectorAll<HTMLElement>(CART_ANCHORS))
@@ -129,7 +138,10 @@ const anchorToCartIcon = (modal: HTMLElement) => {
 	}
 
 	const rect = boxes.reduce((widest, box) => (box.right > widest.right ? box : widest));
-	const right = Math.max(ANCHOR_MIN_SIDE, window.innerWidth - rect.right);
+	const card = modal.querySelector<HTMLElement>(CARD);
+	const cardWidth = card?.getBoundingClientRect().width ?? 0;
+	const axis = rect.left + rect.width / 2;
+	const right = Math.max(ANCHOR_MIN_SIDE, window.innerWidth - axis - cardWidth / 2);
 	// Шапка не липкая: на прокрученной странице низ иконки уходит в минус
 	// (замер 390×844 отдавал bottom = −410), и окно уползло бы за верх экрана
 	// обрезанным. Ниже отступа-минимума не опускаемся.
@@ -281,10 +293,13 @@ export const createCartAddedModal = (deps: CartAddedModalDeps) => {
 
 		if (cartLink) cartLink.textContent = `В корзину (${deps.getCartCount()})`;
 
-		anchorToCartIcon(modal);
-
+		// Сначала показываем, потом ставим на место: `anchorToCartIcon` меряет
+		// ширину карточки, а у скрытого окна она нулевая. Оба шага в одном
+		// синхронном блоке — браузер не успевает нарисовать промежуточный кадр,
+		// так что окно не прыгает.
 		modal.classList.remove("hidden");
 		modal.classList.add("flex");
+		anchorToCartIcon(modal);
 		modal.setAttribute("aria-hidden", "false");
 		lockBody(true);
 		window.requestAnimationFrame(() => {

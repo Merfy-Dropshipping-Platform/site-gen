@@ -1333,7 +1333,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // не участвует, а порядок обёрток между собой не меняется: все
       // z-index:auto, решает порядок дерева — как и было при равных 3/3.
       // Гард — src/themes/__tests__/product-variant-list-overlap.spec.ts.
-      '[data-puck-subsection-parent]{position:relative;cursor:pointer}',
+      // :where() — специфичность 0, чтобы утилита раскладки самой темы всегда
+      // побеждала. Раньше правило шло как [data-puck-subsection-parent]
+      // (0,1,0) и стояло ПОЗЖЕ бандла Tailwind, поэтому перебивало absolute
+      // у элементов, помеченных кликабельной подсекцией. Живой замер на
+      // vanilla (18.09): слайд absolute inset-0 получал computed
+      // position: relative, из-за чего inset-0 переставал растягивать его,
+      // высота слайда падала в 0 и вместе с ней в 0 уходила картинка внутри —
+      // «в слайд-шоу нет самих слайдов» (баг владельца). Позиционированному
+      // элементу relative и не нужен: ::after-подсветка и так найдёт предка.
+      // Статичным элементам relative по-прежнему достаётся.
+      ':where([data-puck-subsection-parent]){position:relative}',
+      '[data-puck-subsection-parent]{cursor:pointer}',
       '[data-puck-subsection-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:2px}',
       '[data-puck-subsection-selected="true"]{outline:2px solid #88b0da !important;outline-offset:2px}',
       // Puck ActionBar styling (1:1 with @measured/puck DraggableComponent action overlay).

@@ -16,10 +16,22 @@
  * Тема ставит `data-puck-subsection-parent` на абсолютный слайд законно: это
  * кликабельная подсекция. Значит уступать должно превью, а не тема.
  *
- * ПРАВИЛО ПОСЛЕ ПРАВКИ: `position` для подсекции объявлен через `:where()` —
- * специфичность 0, любой класс раскладки перебивает его независимо от порядка.
- * Статичный элемент по-прежнему получает `relative`, а позиционированному он и
- * не нужен: ::after-подсветке достаточно любого позиционированного предка.
+ * ДВЕ ПОПРАВКИ ПОСЛЕ ВЫКАТКИ (19.09).
+ *
+ * 1. Версия с `:where()` уехала в прод и НЕ помогла — замер на выкаченном
+ *    превью дал тот же схлопнутый слайд. Проба в том же документе объяснила
+ *    почему: пустой `div` с `absolute inset-0` резолвится в `absolute`, а тот
+ *    же `div` с `data-puck-subsection-parent` — в `relative`. Специфичность ни
+ *    при чём: утилиты Tailwind v4 лежат внутри `@layer`, а правило вне слоёв
+ *    сильнее любого слоя при любом селекторе.
+ * 2. `@layer base` в живом браузере сработал (проверено подменой стилей на
+ *    месте: слайд поднялся с 0 до 790px), но jsdom не разбирает `@layer` и
+ *    роняет соседние гарды агента с «Could not parse CSS stylesheet».
+ *
+ * ИТОГОВОЕ РЕШЕНИЕ: правила `position` в стилях превью НЕТ вовсе. Агент ставит
+ * `position: relative` точечно и только тем подсекциям, у которых computed
+ * position === 'static' — позиционированный элемент не трогается, он и так
+ * годится в предки для ::after-подсветки.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -30,13 +42,29 @@ const SRC = readFileSync(
 );
 
 describe("превью: правило подсекции уступает раскладке темы", () => {
-  it("position объявлен через :where() — иначе он перебьёт absolute у темы", () => {
-    expect(SRC).toContain("':where([data-puck-subsection-parent]){position:relative}'");
+  it("в стилях превью нет правила position для подсекции — ни в каком виде", () => {
+    // Любая из трёх форм (голая, :where, @layer) либо ломала раскладку темы,
+    // либо роняла jsdom-гарды агента.
+    // Ищем именно строковые литералы стилей, а не упоминания в комментариях.
+    expect(SRC).not.toMatch(/'[^'\n]*\[data-puck-subsection-parent\]\{position:relative/);
+    expect(SRC).not.toMatch(/'@layer[^'\n]*data-puck-subsection-parent/);
   });
 
-  it("голого правила с position для подсекции в стилях больше нет", () => {
-    // Именно эта форма (специфичность 0,1,0 + поздний порядок) схлопывала слайд.
-    expect(SRC).not.toMatch(/'\[data-puck-subsection-parent\]\{position:relative/);
+  it("агент ставит relative точечно и только статичным подсекциям", () => {
+    expect(SRC).toMatch(/function ensureSubsectionPositioned\(el\)/);
+    // Уже позиционированный элемент не трогаем — иначе вернётся тот же баг.
+    expect(SRC).toMatch(/cs\.position !== 'static'\) return/);
+    expect(SRC).toMatch(/el\.style\.position = 'relative'/);
+  });
+
+  it("простановка вызвана на обоих путях подсветки — hover и выделение", () => {
+    const hover = SRC.indexOf("setAttribute('data-puck-subsection-hover', 'true')");
+    const sel = SRC.indexOf("setAttribute('data-puck-subsection-selected', 'true')");
+    expect(hover).toBeGreaterThan(-1);
+    expect(sel).toBeGreaterThan(-1);
+    // Вызов стоит непосредственно перед простановкой атрибута.
+    expect(SRC.slice(hover - 200, hover)).toContain("ensureSubsectionPositioned");
+    expect(SRC.slice(sel - 200, sel)).toContain("ensureSubsectionPositioned");
   });
 
   it("cursor:pointer остался — кликабельность подсекции не потеряна", () => {

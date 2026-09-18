@@ -92,6 +92,64 @@ export interface CartAddedModalDeps {
 const MODAL = "[data-cart-added-modal]";
 const CARD = "[data-cart-modal-card]";
 
+/**
+ * Кнопка корзины в шапке. Портированные темы (bloom, flux) вешают
+ * `data-cart-open`, общий блок `blocks/Header` — `a[data-action="cart"]`.
+ */
+const CART_ANCHORS = '[data-cart-open], a[data-action="cart"]';
+/** Зазор между низом иконки и верхом окна. */
+const ANCHOR_GAP = 12;
+/** Минимальный отступ окна от правого края — чтобы не липло к кромке. */
+const ANCHOR_MIN_SIDE = 16;
+
+/**
+ * Окно встаёт ПОД ИКОНКОЙ КОРЗИНЫ, а не по центру экрана (владелец, 19.09 по
+ * bloom: «ща она в центре, а надо чтобы была под корзиной справа сверху»).
+ *
+ * Считаем от живого прямоугольника кнопки, а не классами с числами: правые
+ * поля шапки у тем разные (порт bloom/flux — `px-20 2xl:px-[300px]`, общий
+ * Header — `md:px-10 lg:px-16 xl:px-20 2xl:px-[var(--header-container-px-2xl,280px)]`),
+ * а разметка окна ОДНА на все темы. Эталонный `pr-[348px]` bloom.merfy.ru встал
+ * бы под корзину только у bloom и только на 2xl.
+ *
+ * Кнопок в шапке несколько (мобильный и десктопный ряды, второй ярус), видима
+ * всегда одна — берём самую правую из непустых прямоугольников. Не нашли ни
+ * одной (шапки нет — например, превью отдельного блока) → переменные снимаем,
+ * и окно садится на фолбэк из классов.
+ *
+ * Владелец, 19.09 (второй заход, уже по живому проду): «надо правее прям
+ * напротив корзины». Первая версия равняла ПРАВЫЙ край окна по правому краю
+ * иконки — окно целиком уходило влево от корзины. Теперь окно центрируется по
+ * оси иконки: середина карточки под серединой кнопки. Ширину карточки берём
+ * живым замером (max-w у окна разный: 430px на узких, 520px от md), поэтому
+ * функция зовётся ПОСЛЕ снятия `hidden` — у скрытого элемента ширина 0.
+ * Ось у правого края экрана — окно упёрлось бы за кромку, поэтому отступ
+ * снизу ограничен `ANCHOR_MIN_SIDE`.
+ */
+const anchorToCartIcon = (modal: HTMLElement) => {
+	const boxes = Array.from(document.querySelectorAll<HTMLElement>(CART_ANCHORS))
+		.map((node) => node.getBoundingClientRect())
+		.filter((rect) => rect.width > 0 && rect.height > 0);
+
+	if (boxes.length === 0) {
+		modal.style.removeProperty("--cart-modal-top");
+		modal.style.removeProperty("--cart-modal-right");
+		return;
+	}
+
+	const rect = boxes.reduce((widest, box) => (box.right > widest.right ? box : widest));
+	const card = modal.querySelector<HTMLElement>(CARD);
+	const cardWidth = card?.getBoundingClientRect().width ?? 0;
+	const axis = rect.left + rect.width / 2;
+	const right = Math.max(ANCHOR_MIN_SIDE, window.innerWidth - axis - cardWidth / 2);
+	// Шапка не липкая: на прокрученной странице низ иконки уходит в минус
+	// (замер 390×844 отдавал bottom = −410), и окно уползло бы за верх экрана
+	// обрезанным. Ниже отступа-минимума не опускаемся.
+	const top = Math.max(ANCHOR_MIN_SIDE, rect.bottom + ANCHOR_GAP);
+	modal.style.setProperty("--cart-modal-top", `${Math.round(top)}px`);
+	modal.style.setProperty("--cart-modal-right", `${Math.round(right)}px`);
+};
+
 const isAbsoluteUrl = (v: string) => /^(https?:)?\/\//i.test(v) || v.startsWith("data:");
 
 /**
@@ -235,8 +293,13 @@ export const createCartAddedModal = (deps: CartAddedModalDeps) => {
 
 		if (cartLink) cartLink.textContent = `В корзину (${deps.getCartCount()})`;
 
+		// Сначала показываем, потом ставим на место: `anchorToCartIcon` меряет
+		// ширину карточки, а у скрытого окна она нулевая. Оба шага в одном
+		// синхронном блоке — браузер не успевает нарисовать промежуточный кадр,
+		// так что окно не прыгает.
 		modal.classList.remove("hidden");
 		modal.classList.add("flex");
+		anchorToCartIcon(modal);
 		modal.setAttribute("aria-hidden", "false");
 		lockBody(true);
 		window.requestAnimationFrame(() => {

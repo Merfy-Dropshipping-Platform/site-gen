@@ -219,4 +219,29 @@ describe('окно «Товар добавлен в корзину» — общ�
     expect(modal).toMatch(/"\/checkout"/);
     expect(modal).toMatch(/postMessage\(\{ type: "navigate", path: "\/checkout" \}/);
   });
+
+  it('11. окно стоит под иконкой корзины, а не по центру экрана', () => {
+    const markup = read(MODAL_ASTRO);
+    const runtime = read(MODAL_RUNTIME);
+
+    // Владелец, 19.09 (bloom): «щас она в центре, а надо чтобы была под
+    // корзиной справа сверху». Центрирующая пара вернёт окно на середину даже
+    // при живом рантайме — переменные просто не применятся, и DOM-тест
+    // `cart-added-modal-anchor.dom.test.ts` этого НЕ заметит: он смотрит на
+    // проставленные переменные, а не на раскладку.
+    expect(markup).not.toMatch(/data-cart-added-modal[\s\S]{0,200}items-center/);
+    expect(markup).toMatch(/data-cart-added-modal[\s\S]{0,200}items-start/);
+    expect(markup).toMatch(/md:justify-end/);
+    expect(markup).toContain('pt-[var(--cart-modal-top,7rem)]');
+    expect(markup).toContain('md:pr-[var(--cart-modal-right,5rem)]');
+    // `my-auto` на карточке перебивает items-start и утащил бы окно в центр.
+    expect(markup).not.toMatch(/data-cart-modal-card[\s\S]{0,400}my-auto/);
+
+    // Живые значения кладёт рантайм от прямоугольника кнопки корзины: порты
+    // тем метят её data-cart-open, общий Header — a[data-action="cart"].
+    expect(runtime).toContain('[data-cart-open]');
+    expect(runtime).toContain('a[data-action="cart"]');
+    expect(runtime).toContain('--cart-modal-top');
+    expect(runtime).toContain('--cart-modal-right');
+  });
 });

@@ -1333,17 +1333,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // не участвует, а порядок обёрток между собой не меняется: все
       // z-index:auto, решает порядок дерева — как и было при равных 3/3.
       // Гард — src/themes/__tests__/product-variant-list-overlap.spec.ts.
-      // :where() — специфичность 0, чтобы утилита раскладки самой темы всегда
-      // побеждала. Раньше правило шло как [data-puck-subsection-parent]
-      // (0,1,0) и стояло ПОЗЖЕ бандла Tailwind, поэтому перебивало absolute
-      // у элементов, помеченных кликабельной подсекцией. Живой замер на
-      // vanilla (18.09): слайд absolute inset-0 получал computed
-      // position: relative, из-за чего inset-0 переставал растягивать его,
-      // высота слайда падала в 0 и вместе с ней в 0 уходила картинка внутри —
-      // «в слайд-шоу нет самих слайдов» (баг владельца). Позиционированному
-      // элементу relative и не нужен: ::after-подсветка и так найдёт предка.
-      // Статичным элементам relative по-прежнему достаётся.
-      ':where([data-puck-subsection-parent]){position:relative}',
+
       '[data-puck-subsection-parent]{cursor:pointer}',
       '[data-puck-subsection-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:2px}',
       '[data-puck-subsection-selected="true"]{outline:2px solid #88b0da !important;outline-offset:2px}',
@@ -2107,12 +2097,38 @@ const PREVIEW_NAV_AGENT_INLINE = `
 
   // Pupa parity: при hover на секцию подсвечиваем ВСЕ её subsection-параметры
   // вторым слоем. У секции без параметров — подсвечивается только секция.
+  // Подсветка подсекции рисуется ::after с inset:0 — ей нужен позиционированный
+  // предок. Раньше это выдавалось всем подсекциям правилом CSS
+  // общим CSS-правилом на этот data-атрибут, и оно ЛОМАЛО раскладку
+  // тем: у элемента, размеченного absolute inset-0, position становился
+  // relative, inset переставал его растягивать, высота падала в 0 вместе с
+  // картинкой внутри. Так пропадали слайды слайд-шоу vanilla (замер 18.09:
+  // слайд 1280x0 при загруженной картинке 1920x960).
+  //
+  // Каскадом это не лечится: утилиты Tailwind v4 живут в @layer, а правило
+  // превью — вне слоёв, и правило вне слоёв сильнее любого слоя при любом
+  // селекторе (проверено пробой в живом превью: :where() не помог). @layer
+  // помог бы, но jsdom его не разбирает и роняет соседние гарды агента.
+  //
+  // Поэтому ставим точечно и только тем, кому действительно нужно: элемент уже
+  // позиционирован — не трогаем, он и так годится в предки для ::after.
+  function ensureSubsectionPositioned(el) {
+    if (!el || !el.style) return;
+    var cs = null;
+    try { cs = window.getComputedStyle(el); } catch (e) { return; }
+    if (!cs || cs.position !== 'static') return;
+    el.style.position = 'relative';
+  }
+
   function hintAllSubsections(sectionEl) {
     if (!sectionEl) return;
     var sectionId = sectionEl.getAttribute('data-puck-component-id');
     if (!sectionId) return;
     var subs = document.querySelectorAll('[data-puck-subsection-parent="' + sectionId + '"]');
-    for (var i = 0; i < subs.length; i++) subs[i].setAttribute('data-puck-subsection-hover', 'true');
+    for (var i = 0; i < subs.length; i++) {
+      ensureSubsectionPositioned(subs[i]);
+      subs[i].setAttribute('data-puck-subsection-hover', 'true');
+    }
   }
   function clearAllSubsectionHints(sectionEl) {
     if (!sectionEl) return;
@@ -2360,6 +2376,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
           subEl = document.querySelector('[data-puck-subsection-parent="' + subParent + '"][data-puck-subsection-index="' + subIndex + '"]');
         }
         if (subEl) {
+          ensureSubsectionPositioned(subEl);
           subEl.setAttribute('data-puck-subsection-selected', 'true');
           scrollSelfTo(subEl, 'center');
           selectedSubsectionEl = subEl;

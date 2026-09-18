@@ -31,6 +31,17 @@
  * пара схемы сама малоконтрастна (bloom scheme-1), окно выглядит ровно как
  * панель корзины на той же схеме — это её собственный выбор.
  *
+ * Место на экране (владелец, 19.09 по bloom: «не на том месте стоит блок
+ * корзины — щас она в центре, а надо чтобы была под корзиной справа сверху»):
+ * окно прижато к правому краю и висит ПОД ИКОНКОЙ КОРЗИНЫ. Числа в классах —
+ * только фолбэк (`7rem` сверху, `5rem` справа); живые значения кладёт
+ * `anchorToCartIcon` в `runtime/cart-added-modal.ts` от прямоугольника самой
+ * кнопки корзины, потому что правые поля шапки у тем разные, а разметка окна
+ * одна. Эталон верстальщиков (bloom.merfy.ru) держит то же место жёстким
+ * `md:pr-20 2xl:pr-[348px]`, но такой хардкод встал бы под корзину только у
+ * bloom и только на 2xl. На узких окнах (<md) окно остаётся по центру, как в
+ * эталоне.
+ *
  * Прокрутка на низких окнах (владелец, 16.09 — «окно не должен отображаться
  * во весь экран»): карточка НЕ тянулась под высоту вьюпорта и на коротких
  * окнах вылезала за края без возможности прокрутки — замер live-стенда bloom
@@ -38,14 +49,16 @@
  * уходил за нижний край, а у внешнего контейнера не было `overflow-y`, так что
  * прокрутить страницу к обрезанной части было нечем — карточка съедала весь
  * экран без выхода. Обход: внешний контейнер получил `overflow-y-auto`,
- * карточка — `max-h-[calc(100dvh-4rem)] overflow-y-auto my-auto`, поэтому на
- * тесных окнах прокручивается сама карточка, а не выходит за экран немо.
+ * карточка — `max-h-[calc(100dvh-8rem)] overflow-y-auto`, поэтому на тесных
+ * окнах прокручивается сама карточка, а не выходит за экран немо. `my-auto`
+ * с карточки снят: в flex-контейнере авто-поля по вертикали перебивают
+ * `items-start` и утащили бы окно обратно в центр.
  */
 ---
 
 <div
 	data-cart-added-modal
-	class="fixed inset-0 z-[120] hidden items-center justify-center overflow-y-auto px-4 py-8"
+	class="fixed inset-0 z-[120] hidden items-start justify-center overflow-y-auto px-4 pb-8 pt-[var(--cart-modal-top,7rem)] md:justify-end md:pr-[var(--cart-modal-right,5rem)]"
 	aria-hidden="true"
 >
 	<button
@@ -60,7 +73,7 @@
 		aria-modal="true"
 		aria-labelledby="cart-added-title"
 		data-cart-modal-card
-		class="relative z-10 my-auto flex max-h-[calc(100dvh-4rem)] w-full max-w-[430px] translate-y-3 flex-col gap-6 overflow-y-auto rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.3)] bg-[rgb(var(--color-bg,255_255_255))] p-5 text-[rgb(var(--color-text,0_0_0))] opacity-0 shadow-[0_24px_80px_rgb(var(--color-heading,0_0_0)/0.18)] transition-[opacity,transform] duration-300 ease-out md:max-w-[520px] md:p-6"
+		class="relative z-10 flex max-h-[calc(100dvh-8rem)] w-full max-w-[430px] translate-y-3 flex-col gap-6 overflow-y-auto rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.3)] bg-[rgb(var(--color-bg,255_255_255))] p-5 text-[rgb(var(--color-text,0_0_0))] opacity-0 shadow-[0_24px_80px_rgb(var(--color-heading,0_0_0)/0.18)] transition-[opacity,transform] duration-300 ease-out md:max-w-[520px] md:p-6"
 	>
 		<div class="flex items-start justify-between gap-4">
 			<div class="flex min-w-0 flex-col gap-1">

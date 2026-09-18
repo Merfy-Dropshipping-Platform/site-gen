@@ -167,7 +167,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 									<a href="/products/${line.productId}" class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${line.name}</a>
 									<div class="flex items-center gap-2 uppercase">
 										<span class="font-roboto-flex text-[20px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${formatCartPrice(line.price)}</span>
-										${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-muted,204_204_204))] line-through">${oldPrice}</span>` : ""}
+										${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] line-through">${oldPrice}</span>` : ""}
 									</div>
 								</div>
 								${varInfo}

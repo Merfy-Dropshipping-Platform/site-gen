@@ -106,7 +106,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			.map((line) => {
 				const oldPriceHtml =
 					line.oldPrice && line.oldPrice > line.price
-						? `<span class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
+						? `<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
 						: "";
 
 				// Плитка под фото — «Поверхность» СХЕМЫ. Жалоба тестировщика 15.09
@@ -125,9 +125,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								${cartLineThumbPictureHtml(line.image, line.name)}
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">
-								<a href="/products/${line.productId}" class="break-words font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-dark)] hover:opacity-80 md:text-[16px]">${line.name}</a>
+								<a href="/products/${line.productId}" class="break-words font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]">${line.name}</a>
 								<div class="flex flex-wrap items-center gap-2">
-									<span class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-dark)] md:text-[16px]">${formatCartPrice(line.price * line.quantity)}</span>
+									<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${formatCartPrice(line.price * line.quantity)}</span>
 									${oldPriceHtml}
 								</div>
 							</div>
@@ -137,9 +137,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								${trashIconHtml}
 							</button>
 							<div class="inline-flex h-10 items-center border border-[var(--vanilla-line)]">
-								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] leading-none text-[var(--vanilla-dark)] transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
-								<span class="min-w-[28px] text-center font-manrope text-[14px] font-normal leading-none text-[var(--vanilla-dark)]">${line.quantity}</span>
-								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] leading-none text-[var(--vanilla-dark)] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
+								<button type="button" data-cart-dec data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70" aria-label="Уменьшить">−</button>
+								<span class="min-w-[28px] text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">${line.quantity}</span>
+								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center font-manrope text-[16px] leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70" aria-label="Увеличить">+</button>
 							</div>
 						</div>
 					</li>

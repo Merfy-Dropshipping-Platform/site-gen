@@ -79,7 +79,7 @@ const api = createNtCart({
 									<span class="font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">${formatPrice(line.price * line.quantity)}</span>
 									${
 										typeof line.oldPrice === "number" && line.oldPrice > line.price
-											? `<span class="font-inter text-[13px] font-light leading-none text-[rgb(var(--color-muted,153_153_153))] line-through">${formatPrice(line.oldPrice * line.quantity)}</span>`
+											? `<span class="font-inter text-[13px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${formatPrice(line.oldPrice * line.quantity)}</span>`
 											: ""
 									}
 								</div>

@@ -19,8 +19,17 @@ import { resolve } from "node:path";
  * Этот сторож проверяет ТОЛЬКО bloom (canon других тем не трогаем) и требует:
  *   1) исходник читает `line.oldPrice` и сравнивает со `line.price`;
  *   2) итоговая разметка несёт класс `line-through` для старой цены;
- *   3) старая цена красится токеном приглушённого текста схемы
- *      (`--color-muted`), а не литералом — иначе повторяем баг 15.09.
+ *   3) старая цена красится токеном ТЕКСТА схемы (`--color-text`), а не
+ *      литералом и не приглушённым серым.
+ *
+ * ПОПРАВКА 19.09. Пункт 3 требовал `--color-muted` — и тем самым закреплял
+ * баг. Жалоба владельца: «цвет скидки должен быть как у текста, а не браться
+ * из заголовка». Замер по его скриншоту (схема bg #26311c / заголовок #FA2121
+ * / текст #44FF6D) показал, что в дефолтных схемах ВСЕХ пяти тем
+ * `--color-heading` равен `--color-text`, поэтому расхождение видно только у
+ * мерчанта, задавшего их разными, — ни один стенд его не ловил. Приглушённый
+ * серый тоже «не как у текста»: он производный (60 % текста + 40 % фона).
+ * Теперь старая цена берёт сам `--color-text`.
  */
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
@@ -46,13 +55,14 @@ describe("bloom: цена без скидки (compareAt/oldPrice) отобра�
     expect(src).toMatch(/line-through/);
   });
 
-  it.each(TARGETS)("%s красит старую цену токеном схемы --color-muted, не литералом", (rel) => {
+  it.each(TARGETS)("%s красит старую цену токеном схемы --color-text, не литералом", (rel) => {
     const src = bloomSource(rel);
-    // Строка с line-through обязана нести --color-muted и не нести #-литерал цвета.
+    // Строка с line-through обязана нести --color-text и не нести #-литерал цвета.
     const lines = src.split("\n").filter((l) => l.includes("line-through"));
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) {
-      expect(line).toMatch(/--color-muted/);
+      expect(line).toMatch(/--color-text/);
+      expect(line).not.toMatch(/--color-heading/);
       expect(line).not.toMatch(/text-\[#[0-9A-Fa-f]{3,8}\]/);
     }
   });
@@ -69,6 +79,12 @@ describe("саботаж: гард обязан ловить отсутстви�
 
   it("line-through литералом (не токеном) — красный", () => {
     const src = `<span class="text-[#999999] line-through">100 ₽</span>`;
-    expect(src.includes("--color-muted")).toBe(false);
+    expect(src.includes("--color-text")).toBe(false);
+  });
+
+  it("line-through цветом заголовка — красный", () => {
+    const src = `<span class="text-[rgb(var(--color-heading,0_0_0))] line-through">100 ₽</span>`;
+    expect(src).toMatch(/--color-heading/);
+    expect(src).not.toMatch(/--color-text/);
   });
 });

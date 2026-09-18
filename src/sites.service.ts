@@ -123,6 +123,62 @@ export function shouldReseedOnThemeSwitch(p: {
   return false;
 }
 
+/**
+ * Переносит страницы МЕРЧАНТА в свежепосеянную ревизию темы.
+ *
+ * Баг владельца (18.09, дословно): «При создании страницы в подпункте Страницы
+ * во вкладке Онлайн-магазин, при смене темы магазина удаляются все созданные до
+ * этого страницы». Причина: смена темы на любую из пяти (все они в
+ * `THEMES_RESEED_ON_SWITCH`) пересеивает ревизию целиком — `buildInitialRevision`
+ * отдаёт канон верстальщиков, и он становится текущей ревизией. Канон не знает
+ * ничего о страницах, которые мерчант создал сам, поэтому они исчезали вместе со
+ * своим содержимым. Потеря тихая: ни ошибки, ни предупреждения.
+ *
+ * Пересев темы обязан менять ДИЗАЙН, а не удалять КОНТЕНТ мерчанта. Поэтому
+ * страницы, созданные пользователем (`source === 'user'` / `isCustom === true`),
+ * переезжают в новую ревизию вместе со своим `pagesData`. Страницы темы
+ * (главная, каталог, корзина, служебные) берутся из канона новой темы — ради
+ * этого пересев и делается.
+ *
+ * Чистая функция без БД — тестируется изолированно, как соседний
+ * `shouldReseedOnThemeSwitch`. Сторож: `theme-switch-keeps-user-pages.spec.ts`.
+ */
+export function carryOverUserPages(prevData: unknown, nextData: unknown): unknown {
+  const prev = (prevData ?? {}) as Record<string, any>;
+  const next = (nextData ?? {}) as Record<string, any>;
+  const prevPages = Array.isArray(prev.pages) ? prev.pages : [];
+  const nextPages = Array.isArray(next.pages) ? next.pages : [];
+  if (!prevPages.length) return next;
+
+  const isUserPage = (pg: any): boolean =>
+    Boolean(pg) && (pg.source === "user" || pg.isCustom === true);
+
+  // Страница темы с тем же id/slug уже есть в каноне — второй раз не добавляем,
+  // иначе в списке страниц появились бы дубли.
+  const taken = new Set<string>();
+  for (const pg of nextPages) {
+    if (pg?.id) taken.add(String(pg.id));
+    if (pg?.slug) taken.add(String(pg.slug));
+  }
+
+  const carried = prevPages.filter(
+    (pg: any) =>
+      isUserPage(pg) &&
+      !taken.has(String(pg?.id ?? "")) &&
+      !taken.has(String(pg?.slug ?? "")),
+  );
+  if (!carried.length) return next;
+
+  const prevPagesData = (prev.pagesData ?? {}) as Record<string, unknown>;
+  const nextPagesData = { ...((next.pagesData ?? {}) as Record<string, unknown>) };
+  for (const pg of carried) {
+    const id = String(pg.id);
+    if (prevPagesData[id] !== undefined) nextPagesData[id] = prevPagesData[id];
+  }
+
+  return { ...next, pages: [...nextPages, ...carried], pagesData: nextPagesData };
+}
+
 @Injectable()
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
@@ -868,6 +924,9 @@ export class SitesDomainService {
           .limit(1);
         const currentRevId = current?.currentRevisionId;
         let hasThemeSettings = false;
+        // Данные текущей ревизии нужны дважды: для hasThemeSettings и для
+        // переноса страниц мерчанта в пересеянную ревизию.
+        let prevRevisionData: unknown = null;
         if (currentRevId) {
           const [rev] = await this.db
             .select({ data: schema.siteRevision.data })
@@ -875,6 +934,7 @@ export class SitesDomainService {
             .where(eq(schema.siteRevision.id, currentRevId))
             .limit(1);
           const d = (rev?.data ?? {}) as Record<string, unknown>;
+          prevRevisionData = rev?.data ?? null;
           const ts = (d as any).themeSettings;
           hasThemeSettings = Boolean(
             ts &&
@@ -893,10 +953,15 @@ export class SitesDomainService {
         if (shouldReseed) {
           const defaultContent = await this.buildInitialRevision(nextThemeId);
           if (defaultContent) {
+            // Канон новой темы + страницы, созданные мерчантом (см.
+            // carryOverUserPages): смена темы меняет дизайн, а не удаляет
+            // контент. Без этого «Онлайн-магазин → Страницы» пустел при каждом
+            // переключении темы.
+            const seededData = carryOverUserPages(prevRevisionData, defaultContent);
             await this.createRevision({
               tenantId: params.tenantId,
               siteId: params.siteId,
-              data: defaultContent,
+              data: seededData,
               meta: { title: "Theme reseed" },
               actorUserId: params.actorUserId,
               setCurrent: true,

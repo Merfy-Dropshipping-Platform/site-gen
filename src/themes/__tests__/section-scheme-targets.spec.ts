@@ -106,11 +106,14 @@ const CASES: Case[] = [
   // (та же схема, что у theme-base ProductActions.astro) — проверяет
   // отдельный блок ниже: "дополнительная кнопка «Купить сейчас» несёт
   // токены секондари + меняет цвет при наведении".
-  // [5] «Товар» — цена ДО скидки (пункт 5, владелец 16.09). Проверено: УЖЕ
-  // идёт за «Приглушённым» (эталон rose WishlistSection: та же роль на той
-  // же паре «цена/старая цена»), sabotage-числами подтверждено отдельно
-  // (HANDOFF b34) — держим кейсом, чтобы регрессия сюда не проскочила молча.
-  { theme: "flux", block: "Product", label: "Товар", target: "цена ДО скидки", marker: "data-cfg-oldprice", prop: "color", expect: "--color-muted" },
+  // [5] «Товар» — цена ДО скидки. ПОПРАВКА 19.09: было «--color-muted» по
+  // решению 16.09 (тогда эталоном считалось «Приглушённое» — та же роль в
+  // rose WishlistSection). Владелец 19.09 сменил требование: «цвет скидки
+  // должен быть как у текста, а не браться из заголовка», и приглушённый —
+  // это НЕ текст, а смесь текста с фоном (60/40). Старая цена во всех темах
+  // и на всех путях рендера теперь берёт сам «--color-text»; сплошной обход
+  // сторожит «old-price-follows-text.spec.ts» (57 мишеней в 56 файлах).
+  { theme: "flux", block: "Product", label: "Товар", target: "цена ДО скидки", marker: "data-cfg-oldprice", prop: "color", expect: "--color-text" },
   { theme: "flux", block: "Product", label: "Товар", target: "фон основной кнопки", marker: "data-add-to-cart", prop: "background-color", expect: "--color-bg" },
   { theme: "flux", block: "Product", label: "Товар", target: "текст основной кнопки", marker: "data-add-to-cart", prop: "color", expect: "--color-button-bg" },
   { theme: "flux", block: "CartSection", label: "Корзина", target: "фон секции", marker: 'data-block="cart-section"', prop: "background-color", expect: "--color-bg" },

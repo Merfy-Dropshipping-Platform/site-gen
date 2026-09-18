@@ -1,113 +1,118 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 
 /**
  * Жалоба владельца 19.09: «цвет скидки должен быть как у текста, а не браться
  * из заголовка», затем «надо ещё также по цветам — сделать для скидки и
  * контролов +/-».
  *
- * Первый заход починил только КОРЗИНУ (сторожит `cart-line-not-heading`).
- * Живой замер витрины после выкатки показал, что в остальных местах старая
- * цена осталась приглушённой, а местами вообще вне схемы: каталоги bloom и
- * satin несли литерал `#999999`, каталог vanilla — `#444444`.
+ * ПОЧЕМУ СПЛОШНОЙ ОБХОД, А НЕ СПИСОК. Одна и та же зачёркнутая цена рисуется
+ * во МНОГИХ местах, и три волны подряд «нашёл все» оказывались неполными —
+ * каждый раз недостачу показывал только живой замер витрины после выкатки:
  *
- * Этот сторож требует: ВЕЗДЕ, где рисуется зачёркнутая старая цена, цвет
- * берётся из `--color-text` — не из приглушённого серого, не из заголовка и
- * не литералом.
+ *   1-я волна — корзина (`CartBody`, `CartSection`, дровер `lib/cart.ts`);
+ *   2-я волна — каталоги, карточки товара, избранное;
+ *   3-я волна — гидрация карточек (`lib/storefront-hydrate.ts`);
+ *   4-я волна — секция «Товар» на главной, страницы товара, галерея.
  *
- * Вне объёма: `ProductVariants` (там `line-through` помечает НЕДОСТУПНЫЙ
- * вариант, а не цену) и чекаут с подтверждением заказа (`CheckoutOrderSummary`,
- * `OrderConfirmation`) — типографика чекаута зафиксирована решением владельца
- * 16.09. Тема `luna` вне объёма по AGENTS.md.
+ * Поэтому гард не перечисляет файлы, а ОБХОДИТ все исходники пяти тем и их
+ * пакетов. Новый файл с зачёркнутой ценой попадает под охрану автоматически.
  */
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const THEMES = ["rose", "bloom", "satin", "vanilla", "flux"] as const;
 
-/** Мишени собираем по факту наличия файла — состав карточек по темам разный. */
-function candidates(): string[] {
-  const out: string[] = [];
-  for (const t of THEMES) {
-    out.push(`themes/${t}/src/components/sections/WishlistSection.astro`);
-    for (const name of [
-      "RoseProductCard",
-      "BloomProductCard",
-      "SatinProductCard",
-      "VanillaProductCard",
-      "FluxProductCard",
-    ]) {
-      out.push(`themes/${t}/src/components/products/${name}.astro`);
-    }
-    out.push(`packages/theme-${t}/blocks/Catalog/Catalog.astro`);
-    // ЧЕТВЁРТЫЙ путь рендера — JS-гидрация карточек на витрине. Найден 19.09
-    // живым замером ПОСЛЕ выкатки: в bloom-корзине рядом с зачёркиванием
-    // остался `--color-muted`, и пришёл он именно отсюда. В `.astro` правка
-    // была, в гидрации — нет.
-    out.push(`themes/${t}/src/lib/storefront-hydrate.ts`);
-    out.push(`packages/theme-${t}/blocks/Catalog/storefront-hydrate.ts`);
-    for (const name of [
-      "RoseProductCard",
-      "BloomProductCard",
-      "SatinProductCard",
-      "FluxProductCard",
-    ]) {
-      out.push(`packages/theme-${t}/blocks/Catalog/${name}.astro`);
-    }
+/**
+ * Исключения — с обоснованием на каждое:
+ *  - `ProductVariants` — там `line-through` помечает НЕДОСТУПНЫЙ вариант, а не цену;
+ *  - чекаут и подтверждение заказа — типографика зафиксирована владельцем 16.09;
+ *  - `theme-contract/tokens/sources/*` — справочные выжимки для реестра токенов,
+ *    на витрине не рендерятся; правка там сдвинула бы контракт, а не вид;
+ *  - `luna` — вне объёма по AGENTS.md;
+ *  - `node_modules` — чужие артефакты.
+ */
+const SKIP = [
+  "ProductVariants",
+  "CheckoutOrderSummary",
+  "OrderConfirmation",
+  "theme-contract/tokens/sources",
+  "luna",
+  "node_modules",
+];
+
+function walk(dir: string, acc: string[]): void {
+  if (!existsSync(dir)) return;
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (SKIP.some((s) => full.includes(s))) continue;
+    if (statSync(full).isDirectory()) walk(full, acc);
+    else if (full.endsWith(".astro") || full.endsWith(".ts")) acc.push(full);
   }
-  out.push("packages/theme-base/blocks/Catalog/Catalog.astro");
-  return out;
 }
 
-type Target = { rel: string; src: string; lines: string[] };
-
-const targets: Target[] = [];
-for (const rel of candidates()) {
-  const path = resolve(SITES_ROOT, rel);
-  if (!existsSync(path)) continue;
-  const src = readFileSync(path, "utf-8");
-  // Только строки РАЗМЕТКИ: комментарии тоже упоминают line-through, а
-  // сторожить надо класс, а не прозу.
-  const lines = src
-    .split("\n")
-    .filter((l) => l.includes("line-through") && /class=/.test(l));
-  if (lines.length === 0) continue;
-  targets.push({ rel, src, lines });
+function sources(): string[] {
+  const acc: string[] = [];
+  for (const t of THEMES) {
+    walk(resolve(SITES_ROOT, "themes", t, "src"), acc);
+    walk(resolve(SITES_ROOT, "packages", `theme-${t}`), acc);
+  }
+  walk(resolve(SITES_ROOT, "packages", "theme-base"), acc);
+  return [...new Set(acc)].sort();
 }
 
-const BAD = /--color-muted|--color-heading|--vanilla-dark|--vanilla-muted|#999999|#444444/;
+type Hit = { rel: string; line: string };
 
-describe("старая цена везде следует тексту схемы", () => {
-  it("мишени найдены (каталоги, карточки, избранное)", () => {
-    // избранное + карточки тем + каталоги пакетов + карточки пакетов +
-    // гидрация (4-й путь) + база
-    expect(targets.length).toBeGreaterThanOrEqual(22);
+const hits: Hit[] = [];
+for (const f of sources()) {
+  const src = readFileSync(f, "utf-8");
+  if (!src.includes("line-through")) continue;
+  for (const line of src.split("\n")) {
+    // только разметка: комментарии тоже упоминают line-through
+    if (!line.includes("line-through") || !line.includes("class")) continue;
+    hits.push({ rel: relative(SITES_ROOT, f), line });
+  }
+}
+
+const BAD =
+  /--color-muted|--color-heading|--vanilla-dark|--vanilla-muted|text-\[#[0-9A-Fa-f]{3,8}\]/;
+
+describe("зачёркнутая старая цена везде следует тексту схемы", () => {
+  it("обход нашёл мишени во всех пяти темах", () => {
+    expect(hits.length).toBeGreaterThanOrEqual(30);
+    for (const t of THEMES) {
+      expect(hits.some((h) => h.rel.includes(t))).toBe(true);
+    }
   });
 
-  it.each(targets.map((t) => [t.rel, t] as const))(
-    "%s: зачёркнутая цена красится --color-text",
-    (_rel, t) => {
-      for (const line of t.lines) {
-        expect(line).toMatch(/--color-text/);
-        expect(line).not.toMatch(BAD);
-      }
-    },
-  );
+  it("ни одна зачёркнутая цена не красится серым, заголовком или литералом", () => {
+    const bad = hits.filter((h) => BAD.test(h.line));
+    const report = bad
+      .map((h) => `  ${h.rel}\n    ${h.line.trim().slice(0, 160)}`)
+      .join("\n");
+    expect(
+      bad.length === 0 ? "" : `НАРУШЕНИЙ: ${bad.length}\n${report}`,
+    ).toBe("");
+  });
+
+  it("каждая зачёркнутая цена несёт --color-text", () => {
+    const missing = hits.filter((h) => !/--color-text/.test(h.line));
+    const report = missing
+      .map((h) => `  ${h.rel}\n    ${h.line.trim().slice(0, 160)}`)
+      .join("\n");
+    expect(
+      missing.length === 0 ? "" : `БЕЗ --color-text: ${missing.length}\n${report}`,
+    ).toBe("");
+  });
 });
 
-describe("саботаж: гард ловит возврат серого и литералов", () => {
+describe("саботаж: гард ловит откат цвета", () => {
   it("приглушённый серый — красный", () => {
-    const line = `<span class="text-[rgb(var(--color-muted,153_153_153))] line-through">1 ₽</span>`;
-    expect(line).toMatch(BAD);
+    expect(BAD.test(`class="text-[rgb(var(--color-muted,153_153_153))] line-through"`)).toBe(true);
   });
-
-  it("литерал #999999 — красный", () => {
-    const line = `<span class="text-[#999999] line-through">1 ₽</span>`;
-    expect(line).toMatch(BAD);
-    expect(line).not.toMatch(/--color-text/);
+  it("алиас заголовка — красный", () => {
+    expect(BAD.test(`class="text-[var(--vanilla-dark)] line-through"`)).toBe(true);
   });
-
-  it("литерал #444444 — красный", () => {
-    const line = `<span class="text-[#444444] line-through">1 ₽</span>`;
-    expect(line).toMatch(BAD);
+  it("литерал — красный", () => {
+    expect(BAD.test(`class="text-[#999999] line-through"`)).toBe(true);
   });
 });

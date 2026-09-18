@@ -448,9 +448,23 @@ describe("раскрытый список вариаций лежит повер
       r.selector.includes("data-puck-subsection-parent"),
     );
     expect(parents.length).toBeGreaterThan(0);
-    expect(parents.some((r) => /position\s*:\s*relative/.test(r.body))).toBe(
-      true,
+    // 19.09: `position: relative` для подсекций БОЛЬШЕ НЕ ЖИВЁТ в CSS превью.
+    // Общее правило на этот data-атрибут ломало раскладку тем — элемент,
+    // размеченный `absolute inset-0`, получал `relative`, `inset` переставал
+    // его растягивать, и узел схлопывался в нулевую высоту вместе с картинкой
+    // внутри (слайды слайд-шоу vanilla). Каскадом это не чинится: утилиты
+    // Tailwind v4 лежат в `@layer`, а правило превью — вне слоёв, и вне слоёв
+    // сильнее любого слоя при любом селекторе.
+    //
+    // Теперь агент ставит `position` точечно и только тем подсекциям, что
+    // вычисляются как `static`. Опора проверки переехала на этот механизм:
+    // сторож `src/services/__tests__/preview-subsection-position.spec.ts`.
+    const agent = readFileSync(
+      resolve(SITES_ROOT, "src/services/preview.service.ts"),
+      "utf-8",
     );
+    expect(agent).toMatch(/function ensureSubsectionPositioned\(el\)/);
+    expect(agent).toMatch(/el\.style\.position = 'relative'/);
     expect(
       OVERLAY.some((r) =>
         SUBSECTION_STATE.some((attr) =>

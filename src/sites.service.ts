@@ -1559,6 +1559,7 @@ export class SitesDomainService {
     const migratedData = migrateRevisionData(
       rev.data as Record<string, unknown> | undefined,
       site.themeId,
+      site.name,
     );
     let normalizedData: any = migratedData;
     if (USE_PAGE_RESOLVER && site.themeId) {

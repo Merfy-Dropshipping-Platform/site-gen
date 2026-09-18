@@ -18,18 +18,24 @@
  */
 import { migrateRevisionData } from "../utils/revision-migrations";
 
-const footerPage = (companyName?: string) => ({
+const footerPage = (companyName?: string, siteTitle?: string) => ({
   content: [
     { type: "Header", props: { id: "Header-1" } },
     {
       type: "Footer",
       props: {
         id: "Footer-1",
+        ...(siteTitle === undefined ? {} : { siteTitle }),
         copyright: { ...(companyName === undefined ? {} : { companyName }), showYear: true },
       },
     },
   ],
 });
+
+const footerOf = (data: unknown, pageId = "home"): any => {
+  const pages = (data as { pagesData?: Record<string, any> }).pagesData ?? {};
+  return (pages[pageId]?.content ?? []).find((b: any) => b?.type === "Footer");
+};
 
 const companyOf = (data: unknown, pageId = "home"): unknown => {
   const pages = (data as { pagesData?: Record<string, any> }).pagesData ?? {};
@@ -77,5 +83,50 @@ describe("подвал: имя темы вычищается из ревизии
     expect(footer?.props?.id).toBe("Footer-1");
     expect(footer?.props?.copyright?.showYear).toBe(true);
     expect((pages.home?.content ?? []).some((b: any) => b?.type === "Header")).toBe(true);
+  });
+});
+/**
+ * ВТОРАЯ ПОПРАВКА (19.09). Первая версия чистила только
+ * `copyright.companyName` — и на живом стенде НЕ сработала: замер ревизии
+ * satin показал, что имя темы лежит в другом поле, `siteTitle: "SATIN"`, при
+ * магазине «Satin Demo». Вычистишь одно поле — подвал напечатает имя темы из
+ * второго.
+ */
+describe("подвал: имя темы в siteTitle", () => {
+  it("siteTitle, равный теме, заменяется названием магазина", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage(undefined, "SATIN") } },
+      "satin",
+      "Satin Demo",
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBe("Satin Demo");
+  });
+
+  it("без названия магазина имя темы просто убирается", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage(undefined, "Bloom") } },
+      "bloom",
+      null,
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBeUndefined();
+  });
+
+  it("своё название в siteTitle не трогаем", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage(undefined, "Лавка у дома") } },
+      "satin",
+      "Satin Demo",
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBe("Лавка у дома");
+  });
+
+  it("оба поля разом: и companyName, и siteTitle", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage("Satin", "SATIN") } },
+      "satin",
+      "Satin Demo",
+    );
+    expect(companyOf(out)).toBeUndefined();
+    expect(footerOf(out)?.props?.siteTitle).toBe("Satin Demo");
   });
 });

@@ -130,3 +130,35 @@ describe("подвал: имя темы в siteTitle", () => {
     expect(footerOf(out)?.props?.siteTitle).toBe("Satin Demo");
   });
 });
+
+/**
+ * ТРЕТЬЯ ПОПРАВКА (19.09). После починки порта (он перестал подставлять
+ * SITE_TITLE) подвал bloom стал печатать запасное «Мой магазин» вместо
+ * «Bloom Pilot»: в ревизии у него siteTitle не было ВООБЩЕ, значит миграции
+ * нечего было заменять. Владелец просил название из админки — подставляем его
+ * и в пустое поле.
+ */
+describe("подвал: пустой siteTitle получает название магазина", () => {
+  it("поля нет — подставляется название из админки", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage() } },
+      "bloom",
+      "Bloom Pilot",
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBe("Bloom Pilot");
+  });
+
+  it("поля нет и магазин безымянный — ничего не выдумываем", () => {
+    const out = migrateRevisionData({ pagesData: { home: footerPage() } }, "bloom", null);
+    expect(footerOf(out)?.props?.siteTitle).toBeUndefined();
+  });
+
+  it("своё название на месте — не перезаписываем", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage(undefined, "Лавка у дома") } },
+      "bloom",
+      "Bloom Pilot",
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBe("Лавка у дома");
+  });
+});

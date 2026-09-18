@@ -1413,12 +1413,18 @@ function stripThemeNameFromFooter(
       const company = typeof copyright?.companyName === 'string' ? copyright.companyName.trim() : '';
       const title = typeof b.props.siteTitle === 'string' ? b.props.siteTitle.trim() : '';
       const companyIsTheme = !!company && company.toLowerCase() === theme;
+      // Пустой siteTitle — тоже повод подставить название магазина: у bloom в
+      // ревизии поля не было вовсе, имя темы приходило из порта, и после его
+      // починки подвал стал печатать запасное «Мой магазин» вместо «Bloom
+      // Pilot». Владелец просил именно название из админки.
+      const titleIsEmpty = !title;
       // Имя темы приезжает в подвал ДВУМЯ путями: `copyright.companyName` (сиды
       // bloom/flux/satin) и `siteTitle` (замер стенда satin 19.09: там лежало
       // «SATIN» при магазине «Satin Demo»). Чистим оба — иначе вычистишь одно
       // поле, а подвал продолжит печатать имя темы из второго.
       const titleIsTheme = !!title && title.toLowerCase() === theme;
-      if (!companyIsTheme && !titleIsTheme) return block;
+      const needsShopName = titleIsEmpty && !!shopName;
+      if (!companyIsTheme && !titleIsTheme && !needsShopName) return block;
       changed = true;
       const nextProps: Record<string, unknown> = { ...b.props };
       if (companyIsTheme) {
@@ -1431,6 +1437,8 @@ function stripThemeNameFromFooter(
         // него просто убираем имя темы, дальше сработает запасное «Мой магазин».
         if (shopName) nextProps.siteTitle = shopName;
         else delete nextProps.siteTitle;
+      } else if (needsShopName) {
+        nextProps.siteTitle = shopName;
       }
       return { ...b, props: nextProps };
     });

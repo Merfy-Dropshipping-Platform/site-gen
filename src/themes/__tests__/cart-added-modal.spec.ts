@@ -192,7 +192,6 @@ describe('окно «Товар добавлен в корзину» — общ�
       'data-cart-modal-card',
       'data-cart-modal-overlay',
       'data-cart-modal-close',
-      'data-cart-modal-brand',
       'data-cart-modal-image',
       'data-cart-modal-product-link',
       'data-cart-modal-name',
@@ -204,6 +203,10 @@ describe('окно «Товар добавлен в корзину» — общ�
     ]) {
       expect(src).toContain(attr);
     }
+    // Надписи магазина у эталона нет — 19.09 вёрстка снята с него целиком,
+    // и `data-cart-modal-brand` ушёл вместе с ней; рантайм к этому готов
+    // (`if (brandEl)`), поэтому атрибута в списке больше нет.
+    expect(src).not.toContain('data-cart-modal-brand');
     // Мёртвый data-continue-href из bloom не вернулся.
     expect(src).not.toContain('data-continue-href');
   });

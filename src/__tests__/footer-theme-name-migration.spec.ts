@@ -16,6 +16,9 @@
  * Поэтому чистка перенесена в миграцию ревизии: она работает на чтении, то
  * есть и в превью конструктора, и в сборке витрины.
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { migrateRevisionData } from "../utils/revision-migrations";
 
 const footerPage = (companyName?: string, siteTitle?: string) => ({
@@ -128,5 +131,70 @@ describe("подвал: имя темы в siteTitle", () => {
     );
     expect(companyOf(out)).toBeUndefined();
     expect(footerOf(out)?.props?.siteTitle).toBe("Satin Demo");
+  });
+});
+
+/**
+ * ТРЕТЬЯ ПОПРАВКА (19.09). После починки порта (он перестал подставлять
+ * SITE_TITLE) подвал bloom стал печатать запасное «Мой магазин» вместо
+ * «Bloom Pilot»: в ревизии у него siteTitle не было ВООБЩЕ, значит миграции
+ * нечего было заменять. Владелец просил название из админки — подставляем его
+ * и в пустое поле.
+ */
+describe("подвал: пустой siteTitle получает название магазина", () => {
+  it("поля нет — подставляется название из админки", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage() } },
+      "bloom",
+      "Bloom Pilot",
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBe("Bloom Pilot");
+  });
+
+  it("поля нет и магазин безымянный — ничего не выдумываем", () => {
+    const out = migrateRevisionData({ pagesData: { home: footerPage() } }, "bloom", null);
+    expect(footerOf(out)?.props?.siteTitle).toBeUndefined();
+  });
+
+  it("своё название на месте — не перезаписываем", () => {
+    const out = migrateRevisionData(
+      { pagesData: { home: footerPage(undefined, "Лавка у дома") } },
+      "bloom",
+      "Bloom Pilot",
+    );
+    expect(footerOf(out)?.props?.siteTitle).toBe("Лавка у дома");
+  });
+});
+
+/**
+ * ЧЕТВЁРТАЯ ПОПРАВКА (19.09) — проводка, а не логика.
+ *
+ * Миграция уже умела подставлять название магазина, и `GET /sites/:id/revisions/:rev`
+ * отдавал «Bloom Pilot». А превью рисовало «Мой магазин»: ревизию для него
+ * читает ОТДЕЛЬНЫЙ путь — `preview.controller.ts`, и он вызывал миграцию без
+ * имени. Логика была верной, до превью она просто не доезжала.
+ *
+ * Поэтому сторожим оба пути чтения. Третий вызов (`revision-write-filter`)
+ * намеренно без имени: он строит эталон для фильтра записи, и подстановка
+ * развела бы эталон с тем, что шлёт клиент.
+ */
+describe("проводка: имя магазина доезжает во все пути чтения ревизии", () => {
+  const read = (file: string) =>
+    readFileSync(resolve(__dirname, "..", file), "utf-8");
+
+  it("sites.service передаёт site.name", () => {
+    const src = read("sites.service.ts");
+    const i = src.indexOf("const migratedData = migrateRevisionData(");
+    expect(i).toBeGreaterThan(-1);
+    expect(src.slice(i, i + 220)).toMatch(/site\.name/);
+  });
+
+  it("preview.controller передаёт site.name", () => {
+    const src = read("controllers/preview.controller.ts");
+    const i = src.indexOf("const migrated = migrateRevisionData(");
+    expect(i).toBeGreaterThan(-1);
+    expect(src.slice(i, i + 220)).toMatch(/site\.name/);
+    // И само поле обязано быть в выборке, иначе там будет undefined.
+    expect(src).toMatch(/name:\s*schema\.site\.name/);
   });
 });

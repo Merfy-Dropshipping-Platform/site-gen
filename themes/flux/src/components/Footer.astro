@@ -7,7 +7,6 @@ import { inlineFormat } from "../lib/rich-text";
 import FluxNtIcon from "./icons/FluxNtIcon.astro";
 import { withBase } from "../lib/with-base";
 import { schemeIdOf } from "../lib/color-scheme";
-import { SITE_TITLE } from "../consts";
 
 // Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
 // на деплое (заменяет `const shopId = ""` в HTML); apiUrl — публичный gateway.
@@ -38,7 +37,15 @@ const navColumnDefault = [
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Flux».
-const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
+// Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
+// подвал должна идти лого из настроек темы, если загружена, или, если нет, то
+// как в шапке браться с админки, а не отображаться название темы». Имя темы
+// приезжало сюда ЧЕТВЁРТЫМ путём (после сидов, copyright.companyName и
+// siteTitle в ревизии): порт сам подставлял SITE_TITLE из consts.ts, и подвал
+// печатал «Bloom» при магазине «Bloom Pilot». Название магазина подставляет
+// сборка (build.service) и миграция ревизии; сюда управление доходит, только
+// если магазин безымянный.
+const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";

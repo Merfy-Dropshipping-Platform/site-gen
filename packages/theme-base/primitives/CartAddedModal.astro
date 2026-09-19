@@ -7,52 +7,55 @@
  * `runtime/cart-added-modal.ts` и дёргается делегатом `nt-cart.ts`; здесь
  * только разметка и контракт data-атрибутов.
  *
+ * Вёрстка (владелец, 19.09: «размеры слишком большие… прям посмотри по вёрстке
+ * и скопируй тему, натяни её целиком») снята с эталона верстальщиков
+ * `bloom.merfy.ru` один в один: карточка `max-w-[379px]` (было 430/520 — окно
+ * выглядело громоздким), `p-6`, `gap-6`; заголовок 16px рядом с галочкой;
+ * превью товара 70×70; название и цена 14px, объём 12px; две кнопки по 48px в
+ * колонке с зазором 8px и «Продолжить покупки» ссылкой-подчёркиванием 14px;
+ * крестик 24px в правом верхнем углу; вуаль `bg-black/20`; тень
+ * `0 0 3px` вместо прежней тяжёлой `0 24px 80px`.
+ *
  * Вид следует своей теме без единого per-theme файла: цвета — схемные токены
  * (`--color-*`, их проставляет `applyCartSchemeTo` с того же источника, что
- * красит корзину), шрифты — `--font-heading` / `--font-body`, скругления —
- * `--radius-button` / `--radius-card` / `--radius-media`. Поэтому у bloom окно
- * остаётся с круглыми кнопками (её `--radius-button` = 100px), у vanilla и
- * satin — с прямыми углами (0px), у rose — 8px, у flux — 4px.
+ * красит корзину), шрифты — `--font-body`, скругления — `--radius-button` /
+ * `--radius-card` / `--radius-media`. Поэтому у bloom окно остаётся с круглыми
+ * кнопками (её `--radius-button` = 100px), у vanilla и satin — с прямыми
+ * углами (0px), у rose — 8px, у flux — 4px. Эталонные хексы `#e38e9f` /
+ * `#f5f5f5` / `black` / `white` поэтому НЕ копируются — на их местах те же
+ * токены, что были до переноса вёрстки.
  *
  * Хексов и rgb()-литералов здесь нет: правило `packages/theme-base/CLAUDE.md`.
- * Единственное исключение — затемнение подложки (`bg-black/30`): это не цвет
- * темы, а нейтральная вуаль, ровно как было в bloom.
+ * Единственное исключение — затемнение подложки (`bg-black/20`): это не цвет
+ * темы, а нейтральная вуаль, ровно как у эталона.
  *
  * `--color-border` сознательно НЕ используется: он не попадает в правила схем
  * (проверено по `schemeToVars` в `src/themes/tokens-css.ts`) и за схемой не
- * пошёл бы. Границы — `--color-muted` с прозрачностью, тем же приёмом, что
- * алиасы дровера vanilla.
+ * пошёл бы.
  *
- * Надпись с названием магазина — `--color-text`, а не `--color-accent`. Выбор
- * по замеру контраста к фону окна на 10 сочетаниях тема×схема: accent тонет в
- * трёх (vanilla scheme-1 — 1.27, bloom scheme-1 — 1.27, satin scheme-4 — 2.12),
- * muted — в двух (flux scheme-3 — 1.54, bloom scheme-1 — 2.83), text не падает
- * ниже 3.08. Порог контраста НЕ вводим и цвет мерчанта не подменяем: там, где
- * пара схемы сама малоконтрастна (bloom scheme-1), окно выглядит ровно как
- * панель корзины на той же схеме — это её собственный выбор.
+ * Иконки (галочка и крестик) — инлайновый SVG на `currentColor`, а не файлы
+ * `/icons/check.svg` и `/icons/menu-close.svg` эталона: `check.svg` есть не во
+ * всех темах, а цвет иконки обязан идти за схемой вместе с текстом.
  *
- * Место на экране (владелец, 19.09 по bloom: «не на том месте стоит блок
- * корзины — щас она в центре, а надо чтобы была под корзиной справа сверху»):
- * окно прижато к правому краю и висит ПОД ИКОНКОЙ КОРЗИНЫ. Числа в классах —
- * только фолбэк (`7rem` сверху, `5rem` справа); живые значения кладёт
- * `anchorToCartIcon` в `runtime/cart-added-modal.ts` от прямоугольника самой
- * кнопки корзины, потому что правые поля шапки у тем разные, а разметка окна
- * одна. Эталон верстальщиков (bloom.merfy.ru) держит то же место жёстким
- * `md:pr-20 2xl:pr-[348px]`, но такой хардкод встал бы под корзину только у
- * bloom и только на 2xl. На узких окнах (<md) окно остаётся по центру, как в
- * эталоне.
+ * Строки с названием магазина у эталона нет — вместе с вёрсткой ушла и она;
+ * `runtime/cart-added-modal.ts` к её отсутствию готов (ставит текст только
+ * если элемент найден).
+ *
+ * Место на экране (владелец, 19.09: «не на том месте стоит блок корзины —
+ * надо чтобы была под корзиной справа сверху», затем «надо правее прям
+ * напротив корзины»): окно висит ПОД ИКОНКОЙ КОРЗИНЫ и центрируется по её оси.
+ * Числа в классах — только фолбэк (`7rem` сверху, `5rem` справа); живые
+ * значения кладёт `anchorToCartIcon` в `runtime/cart-added-modal.ts` от
+ * прямоугольника самой кнопки корзины, потому что правые поля шапки у тем
+ * разные, а разметка окна одна. На узких окнах (<md) окно остаётся по центру,
+ * как в эталоне.
  *
  * Прокрутка на низких окнах (владелец, 16.09 — «окно не должен отображаться
- * во весь экран»): карточка НЕ тянулась под высоту вьюпорта и на коротких
- * окнах вылезала за края без возможности прокрутки — замер live-стенда bloom
- * (окно 375×400/500/600) отдавал `card.y = -18…+32`, «Продолжить покупки»
- * уходил за нижний край, а у внешнего контейнера не было `overflow-y`, так что
- * прокрутить страницу к обрезанной части было нечем — карточка съедала весь
- * экран без выхода. Обход: внешний контейнер получил `overflow-y-auto`,
- * карточка — `max-h-[calc(100dvh-8rem)] overflow-y-auto`, поэтому на тесных
- * окнах прокручивается сама карточка, а не выходит за экран немо. `my-auto`
- * с карточки снят: в flex-контейнере авто-поля по вертикали перебивают
- * `items-start` и утащили бы окно обратно в центр.
+ * во весь экран»): внешний контейнер получил `overflow-y-auto`, карточка —
+ * `max-h-[calc(100dvh-8rem)] overflow-y-auto`, поэтому на тесных окнах
+ * прокручивается сама карточка, а не выходит за экран немо. `my-auto` на
+ * карточке НЕ ставим: авто-поля по вертикали перебивают `items-start` и
+ * утащили бы окно обратно в центр.
  */
 ---
 
@@ -64,7 +67,7 @@
 	<button
 		type="button"
 		data-cart-modal-overlay
-		class="absolute inset-0 bg-black/30"
+		class="absolute inset-0 bg-black/20"
 		aria-label="Закрыть окно"
 	></button>
 
@@ -73,96 +76,106 @@
 		aria-modal="true"
 		aria-labelledby="cart-added-title"
 		data-cart-modal-card
-		class="relative z-10 flex max-h-[calc(100dvh-8rem)] w-full max-w-[430px] translate-y-3 flex-col gap-6 overflow-y-auto rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.3)] bg-[rgb(var(--color-bg,255_255_255))] p-5 text-[rgb(var(--color-text,0_0_0))] opacity-0 shadow-[0_24px_80px_rgb(var(--color-heading,0_0_0)/0.18)] transition-[opacity,transform] duration-300 ease-out md:max-w-[520px] md:p-6"
+		class="relative z-10 flex max-h-[calc(100dvh-8rem)] w-full max-w-[379px] translate-y-3 flex-col gap-6 overflow-y-auto rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-bg,255_255_255))] p-6 text-[rgb(var(--color-text,0_0_0))] opacity-0 shadow-[0_0_3px_rgb(var(--color-heading,0_0_0)/0.06)] transition-[opacity,transform] duration-300 ease-out"
 	>
-		<div class="flex items-start justify-between gap-4">
-			<div class="flex min-w-0 flex-col gap-1">
-				<p
-					data-cart-modal-brand
-					class="hidden truncate font-[family-name:var(--font-body)] text-[12px] font-light uppercase leading-none tracking-[0.08em] text-[rgb(var(--color-text,0_0_0))]"
-				></p>
-				<h2
-					id="cart-added-title"
-					class="font-[family-name:var(--font-heading)] text-[20px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] md:text-[24px]"
-				>
-					Товар добавлен в корзину
-				</h2>
-			</div>
-			<button
-				type="button"
-				data-cart-modal-close
-				class="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-surface,245_245_245))] text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80"
-				aria-label="Закрыть"
+		<button
+			type="button"
+			data-cart-modal-close
+			class="absolute right-4 top-4 flex size-6 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
+			aria-label="Закрыть"
+		>
+			<svg
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				aria-hidden="true"
+				class="size-6 shrink-0"
 			>
-				<svg
-					width="20"
-					height="20"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
-					stroke-linecap="round"
-					aria-hidden="true"
-				>
-					<path d="M6 6l12 12M18 6L6 18"></path>
-				</svg>
-			</button>
+				<path d="M6 6l12 12M18 6L6 18"></path>
+			</svg>
+		</button>
+
+		<div class="flex items-center gap-2">
+			<svg
+				width="24"
+				height="24"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+				class="size-6 shrink-0 text-[rgb(var(--color-heading,0_0_0))]"
+			>
+				<path d="M4 12.5l5 5 11-11"></path>
+			</svg>
+			<h2
+				id="cart-added-title"
+				class="font-[family-name:var(--font-body)] text-[16px] font-light leading-normal text-[rgb(var(--color-heading,0_0_0))]"
+			>
+				Товар добавлен в корзину
+			</h2>
 		</div>
 
-		<div
-			class="flex gap-4 rounded-[var(--radius-card,12px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.2)] bg-[rgb(var(--color-surface,245_245_245))] p-3"
-		>
+		<div class="flex gap-3">
 			<a
 				href="#"
 				data-cart-modal-product-link
-				class="group block size-[96px] shrink-0 overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-bg,255_255_255))] md:size-[112px]"
+				class="group block size-[70px] shrink-0 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]"
 			>
 				<img
 					src=""
 					alt=""
 					data-cart-modal-image
-					width="112"
-					height="112"
+					width="70"
+					height="70"
 					decoding="async"
 					class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 				/>
 			</a>
-			<div class="flex min-w-0 flex-1 flex-col justify-center gap-2">
+			<div class="flex min-w-0 flex-1 flex-col gap-1">
 				<a
 					href="#"
 					data-cart-modal-name
-					class="font-[family-name:var(--font-body)] text-[16px] font-light leading-[1.2] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 md:text-[18px]"
+					class="truncate font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
 				></a>
 				<p
-					data-cart-modal-volume
-					class="hidden font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+					data-cart-modal-price
+					class="font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]"
 				></p>
 				<p
-					data-cart-modal-price
-					class="font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]"
+					data-cart-modal-volume
+					class="hidden font-[family-name:var(--font-body)] text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
 				></p>
 			</div>
 		</div>
 
-		<div class="grid gap-3">
-			<a
-				href="/cart"
-				data-cart-modal-cart-link
-				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-5 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-			>
-				В корзину
-			</a>
-			<button
-				type="button"
-				data-cart-modal-buy-now
-				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-secondary-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-secondary-bg,255_255_255))] px-5 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-button-secondary-text,0_0_0))] transition-opacity hover:opacity-90"
-			>
-				Купить сейчас
-			</button>
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-2">
+				<a
+					href="/cart"
+					data-cart-modal-cart-link
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-secondary-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-secondary-bg,255_255_255))] px-4 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-button-secondary-text,0_0_0))] transition-opacity hover:opacity-80 active:scale-95"
+				>
+					Перейти в корзину
+				</a>
+				<button
+					type="button"
+					data-cart-modal-buy-now
+					class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+				>
+					Купить сейчас
+				</button>
+			</div>
 			<button
 				type="button"
 				data-cart-modal-continue
-				class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-muted,153_153_153)/0.35)] bg-[rgb(var(--color-surface,245_245_245))] px-5 font-[family-name:var(--font-body)] text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80"
+				class="inline-flex h-6 items-center justify-center font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] underline underline-offset-2 transition-opacity hover:opacity-70"
 			>
 				Продолжить покупки
 			</button>

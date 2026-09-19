@@ -106,7 +106,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			.map((line) => {
 				const oldPriceHtml =
 					line.oldPrice && line.oldPrice > line.price
-						? `<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0)/0.75)] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
+						? `<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
 						: "";
 
 				// Плитка под фото — «Поверхность» СХЕМЫ. Жалоба тестировщика 15.09

@@ -856,7 +856,7 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: strin
   const price = escapeHtml(formatPrice(p.price));
   const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
   const oldPrice = oldRaw
-    ? `<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0)/0.75)] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
+    ? `<span class="font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
     : "";
   const imageHtml = image
     ? `<img src="${image}" alt="${name}" width="600" height="600" loading="eager" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />`

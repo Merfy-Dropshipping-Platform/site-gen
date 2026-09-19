@@ -327,7 +327,7 @@ export function renderCardHtml(p: RealProduct, aspectRatio: string = "318/444"):
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
-		? `<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">${escapeHtml(oldRaw)}</span>`
+		? `<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
 	<div class="relative w-full">

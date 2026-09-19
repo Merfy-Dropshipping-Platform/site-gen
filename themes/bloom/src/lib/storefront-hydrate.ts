@@ -306,7 +306,7 @@ export function renderCardHtml(
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
-		? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">${escapeHtml(oldRaw)}</span>`
+		? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	const priceStr = escapeHtml(formatPrice(p.price));
 	// Решение владельца: карточная «В корзину» для товара с вариантами добавляет

@@ -548,7 +548,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))] md:text-[20px]" data-cfg-price>
 							{displayPrice}
 						</span>
-						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-text,0_0_0)/0.75)] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
+						<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[16px]" data-cfg-oldprice hidden={!displayOldPrice}>
 							{displayOldPrice}
 						</span>
 					</div>
@@ -682,7 +682,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				{!isFieldHidden('price') && (
 				<div class="flex items-center gap-2" data-puck-subsection-parent={id} data-puck-subsection-index="102" data-puck-subsection-field="price">
 					<span class="font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,153_153_153))]" data-cfg-price>{displayPrice}</span>
-					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-text,0_0_0)/0.75)] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
+					<span class="font-roboto-flex text-[15px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] line-through" data-cfg-oldprice hidden={!displayOldPrice}>{displayOldPrice}</span>
 				</div>
 				)}
 			</div>

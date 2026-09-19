@@ -219,8 +219,38 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
     }
     function checkoutItems() {
       var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
-      if (items && items.length) return items;
+      if (items && items.length) return withCompareAt(items);
       return readNtCartItems();
+    }
+
+    // Жалоба тестировщика 19.09: цена до скидки «то была, то нет». Причина —
+    // ГОНКА двух источников. Пока серверная корзина (cartStore) не поднялась,
+    // позиции читаются из локальной (`<тема>:cart:v1`), и там `oldPrice` есть.
+    // Как только cartStore отвечает, он побеждает — а серверный ответ
+    // /api/orders/cart/<id> несёт только `unitPriceCents`, поля старой цены в
+    // нём нет вовсе (замер 19.09). Зачёркнутая цена исчезала на глазах.
+    //
+    // Пока сервер её не отдаёт, добираем из локальной корзины по позиции: она
+    // и есть источник, из которого товар клали. Сервер начнёт присылать
+    // `compareAtPriceCents` — эта функция станет пустой операцией сама собой.
+    function withCompareAt(items) {
+      var local = readNtCartItems();
+      if (!local.length) return items;
+      var byId = {};
+      for (var i = 0; i < local.length; i++) {
+        var l = local[i];
+        if (l.id) byId['id:' + l.id] = l;
+        if (l.productId) byId['p:' + l.productId] = l;
+      }
+      return items.map(function (it) {
+        if (it.compareAtPriceCents) return it;
+        var m = byId['id:' + it.id] || byId['p:' + it.productId];
+        if (!m || !m.compareAtPriceCents) return it;
+        var copy = {};
+        for (var k in it) if (Object.prototype.hasOwnProperty.call(it, k)) copy[k] = it[k];
+        copy.compareAtPriceCents = m.compareAtPriceCents;
+        return copy;
+      });
     }
 
     function render() {

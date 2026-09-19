@@ -302,8 +302,15 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // цвет, на том же узле нужны фон/текст, читающие их; h-full + justify-center
 // растягивают контейнер на высоту ряда, отступ — манера контейнера темы (§4:
 // p-6 без радиуса, те же, что у rowBoxCls ниже).
+// Текст ряда прижат к ВЕРХУ, а не центрирован (владелец 19.09: «надо чтобы у
+// нижнего был отступ как у верхнего»). Замер в его конструкторе: у низкого ряда
+// заголовок отбит от верха на 32px, у высокого — на 71px, потому что
+// `justify-center` делит остаток поровну, и чем выше ряд, тем больше отбивка.
+// Соседние ряды с разными размерами выглядели по-разному при одинаковых
+// настройках текста. `h-full` остаётся: он и растягивает контейнер на высоту
+// ряда, ради чего колонка вообще получает класс схемы.
 const containerSchemeCls = containerSchemeId
-	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center p-6`
+	? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full p-6`
 	: "";
 // Per-element подложка ряда (satin §4: surface 245_245_245 + p-6, БЕЗ радиуса) при ВКЛ.
 const rowBoxCls = containerEnabled ? "bg-[rgb(var(--color-surface,245_245_245))] p-6" : "";

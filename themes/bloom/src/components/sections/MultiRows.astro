@@ -193,6 +193,21 @@ const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; text
 const rowSplitKey: "small" | "medium" | "large" =
 	p.width === "small" ? "small" : p.width === "medium" ? "medium" : "large";
 
+// Медиа тянется на высоту ряда (владелец 19.09: «фотки внутри контейнера не
+// растягиваются на всю высоту и из-за этого есть белое пространство»). Замер в
+// живом конструкторе: ряд 206px, медиа 176px — под картинкой 30px пустоты,
+// потому что `aspect-*` фиксирует высоту, а текстовая колонка рядом оказалась
+// выше. Проверено отдельным опытом в браузере: с `h-full` медиа догоняет ряд,
+// когда текст выше, и НЕ ломает «Высоту» — когда медиа выше текста, высоту
+// по-прежнему задаёт аспект (ряд 176px при тексте 120px).
+// Внутренний отступ текстовой колонки (владелец 19.09, конфиг Высота=Средняя /
+// Ширина=Большая / Позиция=Слева: «отступы при таком конфиге ломаются»).
+// Замер на живом рендере: заголовок начинался ровно от кромки медиа —
+// зазор текст↔картинка 0px и 0px сверху, потому что отступ был ТОЛЬКО у
+// контейнера со своей цветовой схемой, а пара колонок с этой ширины идёт
+// вплотную (lg:gap-0). Отступ нужен на той же ширине, где ряд становится
+// двухколоночным: до неё колонки идут друг под другом внутри секции, у которой
+// свои боковые поля, и лишний padding там сузил бы текст.
 // Канон alignment — выравнивание текстовой колонки рядов (отсутствие = left).
 const alignCls =
 	p.alignment === "center"
@@ -305,7 +320,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						data-puck-subsection-field={hasRealRows ? "rows" : undefined}
 					>
 						<div
-							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""} lg:rounded-none`}
+							class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""} lg:rounded-none`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (
@@ -317,7 +332,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								/>
 							)}
 						</div>
-						<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
+						<div class={`flex w-full flex-col gap-6 lg:p-8 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 							{r.heading && (
 								<h3
 									class={`font-urbanist ${r.headingCls} font-normal leading-none text-[rgb(var(--color-heading,227_142_159))]`}

@@ -206,7 +206,11 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
 			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
 			// общую настройку «Высота» — она выглядела мёртвой.
-			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : p.size,
+						// Пустая «Высота» ≡ дефолт панели satin ('medium' — у неё свой
+			// puckConfig в packages/theme-satin, у остальных четырёх 'small'):
+			// пока секцией правили ряды, оба случая давали один вид, а теперь
+			// разошлись бы — гард panel-default-is-noop ловит ровно это.
+			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : (p.size ?? "medium"),
 		),
 		headingCls: rowHeadingCls(r.headingSize),
 		textCls: rowTextCls(r.textSize),

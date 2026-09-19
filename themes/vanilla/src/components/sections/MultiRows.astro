@@ -129,7 +129,11 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
 			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
 			// общую настройку «Высота» — она выглядела мёртвой.
-			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : p.size,
+						// Пустая «Высота» ≡ дефолт панели ('small'): пока секцией правили ряды,
+			// оба случая давали один вид, а теперь разошлись бы — гард
+			// panel-default-is-noop ловит ровно это. 'small' держит прежнюю
+			// картину: у рядов в сидах лежит именно он.
+			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : (p.size ?? "small"),
 		),
 		headingCls: rowHeadingSizeCls(r.headingSize),
 		textCls: rowTextSizeCls(r.textSize),

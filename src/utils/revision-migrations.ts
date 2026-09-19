@@ -1564,6 +1564,51 @@ function multiRowsSectionSize(props: Record<string, unknown>): string {
   return raw === 'small' || raw === 'large' ? raw : 'medium';
 }
 
+/**
+ * Секция «Мультиряды» без собственной «Высоты» получает 'medium' — ровно тот
+ * вид, который у неё был, пока высотой правили ряды.
+ *
+ * Зачем. 19.09 секционная «Высота» ожила (порты тем получили правило
+ * `perRowSizesDiffer`), и фолбэк порта пришлось свести с дефолтом панели
+ * ('small' у rose/bloom/flux/vanilla, 'medium' у satin со своим puckConfig) —
+ * иначе рендер «с дефолтом» расходился с рендером «без значения», что и ловит
+ * `panel-default-is-noop`. Но у части живых ревизий секционного `size` НЕТ
+ * вовсе: нормализация `adaptLegacyProps` его не подставляет, а до 19.09
+ * отсутствие читалось как СРЕДНИЙ аспект (rose 429/444, bloom 652/594, flux и
+ * satin square, vanilla 652/366 — проверено по всем пяти портам). Со сведённым
+ * фолбэком такие секции стали бы ниже — вид живых магазинов поехал бы без
+ * просьбы владельца.
+ *
+ * Поэтому отсутствие материализуем в 'medium': во ВСЕХ пяти портах
+ * `aspectFor('medium')` попадает в ту же ветку, что и `aspectFor(undefined)`,
+ * то есть миграция ничего не меняет на экране — она лишь делает прежний
+ * молчаливый фолбэк явным значением. Секции с заданной «Высотой» не трогаем.
+ */
+function materializeMultiRowsSectionSize(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (b?.type !== 'MultiRows' || !b.props) return block;
+      const raw = b.props.size;
+      if (raw === 'small' || raw === 'medium' || raw === 'large') return block;
+      pageChanged = true;
+      return { ...b, props: { ...b.props, size: 'medium' } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
 function materializeMultiRowsItemSize(
   pagesData: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -2640,6 +2685,12 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = materializeMultiRowsItemSize(out.pagesData as Record<string, unknown>);
+  }
+  // СТРОГО после materializeMultiRowsItemSize: та читает секционный размер как
+  // фолбэк для рядов со снятым «Как в секции», и ей нужно исходное состояние
+  // пропа, а не проставленное здесь.
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = materializeMultiRowsSectionSize(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = clearDemoImageSections(out.pagesData as Record<string, unknown>);

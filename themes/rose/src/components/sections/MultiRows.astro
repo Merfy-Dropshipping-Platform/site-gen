@@ -79,6 +79,17 @@ const aspectFor = (s: string | undefined) =>
 // дизайн-ассет landscape-multirows-image.png (PLACEHOLDER_ROWS выше), а реальный ряд
 // мерчанта без картинки → пустая surface-плитка (image='' → <img> не рендерится,
 // контейнер ниже имеет bg-surface). На live мерчант грузит своё фото.
+// «Высота» секции не работала (владелец 19.09 по bloom: «высота настройка
+// вообще не работает»): у КАЖДОГО ряда в сиде лежит свой `size`, а per-row
+// значение приоритетнее секционного — секционный регулятор не менял ничего.
+// Правило то же, что уже стоит в общем блоке `packages/theme-base/blocks/
+// MultiRows/MultiRows.astro` (починено там 18.09, в порты тем не доехало):
+// отличить «мерчант выбрал ряду свой размер» от «так лёг дефолт сида» в данных
+// нельзя, но если у ВСЕХ рядов размер ОДИНАКОВ — переопределять нечего, и
+// высотой правит секция. Стоит рядам разойтись — выбор мерчанта снова главнее.
+const rowSizes = rawRows.map((r: any) => r?.size);
+const perRowSizesDiffer = rowSizes.some((s: unknown) => s !== rowSizes[0]);
+
 const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	const btnText =
 		typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined;
@@ -98,7 +109,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
 			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
 			// общую настройку «Высота» — она выглядела мёртвой.
-			r.size && r.size !== "inherit" ? r.size : p.size,
+			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : p.size,
 		),
 		headingSizeCls:
 			(r.headingSize ?? undefined) === "small"

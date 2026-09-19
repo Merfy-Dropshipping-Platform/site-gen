@@ -107,6 +107,17 @@ const rowHeadingSizeCls = (s: string | undefined) =>
 const rowTextSizeCls = (s: string | undefined) =>
 	s === "small" ? "text-[14px]" : s === "large" ? "text-[19px]" : "text-[16px]";
 
+// «Высота» секции не работала (владелец 19.09 по bloom: «высота настройка
+// вообще не работает»): у КАЖДОГО ряда в сиде лежит свой `size`, а per-row
+// значение приоритетнее секционного — секционный регулятор не менял ничего.
+// Правило то же, что уже стоит в общем блоке `packages/theme-base/blocks/
+// MultiRows/MultiRows.astro` (починено там 18.09, в порты тем не доехало):
+// отличить «мерчант выбрал ряду свой размер» от «так лёг дефолт сида» в данных
+// нельзя, но если у ВСЕХ рядов размер ОДИНАКОВ — переопределять нечего, и
+// высотой правит секция. Стоит рядам разойтись — выбор мерчанта снова главнее.
+const rowSizes = rawRows.map((r: any) => r?.size);
+const perRowSizesDiffer = rowSizes.some((s: unknown) => s !== rowSizes[0]);
+
 const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	const btnText =
 		typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined;
@@ -130,7 +141,7 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
 			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
 			// общую настройку «Высота» — она выглядела мёртвой.
-			r.size && r.size !== "inherit" ? r.size : p.size,
+			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : p.size,
 		),
 		headingCls: rowHeadingSizeCls(r.headingSize),
 		textCls: rowTextSizeCls(r.textSize),
@@ -224,11 +235,11 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // внешней стороне ряда (зеркально медиа-скруглению, см. rowBoxCls/медиа ниже).
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,12px)] p-6 md:p-8 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,12px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,12px)]"}`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,12px)] p-6 md:p-8 lg:rounded-none`
 		: "";
 // Per-element surface-бокс на КАЖДЫЙ ряд при ВКЛ; при ВЫКЛ — голый ряд.
 const rowBoxCls = containerEnabled
-	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-8"
+	? " rounded-[var(--radius-card,12px)] lg:rounded-none bg-[rgb(var(--color-surface,245_245_245))] p-6 md:p-8"
 	: "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
@@ -269,6 +280,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				></h2>
 			)
 		}
+		{/* Скругления на ≥lg сняты (владелец 19.09: «если отступов нет — бордер-
+		    радиусы не нужны, нужно убрать эти прогалы»). Там, где ряды идут
+		    вплотную (lg:gap-0 ниже), скруглённые углы рвут сплошную полосу:
+		    между соседними рядами и на стыке медиа с текстом видны просветы
+		    подложки. На мобильном зазор между рядами остаётся — там скругления
+		    работают как задумано и остаются нетронутыми. */}
 		{/* Зазор МЕЖДУ рядами — канон владельца 2026-09-17 (Shopify Row): ряды
 		    ВПЛОТНУЮ, зазор РОВНО ноль на lg: (там же, где ряд становится
 		    двухколоночным — media-text-pair.spec.ts). На мобильном (одна колонка)
@@ -284,7 +301,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						data-puck-subsection-field={hasRealRows ? "rows" : undefined}
 					>
 						<div
-							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,12px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,12px)]"}`}
+							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""} lg:rounded-none`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (

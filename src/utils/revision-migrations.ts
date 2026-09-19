@@ -1057,8 +1057,8 @@ export function migrateVanillaHomePage(
         menuType: 'dropdown',
         navigationLinks: [
           { label: 'Каталог', href: '/catalog' },
-          { label: 'Мебель', href: '/c/mebel' },
-          { label: 'Декор', href: '/c/dekor' },
+          { label: 'Мебель', href: '/collections/mebel' },
+          { label: 'Декор', href: '/collections/dekor' },
         ],
         actionButtons: { showSearch: true, showCart: true, showProfile: true },
         colorScheme: 'scheme-1',
@@ -1146,7 +1146,7 @@ export function migrateVanillaHomePage(
           },
         ],
         columns: 2,
-        cardLinkBase: '/c/',
+        cardLinkBase: '/collections/',
         colorScheme: 'scheme-3',
         // 084 Stage 2 Task 5 (v5): 120px y-padding per Figma 1:18973.
         // Pre-v5 was 80px (40px short of Figma).
@@ -1209,7 +1209,7 @@ export function migrateVanillaHomePage(
             'Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.',
           size: 'medium',
         },
-        button: { text: 'Смотреть мебель', link: '/c/mebel' },
+        button: { text: 'Смотреть мебель', link: '/collections/mebel' },
         imagePosition: 'right',
         ctaPosition: 'bottom-pinned',
         textStyle: 'italic',
@@ -1287,8 +1287,8 @@ export function migrateVanillaHomePage(
           title: 'Магазин',
           links: [
             { label: 'Каталог', href: '/catalog' },
-            { label: 'Мебель', href: '/c/mebel' },
-            { label: 'Декор', href: '/c/dekor' },
+            { label: 'Мебель', href: '/collections/mebel' },
+            { label: 'Декор', href: '/collections/dekor' },
           ],
         },
         informationColumn: {

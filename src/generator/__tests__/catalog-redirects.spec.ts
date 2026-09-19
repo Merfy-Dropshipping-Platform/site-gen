@@ -35,7 +35,7 @@ describe("catalog-redirects — оживление старых ссылок /ca
 			"https://shop.merfy.ru",
 		);
 
-		expect(res.written).toBe(2);
+		expect(res.written).toBe(4); // catalog/<slug|id> + c/<slug|id>
 		const bySlug = await read("catalog/tovary/index.html");
 		const byId = await read("catalog/1d25335c-0d6f-4271-8f4d-202f4d966147/index.html");
 		for (const html of [bySlug, byId]) {
@@ -57,7 +57,19 @@ describe("catalog-redirects — оживление старых ссылок /ca
 
 		expect(await read("catalog/textile/index.html")).toBe("СТРАНИЦА ТЕМЫ");
 		expect(res.skipped).toBe(1);
-		expect(res.written).toBe(1); // только по id
+		expect(res.written).toBe(3); // по id в /catalog + обе формы в /c
+	});
+
+	it("короткая форма /c/<slug> тоже оживает (баг тестера #2)", async () => {
+		await writeCatalogRedirects(
+			dir,
+			[{ id: "col-mebel", slug: "mebel", name: "Мебель" }],
+			"",
+		);
+
+		const html = await read("c/mebel/index.html");
+		expect(html).toContain("/collections/mebel");
+		expect(await read("c/col-mebel/index.html")).toContain("/collections/mebel");
 	});
 
 	it("коллекция без слага редиректит на /collections/<id>", async () => {

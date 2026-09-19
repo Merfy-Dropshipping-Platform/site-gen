@@ -94,6 +94,25 @@ describe("зачёркнутая старая цена везде следует
     ).toBe("");
   });
 
+  /**
+   * ЭТАЛОН — Shopify Dawn (`assets/component-price.css`), владелец 19.09:
+   * «мы копируем с шопифая». Там старая цена при распродаже —
+   * `.price--on-sale .price-item--regular { color: rgba(var(--color-foreground), 0.75); text-decoration: line-through }`,
+   * то есть ТОТ ЖЕ цвет текста, приглушённый ПРОЗРАЧНОСТЬЮ, а не отдельный
+   * серый токен. Сплошной `--color-text` без прозрачности тоже неверен: тогда
+   * старая цена по яркости не отличается от цены рядом — именно это и
+   * забраковал тестировщик.
+   */
+  it("зачёркнутая цена приглушена прозрачностью, как в Shopify", () => {
+    const flat = hits.filter((h) => !/\/0?\.?75\b|\/75\b/.test(h.line));
+    const report = flat
+      .map((h) => `  ${h.rel}\n    ${h.line.trim().slice(0, 160)}`)
+      .join("\n");
+    expect(
+      flat.length === 0 ? "" : `БЕЗ ПРОЗРАЧНОСТИ 0.75: ${flat.length}\n${report}`,
+    ).toBe("");
+  });
+
   it("каждая зачёркнутая цена несёт --color-text", () => {
     const missing = hits.filter((h) => !/--color-text/.test(h.line));
     const report = missing
@@ -114,5 +133,10 @@ describe("саботаж: гард ловит откат цвета", () => {
   });
   it("литерал — красный", () => {
     expect(BAD.test(`class="text-[#999999] line-through"`)).toBe(true);
+  });
+
+  it("цвет текста БЕЗ прозрачности — красный", () => {
+    const line = `class="text-[rgb(var(--color-text,0_0_0))] line-through"`;
+    expect(/\/0?\.?75\b|\/75\b/.test(line)).toBe(false);
   });
 });

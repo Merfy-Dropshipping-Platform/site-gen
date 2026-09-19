@@ -897,7 +897,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const price = escapeHtml(formatPrice(p.price));
     const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
     const oldPrice = oldRaw
-      ? `<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0))] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
+      ? `<span class="flux-product-oldprice font-manrope text-[12px] font-normal leading-[1.366] text-[rgb(var(--color-text,0_0_0)/0.75)] line-through md:text-[14px]">${escapeHtml(oldRaw)}</span>`
       : "";
     // Свотчи цвета (эталон): цветные квадраты + опц. перечёркнутый «недоступный».
     // Свотч С картинкой цвета → КЛИКАБЕЛЬНАЯ кнопка (data-swatch-img): клик меняет

@@ -233,7 +233,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			var price = escapeHtml(formatPrice(p.price));
 			var oldRaw = formatPrice(p.oldPrice || null);
 			var oldPrice = oldRaw
-				? '<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))] line-through">' + escapeHtml(oldRaw) + "</span>"
+				? '<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">' + escapeHtml(oldRaw) + "</span>"
 				: "";
 			var heartInner =
 				(window.__roseWishlist && window.__roseWishlist.heartSvg) ? window.__roseWishlist.heartSvg(true) : WISHLIST_OUTLINE_SVG;

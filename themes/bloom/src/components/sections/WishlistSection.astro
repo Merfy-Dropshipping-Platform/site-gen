@@ -241,7 +241,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			var price = escapeHtml(formatPrice(p.price));
 			var oldRaw = formatPrice(p.oldPrice || null);
 			var oldPrice = oldRaw
-				? '<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] line-through">' + escapeHtml(oldRaw) + "</span>"
+				? '<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">' + escapeHtml(oldRaw) + "</span>"
 				: "";
 			var heartInner =
 				(window.__bloomWishlist && window.__bloomWishlist.heartSvg) ? window.__bloomWishlist.heartSvg(true) : WISHLIST_OUTLINE_SVG;

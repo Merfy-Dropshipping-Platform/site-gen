@@ -726,7 +726,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const price = escapeHtml(formatPrice(p.price));
     const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
     const oldPrice = oldRaw
-      ? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
+      ? `<span class="bloom-product-oldprice font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">${escapeHtml(oldRaw)}</span>`
       : "";
     // quickAdd-кнопка — СНАРУЖИ <a> (button-in-anchor невалиден). data-quick-add-id
     // ловит обработчик добавления в корзину. Решение владельца: товар с вариантами

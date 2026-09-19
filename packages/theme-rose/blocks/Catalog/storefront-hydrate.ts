@@ -297,7 +297,7 @@ export function renderCardHtml(p: RealProduct): string {
 	const price = escapeHtml(formatPrice(p.price));
 	const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);
 	const oldPrice = oldRaw
-		? `<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${escapeHtml(oldRaw)}</span>`
+		? `<span class="rose-product-oldprice font-manrope !text-[14px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">${escapeHtml(oldRaw)}</span>`
 		: "";
 	return `<article class="group flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label="${name}">
 	<a href="${href}" class="relative block aspect-[318/444] w-full overflow-hidden rounded-[8px] bg-white" aria-label="${name}">

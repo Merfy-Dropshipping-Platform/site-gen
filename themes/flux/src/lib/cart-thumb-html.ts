@@ -130,7 +130,7 @@ export function cartLinePictureHtml(
 						<a href="/products/${encodeURIComponent(l.productId)}" class="font-roboto-flex text-[20px] font-light leading-normal text-black transition-opacity hover:opacity-70">${escapeHtml(l.name)}</a>
 						<div class="flex items-center gap-2 uppercase">
 							<span class="font-roboto-flex text-[20px] font-light leading-normal text-black">${format(l.price)}</span>
-							${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] line-through">${oldPrice}</span>` : ""}
+							${oldPrice ? `<span class="font-roboto-flex text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0)/0.75)] line-through">${oldPrice}</span>` : ""}
 						</div>
 					</div>
 					${

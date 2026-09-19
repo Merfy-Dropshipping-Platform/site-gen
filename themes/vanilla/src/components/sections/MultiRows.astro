@@ -328,7 +328,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						    ряда» у соседних колонок. Без self-center обе колонки растягиваются
 						    (align-items:normal ⇒ stretch), паритет rose/flux/bloom/satin.
 						    Сторож: multirows-row-stretch.spec.ts. */}
-						<div class={`flex w-full flex-col ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
+						<div class={`flex w-full flex-col lg:p-8 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 							{r.heading && (
 								<h3
 									class={`font-vanilla-bitter ${r.headingCls} font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]`}

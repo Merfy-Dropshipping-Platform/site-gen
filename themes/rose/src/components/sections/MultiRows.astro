@@ -293,7 +293,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<img src={r.image} alt={r.heading || "Ряд"} loading="lazy" class="!h-full !w-full object-cover" />
 							)}
 						</div>
-						<div class={`flex w-full flex-col gap-6 items-center text-center ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
+						<div class={`flex w-full flex-col gap-6 items-center text-center lg:p-8 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 							{r.heading && <h3 class={`rose-title${r.headingSizeCls}`} set:html={inlineFormat(r.heading)} />}
 							{r.text && (
 								<div

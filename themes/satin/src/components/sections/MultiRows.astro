@@ -412,7 +412,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								))}
 						</div>
-						<div class:list={[`flex flex-col gap-5${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
+						<div class:list={[`flex flex-col gap-5 md:p-8${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
 							{row.heading && <h3 class={row.headingCls} set:html={inlineFormat(row.heading)} />}
 							{row.paragraphs.length > 0 && (
 								<div class="flex flex-col gap-3">

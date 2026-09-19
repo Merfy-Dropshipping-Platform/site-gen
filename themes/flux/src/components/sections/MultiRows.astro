@@ -322,7 +322,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								)}
 							</div>
-							<div class={`flex w-full flex-col gap-6 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
+							<div class={`flex w-full flex-col gap-6 lg:p-8 ${alignCls}${r.right ? " lg:order-1" : ""}${containerSchemeCls(!!r.right)}`}>
 								{r.heading && (
 									<h3
 										class={`font-roboto-flex ${r.headingCls} font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))]`}

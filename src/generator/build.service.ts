@@ -33,6 +33,7 @@ import { and, eq } from "drizzle-orm";
 import type * as schemaTypes from "../db/schema";
 import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
 import { escapeHtml, patchPdpMetaTags, patchCollectionMetaTags } from "./seo-meta";
+import { writeCatalogRedirects } from "./catalog-redirects";
 import { migrateRevisionData } from "../utils/revision-migrations";
 import { applyFooterData } from "../utils/footer-data";
 import { applyPageBinding } from "../render/page-transclude";
@@ -1563,6 +1564,23 @@ export async function runBuildPipeline(
           }
         } catch (colSlugErr) {
           logger.warn(`[themes-v2] per-collection page gen failed: ${(colSlugErr as Error)?.message ?? colSlugErr}`);
+        }
+        // Исторические ссылки `/catalog/<id|slug>`: конструктор писал их до
+        // 19.09.2026, а маршрута на витрине нет (themes-v2 не зовёт
+        // scaffold-builder, см. catalog-redirects.ts). Кладём редирект на
+        // канонический /collections/<slug>; страницы, которые тема несёт сама
+        // (хардкод vanilla), не трогаем.
+        try {
+          const redirects = await writeCatalogRedirects(
+            ctx.distDir,
+            v2Store.collections as unknown as Array<Record<string, unknown>>,
+            ctx.publicUrl ?? "",
+          );
+          logger.log(
+            `[themes-v2][seo] Wrote ${redirects.written} catalog/<slug|id> redirects (${redirects.skipped} theme pages kept) for site ${params.siteId}`,
+          );
+        } catch (catRedirErr) {
+          logger.warn(`[themes-v2] catalog redirect gen failed: ${(catRedirErr as Error)?.message ?? catRedirErr}`);
         }
         // SEO: sitemap коллекций + robots.txt. Гейт на ctx.publicUrl. robots.txt
         // здесь пишется ТОЛЬКО когда товаров не было (иначе блок товаров уже

@@ -297,7 +297,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						data-puck-subsection-field="rows"
 					>
 						<div
-							class={`group relative w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,0px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,0px)]"}`}
+							class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,0px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,0px)]"}`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (

@@ -17,7 +17,16 @@ import * as path from "path";
  * кладём `catalog/<slug>/index.html` и `catalog/<id>/index.html` — редирект на
  * канонический `/collections/<slug>`. Уже существующие файлы не трогаем, иначе
  * затрём рабочие страницы темы.
+ *
+ * Та же беда у короткой формы `/c/<slug>` (баг тестера #2): ею стартовый
+ * контент vanilla засевал меню шапки, меню подвала, кнопку «Смотреть мебель» и
+ * базу ссылок карточек коллекций (`cardLinkBase: '/c/'`). Источник починен в
+ * `revision-migrations.ts`, но пересев старых сайтов затёр бы правки мерчанта —
+ * поэтому их ссылки оживляет тот же редирект.
  */
+/** Префиксы исторических маршрутов коллекции. Канонический — `/collections/`. */
+const LEGACY_PREFIXES = ["catalog", "c"] as const;
+
 export type RedirectCollection = {
 	id?: unknown;
 	slug?: unknown;
@@ -94,12 +103,15 @@ export async function writeCatalogRedirects(
 
 		const id = typeof c.id === "string" ? c.id.trim() : "";
 		const keys = id && id !== slug ? [slug, id] : [slug];
-		for (const key of keys) {
+		const targets = LEGACY_PREFIXES.flatMap((prefix) =>
+			keys.map((key) => ({ prefix, key })),
+		);
+		for (const { prefix, key } of targets) {
 			// Ключ уезжает в путь файла — отсекаем всё, что может вывести из dist.
 			if (key.includes("/") || key.includes("\\") || key === "." || key === "..") {
 				continue;
 			}
-			const target = path.join(distDir, "catalog", key, "index.html");
+			const target = path.join(distDir, prefix, key, "index.html");
 			// Страница темы (хардкод vanilla) всегда сильнее нашего редиректа.
 			const exists = await fs
 				.access(target)

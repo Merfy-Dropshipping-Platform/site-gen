@@ -144,10 +144,19 @@
 					data-cart-modal-name
 					class="truncate font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70"
 				></a>
-				<p
-					data-cart-modal-price
-					class="font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]"
-				></p>
+				<div class="flex flex-wrap items-baseline gap-2">
+					<p
+						data-cart-modal-price
+						class="font-[family-name:var(--font-body)] text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]"
+					></p>
+					{/* Цена ДО скидки. Владелец 19.09: «в карточке под корзиной
+					    плавающей не отображает». Цвет — от настройки «Текст», как и
+					    везде в строке товара. */}
+					<p
+						data-cart-modal-old-price
+						class="hidden font-[family-name:var(--font-body)] text-[13px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] line-through"
+					></p>
+				</div>
 				<p
 					data-cart-modal-volume
 					class="hidden font-[family-name:var(--font-body)] text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"

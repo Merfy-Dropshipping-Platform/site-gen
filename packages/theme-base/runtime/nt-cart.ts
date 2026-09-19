@@ -185,7 +185,17 @@ export function reconcileNtLines(
 			if (!combo) { changed = true; dropped++; continue; } // вариант удалён → выкинуть
 		}
 		const price = combo ? Number(combo.price) : Number(p.price);
-		const rawOld = combo ? combo.compareAtPrice : p.compareAtPrice;
+		// Каскад, а не «или»: у варианта своей цены до скидки может не быть
+		// (каталог витрины отдаёт `compareAtPrice: null` на комбинации, а на
+		// товаре — 999). Раньше стояло `combo ? combo.compareAtPrice : ...`, и для
+		// ЛЮБОГО вариантного товара примирение затирало цену, пришедшую с кнопки:
+		// она была видна миг после добавления и пропадала из дровера, корзины и
+		// плавающей карточки. У товаров без вариантов всё работало — потому баг и
+		// выглядел плавающим. Тот же каскад описан в flux/storefront-hydrate.ts.
+		const rawOld =
+			combo && combo.compareAtPrice != null
+				? combo.compareAtPrice
+				: p.compareAtPrice;
 		const oldPrice = rawOld != null && Number.isFinite(Number(rawOld)) ? Number(rawOld) : undefined;
 		const name = p.name || line.name;
 		// Фото выбранного варианта (Цвет) → иначе фото позиции (add-time, верное) →
@@ -495,6 +505,10 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						image: addBtn.dataset.image ?? "",
 						volume: addBtn.dataset.volume || undefined,
 						lineTotal: line ? line.price * line.quantity : undefined,
+						oldLineTotal:
+							line && typeof line.oldPrice === "number"
+								? line.oldPrice * line.quantity
+								: undefined,
 						quantity: line?.quantity ?? 1,
 						origin: addBtn,
 					});

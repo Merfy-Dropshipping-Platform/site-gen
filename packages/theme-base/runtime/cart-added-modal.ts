@@ -73,6 +73,8 @@ export interface CartAddedModalPayload {
 	volume?: string;
 	/** Итог по строке корзины: цена × количество. */
 	lineTotal?: number;
+	/** Итог по строке ДО скидки: старая цена × количество. */
+	oldLineTotal?: number;
 	quantity?: number;
 	/** Элемент, по которому кликнули, — от него ищем обёртку схемы страницы. */
 	origin?: Element | null;
@@ -289,6 +291,23 @@ export const createCartAddedModal = (deps: CartAddedModalDeps) => {
 				typeof payload.lineTotal === "number"
 					? `${deps.formatPrice(payload.lineTotal)} · ${qty} шт.`
 					: payload.price;
+		}
+
+		// Старая цена показывается только когда она БОЛЬШЕ текущей: иначе
+		// зачёркивать нечего. Скрываем через hidden-класс, чтобы пустой абзац
+		// не занимал строку.
+		const oldPriceEl = modal.querySelector<HTMLElement>(
+			"[data-cart-modal-old-price]",
+		);
+		if (oldPriceEl) {
+			const show =
+				typeof payload.oldLineTotal === "number" &&
+				typeof payload.lineTotal === "number" &&
+				payload.oldLineTotal > payload.lineTotal;
+			oldPriceEl.textContent = show
+				? deps.formatPrice(payload.oldLineTotal as number)
+				: "";
+			oldPriceEl.classList.toggle("hidden", !show);
 		}
 
 		if (cartLink) cartLink.textContent = `Перейти в корзину (${deps.getCartCount()})`;

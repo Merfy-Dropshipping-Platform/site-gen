@@ -216,9 +216,16 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // стороне ряда. Раньше был один класс на все ряды без учёта r.right — отсюда
 // щель в форме скругления на стыке (media-text-pair.spec.ts §5 ловил только
 // медиа, не контейнер).
+// Текст ряда прижат к ВЕРХУ, а не центрирован (владелец 19.09: «надо чтобы у
+// нижнего был отступ как у верхнего»). Замер в его конструкторе: у низкого ряда
+// заголовок отбит от верха на 32px, у высокого — на 71px, потому что
+// `justify-center` делит остаток поровну, и чем выше ряд, тем больше отбивка.
+// Соседние ряды с разными размерами выглядели по-разному при одинаковых
+// настройках текста. `h-full` остаётся: он и растягивает контейнер на высоту
+// ряда, ради чего колонка вообще получает класс схемы.
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full justify-center rounded-[var(--radius-card,8px)] p-6 md:p-8 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,8px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,8px)]"}`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,8px)] p-6 md:p-8 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,8px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,8px)]"}`
 		: "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).

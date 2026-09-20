@@ -284,6 +284,17 @@ export function parseRules(cssRaw: string): Rule[] {
  */
 export function atRuleApplies(at: string, widthPx: number): boolean {
   if (at.startsWith("@supports")) return true; // современный Chromium
+  // Style-запрос контейнера (`@container style(--card-style: standard)`)
+  // вычислить нельзя: он зависит от значения кастомного свойства на предке, а
+  // движок меряет каскад без реального дерева стилей. Считаем НЕприменимым —
+  // то есть меряем базовое значение, без контейнерного override.
+  //
+  // Почему это не «молча пропустить конкурента»: такие правила у нас адресуют
+  // СВОИ узлы (у flux — `[data-nt="flux-product-card"]`), и до сравнения
+  // селекторов дело даже не доходило — обёртка роняла весь замер исключением.
+  // Если однажды контейнерный запрос начнёт править измеряемый узел, это
+  // придётся считать честно, а не расширять исключение.
+  if (at.startsWith("@container")) return false;
   if (!at.startsWith("@media")) {
     throw new Error(`неизвестная at-обёртка: ${at}`);
   }

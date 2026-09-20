@@ -79,3 +79,33 @@ describe('стартовый контент не содержит битых м�
 		expect(bases).toContain('/collections/');
 	});
 });
+
+/**
+ * Перепроверка тестера (20.09): «Дефолтные пункты меню шапки 404-ят. Vanilla:
+ * „Мебель“ → /collections/mebel, „Декор“ → /collections/dekor, оба 404. Это
+ * живые ссылки опубликованного магазина».
+ *
+ * Прошлая правка сменила форму ссылки (`/c/<slug>` → `/collections/<slug>`), но
+ * не сняла главного: пункты ссылались на коллекции магазина ВЕРСТАЛЬЩИКОВ. На
+ * демо-стенде такие коллекции есть, у реального магазина — нет, поэтому у
+ * тестера 404, а на стенде 200. Стартовое меню не вправе обещать разделы,
+ * которых у магазина может не быть.
+ */
+describe('стартовое меню не обещает чужих коллекций', () => {
+	it('в сиде нет ссылок на конкретные демо-коллекции', () => {
+		const seeded = migrateVanillaHomePage({}, 'vanilla');
+		const links = collectLinks(seeded);
+		const demo = links.filter((h) => /\/collections\/(mebel|dekor)\b/.test(h));
+		expect(demo).toEqual([]);
+	});
+
+	it('оставшиеся пункты меню ведут на маршруты, которые есть у любого магазина', () => {
+		const seeded = migrateVanillaHomePage({}, 'vanilla');
+		const menu = collectLinks(seeded).filter((h) => h.startsWith('/'));
+		for (const href of menu) {
+			// /collections/ — это база ссылок карточек, она достраивается слагом
+			// реальной коллекции магазина, а не зашита в сид.
+			expect(href === '/collections/' || !/^\/collections\/.+/.test(href)).toBe(true);
+		}
+	});
+});

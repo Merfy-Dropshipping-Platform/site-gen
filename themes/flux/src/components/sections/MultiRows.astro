@@ -7,7 +7,7 @@ import { schemeIdOf } from "../../lib/color-scheme";
 // (заголовки/текст/кнопки); прежний дрейф на comfortaa/manrope (наследие
 // разошедшегося product-grid порта) УДАЛЁН. Эталон нового flux-стиля —
 // MainText/Collections/Gallery: заголовок roboto-flex uppercase 19/23, тело
-// roboto-flex 300 (font-light), медиа rounded-[12px] + hover-zoom 1.03
+// roboto-flex 300 (font-light), медиа rounded-[var(--radius-media,12px)] + hover-zoom 1.03
 // (Collections), чёрная CTA h-14 rounded-6 uppercase (buttonStyle=black паттерн,
 // MainText/Hero/Puk). Скролл-анимаций НЕТ — манера flux статична (MANNER §6).
 // Контейнер = flux-носитель max-w-[1920px] px-4 md:px-20 2xl:px-80, вертикаль
@@ -242,7 +242,7 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // ряда, ради чего колонка вообще получает класс схемы.
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,12px)] p-6 md:p-10 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,12px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,12px)]"}`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,12px)] p-6 md:p-10 ${right ? "" : ""}`
 		: "";
 
 // Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
@@ -310,17 +310,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    (align-items:normal ⇒ stretch), img внутри — object-cover (absolute
 			    inset-0 size-full), обрезается по новой высоте без искажений. Сторож:
 			    multirows-row-stretch.spec.ts. */}
-			<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
+			<ul class="flex w-full flex-col gap-8" role="list">
 				{
 					rows.map((r, i) => (
 						<li
-							class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${cardSurfaceCls}`}
+							class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]}${cardSurfaceCls}`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="rows"
 						>
 							<div
-								class={`group relative w-full lg:h-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[12px]" : " lg:rounded-r-none lg:rounded-l-[12px]"}`}
+								class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
 								aria-hidden={r.image ? undefined : "true"}
 							>
 								{r.image && (

@@ -188,7 +188,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2 lg:items-center lg:gap-10${containerSchemeCls}`}>
 			{!isFieldHidden('image') && (
 			<div
-				class={`group relative w-full overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
+				class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageRight ? " lg:order-2" : ""}`}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="100"
 				data-puck-subsection-field="image"

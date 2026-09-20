@@ -8,6 +8,8 @@
  * This unit-tests the pure helper extracted from the .astro file. Defaults
  * round-trip to empty query (so canonical URL is /catalog without spurious params).
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { parseCatalogUrlParams, serializeCatalogUrlParams, type CatalogUrlState } from '../blocks/Catalog/url-params';
 
 describe('parseCatalogUrlParams', () => {
@@ -15,6 +17,7 @@ describe('parseCatalogUrlParams', () => {
     const params = new URLSearchParams('');
     const result = parseCatalogUrlParams(params);
     expect(result).toEqual({
+      query: undefined,
       collection: undefined,
       page: 1,
       sort: 'newest',
@@ -72,6 +75,7 @@ describe('parseCatalogUrlParams', () => {
 describe('serializeCatalogUrlParams', () => {
   it('produces empty string for default state', () => {
     const state: CatalogUrlState = {
+      query: undefined,
       collection: undefined,
       page: 1,
       sort: 'newest',
@@ -85,6 +89,7 @@ describe('serializeCatalogUrlParams', () => {
 
   it('produces minimal query for non-default values', () => {
     const state: CatalogUrlState = {
+      query: undefined,
       collection: 'URBAN',
       page: 2,
       sort: 'price-asc',
@@ -101,5 +106,65 @@ describe('serializeCatalogUrlParams', () => {
     expect(result).toContain('color=red');
     expect(result).toContain('priceMin=100');
     expect(result).toContain('priceMax=500');
+  });
+});
+
+/**
+ * Баг тестера #5 (18.09): «Rose: поиск в каталоге не фильтрует — форма GET
+ * /catalog, поле q. /catalog?q=тинт → все 5 товаров, /catalog?q=ZZZNOTHING →
+ * тоже все».
+ *
+ * Замер 19.09: форма поиска (`<input name="q">`) есть во ВСЕХ темах — rose,
+ * flux, satin, bloom, luna и в общей шапке theme-base, — а `CatalogUrlState`
+ * знал только collection/page/sort/availability/colors/price. Поисковый запрос
+ * не парсился ни на сервере, ни в клиентской фильтрации: поиск по магазину не
+ * работал нигде.
+ */
+describe('поисковый запрос из шапки (баг тестера #5)', () => {
+  it('parse: q попадает в состояние каталога', () => {
+    expect(parseCatalogUrlParams(new URLSearchParams('q=тинт')).query).toBe('тинт');
+  });
+
+  it('parse: пробелы по краям срезаются, пустой запрос = нет запроса', () => {
+    expect(parseCatalogUrlParams(new URLSearchParams('q=%20%20')).query).toBeUndefined();
+    expect(parseCatalogUrlParams(new URLSearchParams('')).query).toBeUndefined();
+    expect(parseCatalogUrlParams(new URLSearchParams('q=%20тинт%20')).query).toBe('тинт');
+  });
+
+  it('serialize: запрос переживает круг через URL', () => {
+    const state = parseCatalogUrlParams(new URLSearchParams('q=тинт&sort=price-asc'));
+    const back = new URLSearchParams(serializeCatalogUrlParams(state));
+    expect(back.get('q')).toBe('тинт');
+    expect(parseCatalogUrlParams(back).query).toBe('тинт');
+  });
+
+  it('serialize: без запроса параметр q в адрес не лезет', () => {
+    const state: CatalogUrlState = parseCatalogUrlParams(new URLSearchParams(''));
+    expect(serializeCatalogUrlParams(state)).toBe('');
+  });
+});
+
+/**
+ * Сторож ЖИВОГО пути: разбор `q` можно оставить идеальным, а рантайм каталога
+ * так и не начнёт им фильтровать — тесты при этом будут зелёными. Фильтрация
+ * живёт в инлайн-скрипте `Catalog.astro` (модуль `variant-filter.ts` — его
+ * зеркало, рантайм его не импортирует), поэтому проверяем сам файл блока.
+ */
+describe('поиск подключён к рантайму каталога', () => {
+  const astro = readFileSync(
+    join(__dirname, '..', 'blocks', 'Catalog', 'Catalog.astro'),
+    'utf8',
+  );
+
+  it('состояние каталога берёт запрос из разобранного URL', () => {
+    expect(astro).toContain('query: urlState.query');
+  });
+
+  it('фильтрация учитывает запрос', () => {
+    expect(astro).toMatch(/if \(state\.query\)/);
+  });
+
+  it('запрос переживает обновление адреса при смене фильтров', () => {
+    expect(astro).toMatch(/params\.set\('q', state\.query\)/);
   });
 });

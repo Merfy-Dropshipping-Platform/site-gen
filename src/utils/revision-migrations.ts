@@ -1885,6 +1885,61 @@ function normalizePromoBannerPadding(
 }
 
 /**
+ * Bloom Header: снять сидовый `padding {0,0}` — вернуть канон темы {16,16}.
+ *
+ * Жалоба владельца 20.09: «отступы в шапке идут по пизде — сверху отступов нет,
+ * снизу нет». Замер живой витрины подтвердил: обёртка получала инлайн
+ * `padding-top:0;padding-bottom:0`, меню упиралось в нижний край шапки.
+ *
+ * Корень — сид: все 12 страниц `packages/theme-bloom/pages/*.json` клали шапке
+ * `padding {top:0,bottom:0}`, хотя `theme.json` темы даёт {16,16}. Порт считает
+ * ровно {16,16} каноном и рисует литерал верстальщика `py-6` (24px); любое
+ * другое значение выбрасывает `py-6` и ставит инлайн-стиль. Ноль из сида и
+ * означал «совсем без отступов» у каждого bloom-магазина.
+ *
+ * Сид уже исправлен, но у существующих магазинов ноль лежит В РЕВИЗИИ — сид
+ * замораживает настройки, правка темы до них не доходит. Переносим ТОЛЬКО
+ * точное {0,0} (значение сида) и только у bloom: осознанный ноль мерчанта в
+ * другой теме не трогаем. Идемпотентна: после переноса значение уже {16,16}.
+ */
+const BLOOM_HEADER_SEED_PADDING = { top: 0, bottom: 0 };
+const BLOOM_HEADER_CANON_PADDING = { top: 16, bottom: 16 };
+
+function migrateBloomHeaderPadding(
+  pagesData: Record<string, unknown>,
+  themeId?: string | null,
+): Record<string, unknown> {
+  if (themeId !== 'bloom') return pagesData;
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of Object.keys(pagesData)) {
+    const page = pagesData[pageId] as PageData | undefined;
+    if (!page || !Array.isArray(page.content)) continue;
+    let pageChanged = false;
+    const content = page.content.map((block) => {
+      const b = block as { type?: string; props?: Record<string, unknown> };
+      if (!b || b.type !== 'Header' || !b.props) return block;
+      const padding = b.props.padding as { top?: unknown; bottom?: unknown } | undefined;
+      if (
+        !padding ||
+        typeof padding !== 'object' ||
+        padding.top !== BLOOM_HEADER_SEED_PADDING.top ||
+        padding.bottom !== BLOOM_HEADER_SEED_PADDING.bottom
+      ) {
+        return block;
+      }
+      pageChanged = true;
+      return { ...b, props: { ...b.props, padding: { ...BLOOM_HEADER_CANON_PADDING } } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(page as object), content };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Newsletter: платформенная подсказка «Твой email» → «Email».
  *
  * Пункт 6 пачки тестировщика (13.09): «В секции Подписка на рассылку текст в
@@ -2690,6 +2745,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = renameNewsletterPlaceholder(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = migrateBloomHeaderPadding(out.pagesData as Record<string, unknown>, themeId);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);

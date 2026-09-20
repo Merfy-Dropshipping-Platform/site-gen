@@ -196,6 +196,12 @@ const _menuSchemeStr = (v: unknown): string =>
 const menuColorScheme = _menuSchemeStr(p.menuColorScheme);
 const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replace("scheme-", "")}` : "";
 
+// Размер иконок десктопной шапки = ЭТАЛОН ВЕРСТАЛЬЩИКОВ: кнопка-обёртка size-8
+// (32px), иконка внутри size-5 (20px) — сверено с canon-sections/header.html,
+// где Поиск/Корзина/Аккаунт несут ровно `size-5`. Было size-6 (24px): жалоба
+// владельца 20.09 «иконки большие». Мобильная строка (md:hidden) свой размер
+// не меняет. Сторож: src/themes/__tests__/bloom-header-canon.spec.ts.
+
 // Outline-сердце избранного в шапке (SSR-дефолт). Геометрия = универсальный heart-path
 // (как rose public/icons/favourite.svg), зеркалит wishlist.ts heartSvg(false). Инлайн-SVG
 // (НЕ <img> NtIcon) — глобальный делегат initWishlistUI (Layout) переключает fill на filled
@@ -329,14 +335,14 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 									</button>
 									<a
 										href="/wishlist"
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Избранное"
 									>
-										<span data-wishlist-icon class="block size-6 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
+										<span data-wishlist-icon class="block size-5 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
 										<span
 											data-wishlist-count
 											data-empty="true"
@@ -349,7 +355,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -361,7 +367,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
 									</a>
 									{isSidebar && (
 										<button
@@ -409,7 +415,7 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 									</button>
 								</div>
 
@@ -429,7 +435,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Избранное"
 									>
-										<span data-wishlist-icon class="block size-6 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
+										<span data-wishlist-icon class="block size-5 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
 										<span
 											data-wishlist-count
 											data-empty="true"
@@ -442,7 +448,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -454,7 +460,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
+										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
 									</a>
 									{isSidebar && (
 										<button
@@ -531,14 +537,14 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 								</button>
 								<a
 									href="/wishlist"
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<span data-wishlist-icon class="block size-6 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
+									<span data-wishlist-icon class="block size-5 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -551,7 +557,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -563,7 +569,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
 								</a>
 								{isSidebar && (
 									<button
@@ -619,14 +625,14 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 								</button>
 								<a
 									href="/wishlist"
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<span data-wishlist-icon class="block size-6 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
+									<span data-wishlist-icon class="block size-5 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -639,7 +645,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -651,7 +657,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-6" />
+									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
 								</a>
 								{isSidebar && (
 									<button

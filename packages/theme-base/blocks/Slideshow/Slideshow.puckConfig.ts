@@ -20,7 +20,13 @@ const SlideSchema = z.object({
   ctaUrl: z.string().optional(),
   button: z.object({
     text: z.string().optional(),
-    link: z.string().optional(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+    link: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))).optional(),
   }).optional(),
   // Pupa parity: per-slide layout + theme.
   image: z.string().optional(),

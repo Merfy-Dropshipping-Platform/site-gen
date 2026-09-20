@@ -32,7 +32,7 @@ const qaLabel =
 // Переведены на роли: bg-[#e38e9f] → --color-accent (bloom default 227 142 159
 // = #e38e9f, число то же), text-[#000000] → --color-text.
 const qaStepperCls =
-	"mb-2 flex h-12 w-full items-center justify-between rounded-full border border-solid border-[#FFD4E5] px-1";
+	"mb-2 flex h-12 w-full items-center justify-between rounded-[var(--radius-button,9999px)] border border-solid border-[#FFD4E5] px-1";
 const qaStepBtnCls =
 	"flex h-full w-10 shrink-0 items-center justify-center font-inter text-[18px] font-light leading-none text-[#000000]";
 const href = `/products/${product.id}`;

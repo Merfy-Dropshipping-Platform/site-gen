@@ -1445,6 +1445,21 @@ const PREVIEW_NAV_AGENT_INLINE = `
     return (typeof p === 'string' && p) ? p : undefined;
   }
 
+  // Когда глобал НЕ должен побеждать. Регрессия 20.09 (поймал соседний агент
+  // замером на стенде Bloom Pilot): глобал — снимок на момент ЗАГРУЗКИ
+  // страницы, поэтому безусловная подстановка глушила свежую правку поля
+  // «Выбор товара» в панели — переключение товара в сайдбаре не меняло ничего
+  // до перезагрузки iframe.
+  //
+  // Отличаем по diff, который агент и так считает для local-patch: изменился
+  // сам productId → правят ИМЕННО его, props авторитетны, свой снимок не шлём.
+  // Изменилось что-то другое (отступы, тексты) → остаёмся на товаре, который
+  // мерчант выбрал в верхнем меню, ради чего правка и делалась.
+  function productIdForRender(oldP, newP) {
+    if (oldP && newP && oldP.productId !== newP.productId) return undefined;
+    return previewProductId();
+  }
+
   // Spec 090 — local-patch state. Хранит последний known props per blockId
   // чтобы compute diff при следующем update-block.
   var LAST_PROPS = {};
@@ -2491,7 +2506,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       fetch('/api/sites/' + currentSiteId + '/preview/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId, collectionContext: collectionCtx(), productId: previewProductId() }),
+        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId, collectionContext: collectionCtx(), productId: productIdForRender(oldProps, newProps) }),
       })
         .then(function (r) {
           if (!r.ok) {
@@ -2722,7 +2737,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return fetch('/api/sites/' + currentSiteId + '/preview/block', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId, collectionContext: collectionCtx(), productId: previewProductId() }),
+          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId, collectionContext: collectionCtx(), productId: productIdForRender(LAST_PROPS[job.id], job.props) }),
         })
           .then(function (r) { return r.ok ? r.text() : null; })
           .then(function (html) {

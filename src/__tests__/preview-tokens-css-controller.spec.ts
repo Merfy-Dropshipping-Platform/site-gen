@@ -31,8 +31,31 @@ describe('POST /api/sites/:siteId/preview/tokens-css', () => {
           },
         },
         {
+          /**
+           * ПОЧИНКА 20.09, та же причина, что у `preview-block-controller`:
+           * мок отдавал `[]` на любой select — сайта как будто нет, — а
+           * контроллер берёт личность рендера из записи сайта и без темы
+           * отвечает 500. В CI файл не гоняется, поэтому краснота жила молча.
+           */
           provide: PG_CONNECTION,
-          useValue: { select: () => ({ from: () => ({ where: () => [] }) }) },
+          useValue: {
+            select: (fields?: Record<string, unknown>) => ({
+              from: () => ({
+                where: () =>
+                  fields && 'data' in fields
+                    ? [{ data: { pagesData: {} } }]
+                    : [
+                        {
+                          currentRevisionId: 'rev-1',
+                          publicUrl: null,
+                          themeId: 'rose',
+                          tenantId: null,
+                          name: 'Тестовый магазин',
+                        },
+                      ],
+              }),
+            }),
+          },
         },
         {
           // PreviewController конструктор инжектит BILLING_RMQ_SERVICE (footer-

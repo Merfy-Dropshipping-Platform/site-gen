@@ -21,11 +21,45 @@ describe('POST /api/sites/:siteId/preview/block', () => {
             // rewrite корневых URL. false → rewrite-ветка пропускается,
             // HTML блока отдаётся как раньше (1:1).
             hasV2Sections: jest.fn().mockResolvedValue(false),
+            // Контроллер спрашивает схему блока тем же правилом, что и первичный
+            // рендер страницы (`resolveBlockScheme`), чтобы hot-replace не снимал
+            // обёртку у секций, которым схему задаёт тема. Мок отстал — без
+            // метода эндпоинт падал в 500 «is not a function».
+            resolveBlockScheme: jest.fn().mockResolvedValue(null),
           },
         },
         {
+          /**
+           * ПОЧИНКА 20.09. Мок отдавал `[]` на ЛЮБОЙ select, то есть сайт как
+           * будто не существует. Контроллер с тех пор стал требовать тему
+           * сайта (`if (!loaded?.themeId) → 500 "site has no themeId"`) —
+           * личность рендера берётся из записи сайта, а не из тела запроса, —
+           * и тест отвечал 500 вместо 200. В CI этот файл не гоняется, поэтому
+           * краснота жила незаметно.
+           *
+           * Теперь мок отвечает по таблице: сайт отдаёт тему и ссылку на
+           * ревизию, ревизия — пустой Puck-документ. Этого хватает, чтобы дойти
+           * до `renderBlock`, который и так застаблен.
+           */
           provide: PG_CONNECTION,
-          useValue: { select: () => ({ from: () => ({ where: () => [] }) }) },
+          useValue: {
+            select: (fields?: Record<string, unknown>) => ({
+              from: () => ({
+                where: () =>
+                  fields && 'data' in fields
+                    ? [{ data: { pagesData: {} } }]
+                    : [
+                        {
+                          currentRevisionId: 'rev-1',
+                          publicUrl: null,
+                          themeId: 'rose',
+                          tenantId: null,
+                          name: 'Тестовый магазин',
+                        },
+                      ],
+              }),
+            }),
+          },
         },
         {
           // PreviewController конструктор инжектит BILLING_RMQ_SERVICE (footer-
@@ -66,12 +100,25 @@ describe('POST /api/sites/:siteId/preview/block', () => {
     expect(res.text).toContain('data-puck-component-id="x"');
     // siteId инжектится в props (Product.astro server-side fetch);
     // isPreview: true — graceful stub видим в превью (spec 092 Q3 C).
-    expect(renderBlockSpy).toHaveBeenCalledWith({
-      blockName: 'Hero',
-      props: { title: 'Test', id: 'Hero-1', siteId: 'site-1' },
-      themeId: 'rose',
-      isPreview: true,
-    });
+    // Сверяем СУЩЕСТВЕННОЕ, а не полное равенство: с тех пор контроллер стал
+    // передавать ещё и каталожный контекст (`merfy`) и прогонять props через
+    // общую нормализацию, которая дописывает пустые cta/image. Жёсткое
+    // сравнение ломалось на каждом таком расширении, хотя поведение эндпоинта
+    // не менялось — из-за этого тест и лежал красным (в CI он не гоняется).
+    expect(renderBlockSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        blockName: 'Hero',
+        themeId: 'rose',
+        isPreview: true,
+        props: expect.objectContaining({
+          title: 'Test',
+          id: 'Hero-1',
+          // siteId инжектится контроллером — Product.astro тянет по нему товар,
+          // когда products.json ещё нет (путь превью).
+          siteId: 'site-1',
+        }),
+      }),
+    );
   });
 
   it('returns 400 if blockType missing', async () => {

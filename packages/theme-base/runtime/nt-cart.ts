@@ -486,6 +486,30 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 				.join("");
 
 			total.textContent = formatPrice(getCartTotal(lines));
+
+			// Кнопка панели ведёт в ЧЕКАУТ, а не на страницу корзины. Панель —
+			// это и есть корзина, просто в формате сайдбара (настройка темы
+			// «Корзина → Сайдбар»), и вести из корзины в корзину бессмысленно.
+			//
+			// Почему правим здесь. Разметку панели отдаёт внешний пакет
+			// design-systems-theme (`NtCartDrawer.astro`): у него ОДИН проп
+			// ссылки — `cartHref` со значением по умолчанию `/cart`, и он же
+			// навешан на «Оформить заказ». Пока в пакете нет отдельного
+			// `checkoutHref`, единственная общая для всех пяти тем точка — этот
+			// рантайм: панель без него всё равно пустая, а темы монтируют её
+			// одинаково.
+			//
+			// `data-astro-reload` — как у кнопки на странице корзины: на темах с
+			// ViewTransitions (rose, vanilla, bloom) SPA-переход не перезапускает
+			// инлайн-скрипты чекаута (DaData, СДЭК, оплата), и страница
+			// открывается мёртвой.
+			const cta = document.querySelector<HTMLAnchorElement>(
+				'[data-nt="cart-drawer"] [data-cart-summary] a[href="/cart"]',
+			);
+			if (cta) {
+				cta.setAttribute("href", "/checkout");
+				cta.setAttribute("data-astro-reload", "");
+			}
 		};
 
 		/**

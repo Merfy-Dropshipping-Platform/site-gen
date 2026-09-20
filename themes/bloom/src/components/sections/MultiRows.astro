@@ -107,16 +107,19 @@ const rowHeadingSizeCls = (s: string | undefined) =>
 const rowTextSizeCls = (s: string | undefined) =>
 	s === "small" ? "text-[14px]" : s === "large" ? "text-[19px]" : "text-[16px]";
 
-// «Высота» секции не работала (владелец 19.09 по bloom: «высота настройка
-// вообще не работает»): у КАЖДОГО ряда в сиде лежит свой `size`, а per-row
-// значение приоритетнее секционного — секционный регулятор не менял ничего.
-// Правило то же, что уже стоит в общем блоке `packages/theme-base/blocks/
-// MultiRows/MultiRows.astro` (починено там 18.09, в порты тем не доехало):
-// отличить «мерчант выбрал ряду свой размер» от «так лёг дефолт сида» в данных
-// нельзя, но если у ВСЕХ рядов размер ОДИНАКОВ — переопределять нечего, и
-// высотой правит секция. Стоит рядам разойтись — выбор мерчанта снова главнее.
-const rowSizes = rawRows.map((r: any) => r?.size);
-const perRowSizesDiffer = rowSizes.some((s: unknown) => s !== rowSizes[0]);
+// «Высота» секции и «Размер» ряда — две ЖИВЫЕ настройки, и ни одна из них не
+// угадывается по данным. Ряд со своим размером всегда главнее; секция задаёт
+// высоту тем рядам, у которых своего размера нет. Саму «Высоту» конструктор
+// при изменении прописывает во ВСЕ ряды (CustomFieldsPanel.updateProp) —
+// поэтому секционный регулятор виден сразу, а выбор ряда больше не отменяется
+// сам собой.
+//
+// До 20.09 здесь стояла эвристика perRowSizesDiffer: одинаковый размер у всех
+// рядов считался признаком «мерчант не выбирал» и уступал секции. Она чинила
+// одну сторону монеты и ломала другую — владелец 20.09: «при размерах в рядах
+// большой они становятся маленькие». Мерчант ставил medium второму ряду,
+// размеры снова совпадали, признак гас, и ОБА ряда падали на секционный
+// фолбэк; а у секции с ОДНИМ рядом per-row размер не работал никогда.
 
 const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	const btnText =
@@ -138,14 +141,10 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 			PLACEHOLDER_ROW_IMAGE,
 		right: firstRowRight ? i % 2 === 0 : i % 2 === 1,
 		aspectCls: aspectFor(
-			// «Как в секции» (inherit) и отсутствие → высота берётся у секции.
-			// Раньше собственный размер ряда стоял в дефолтах и молча перебивал
-			// общую настройку «Высота» — она выглядела мёртвой.
-						// Пустая «Высота» ≡ дефолт панели ('small'): пока секцией правили ряды,
-			// оба случая давали один вид, а теперь разошлись бы — гард
-			// panel-default-is-noop ловит ровно это. 'small' держит прежнюю
-			// картину: у рядов в сидах лежит именно он.
-			perRowSizesDiffer && r.size && r.size !== "inherit" ? r.size : (p.size ?? "small"),
+			// «Как в секции» (inherit) и отсутствие размера → высоту берёт секция.
+			// Пустая «Высота» ≡ дефолт панели: гард panel-default-is-noop требует,
+			// чтобы дефолт был неотличим от отсутствия значения.
+			r.size && r.size !== "inherit" ? r.size : (p.size ?? "small"),
 		),
 		headingCls: rowHeadingSizeCls(r.headingSize),
 		textCls: rowTextSizeCls(r.textSize),
@@ -223,10 +222,16 @@ const alignCls =
 // токены, CTA Philosophy); outlined = бордер цвета заливки на прозрачном.
 const btnBase =
 	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95";
+// Канонное значение панели — `secondary` («Дополнительная»), и оно обязано
+// попадать СЮДА. Порт был написан на словаре верстальщиков (white/black/
+// outlined), которого в панели нет: ветки не срабатывали, и «Стиль кнопки»
+// рисовал основную кнопку при любом выборе. Замер локальным рендерером 20.09:
+// основная и дополнительная давали одни и те же токены. Легаси-слова оставлены
+// — они доезжают до порта СЫРЫМИ из старых ревизий (проверено на живом стенде).
 const btnCls =
 	p.buttonStyle === "outlined"
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent text-[rgb(var(--color-button-bg,227_142_159))]`
-		: p.buttonStyle === "white"
+		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
 			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 			: p.buttonStyle === "black"
 				? `${btnBase} bg-[rgb(var(--color-text,0_0_0))] text-[rgb(var(--color-bg,255_255_255))]`

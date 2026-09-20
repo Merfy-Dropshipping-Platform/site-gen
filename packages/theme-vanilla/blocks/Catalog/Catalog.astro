@@ -333,7 +333,7 @@ const rowStockOptions: RadioOption[] = [
 					<div class="flex flex-wrap items-center gap-x-6 gap-y-4">
 						{filterVisible && (
 							<>
-								<details class="relative [&[open]]:z-30">
+								<details class="relative max-md:static [&[open]]:z-30">
 									<summary class={rowSummaryClass}>
 										<span>Наличие</span>
 										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
@@ -349,7 +349,7 @@ const rowStockOptions: RadioOption[] = [
 									</div>
 								</details>
 
-								<details class="relative [&[open]]:z-30">
+								<details class="relative max-md:static [&[open]]:z-30">
 									<summary class={rowSummaryClass}>
 										<span>Стоимость</span>
 										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
@@ -370,7 +370,7 @@ const rowStockOptions: RadioOption[] = [
 
 								{/* Фильтр по коллекциям (row-ветка): дропдаун. Скрыт на demo-сборке,
 								    гидрация показывает его при наличии коллекций магазина. */}
-								<details class="relative [&[open]]:z-30" data-nt="catalog-collections-filter" data-collections-dropdown style="display:none;">
+								<details class="relative max-md:static [&[open]]:z-30" data-nt="catalog-collections-filter" data-collections-dropdown style="display:none;">
 									<summary class={rowSummaryClass}>
 										<span data-collections-label>Коллекции</span>
 										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
@@ -384,7 +384,7 @@ const rowStockOptions: RadioOption[] = [
 					</div>
 
 					{sortVisible && (
-						<details class="relative [&[open]]:z-30">
+						<details class="relative max-md:static [&[open]]:z-30">
 							<summary class={rowSummaryClass}>
 								<span>По популярности</span>
 								<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>

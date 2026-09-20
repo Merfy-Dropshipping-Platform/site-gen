@@ -262,6 +262,61 @@ export const cartStore = {
   },
 
   /**
+   * Залить готовый список строк (локальная корзина темы или «купить сейчас»)
+   * в СВЕЖУЮ серверную корзину ОДНИМ действием.
+   *
+   * Зачем отдельный метод. Чекаут звал addItem в цикле, а каждый такой вызов
+   * дёргал cart:updated и повторный getCart. На шести товарах это давало шесть
+   * перерисовок сводки (список рос 1→2→3→4→5→6 прямо на глазах, фотографии
+   * перекладывались) и шесть перезапусков расчёта доставки — лоудер «Считаем
+   * варианты доставки…» мигал. Замер до правки на живом стенде: 8 событий
+   * cart:updated, 9 перестроений списка, 6 морганий лоудера за 6 секунд.
+   *
+   * Здесь позиции уходят на сервер молча, состав забирается ОДНИМ getCart,
+   * и cart:updated шлётся ОДИН раз — в конце. Так же устроен rose.
+   */
+  async syncLinesToServer(lines, opts) {
+    const silent = !!(opts && opts.notify === false);
+    const list = Array.isArray(lines) ? lines : [];
+    if (!list.length) return null;
+
+    // Свежая серверная корзина: состав берём из локальной целиком, а не
+    // доливаем в старую — иначе позиции прошлого захода останутся.
+    state.cartId = null;
+    state.items = [];
+    try {
+      localStorage.removeItem(CART_ID_KEY);
+      localStorage.removeItem(CART_ITEMS_KEY);
+    } catch (e) {
+      // localStorage may be unavailable
+    }
+
+    const cartId = await ensureCart();
+    for (let i = 0; i < list.length; i++) {
+      const l = list[i] || {};
+      const variantId = (l.variant && l.variant.variantCombinationId) || l.variantCombinationId || null;
+      try {
+        await CartAPI.addItem(cartId, l.productId, l.quantity || 1, variantId);
+      } catch (e) {
+        // Позиция могла исчезнуть из каталога — остальные из-за неё не теряем.
+      }
+    }
+
+    try {
+      const res = await CartAPI.getCart(cartId);
+      if (res && res.success && res.data && Array.isArray(res.data.items)) {
+        state.items = res.data.items;
+        saveToStorage();
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    if (!silent) notify('cart:updated', { items: state.items });
+    return cartId;
+  },
+
+  /**
    * Проверка загрузки
    * @returns {boolean}
    */

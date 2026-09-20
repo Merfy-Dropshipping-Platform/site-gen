@@ -1880,21 +1880,34 @@ async function stageMerge(
   // подвала объявлены `type: 'hidden'` — мерчант их не правит, туда пишет
   // сборка. companyName чистим: `Footer.astro` читает его ПЕРВЫМ, и мусор из
   // сидов темы снова перебил бы имя из админки.
-  // Название бренда из окна «Редактировать содержимое темы» (админка, меню на
-  // карточке темы; подпись поля — «Замените стандартный текст на название
-  // бренда»). Владелец 20.09: копирайт «должен браться исключительно из
-  // Содержимое темы в админке… если заполнено, а не от темы».
+  // Окно «Редактировать содержимое темы» (админка, меню на карточке темы) —
+  // ЕДИНСТВЕННЫЙ источник подписи платформы в подвале. Владелец 20.09:
+  // «Идёт только из содержимого темы, изначально во всех темах сделать
+  // Разработано на Merfy… но при изменении ссылка убирается и идёт просто
+  // текст». Стандартное значение поля («Powered by merfy» / «Разработано на
+  // Merfy») считаем НЕ тронутым: тема сама подставит дефолт и оставит ссылку.
   //
-  // Приоритет: бренд из этого поля → название магазина → ничего. Имя ТЕМЫ в
-  // копирайт не попадает ни при каком раскладе.
-  const brandFromSettings = (() => {
+  // Раньше это значение писалось в `siteTitle` — то есть в имя бренда внутри
+  // копирайта. После 20.09 копирайт темы не собирают вовсе, и запись в
+  // `siteTitle` перестала быть видна где-либо: поле в админке правилось, а в
+  // подвале не менялось ничего. Поэтому значение идёт туда, где оно и видно,
+  // — в `copyright.poweredBy`.
+  const PLATFORM_SIGNATURE_DEFAULTS = new Set([
+    "powered by merfy",
+    "разработано на merfy",
+  ]);
+  const signatureFromSettings = (() => {
     const raw = (ctx.settings as { themeBrandName?: unknown } | undefined)
       ?.themeBrandName;
-    return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+    if (typeof raw !== "string" || !raw.trim()) return null;
+    const value = raw.trim();
+    return PLATFORM_SIGNATURE_DEFAULTS.has(value.toLowerCase()) ? null : value;
   })();
-  const footerBrand = brandFromSettings ?? ctx.siteName ?? null;
+  // `siteTitle` — это название МАГАЗИНА (подпись логотипа, плейсхолдер почты),
+  // и берётся оно из админки магазина, а не из окна содержимого темы.
+  const footerBrand = ctx.siteName ?? null;
 
-  if (footerBrand) {
+  if (footerBrand || signatureFromSettings) {
     const pagesData = (ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> })
       ?.pagesData;
     for (const pageKey of Object.keys(pagesData ?? {})) {
@@ -1902,9 +1915,15 @@ async function stageMerge(
       if (!Array.isArray(content)) continue;
       for (const comp of content as Array<{ type?: string; props?: Record<string, unknown> }>) {
         if (comp?.type !== "Footer" || !comp.props) continue;
-        comp.props.siteTitle = footerBrand;
-        const cr = comp.props.copyright as { companyName?: unknown } | undefined;
+        if (footerBrand) comp.props.siteTitle = footerBrand;
+        const cr = comp.props.copyright as
+          | { companyName?: unknown; poweredBy?: unknown }
+          | undefined;
         if (cr && String(cr.companyName ?? "").trim()) cr.companyName = "";
+        if (signatureFromSettings) {
+          if (cr) cr.poweredBy = signatureFromSettings;
+          else comp.props.copyright = { poweredBy: signatureFromSettings };
+        }
       }
     }
   }

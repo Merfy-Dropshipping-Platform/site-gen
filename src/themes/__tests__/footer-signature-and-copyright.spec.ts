@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { renderBlock } from "../../../scripts/qa/lib/render";
+
 /**
  * Подвал: копирайт ушёл из тем, подпись платформы стала ссылкой.
  *
@@ -37,6 +39,8 @@ const THEMES = ["rose", "bloom", "satin", "vanilla", "flux"] as const;
 const SIGNATURE = "Разработано на Merfy";
 const PLATFORM_URL = "https://merfy.ru/";
 const COPYRIGHT_TAIL = "Все права защищены";
+/** Текст, который мерчант вписывает в окне «Содержимое темы» вместо подписи. */
+const MERCHANT_SIGNATURE = "Сделано в ООО «Ромашка»";
 
 /** Темы, где полоса подписи и строка копирайта — РАЗНЫЕ узлы. */
 const SPLIT_THEMES = ["bloom", "satin", "vanilla"] as const;
@@ -108,6 +112,14 @@ describe("подвал: копирайт убран из тем, подпись 
     expect(m?.[1]).toBe("stripText");
   });
 
+  it.each(SPLIT_THEMES)("%s: мерчантский текст подписи доходит до полосы", (theme) => {
+    // У этих тем полоса подписи и строка копирайта — разные узлы, и текст из
+    // окна «Содержимое темы» (copyright.poweredBy) кормил ТОЛЬКО копирайт.
+    // Копирайт из тем убрали — и поле в админке стало править вхолостую.
+    const code = stripComments(footerSource(theme));
+    expect(code).toMatch(/:\s*poweredByTail \|\| "Разработано на Merfy";/);
+  });
+
   it.each(SPLIT_THEMES)("%s: строка копирайта пуста, пока мерчант её не задал", (theme) => {
     const code = stripComments(footerSource(theme));
     expect(code).toMatch(/const copyrightText\s*=\s*copyrightOverride \?\? "";/);
@@ -140,6 +152,37 @@ describe("подвал: собранный модуль темы без копи
 
   it("хотя бы один собранный подвал доступен для проверки", () => {
     expect(built.length).toBeGreaterThan(0);
+  });
+
+  it("подпись: дефолт — ссылка, мерчантский текст — без ссылки", () => {
+    for (const { theme } of built) {
+      const def = renderBlock(theme, "Footer", { id: "Footer-1", colorScheme: "scheme-1" });
+      const own = renderBlock(theme, "Footer", {
+        id: "Footer-1",
+        colorScheme: "scheme-1",
+        copyright: { poweredBy: MERCHANT_SIGNATURE },
+      });
+      expect({
+        тема: theme,
+        дефолтТекст: def.includes(SIGNATURE),
+        дефолтСсылка: def.includes(`href="${PLATFORM_URL}"`),
+        мерчантТекст: own.includes(MERCHANT_SIGNATURE),
+        мерчантСсылка: own.includes(`href="${PLATFORM_URL}"`),
+      }).toEqual({
+        тема: theme,
+        дефолтТекст: true,
+        дефолтСсылка: true,
+        мерчантТекст: true,
+        мерчантСсылка: false,
+      });
+    }
+  });
+
+  it("собранный подвал не печатает копирайт темы", () => {
+    for (const { theme } of built) {
+      const html = renderBlock(theme, "Footer", { id: "Footer-1", colorScheme: "scheme-1" });
+      expect(`${theme}: ${html.includes(COPYRIGHT_TAIL)}`).toBe(`${theme}: false`);
+    }
   });
 
   it("в собранных подвалах нет копирайта и есть ссылка на платформу", () => {

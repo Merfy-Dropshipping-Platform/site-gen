@@ -34,10 +34,8 @@ const FOOTER = readFileSync(
 );
 
 /** Кусок сборки, отвечающий за имя в подвале. */
-const block = BUILD.slice(
-  BUILD.indexOf("Название бренда из окна"),
-  BUILD.indexOf("Название бренда из окна") + 2400,
-);
+const ANCHOR = "Окно «Редактировать содержимое темы»";
+const block = BUILD.slice(BUILD.indexOf(ANCHOR), BUILD.indexOf(ANCHOR) + 2600);
 
 describe("копирайт подвала берёт имя из платформы", () => {
   it("сборка не проверяет «поле пустое» перед подстановкой", () => {
@@ -48,17 +46,34 @@ describe("копирайт подвала берёт имя из платфор�
     expect(block).not.toMatch(/comp\.props\.siteTitle\s*\?\?\s*['"]{2}\s*\)\s*\.trim\(\)/);
   });
 
-  it("имя из админки кладётся в siteTitle безусловно", () => {
-    // ПОПРАВКА 20.09: источник стал шире — сперва бренд из окна «Содержимое
-    // темы», затем название магазина. Обе ветки собраны в `footerBrand`.
+  it("имя магазина кладётся в siteTitle безусловно", () => {
+    // ВТОРАЯ ПОПРАВКА 20.09. Сначала сюда клали значение из окна «Содержимое
+    // темы», но копирайт из тем убрали, и `siteTitle` перестал быть виден:
+    // поле в админке правилось, а в подвале не менялось ничего. Теперь
+    // `siteTitle` — это название МАГАЗИНА (подпись логотипа, плейсхолдер
+    // почты), а значение окна идёт в подпись платформы, см. проверки ниже.
     expect(block).toMatch(/comp\.props\.siteTitle = footerBrand;/);
-    expect(block).toMatch(/const footerBrand = brandFromSettings \?\? ctx\.siteName/);
+    expect(block).toMatch(/const footerBrand = ctx\.siteName/);
+  });
+
+  it("значение окна «Содержимое темы» идёт в подпись платформы", () => {
+    expect(block).toMatch(/cr\.poweredBy = signatureFromSettings;/);
+    expect(block).toMatch(/comp\.props\.copyright = \{ poweredBy: signatureFromSettings \}/);
+  });
+
+  it("стандартный текст подписи не считается правкой мерчанта", () => {
+    // Иначе «Разработано на Merfy», сохранённое кнопкой без изменений, ушло бы
+    // в проп как мерчантский текст — и тема сняла бы с него ссылку.
+    expect(block).toMatch(/PLATFORM_SIGNATURE_DEFAULTS/);
+    expect(block).toMatch(/"powered by merfy"/);
+    expect(block).toMatch(/"разработано на merfy"/);
+    expect(block).toMatch(/\.has\(value\.toLowerCase\(\)\) \? null : value/);
   });
 
   it("companyName чистится — иначе он читается первым и перебивает", () => {
     const wider = BUILD.slice(
-      BUILD.indexOf("Название бренда из окна"),
-      BUILD.indexOf("Название бренда из окна") + 3200,
+      BUILD.indexOf(ANCHOR),
+      BUILD.indexOf(ANCHOR) + 3400,
     );
     expect(wider).toMatch(/cr\.companyName = "";/);
     // порядок в самом подвале: companyName идёт раньше siteTitle
@@ -68,8 +83,8 @@ describe("копирайт подвала берёт имя из платфор�
 
   it("подстановка идёт только в блок подвала", () => {
     const wider = BUILD.slice(
-      BUILD.indexOf("Название бренда из окна"),
-      BUILD.indexOf("Название бренда из окна") + 3200,
+      BUILD.indexOf(ANCHOR),
+      BUILD.indexOf(ANCHOR) + 3400,
     );
     expect(wider).toMatch(/comp\?\.type !== "Footer"/);
   });
@@ -88,7 +103,7 @@ describe("копирайт подвала берёт имя из платфор�
 
   it("правка стоит сразу после загрузки ревизии, до её копий", () => {
     const load = BUILD.indexOf("ctx.revisionData = resolveAssetUrls");
-    const patch = BUILD.indexOf("Название магазина из админки");
+    const patch = BUILD.indexOf(ANCHOR);
     const pagesBuilt = BUILD.indexOf("const pages: PageEntry[] = []");
     expect(load).toBeGreaterThan(-1);
     expect(patch).toBeGreaterThan(load);
@@ -99,8 +114,8 @@ describe("копирайт подвала берёт имя из платфор�
     expect(block).toMatch(/Object\.keys\(pagesData \?\? \{\}\)/);
   });
 
-  it("без имени магазина ничего не трогаем", () => {
-    expect(block).toMatch(/if \(footerBrand\) \{/);
+  it("без имени магазина и без подписи ничего не трогаем", () => {
+    expect(block).toMatch(/if \(footerBrand \|\| signatureFromSettings\) \{/);
   });
 
   it("оба поля скрыты от мерчанта — перезапись законна", () => {

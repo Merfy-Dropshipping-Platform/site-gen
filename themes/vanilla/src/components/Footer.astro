@@ -210,7 +210,11 @@ const stripText =
 	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT &&
 		strip.text.trim() !== "Powered by Merfy"
 		? strip.text
-		: "Разработано на Merfy";
+		// Мерчантский текст из окна «Содержимое темы» (админка) приходит в
+		// copyright.poweredBy. До 20.09 он кормил только строку копирайта, а её
+		// из тем убрали — и поле в админке правилось вхолостую. Теперь он
+		// перебивает дефолт полосы; ссылку с него тема снимает (stripIsDefault).
+		: poweredByTail || "Разработано на Merfy";
 const stripIsDefault = stripText === "Разработано на Merfy";
 // Копирайт рисуем, только если мерчант его сам задал (пустая строка —
 // дефолт после 20.09), иначе в подвале оставался бы пустой абзац.

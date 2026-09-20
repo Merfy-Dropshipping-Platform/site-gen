@@ -107,11 +107,11 @@ describe("подвал: источник названия и логотипа", 
     // до витрины не доходило вовсе. Условие снято; источник имени теперь
     // шире — сперва бренд из окна «Содержимое темы», затем название магазина.
     const build = readFileSync(resolve(ROOT, "src/generator/build.service.ts"), "utf-8");
-    const start = build.indexOf("const footerBrand = brandFromSettings");
+    const start = build.indexOf("const footerBrand = ctx.siteName");
     expect(start).toBeGreaterThan(-1);
     const block = build.slice(start, start + 900);
     expect(block).toContain('"Footer"');
-    expect(block).toMatch(/const footerBrand = brandFromSettings \?\? ctx\.siteName/);
+    expect(block).toMatch(/const footerBrand = ctx\.siteName \?\? null;/);
     expect(block).toMatch(/comp\.props\.siteTitle = footerBrand;/);
     // И никакой проверки «поле пустое» перед записью — ровно её и снимали.
     expect(block).not.toMatch(/!String\(\s*comp\.props\.siteTitle/);

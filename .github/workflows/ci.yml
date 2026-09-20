@@ -920,6 +920,18 @@ jobs:
         run: pnpm exec jest --runInBand src/utils/__tests__/revision-migrations-header-unify.test.ts src/themes/__tests__/page-blocks-header-unify.spec.ts src/themes/__tests__/page-seed-header-parity.spec.ts src/utils/__tests__/revision-migrations-profile.test.ts
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-scheme-notation.spec.ts
+      # Шапка bloom: размер иконок и отступы (жалоба владельца 20.09 «иконки
+      # большие, отступов сверху и снизу нет»). Сверено с эталоном
+      # верстальщиков canon-sections/header.html: десктопные Поиск/Корзина/
+      # Аккаунт несут size-5 (20px) в кнопке size-8, обёртка десктопа — py-6
+      # (24px). Порт рисовал size-6 (24px), а все 12 сидов страниц темы клали
+      # шапке padding {0,0} — порт считает каноном ровно {16,16} и только на
+      # нём рисует py-6, поэтому ноль из сида означал шапку совсем без
+      # вертикальных отступов у КАЖДОГО bloom-магазина. Гард держит три вещи:
+      # размер иконок в четырёх раскладках, отсутствие нулей в сидах и
+      # миграцию {0,0}→{16,16} для уже существующих ревизий.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/bloom-header-canon.spec.ts
       # Сетка шапки rose (жалоба тестировщика 14.09 «Шапка в теме Rose не по
       # сетке»). Канон сетки темы — лестница боковых отступов + рельс контента
       # 1320px; шапка рельс потеряла и на широких экранах вылезала за секции

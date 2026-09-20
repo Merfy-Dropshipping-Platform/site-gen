@@ -240,9 +240,15 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // Соседние ряды с разными размерами выглядели по-разному при одинаковых
 // настройках текста. `h-full` остаётся: он и растягивает контейнер на высоту
 // ряда, ради чего колонка вообще получает класс схемы.
+// Скругляется ТОЛЬКО сторона, обращённая к соседнему блоку через зазор
+// (владелец 20.09: «скруглять только ту часть, которая рядом с карточкой»).
+// Внешние края прямые: ряды стоят вплотную по вертикали, и скруглённый внешний
+// угол вырезал бы из полосы кусок фона. До 17.09 правило было ЗЕРКАЛЬНЫМ —
+// скругляли внешнюю сторону, а шов квадратили, — потому что тогда медиа и текст
+// соприкасались; теперь между ними зазор, и скругление переехало на шов.
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,12px)] p-6 md:p-10 ${right ? "" : ""}`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,12px)] p-6 md:p-10 ${right ? " lg:rounded-r-none lg:rounded-l-[var(--radius-card,12px)]" : " lg:rounded-l-none lg:rounded-r-[var(--radius-card,12px)]"}`
 		: "";
 
 // Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
@@ -310,17 +316,17 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    (align-items:normal ⇒ stretch), img внутри — object-cover (absolute
 			    inset-0 size-full), обрезается по новой высоте без искажений. Сторож:
 			    multirows-row-stretch.spec.ts. */}
-			<ul class="flex w-full flex-col gap-8" role="list">
+			<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 				{
 					rows.map((r, i) => (
 						<li
-							class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]}${cardSurfaceCls}`}
+							class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${cardSurfaceCls}`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index={i}
 							data-puck-subsection-field="rows"
 						>
 							<div
-								class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+								class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,12px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,12px)]"}`}
 								aria-hidden={r.image ? undefined : "true"}
 							>
 								{r.image && (

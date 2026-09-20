@@ -266,7 +266,7 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // ряда, ради чего колонка вообще получает класс схемы.
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,12px)] p-6 md:p-8`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,12px)] p-6 md:p-8${right ? " lg:rounded-r-none lg:rounded-l-[var(--radius-card,12px)]" : " lg:rounded-l-none lg:rounded-r-[var(--radius-card,12px)]"}`
 		: "";
 // Per-element surface-бокс на КАЖДЫЙ ряд при ВКЛ; при ВЫКЛ — голый ряд.
 const rowBoxCls = containerEnabled
@@ -321,18 +321,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    ВПЛОТНУЮ, зазор РОВНО ноль на lg: (там же, где ряд становится
 		    двухколоночным — media-text-pair.spec.ts). На мобильном (одна колонка)
 		    зазор оставлен, иначе ряды сливаются в кашу (multirows-row-gap.spec.ts). */}
-		<ul class="flex w-full flex-col gap-8" role="list">
+		<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class={`grid w-full grid-cols-1 gap-4 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]}${rowBoxCls}`}
+						class={`grid w-full grid-cols-1 gap-4 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${rowBoxCls}`}
 						data-animate
 						data-puck-subsection-parent={hasRealRows ? id : undefined}
 						data-puck-subsection-index={hasRealRows ? i : undefined}
 						data-puck-subsection-field={hasRealRows ? "rows" : undefined}
 					>
 						<div
-							class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+							class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,12px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,12px)]"}`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (

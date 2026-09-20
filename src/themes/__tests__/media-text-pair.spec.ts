@@ -278,31 +278,14 @@ describe("пара «медиа + текст»: зазор, доли колон�
         expect(gap as number).toBeGreaterThan(0);
       });
     }
-    // MultiRows — канон 2026-09-17 «медиа и текст СТЫКУЮТСЯ, зазор РОВНО ноль»
-    // ОТМЕНЁН ВЛАДЕЛЬЦЕМ 20.09. Дословно: «остались отступы нужно добавить
-    // отступы» и «скругление отвалилось когда отступов не было». Замер его
-    // живой главной (695f190f…, bloom, 1440px, playwright) показывал прежний
-    // канон числами: зазор пары 0px, зазор между рядами 0px, радиус медиа 0px.
-    //
-    // Почему это одно требование, а не два. Пока пара стыковалась, углы на
-    // стыке приходилось квадратить (`lg:rounded-l-none` и родня) — иначе между
-    // медиа и текстом торчал вырез. Вернуть скругления, оставив стык, нельзя:
-    // либо блоки разнесены и скруглены каждый, либо сомкнуты и квадратны на
-    // шве. Владелец попросил скругления — значит блоки разнесены.
-    //
-    // Если проверка покраснела: сначала выясни, не вернули ли `lg:gap-0`
-    // «заодно» с какой-нибудь правкой, и только потом правь вёрстку.
+    // MultiRows — канон 2026-09-17: медиа и текст СТЫКУЮТСЯ, зазор РОВНО ноль
+    // на всех трёх «Ширинах» (не «как у rose» — у rose теперь тоже ноль).
     for (const theme of THEMES) {
       for (const width of ["small", "medium", "large"] as const) {
-        it(`${theme} / MultiRows (${width}): пара РАЗДЕЛЕНА зазором`, () => {
+        it(`${theme} / MultiRows (${width}): зазор пары РОВНО ноль (медиа и текст стыкуются)`, () => {
           const { pair } = pairParts(theme, "MultiRows", width);
           const gap = gapPx(theme, pair);
-          expect(gap).not.toBeNull();
-          expect({ theme, width, положительный: (gap as number) > 0 }).toEqual({
-            theme,
-            width,
-            положительный: true,
-          });
+          expect({ theme, width, gap }).toEqual({ theme, width, gap: 0 });
         });
       }
     }
@@ -424,23 +407,7 @@ describe("пара «медиа + текст»: зазор, доли колон�
     }
   });
 
-  describe("5) MultiRows: скругление медиа одинаково со всех сторон", () => {
-    /**
-     * ТРЕБОВАНИЕ ОТМЕНЕНО ВЛАДЕЛЬЦЕМ 20.09: «скругление отвалилось когда
-     * отступов не было». Квадратный шов имел смысл ровно пока пара стыковалась
-     * (канон 17.09 «без скруглений на внутренней границе»); теперь блоки
-     * разнесены зазором, и угол на бывшем стыке обязан быть таким же, как
-     * снаружи.
-     *
-     * ФИЗИЧЕСКИ НЕСОВМЕСТИМЫЕ ВАРИАНТЫ — чтобы это не «чинили» по кругу:
-     * либо блоки сомкнуты и шов квадратный (тогда нет отступов), либо разнесены
-     * и скруглены со всех сторон. Среднего нет: скругление на сомкнутом шве
-     * даёт вырез между медиа и текстом.
-     *
-     * Сравниваем шов с ВНЕШНЕЙ стороной, а не с нулём: у satin и vanilla радиус
-     * темы равен 0px, и проверка «радиус > 0» врала бы на них.
-     */
-
+  describe("5) MultiRows: скругление медиа — только на внешней стороне", () => {
     /**
      * Требование владельца 2026-09-17: «без скруглений на внутренней
      * границе». Медиа держит скругление радиуса темы на ВНЕШНЕЙ стороне (там,
@@ -451,7 +418,7 @@ describe("пара «медиа + текст»: зазор, доли колон�
      * объявление совсем — у satin/vanilla радиус темы 0px, скруглять нечего).
      */
     for (const theme of THEMES) {
-      it(`${theme} / MultiRows: угол бывшего стыка (справа) равен внешнему (слева)`, () => {
+      it(`${theme} / MultiRows: скругление у стыка (справа) — ноль, снаружи (слева) — не меньше`, () => {
         const { media } = pairParts(theme, "MultiRows", "large");
         // Лонгхенд (наш directional override, lg:rounded-{l,r}-*) ищем ПЕРВЫМ —
         // он бьёт конкретный угол; если его нет вовсе (регресс убрал override и
@@ -466,7 +433,11 @@ describe("пара «медиа + текст»: зазор, доли колон�
         const seamBottom = seamPx("border-bottom-right-radius");
         const outerTop = seamPx("border-top-left-radius");
         const outerBottom = seamPx("border-bottom-left-radius");
-        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: outerTop, seamBottom: outerBottom });
+        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
+        // Внешняя сторона не обязана быть > 0 (satin/vanilla — радиус темы
+        // 0px), но обязана быть >= стыка — регресс "весь rounded-none" не проходит.
+        expect(outerTop).toBeGreaterThanOrEqual(seamTop);
+        expect(outerBottom).toBeGreaterThanOrEqual(seamBottom);
       });
     }
   });
@@ -541,7 +512,7 @@ describe("пара «медиа + текст»: зазор, доли колон�
     };
 
     for (const theme of THEMES) {
-      it(`${theme} / MultiRows: containerColorScheme слева — углы текста одинаковы с обеих сторон`, () => {
+      it(`${theme} / MultiRows: containerColorScheme слева (медиа слева) — стык у текста СЛЕВА, ноль`, () => {
         const text = containerTextEl(theme, "left");
         const seamPx = (long: string) =>
           pxOf(bundleOf(theme, false), text, [long, "border-radius"], DESKTOP_PX) ?? 0;
@@ -550,19 +521,19 @@ describe("пара «медиа + текст»: зазор, доли колон�
         const seamBottom = seamPx("border-bottom-left-radius");
         const outerTop = seamPx("border-top-right-radius");
         const outerBottom = seamPx("border-bottom-right-radius");
-        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: outerTop, seamBottom: outerBottom });
+        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
+        expect(outerTop).toBeGreaterThanOrEqual(seamTop);
+        expect(outerBottom).toBeGreaterThanOrEqual(seamBottom);
       });
 
-      it(`${theme} / MultiRows: containerColorScheme зеркалится с rowsPosition="right" — углы одинаковы`, () => {
+      it(`${theme} / MultiRows: containerColorScheme зеркалится с rowsPosition="right" — стык у текста СПРАВА, ноль`, () => {
         const text = containerTextEl(theme, "right");
         const seamPx = (long: string) =>
           pxOf(bundleOf(theme, false), text, [long, "border-radius"], DESKTOP_PX) ?? 0;
         // rowsPosition="right" → медиа справа, текст слева → стык текста справа.
         const seamTop = seamPx("border-top-right-radius");
         const seamBottom = seamPx("border-bottom-right-radius");
-        const outerTop = seamPx("border-top-left-radius");
-        const outerBottom = seamPx("border-bottom-left-radius");
-        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: outerTop, seamBottom: outerBottom });
+        expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
       });
     }
   });

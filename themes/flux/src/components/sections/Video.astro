@@ -121,7 +121,13 @@ const subheadingCls = `font-roboto-flex ${subSizeCls} font-light leading-normal 
 // клампа (align приоритетнее position); padded=false убирает горизонтальные поля.
 const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
 const positionProp = typeof p.position === "string" ? p.position : "contained";
-const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
+// Видимое поле «Положение видео» главнее скрытого align из blockDefaults
+// темы: раньше align: "container" перекрывал выбор мерчанта и разметка не
+// менялась вовсе (баг тестера, таблица «настройка не влияет»).
+const positionRaw = typeof p.position === "string" ? p.position : undefined;
+const fullBleed = positionRaw
+	? positionRaw === "fullscreen"
+	: alignProp === "fullbleed";
 const padded = !(p.padded === false || p.padded === "false");
 
 // Канон padding {top,bottom} — inline-стиль на контейнере ТОЛЬКО при заданном

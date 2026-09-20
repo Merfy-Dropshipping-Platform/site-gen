@@ -503,8 +503,14 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			// ViewTransitions (rose, vanilla, bloom) SPA-переход не перезапускает
 			// инлайн-скрипты чекаута (DaData, СДЭК, оплата), и страница
 			// открывается мёртвой.
+			// `$=` (оканчивается на), а не точное совпадение: панелей в проекте
+			// ДВЕ. Пакетная зовётся `data-nt="cart-drawer"`, у vanilla своя —
+			// `data-nt="vanilla-cart-drawer"`. Первый заход правки 20.09 стоял на
+			// точном совпадении и закрыл только одну из двух; владелец поймал
+			// это на своём сайте. Суффиксный селектор накрывает и будущую
+			// третью, если её заведут по той же конвенции.
 			const cta = document.querySelector<HTMLAnchorElement>(
-				'[data-nt="cart-drawer"] [data-cart-summary] a[href="/cart"]',
+				'[data-nt$="cart-drawer"] [data-cart-summary] a[href="/cart"]',
 			);
 			if (cta) {
 				cta.setAttribute("href", "/checkout");

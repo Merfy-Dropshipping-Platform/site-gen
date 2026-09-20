@@ -41,7 +41,32 @@ describe("точечный перерендер уважает выбор тов
   it("productId уезжает в КАЖДОМ точечном рендере, а не в одном из путей", () => {
     const sends = AGENT.split("\n").filter((l) => l.includes("blockType:") && l.includes("body: JSON.stringify"));
     expect(sends.length).toBeGreaterThanOrEqual(2);
-    for (const line of sends) expect(line).toMatch(/productId: previewProductId\(\)/);
+    for (const line of sends) expect(line).toMatch(/productId: productIdForRender\(/);
+  });
+
+  /**
+   * РЕГРЕССИЯ 20.09, поймана замером соседнего агента на стенде Bloom Pilot:
+   * `props.productId = A` + `body.productId = B` давало товар B, то есть
+   * глобал побеждал свежую правку панели «Выбор товара» — переключение товара
+   * в сайдбаре не меняло ничего до перезагрузки iframe.
+   *
+   * Глобал — снимок на момент ЗАГРУЗКИ страницы, поэтому безусловным он быть
+   * не может. Различаем по diff, который агент и так считает: правят сам
+   * productId → авторитетны props; правят другое поле → держим товар из меню.
+   */
+  it("правка самого «Выбора товара» сильнее снимка из меню", () => {
+    const fn = AGENT.slice(AGENT.indexOf("function productIdForRender"));
+    expect(fn.slice(0, 260)).toMatch(/oldP\.productId !== newP\.productId/);
+    expect(fn.slice(0, 260)).toMatch(/return undefined;/);
+  });
+
+  it("правка другого поля оставляет товар из меню", () => {
+    const fn = AGENT.slice(AGENT.indexOf("function productIdForRender"));
+    expect(fn.slice(0, 300)).toMatch(/return previewProductId\(\);/);
+  });
+
+  it("очередь перерисовки сверяется с запомненными пропами блока", () => {
+    expect(AGENT).toMatch(/productIdForRender\(LAST_PROPS\[job\.id\], job\.props\)/);
   });
 
   it("контракт запроса знает поле", () => {
@@ -65,7 +90,12 @@ describe("точечный перерендер уважает выбор тов
 describe("саботаж: гард ловит возврат прежнего поведения", () => {
   it("тело без productId — красный", () => {
     const body = "body: JSON.stringify({ blockType: t, props: p, themeId: x, collectionContext: c() }),";
-    expect(/productId: previewProductId\(\)/.test(body)).toBe(false);
+    expect(/productId: productIdForRender\(/.test(body)).toBe(false);
+  });
+
+  it("безусловный глобал (без diff) — красный", () => {
+    const naive = "function productIdForRender(o, n) { return previewProductId(); }";
+    expect(/productId !== /.test(naive)).toBe(false);
   });
 
   it("подмена без ограничения по типу блока — красный", () => {

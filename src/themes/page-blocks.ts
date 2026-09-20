@@ -419,6 +419,16 @@ function dropHiddenArrayItems(out: Record<string, unknown>): void {
  *
  * colorScheme "scheme-N" strings are converted to numbers.
  */
+/**
+ * Конверты с размером и куда класть размер, чтобы он пережил развёртку.
+ * `heading: {text, size}` → `headingSize`, `text: {content, size}` → `textSize`.
+ */
+const TEXT_SIZE_ENVELOPES: ReadonlyArray<readonly [string, string]> = [
+  ['heading', 'headingSize'],
+  ['text', 'textSize'],
+  ['subheading', 'subheadingSize'],
+];
+
 function coerceGenericLegacyProps(out: Record<string, unknown>): void {
   // Кнопки запоминаем ДО общей развёртки конвертов: правило «{text, size?,
   // enabled?, alignment?} → text» схлопывает в СТРОКУ и кнопку, у которой
@@ -430,6 +440,20 @@ function coerceGenericLegacyProps(out: Record<string, unknown>): void {
   const buttonsBefore: Record<string, unknown> = {};
   for (const key of BUTTON_ENVELOPE_KEYS) {
     if (isPlainObject(out[key])) buttonsBefore[key] = out[key];
+  }
+  // Размеры запоминаем ДО развёртки: правило «{text|content, size} → строка»
+  // выбрасывает `size`, а порты читают его из top-level `headingSize`/`textSize`.
+  // Из-за этого «Размер заголовка» не работал у ВСЕХ блоков без своего
+  // нормализатора — Newsletter, CollapsibleSection, MultiColumns и прочих
+  // (баг тестера, перепроверено 20.09; у MainText и ImageWithText та же беда
+  // чинится в их собственных коерсерах).
+  for (const [envelopeKey, sizeKey] of TEXT_SIZE_ENVELOPES) {
+    const envelope = out[envelopeKey];
+    if (!isPlainObject(envelope)) continue;
+    const size = (envelope as Record<string, unknown>).size;
+    if (isHeadingSize(size) && !isHeadingSize(out[sizeKey])) {
+      out[sizeKey] = size;
+    }
   }
   for (const [k, v] of Object.entries(out)) {
     out[k] = coerceLegacyValue(v);
@@ -859,6 +883,22 @@ function coerceImageWithTextProps(
   out: Record<string, unknown>,
   publicUrl: string | null,
 ): void {
+  // Размер спасаем ДО сплющивания — та же беда, что была у MainText: конверт
+  // {text, size} плющился в строку вместе с размером, и тема каждый раз брала
+  // свою ветку по умолчанию (баг тестера «Изображение с текстом ▸ Заголовок →
+  // Размер заголовка», перепроверено 20.09).
+  const headingEnvelope = isPlainObject(out.heading)
+    ? (out.heading as Record<string, unknown>)
+    : null;
+  if (isHeadingSize(headingEnvelope?.size) && !isHeadingSize(out.headingSize)) {
+    out.headingSize = headingEnvelope!.size;
+  }
+  const textEnvelope = isPlainObject(out.text)
+    ? (out.text as Record<string, unknown>)
+    : null;
+  if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
+    out.textSize = textEnvelope!.size;
+  }
   // heading: {text, enabled} → flat string
   const h = unwrapTextSize(out.heading);
   if (h.present) out.heading = h.value;
@@ -904,6 +944,23 @@ function coerceImageWithTextProps(
 }
 
 function coerceMainTextProps(out: Record<string, unknown>): void {
+  // Размер спасаем ДО сплющивания: `heading` приходит конвертом {text, size},
+  // а схема блока ждёт строку. Раньше конверт плющился сразу, и размер
+  // выбрасывался — в панели «Большой», на витрине всегда средний (баг тестера
+  // «Основной текст ▸ Заголовок → Размер заголовка», перепроверено 20.09).
+  // Тот же приём уже стоит в ContactForm/ImageWithText/Collections.
+  const headingEnvelope = isPlainObject(out.heading)
+    ? (out.heading as Record<string, unknown>)
+    : null;
+  if (isHeadingSize(headingEnvelope?.size) && !isHeadingSize(out.headingSize)) {
+    out.headingSize = headingEnvelope!.size;
+  }
+  const textEnvelope = isPlainObject(out.text)
+    ? (out.text as Record<string, unknown>)
+    : null;
+  if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
+    out.textSize = textEnvelope!.size;
+  }
   const h = unwrapTextSize(out.heading);
   if (h.present) out.heading = h.value;
   else if (typeof out.heading !== 'string') out.heading = '';

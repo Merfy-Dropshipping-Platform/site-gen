@@ -57,7 +57,19 @@ const brandName =
 // (`siteTitle` приходит из брендинга/названия сайта), и только потом запасное
 // «Мой магазин». Имя ТЕМЫ в подвал не попадает ниоткуда.
 const logoSrc = typeof logo === 'string' ? logo.trim() : '';
-const poweredBy = (copyright?.poweredBy ?? 'Powered by Merfy').trim();
+/**
+ * Подпись платформы под подвалом. Владелец 20.09: во всех темах по умолчанию
+ * «Разработано на Merfy», текст задаёт мерчант в админке (карточка темы →
+ * меню → «Редактировать содержимое темы»). Ссылкой НЕ делаем — владелец
+ * отдельно это подтвердил: «не должно быть ссылкой вообще».
+ *
+ * Прежнее «Powered by Merfy» в старых ревизиях считаем не тронутым мерчантом и
+ * заменяем новым текстом, иначе у давно созданных магазинов осталась бы
+ * прежняя подпись навсегда.
+ */
+const POWERED_BY_DEFAULT = 'Разработано на Merfy';
+const poweredByRaw = typeof copyright?.poweredBy === 'string' ? copyright.poweredBy.trim() : '';
+const poweredBy = !poweredByRaw || poweredByRaw === 'Powered by Merfy' ? POWERED_BY_DEFAULT : poweredByRaw;
 const showYear = copyright?.showYear !== false;
 const copyText = `© ${showYear ? year + ' ' : ''}${brandName ? brandName + ' ' : ''}Все права защищены.`;
 

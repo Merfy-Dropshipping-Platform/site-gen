@@ -159,8 +159,14 @@ const companyPart =
 	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
 		? copyrightObj.companyName
 		: siteTitle;
+// Подпись платформы. Владелец 20.09: во всех темах по умолчанию «Разработано
+// на Merfy», текст задаёт мерчант в админке («Редактировать содержимое темы»).
+// Ссылкой не оформляем — владелец подтвердил отдельно. Прежнее «Powered by
+// Merfy» в старых ревизиях считаем не тронутым и заменяем новым текстом.
 const poweredBy =
-	typeof copyrightObj.poweredBy === "string" ? copyrightObj.poweredBy : "Powered by Merfy";
+	typeof copyrightObj.poweredBy === "string" && copyrightObj.poweredBy.trim() && copyrightObj.poweredBy.trim() !== "Powered by Merfy"
+		? copyrightObj.poweredBy.trim()
+		: "Разработано на Merfy";
 const copyrightText =
 	copyrightOverride ??
 	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredBy ? ` ${poweredBy}` : ""}`;

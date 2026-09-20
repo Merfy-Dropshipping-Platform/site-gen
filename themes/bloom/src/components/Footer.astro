@@ -172,10 +172,15 @@ const companyPart =
 	typeof copyrightObj.companyName === "string" && copyrightObj.companyName.trim()
 		? copyrightObj.companyName
 		: siteTitle;
+// Подпись платформы. Владелец 20.09: во всех темах по умолчанию «Разработано
+// на Merfy», текст задаёт мерчант в админке («Редактировать содержимое темы»).
+// Ссылкой не оформляем — владелец подтвердил отдельно. Прежнее «Powered by
+// Merfy» в старых ревизиях считаем не тронутым и заменяем новым текстом.
 const poweredByTail =
 	typeof copyrightObj.poweredBy === "string" &&
 	copyrightObj.poweredBy.trim() &&
-	copyrightObj.poweredBy !== "Powered by Merfy"
+	copyrightObj.poweredBy !== "Powered by Merfy" &&
+	copyrightObj.poweredBy !== "Разработано на Merfy"
 		? copyrightObj.poweredBy
 		: "";
 const copyrightText =
@@ -190,12 +195,13 @@ const CANON_STRIP_TEXT = "© 2026 Bloom Theme. Powered by Merfy";
 const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
 const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
 const stripText =
-	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT
+	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT &&
+		strip.text.trim() !== "Powered by Merfy"
 		? strip.text
 		// Дефолт полосы — только подпись платформы. Раньше он дословно повторял
 		// строку копирайта выше, и в подвале было два одинаковых «© … Все права
 		// защищены» подряд. Мерчантский текст полосы, если задан, идёт как есть.
-		: "Powered by Merfy";
+		: "Разработано на Merfy";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе отступов
 // верстальщика (контейнер pt-16 pb-24 md:pb-28). {80,80} = canon-default puckConfig

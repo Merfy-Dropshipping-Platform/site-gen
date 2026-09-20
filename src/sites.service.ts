@@ -837,6 +837,19 @@ export class SitesDomainService {
       nextThemeId = params.patch.theme.id;
       updates.themeId = nextThemeId;
     }
+    // Дата выбора темы мерчантом. Карточка темы в админке показывала
+    // `theme.createdAt` — момент появления темы В СИСТЕМЕ, один на всех, —
+    // поэтому «Добавлено» было одинаковым у каждого магазина с этой темой.
+    //
+    // Пишем ТОЛЬКО при фактической смене: повторное сохранение настроек с тем
+    // же themeId не должно двигать дату, иначе она превратится в «последнее
+    // сохранение» и потеряет смысл.
+    if (
+      nextThemeId !== undefined &&
+      nextThemeId !== (existingSite?.themeId ?? null)
+    ) {
+      updates.themeAppliedAt = nextThemeId ? new Date() : null;
+    }
     // Handle branding (logo + цвета + favicons) — shallow-merge, НЕ replace
     // (зеркалит settings-merge ниже). Частичный сейв цветов/лого из BrandingModal
     // НЕ должен затирать branding.favicons, записанные server-authoritative

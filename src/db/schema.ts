@@ -90,6 +90,18 @@ export const site = pgTable("site", {
   themeId: text("theme_id"),
   // @deprecated: Старое JSONB поле theme будет удалено после миграции
   theme: jsonb("theme"),
+  /**
+   * Когда МЕРЧАНТ выбрал тему для этого магазина.
+   *
+   * Не путать с `theme.createdAt` — тем моментом, когда тема появилась в
+   * системе: он одинаков для всех магазинов, и карточка темы в админке из-за
+   * него показывала «Добавлено 15 апреля 2026» каждому, кто выбрал Bloom.
+   *
+   * Пусто у магазинов, созданных до появления колонки: событий смены темы мы
+   * не писали, восстанавливать нечего. Интерфейс в этом случае показывает дату
+   * создания магазина.
+   */
+  themeAppliedAt: timestamp("theme_applied_at"),
   currentRevisionId: text("current_revision_id"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())

@@ -95,7 +95,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice } from "../../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, variantLabel } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const deleteIconSrc =
@@ -131,10 +131,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 		itemsEl.innerHTML = lines
 			.map((line) => {
-				const slug = line.variant?.color ?? "";
-				const colorLabel = slug ? (VARIANT_COLOR_LABELS[slug] ?? slug) : "";
-				const sizePart = line.variant?.size ?? "";
-				const variantUnderPrice = [colorLabel, sizePart].filter(Boolean).join(", ");
+				// Подпись варианта — общим хелпером: произвольные группы («Оттенок»,
+					// «Объём») лежат в variant.options и при склейке color+size терялись,
+					// из-за чего два разных варианта давали неразличимые строки.
+					const variantUnderPrice = variantLabel(line.variant);
 				const totalCurrent = formatCartPrice(line.price * line.quantity);
 				const totalOld =
 					typeof line.oldPrice === "number" && line.oldPrice > line.price

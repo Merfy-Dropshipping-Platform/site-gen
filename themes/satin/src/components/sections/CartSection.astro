@@ -108,7 +108,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart } from "../../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantLabel } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -137,8 +137,20 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// вовсе и наследовали `body { color: var(--satin-black) }` — тема, не схема.
 				// text-[rgb(var(--color-text,...))]` на обёртке ниже красит цифру и обе
 				// кнопки-глифа схемой («Текст»), фолбэк 0 0 0 = прежний вид.
-				const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+				// Подпись варианта — общим хелпером: произвольные группы («Оттенок», «Объём»)
+					// лежат в variant.options и при склейке color+size терялись — два разных
+					// варианта давали неразличимые строки (баг тестера).
+					const variant = variantLabel(line.variant);
 				const borderClass = index === arr.length - 1 ? "" : "border-b border-[rgb(var(--color-muted,153_153_153)/0.3)] pb-6";
+				// Старая (зачёркнутая) цена — жалоба владельца 17.09 «не отображается цена
+				// без скидки» и пункт тестера 18.09 про секцию Корзина. Эталон
+				// rose/flux/bloom/vanilla: line.oldPrice сравнивается с line.price на том же
+				// количестве, красится --color-muted. Satin оставался последней темой без неё.
+				const totalOld =
+					typeof line.oldPrice === "number" && line.oldPrice > line.price
+						? formatCartPrice(line.oldPrice * line.quantity)
+						: "";
+
 				return `
 					<li class="flex flex-col gap-4 ${borderClass} md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
 						<div class="flex gap-4">
@@ -158,6 +170,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Увеличить">+</button>
 							</div>
 							<span class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
+						${totalOld ? `<span class="font-manrope text-[14px] font-normal text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[16px]">${totalOld}</span>` : ""}
 						</div>
 					</li>
 				`;

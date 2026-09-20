@@ -13,6 +13,7 @@
 import {
 	createNtCart,
 	variantLabel,
+	variantPairs,
 	type NtCartLine,
 	type NtCartLineVariant,
 } from "../../../../packages/theme-base/runtime/nt-cart";
@@ -82,3 +83,7 @@ export const getCartCount = api.getCartCount;
 export const getCartTotal = api.getCartTotal;
 export const formatCartPrice = api.formatCartPrice;
 export const initCartUI = api.initCartUI;
+
+// Подпись варианта нужна и странице корзины (CartSection), а не только
+// дроверу: там она собиралась из color+size и теряла произвольные группы.
+export { variantLabel, variantPairs };

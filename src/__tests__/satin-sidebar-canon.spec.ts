@@ -4,14 +4,31 @@
  * pre-existing type-ошибках в theme-base (defaults.textSize вне схемы в MainText/
  * MultiRows; packages вне tsconfig.build). Дефолты satin НЕ сверяем.
  *
- * Покрыты блоки, которые ДОЛЖНЫ совпадать. MultiRows/MultiColumns/Footer —
- * вне покрытия (открытые решения, см. отчёт сессии).
+ * Покрыты все блоки, у которых есть порт satin. Осознанные расхождения satin
+ * (их три, все со ссылкой на Figma или на миграцию данных) вынесены в
+ * KNOWN_DIVERGENCES: гард продолжает сторожить эти блоки от НОВОГО расхождения,
+ * но не требует менять состав параметров, который никто не согласовывал.
+ *
+ * 20.09: парсер начал срезать комментарии. До этого текст комментария попадал
+ * в разбор полей, и сверка врала в обе стороны: у ImageWithText и Footer
+ * «расхождения» были призраками (в каноне значился несуществующий параметр
+ * `but` — слово из комментария), а настоящее расхождение Hero (`padding`
+ * скрыт у satin) гард не видел вовсе.
  */
 import * as fs from "fs";
 import * as path from "path";
 
+/** Комментарии — не поля: без этого в разбор попадают слова из пояснений. */
+function stripComments(src: string): string {
+  return src
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n")
+    .replace(/\/\*[\s\S]*?\*\//g, " ");
+}
+
 function fieldTypes(file: string): Record<string, string> {
-  const s = fs.readFileSync(file, "utf8");
+  const s = stripComments(fs.readFileSync(file, "utf8"));
   const fi = s.indexOf("fields: {");
   if (fi < 0) return {};
   let i = fi + "fields: {".length,
@@ -63,8 +80,44 @@ const COVERED = [
   "Footer",
 ];
 
+/**
+ * Осознанные расхождения satin. Ключ — блок, значение — поле → [канон, satin].
+ * Каждое подпёрто комментарием в самом puckConfig satin; менять состав
+ * параметров, чтобы «свести к канону», нельзя — он согласован отдельно.
+ */
+const KNOWN_DIVERGENCES: Record<string, Record<string, [string, string]>> = {
+  // «Отступов» нет в Figma 314-34815 — контрол скрыт, значение в данных
+  // остаётся (Hero.astro его читает).
+  Hero: { padding: ["padding", "hidden"] },
+  // satin показывает тумблер контейнера и прячет его схему — обратно канону,
+  // где тумблер скрыт, а схема видима (Figma 314-34963).
+  MultiRows: {
+    containerEnabled: ["hidden", "toggle"],
+    containerColorScheme: ["colorScheme", "hidden"],
+  },
+  // Legacy-ключ, оставленный скрытым ради миграции старых ревизий: рендер
+  // читает и его, и новый containerEnabled.
+  MultiColumns: { background: ["—", "hidden"] },
+};
+
 describe("satin section sidebars: field types == theme-base canon", () => {
   it.each(COVERED)("%s: satin field types match theme-base", (b) => {
-    expect(fieldTypes(satinPath(b))).toEqual(fieldTypes(basePath(b)));
+    const base = fieldTypes(basePath(b));
+    const satin = fieldTypes(satinPath(b));
+    const known = KNOWN_DIVERGENCES[b] ?? {};
+    // Известные расхождения выводим из сверки — но только те, что ВСЁ ЕЩЁ
+    // расходятся ровно так, как записано. Иначе список тихо протухает и
+    // начинает прятать новое расхождение вместо старого.
+    for (const [field, [expectBase, expectSatin]] of Object.entries(known)) {
+      expect({ блок: b, поле: field, канон: base[field] ?? "—", satin: satin[field] ?? "—" }).toEqual({
+        блок: b,
+        поле: field,
+        канон: expectBase,
+        satin: expectSatin,
+      });
+      delete base[field];
+      delete satin[field];
+    }
+    expect(satin).toEqual(base);
   });
 });

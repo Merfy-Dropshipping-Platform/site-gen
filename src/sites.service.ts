@@ -261,6 +261,13 @@ export class SitesDomainService {
         branding: schema.site.branding,
         settings: schema.site.settings,
         createdAt: schema.site.createdAt,
+        // Даты САМОГО магазина. Список отдавал только `createdAt` магазина и
+        // обе даты ТЕМЫ, поэтому карточка темы в админке показывала «Добавлено»
+        // и «Последнее обновление» из жизни темы в системе — одинаковые у всех
+        // магазинов с этой темой. `updatedAt` магазина при этом живой: он
+        // обновляется в `createRevision` при каждом сохранении контента.
+        updatedAt: schema.site.updatedAt,
+        themeAppliedAt: schema.site.themeAppliedAt,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,

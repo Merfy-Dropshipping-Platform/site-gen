@@ -74,6 +74,14 @@ interface RenderBlockBody {
    * страница не коллекционная, поведение прежнее.
    */
   collectionContext?: PreviewCollectionContext | null;
+  /**
+   * Товар, который СЕЙЧАС показывает превью (выбор через верхнее меню). Агент
+   * возвращает сюда глобал `__MERFY_DEFAULT_PRODUCT_ID__`, куда GET-превью уже
+   * положило разрешённый выбор (`?productId=` приоритетнее настройки блока).
+   * Есть → секция рендерится этим товаром, как целая страница; нет → поведение
+   * прежнее, товар берётся из props.
+   */
+  productId?: string | null;
 }
 
 /**
@@ -785,6 +793,20 @@ export class PreviewController {
           : adaptedProps),
         siteId,
       };
+      // Выбор товара через верхнее меню превью бьёт настройку блока — ровно как
+      // на целой странице (`productIdOverride ?? defaultProductIdFromRevision`).
+      // Без этого точечный перерендер возвращал товар из сайдбара, и любая
+      // правка сбрасывала секцию на него (жалоба владельца 19.09).
+      //
+      // Трогаем ТОЛЬКО секцию «Товар»: у остальных блоков `productId` своей
+      // роли не играет, и подмена там была бы тихим сюрпризом.
+      const previewProductId =
+        typeof body.productId === 'string' && body.productId.trim()
+          ? body.productId.trim()
+          : null;
+      if (previewProductId && /^product$/i.test(body.blockType)) {
+        propsWithContext.productId = previewProductId;
+      }
       const loaded = await this.loadRevisionData(siteId);
       if (body.themeId && loaded?.themeId && body.themeId !== loaded.themeId) {
         this.logger.warn(

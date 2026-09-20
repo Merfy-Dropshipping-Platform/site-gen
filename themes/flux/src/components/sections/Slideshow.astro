@@ -106,8 +106,8 @@ const slideLayoutCls = (s: any) => {
 const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 	const ctaText =
-		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
-		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined);
+		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined) ??
+		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined);
 	return {
 		// §11 Контракта секции: видимое поле панели «Изображение» (image) приоритетнее
 		// скрытого legacy «Изображение (старое)» (imageUrl). Раньше legacy читался
@@ -119,15 +119,20 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
 			"",
 		heading: typeof s.heading === "string" ? s.heading : (s.heading?.text ?? ""),
 		headingCls: slideHeadingCls(typeof s.heading === "object" ? s.heading?.size : undefined),
+				// Канон панели ПЕРВЫМ, легаси — запасным. Раньше порядок был обратным, а
+		// легаси почти всегда заполнено сидом, поэтому ввод мерчанта в «Текст» и
+		// «Кнопку» не доезжал до витрины: слайд показывал старые subtitle/ctaText
+		// (баг тестера, «Слайд-шоу ▸ Слайд — доезжает только Заголовок»). Тем же
+		// приёмом здесь уже чинили «Изображение (старое)».
 		subtitle:
-			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
-			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined),
+			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined) ??
+			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined),
 		textCls: slideTextCls(typeof s.text === "object" ? s.text?.size : undefined),
 		ctaText,
 		ctaHref:
-			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
 			s.button?.link?.href ??
 			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
+			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
 			"/catalog",
 		boxed: String(s.container ?? "false") === "true",
 		schemeCls:

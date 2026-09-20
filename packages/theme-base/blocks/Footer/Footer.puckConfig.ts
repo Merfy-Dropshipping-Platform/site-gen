@@ -3,14 +3,22 @@ import type { BlockPuckConfig } from '@merfy/theme-contract';
 
 const FooterLinkSchema = z.object({
   label: z.string(),
-  href: z.string(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+  href: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))),
 });
 
 const SocialPlatformSchema = z.enum(['telegram', 'vk', 'youtube', 'tiktok', 'dzen']);
 
 const SocialLinkSchema = z.object({
   platform: SocialPlatformSchema,
-  href: z.string(),
+  href: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))),
 });
 
 export const FooterSchema = z.object({

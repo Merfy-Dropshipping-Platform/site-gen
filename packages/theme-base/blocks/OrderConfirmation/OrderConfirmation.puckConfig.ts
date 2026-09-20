@@ -34,7 +34,13 @@ export const OrderConfirmationSchema = z.object({
   detailsTitle: z.string(),
   helpText: z.string(),
   returnButtonText: z.string(),
-  returnButtonHref: z.string(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+  returnButtonHref: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))),
   legalText: z.string(),
   // Стандартные
   colorScheme: z.string(),

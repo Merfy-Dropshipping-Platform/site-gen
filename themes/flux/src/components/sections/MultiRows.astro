@@ -200,8 +200,14 @@ const alignCls =
 // active:scale в манере flux НЕ используется (§3).
 const btnBase =
 	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-6 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90";
+// Канонное значение панели — `secondary` («Дополнительная»), и оно обязано
+// попадать СЮДА. Порт был написан на словаре верстальщиков (white/black/
+// outlined), которого в панели нет: ветки не срабатывали, и «Стиль кнопки»
+// рисовал основную кнопку при любом выборе. Замер локальным рендерером 20.09:
+// основная и дополнительная давали одни и те же токены. Легаси-слова оставлены
+// — они доезжают до порта СЫРЫМИ из старых ревизий (проверено на живом стенде).
 const btnCls =
-	p.buttonStyle === "white"
+	p.buttonStyle === "white" || p.buttonStyle === "secondary"
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
 		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))]`;
 

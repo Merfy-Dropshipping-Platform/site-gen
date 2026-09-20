@@ -222,10 +222,16 @@ const alignCls =
 // токены, CTA Philosophy); outlined = бордер цвета заливки на прозрачном.
 const btnBase =
 	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95";
+// Канонное значение панели — `secondary` («Дополнительная»), и оно обязано
+// попадать СЮДА. Порт был написан на словаре верстальщиков (white/black/
+// outlined), которого в панели нет: ветки не срабатывали, и «Стиль кнопки»
+// рисовал основную кнопку при любом выборе. Замер локальным рендерером 20.09:
+// основная и дополнительная давали одни и те же токены. Легаси-слова оставлены
+// — они доезжают до порта СЫРЫМИ из старых ревизий (проверено на живом стенде).
 const btnCls =
 	p.buttonStyle === "outlined"
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent text-[rgb(var(--color-button-bg,227_142_159))]`
-		: p.buttonStyle === "white"
+		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
 			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
 			: p.buttonStyle === "black"
 				? `${btnBase} bg-[rgb(var(--color-text,0_0_0))] text-[rgb(var(--color-bg,255_255_255))]`

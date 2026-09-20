@@ -95,6 +95,14 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
         const rowAspectClass = C.imageAspect[aspectKey(row.size, sectionSize)];
         const rowHeadingSizeClass = C.rowHeadingSize[aspectKey(row.headingSize, 'medium')];
         const rowTextSizeClass = C.rowTextSize[aspectKey(row.textSize, 'medium')];
+        // «Стиль кнопки» (панель: Основная / Дополнительная). Общий блок его не
+        // читал вовсе — рисовал C.button при любом выборе, хотя C.buttonSecondary
+        // лежит рядом готовый. Легаси-слово 'white' принимаем тоже: из старых
+        // ревизий оно доезжает сюда сырым.
+        const rowButtonClass =
+          raw.buttonStyle === 'secondary' || raw.buttonStyle === 'white'
+            ? C.buttonSecondary
+            : C.button;
         const buttonHref =
           (row.button && typeof row.button === 'object' && 'link' in row.button && typeof row.button.link === 'string')
             ? row.button.link
@@ -119,7 +127,7 @@ const rowsPosition = typeof raw.rowsPosition === 'string' ? raw.rowsPosition : '
               {rowTitle && <h3 class:list={[C.rowHeading, rowHeadingSizeClass]}><Fragment set:html={sanitizeInline(rowTitle)} /></h3>}
               {rowDescription && <p class:list={[C.rowText, rowTextSizeClass]}>{rowDescription}</p>}
               {row.button?.text && (
-                <a href={buttonHref ?? '#'} class={C.button}>{row.button.text}</a>
+                <a href={buttonHref ?? '#'} class={rowButtonClass}>{row.button.text}</a>
               )}
             </div>
           </div>

@@ -327,7 +327,7 @@ export function renderCardHtml(p: RealProduct, cardContainerOn = false): string 
 			<span class="font-manrope text-[16px] font-normal leading-tight text-[#000000]">${price}</span>
 			${oldPrice}
 		</div>
-		<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>
+		<button type="button" data-add-to-cart data-product-id="${escapeHtml(p.id)}" data-name="${name}" data-price="${price}" data-old-price="${escapeHtml(oldRaw)}" data-image="${image}" class="mt-2 flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] bg-[#000000] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-white transition-opacity hover:opacity-80">В корзину</button>
 	</div>
 </article>`;
 }

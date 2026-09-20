@@ -1370,11 +1370,7 @@
     }
   ],
   "schemaVersion": 1,
-<<<<<<< HEAD
-  "sourceDigest": "fa6d54591af3851cb26db84b5cf7bf59b030ed1881c5d399d298d8e293d8d22c",
-=======
-  "sourceDigest": "5740ca6e243ad8fdc377855e9334edd90b69bbd40a2f7bb618f7c4d8b94fadf8",
->>>>>>> origin/main
+  "sourceDigest": "bc5ab09253405edcb5924d9e429149bea43046b97f17d08f99792c019002d683",
   "structuralIssues": [
     {
       "canonicalFacts": {

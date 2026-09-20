@@ -178,16 +178,17 @@ const dadataToken = "";
       } else {
         try { lines = JSON.parse(localStorage.getItem("bloom:cart:v1") || "[]"); } catch (e) { lines = []; }
       }
-      if (!Array.isArray(lines) || !lines.length || !cs.clear || !cs.addItem) { fallbackInit(); return; }
+      if (!Array.isArray(lines) || !lines.length || !cs.syncLinesToServer) { fallbackInit(); return; }
       (async function () {
+        // ОДНО действие вместо цикла. Раньше здесь шёл cs.addItem по каждой
+        // позиции, и на каждую прилетал cart:updated: сводка перестраивалась
+        // столько раз, сколько товаров (список рос 1→2→3→4→5→6, фотографии
+        // перекладывались), а расчёт доставки перезапускался и мигал лоудером.
+        // syncLinesToServer собирает серверную корзину целиком и шлёт событие
+        // ОДИН раз — в конце.
         try {
-          await cs.clear();
-          for (var i = 0; i < lines.length; i++) {
-            var l = lines[i];
-            try { await cs.addItem(l.productId, (l.variant && l.variant.variantCombinationId) || null, l.quantity); } catch (e) {}
-          }
+          await cs.syncLinesToServer(lines, { notify: true });
         } catch (e) { fallbackInit(); return; }
-        try { document.dispatchEvent(new CustomEvent("cart:updated")); } catch (e) {}
       })();
     });
   </script>

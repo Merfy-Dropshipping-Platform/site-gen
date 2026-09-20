@@ -298,7 +298,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    ВПЛОТНУЮ, зазор РОВНО ноль на lg: (там же, где ряд становится
 		    двухколоночным — media-text-pair.spec.ts). На мобильном (одна колонка)
 		    зазор оставлен, иначе ряды сливаются в кашу (multirows-row-gap.spec.ts). */}
-		<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
+		<ul class="flex w-full flex-col gap-8" role="list">
 			{
 				rows.map((r, i) => (
 					<li

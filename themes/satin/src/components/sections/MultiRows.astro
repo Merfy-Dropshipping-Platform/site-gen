@@ -375,12 +375,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    как остальные темы — media-text-pair.spec.ts). На мобильном (одна
 		    колонка) зазор оставлен, иначе ряды сливаются в кашу
 		    (multirows-row-gap.spec.ts). */}
-		<div class="flex flex-col gap-8">
+		<div class="flex flex-col gap-8 md:gap-0">
 			{
 				rows.map((row, i) => (
 					<div
 						class:list={[
-							"grid grid-cols-1 items-stretch gap-8",
+							"grid grid-cols-1 items-stretch gap-8 md:gap-0",
 							ROW_SPLIT[rowSplitKey][row.right ? "textFirst" : "mediaFirst"],
 							rowBoxCls,
 						]}

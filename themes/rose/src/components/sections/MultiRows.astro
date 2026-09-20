@@ -220,7 +220,7 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // ряда, ради чего колонка вообще получает класс схемы.
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,8px)] p-6 md:p-8 ${right ? "" : ""}`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] h-full rounded-[var(--radius-card,8px)] p-6 md:p-8${right ? " lg:rounded-r-none lg:rounded-l-[var(--radius-card,8px)]" : " lg:rounded-l-none lg:rounded-r-[var(--radius-card,8px)]"}`
 		: "";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
@@ -277,18 +277,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    Сторож: multirows-row-stretch.spec.ts (несколько ширин + сочетаний
 		    настроек — три прежних гарда проверяли одно состояние на одной ширине
 		    и пропустили баг). */}
-		<ul class="flex w-full flex-col gap-8" role="list">
+		<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]}${rowSurfaceCls}`}
+						class={`grid w-full grid-cols-1 gap-6 md:gap-8 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${rowSurfaceCls}`}
 						data-animate
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="rows"
 					>
 						<div
-							class={`w-full lg:h-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
+							class={`w-full lg:h-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,8px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,8px)]"}`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (

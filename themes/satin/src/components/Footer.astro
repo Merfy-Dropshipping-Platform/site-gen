@@ -183,7 +183,8 @@ const companyPart =
 		: siteTitle;
 // Подпись платформы. Владелец 20.09: во всех темах по умолчанию «Разработано
 // на Merfy», текст задаёт мерчант в админке («Редактировать содержимое темы»).
-// Ссылкой не оформляем — владелец подтвердил отдельно. Прежнее «Powered by
+// Стандартный текст — ссылка на https://merfy.ru/ (владелец 20.09 поправил
+// сам себя: «ссылку всё таки надо оставлять»). Прежнее «Powered by
 // Merfy» в старых ревизиях считаем не тронутым и заменяем новым текстом.
 const poweredByTail =
 	typeof copyrightObj.poweredBy === "string" &&
@@ -193,20 +194,30 @@ const poweredByTail =
 		? copyrightObj.poweredBy
 		: "";
 const copyrightText =
-	copyrightOverride ??
-	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredByTail ? ` ${poweredByTail}` : ""}`;
+	// Копирайт убран из тем (владелец 20.09). Показывается только то, что
+	// мерчант сам завёл: либо своей строкой копирайта, либо записью в
+	// «Блоках информации о компании» — она выводится в контактах.
+	copyrightOverride ?? "";
 
 // Канон bottomStrip {enabled, text} — чёрная полоса верстальщика (F:180-182):
 // bg 0_0_0 py-4, font-inter 12/md:16 light, «Powered by Merfy». enabled false/'false'
 // → полоса скрыта; непустой text перебивает литеральную сборку.
 const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
 const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
+// Подпись платформы ведёт на лендинг (владелец 20.09: «сделать именно
+// ссылкой на https://merfy.ru/»). Ссылка только у стандартного текста: вписал
+// мерчант своё — остаётся просто текст.
+const PLATFORM_URL = "https://merfy.ru/";
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim() && strip.text.trim() !== "Powered by Merfy"
 		? strip.text
 		// Дефолт полосы — только подпись платформы: прежний дефолт дублировал
 		// строку копирайта выше (два «© … Все права защищены» в подвале).
 		: "Разработано на Merfy";
+const stripIsDefault = stripText === "Разработано на Merfy";
+// Копирайт рисуем, только если мерчант его сам задал (пустая строка —
+// дефолт после 20.09), иначе в подвале оставался бы пустой абзац.
+const showCopyright = copyrightText.trim().length > 0;
 
 // Канон padding {top,bottom} — inline-стиль при любом заданном пропе, как rose
 // Footer (включая {80,80}, иначе слайдер «Отступы» мёртв). Без пропа — литерал.
@@ -345,14 +356,16 @@ const linkClassSm =
 
 				<!-- D. Info row -->
 				<div class={`flex items-center gap-4 border-t border-[rgb(var(--color-text,0_0_0)/13%)] pt-6 ${bottomRowJustifyCls}`}>
-					<p
-						class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="993"
-						data-puck-subsection-field="copyright"
-					>
-						{copyrightText}
-					</p>
+					{showCopyright && (
+						<p
+							class="font-manrope text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="993"
+							data-puck-subsection-field="copyright"
+						>
+							{copyrightText}
+						</p>
+					)}
 					{(infoColTitle || infoLinks.length > 0) && (
 						<div
 							class="flex flex-wrap items-center gap-x-6 gap-y-2"
@@ -433,7 +446,7 @@ const linkClassSm =
 		<!-- Divider + bottom (copyright/payments | policies) -->
 		<div class="mt-8 flex justify-between gap-4 border-t border-[rgb(var(--color-text,0_0_0)/13%)] pt-6">
 			<div class="flex flex-col gap-4">
-				<p class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">{copyrightText}</p>
+				{showCopyright && <p class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">{copyrightText}</p>}
 				{paymentEnabled && (
 					<div class="flex items-center gap-2">
 						{payments.map((pay) => (
@@ -468,7 +481,7 @@ const linkClassSm =
 			{/* 14px на десктопе — как у эталона rose (Footer:376) и flux. Было 16px:
 			    подпись платформы выходила крупнее строки копирайта рядом (12px) и
 			    крупнее, чем в остальных темах. Скриншот тестера 15.09. */}
-			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[14px]">{stripText}</p>
+			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[14px]">{stripIsDefault ? (<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>) : (stripText)}</p>
 		</div>
 	)}
 </footer>

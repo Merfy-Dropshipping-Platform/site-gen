@@ -161,7 +161,8 @@ const companyPart =
 		: siteTitle;
 // Подпись платформы. Владелец 20.09: во всех темах по умолчанию «Разработано
 // на Merfy», текст задаёт мерчант в админке («Редактировать содержимое темы»).
-// Ссылкой не оформляем — владелец подтвердил отдельно. Прежнее «Powered by
+// Стандартный текст — ссылка на https://merfy.ru/ (владелец 20.09 поправил
+// сам себя: «ссылку всё таки надо оставлять»). Прежнее «Powered by
 // Merfy» в старых ревизиях считаем не тронутым и заменяем новым текстом.
 const poweredBy =
 	typeof copyrightObj.poweredBy === "string" && copyrightObj.poweredBy.trim() && copyrightObj.poweredBy.trim() !== "Powered by Merfy"
@@ -169,15 +170,24 @@ const poweredBy =
 		: "Разработано на Merfy";
 const copyrightText =
 	copyrightOverride ??
-	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredBy ? ` ${poweredBy}` : ""}`;
+	// Копирайт из тем убран (владелец 20.09: «удалить во всех темах»).
+	// Он показывается только как строка, которую мерчант сам завёл в
+	// «Блоках информации о компании» — она и так выводится в контактах.
+	// Здесь остаётся ровно подпись платформы.
+	poweredBy;
 
 // Канон bottomStrip {enabled, text} — носитель в rose = чёрная копирайт-полоса
 // (отдельной полосы у верстальщика нет). enabled false/'false' → полоса скрыта;
 // непустой text перебивает собранный копирайт. Отсутствие = текущий рендер.
 const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
 const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
+// Подпись платформы ведёт на лендинг (владелец 20.09: «сделать именно
+// ссылкой на https://merfy.ru/»). Ссылка только у стандартного текста: как
+// только мерчант впишет своё в админке, остаётся просто текст.
+const PLATFORM_URL = "https://merfy.ru/";
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim() ? strip.text : copyrightText;
+const stripIsDefault = stripText === "Разработано на Merfy";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе
 // отступов верстальщика (внутренний контейнер pt-20 pb-20). При rose
@@ -388,7 +398,11 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 			data-puck-subsection-field="copyright"
 		>
 			<p class="text-center font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">
-				{stripText}
+				{stripIsDefault ? (
+					<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>
+				) : (
+					stripText
+				)}
 			</p>
 		</div>
 	)}

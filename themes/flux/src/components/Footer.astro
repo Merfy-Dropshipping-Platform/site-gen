@@ -175,7 +175,8 @@ const companyPart =
 		: siteTitle;
 // Подпись платформы. Владелец 20.09: во всех темах по умолчанию «Разработано
 // на Merfy», текст задаёт мерчант в админке («Редактировать содержимое темы»).
-// Ссылкой не оформляем — владелец подтвердил отдельно. Прежнее «Powered by
+// Стандартный текст — ссылка на https://merfy.ru/ (владелец 20.09 поправил
+// сам себя: «ссылку всё таки надо оставлять»). Прежнее «Powered by
 // Merfy» в старых ревизиях считаем не тронутым и заменяем новым текстом.
 const poweredBy =
 	typeof copyrightObj.poweredBy === "string" && copyrightObj.poweredBy.trim() && copyrightObj.poweredBy.trim() !== "Powered by Merfy"
@@ -183,13 +184,22 @@ const poweredBy =
 		: "Разработано на Merfy";
 const copyrightText =
 	copyrightOverride ??
-	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredBy ? ` ${poweredBy}` : ""}`;
+	// Копирайт из тем убран (владелец 20.09: «удалить во всех темах»).
+	// Он показывается только как строка, которую мерчант сам завёл в
+	// «Блоках информации о компании» — она и так выводится в контактах.
+	// Здесь остаётся ровно подпись платформы.
+	poweredBy;
 
 // bottomStrip {enabled, text} — чёрная копирайт-полоса = носитель (отдельной полосы у
 // верстальщика нет). enabled false/'false' скрывает; непустой text перебивает собранный copyright.
 const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
 const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
+// Подпись платформы ведёт на лендинг (владелец 20.09: «сделать именно
+// ссылкой на https://merfy.ru/»). Ссылка только у стандартного текста: вписал
+// мерчант своё — остаётся просто текст.
+const PLATFORM_URL = "https://merfy.ru/";
 const stripText = typeof strip?.text === "string" && strip.text.trim() ? strip.text : copyrightText;
+const stripIsDefault = stripText === "Разработано на Merfy";
 
 // padding {top,bottom} — inline-стиль ТОЛЬКО при не-canon пропе. canon {64,64} (theme.json
 // flux, впрыск коэрсера) → литерал py-12 md:py-16 верстальщика (правило canon-default → пиксель).
@@ -433,7 +443,11 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 				data-puck-subsection-index="993"
 				data-puck-subsection-field="copyright"
 			>
-				{stripText}
+				{stripIsDefault ? (
+					<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>
+				) : (
+					stripText
+				)}
 			</p>
 		</div>
 	)}

@@ -174,7 +174,8 @@ const companyPart =
 		: siteTitle;
 // Подпись платформы. Владелец 20.09: во всех темах по умолчанию «Разработано
 // на Merfy», текст задаёт мерчант в админке («Редактировать содержимое темы»).
-// Ссылкой не оформляем — владелец подтвердил отдельно. Прежнее «Powered by
+// Стандартный текст — ссылка на https://merfy.ru/ (владелец 20.09 поправил
+// сам себя: «ссылку всё таки надо оставлять»). Прежнее «Powered by
 // Merfy» в старых ревизиях считаем не тронутым и заменяем новым текстом.
 const poweredByTail =
 	typeof copyrightObj.poweredBy === "string" &&
@@ -184,8 +185,10 @@ const poweredByTail =
 		? copyrightObj.poweredBy
 		: "";
 const copyrightText =
-	copyrightOverride ??
-	`© ${showYear ? `${today.getFullYear()} ` : ""}${companyPart} Все права защищены.${poweredByTail ? ` ${poweredByTail}` : ""}`;
+	// Копирайт убран из тем (владелец 20.09). Показывается только то, что
+	// мерчант сам завёл: либо своей строкой копирайта, либо записью в
+	// «Блоках информации о компании» — она выводится в контактах.
+	copyrightOverride ?? "";
 
 // Канон bottomStrip {enabled, text} — розовая полоса блока 4 верстальщика.
 // enabled false/'false' → полоса скрыта; непустой text перебивает литеральную
@@ -194,6 +197,10 @@ const copyrightText =
 const CANON_STRIP_TEXT = "© 2026 Bloom Theme. Powered by Merfy";
 const strip = p.bottomStrip && typeof p.bottomStrip === "object" ? p.bottomStrip : undefined;
 const bottomStripVisible = !(strip && (strip.enabled === false || strip.enabled === "false"));
+// Подпись платформы ведёт на лендинг (владелец 20.09: «сделать именно
+// ссылкой на https://merfy.ru/»). Ссылка только у стандартного текста: вписал
+// мерчант своё — остаётся просто текст.
+const PLATFORM_URL = "https://merfy.ru/";
 const stripText =
 	typeof strip?.text === "string" && strip.text.trim() && strip.text !== CANON_STRIP_TEXT &&
 		strip.text.trim() !== "Powered by Merfy"
@@ -202,6 +209,10 @@ const stripText =
 		// строку копирайта выше, и в подвале было два одинаковых «© … Все права
 		// защищены» подряд. Мерчантский текст полосы, если задан, идёт как есть.
 		: "Разработано на Merfy";
+const stripIsDefault = stripText === "Разработано на Merfy";
+// Копирайт рисуем, только если мерчант его сам задал (пустая строка —
+// дефолт после 20.09), иначе осталась бы висящая линейка без текста.
+const showCopyright = copyrightText.trim().length > 0;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при пропе, на носителе отступов
 // верстальщика (контейнер pt-16 pb-24 md:pb-28). {80,80} = canon-default puckConfig
@@ -422,20 +433,22 @@ const footerContainerCls = footerPadStyle
 			</section>
 
 			<!-- Block 3: Legal row -->
-			<section class="flex w-full flex-col gap-4 pt-2" aria-label="Правовая информация">
-				<div class="h-px w-full bg-[rgb(var(--color-accent,227_142_159)/0.5)]" aria-hidden="true"></div>
+			{showCopyright && (
+				<section class="flex w-full flex-col gap-4 pt-2" aria-label="Правовая информация">
+					<div class="h-px w-full bg-[rgb(var(--color-accent,227_142_159)/0.5)]" aria-hidden="true"></div>
 
-				<div class="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
-					<p
-						class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="993"
-						data-puck-subsection-field="copyright"
-					>
-						{copyrightText}
-					</p>
-				</div>
-			</section>
+					<div class="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
+						<p
+							class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="993"
+							data-puck-subsection-field="copyright"
+						>
+							{copyrightText}
+						</p>
+					</div>
+				</section>
+			)}
 		</div>
 	</div>
 
@@ -448,7 +461,11 @@ const footerContainerCls = footerPadStyle
 			data-puck-subsection-field="bottomStrip"
 		>
 			<p class="text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))]">
-				{stripText}
+				{stripIsDefault ? (
+					<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>
+				) : (
+					stripText
+				)}
 			</p>
 		</div>
 	)}

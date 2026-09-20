@@ -89,6 +89,13 @@ type Case = {
     | "--color-button-2-bg"
     | "--color-button-2-text"
     | "--color-muted";
+  /**
+   * Пропы, без которых мишень не рендерится вовсе. С 20.09 подвал не собирает
+   * копирайт сам (владелец: «идёт только из блока информации, если заполнено»),
+   * и узел копирайта появляется, только когда мерчант его задал. Без пропа
+   * проверка падала бы «узел не найден» — а сторожить она должна цвет.
+   */
+  props?: Record<string, unknown>;
 };
 
 const THEMES_5 = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
@@ -232,7 +239,7 @@ const CASES: Case[] = [
     { theme, block: "Footer", label: "Подвал", target: "фон поля подписки", marker: "data-newsletter-form", prop: "background-color", expect: "--color-bg" } as Case
   )),
   // [подвал vanilla] Копирайт: полоса под ним шла за схемой, буквы стояли.
-  { theme: "vanilla", block: "Footer", label: "Подвал", target: "копирайт", marker: 'data-puck-subsection-field="copyright"', prop: "color", expect: "--color-text" },
+  { theme: "vanilla", block: "Footer", label: "Подвал", target: "копирайт", marker: 'data-puck-subsection-field="copyright"', prop: "color", expect: "--color-text", props: { copyright: "© 2026 Тестовый магазин" } },
   // [корзина] Полотно секции и кнопки. Кнопки переводились ПАРОЙ (заливка +
   // надпись): перекрасить одну половину значит завести новый дефект —
   // чёрное на чёрном.
@@ -304,12 +311,18 @@ const built = (theme: string) =>
  * экранирование селекторов Tailwind и чтение схем делает общая библиотека
  * зондов `scripts/qa/lib` (её README — список ловушек, на которых это ломалось).
  */
-const renderLive = (theme: string, block: string, layout?: string): string =>
+const renderLive = (
+  theme: string,
+  block: string,
+  layout?: string,
+  extra?: Record<string, unknown>,
+): string =>
   renderBlock(theme, block, {
     productId: "p1",
     colorScheme: `scheme-${SCHEME_A}`,
     padding: { top: 40, bottom: 40 },
     ...(layout ? { layout } : {}),
+    ...(extra ?? {}),
   });
 
 /**
@@ -327,6 +340,9 @@ const renderLive = (theme: string, block: string, layout?: string): string =>
 const classesOfAll = (html: string, marker: string): string[][] =>
   classesOfAllMarker(html, marker);
 
+/** Ключ кэша рендера: тема + блок + пропы случая. */
+const caseKey = (c: Case): string => `${c.theme}/${c.block}/${JSON.stringify(c.props ?? null)}`;
+
 /** Классы первого совпавшего узла — там, где узел заведомо один. */
 const classesOf = (html: string, marker: string): string[] => classesOfAll(html, marker)[0];
 
@@ -342,8 +358,12 @@ describe("мишени секций красятся токеном МЕРЧАН
       cssOf.set(theme, themeCss(theme));
     }
     for (const c of CASES) {
-      const key = `${c.theme}/${c.block}`;
-      if (!htmlOf.has(key) && built(c.theme)) htmlOf.set(key, renderLive(c.theme, c.block));
+      // Ключ несёт и пропы: иначе рендер без них обслужил бы случай, который
+      // без них не рисует свою мишень.
+      const key = caseKey(c);
+      if (!htmlOf.has(key) && built(c.theme)) {
+        htmlOf.set(key, renderLive(c.theme, c.block, undefined, c.props));
+      }
     }
   });
 
@@ -351,7 +371,7 @@ describe("мишени секций красятся токеном МЕРЧАН
     "%s",
     (_name, c) => {
       if (!built(c.theme)) throw new Error(`тема ${c.theme} не собрана`);
-      const html = htmlOf.get(`${c.theme}/${c.block}`)!;
+      const html = htmlOf.get(caseKey(c))!;
       const nodes = classesOfAll(html, c.marker);
       const styles = inlineStylesOfAllMarker(html, c.marker);
       expect(nodes.length).toBeGreaterThan(0);

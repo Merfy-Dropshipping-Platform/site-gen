@@ -97,14 +97,23 @@ describe("подвал: источник названия и логотипа", 
     expect(block).toMatch(/comp\.props\.logo\s*=\s*ctx\.branding\.logoUrl/);
   });
 
-  it("сборка подставляет подвалу название магазина, не трогая заданное мерчантом", () => {
+  it("сборка подставляет подвалу название бренда из платформы", () => {
+    // ПОПРАВКА 20.09. Раньше здесь требовалось обратное: писать имя ТОЛЬКО
+    // когда поле пустое — «чтобы не затереть правку мерчанта». Правки мерчанта
+    // там не бывает: и `siteTitle`, и `copyright.companyName` объявлены в
+    // панели подвала `type: 'hidden'`, туда пишет сборка. Из-за проверки на
+    // пустоту в подвал ехало ВМОРОЖЕННОЕ значение прошлой сборки — на rose
+    // стояло имя чужой темы, на bloom «Мой магазин», переименование магазина
+    // до витрины не доходило вовсе. Условие снято; источник имени теперь
+    // шире — сперва бренд из окна «Содержимое темы», затем название магазина.
     const build = readFileSync(resolve(ROOT, "src/generator/build.service.ts"), "utf-8");
-    const start = build.indexOf("ctx.siteName && pages.length > 0");
+    const start = build.indexOf("const footerBrand = brandFromSettings");
     expect(start).toBeGreaterThan(-1);
-    const block = build.slice(start, start + 700);
+    const block = build.slice(start, start + 900);
     expect(block).toContain('"Footer"');
-    // Пишем ТОЛЬКО когда своё название пустое — иначе затёрли бы правку мерчанта.
-    expect(block).toMatch(/!String\(comp\.props\.siteTitle[^)]*\)\.trim\(\)/);
-    expect(block).toMatch(/comp\.props\.siteTitle\s*=\s*ctx\.siteName/);
+    expect(block).toMatch(/const footerBrand = brandFromSettings \?\? ctx\.siteName/);
+    expect(block).toMatch(/comp\.props\.siteTitle = footerBrand;/);
+    // И никакой проверки «поле пустое» перед записью — ровно её и снимали.
+    expect(block).not.toMatch(/!String\(\s*comp\.props\.siteTitle/);
   });
 });

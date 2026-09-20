@@ -1239,6 +1239,25 @@ jobs:
       # и pnpm build:theme-sections выше по джобу (они там есть).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/checkout-no-storefront-footer.spec.ts
+      # Подвал витрины: копирайт «© … Все права защищены» темы больше НЕ
+      # собирают (владелец 20.09: «данная информация идёт только из блока
+      # информации, если заполнено, а не от темы»), а стандартная подпись
+      # «Разработано на Merfy» — ссылка на https://merfy.ru/ (он же, тем же
+      # днём, поправив своё «не должно быть ссылкой вообще»). Мерчантский
+      # текст подписи ссылкой не оформляется.
+      # Гард читает исходник БЕЗ комментариев: над сборкой копирайта в каждой
+      # теме стоит комментарий-цитата вёрстки с тем же литералом, и проверка
+      # «нет литерала в файле» сторожила бы текст комментария.
+      # Саботаж проверен: возврат копирайта в rose — 2 проверки, снятие ссылки
+      # в satin — 2, возврат копирайта в bloom — 2.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/footer-signature-and-copyright.spec.ts
+      # Имя в подвале приходит из платформы (окно «Содержимое темы», иначе
+      # название магазина), а не вмораживается прошлой сборкой. Оба гарда
+      # заведены 20.09 и до сих пор не гонялись в CI ни одной джобой —
+      # src/__tests__/ в прогон не входит.
+      - if: false
+        run: pnpm exec jest --runInBand src/__tests__/footer-copyright-from-platform.spec.ts src/__tests__/footer-brand-from-admin.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

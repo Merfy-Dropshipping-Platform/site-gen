@@ -19,8 +19,13 @@ const footerOf = (theme: string) =>
 
 /**
  * Размер подписи на десктопе: md:text-[Npx], иначе базовый text-[Npx].
- * Ищем в ОКНЕ вокруг вывода `{stripText}` — у rose и vanilla класс стоит
- * строкой выше самого вывода, поиск по одной строке их не находит.
+ *
+ * Ищем НЕСУЩИЙ КЛАСС, поднимаясь вверх от последнего вывода `stripText`: у
+ * rose и vanilla класс стоит строками выше самого вывода, у satin — на той же
+ * строке. Прежняя версия брала окно в три строки и отбрасывала строки с «?»;
+ * 20.09 подпись стала тернарником (ссылка на merfy.ru у дефолтного текста,
+ * голый текст у мерчантского), окно перестало доставать до класса, и гард
+ * покраснел на четырёх темах, ничего при этом не поймав.
  */
 function stripSizePx(src: string): { desktop: number; mobile: number } | null {
   // комментарии не разметка: за смену они дважды обманули гарды
@@ -28,13 +33,22 @@ function stripSizePx(src: string): { desktop: number; mobile: number } | null {
   const lines = code.split("\n");
   const at = lines
     .map((l, i) => ({ l, i }))
-    .filter(({ l }) => l.includes("stripText") && !l.includes("const") && !l.includes("?"))
+    .filter(({ l }) => l.includes("stripText") && !l.includes("const "))
     .pop();
   if (!at) return null;
-  const win = lines.slice(Math.max(0, at.i - 3), at.i + 2).join("\n");
-  const base = /text-\[(\d+)px\]/.exec(win);
+  // Ближайшая строка вверх (включая саму), несущая размер шрифта, — это <p>
+  // полосы. Десять строк с запасом на многострочный тернарник.
+  let carrier: string | null = null;
+  for (let i = at.i; i >= Math.max(0, at.i - 10); i -= 1) {
+    if (/text-\[(\d+)px\]/.test(lines[i])) {
+      carrier = lines[i];
+      break;
+    }
+  }
+  if (!carrier) return null;
+  const base = /text-\[(\d+)px\]/.exec(carrier);
   if (!base) return null;
-  const md = /md:text-\[(\d+)px\]/.exec(win);
+  const md = /md:text-\[(\d+)px\]/.exec(carrier);
   return { mobile: Number(base[1]), desktop: md ? Number(md[1]) : Number(base[1]) };
 }
 

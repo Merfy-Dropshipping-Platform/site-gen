@@ -42,7 +42,7 @@ const paddingStyle = padding
           id="checkout-country"
           name="country"
           type="text"
-          autocomplete="off"
+          autocomplete="country-name"
           value={country.default}
           placeholder=" "
           readonly={!country.selectable}
@@ -63,17 +63,17 @@ const paddingStyle = padding
     {nameField.enabled && (nameField.splitFirstLast ? (
       <div class={C.fieldRow2}>
         <div class={C.field} data-checkout-field="firstName">
-          <input class={C.input} id="checkout-firstName" name="firstName" type="text" autocomplete="off" placeholder=" " />
+          <input class={C.input} id="checkout-firstName" name="firstName" type="text" autocomplete="given-name" placeholder=" " />
           <label class={C.label} for="checkout-firstName">Имя</label>
         </div>
         <div class={C.field} data-checkout-field="lastName">
-          <input class={C.input} id="checkout-lastName" name="lastName" type="text" autocomplete="off" placeholder=" " />
+          <input class={C.input} id="checkout-lastName" name="lastName" type="text" autocomplete="family-name" placeholder=" " />
           <label class={C.label} for="checkout-lastName">Фамилия</label>
         </div>
       </div>
     ) : (
       <div class={C.field} data-checkout-field="fullName">
-        <input class={C.input} id="checkout-fullName" name="fullName" type="text" autocomplete="off" placeholder=" " />
+        <input class={C.input} id="checkout-fullName" name="fullName" type="text" autocomplete="name" placeholder=" " />
         <label class={C.label} for="checkout-fullName">ФИО</label>
       </div>
     ))}
@@ -85,7 +85,7 @@ const paddingStyle = padding
         id="checkout-city"
         name="city"
         type="text"
-        autocomplete="off"
+        autocomplete="address-level2"
         placeholder=" "
         data-checkout-dadata-input="city"
       />
@@ -110,7 +110,7 @@ const paddingStyle = padding
           id="checkout-address"
           name="address"
           type="text"
-          autocomplete="off"
+          autocomplete="street-address"
           placeholder=" "
           data-checkout-dadata-input="address"
         />
@@ -125,7 +125,7 @@ const paddingStyle = padding
         )}
       </div>
       <div class={C.field} data-checkout-field="postalCode" data-autofill={String(indexAutoFill)}>
-        <input class={C.input} id="checkout-postal" name="postalCode" type="text" autocomplete="off" placeholder=" " />
+        <input class={C.input} id="checkout-postal" name="postalCode" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="postal-code" placeholder=" " />
         <label class={C.label} for="checkout-postal">Индекс</label>
       </div>
     </div>

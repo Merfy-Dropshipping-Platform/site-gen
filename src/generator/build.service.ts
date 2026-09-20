@@ -2369,15 +2369,29 @@ async function stageGenerate(
     );
   }
 
-  // Название магазина из админки — в подвал, если мерчант не задал своё в
-  // настройках секции (`copyright.companyName` сильнее). Без этого подвал
-  // откатывался на siteTitle из сида темы, то есть на имя темы.
+  // Название магазина из админки — в подвал, ВСЕГДА, когда оно задано.
+  //
+  // Владелец 20.09: «копирайт должен браться из платформы, из админки, если он
+  // там есть». Раньше стояло условие «только если поле пустое», и из-за него
+  // подвал печатал ВМОРОЖЕННОЕ значение прошлой сборки: замер 20.09 показал на
+  // витрине rose «Vanilla Pilot» (имя от другой темы), у bloom — запасное «Мой
+  // магазин», тогда как превью того же bloom уже показывало верное «Bloom
+  // Pilot». Переименование магазина в админке до подвала не доезжало вовсе.
+  //
+  // Перезаписывать безопасно: и `siteTitle`, и `copyright.companyName` в панели
+  // подвала объявлены `type: 'hidden'` — мерчант их не правит, туда кладёт
+  // сборка. Поэтому чистим и companyName: иначе мусор из сидов темы или старой
+  // ревизии остаётся сильнее (Footer.astro читает companyName ПЕРВЫМ) и снова
+  // перебивает имя из админки.
   if (ctx.siteName && pages.length > 0) {
     for (const page of pages) {
       const content = page.data.content as any[];
       for (const comp of content) {
-        if (comp?.type === "Footer" && comp.props && !String(comp.props.siteTitle ?? "").trim()) {
-          comp.props.siteTitle = ctx.siteName;
+        if (comp?.type !== "Footer" || !comp.props) continue;
+        comp.props.siteTitle = ctx.siteName;
+        const cr = comp.props.copyright as { companyName?: unknown } | undefined;
+        if (cr && String(cr.companyName ?? "").trim()) {
+          cr.companyName = "";
         }
       }
     }

@@ -307,6 +307,7 @@ export class SitesDomainService {
         currentRevisionId: schema.site.currentRevisionId,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
+        themeAppliedAt: schema.site.themeAppliedAt,
         publicUrl: schema.site.publicUrl,
         storageSlug: schema.site.storageSlug,
         coolifyAppUuid: schema.site.coolifyAppUuid,
@@ -357,6 +358,7 @@ export class SitesDomainService {
         branding: schema.site.branding,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
+        themeAppliedAt: schema.site.themeAppliedAt,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,
@@ -410,6 +412,7 @@ export class SitesDomainService {
         settings: schema.site.settings,
         createdAt: schema.site.createdAt,
         updatedAt: schema.site.updatedAt,
+        themeAppliedAt: schema.site.themeAppliedAt,
         theme: {
           id: schema.theme.id,
           name: schema.theme.name,

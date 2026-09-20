@@ -231,7 +231,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		{!isFieldHidden('image') && (
 		<div
 			class:list={[
-				"relative order-1 aspect-[375/362] overflow-hidden md:aspect-auto",
+				"relative order-1 aspect-[375/362] overflow-hidden rounded-[var(--radius-media,0px)] md:aspect-auto",
 				/* Реальное фото ИЛИ дизайн-ассет пустого состояния (landscape-iwt.png) —
 				   на тёмной подложке #111111 (cover). Контракт картиночных секций
 				   (правило 2): картинка показывается ВСЕГДА, surface-rect не остаётся. */

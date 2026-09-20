@@ -394,7 +394,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						    (правило 2): картинка показывается ВСЕГДА, surface-rect не остаётся. */}
 						<div
 							class:list={[
-								"relative overflow-hidden md:h-full",
+								"relative overflow-hidden rounded-[var(--radius-media,0px)] md:h-full",
 								row.image ? "bg-[#111111]" : "bg-[#FBFBFB]",
 								row.aspectCls,
 								row.right && "md:order-2",

@@ -24,9 +24,24 @@ const ROSE_SYSTEM_PAGE_IDS = [
   // Страница «Заказы» (/account/orders): пункт «Профиль → Заказы» открывал
   // витрину в режиме просмотра — настроить там было нечего.
   'page-orders',
+  // Страница «Вход» (/login): заведена в манифест позже остальных, и список
+  // здесь за ней не поехал — три проверки этого файла краснели на «13 против
+  // 14». Чтобы такое не повторялось молча, ниже стоит отдельная сверка списка
+  // с самим манифестом: она называет расхождение, а не просто роняет счётчик.
+  'page-login',
 ];
 
 describe('sites multipage integration', () => {
+  it('канонический список совпадает с манифестом темы rose', () => {
+    // Источник правды — packages/theme-rose/theme.json. Список выше пинит
+    // ПОРЯДОК и состав; расхождение здесь читается как «в манифест добавили
+    // страницу, а список не обновили» (или наоборот — страницу потеряли).
+    const manifest = require('../../packages/theme-rose/theme.json') as {
+      pages: Array<{ id: string }>;
+    };
+    expect(manifest.pages.map((pg) => pg.id)).toEqual(ROSE_SYSTEM_PAGE_IDS);
+  });
+
   it('PageResolver for rose buildInitialRevision returns all system pages', async () => {
     const resolver = getPageResolver('rose');
     const rev = await resolver.buildInitialRevision();

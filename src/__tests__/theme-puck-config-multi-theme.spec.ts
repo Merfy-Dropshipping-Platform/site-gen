@@ -90,11 +90,16 @@ describe("Theme manifest resolver (Phase 2a multi-theme wiring)", () => {
     expect(vanilla.id).toBe("vanilla");
     expect(rose.id).toBe("rose");
     expect(vanilla.defaults["--container-max-width"]).toBe("1320px");
-    // Фаза 3 defaults-сверка под верстальщика: внешняя обёртка rose 1920px
-    // (Header/Footer max-w-[1920px]), CTA радиус 6px (MANNER.md §3).
-    expect(rose.defaults["--container-max-width"]).toBe("1920px");
+    // Фаза 3 defaults-сверка под верстальщика: CTA радиус rose 6px
+    // (MANNER.md §3). Внешняя обёртка стала 1320px в `6d052b54`
+    // («контент-блоки по сетке», 22.06) — 1920px здесь остался от прежней
+    // ревизии вёрстки и держал проверку красной, ничего не сторожа.
+    expect(rose.defaults["--container-max-width"]).toBe("1320px");
     expect(vanilla.defaults["--radius-button"]).toBe("0px");
-    expect(rose.defaults["--radius-button"]).toBe("6px");
+    // 8px: `57b5f75c` («оживить theme-настройку Скругления») свёл радиусы rose
+    // к одному токену; 6px из MANNER.md §3 к тому моменту уже не отвечал ни
+    // манифесту, ни витрине.
+    expect(rose.defaults["--radius-button"]).toBe("8px");
   });
 
   it("bloom manifest inherits Header + Footer from base (spec 089 — no overrides)", () => {
@@ -158,7 +163,9 @@ describe("Theme manifest resolver (Phase 2a multi-theme wiring)", () => {
     );
     expect(fluxJson.id).toBe("flux");
     expect(fluxJson.defaults["--container-max-width"]).toBe("1320px");
-    expect(fluxJson.defaults["--radius-button"]).toBe("6px");
+    // 4px, а не 6px: `faf12884` («Hero, шапка и сетка полей — по вёрстке
+    // верстальщиков») поправил радиус под макет, проверка за ним не поехала.
+    expect(fluxJson.defaults["--radius-button"]).toBe("4px");
     expect(fluxJson.defaults["--radius-card"]).toBe("12px");
     // Orange accent signature
     expect(fluxJson.colorSchemes[0].tokens["--color-accent"]).toBe("250 81 9");
@@ -231,6 +238,9 @@ describe('ThemePuckConfigController base-block catalog parity (extraction)', () 
     // живут только на своих страницах.
     'AccountSection',
     'OrdersSection',
+    // Тело страницы «Вход» — заведено в `cce74446` вместе с самой страницей;
+    // список здесь за ним не поехал.
+    'LoginSection',
     'CheckoutSection',
     'CartBody',
     'CartSummary',

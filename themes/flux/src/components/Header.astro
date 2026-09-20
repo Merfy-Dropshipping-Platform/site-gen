@@ -160,7 +160,7 @@ const badgeCls =
 // становится сеткой [1fr_auto_1fr]: меню слева (может переноситься), лого в
 // средней ячейке (центр, пока фланги не шире 1fr), действия справа. Перекрытие
 // невозможно по построению.
-const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:order-2 md:justify-self-center" : ""}`;
+const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:order-2 md:col-start-2 md:justify-self-center" : ""}`;
 const mobileLogoCls = "flex items-center hover:opacity-80";
 
 // Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
@@ -168,6 +168,12 @@ const deskContainerBase = "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80
 // py-6 = вертикальный отступ верстальщика (дефолт); inline-стиль перебивает при настройке padding.
 const deskPadCls = headerPad ? "" : "py-6";
 const twoRowContainerCls = [deskContainerBase, "hidden flex-col gap-5 md:flex", deskPadCls].filter(Boolean).join(" ");
+// «По центру» (center-absolute) строит сетку [1fr auto 1fr]. Колонки закреплены
+// ЯВНО (md:col-start-1/2/3), а не самораскладкой: при «Боковом» меню навигация
+// скрывается через display:none и ВЫПАДАЕТ из сетки — логотип с иконками
+// съезжали на колонку влево, третья оставалась пустой (жалоба владельца 20.09,
+// замер: отступ справа 498px вместо 80). Сторож:
+// src/themes/__tests__/header-layout-menu-matrix.spec.ts.
 const singleRowContainerCls = [deskContainerBase, deskPadCls, isAbsoluteCenter ? "hidden items-center gap-6 md:grid md:grid-cols-[1fr_auto_1fr]" : "hidden items-center justify-between md:flex"].filter(Boolean).join(" ");
 
 // Пункт nav эталона: Roboto Flex 16px light; active чёрный, inactive #cccccc → hover чёрный.
@@ -423,7 +429,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					isSidebar && "md:!hidden",
 					/* «По центру»: nav живёт в левой 1fr-ячейке сетки; длинное меню
 					   вёрстки переносится на вторую строку, а не выползает под лого. */
-					isAbsoluteCenter && "md:order-1 md:min-w-0 md:flex-wrap md:gap-y-2 md:justify-self-start",
+					isAbsoluteCenter && "md:order-1 md:col-start-1 md:min-w-0 md:flex-wrap md:gap-y-2 md:justify-self-start",
 				]}
 				aria-label="Основная навигация" data-nav-inline
 				data-puck-subsection-parent={id}
@@ -440,7 +446,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 				))}
 			</nav>
 
-			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end", isAbsoluteCenter && "md:order-3 md:justify-self-end"]}>
+			<div class:list={["flex items-center gap-4", logoLeft && "flex-1 justify-end", isAbsoluteCenter && "md:order-3 md:col-start-3 md:justify-self-end"]}>
 				{showSearch && (
 					<button
 						type="button"

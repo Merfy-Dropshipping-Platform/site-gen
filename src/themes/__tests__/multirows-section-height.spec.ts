@@ -110,20 +110,17 @@ describe('«Мультиряды»: высота секции и стыки ря
     expect(src).not.toContain('h-full justify-center');
   });
 
-  it('bloom: на ≥lg ряды идут вплотную и без скруглений', () => {
+  it('bloom: ряды разделены зазором и скруглены на всех ширинах', () => {
     const src = read(portOf('bloom'));
 
-    // Ряды вплотную (канон владельца 17.09) — если зазор вернётся, снятие
-    // скруглений станет бессмысленным, и проверку ниже надо пересматривать.
-    expect(src).toContain('lg:gap-0');
-    // Медиа и текстовый контейнер гасят скругления на той же ширине.
-    expect(src).toContain('lg:rounded-none');
-    // Прежние половинчатые скругления стыка не вернулись.
-    expect(src).not.toContain('lg:rounded-l-[var(--radius-media,12px)]');
-    expect(src).not.toContain('lg:rounded-r-[var(--radius-media,12px)]');
-    expect(src).not.toContain('lg:rounded-l-[var(--radius-card,12px)]');
-    expect(src).not.toContain('lg:rounded-r-[var(--radius-card,12px)]');
-    // Мобильные скругления остаются: там ряды с зазором.
+    // ТРЕБОВАНИЕ СМЕНИЛОСЬ. 17.09 владелец просил ряды вплотную, 19.09 — снять
+    // скругления, раз стыка не видно. 20.09 он отменил и то, и другое:
+    // «остались отступы нужно добавить отступы», «скругление отвалилось когда
+    // отступов не было». Замер его живой главной подтверждал прежнее
+    // требование числами: зазор 0px, радиус 0px со всех сторон.
+    expect(src).not.toContain('lg:gap-0');
+    expect(src).not.toContain('lg:rounded-none');
+    // Базовое скругление на месте — именно оно теперь действует везде.
     expect(src).toContain('rounded-[var(--radius-media,12px)]');
   });
 });

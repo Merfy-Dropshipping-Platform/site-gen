@@ -239,7 +239,7 @@ const containerSchemeId = schemeIdOf(p.containerColorScheme);
 // ряда, ради чего колонка вообще получает класс схемы.
 const containerSchemeCls = (right: boolean) =>
 	containerSchemeId
-		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,238_238_238))] text-[rgb(var(--color-text,38_49_28))] h-full rounded-[var(--radius-card,0px)] p-6 md:p-10 ${right ? "lg:rounded-r-none lg:rounded-l-[var(--radius-card,0px)]" : "lg:rounded-l-none lg:rounded-r-[var(--radius-card,0px)]"}`
+		? ` color-scheme-${containerSchemeId} bg-[rgb(var(--color-bg,238_238_238))] text-[rgb(var(--color-text,38_49_28))] h-full rounded-[var(--radius-card,0px)] p-6 md:p-10 ${right ? "" : ""}`
 		: "";
 // per-item: surface-бокс на КАЖДЫЙ ряд при ВКЛ; ВЫКЛ — голый ряд.
 const rowBoxCls = containerEnabled
@@ -298,18 +298,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    ВПЛОТНУЮ, зазор РОВНО ноль на lg: (там же, где ряд становится
 		    двухколоночным — media-text-pair.spec.ts). На мобильном (одна колонка)
 		    зазор оставлен, иначе ряды сливаются в кашу (multirows-row-gap.spec.ts). */}
-		<ul class="flex w-full flex-col gap-8 lg:gap-0" role="list">
+		<ul class="flex w-full flex-col gap-8" role="list">
 			{
 				rows.map((r, i) => (
 					<li
-						class={`grid w-full grid-cols-1 gap-4 md:gap-10 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]} lg:gap-0${rowBoxCls}`}
+						class={`grid w-full grid-cols-1 gap-4 md:gap-10 ${ROW_SPLIT[rowSplitKey][r.right ? "textFirst" : "mediaFirst"]}${rowBoxCls}`}
 						data-animate
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index={i}
 						data-puck-subsection-field="rows"
 					>
 						<div
-							class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] ${r.aspectCls}${r.right ? " lg:order-2 lg:rounded-l-none lg:rounded-r-[var(--radius-media,0px)]" : " lg:rounded-r-none lg:rounded-l-[var(--radius-media,0px)]"}`}
+							class={`group relative w-full lg:h-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))] ${r.aspectCls}${r.right ? " lg:order-2" : ""}`}
 							aria-hidden={r.image ? undefined : "true"}
 						>
 							{r.image && (

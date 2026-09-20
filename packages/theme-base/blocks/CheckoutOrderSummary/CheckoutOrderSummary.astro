@@ -260,6 +260,16 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       });
     }
 
+    // Полная перестройка innerHTML рвёт узлы <img>: браузер заново создаёт
+    // картинки, и покупатель видит, как фотографии «подменяются». А
+    // cart:updated прилетает несколько раз подряд (локальная корзина → ответ
+    // сервера → применение промокода → ре-синк подарка), причём чаще всего
+    // рисовать надо РОВНО ТО ЖЕ.
+    //
+    // Поэтому сравниваем не поля позиций (их формы у локальной и серверной
+    // корзины разные — легко ошибиться в списке), а саму разметку: собрали
+    // строку, она совпала с тем, что уже в DOM — не трогаем DOM вовсе.
+    // Шесть позиций, конкатенация строк — дешевле одной перерисовки.
     function render() {
       if (loadingEl) loadingEl.hidden = true;
       var items = checkoutItems();
@@ -274,7 +284,8 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       if (emptyEl) emptyEl.hidden = true;
       if (itemsEl) {
         itemsEl.hidden = false;
-        itemsEl.innerHTML = items.map(renderItem).join('');
+        var html = items.map(renderItem).join('');
+        if (html !== itemsEl.innerHTML) itemsEl.innerHTML = html;
       }
       if (promoWrap) promoWrap.hidden = false;
     }

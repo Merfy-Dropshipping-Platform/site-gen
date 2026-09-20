@@ -159,6 +159,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     }
 
     function showEmpty(reason) {
+      listEl && listEl.removeAttribute('aria-busy');
       emptyEl && (emptyEl.hidden = false);
       // Если передан reason — оверайдим текст для лучшего UX (вместо общего
       // "Заполните адрес доставки..." показываем конкретику: cart пуст или
@@ -168,13 +169,26 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       errorEl && (errorEl.hidden = true);
       listEl && (listEl.hidden = true);
     }
+    // ПЕРЕСЧЁТ ПРИ УЖЕ ОТРИСОВАННОМ СПИСКЕ НЕ УБИРАЕТ СПИСОК.
+    // Раньше любой пересчёт (правка адреса, фоновый cart:updated) прятал
+    // список и показывал большой лоудер — на живом стенде это давало шесть
+    // переключений «список → лоудер → список» за шесть секунд, что покупатель
+    // видит как мерцание. Теперь пока есть что показывать, показываем старые
+    // варианты и помечаем список aria-busy; большой лоудер — только когда
+    // показывать нечего (первый расчёт).
     function showLoading() {
+      var hasList = !!(listEl && !listEl.hidden && listEl.children.length);
+      if (hasList) {
+        listEl.setAttribute('aria-busy', 'true');
+        return;
+      }
       emptyEl && (emptyEl.hidden = true);
       loadingEl && (loadingEl.hidden = false);
       errorEl && (errorEl.hidden = true);
       listEl && (listEl.hidden = true);
     }
     function showError(msg) {
+      listEl && listEl.removeAttribute('aria-busy');
       emptyEl && (emptyEl.hidden = true);
       loadingEl && (loadingEl.hidden = true);
       if (errorEl) { errorEl.hidden = false; errorEl.textContent = msg || 'Не удалось рассчитать доставку'; }
@@ -184,7 +198,7 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       emptyEl && (emptyEl.hidden = true);
       loadingEl && (loadingEl.hidden = true);
       errorEl && (errorEl.hidden = true);
-      listEl && (listEl.hidden = false);
+      if (listEl) { listEl.removeAttribute('aria-busy'); listEl.hidden = false; }
     }
 
     // ── CDEK ПВЗ-picker ────────────────────────────────────────────────────
@@ -776,8 +790,32 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
       render((lastJson && lastJson.data) || {}, addressKnown);
     }
 
+    // Адрес меняется ПАЧКОЙ: подсказка DaData шлёт событие на выбор города,
+    // потом на дом, потом на индекс — и каждая правка перезапускала расчёт с
+    // нуля вместе с лестницей ретраев 0/2/5/10 с. Первый пересчёт делаем
+    // СРАЗУ (покупатель не должен ждать), а всё, что прилетело следом в
+    // ближайшие 400 мс, схлопываем в один отложенный.
+    var _addrTimer = null;
+    var _lastAddrRecalcAt = 0;
+    var _lastAddrCity = null;
+    function scheduleAddressRecalc(detail, fn) {
+      var city = (detail && detail.cityFiasId) || '';
+      var now = Date.now();
+      if (_addrTimer) { clearTimeout(_addrTimer); _addrTimer = null; }
+      // Другой город — материальная смена (меняются и тарифы, и точки выдачи):
+      // считаем сразу, схлопывать нельзя. Схлопываем только уточнения ВНУТРИ
+      // того же города (дом, индекс), которые DaData шлёт подряд.
+      if (city !== _lastAddrCity || now - _lastAddrRecalcAt >= 400) {
+        _lastAddrCity = city;
+        _lastAddrRecalcAt = now;
+        fn();
+        return;
+      }
+      _addrTimer = setTimeout(function () { _lastAddrRecalcAt = Date.now(); fn(); }, 400);
+    }
     document.addEventListener('checkout:address-changed', function (e) {
-      recalculate(e && e.detail);
+      var detail = e && e.detail;
+      scheduleAddressRecalc(detail, function () { recalculate(detail); });
     });
     // Cart updates — пересчитать free shipping threshold + актуальные веса.
     // cart:updated прилетает ПОСЛЕ того, как страница создала серверную корзину

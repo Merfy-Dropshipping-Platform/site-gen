@@ -97,7 +97,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice } from "../../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, variantLabel } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -135,6 +135,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 							`<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
 						: "";
 
+				// Подпись варианта: без неё два разных варианта одного товара давали
+				// неразличимые строки (баг тестера про «Cold Brew»).
+				const variantUnderPrice = variantLabel(line.variant);
+
 				return `
 					<li class="flex flex-col gap-4 border-b border-[var(--vanilla-line)] py-6 first:pt-0 last:border-b-0 md:flex-row md:items-center md:justify-between md:gap-8" data-line-id="${line.id}">
 						<div class="flex min-w-0 flex-1 items-center gap-4 md:gap-6">
@@ -143,6 +147,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">
 								<a href="/products/${line.productId}" class="break-words font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]">${line.name}</a>
+							${variantUnderPrice
+								? `<span class="font-manrope text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">${variantUnderPrice}</span>`
+								: ""}
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${formatCartPrice(line.price * line.quantity)}</span>
 									${oldPriceHtml}

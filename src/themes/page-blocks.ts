@@ -904,6 +904,23 @@ function coerceImageWithTextProps(
 }
 
 function coerceMainTextProps(out: Record<string, unknown>): void {
+  // Размер спасаем ДО сплющивания: `heading` приходит конвертом {text, size},
+  // а схема блока ждёт строку. Раньше конверт плющился сразу, и размер
+  // выбрасывался — в панели «Большой», на витрине всегда средний (баг тестера
+  // «Основной текст ▸ Заголовок → Размер заголовка», перепроверено 20.09).
+  // Тот же приём уже стоит в ContactForm/ImageWithText/Collections.
+  const headingEnvelope = isPlainObject(out.heading)
+    ? (out.heading as Record<string, unknown>)
+    : null;
+  if (isHeadingSize(headingEnvelope?.size) && !isHeadingSize(out.headingSize)) {
+    out.headingSize = headingEnvelope!.size;
+  }
+  const textEnvelope = isPlainObject(out.text)
+    ? (out.text as Record<string, unknown>)
+    : null;
+  if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
+    out.textSize = textEnvelope!.size;
+  }
   const h = unwrapTextSize(out.heading);
   if (h.present) out.heading = h.value;
   else if (typeof out.heading !== 'string') out.heading = '';

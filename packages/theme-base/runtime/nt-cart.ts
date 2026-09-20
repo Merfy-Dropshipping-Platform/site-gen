@@ -59,6 +59,31 @@ export function variantLabel(variant: NtCartLineVariant | undefined): string {
 	return values.join(", ");
 }
 
+/**
+ * Пары «Имя: Значение» выбранного варианта — для тем, которые подписывают
+ * характеристики (flux: «Цвет: Красный», «Размер: M»). Старые позиции без
+ * `options` подписываются прежними именами, чтобы корзины, сохранённые до
+ * 20.09, не потеряли подпись.
+ */
+export function variantPairs(
+	variant: NtCartLineVariant | undefined,
+): Array<{ name: string; value: string }> {
+	if (!variant) return [];
+	const pairs: Array<{ name: string; value: string }> = [];
+	const push = (name: string, raw: unknown) => {
+		const value = typeof raw === "string" ? raw.trim() : "";
+		if (!value) return;
+		if (pairs.some((p) => p.value === value)) return;
+		pairs.push({ name, value });
+	};
+	if (variant.options && typeof variant.options === "object") {
+		for (const key of Object.keys(variant.options)) push(key, variant.options[key]);
+	}
+	push("Цвет", variant.color);
+	push("Размер", variant.size);
+	return pairs;
+}
+
 /** Разбор `data-variant-options` (JSON от страницы товара) в опции позиции. */
 export function parseVariantOptions(
 	raw: string | undefined,

@@ -1856,6 +1856,35 @@ async function stageMerge(
   // URLs via site.publicUrl. Live и preview iframe видят один и тот же URL,
   // merchant uploads (уже absolute) — без изменений. Single source of truth.
   ctx.revisionData = resolveAssetUrls(migrated, siteRow.publicUrl);
+
+  // Название магазина из админки — в подвал, ВСЕГДА, когда оно задано.
+  //
+  // Владелец 20.09: «копирайт должен браться из платформы, из админки, если он
+  // там есть». Правим ИСТОЧНИК — `ctx.revisionData`, — а не копию в массиве
+  // страниц: подвал собирается ДВУМЯ путями, и второй (`applyChromeToDist` →
+  // `assembleChrome`) читает именно revisionData. Замер 20.09 после первой
+  // попытки: rose/satin/vanilla починились, а bloom и flux продолжали печатать
+  // запасное «Мой магазин» при верном имени в превью — потому что правилась
+  // только одна из двух дорог.
+  //
+  // Перезаписывать безопасно: и `siteTitle`, и `copyright.companyName` в панели
+  // подвала объявлены `type: 'hidden'` — мерчант их не правит, туда пишет
+  // сборка. companyName чистим: `Footer.astro` читает его ПЕРВЫМ, и мусор из
+  // сидов темы снова перебил бы имя из админки.
+  if (ctx.siteName) {
+    const pagesData = (ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> })
+      ?.pagesData;
+    for (const pageKey of Object.keys(pagesData ?? {})) {
+      const content = pagesData?.[pageKey]?.content;
+      if (!Array.isArray(content)) continue;
+      for (const comp of content as Array<{ type?: string; props?: Record<string, unknown> }>) {
+        if (comp?.type !== "Footer" || !comp.props) continue;
+        comp.props.siteTitle = ctx.siteName;
+        const cr = comp.props.copyright as { companyName?: unknown } | undefined;
+        if (cr && String(cr.companyName ?? "").trim()) cr.companyName = "";
+      }
+    }
+  }
   ctx.revisionMeta = (revRow?.meta as Record<string, unknown>) ?? {};
 
   // Update build record with revisionId
@@ -2367,34 +2396,6 @@ async function stageGenerate(
     logger.log(
       `[generate] Overriding Header/Footer logo in ${pages.length} page(s) with branding: ${ctx.branding.logoUrl}`,
     );
-  }
-
-  // Название магазина из админки — в подвал, ВСЕГДА, когда оно задано.
-  //
-  // Владелец 20.09: «копирайт должен браться из платформы, из админки, если он
-  // там есть». Раньше стояло условие «только если поле пустое», и из-за него
-  // подвал печатал ВМОРОЖЕННОЕ значение прошлой сборки: замер 20.09 показал на
-  // витрине rose «Vanilla Pilot» (имя от другой темы), у bloom — запасное «Мой
-  // магазин», тогда как превью того же bloom уже показывало верное «Bloom
-  // Pilot». Переименование магазина в админке до подвала не доезжало вовсе.
-  //
-  // Перезаписывать безопасно: и `siteTitle`, и `copyright.companyName` в панели
-  // подвала объявлены `type: 'hidden'` — мерчант их не правит, туда кладёт
-  // сборка. Поэтому чистим и companyName: иначе мусор из сидов темы или старой
-  // ревизии остаётся сильнее (Footer.astro читает companyName ПЕРВЫМ) и снова
-  // перебивает имя из админки.
-  if (ctx.siteName && pages.length > 0) {
-    for (const page of pages) {
-      const content = page.data.content as any[];
-      for (const comp of content) {
-        if (comp?.type !== "Footer" || !comp.props) continue;
-        comp.props.siteTitle = ctx.siteName;
-        const cr = comp.props.copyright as { companyName?: unknown } | undefined;
-        if (cr && String(cr.companyName ?? "").trim()) {
-          cr.companyName = "";
-        }
-      }
-    }
   }
 
   const rawApiUrl = process.env.API_GATEWAY_URL ?? "https://gateway.merfy.ru";

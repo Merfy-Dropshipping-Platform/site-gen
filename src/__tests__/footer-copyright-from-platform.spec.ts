@@ -36,12 +36,16 @@ const FOOTER = readFileSync(
 /** Кусок сборки, отвечающий за имя в подвале. */
 const block = BUILD.slice(
   BUILD.indexOf("Название магазина из админки"),
-  BUILD.indexOf("Название магазина из админки") + 1400,
+  BUILD.indexOf("Название магазина из админки") + 1800,
 );
 
 describe("копирайт подвала берёт имя из платформы", () => {
   it("сборка не проверяет «поле пустое» перед подстановкой", () => {
-    expect(block).not.toMatch(/!String\(comp\.props\.siteTitle \?\? ""\)\.trim\(\)/);
+    // Кавычки в шаблоне не фиксируем: саботаж с одинарными кавычками проходил
+    // мимо точного совпадения, и гард молчал. Ловим саму СУТЬ — любую проверку
+    // непустоты siteTitle перед присваиванием.
+    expect(block).not.toMatch(/!String\(\s*comp\.props\.siteTitle/);
+    expect(block).not.toMatch(/comp\.props\.siteTitle\s*\?\?\s*['"]{2}\s*\)\s*\.trim\(\)/);
   });
 
   it("имя из админки кладётся в siteTitle безусловно", () => {
@@ -59,8 +63,33 @@ describe("копирайт подвала берёт имя из платфор�
     expect(block).toMatch(/comp\?\.type !== "Footer"/);
   });
 
+  /**
+   * ВТОРОЙ ЗАХОД 20.09. Сначала правился массив `pages`, и замер показал, что
+   * это лечит лишь часть: rose/satin/vanilla починились, bloom и flux остались
+   * на запасном «Мой магазин» при верном имени в превью. Причина — подвал
+   * собирается ДВУМЯ путями, и второй (`applyChromeToDist` → `assembleChrome`)
+   * читает `ctx.revisionData`, а не копию в pages. Поэтому правим ИСТОЧНИК.
+   */
+  it("правится источник — revisionData, а не копия в pages", () => {
+    expect(block).toMatch(/ctx\.revisionData as \{ pagesData\?/);
+    expect(block).not.toMatch(/for \(const page of pages\)/);
+  });
+
+  it("правка стоит сразу после загрузки ревизии, до её копий", () => {
+    const load = BUILD.indexOf("ctx.revisionData = resolveAssetUrls");
+    const patch = BUILD.indexOf("Название магазина из админки");
+    const pagesBuilt = BUILD.indexOf("const pages: PageEntry[] = []");
+    expect(load).toBeGreaterThan(-1);
+    expect(patch).toBeGreaterThan(load);
+    expect(patch).toBeLessThan(pagesBuilt);
+  });
+
+  it("обходит все страницы ревизии, а не только home", () => {
+    expect(block).toMatch(/Object\.keys\(pagesData \?\? \{\}\)/);
+  });
+
   it("без имени магазина ничего не трогаем", () => {
-    expect(block).toMatch(/if \(ctx\.siteName && pages\.length > 0\)/);
+    expect(block).toMatch(/if \(ctx\.siteName\) \{/);
   });
 
   it("оба поля скрыты от мерчанта — перезапись законна", () => {

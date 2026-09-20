@@ -84,3 +84,24 @@ describe('карточка товара: кнопка «В корзину» то
     expect(tag).not.toMatch(/rounded-full/);
   });
 });
+
+/**
+ * Витрина рисует CTA карточки тремя разными тегами: кнопка `data-add-to-cart`,
+ * ссылка `data-card-cta` (когда быстрого добавления нет) и степпер количества.
+ * Первый заход починил только кнопку — на живой витрине bloom осталась пилюля,
+ * потому что там показывалась ссылка. Проверяем все варианты сразу.
+ */
+describe('вся CTA-зона карточки слушает настройку', () => {
+  const FILES = [
+    'themes/bloom/src/lib/storefront-hydrate.ts',
+    'themes/bloom/src/components/products/BloomProductCard.astro',
+  ];
+
+  it.each(FILES)('%s: у CTA нет жёсткой пилюли', (rel) => {
+    const src = readFileSync(join(ROOT, rel), 'utf8');
+    for (const anchor of ['data-card-cta', 'qaStepper']) {
+      const re = new RegExp(`${anchor}[\\s\\S]{0,400}?rounded-full`);
+      expect(src).not.toMatch(re);
+    }
+  });
+});

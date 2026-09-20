@@ -1,41 +1,41 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
  * Жалоба владельца 20.09: «при положении логотипа „По центру" ломается — все
- * иконки». Замер матрицей 5 тем × 4 положения логотипа × 3 типа меню показал
- * ровно две дырки, обе в сочетании «По центру» + «Боковое»:
+ * иконки». Замер геометрии в браузере по матрице 5 тем × 4 положения логотипа ×
+ * 3 типа меню (окно 1280) нашёл ровно две дырки, обе в «По центру» + «Боковое»:
  *
- *   flux     отступ иконок справа 498px вместо 80
- *   vanilla  отступ иконок справа 968px вместо 80
+ *   flux     блок действий стоял в 498px от правого края вместо 80
+ *   vanilla  968px вместо 80
+ *   bloom, rose, satin — ровно во всех 12 сочетаниях
  *
- * Механизмы разные, симптом один. У flux «По центру» — сетка [1fr auto 1fr], а
- * «Боковое» прячет навигацию через display:none: элемент выпадает из сетки, и
- * логотип с иконками съезжают на колонку влево. У vanilla логотип абсолютный, в
- * потоке остаются меню и иконки, ряд раздаёт их justify-between — спрятали
- * меню, и единственный оставшийся блок прижался к левому краю.
+ * Механизмы разные, симптом один. «Боковое» прячет навигацию через
+ * `display:none`. У flux «По центру» — сетка `grid-cols-[1fr_auto_1fr]`, и
+ * скрытый элемент ВЫПАДАЕТ ИЗ СЕТКИ: логотип с иконками съезжали на колонку
+ * влево, третья оставалась пустой. У vanilla логотип абсолютный, в потоке
+ * остаются меню и иконки, ряд раздаёт их `justify-between` — спрятали меню, и
+ * единственный оставшийся блок прижимался к ЛЕВОМУ краю.
  *
- * Инвариант, который здесь держится: ТИП МЕНЮ НЕ ДВИГАЕТ ПРАВЫЙ КРАЙ БЛОКА
- * ДЕЙСТВИЙ. Бургер входит в блок: при «Боковом» он законно встаёт правее
- * остальных иконок (у satin — левее), и без него замер ловил бы эту разницу как
- * поломку.
- * Он не зависит от конкретных чисел вёрстки каждой темы и поэтому переживает
- * правки дизайна — в отличие от «отступ равен 80px».
+ * Здесь проверяется РЕЗУЛЬТАТ РЕНДЕРА настоящего скомпилированного модуля, а не
+ * исходник: пропы проходят полную живую цепочку, поэтому гард ловит и потерю
+ * класса, и потерю самого пропа. Геометрию браузером тут не меряем сознательно —
+ * ни один гард репозитория не поднимает браузер, и CI не ставит для него
+ * движки; замер выше делался вручную и воспроизводится тем же способом.
  */
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
-const ROOT = resolve(__dirname, "..", "..", "..");
-const THEMES = ["rose", "bloom", "flux", "satin", "vanilla"] as const;
-const POSITIONS = ["top-left", "top-center", "center-left", "center-absolute"] as const;
 const MENUS = ["dropdown", "mega-menu", "sidebar"] as const;
 
 const LINKS = [
   { text: "Главная", href: "/" },
   { text: "Наушники", href: "/catalog" },
-  { text: "Колонки", href: "/catalog" },
 ];
 
-function renderHeader(theme: string, logoPosition: string, menuType: string): string {
+function renderHeader(
+  theme: string,
+  menuType: string,
+  logoPosition = "center-absolute",
+): string {
   const props = {
     id: "Header-1",
     colorScheme: "1",
@@ -50,95 +50,50 @@ function renderHeader(theme: string, logoPosition: string, menuType: string): st
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   const [res] = JSON.parse(out) as Array<{ html?: string; error?: string }>;
-  if (res.error) throw new Error(`${theme}/${logoPosition}/${menuType}: ${res.error}`);
+  if (res.error)
+    throw new Error(`${theme}/${logoPosition}/${menuType}: ${res.error}`);
   return res.html ?? "";
 }
 
-/** Иконки подтягиваем данными, иначе file:// их не отдаёт и ширина будет нулевой. */
-const ICON_DIRS = (theme: string) => [
-  resolve(ROOT, "themes", theme, "public", "icons"),
-  resolve(ROOT, "themes", "rose", "public", "icons"),
-  resolve(ROOT, "themes", "satin", "public", "icons"),
-  resolve(ROOT, "packages", "theme-base", "public", "icons"),
-];
-
-function inlineIcons(html: string, theme: string): string {
-  return html.replace(/src="\/icons\/([^"]+)"/g, (whole, name: string) => {
-    for (const dir of ICON_DIRS(theme)) {
-      const file = resolve(dir, name);
-      if (existsSync(file)) {
-        return `src="data:image/svg+xml;base64,${readFileSync(file).toString("base64")}"`;
-      }
+describe("flux «По центру»: колонки сетки закреплены явно", () => {
+  /**
+   * Самораскладка сетки расставляет элементы по порядку, поэтому скрытая
+   * навигация сдвигала соседей. Явные col-start держат каждого в своей колонке
+   * независимо от того, сколько элементов реально видимы.
+   */
+  it.each(MENUS)("%s: в разметке есть все три колонки", (menu) => {
+    const html = renderHeader("flux", menu);
+    for (const col of ["md:col-start-1", "md:col-start-2", "md:col-start-3"]) {
+      expect({ menu, col, есть: html.includes(col) }).toEqual({
+        menu,
+        col,
+        есть: true,
+      });
     }
-    return whole;
   });
-}
 
-type Page = {
-  goto: (url: string, opts?: unknown) => Promise<unknown>;
-  evaluate: <T>(fn: () => T) => Promise<T>;
-  waitForTimeout: (ms: number) => Promise<void>;
-};
-
-let browser: { newPage: (o: unknown) => Promise<Page>; close: () => Promise<void> };
-let page: Page;
-
-beforeAll(async () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { chromium } = require("playwright");
-  browser = await chromium.launch();
-  page = await browser.newPage({ viewport: { width: 1280, height: 400 } });
-}, 120000);
-
-afterAll(async () => {
-  if (browser) await browser.close();
+  it("в других положениях логотипа сетки нет — колонки не навязываются", () => {
+    const html = renderHeader("flux", "dropdown", "top-left");
+    expect(html).not.toContain("md:col-start-");
+  });
 });
 
-async function actionsRightEdge(theme: string, pos: string, menu: string): Promise<number | null> {
-  const css = readFileSync(resolve(ROOT, "dist", "theme-css", `${theme}.css`), "utf8");
-  const html = inlineIcons(renderHeader(theme, pos, menu), theme);
-  const file = `/tmp/header-matrix-${theme}-${pos}-${menu}.html`;
-  writeFileSync(
-    file,
-    `<!doctype html><meta charset="utf-8"><style>${css}</style><style>body{margin:0}</style>${html}`,
-  );
-  await page.goto(`file://${file}`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(120);
-  return page.evaluate(() => {
-    const header = document.querySelector("header") ?? document.body.firstElementChild;
-    if (!header) return null;
-    const visible = (el: Element) =>
-      (el as HTMLElement).offsetParent !== null && el.getBoundingClientRect().width > 0;
-    const actions = [...header.querySelectorAll("a,button")].filter(
-      (el) =>
-        visible(el) &&
-        /Поиск|Корзина|Аккаунт|Избранное|Меню/.test(el.getAttribute("aria-label") ?? ""),
-    );
-    if (!actions.length) return null;
-    const right = Math.max(...actions.map((el) => el.getBoundingClientRect().right));
-    return Math.round(header.getBoundingClientRect().right - right);
+describe("vanilla «По центру»: блок действий прижат вправо сам по себе", () => {
+  /**
+   * Ряд раздаёт детей через justify-between, поэтому исчезновение соседа
+   * уводило иконки влево. `ml-auto` держит блок у правого края независимо от
+   * того, остался ли сосед.
+   */
+  it.each(MENUS)("%s: у блока действий есть ml-auto", (menu) => {
+    const html = renderHeader("vanilla", menu);
+    expect({ menu, есть: html.includes("ml-auto") }).toEqual({
+      menu,
+      есть: true,
+    });
   });
-}
 
-describe("шапка: тип меню не двигает правый край блока иконок", () => {
-  const cases: Array<[string, string]> = [];
-  for (const theme of THEMES) for (const pos of POSITIONS) cases.push([theme, pos]);
-
-  it.each(cases)(
-    "%s / %s: «Выпадающее», «Расширенное» и «Боковое» дают один и тот же отступ справа",
-    async (theme, pos) => {
-      const base = await actionsRightEdge(theme, pos, "dropdown");
-      expect(base).not.toBeNull();
-      for (const menu of MENUS) {
-        const got = await actionsRightEdge(theme, pos, menu);
-        expect({ theme, pos, menu, отступСправа: got }).toEqual({
-          theme,
-          pos,
-          menu,
-          отступСправа: base,
-        });
-      }
-    },
-    180000,
-  );
+  it("при логотипе слева прижатие не навязывается — там своё flex-1 justify-end", () => {
+    const html = renderHeader("vanilla", "dropdown", "center-left");
+    expect(html).toContain("justify-end");
+  });
 });

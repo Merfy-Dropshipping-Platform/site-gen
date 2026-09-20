@@ -66,18 +66,24 @@ const slides = rawSlides.slice(0, 5).map((s: any, i: number) => ({
 		(typeof s.imageUrl === "string" && s.imageUrl.trim()) ||
 		(hasSlides ? SLIDE_FALLBACKS[i % SLIDE_FALLBACKS.length] : ""),
 	title: (typeof s.heading === "string" ? s.heading : s.heading?.text) ?? "",
-	subtitle:
-		(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
-		(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined) ??
+			// Канон панели ПЕРВЫМ, легаси — запасным. Раньше порядок был обратным, а
+		// легаси почти всегда заполнено сидом, поэтому ввод мерчанта в «Текст» и
+		// «Кнопку» не доезжал до витрины: слайд показывал старые subtitle/ctaText
+		// (баг тестера, «Слайд-шоу ▸ Слайд — доезжает только Заголовок»). Тем же
+		// приёмом здесь уже чинили «Изображение (старое)».
+		subtitle:
+			(typeof s.text?.content === "string" && s.text.content.trim() ? s.text.content : undefined) ??
+			(typeof s.subtitle === "string" && s.subtitle.trim() ? s.subtitle : undefined) ??
 		"",
 	ctaText:
-		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
+		// Канон панели первым, легаси — запасным (см. subtitle выше).
 		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined) ??
+		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined) ??
 		"",
 	ctaHref:
-		(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
-		s.button?.link?.href ??
-		(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
+			s.button?.link?.href ??
+			(typeof s.button?.link === "string" && s.button.link ? s.button.link : undefined) ??
+			(typeof s.ctaUrl === "string" && s.ctaUrl ? s.ctaUrl : undefined) ??
 		"/catalog",
 	// Per-slide colorScheme — класс на слое фона (паритет bloom Slideshow).
 	schemeCls:

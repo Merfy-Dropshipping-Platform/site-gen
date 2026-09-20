@@ -141,7 +141,16 @@ const containerSchemeCls =
 const btnText = typeof p.buttonText === "string" && p.buttonText.trim() ? p.buttonText : undefined;
 const btnHref =
 	(typeof p.buttonLink === "string" && p.buttonLink ? p.buttonLink : undefined) ??
+	// Пикер сохраняет объект { href, text } — без этой ветки выбранная мерчантом
+	// ссылка терялась и кнопка вела на фолбэк (баг тестера, таблица «настройка
+	// не влияет на витрину»).
+	(p.buttonLink && typeof p.buttonLink === "object" && typeof (p.buttonLink as any).href === "string" && (p.buttonLink as any).href
+		? (p.buttonLink as any).href
+		: undefined) ??
 	(typeof p.link === "string" && p.link ? p.link : undefined) ??
+	(p.link && typeof p.link === "object" && typeof (p.link as any).href === "string" && (p.link as any).href
+		? (p.link as any).href
+		: undefined) ??
 	"/catalog";
 
 // Ссылки-CTA колонок: текстовые Arsenal uppercase с подчёркиванием (манера

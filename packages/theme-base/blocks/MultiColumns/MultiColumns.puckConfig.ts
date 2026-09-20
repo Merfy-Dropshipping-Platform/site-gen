@@ -14,7 +14,13 @@ const MultiColumnItemSchema = z.object({
   description: z.string().optional(),
   textSize: z.enum(['small', 'medium', 'large']).optional(),
   linkText: z.string().optional(),
-  link: z.string().optional(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+  link: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))).optional(),
   hidden: z.boolean().optional(),
 });
 
@@ -26,12 +32,20 @@ export const MultiColumnsAuthoringSchema = z.object({
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   imageAspectRatio: z.enum(['adapt', 'square', 'portrait', 'landscape']).optional(),
   buttonText: z.string().optional(),
-  buttonLink: z.string().optional(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+  buttonLink: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))).optional(),
   // Pupa parity: nested heading {text,alignment,size} + textPosition + background + containerColorScheme.
   textPosition: z.enum(['left', 'center']).optional(),
   containerEnabled: z.enum(['true', 'false']).optional(),
   containerColorScheme: z.string().optional(),
-  link: z.string().optional(),
+  link: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))).optional(),
   columns: z.array(MultiColumnItemSchema).min(1).max(10),
   displayColumns: z.union([
     z.literal(1),
@@ -349,9 +363,16 @@ export function resolveMultiColumnsSectionLink(raw: {
   buttonLink?: unknown;
   link?: unknown;
 }): string {
-  if (typeof raw.buttonLink === 'string') return raw.buttonLink;
-  if (typeof raw.link === 'string') return raw.link;
-  if (isRecord(raw.link) && typeof raw.link.href === 'string') return raw.link.href;
+  // Обе формы у ОБОИХ полей: пикер сохраняет объект { href, text }, стартовый
+  // контент и старые ревизии — строку. Раньше объектная форма разбиралась
+  // только у `link`, поэтому выбранная мерчантом ссылка кнопки секции не
+  // доезжала до витрины и блок падал на фолбэк (баг тестера про «/catalog»).
+  if (typeof raw.buttonLink === 'string' && raw.buttonLink) return raw.buttonLink;
+  if (isRecord(raw.buttonLink) && typeof raw.buttonLink.href === 'string' && raw.buttonLink.href) {
+    return raw.buttonLink.href;
+  }
+  if (typeof raw.link === 'string' && raw.link) return raw.link;
+  if (isRecord(raw.link) && typeof raw.link.href === 'string' && raw.link.href) return raw.link.href;
   return '/';
 }
 

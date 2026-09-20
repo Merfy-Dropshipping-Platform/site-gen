@@ -41,3 +41,43 @@ describe("MainText: размер заголовка переживает нор�
     expect(out.heading).toBe("Просто строка");
   });
 });
+
+/**
+ * Та же потеря была у ВСЕХ блоков без собственного нормализатора: общий
+ * `coerceGenericLegacyProps` разворачивал конверт `{text|content, size}` в
+ * голую строку. Отсюда пункты перепроверки про «Сворачиваемый раздел»,
+ * «Подписку на рассылку» и «Мультиколонны ▸ Колонна».
+ */
+describe("размер переживает нормализацию у блоков без своего коерсера", () => {
+  const BLOCKS = ["Newsletter", "CollapsibleSection", "MultiColumns", "MultiRows", "Video"];
+
+  it.each(BLOCKS)("%s: размер заголовка", (block) => {
+    const out = adaptLegacyProps(
+      { heading: { text: "Заголовок", size: "large" } },
+      null,
+      block,
+    ) as Record<string, unknown>;
+    expect(out.headingSize).toBe("large");
+    expect(out.heading).toBe("Заголовок");
+  });
+
+  it.each(BLOCKS)("%s: размер текста", (block) => {
+    const out = adaptLegacyProps(
+      { text: { content: "Текст", size: "small" } },
+      null,
+      block,
+    ) as Record<string, unknown>;
+    expect(out.textSize).toBe("small");
+    expect(out.text).toBe("Текст");
+  });
+
+  it("ImageWithText тоже сохраняет оба размера", () => {
+    const out = adaptLegacyProps(
+      { heading: { text: "З", size: "large" }, text: { content: "Т", size: "small" } },
+      null,
+      "ImageWithText",
+    ) as Record<string, unknown>;
+    expect(out.headingSize).toBe("large");
+    expect(out.textSize).toBe("small");
+  });
+});

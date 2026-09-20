@@ -67,10 +67,13 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		"/catalog";
 	return {
 		heading:
-			(typeof c.heading === "string" && c.heading) || (typeof c.title === "string" && c.title) || "",
+			// Канон панели («Заголовок»/«Текст» пишутся в title/description) ПЕРВЫМ,
+			// легаси heading/text — запасным: сид заполняет легаси всегда, поэтому
+			// ввод мерчанта не доезжал до витрины (баг тестера, перепроверено 20.09).
+			(typeof c.title === "string" && c.title) || (typeof c.heading === "string" && c.heading) || "",
 		text:
-			(typeof c.text === "string" && c.text) ||
 			(typeof c.description === "string" && c.description) ||
+			(typeof c.text === "string" && c.text) ||
 			"",
 		image:
 			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||

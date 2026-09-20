@@ -13,6 +13,12 @@ export type CatalogSort = 'newest' | 'popularity' | 'price-asc' | 'price-desc';
 export type CatalogAvailability = 'all' | 'in' | 'out';
 
 export interface CatalogUrlState {
+  /**
+   * Поисковый запрос из шапки: форма `<input name="q">` шлёт GET на /catalog.
+   * До 19.09.2026 каталог этот параметр не читал вовсе, и поиск по магазину
+   * не фильтровал ничего ни в одной теме (баг тестера #5).
+   */
+  query: string | undefined;
   collection: string | undefined;
   page: number;
   sort: CatalogSort;
@@ -53,8 +59,10 @@ export function parseCatalogUrlParams(params: URLSearchParams): CatalogUrlState 
     .filter((c) => c.length > 0);
 
   const collection = (params.get('collection') ?? '').trim() || undefined;
+  const query = (params.get('q') ?? '').trim() || undefined;
 
   return {
+    query,
     collection,
     page,
     sort,
@@ -67,6 +75,7 @@ export function parseCatalogUrlParams(params: URLSearchParams): CatalogUrlState 
 
 export function serializeCatalogUrlParams(state: CatalogUrlState): string {
   const params = new URLSearchParams();
+  if (state.query) params.set('q', state.query);
   if (state.collection) params.set('collection', state.collection);
   if (state.page > 1) params.set('page', String(state.page));
   if (state.sort !== 'newest') params.set('sort', state.sort);

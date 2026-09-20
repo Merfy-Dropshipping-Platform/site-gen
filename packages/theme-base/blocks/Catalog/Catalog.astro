@@ -699,6 +699,10 @@ const fmtPriceServer = (n: number | string | undefined): string => {
     // Local state for client-side filter/sort (preview parity with live).
     const state = {
       allProducts: [],
+      // Поисковый запрос из шапки (`<input name="q">` → GET /catalog?q=…).
+      // До 19.09.2026 каталог его не читал, и поиск не фильтровал ничего
+      // ни в одной теме (баг тестера #5).
+      query: urlState.query || '',
       sort: urlState.sort,
       stock: urlState.availability,  // 'all' | 'in' | 'out'
       priceMin: urlState.priceMin != null ? urlState.priceMin : null,
@@ -726,6 +730,7 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 
     function syncUrlState() {
       const params = new URLSearchParams(window.location.search);
+      if (state.query) params.set('q', state.query); else params.delete('q');
       if (state.collection) params.set('collection', state.collection); else params.delete('collection');
       if (state.page > 1) params.set('page', String(state.page)); else params.delete('page');
       if (state.sort && state.sort !== 'newest') params.set('sort', state.sort); else params.delete('sort');
@@ -741,6 +746,20 @@ const fmtPriceServer = (n: number | string | undefined): string => {
 
     function applyFilters(list) {
       let result = list.slice();
+      // Поиск по запросу из шапки: имя, артикул и описание — по всем словам
+      // запроса (И), без учёта регистра.
+      if (state.query) {
+        const words = String(state.query).toLowerCase().split(/\s+/).filter(Boolean);
+        if (words.length > 0) {
+          result = result.filter(function (p) {
+            const haystack = [p.name, p.title, p.sku, p.description]
+              .filter(function (v) { return typeof v === 'string' && v; })
+              .join(' ')
+              .toLowerCase();
+            return words.every(function (w) { return haystack.indexOf(w) !== -1; });
+          });
+        }
+      }
       // Collection filter
       if (state.collection) {
         result = result.filter(function (p) {

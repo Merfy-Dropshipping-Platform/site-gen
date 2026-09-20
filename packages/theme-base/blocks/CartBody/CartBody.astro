@@ -88,8 +88,16 @@ const schemeClass =
       return lines.map(function (l) {
         var v = l.variant || {};
         var opts = {};
-        if (v.color) opts['Цвет'] = v.color;
-        if (v.size) opts['Размер'] = v.size;
+        // Произвольные группы вариантов («Оттенок», «Объём») приезжают в
+        // v.options; Цвет/Размер остаются для позиций, сохранённых до 19.09
+        // (баг тестера #7 — строка корзины без подписи варианта).
+        if (v.options && typeof v.options === 'object') {
+          for (var ok in v.options) {
+            if (typeof v.options[ok] === 'string' && v.options[ok]) opts[ok] = v.options[ok];
+          }
+        }
+        if (v.color && !opts['Цвет']) opts['Цвет'] = v.color;
+        if (v.size && !opts['Размер']) opts['Размер'] = v.size;
         return {
           id: l.id,
           productId: l.productId,

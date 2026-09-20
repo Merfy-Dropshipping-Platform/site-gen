@@ -162,6 +162,7 @@ const schemeClass =
           var img = item.imageUrl || (item.images && item.images[0]) || item.image || '';
           var name = item.name || item.productName || 'Товар';
           var price = item.unitPriceCents || item.priceCents || item.price || 0;
+            var oldPrice = item.compareAtPriceCents || item.oldPrice || 0;
           var qty = item.quantity || 1;
           var vLines = variantLines(item);
 
@@ -182,6 +183,13 @@ const schemeClass =
                     '<div class="font-body" style="font-size: 20px; line-height: 27px; text-transform: uppercase; color: rgb(var(--color-heading));">' + name + '</div>' +
                     '<div style="display: flex; align-items: center; gap: 15px;">' +
                       '<span class="font-body" style="font-size: 24px; line-height: 33px; color: rgb(var(--color-text));">' + fmt(price) + '</span>' +
+              // Цена до скидки: данные приходят в compareAtPriceCents, но строка
+              // корзины её не рисовала — покупатель не видел выгоду (баг тестера,
+              // «в секции Корзина не отображается цена до скидки»). Манера та же,
+              // что в боковой корзине тем: приглушённый зачёркнутый текст рядом.
+              (oldPrice && oldPrice > price
+                ? '<span class="font-body" style="font-size: 16px; line-height: 22px; color: rgb(var(--color-muted)); text-decoration: line-through;">' + fmt(oldPrice) + '</span>'
+                : '') +
                     '</div>' +
                   '</div>' + vHtml +
                 '</div>' +

@@ -125,7 +125,7 @@ const href = `/products/${product.id}`;
 		data-price={product.price}
 		data-old-price={product.oldPrice ?? ""}
 		data-image={product.image}
-		class="flex h-11 w-full shrink-0 items-center justify-center px-3 font-manrope text-[14px] font-normal uppercase leading-none transition-opacity hover:opacity-80"
+		class="flex h-11 w-full shrink-0 items-center justify-center px-3 font-manrope text-[14px] font-normal uppercase leading-none transition-opacity hover:opacity-80 rounded-[var(--radius-button,0px)]"
 		style={cardBtnStyle ?? "background:rgb(var(--color-button-bg,0 0 0));color:rgb(var(--color-button-text,255 255 255));border:1px solid rgb(var(--color-button-bg,0 0 0));"}
 	>
 		В корзину

@@ -27,6 +27,15 @@ const defaultNav: NavLink[] = [
 // stickiness, padding, nav, logo, colorScheme, wishlist) работает поверх этой
 // вёрстки. Канон-схема theme-base Header.puckConfig — siteTitle, navigationLinks,
 // logo, logoPosition, stickiness, padding, menuType, menuColorScheme.
+// Размер ИКОНОК десктопных действий — 24px (size-6), кнопка остаётся 44px
+// (size-11, требование эталона и контракта scripts/__tests__/flux-header-
+// reference-contract.test.mjs — его не трогаем). Было 32px: жалоба владельца
+// 20.09 «иконки большие», та же по смыслу, что и по bloom. Замер: flux был
+// единственной темой с иконкой крупнее 24px (rose 24, bloom 20, satin/vanilla
+// 24), и крупнее собственного мобильного ряда flux, где всегда было size-6.
+// Кликабельная область не уменьшилась — менялось только содержимое кнопки.
+// Сторож: src/themes/__tests__/flux-header-icon-size.spec.ts.
+
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить название магазина.
@@ -256,7 +265,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-8" />
+									<NtIcon name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
 						</div>
@@ -274,7 +283,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<NtIcon name="cart" sizeClass="size-6" />
 									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 								</button>
 							)}
@@ -284,7 +293,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<NtIcon name="user" sizeClass="size-6" />
 								</a>
 							)}
 							{isSidebar && (
@@ -338,7 +347,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-8" />
+									<NtIcon name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
 							<FluxWishlistLink badgeCls={badgeCls} />
@@ -349,7 +358,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-8" />
+									<NtIcon name="cart" sizeClass="size-6" />
 									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 								</button>
 							)}
@@ -359,7 +368,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-8" />
+									<NtIcon name="user" sizeClass="size-6" />
 								</a>
 							)}
 							{isSidebar && (
@@ -439,7 +448,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Поиск"
 					>
-						<NtIcon name="search-lg" sizeClass="size-8" />
+						<NtIcon name="search-lg" sizeClass="size-6" />
 					</button>
 				)}
 				<FluxWishlistLink badgeCls={badgeCls} />
@@ -450,7 +459,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
-						<NtIcon name="cart" sizeClass="size-8" />
+						<NtIcon name="cart" sizeClass="size-6" />
 						<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 					</button>
 				)}
@@ -460,7 +469,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Аккаунт"
 					>
-						<NtIcon name="user" sizeClass="size-8" />
+						<NtIcon name="user" sizeClass="size-6" />
 					</a>
 				)}
 				{isSidebar && (
@@ -582,7 +591,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,0_0_0))]"
 						aria-label="Профиль"
 					>
-						<NtIcon name="user" sizeClass="size-8" class="invert" />
+						<NtIcon name="user" sizeClass="size-6" class="invert" />
 					</a>
 				)}
 			</div>

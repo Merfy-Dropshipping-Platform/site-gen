@@ -1270,6 +1270,16 @@ jobs:
       # src/__tests__/ в прогон не входит.
       - if: false
         run: pnpm exec jest --runInBand src/__tests__/footer-copyright-from-platform.spec.ts src/__tests__/footer-brand-from-admin.spec.ts
+      # ПОВЕДЕНЧЕСКАЯ проверка подстановки в подвал: гоняет сам applyFooterData
+      # на поддельной базе. Заведена потому, что текстовые гарды выше остались
+      # ЗЕЛЁНЫМИ на саботаже `if (false && signature)` — строка присваивания на
+      # месте, подстановка мертва. Владелец 20.09: «не тянет изменения из
+      # содержимого темы».
+      # Саботаж проверен: мёртвая подстановка подписи — 3 проверки, дефолт как
+      # мерчантский текст — 1, запись имени только в пустое поле — 1, пропуск
+      # чистки companyName — 1, отпечаток без подписи — 2.
+      - if: false
+        run: pnpm exec jest --runInBand src/utils/__tests__/footer-data-signature.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

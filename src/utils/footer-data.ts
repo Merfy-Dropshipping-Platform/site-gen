@@ -55,7 +55,9 @@ const POLICY_TITLE_MAP: Record<string, string> = {
  *  • phone / socialColumn.email — телефон/почта из «Информация о компании» (site_contacts);
  *  • socialColumn.contactFields — ОСТАЛЬНЫЕ поля (адрес/часы/ИНН/любая инфа);
  *  • socialColumn.socialLinks — фильтр пустых/«#» + нормализация схемы (https://);
- *  • paymentEnabled — только при подключённой кассе (billing.shop_payment_settings).
+ *  • paymentEnabled — только при подключённой кассе (billing.shop_payment_settings);
+ *  • siteTitle — название магазина из админки;
+ *  • copyright.poweredBy — подпись платформы из окна «Содержимое темы».
  *
  * Общая логика build (runBuildPipeline после stageMerge) и preview-контроллера —
  * чтобы конструктор/превью показывали тот же футер, что live (parity).
@@ -82,6 +84,42 @@ export async function applyFooterData(
         label: POLICY_TITLE_MAP[p.type] ?? p.type,
         href: `${legalBase}/${POLICY_SLUG_MAP[p.type] ?? p.type}`,
       }));
+
+    // Магазин: название и настройки. Подпись платформы в подвале задаётся в
+    // окне «Редактировать содержимое темы» (меню карточки темы в админке) и
+    // хранится в `site.settings.themeBrandName`.
+    //
+    // ПОЧЕМУ ЗДЕСЬ, А НЕ В СБОРКЕ. До 20.09 эта подстановка жила в
+    // `build.service.ts` и работала ТОЛЬКО на сборке витрины: конструктор и
+    // превью идут другим путём и настройку не читали вовсе — мерчант правил
+    // текст и не видел изменения нигде, пока сайт не пересоберут. Здесь
+    // единственное место, которое зовут ОБА пути (build после stageMerge и
+    // preview-контроллер), — поэтому подстановка переехала сюда.
+    const siteRows = await deps.db
+      .select({
+        name: deps.schema.site.name,
+        settings: deps.schema.site.settings,
+      })
+      .from(deps.schema.site)
+      .where(eq(deps.schema.site.id, siteId));
+    const siteName =
+      typeof siteRows[0]?.name === "string" && siteRows[0].name.trim()
+        ? siteRows[0].name.trim()
+        : null;
+    // Стандартный текст правкой мерчанта не считается: тема сама подставит
+    // дефолт и оставит его ССЫЛКОЙ на https://merfy.ru/. Пропусти дефолт в
+    // проп — и тема сочтёт его мерчантским и ссылку снимет.
+    const PLATFORM_SIGNATURE_DEFAULTS = new Set([
+      "powered by merfy",
+      "разработано на merfy",
+    ]);
+    const signature = (() => {
+      const raw = (siteRows[0]?.settings as { themeBrandName?: unknown } | null)
+        ?.themeBrandName;
+      if (typeof raw !== "string" || !raw.trim()) return null;
+      const value = raw.trim();
+      return PLATFORM_SIGNATURE_DEFAULTS.has(value.toLowerCase()) ? null : value;
+    })();
 
     // Контакты компании.
     const contactsRows = await deps.db
@@ -180,6 +218,19 @@ export async function applyFooterData(
         else delete props.phone;
 
         props.paymentEnabled = paymentEnabled;
+
+        // Название магазина — БЕЗУСЛОВНО. Проверка «поле пустое» держала в
+        // подвале вмороженное значение прошлой сборки (на одном стенде — имя
+        // чужой темы, на другом «Мой магазин»), а править это поле мерчант всё
+        // равно не может: в панели подвала оно `type: 'hidden'`.
+        if (siteName) props.siteTitle = siteName;
+        const cr = (props.copyright ?? null) as Record<string, unknown> | null;
+        // companyName читается темой ПЕРВЫМ и перебил бы название из админки.
+        if (cr && String(cr.companyName ?? "").trim()) cr.companyName = "";
+        if (signature) {
+          if (cr) cr.poweredBy = signature;
+          else props.copyright = { poweredBy: signature };
+        }
         footerCount++;
       }
     }
@@ -197,7 +248,10 @@ export async function applyFooterData(
       d instanceof Date ? d.getTime() : typeof d === "string" ? Date.parse(d) || 0 : 0;
     const contactsTs = ts(contactsRows[0]?.updatedAt);
     const policyTs = policies.reduce((m, p) => Math.max(m, ts(p.updatedAt)), 0);
-    return `${contactsTs}.${policyTs}.${policyLinks.length}.${paymentEnabled ? 1 : 0}`;
+    // Подпись и название магазина входят в отпечаток: без них превью отдавало
+    // бы закэшированный HTML со старым текстом сразу после правки в админке.
+    const sig = signature ? signature.length + ":" + signature : "-";
+    return `${contactsTs}.${policyTs}.${policyLinks.length}.${paymentEnabled ? 1 : 0}.${siteName ?? "-"}.${sig}`;
   } catch (err) {
     logger?.warn(
       `[footer-data] applyFooterData failed: ${err instanceof Error ? err.message : String(err)}`,

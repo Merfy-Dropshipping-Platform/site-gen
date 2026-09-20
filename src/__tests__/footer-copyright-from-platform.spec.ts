@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
+ * Имя в подвале приходит из платформы, а не вмораживается прошлой сборкой.
+ *
  * Владелец 20.09: «по подвалу просто копирайт должен браться из платформы, из
  * админки, если он там есть».
  *
- * ЧТО БЫЛО. Сборка клала название магазина в подвал только когда поле пустое
+ * ЧТО БЫЛО. Подстановка шла только когда поле пустое
  * (`!String(comp.props.siteTitle ?? "").trim()`), поэтому печаталось
  * ВМОРОЖЕННОЕ значение прошлой сборки. Замер 20.09:
  *
@@ -17,13 +19,17 @@ import { resolve } from "node:path";
  *
  * ПОЧЕМУ ПЕРЕЗАПИСЫВАТЬ МОЖНО. И `siteTitle`, и `copyright.companyName` в
  * панели подвала объявлены `type: 'hidden'` — мерчант их не редактирует, туда
- * пишет сборка. Единственный источник, который мерчант реально задаёт, — имя
- * магазина в админке. Поэтому companyName тоже чистим: `Footer.astro` читает
- * его ПЕРВЫМ, и мусор из сидов темы снова перебил бы имя из админки.
+ * пишет платформа. Единственное, что он реально задаёт, — название магазина в
+ * админке. Поэтому companyName тоже чистим: `Footer.astro` читает его ПЕРВЫМ,
+ * и мусор из сидов темы снова перебил бы имя из админки.
+ *
+ * ГДЕ ЖИВЁТ. В `applyFooterData` (utils/footer-data.ts) — единственном месте,
+ * которое зовут ОБА пути рендера. В `build.service.ts` подстановка работала
+ * только на сборке витрины, и конструктор её не видел.
  */
 
 const SITES_ROOT = resolve(__dirname, "..", "..");
-const BUILD = readFileSync(resolve(SITES_ROOT, "src/generator/build.service.ts"), "utf-8");
+const FOOTER_DATA = readFileSync(resolve(SITES_ROOT, "src/utils/footer-data.ts"), "utf-8");
 const PANEL = readFileSync(
   resolve(SITES_ROOT, "packages/theme-base/blocks/Footer/Footer.puckConfig.ts"),
   "utf-8",
@@ -33,60 +39,32 @@ const FOOTER = readFileSync(
   "utf-8",
 );
 
-/** Кусок сборки, отвечающий за имя в подвале. */
-const ANCHOR = "Окно «Редактировать содержимое темы»";
-const block = BUILD.slice(BUILD.indexOf(ANCHOR), BUILD.indexOf(ANCHOR) + 2600);
-
 describe("копирайт подвала берёт имя из платформы", () => {
-  it("сборка не проверяет «поле пустое» перед подстановкой", () => {
+  it("нет проверки «поле пустое» перед подстановкой", () => {
     // Кавычки в шаблоне не фиксируем: саботаж с одинарными кавычками проходил
     // мимо точного совпадения, и гард молчал. Ловим саму СУТЬ — любую проверку
     // непустоты siteTitle перед присваиванием.
-    expect(block).not.toMatch(/!String\(\s*comp\.props\.siteTitle/);
-    expect(block).not.toMatch(/comp\.props\.siteTitle\s*\?\?\s*['"]{2}\s*\)\s*\.trim\(\)/);
+    expect(FOOTER_DATA).not.toMatch(/!String\(\s*props\.siteTitle/);
+    expect(FOOTER_DATA).not.toMatch(/props\.siteTitle\s*\?\?\s*['"]{2}\s*\)\s*\.trim\(\)/);
   });
 
-  it("имя магазина кладётся в siteTitle безусловно", () => {
-    // ВТОРАЯ ПОПРАВКА 20.09. Сначала сюда клали значение из окна «Содержимое
-    // темы», но копирайт из тем убрали, и `siteTitle` перестал быть виден:
-    // поле в админке правилось, а в подвале не менялось ничего. Теперь
-    // `siteTitle` — это название МАГАЗИНА (подпись логотипа, плейсхолдер
-    // почты), а значение окна идёт в подпись платформы, см. проверки ниже.
-    expect(block).toMatch(/comp\.props\.siteTitle = footerBrand;/);
-    expect(block).toMatch(/const footerBrand = ctx\.siteName/);
-  });
-
-  it("значение окна «Содержимое темы» идёт в подпись платформы", () => {
-    expect(block).toMatch(/cr\.poweredBy = signatureFromSettings;/);
-    expect(block).toMatch(/comp\.props\.copyright = \{ poweredBy: signatureFromSettings \}/);
-  });
-
-  it("стандартный текст подписи не считается правкой мерчанта", () => {
-    // Иначе «Разработано на Merfy», сохранённое кнопкой без изменений, ушло бы
-    // в проп как мерчантский текст — и тема сняла бы с него ссылку.
-    expect(block).toMatch(/PLATFORM_SIGNATURE_DEFAULTS/);
-    expect(block).toMatch(/"powered by merfy"/);
-    expect(block).toMatch(/"разработано на merfy"/);
-    expect(block).toMatch(/\.has\(value\.toLowerCase\(\)\) \? null : value/);
+  it("имя магазина кладётся в siteTitle", () => {
+    expect(FOOTER_DATA).toMatch(/if \(siteName\) props\.siteTitle = siteName;/);
+    expect(FOOTER_DATA).toMatch(/name: deps\.schema\.site\.name/);
   });
 
   it("companyName чистится — иначе он читается первым и перебивает", () => {
-    const wider = BUILD.slice(
-      BUILD.indexOf(ANCHOR),
-      BUILD.indexOf(ANCHOR) + 3400,
-    );
-    expect(wider).toMatch(/cr\.companyName = "";/);
+    expect(FOOTER_DATA).toMatch(/cr\.companyName = "";/);
     // порядок в самом подвале: companyName идёт раньше siteTitle
-    const order = FOOTER.slice(FOOTER.indexOf("copyright?.companyName"), FOOTER.indexOf("copyright?.companyName") + 200);
+    const order = FOOTER.slice(
+      FOOTER.indexOf("copyright?.companyName"),
+      FOOTER.indexOf("copyright?.companyName") + 200,
+    );
     expect(order).toMatch(/siteTitle/);
   });
 
   it("подстановка идёт только в блок подвала", () => {
-    const wider = BUILD.slice(
-      BUILD.indexOf(ANCHOR),
-      BUILD.indexOf(ANCHOR) + 3400,
-    );
-    expect(wider).toMatch(/comp\?\.type !== "Footer"/);
+    expect(FOOTER_DATA).toMatch(/component\?\.type !== "Footer"/);
   });
 
   /**
@@ -94,28 +72,16 @@ describe("копирайт подвала берёт имя из платфор�
    * это лечит лишь часть: rose/satin/vanilla починились, bloom и flux остались
    * на запасном «Мой магазин» при верном имени в превью. Причина — подвал
    * собирается ДВУМЯ путями, и второй (`applyChromeToDist` → `assembleChrome`)
-   * читает `ctx.revisionData`, а не копию в pages. Поэтому правим ИСТОЧНИК.
+   * читает `revisionData`, а не копию в pages. Поэтому правим ИСТОЧНИК.
    */
   it("правится источник — revisionData, а не копия в pages", () => {
-    expect(block).toMatch(/ctx\.revisionData as \{ pagesData\?/);
-    expect(block).not.toMatch(/for \(const page of pages\)/);
-  });
-
-  it("правка стоит сразу после загрузки ревизии, до её копий", () => {
-    const load = BUILD.indexOf("ctx.revisionData = resolveAssetUrls");
-    const patch = BUILD.indexOf(ANCHOR);
-    const pagesBuilt = BUILD.indexOf("const pages: PageEntry[] = []");
-    expect(load).toBeGreaterThan(-1);
-    expect(patch).toBeGreaterThan(load);
-    expect(patch).toBeLessThan(pagesBuilt);
+    expect(FOOTER_DATA).not.toMatch(/for \(const page of pages\)/);
   });
 
   it("обходит все страницы ревизии, а не только home", () => {
-    expect(block).toMatch(/Object\.keys\(pagesData \?\? \{\}\)/);
-  });
-
-  it("без имени магазина и без подписи ничего не трогаем", () => {
-    expect(block).toMatch(/if \(footerBrand \|\| signatureFromSettings\) \{/);
+    expect(FOOTER_DATA).toMatch(/Object\.keys\(rev\.pagesData\)/);
+    // и легаси-массив content тоже
+    expect(FOOTER_DATA).toMatch(/Array\.isArray\(rev\.content\)/);
   });
 
   it("оба поля скрыты от мерчанта — перезапись законна", () => {
@@ -126,12 +92,13 @@ describe("копирайт подвала берёт имя из платфор�
 
 describe("саботаж: гард ловит возврат прежнего поведения", () => {
   it("условие «только если пусто» — красный", () => {
-    const old = 'if (comp?.type === "Footer" && comp.props && !String(comp.props.siteTitle ?? "").trim()) {';
+    const old =
+      'if (comp?.type === "Footer" && comp.props && !String(comp.props.siteTitle ?? "").trim()) {';
     expect(/!String\(comp\.props\.siteTitle \?\? ""\)\.trim\(\)/.test(old)).toBe(true);
   });
 
   it("без чистки companyName — красный", () => {
-    const naive = "comp.props.siteTitle = ctx.siteName;";
+    const naive = "props.siteTitle = siteName;";
     expect(/cr\.companyName = ""/.test(naive)).toBe(false);
   });
 });

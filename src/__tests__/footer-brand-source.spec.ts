@@ -97,23 +97,22 @@ describe("подвал: источник названия и логотипа", 
     expect(block).toMatch(/comp\.props\.logo\s*=\s*ctx\.branding\.logoUrl/);
   });
 
-  it("сборка подставляет подвалу название бренда из платформы", () => {
-    // ПОПРАВКА 20.09. Раньше здесь требовалось обратное: писать имя ТОЛЬКО
-    // когда поле пустое — «чтобы не затереть правку мерчанта». Правки мерчанта
-    // там не бывает: и `siteTitle`, и `copyright.companyName` объявлены в
-    // панели подвала `type: 'hidden'`, туда пишет сборка. Из-за проверки на
-    // пустоту в подвал ехало ВМОРОЖЕННОЕ значение прошлой сборки — на rose
-    // стояло имя чужой темы, на bloom «Мой магазин», переименование магазина
-    // до витрины не доходило вовсе. Условие снято; источник имени теперь
-    // шире — сперва бренд из окна «Содержимое темы», затем название магазина.
-    const build = readFileSync(resolve(ROOT, "src/generator/build.service.ts"), "utf-8");
-    const start = build.indexOf("const footerBrand = ctx.siteName");
-    expect(start).toBeGreaterThan(-1);
-    const block = build.slice(start, start + 900);
-    expect(block).toContain('"Footer"');
-    expect(block).toMatch(/const footerBrand = ctx\.siteName \?\? null;/);
-    expect(block).toMatch(/comp\.props\.siteTitle = footerBrand;/);
+  it("название магазина подставляет общий модуль подвала, а не сборка", () => {
+    // ТРИ ПОПРАВКИ ЗА ДЕНЬ, и каждая снимала прежнее требование.
+    //
+    //  1. Раньше здесь требовалось писать имя ТОЛЬКО когда поле пустое —
+    //     «чтобы не затереть правку мерчанта». Правки мерчанта там не бывает:
+    //     и `siteTitle`, и `copyright.companyName` объявлены в панели подвала
+    //     `type: 'hidden'`. Из-за проверки на пустоту в подвал ехало
+    //     ВМОРОЖЕННОЕ значение прошлой сборки.
+    //  2. Источник расширили окном «Содержимое темы» — и тут же сузили
+    //     обратно: копирайт из тем убрали, `siteTitle` перестал быть виден.
+    //  3. Подстановка уехала из сборки в `applyFooterData`: в сборке её видел
+    //     только один путь из двух, и конструктор настройку не тянул вовсе.
+    const footerData = readFileSync(resolve(ROOT, "src/utils/footer-data.ts"), "utf-8");
+    expect(footerData).toMatch(/component\?\.type !== "Footer"/);
+    expect(footerData).toMatch(/if \(siteName\) props\.siteTitle = siteName;/);
     // И никакой проверки «поле пустое» перед записью — ровно её и снимали.
-    expect(block).not.toMatch(/!String\(\s*comp\.props\.siteTitle/);
+    expect(footerData).not.toMatch(/!String\(\s*props\.siteTitle/);
   });
 });

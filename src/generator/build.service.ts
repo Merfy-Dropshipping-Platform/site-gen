@@ -392,13 +392,6 @@ export interface BuildContext {
   /** Site settings (checkout config, etc.) */
   settings?: {
     requireCustomerAuth?: boolean;
-    /**
-     * Название бренда для копирайта подвала. Правится в админке через меню
-     * карточки темы → «Редактировать содержимое темы» (подпись поля:
-     * «Замените стандартный текст на название бренда»). Заполнено — побеждает
-     * название магазина; пусто — берётся название магазина.
-     */
-    themeBrandName?: string;
   };
   /** Название магазина (site.name) — для name/short_name в web-manifest. */
   siteName?: string;
@@ -1880,53 +1873,13 @@ async function stageMerge(
   // подвала объявлены `type: 'hidden'` — мерчант их не правит, туда пишет
   // сборка. companyName чистим: `Footer.astro` читает его ПЕРВЫМ, и мусор из
   // сидов темы снова перебил бы имя из админки.
-  // Окно «Редактировать содержимое темы» (админка, меню на карточке темы) —
-  // ЕДИНСТВЕННЫЙ источник подписи платформы в подвале. Владелец 20.09:
-  // «Идёт только из содержимого темы, изначально во всех темах сделать
-  // Разработано на Merfy… но при изменении ссылка убирается и идёт просто
-  // текст». Стандартное значение поля («Powered by merfy» / «Разработано на
-  // Merfy») считаем НЕ тронутым: тема сама подставит дефолт и оставит ссылку.
-  //
-  // Раньше это значение писалось в `siteTitle` — то есть в имя бренда внутри
-  // копирайта. После 20.09 копирайт темы не собирают вовсе, и запись в
-  // `siteTitle` перестала быть видна где-либо: поле в админке правилось, а в
-  // подвале не менялось ничего. Поэтому значение идёт туда, где оно и видно,
-  // — в `copyright.poweredBy`.
-  const PLATFORM_SIGNATURE_DEFAULTS = new Set([
-    "powered by merfy",
-    "разработано на merfy",
-  ]);
-  const signatureFromSettings = (() => {
-    const raw = (ctx.settings as { themeBrandName?: unknown } | undefined)
-      ?.themeBrandName;
-    if (typeof raw !== "string" || !raw.trim()) return null;
-    const value = raw.trim();
-    return PLATFORM_SIGNATURE_DEFAULTS.has(value.toLowerCase()) ? null : value;
-  })();
-  // `siteTitle` — это название МАГАЗИНА (подпись логотипа, плейсхолдер почты),
-  // и берётся оно из админки магазина, а не из окна содержимого темы.
-  const footerBrand = ctx.siteName ?? null;
+  // Подстановка названия магазина и подписи платформы в подвал переехала в
+  // `applyFooterData` (utils/footer-data.ts) — единственное место, которое
+  // зовут ОБА пути рендера. Здесь она работала только на сборке витрины:
+  // конструктор и превью идут своим путём и настройку не читали вовсе, то есть
+  // мерчант правил текст в админке и не видел изменения нигде.
+  // Вызов: injectFooterData(), сразу после stageMerge.
 
-  if (footerBrand || signatureFromSettings) {
-    const pagesData = (ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> })
-      ?.pagesData;
-    for (const pageKey of Object.keys(pagesData ?? {})) {
-      const content = pagesData?.[pageKey]?.content;
-      if (!Array.isArray(content)) continue;
-      for (const comp of content as Array<{ type?: string; props?: Record<string, unknown> }>) {
-        if (comp?.type !== "Footer" || !comp.props) continue;
-        if (footerBrand) comp.props.siteTitle = footerBrand;
-        const cr = comp.props.copyright as
-          | { companyName?: unknown; poweredBy?: unknown }
-          | undefined;
-        if (cr && String(cr.companyName ?? "").trim()) cr.companyName = "";
-        if (signatureFromSettings) {
-          if (cr) cr.poweredBy = signatureFromSettings;
-          else comp.props.copyright = { poweredBy: signatureFromSettings };
-        }
-      }
-    }
-  }
   ctx.revisionMeta = (revRow?.meta as Record<string, unknown>) ?? {};
 
   // Update build record with revisionId

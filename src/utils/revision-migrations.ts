@@ -1057,8 +1057,10 @@ export function migrateVanillaHomePage(
         menuType: 'dropdown',
         navigationLinks: [
           { label: 'Каталог', href: '/catalog' },
-          { label: 'Мебель', href: '/collections/mebel' },
-          { label: 'Декор', href: '/collections/dekor' },
+          // Демо-пункты «Мебель» и «Декор» убраны: они ссылались на коллекции
+          // магазина верстальщиков, а у настоящего магазина их нет — стартовое
+          // меню отдавало 404 (баг тестера, перепроверено 20.09). Свои коллекции
+          // мерчант добавляет пикером, тот пишет рабочий /collections/<slug>.
         ],
         actionButtons: { showSearch: true, showCart: true, showProfile: true },
         colorScheme: 'scheme-1',
@@ -1209,7 +1211,10 @@ export function migrateVanillaHomePage(
             'Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.',
           size: 'medium',
         },
-        button: { text: 'Смотреть мебель', link: '/collections/mebel' },
+        // Кнопка ведёт в каталог, а не в коллекцию магазина верстальщиков:
+        // «Мебель» у настоящего магазина может не быть (та же причина, что у
+        // пунктов меню выше).
+        button: { text: 'Смотреть каталог', link: '/catalog' },
         imagePosition: 'right',
         ctaPosition: 'bottom-pinned',
         textStyle: 'italic',
@@ -1287,8 +1292,10 @@ export function migrateVanillaHomePage(
           title: 'Магазин',
           links: [
             { label: 'Каталог', href: '/catalog' },
-            { label: 'Мебель', href: '/collections/mebel' },
-            { label: 'Декор', href: '/collections/dekor' },
+            // Демо-пункты «Мебель» и «Декор» убраны: они ссылались на коллекции
+            // магазина верстальщиков, а у настоящего магазина их нет — стартовое
+            // меню отдавало 404 (баг тестера, перепроверено 20.09). Свои коллекции
+            // мерчант добавляет пикером, тот пишет рабочий /collections/<slug>.
           ],
         },
         informationColumn: {

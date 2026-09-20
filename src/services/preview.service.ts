@@ -1431,6 +1431,20 @@ const PREVIEW_NAV_AGENT_INLINE = `
     return (c && typeof c === 'object') ? c : undefined;
   }
 
+  // Товар, который сейчас показывает превью. Жалоба владельца 19.09: «при
+  // выборе товара через верхнее меню в сайдбаре отображает другой товар и при
+  // любом изменении сбрасывает секцию на товар из сайдбара». Причина: целая
+  // страница превью уважает выбор из меню (?productId= приоритетнее настройки
+  // блока), а ТОЧЕЧНЫЙ перерендер про него не знал вовсе — он рендерил строго
+  // props секции, то есть настройку сайдбара. Любая правка возвращала «свой»
+  // товар. Глобал ставит тот же инжектор, что и для коллекции, и несёт уже
+  // разрешённый выбор: productIdOverride, иначе настройка блока. Читаем ЛЕНИВО —
+  // порядок инжектов не гарантирован; нет глобала → ключ не уедет.
+  function previewProductId() {
+    var p = window.__MERFY_DEFAULT_PRODUCT_ID__;
+    return (typeof p === 'string' && p) ? p : undefined;
+  }
+
   // Spec 090 — local-patch state. Хранит последний known props per blockId
   // чтобы compute diff при следующем update-block.
   var LAST_PROPS = {};
@@ -2477,7 +2491,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
       fetch('/api/sites/' + currentSiteId + '/preview/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId, collectionContext: collectionCtx() }),
+        body: JSON.stringify({ blockType: blockType, props: newProps, themeId: currentThemeId, collectionContext: collectionCtx(), productId: previewProductId() }),
       })
         .then(function (r) {
           if (!r.ok) {
@@ -2708,7 +2722,7 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return fetch('/api/sites/' + currentSiteId + '/preview/block', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId, collectionContext: collectionCtx() }),
+          body: JSON.stringify({ blockType: job.type, props: job.props, themeId: currentThemeId, collectionContext: collectionCtx(), productId: previewProductId() }),
         })
           .then(function (r) { return r.ok ? r.text() : null; })
           .then(function (html) {

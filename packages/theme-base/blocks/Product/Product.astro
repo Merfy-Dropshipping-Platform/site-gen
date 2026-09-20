@@ -621,6 +621,17 @@ const cartImage = view.gallery.hero?.src ?? '';
       }
       if (col) addBtn.setAttribute('data-variant-color', col); else addBtn.removeAttribute('data-variant-color');
       if (sz) addBtn.setAttribute('data-variant-size', sz); else addBtn.removeAttribute('data-variant-size');
+      // ВСЕ выбранные опции, а не только Цвет/Размер: «Оттенок», «Объём»,
+      // «Вкус» иначе теряются, и корзина показывает две одинаковые строки на
+      // два разных варианта (баг тестера #7).
+      var optsOut = {};
+      var hasOpts = false;
+      for (const k2 in selectedOptions) {
+        const val2 = selectedOptions[k2];
+        if (typeof val2 === 'string' && val2.trim()) { optsOut[k2] = val2.trim(); hasOpts = true; }
+      }
+      if (hasOpts) addBtn.setAttribute('data-variant-options', JSON.stringify(optsOut));
+      else addBtn.removeAttribute('data-variant-options');
     }
 
     // Apply product (preview re-render). Assumes primitive structure exists.

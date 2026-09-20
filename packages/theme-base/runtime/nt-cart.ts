@@ -26,8 +26,57 @@ import { createCartAddedModal } from "./cart-added-modal";
 export interface NtCartLineVariant {
 	color?: string;
 	size?: string;
+	/**
+	 * ВСЕ выбранные опции комбинации: «Оттенок» → «Cold Brew», «Объём» → «50 мл».
+	 * До 19.09.2026 позиция знала только `color`/`size` — страница товара
+	 * распознавала ровно имена групп «Цвет»/«Размер», и любой другой вариант
+	 * доезжал до корзины без подписи: две одинаковые строки на два разных
+	 * оттенка (баг тестера #7). Старые позиции из localStorage живут дальше на
+	 * `color`/`size` — `variantLabel` понимает обе формы.
+	 */
+	options?: Record<string, string>;
 	/** combinationId реальной комбинации — уходит в backend cart → order_items. */
 	variantCombinationId?: string;
+}
+
+/**
+ * Подпись варианта в строке корзины — ОДНА на дровер, страницу корзины и
+ * сводку. Порядок значений — как объявлены опции комбинации; устаревшие
+ * `color`/`size` добавляются, только если их ещё нет среди опций.
+ */
+export function variantLabel(variant: NtCartLineVariant | undefined): string {
+	if (!variant) return "";
+	const values: string[] = [];
+	const push = (raw: unknown) => {
+		const v = typeof raw === "string" ? raw.trim() : "";
+		if (v && !values.includes(v)) values.push(v);
+	};
+	if (variant.options && typeof variant.options === "object") {
+		for (const key of Object.keys(variant.options)) push(variant.options[key]);
+	}
+	push(variant.color);
+	push(variant.size);
+	return values.join(", ");
+}
+
+/** Разбор `data-variant-options` (JSON от страницы товара) в опции позиции. */
+export function parseVariantOptions(
+	raw: string | undefined,
+): Record<string, string> | undefined {
+	if (!raw) return undefined;
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return undefined;
+		const out: Record<string, string> = {};
+		for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+			const k = String(key).trim();
+			const v = typeof value === "string" ? value.trim() : "";
+			if (k && v) out[k] = v;
+		}
+		return Object.keys(out).length > 0 ? out : undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 export interface NtCartLine {
@@ -466,6 +515,10 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 				const variant = {
 					color: addBtn.dataset.variantColor || undefined,
 					size: addBtn.dataset.variantSize || undefined,
+					// Произвольные группы вариантов («Оттенок», «Объём», «Вкус»):
+					// страница товара кладёт их сюда JSON-ом, иначе подпись строки
+					// собиралась бы из пустых color/size (баг тестера #7).
+					options: parseVariantOptions(addBtn.dataset.variantOptions),
 					variantCombinationId: addBtn.dataset.variantCombinationId || undefined,
 				};
 				const productId = addBtn.dataset.productId ?? "";

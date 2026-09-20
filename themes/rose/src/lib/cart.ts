@@ -7,6 +7,7 @@
  */
 import {
 	createNtCart,
+	variantLabel,
 	type NtCartLine,
 	type NtCartLineVariant,
 } from "../../../../packages/theme-base/runtime/nt-cart";
@@ -28,7 +29,7 @@ const api = createNtCart({
 	// токенизирует. Сторож: pnpm test:cart-scheme (секции CartBody/CartSummary),
 	// на строки дровера смотрит новый test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
-		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+		const variant = variantLabel(line.variant);
 		const pHref = `${productPathPrefix}/${line.productId}`;
 		const thumb = cartLineThumbPictureHtml(line.image, line.name);
 		return `

@@ -35,8 +35,8 @@ const FOOTER = readFileSync(
 
 /** Кусок сборки, отвечающий за имя в подвале. */
 const block = BUILD.slice(
-  BUILD.indexOf("Название магазина из админки"),
-  BUILD.indexOf("Название магазина из админки") + 1800,
+  BUILD.indexOf("Название бренда из окна"),
+  BUILD.indexOf("Название бренда из окна") + 2400,
 );
 
 describe("копирайт подвала берёт имя из платформы", () => {
@@ -49,18 +49,29 @@ describe("копирайт подвала берёт имя из платфор�
   });
 
   it("имя из админки кладётся в siteTitle безусловно", () => {
-    expect(block).toMatch(/comp\.props\.siteTitle = ctx\.siteName;/);
+    // ПОПРАВКА 20.09: источник стал шире — сперва бренд из окна «Содержимое
+    // темы», затем название магазина. Обе ветки собраны в `footerBrand`.
+    expect(block).toMatch(/comp\.props\.siteTitle = footerBrand;/);
+    expect(block).toMatch(/const footerBrand = brandFromSettings \?\? ctx\.siteName/);
   });
 
   it("companyName чистится — иначе он читается первым и перебивает", () => {
-    expect(block).toMatch(/cr\.companyName = "";/);
+    const wider = BUILD.slice(
+      BUILD.indexOf("Название бренда из окна"),
+      BUILD.indexOf("Название бренда из окна") + 3200,
+    );
+    expect(wider).toMatch(/cr\.companyName = "";/);
     // порядок в самом подвале: companyName идёт раньше siteTitle
     const order = FOOTER.slice(FOOTER.indexOf("copyright?.companyName"), FOOTER.indexOf("copyright?.companyName") + 200);
     expect(order).toMatch(/siteTitle/);
   });
 
   it("подстановка идёт только в блок подвала", () => {
-    expect(block).toMatch(/comp\?\.type !== "Footer"/);
+    const wider = BUILD.slice(
+      BUILD.indexOf("Название бренда из окна"),
+      BUILD.indexOf("Название бренда из окна") + 3200,
+    );
+    expect(wider).toMatch(/comp\?\.type !== "Footer"/);
   });
 
   /**
@@ -89,7 +100,7 @@ describe("копирайт подвала берёт имя из платфор�
   });
 
   it("без имени магазина ничего не трогаем", () => {
-    expect(block).toMatch(/if \(ctx\.siteName\) \{/);
+    expect(block).toMatch(/if \(footerBrand\) \{/);
   });
 
   it("оба поля скрыты от мерчанта — перезапись законна", () => {

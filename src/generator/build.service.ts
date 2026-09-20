@@ -390,7 +390,16 @@ export interface BuildContext {
   /** Branding overrides (logo, colors, favicons, home SEO) from site table */
   branding?: { logoUrl?: string; primaryColor?: string; secondaryColor?: string; favicons?: { universal?: string; dark?: string; light?: string; apple?: string }; seo?: { title?: string; description?: string; keywords?: string } };
   /** Site settings (checkout config, etc.) */
-  settings?: { requireCustomerAuth?: boolean };
+  settings?: {
+    requireCustomerAuth?: boolean;
+    /**
+     * Название бренда для копирайта подвала. Правится в админке через меню
+     * карточки темы → «Редактировать содержимое темы» (подпись поля:
+     * «Замените стандартный текст на название бренда»). Заполнено — побеждает
+     * название магазина; пусто — берётся название магазина.
+     */
+    themeBrandName?: string;
+  };
   /** Название магазина (site.name) — для name/short_name в web-manifest. */
   siteName?: string;
   /**
@@ -1871,7 +1880,21 @@ async function stageMerge(
   // подвала объявлены `type: 'hidden'` — мерчант их не правит, туда пишет
   // сборка. companyName чистим: `Footer.astro` читает его ПЕРВЫМ, и мусор из
   // сидов темы снова перебил бы имя из админки.
-  if (ctx.siteName) {
+  // Название бренда из окна «Редактировать содержимое темы» (админка, меню на
+  // карточке темы; подпись поля — «Замените стандартный текст на название
+  // бренда»). Владелец 20.09: копирайт «должен браться исключительно из
+  // Содержимое темы в админке… если заполнено, а не от темы».
+  //
+  // Приоритет: бренд из этого поля → название магазина → ничего. Имя ТЕМЫ в
+  // копирайт не попадает ни при каком раскладе.
+  const brandFromSettings = (() => {
+    const raw = (ctx.settings as { themeBrandName?: unknown } | undefined)
+      ?.themeBrandName;
+    return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+  })();
+  const footerBrand = brandFromSettings ?? ctx.siteName ?? null;
+
+  if (footerBrand) {
     const pagesData = (ctx.revisionData as { pagesData?: Record<string, { content?: unknown[] }> })
       ?.pagesData;
     for (const pageKey of Object.keys(pagesData ?? {})) {
@@ -1879,7 +1902,7 @@ async function stageMerge(
       if (!Array.isArray(content)) continue;
       for (const comp of content as Array<{ type?: string; props?: Record<string, unknown> }>) {
         if (comp?.type !== "Footer" || !comp.props) continue;
-        comp.props.siteTitle = ctx.siteName;
+        comp.props.siteTitle = footerBrand;
         const cr = comp.props.copyright as { companyName?: unknown } | undefined;
         if (cr && String(cr.companyName ?? "").trim()) cr.companyName = "";
       }

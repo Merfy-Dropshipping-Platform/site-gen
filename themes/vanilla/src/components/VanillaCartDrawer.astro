@@ -39,7 +39,12 @@ const {
 	catalogHref = "/catalog/textile",
 	signInHref = "/login",
 	cartHref = "/cart",
-	checkoutHref = "/cart",
+	// Кнопка панели ведёт в ЧЕКАУТ. Панель — это и есть корзина, просто в
+	// формате сайдбара (настройка темы «Корзина → Сайдбар»), и вести из
+	// корзины в корзину бессмысленно. До 2026-09-20 у пропа с говорящим
+	// именем стоял дефолт `/cart`, а Layout монтирует панель без него —
+	// поэтому кнопка уводила на страницу корзины.
+	checkoutHref = "/checkout",
 	title = "Корзина",
 	dismissLabel = "Скрыть",
 	class: className = "",
@@ -113,8 +118,12 @@ const evToggle = `${eventPrefix}:toggle`;
 					<span>Итого</span>
 					<span data-cart-total>0 ₽</span>
 				</div>
+				{/* data-astro-reload: у vanilla включены ViewTransitions, а SPA-переход
+				    не перезапускает инлайн-скрипты чекаута (DaData, СДЭК, оплата) —
+				    тот же атрибут стоит у кнопки на странице корзины. */}
 				<a
 					href={checkoutHref}
+					data-astro-reload
 					class="inline-flex h-12 items-center justify-center border border-[var(--vanilla-header-bg)] bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-[12px] font-medium uppercase leading-none tracking-[0.02em] text-white transition-opacity hover:opacity-90"
 				>
 					Оформить заказ

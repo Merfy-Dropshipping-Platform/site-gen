@@ -325,7 +325,7 @@ export function renderCardHtml(p: RealProduct, quickAdd?: string): string {
 	const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
 	const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";
 	const comboSize = comboOpt["Размер"] || comboOpt["Size"] || "";
-	const cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-80";
+	const cartBtnCls = "mt-2 flex h-11 w-full items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-manrope text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-80";
 	// «Количество»: счётчик перед кнопкой, зеркало SSR-ветки SatinProductCard —
 	// после подмены innerHTML мерчант обязан видеть то же, что в статике.
 	const stepper =

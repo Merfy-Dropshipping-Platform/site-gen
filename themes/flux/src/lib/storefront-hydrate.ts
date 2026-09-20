@@ -773,7 +773,7 @@ function saleBadgeHtml(p: RealProduct): string {
 // Чёрная CTA эталона (literal — карточка верстальщиков светлая независимо от
 // схемы; data-btn-style на гриде Popular перекрывает её через <style is:global>).
 const CARD_BTN_CLS =
-  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+  "mt-auto inline-flex h-11 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,0_0_0)))] bg-[rgb(var(--color-button-bg,0_0_0))] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
 /**
  * Кнопка «В корзину» карточки. Вариативный товар → добавляет ПЕРВУЮ доступную

@@ -196,8 +196,15 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
           return arr.map(function (l) {
             var v = l.variant || {};
             var opts = {};
-            if (v.color) opts['Цвет'] = v.color;
-            if (v.size) opts['Размер'] = v.size;
+            // Как в CartBody: произвольные группы («Оттенок», «Объём») из
+            // v.options, Цвет/Размер — совместимость со старыми позициями.
+            if (v.options && typeof v.options === 'object') {
+              for (var ok in v.options) {
+                if (typeof v.options[ok] === 'string' && v.options[ok]) opts[ok] = v.options[ok];
+              }
+            }
+            if (v.color && !opts['Цвет']) opts['Цвет'] = v.color;
+            if (v.size && !opts['Размер']) opts['Размер'] = v.size;
             var rub = parseFloat(l.price) || 0;
             return {
               id: l.id,

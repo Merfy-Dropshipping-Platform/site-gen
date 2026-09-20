@@ -295,32 +295,32 @@ const skeletons = Array.from({ length: skeletonCount });
           <div class="flex flex-wrap items-start gap-3">
             {filterVisible && (
               <>
-                <details class="group relative [&[open]]:z-30">
+                <details class="group relative max-md:static [&[open]]:z-30">
                   <summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
                     <span>Наличие</span>
                     <FluxNtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <NtFilterPanel panel="stock" />
                   </div>
                 </details>
 
-                <details class="group relative [&[open]]:z-30">
+                <details class="group relative max-md:static [&[open]]:z-30">
                   <summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
                     <span>Стоимость</span>
                     <FluxNtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <NtFilterPanel panel="price" />
                   </div>
                 </details>
 
-                <details class="group relative [&[open]]:z-30">
+                <details class="group relative max-md:static [&[open]]:z-30">
                   <summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
                     <span>Цвет</span>
                     <FluxNtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <NtFilterPanel panel="color" />
                   </div>
                 </details>
@@ -330,12 +330,12 @@ const skeletons = Array.from({ length: skeletonCount });
                     ссылок тайлов Collections/Gallery. Манера = бордерные details-кнопки
                     выше, панель опций — в стиле NtFilterPanel. Активное состояние
                     синхронизируется с секцией сайдбара (side). */}
-                <details class="group relative [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
+                <details class="group relative max-md:static [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
                   <summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-between gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
                     <span data-collections-label>Коллекции</span>
                     <FluxNtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-1 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <div class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-muted,153_153_153)/0.1)] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-normal">
                       <ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
                     </div>
@@ -346,12 +346,12 @@ const skeletons = Array.from({ length: skeletonCount });
           </div>
 
           {sortVisible && (
-            <details class="group relative [&[open]]:z-30">
+            <details class="group relative max-md:static [&[open]]:z-30">
               <summary class="flex h-10 min-w-[180px] cursor-pointer list-none items-center justify-end gap-2 rounded-[6px] bg-[rgb(var(--color-surface,255_255_255))] px-3 font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-90 [&::-webkit-details-marker]:hidden">
                 <span>По популярности</span>
                 <FluxNtIcon name="dropdown-chevron" sizeClass="size-5" class="transition-transform group-open:rotate-180" />
               </summary>
-              <div class="absolute right-0 top-full z-30 mt-1 w-[180px]">
+              <div class="absolute right-0 top-full z-30 mt-1 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                 <NtFilterPanel panel="sort" />
               </div>
             </details>
@@ -1019,6 +1019,12 @@ const skeletons = Array.from({ length: skeletonCount });
   let seenRealProducts = false;
 
   const filters = {
+    // Поисковый запрос из шапки: /catalog?q=… . Читается один раз при
+    // загрузке — форма шапки делает полный переход, не SPA-навигацию.
+    query:
+    	typeof window !== "undefined"
+    		? (new URLSearchParams(window.location.search).get("q") || "").trim()
+    		: "",
     stock: "all",
     priceMin: null,
     priceMax: null,
@@ -1117,6 +1123,12 @@ const skeletons = Array.from({ length: skeletonCount });
     qp.set("store_id", String(storeId ?? ""));
     qp.set("page", String(page));
     qp.set("limit", String(getPageSize()));
+
+    // Поиск из шапки: форма шлёт GET /catalog?q=… . API понимает q сам
+    // (проверено live: q=Bloom → 1 товар из 6), витрина его просто не
+    // передавала — поиск не фильтровал ничего ни в одной теме (баг тестера #5).
+    const searchQ = (filters.query || "").trim();
+    if (searchQ) qp.set("q", searchQ);
 
     const sortMap = {
       popularity: "popular",

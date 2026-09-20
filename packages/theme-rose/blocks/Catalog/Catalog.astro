@@ -266,38 +266,38 @@ const skeletons = Array.from({ length: skeletonCount });
           <div class="flex flex-wrap items-center gap-3">
             {filterVisible && (
               <>
-                <details class="relative [&[open]]:z-30">
+                <details class="relative max-md:static [&[open]]:z-30">
                   <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span>Наличие</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                     </span>
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <NtFilterPanel panel="stock" />
                   </div>
                 </details>
 
-                <details class="relative [&[open]]:z-30">
+                <details class="relative max-md:static [&[open]]:z-30">
                   <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span>Стоимость</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                     </span>
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <NtFilterPanel panel="price" />
                   </div>
                 </details>
 
-                <details class="relative [&[open]]:z-30">
+                <details class="relative max-md:static [&[open]]:z-30">
                   <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span>Цвет</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                     </span>
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <NtFilterPanel panel="color" />
                   </div>
                 </details>
@@ -307,14 +307,14 @@ const skeletons = Array.from({ length: skeletonCount });
                     ссылок тайлов Collections/Gallery. Манера = details-дропдауны выше,
                     открытая панель — 1:1 рецепт корня NtFilterPanel. Активное
                     состояние синхронизируется с секцией сайдбара (side). */}
-                <details class="relative [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
+                <details class="relative max-md:static [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
                   <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span data-collections-label>Коллекции</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                     </span>
                   </summary>
-                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px]">
+                  <div class="absolute left-0 top-full z-30 mt-2 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                     <div class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-[100%]">
                       <ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
                     </div>
@@ -325,14 +325,14 @@ const skeletons = Array.from({ length: skeletonCount });
           </div>
 
           {sortVisible && (
-            <details class="relative [&[open]]:z-30">
+            <details class="relative max-md:static [&[open]]:z-30">
               <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                 <span class="flex items-center gap-2">
                   <span>По популярности</span>
                   <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                 </span>
               </summary>
-              <div class="absolute right-0 top-full z-30 mt-2 w-[180px]">
+              <div class="absolute right-0 top-full z-30 mt-2 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
                 <NtFilterPanel panel="sort" />
               </div>
             </details>
@@ -857,6 +857,12 @@ const skeletons = Array.from({ length: skeletonCount });
   let seenRealProducts = false;
 
   const filters = {
+    // Поисковый запрос из шапки: /catalog?q=… . Читается один раз при
+    // загрузке — форма шапки делает полный переход, не SPA-навигацию.
+    query:
+    	typeof window !== "undefined"
+    		? (new URLSearchParams(window.location.search).get("q") || "").trim()
+    		: "",
     stock: "all",
     priceMin: null,
     priceMax: null,
@@ -956,6 +962,12 @@ const skeletons = Array.from({ length: skeletonCount });
     qp.set("store_id", String(storeId ?? ""));
     qp.set("page", String(page));
     qp.set("limit", String(getPageSize()));
+
+    // Поиск из шапки: форма шлёт GET /catalog?q=… . API понимает q сам
+    // (проверено live: q=Bloom → 1 товар из 6), витрина его просто не
+    // передавала — поиск не фильтровал ничего ни в одной теме (баг тестера #5).
+    const searchQ = (filters.query || "").trim();
+    if (searchQ) qp.set("q", searchQ);
 
     const sortMap = {
       popularity: "popular",

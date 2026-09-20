@@ -18,6 +18,7 @@
  */
 import {
 	createNtCart,
+	variantLabel,
 	type NtCartLine,
 	type NtCartLineVariant,
 } from "../../../../packages/theme-base/runtime/nt-cart";
@@ -53,7 +54,7 @@ const api = createNtCart({
 	// Плашка-плейсхолдер уже была токеном (--color-surface) — не трогаем.
 	// Сторож: pnpm test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
-		const variant = [line.variant?.color, line.variant?.size].filter(Boolean).join(", ");
+		const variant = variantLabel(line.variant);
 		const pHref = `${productPathPrefix}/${encodeURIComponent(line.productId)}`;
 		const thumb = cartLineThumbPictureHtml(line.image, line.name);
 		return `

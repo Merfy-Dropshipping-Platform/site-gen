@@ -10,7 +10,13 @@ export const PromoBannerSchema = z.object({
   text: z.string(),
   link: z.object({
     text: z.string().optional(),
-    href: z.string().optional(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+    href: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))).optional(),
   }).optional(),
   /**
    * 084 vanilla pilot — additive value `'thin'` added to the existing

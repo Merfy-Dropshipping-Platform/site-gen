@@ -80,7 +80,13 @@ export const HeroSchema = z.object({
       size: z.enum(['small', 'medium', 'large']),
     }).optional(),
     buttonText: z.string().optional(),
-    buttonLink: z.string().optional(),
+  // Поле панели — pagePicker: он сохраняет ОБЪЕКТ { href, text }. При строгом
+  // z.string() zod отбрасывал значение при разборе, и блок падал на фолбэк —
+  // «Ссылка» не доезжала до витрины (баг тестера, таблица «настройка не
+  // влияет»). Принимаем обе формы, как это уже сделано у Hero.
+    buttonLink: z
+    .union([z.string(), z.object({ href: z.string().optional(), text: z.string().optional() })])
+    .transform((v) => (typeof v === 'string' ? v : (v.href ?? ''))).optional(),
     alignment: z.enum(['left', 'center', 'right']).optional(),
   })).max(8).optional(),
   pagination: z.enum(['numbers', 'dots', 'lines', 'none']).optional(),

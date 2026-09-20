@@ -125,10 +125,16 @@ const alignProp =
     ? (raw.align as 'fullbleed' | 'container')
     : undefined;
 const paddedProp = typeof raw.padded === 'boolean' ? raw.padded : undefined;
-const containerClass = alignProp
-  ? C.align[alignProp]
-  : positionProp === 'fullscreen'
-    ? 'w-full'
+// Видимое поле «Положение видео» решает, когда мерчант его задал; скрытый
+// `align` из blockDefaults темы — только запасной вариант. Раньше приоритет был
+// обратным, и `align: "container"` из theme.json (bloom, satin, vanilla) намертво
+// перекрывал выбор: HTML секции не менялся вовсе (баг тестера, таблица
+// «настройка не влияет на витрину»).
+const positionRaw = typeof raw.position === 'string' ? raw.position : undefined;
+const containerClass = positionRaw
+  ? (positionRaw === 'fullscreen' ? 'w-full' : C.container)
+  : alignProp
+    ? C.align[alignProp]
     : C.container;
 
 // Detect provider by URL. Return { kind, embedUrl } or null for self-hosted.

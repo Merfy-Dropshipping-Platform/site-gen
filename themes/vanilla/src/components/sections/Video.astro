@@ -95,7 +95,13 @@ const subheadingCls = `mt-3 font-vanilla-arsenal text-base font-normal leading-[
 // всю ширину без полей и клампа; padded=false убирает поля, сохраняя кламп.
 const alignProp = p.align === "fullbleed" || p.align === "container" ? p.align : undefined;
 const positionProp = typeof p.position === "string" ? p.position : "contained";
-const fullBleed = alignProp ? alignProp === "fullbleed" : positionProp === "fullscreen";
+// Видимое поле «Положение видео» главнее скрытого align из blockDefaults
+// темы: раньше align: "container" перекрывал выбор мерчанта и разметка не
+// менялась вовсе (баг тестера, таблица «настройка не влияет»).
+const positionRaw = typeof p.position === "string" ? p.position : undefined;
+const fullBleed = positionRaw
+	? positionRaw === "fullscreen"
+	: alignProp === "fullbleed";
 const padded = !(p.padded === false || p.padded === "false");
 const sectionCls =
 	fullBleed || !padded

@@ -154,7 +154,12 @@ const _menuSchemeStr = (v: unknown): string =>
 const menuColorScheme = _menuSchemeStr(p.menuColorScheme);
 const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replace("scheme-", "")}` : "";
 
-const catalogSearchAction = pathnameBase(Astro.url) === "/catalog/decor" ? "/catalog/decor" : "/catalog/textile";
+// Поиск по магазину ведёт в КАТАЛОГ, а не на демо-страницу темы.
+// Вёрстка верстальщиков искала внутри своей категории (/catalog/textile),
+// но у настоящего магазина таких страниц нет: запрос уходил мимо каталога,
+// и поиск не фильтровал ничего (баг тестера, перепроверено 20.09).
+// Каталог умеет ?q= — см. порты Catalog и /api/store/products.
+const catalogSearchAction = "/catalog";
 
 const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.url.pathname === link.href);
 ---

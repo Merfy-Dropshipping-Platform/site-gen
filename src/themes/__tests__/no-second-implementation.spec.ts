@@ -148,3 +148,47 @@ describe("вторая реализация снятого анти-паттер
     },
   );
 });
+
+/**
+ * Выбор варианта в is:inline портах каталога.
+ *
+ * Импортировать общий `pickDefaultCombination` туда НЕЛЬЗЯ: блок-порты
+ * компилируются в ПЛОСКУЮ `dist/astro-blocks`, и кросс-пакетный относительный
+ * путь после сборки не резолвится — артефакт satin переставал грузиться,
+ * конформанс ловил это как «renderer недостижим» (22.09).
+ *
+ * Поэтому текст живёт в каждом порту, и здесь сторожится его ИДЕНТИЧНОСТЬ:
+ * разойдутся — проверка красная, то есть вторая реализация всё равно не
+ * заводится.
+ */
+describe("выбор варианта в портах каталога не расходится", () => {
+  const ПОРТЫ = ["rose", "bloom", "satin", "flux"].map(
+    (t) => `packages/theme-${t}/blocks/Catalog/Catalog.astro`,
+  );
+
+  /** Тело общей функции без отступов — сравниваем смысл, а не форматирование. */
+  const тело = (rel: string): string => {
+    const src = readFileSync(resolve(SITES_ROOT, rel), "utf-8");
+    const i = src.indexOf("window.__merfyPickDefaultCombination = function");
+    expect({ порт: rel, найдено: i > -1 }).toEqual({ порт: rel, найдено: true });
+    const кусок = src.slice(i, src.indexOf("</script>", i));
+    return кусок.replace(/\s+/g, " ").trim();
+  };
+
+  it("все четыре порта несут одинаковую реализацию", () => {
+    const эталон = тело(ПОРТЫ[0]);
+    for (const порт of ПОРТЫ.slice(1)) {
+      expect({ порт, совпадает: тело(порт) === эталон }).toEqual({ порт, совпадает: true });
+    }
+  });
+
+  it("каждый порт ЗОВЁТ её, а не только объявляет", () => {
+    for (const порт of ПОРТЫ) {
+      const src = код(порт);
+      expect({ порт, зовёт: src.includes("window.__merfyPickDefaultCombination(") }).toEqual({
+        порт,
+        зовёт: true,
+      });
+    }
+  });
+});

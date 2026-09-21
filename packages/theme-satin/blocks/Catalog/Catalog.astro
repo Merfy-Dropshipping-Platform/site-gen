@@ -21,7 +21,6 @@
 // резолвит). Корневой <section> несёт data-puck-component-id из props.id для
 // выделяемости в конструкторе.
 import SatinProductCard from "./SatinProductCard.astro";
-import { PICK_DEFAULT_COMBINATION_SOURCE } from "../../../theme-base/runtime/nt-cart";
 import { inlineFormat } from "./rich-text";
 import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
@@ -1504,4 +1503,42 @@ const skeletons = Array.from({ length: skeletonCount });
   })();
 </script>
 
-<script is:inline set:html={PICK_DEFAULT_COMBINATION_SOURCE}></script>
+<script is:inline>
+  /* ЕДИНЫЙ выбор варианта по умолчанию для is:inline портов.
+     Блок-порты компилируются в ПЛОСКУЮ dist/astro-blocks, поэтому кросс-пакетный
+     import здесь не резолвится (проверено: артефакт satin переставал грузиться).
+     Текст обязан совпадать во всех портах — это сторожит
+     src/themes/__tests__/no-second-implementation.spec.ts. */
+  (function () {
+    if (window.__merfyPickDefaultCombination) return;
+    window.__merfyPickDefaultCombination = function (combinations, groups) {
+      var list = Array.isArray(combinations) ? combinations.filter(Boolean) : [];
+      if (list.length === 0) return null;
+      var first = {}, hasFirst = false;
+      var gs = Array.isArray(groups) ? groups : [];
+      for (var i = 0; i < gs.length; i++) {
+        var g = gs[i] || {}, name = typeof g.name === "string" ? g.name.trim() : "";
+        var values = g.options || g.values || [], value = "";
+        for (var j = 0; j < values.length; j++) {
+          var v = typeof values[j] === "string" ? values[j] : (values[j] && values[j].value);
+          if (typeof v === "string" && v.trim()) { value = v.trim(); break; }
+        }
+        if (name && value) { first[name] = value; hasFirst = true; }
+      }
+      if (hasFirst) {
+        var fits = function (c) {
+          var opts = (c && c.options) || {};
+          for (var k in first) {
+            if (!Object.prototype.hasOwnProperty.call(first, k)) continue;
+            if (String(opts[k] || "").trim() !== first[k]) return false;
+          }
+          return true;
+        };
+        for (var a = 0; a < list.length; a++) if (fits(list[a]) && list[a].available !== false) return list[a];
+        for (var b = 0; b < list.length; b++) if (fits(list[b])) return list[b];
+      }
+      for (var d = 0; d < list.length; d++) if (list[d].available !== false) return list[d];
+      return list[0] || null;
+    };
+  })();
+</script>

@@ -29,11 +29,29 @@ const NEWSLETTER_PUCK_CONFIG = join(
 );
 
 /** `defaults: { … }` блока Newsletter из исходника puckConfig. */
+/**
+ * Блок `defaults: { … }` целиком — по балансу фигурных скобок.
+ *
+ * Раньше бралась фиксированная нарезка в 600 символов, и любой комментарий,
+ * дописанный ВЫШЕ внутри блока, выдавливал часть полей за окно: проверка
+ * «дефолт placeholder = Email» покраснела 21.09 от шести строк пояснения к
+ * соседнему ключу, хотя сам дефолт не трогали. Читаем блок, а не отрезок.
+ */
 function newsletterDefaults(): string {
   const src = readFileSync(NEWSLETTER_PUCK_CONFIG, 'utf-8');
   const at = src.indexOf('defaults:');
   expect(at).toBeGreaterThan(-1);
-  return src.slice(at, at + 600);
+  const open = src.indexOf('{', at);
+  expect(open).toBeGreaterThan(-1);
+  let depth = 0;
+  for (let i = open; i < src.length; i += 1) {
+    if (src[i] === '{') depth += 1;
+    else if (src[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return src.slice(at, i + 1);
+    }
+  }
+  throw new Error('блок defaults не закрыт');
 }
 
 const newsletter = (props: Record<string, unknown>) => ({

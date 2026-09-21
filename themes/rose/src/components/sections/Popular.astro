@@ -435,6 +435,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		productHref,
 		productImage,
 	} from "../../lib/storefront-hydrate";
+	import { pickDefaultCombination } from "../../../../../packages/theme-base/runtime/nt-cart";
 
 	// Реальные товары (Option B): первые N из /data/products.json (N = data-cards
 	// грида, дефолт 4 — поведение верстальщика). Demo-сборка → no-op. Канон-поля
@@ -483,9 +484,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						// добавляет ПЕРВУЮ доступную комбинацию (не ведёт на PDP). Без
 						// комбинаций (битый товар) — фолбэк на ссылку PDP, чтобы не дать
 						// сломанную кнопку (order_items без варианта).
+						// Первый вариант — тот, что ВИДИТ покупатель (первые значения
+						// каждой группы). Порядок комбинаций из ответа с порядком показа
+						// не совпадает — карточка молча клала последний оттенок
+						// (баг тестера 22.09, п.27).
 						const firstCombo = hasVariants
-							? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
-								(p.variantCombinations || [])[0]
+							? pickDefaultCombination(p.variantCombinations, p.variantGroups)
 							: null;
 						const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
 						const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";

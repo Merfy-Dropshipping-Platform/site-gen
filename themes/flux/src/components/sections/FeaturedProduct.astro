@@ -594,9 +594,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{showAddToCart && (
 							<button
 								type="button"
+								{/* Скругление — из настройки темы «Кнопки → Скругление».
+								    Было зашито 4px: при токене 6px соседняя «Смотреть все
+								    товары» шла 6px, а «Добавить в корзину» оставалась 4px
+								    (замер на живой витрине 22.09). Фолбэк 4px сохраняет
+								    прежний вид на дефолте. */}
 								data-cfg-add
 								{...addToCartAttrs}
-								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-6 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
+								class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-6 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
 							>
 								{addBtnText}
 							</button>
@@ -605,7 +610,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<button
 								type="button"
 								data-cfg-buy
-								class="inline-flex h-14 w-full items-center justify-center rounded-[4px] px-6 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+								class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] px-6 font-roboto-flex text-[16px] font-light leading-none transition-colors"
 								style={`background:rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK})); color:rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}));`}
 								onmouseover={`this.style.background='rgb(var(--color-button-secondary-bg-hover, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text-hover, ${SEC_TEXT_FALLBACK}))';`}
 								onmouseout={`this.style.background='rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}))';`}
@@ -727,7 +732,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							type="button"
 							data-cfg-add
 							{...addToCartAttrs}
-							class="inline-flex h-14 w-full items-center justify-center rounded-[4px] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
+							class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
 						>
 							{addBtnText}
 						</button>
@@ -736,7 +741,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<button
 							type="button"
 							data-cfg-buy
-							class="inline-flex h-14 w-full items-center justify-center rounded-[4px] px-4 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+							class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] px-4 font-roboto-flex text-[16px] font-light leading-none transition-colors"
 							style={`background:rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK})); color:rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}));`}
 							onmouseover={`this.style.background='rgb(var(--color-button-secondary-bg-hover, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text-hover, ${SEC_TEXT_FALLBACK}))';`}
 							onmouseout={`this.style.background='rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}))';`}

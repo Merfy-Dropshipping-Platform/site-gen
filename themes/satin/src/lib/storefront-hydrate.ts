@@ -12,6 +12,8 @@
  * трогаем, остаётся SSG-разметка.
  */
 
+import { pickDefaultCombination } from "../../../../packages/theme-base/runtime/nt-cart";
+
 export interface RealProduct {
 	id: string;
 	name: string;
@@ -319,8 +321,11 @@ export function renderCardHtml(p: RealProduct, quickAdd?: string): string {
 		p.hasVariants === true ||
 		(Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
 	const firstCombo = hasVariants
-		? (p.variantCombinations || []).find((c) => c && c.available !== false) ||
-			(p.variantCombinations || [])[0]
+		// Первый вариант — тот, что ВИДИТ покупатель: совпадение по первым
+		// значениям каждой группы. Прежний выбор брал первую комбинацию из
+		// ответа, а её порядок с порядком показа не совпадает — карточка
+		// молча клала последний оттенок (баг тестера 22.09, п.27).
+		? pickDefaultCombination(p.variantCombinations, p.variantGroups)
 		: null;
 	const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
 	const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";

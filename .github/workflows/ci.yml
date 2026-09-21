@@ -1432,6 +1432,18 @@ jobs:
       # разметки vanilla — 1.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-page-variant-label.spec.ts
+      # Быстрое добавление кладёт ПЕРВЫЙ вариант — тот, что видит покупатель.
+      # Порядок комбинаций из ответа не совпадает с порядком показа: замер на
+      # живой витрине 22.09 — показ «Performance Pink, Cherry Purple, Haze
+      # Pink», а combinations[0] = Haze Pink, и карточка клала его молча.
+      # Саботаж проверен: возврат «первой доступной» красит 1 проверку.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/quick-add-default-combination.spec.ts
+      # Кнопка покупки берёт скругление из настройки темы. Было зашито 4px:
+      # при токене 6px соседняя кнопка шла 6px, а «Добавить в корзину» — 4px.
+      # Саботаж проверен: возврат жёстких 4px — 2 проверки, увод фолбэка — 1.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/buy-button-radius-token.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

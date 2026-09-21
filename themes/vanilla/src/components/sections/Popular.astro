@@ -478,6 +478,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		formatPrice,
 		escapeHtml,
 	} from "../../lib/storefront-hydrate";
+	import { pickDefaultCombination } from "../../../../../packages/theme-base/runtime/nt-cart";
 
 	// Текст добавленной кнопки (quickAddText): применяется и к demo-SSR, и к
 	// перерисованным гидрацией карточкам.
@@ -531,9 +532,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					const hasVariants =
 						prod.hasVariants === true ||
 						(Array.isArray(prod.variantCombinations) && prod.variantCombinations.length > 0);
+					// Первый вариант — тот, что ВИДИТ покупатель (первые значения
+					// каждой группы). Порядок комбинаций из ответа с порядком показа
+					// не совпадает — карточка молча клала последний оттенок
+					// (баг тестера 22.09, п.27).
 					const firstCombo = hasVariants
-						? (prod.variantCombinations || []).find((c) => c && c.available !== false) ||
-							(prod.variantCombinations || [])[0]
+						? pickDefaultCombination(prod.variantCombinations, prod.variantGroups)
 						: null;
 					const comboOpt = (firstCombo?.options || {}) as Record<string, string>;
 					const comboColor = comboOpt["Цвет"] || comboOpt["Color"] || "";

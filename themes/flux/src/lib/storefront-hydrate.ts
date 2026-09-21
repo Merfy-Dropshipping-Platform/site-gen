@@ -12,6 +12,8 @@
  * трогаем, остаётся SSG-разметка.
  */
 
+import { pickDefaultCombination } from "../../../../packages/theme-base/runtime/nt-cart";
+
 export interface RealProduct {
   id: string;
   name: string;
@@ -805,8 +807,10 @@ function cardButtonHtml(p: RealProduct, ctaLabel?: string, qaMode?: string): str
     (Array.isArray(p.variantCombinations) && p.variantCombinations.length > 0);
   if (hasVariants) {
     const combos = p.variantCombinations ?? [];
-    const firstCombo =
-      combos.find((c) => c && c.available !== false) ?? combos[0];
+    // Первый вариант — тот, что ВИДИТ покупатель (первые значения каждой
+    // группы). Порядок комбинаций из ответа с порядком показа не совпадает:
+    // карточка молча клала последний оттенок (баг тестера 22.09, п.27).
+    const firstCombo = pickDefaultCombination(combos, p.variantGroups);
     if (!firstCombo) {
       return `<a href="${escapeHtml(productHref(p))}" data-qa-link class="${CARD_BTN_CLS}">${label}</a>`;
     }

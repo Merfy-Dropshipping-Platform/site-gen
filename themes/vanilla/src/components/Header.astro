@@ -357,10 +357,21 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						</nav>
 					</>
 				) : (
-					/* top-center: Row1=[search LEFT | logo CENTER | cart+user RIGHT], Row2=[nav CENTER] */
+					/* top-center: Row1=[распорка | logo CENTER | search+icons RIGHT], Row2=[nav CENTER] */
 					<>
 						<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+						{/* Левая ячейка — распорка: она держит логотип ровно по центру грида.
+						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
+						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
+						    не разрывался. */}
 							<div class="flex items-center">
+							</div>
+							<div class="flex items-center justify-center">
+								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class="h-[var(--size-logo-width,28px)] w-auto max-w-[89px]" />}
+								</a>
+							</div>
+							<div class="flex items-center justify-end gap-5">
 								<button
 									type="button"
 									data-action="toggle-search"
@@ -371,13 +382,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								>
 									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 								</button>
-							</div>
-							<div class="flex items-center justify-center">
-								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
-									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class="h-[var(--size-logo-width,28px)] w-auto max-w-[89px]" />}
-								</a>
-							</div>
-							<div class="flex items-center justify-end gap-5">
 								<a
 									href="/wishlist"
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"

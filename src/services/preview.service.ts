@@ -1689,7 +1689,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
         return true;
       },
       menuColorScheme: function (el, _oldVal, newVal) {
-        var items = el.querySelectorAll('[data-nav-inline]');
+        // Панель бокового меню («<тема>-burger») красится тем же классом схемы,
+        // что и инлайн-навигация (правка 21.09, пункт 24 документа владельца).
+        // Патч её не трогал — в превью мерчант менял схему меню, открывал
+        // шторку и видел СТАРЫЕ цвета до перезагрузки. Кнопка бургера
+        // («…-burger-btn») под суффикс не попадает.
+        var items = el.querySelectorAll('[data-nav-inline], [id$="-burger"]');
         for (var i = 0; i < items.length; i++) {
           var it = items[i];
           it.className = it.className.replace(/\\bcolor-scheme-\\d+\\b/g, '').replace(/\\s+/g, ' ').trim();

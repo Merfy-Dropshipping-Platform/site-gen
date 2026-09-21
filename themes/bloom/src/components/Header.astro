@@ -152,10 +152,17 @@ const headerPadStyle = headerPad
 const desktopTwoRowWrapCls = headerPad
 	? "relative mx-auto hidden w-full max-w-[1920px] px-20 md:flex 2xl:px-[300px]"
 	: "relative mx-auto hidden w-full max-w-[1920px] px-20 py-6 md:flex 2xl:px-[300px]";
-// Single-row outer wrapper (center-left / center-absolute): single flex row, relative for absolute logo.
+// Single-row outer wrapper (center-left / center-absolute): single flex row.
+// Позиционированного предка здесь больше нет НИ В ОДНОМ положении: плашка
+// «Расширенного» меню считает края от ближайшего позиционированного предка, и с
+// ним она получалась уже шапки и налезала на строку пунктов (замер 1440: лист
+// 1280 при шапке 1440, накрыты все пункты верхнего уровня — ровно жалоба из
+// пункта 26 документа владельца). Логотип «по центру» центрируется гридом
+// [1fr auto 1fr], а не `absolute`, поэтому якорем плашки остаётся сам <header>.
+const needsPositionedRow = logoPosition === "center-absolute";
 const desktopSingleRowWrapCls = headerPad
-	? "relative mx-auto hidden w-full max-w-[1920px] items-center px-20 md:flex 2xl:px-[300px]"
-	: "relative mx-auto hidden w-full max-w-[1920px] items-center px-20 py-6 md:flex 2xl:px-[300px]";
+	? "mx-auto hidden w-full max-w-[1920px] items-center px-20 md:flex 2xl:px-[300px]"
+	: "mx-auto hidden w-full max-w-[1920px] items-center px-20 py-6 md:flex 2xl:px-[300px]";
 
 const pathname = pathnameBase(Astro.url.pathname);
 // Поиск по магазину ведёт в КАТАЛОГ, а не на демо-страницу темы.
@@ -508,12 +515,12 @@ const headerHeartSvg =
 		) : (
 			/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 			<div class={desktopSingleRowWrapCls} style={headerPadStyle}>
-				<div class="relative mx-auto flex w-full max-w-[1320px] items-center">
+				<div class:list={[needsPositionedRow ? "grid grid-cols-[1fr_auto_1fr]" : "flex", "mx-auto w-full max-w-[1320px] items-center"]}>
 					{logoPosition === "center-absolute" ? (
 						/* center-absolute: nav LEFT, logo ABSOLUTE-center, icons RIGHT */
 						<>
 							<nav
-								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
+								class:list={["col-start-1 flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-nav-inline
 								data-puck-subsection-parent={id}
@@ -525,7 +532,7 @@ const headerHeartSvg =
 								))}
 							</nav>
 
-							<a href="/" class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center hover:opacity-90" aria-label={siteTitle}>
+							<a href="/" class="col-start-2 flex items-center justify-self-center hover:opacity-90" aria-label={siteTitle}>
 								{
 									logo ? (
 										<img src={logo} alt={siteTitle} class={logoImgCls} />
@@ -535,7 +542,7 @@ const headerHeartSvg =
 								}
 							</a>
 
-							<div class="ml-auto flex items-center gap-4">
+							<div class="col-start-3 flex items-center gap-4 justify-self-end">
 								<button
 									type="button"
 									data-action="toggle-search"

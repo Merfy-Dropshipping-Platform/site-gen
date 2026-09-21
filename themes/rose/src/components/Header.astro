@@ -124,6 +124,17 @@ const desktopRailCls = [
 ]
 	.filter(Boolean)
 	.join(" ");
+// ОДНОрядная раскладка с логотипом по центру: раньше логотип стоял `absolute`
+// внутри позиционированного рельса — и этот же рельс становился якорем для
+// плашки «Расширенного» меню. Плашка получалась уже шапки и налезала на строку
+// пунктов (замер 1440: лист 1280 из 1440, накрыты ВСЕ пункты верхнего уровня —
+// ровно жалоба из пункта 26 документа владельца). Тот же центр даёт грид
+// [1fr auto 1fr], и позиционированный предок больше не нужен: якорем плашки
+// становится сам <header>.
+const singleRowCentered = logoPosition === "center-absolute";
+const desktopRailGridCls = [ROSE_RAIL_INNER, "grid grid-cols-[1fr_auto_1fr] items-center"].join(" ");
+const desktopCenterLogoCls =
+	"col-start-2 shrink-0 justify-self-center font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90";
 
 /** Внутренний рельс для двухрядных раскладок (лого/иконки + nav под ними). */
 const desktopRailColumnCls = `${ROSE_RAIL_INNER} flex flex-col`;
@@ -399,13 +410,13 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					) : (
 						/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 						<div class={desktopRowCls} style={headerPadStyle}>
-						<div class={desktopRailCls}>
-								<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]}>
+						<div class={singleRowCentered ? desktopRailGridCls : desktopRailCls}>
+								<a href="/" class:list={[singleRowCentered ? desktopCenterLogoCls : desktopLogoCls, logoLeft && "flex-1"]}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 							</a>
 
 							<nav
-								class:list={["flex items-center gap-8 lg:gap-12", menuSchemeClass, isSidebar && "lg:!hidden"]}
+								class:list={["flex items-center gap-8 lg:gap-12", singleRowCentered && "col-start-1", menuSchemeClass, isSidebar && "lg:!hidden"]}
 								aria-label="Основная навигация"
 								data-nav-inline
 								data-puck-subsection-parent={id}
@@ -417,7 +428,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								))}
 							</nav>
 
-							<div class:list={["flex items-center gap-4 lg:gap-6", logoLeft && "flex-1 justify-end"]}>
+							<div class:list={["flex items-center gap-4 lg:gap-6", singleRowCentered && "col-start-3 justify-self-end", logoLeft && "flex-1 justify-end"]}>
 								<button
 									type="button"
 									data-action="toggle-search"

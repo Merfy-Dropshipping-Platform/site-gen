@@ -51,6 +51,12 @@ const headingCls =
 const headingAlignment = p.alignment ?? p.headingAlignment ?? p.heading?.alignment;
 const headingAlignCls =
 	headingAlignment === "center" ? " text-center" : headingAlignment === "right" ? " text-right" : "";
+// «Выравнивание» — поле СЕКЦИИ, а не заголовка: применяется к заголовку, тексту
+// И кнопке (паритет rose). До 2026-09-21 порт красил только заголовок — мерчант
+// ставил «по центру», текст и кнопка оставались слева (§12 контракта секции:
+// видимое поле обязано доезжать целиком, а не наполовину).
+const ctaAlignCls =
+	headingAlignment === "center" ? " self-center" : headingAlignment === "right" ? " self-end" : "";
 
 // Канон text.size — body-роль (Inter 300, МАННЕРА §1). Лестница §9: medium
 // (canon-default) и отсутствие = литерал 16, small 14, large 19.
@@ -109,35 +115,76 @@ const widthCls =
 //     читаются напрямую (приоритет №1);
 //   - сайты, сохранённые МЕЖДУ 15.09 и 17.09 только с layout='overlap'
 //     (containerEnabled тогда не существовал) — фолбэк №2.
+// §5 контракта секции: тумблер приходит и строкой ('true'/'false' — формат
+// поля toggle), и boolean (панель конструктора шлёт его так). Ветка только на
+// строку означала бы «переключатель не даёт эффекта» — гейт
+// scripts/section-contract-check.mjs на это и ругался.
 const isOverlap =
-	typeof p.containerEnabled === "string"
-		? p.containerEnabled === "true"
-		: p.layout === "overlap";
+	p.containerEnabled === true || p.containerEnabled === "true"
+		? true
+		: p.containerEnabled === false || p.containerEnabled === "false"
+			? false
+			: p.layout === "overlap";
 // Канон position: 'top' | 'middle' (дефолт, прежнее lg:items-center) | 'bottom'
 // — вертикальное положение карточки относительно фото (Shopify Position).
 const position = p.position === "top" ? "top" : p.position === "bottom" ? "bottom" : "middle";
 const positionItemsCls =
 	position === "top" ? "lg:items-start" : position === "bottom" ? "lg:items-end" : "lg:items-center";
-const positionAbsCls =
-	position === "top" ? "lg:top-6" : position === "bottom" ? "lg:bottom-6" : "lg:top-1/2 lg:-translate-y-1/2";
+// Наложение: карточка стоит в потоке и ЗАДАЁТ высоту пары, фото — абсолютный
+// слой на всю высоту пары. «Положение» двигает карточку по вертикали тем же
+// `positionItemsCls`, что и в раскладке без наложения (карточка — единственный
+// элемент потока, значит items-* выравнивает именно её); разница видна, когда
+// «Размер» держит медиа выше карточки.
 
 // Карточка с подложкой в режиме наложения (иначе текст нечитаем на фото) —
 // тот же surface-класс, что раньше давал тумблер «Контейнер».
+// Тени на эталоне нет: карточка и фото стыкуются чистой кромкой (снимки 1-6,
+// граница наезда без размытия). shadow-xl был нужен прежней раскладке, где
+// карточка лежала ЦЕЛИКОМ на фото и без тени сливалась с ним.
 const containerSurfaceCls = isOverlap
-	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8 shadow-xl"
+	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8"
 	: "";
 const containerSchemeCls =
 	isOverlap && typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
-// Ширина карточки при наложении — Shopify Width меняет пропорцию
-// карточка/фото (узкая карточка → фото крупнее; широкая — карточка почти во
-// всю ширину). В режиме «Без наложения» `width` работает как раньше —
-// ограничивает max-width всего блока (widthCls ниже), пропорция колонок 50/50.
+// Пропорция «карточка / фото» при наложении (эталон владельца 2026-09-21,
+// шесть снимков; замер PIL по розовой плашке и кромке фото, вьюпорт снимка
+// 1280):
+//   Ширина=Большая — карточка 655, фото 287, пара 876, наезд 66
+//   Ширина=Средняя — карточка 508  (пара и наезд те же)
+//   Ширина=Маленькая — карточка 358, фото 582, пара 875, наезд 65
+// В долях пары: карточка 40 / 58 / 75 %, фото 67.5 / 49.5 / 32.5 %. Сумма
+// каждой пары — 107.5 %, то есть НАЕЗД РОВНО 7.5 % ширины пары при любой
+// «Ширине» (на снимках он и не плавает: 65-67 px из 876).
+// Важно: сумма долей > 100 % и даёт наезд сама — отдельного отрицательного
+// margin не нужно, фото абсолютное и прижато к своей стороне.
 const overlapCardWidthCls =
-	p.width === "small" ? "lg:w-[36%]" : p.width === "large" ? "lg:w-[62%]" : "lg:w-[46%]";
-const overlapSideCls = imageLeft ? "lg:right-4 xl:right-8" : "lg:left-4 xl:left-8";
+	p.width === "small" ? "lg:w-[40%]" : p.width === "large" ? "lg:w-[75%]" : "lg:w-[58%]";
+const overlapPhotoWidthCls =
+	p.width === "small" ? "lg:w-[67.5%]" : p.width === "large" ? "lg:w-[32.5%]" : "lg:w-[49.5%]";
+// Фото прижато к своей стороне пары и растянуто на её высоту; карточка стоит
+// с противоположной стороны в потоке.
+const overlapPhotoSideCls = imageLeft ? "lg:left-0" : "lg:right-0";
+const overlapCardSideCls = imageLeft ? "lg:ml-auto" : "lg:mr-auto";
+// Вертикальный вылет фото за карточку: на снимках 27-30 px при паре 876, то
+// есть 3.3 % её ширины. Наша пара на 1440-м вьюпорте — 1280 px, те же 3.3 %
+// дают 40 px (lg:my-10). Считаем от эталонной ДОЛИ, а не от его пикселей:
+// снимки владельца сняты в превью конструктора, там пара уже окна.
+const overlapCardInsetCls = "lg:my-10";
+// «Размер» при наложении держит НИЖНЮЮ границу высоты пары: короткий текст не
+// должен схлопывать фото в полоску. Опора — снимок №4 эталона: карточка 248,
+// медиа всё равно 430 (49 % ширины пары), то есть высоту там держала именно
+// эта граница. 49 % от нашей пары 1280 = 630 px — ступень «Средний»; соседние
+// ступени на снимках не встречались, взяты тем же шагом ±20 %.
+const overlapMinHCls =
+	p.size === "small" ? "lg:min-h-[520px]" : p.size === "large" ? "lg:min-h-[760px]" : "lg:min-h-[630px]";
+// Ширина ПАРЫ при наложении постоянна: на всех шести снимках она 875-876 px,
+// меняется только доля карточки внутри неё. Поэтому «Ширина» в этом режиме
+// правит пропорцию (выше), а не потолок блока — иначе «Маленькая» ужимала бы
+// и фото тоже, чего на эталоне нет. Без наложения `width` работает как прежде.
+const outerWidthCls = isOverlap ? "max-w-[1320px]" : widthCls;
 
 // Кнопка: canon button {text, href|link} — розовый pill манеры §3. Мерчант задал
 // текст → его; пусто → дословный Figma-плейсхолдер «Кнопка» (1:19335). Кнопка
@@ -194,14 +241,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    в бандл темы, и правило молча не работает (у bloom так и было после main 4d4a11ce). */}
 		class={
 			isOverlap
-				? `relative mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-1 lg:gap-0`
-				: `mx-auto grid w-full ${widthCls} grid-cols-1 gap-4 lg:grid-cols-2 ${positionItemsCls} lg:gap-10`
+				? `relative mx-auto flex w-full ${outerWidthCls} flex-col gap-4 ${overlapMinHCls} lg:flex-row ${positionItemsCls} lg:gap-0`
+				: `mx-auto grid w-full ${outerWidthCls} grid-cols-1 gap-4 lg:grid-cols-2 ${positionItemsCls} lg:gap-10`
 		}
 		data-animate
 	>
 		{!isFieldHidden('image') && (
 		<div
-			class={`group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${isOverlap ? "" : imageLeft ? "" : " lg:order-2"}`}
+			class={
+				isOverlap
+					? `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls} lg:absolute lg:inset-y-0 lg:aspect-auto ${overlapPhotoWidthCls} ${overlapPhotoSideCls}`
+					: `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}`
+			}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"
@@ -220,7 +271,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			class={
 				isOverlap
-					? `relative z-10 flex w-full flex-col gap-6 lg:absolute ${overlapCardWidthCls} ${positionAbsCls} ${overlapSideCls}${containerSurfaceCls}${containerSchemeCls}`
+					? `relative z-10 flex w-full flex-col gap-6 ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardInsetCls}${containerSurfaceCls}${containerSchemeCls}`
 					: `flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
 			}
 		>
@@ -236,7 +287,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 			{!isFieldHidden('text') && (
 				<div
-					class={textCls + italicCls}
+					class={textCls + italicCls + headingAlignCls}
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="102"
 					data-puck-subsection-field="text"
@@ -245,7 +296,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 			{
 				btnText && (
-					<div class={inlineCta ? "mt-2" : "mt-auto"}>
+					<div class={(inlineCta ? "mt-2" : "mt-auto") + ctaAlignCls}>
 						{!isFieldHidden('button') && (
 						<a
 							href={btnHref}

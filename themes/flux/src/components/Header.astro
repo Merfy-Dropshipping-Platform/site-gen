@@ -262,10 +262,20 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	{isTwoRow ? (
 		<div class={twoRowContainerCls} style={headerPadStyle}>
 			{logoPosition === "top-center" ? (
-				/* top-center: Row1=[search LEFT | logo CENTER | actions RIGHT], Row2=[nav CENTER] */
+				/* top-center: Row1=[распорка | logo CENTER | search+actions RIGHT], Row2=[nav CENTER] */
 				<>
 					<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
-						<div class="flex items-center">
+						{/* Левая ячейка — распорка: она держит логотип ровно по центру грида.
+						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
+						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
+						    не разрывался. */}
+						<div class="flex items-center"></div>
+						<div class="flex items-center justify-center">
+							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+							</a>
+						</div>
+						<div class="flex items-center justify-end gap-4">
 							{showSearch && (
 								<button
 									type="button"
@@ -276,13 +286,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
-						</div>
-						<div class="flex items-center justify-center">
-							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
-							</a>
-						</div>
-						<div class="flex items-center justify-end gap-4">
 							<FluxWishlistLink badgeCls={badgeCls} />
 							{showCart && (
 								<button

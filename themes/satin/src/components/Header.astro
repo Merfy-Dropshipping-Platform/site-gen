@@ -218,10 +218,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					) : (
 						<>
 							<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+						{/* Левая ячейка — распорка: она держит логотип ровно по центру грида.
+						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
+						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
+						    не разрывался. */}
 								<div class="flex items-center gap-4">
-									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-										<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-lg" sizeClass="size-6" />
-									</button>
 								</div>
 								<div class="flex items-center justify-center">
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
@@ -229,6 +230,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 									</a>
 								</div>
 								<div class="flex items-center justify-end gap-5">
+									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-lg" sizeClass="size-6" />
+									</button>
 									<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
 										<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>

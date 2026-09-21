@@ -179,6 +179,72 @@ export function carryOverUserPages(prevData: unknown, nextData: unknown): unknow
   return { ...next, pages: [...nextPages, ...carried], pagesData: nextPagesData };
 }
 
+/**
+ * Пункты меню, настроенные мерчантом, переживают смену темы.
+ *
+ * Баг 27 документа владельца «баги шапки и меню»: «Настроенные пункты меню
+ * пропадают после переключения темы». Причина — пересев ревизии при смене
+ * themeId: `carryOverUserPages` переносит СТРАНИЦЫ мерчанта, а меню не
+ * переносил никто, и шапка новой темы приходила со своим сидовым списком.
+ *
+ * Переносим ТОЛЬКО если мерчант меню правил: сравниваем список текущей ревизии
+ * с сидом ПРЕЖНЕЙ темы. Без этой проверки перенос был бы вреден — у тем разные
+ * заводские меню (у flux «Смартфоны/Наушники/Ноутбуки», у bloom «Каталог/О нас/
+ * Доставка/Контакты»), и переключение flux→bloom затащило бы в bloom чужое.
+ *
+ * Меню у всех страниц одно (его сводит `unifyHeaderWithHome`), поэтому берём
+ * список с главной и раскладываем во ВСЕ шапки пересеянной ревизии.
+ */
+export function carryOverMenuLinks(
+  prevData: unknown,
+  nextData: unknown,
+  prevSeedData: unknown,
+): unknown {
+  const navOf = (data: unknown): unknown[] | null => {
+    const pages = ((data ?? {}) as Record<string, any>).pagesData;
+    if (!pages || typeof pages !== "object") return null;
+    for (const page of Object.values(pages as Record<string, any>)) {
+      const content = Array.isArray(page?.content) ? page.content : [];
+      for (const block of content) {
+        if (block?.type !== "Header") continue;
+        const links = block?.props?.navigationLinks;
+        if (Array.isArray(links)) return links;
+      }
+    }
+    return null;
+  };
+
+  const merchantNav = navOf(prevData);
+  if (!merchantNav || merchantNav.length === 0) return nextData;
+
+  const seedNav = navOf(prevSeedData);
+  // Мерчант меню не трогал — оставляем заводское новой темы.
+  if (seedNav && JSON.stringify(seedNav) === JSON.stringify(merchantNav)) return nextData;
+
+  const next = (nextData ?? {}) as Record<string, any>;
+  const pages = next.pagesData;
+  if (!pages || typeof pages !== "object") return nextData;
+
+  let changed = false;
+  const nextPages: Record<string, unknown> = {};
+  for (const [pageId, page] of Object.entries(pages as Record<string, any>)) {
+    const content = Array.isArray(page?.content) ? page.content : null;
+    if (!content) {
+      nextPages[pageId] = page;
+      continue;
+    }
+    let pageChanged = false;
+    const nextContent = content.map((block: any) => {
+      if (block?.type !== "Header" || !block?.props) return block;
+      pageChanged = true;
+      return { ...block, props: { ...block.props, navigationLinks: merchantNav } };
+    });
+    nextPages[pageId] = pageChanged ? { ...page, content: nextContent } : page;
+    changed = changed || pageChanged;
+  }
+  return changed ? { ...next, pagesData: nextPages } : nextData;
+}
+
 @Injectable()
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
@@ -980,7 +1046,18 @@ export class SitesDomainService {
             // carryOverUserPages): смена темы меняет дизайн, а не удаляет
             // контент. Без этого «Онлайн-магазин → Страницы» пустел при каждом
             // переключении темы.
-            const seededData = carryOverUserPages(prevRevisionData, defaultContent);
+            // Страницы мерчанта + его пункты меню. Меню переносится только
+            // если он его правил — сравнение с сидом ПРЕЖНЕЙ темы (см.
+            // carryOverMenuLinks). Баг 27 документа владельца.
+            const prevSeed = prevThemeId
+              ? await this.buildInitialRevision(prevThemeId).catch(() => null)
+              : null;
+            const withPages = carryOverUserPages(prevRevisionData, defaultContent);
+            const seededData = carryOverMenuLinks(
+              prevRevisionData,
+              withPages,
+              prevSeed,
+            );
             await this.createRevision({
               tenantId: params.tenantId,
               siteId: params.siteId,

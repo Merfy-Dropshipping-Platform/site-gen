@@ -4,6 +4,7 @@ import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.as
 import { BLOOM_ICON_SVGS } from "./icons/bloom-icon-svgs";
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import NavItem from "./NavItem.astro";
+import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import { SITE_TITLE } from "../consts";
 import { DEFAULT_CATEGORY_HREF, categoryPages, getCategoryBySlug } from "../data/categories";
 import { getProductById } from "../data/products";
@@ -815,34 +816,64 @@ const headerHeartSvg =
 					? link.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
 					: [];
 				return (
-					<div class="flex flex-col gap-3">
-						<a
-							href={link.href}
-							aria-current={active ? "page" : undefined}
-							class:list={[
-								"font-inter text-[14px] font-light leading-normal",
-								active ? "text-[#000000]" : "text-[rgb(var(--color-muted,153_153_153))]",
-							]}
-						>
-							{link.label}
-						</a>
+					<div class="flex flex-col gap-3" data-nav-group={subs.length > 0 ? "" : undefined}>
+						<div class="flex w-full items-center justify-between gap-2">
+							<a
+								href={link.href}
+								aria-current={active ? "page" : undefined}
+								class:list={[
+									"font-inter text-[14px] font-light leading-normal",
+									active ? "text-[#000000]" : "text-[rgb(var(--color-muted,153_153_153))]",
+								]}
+							>
+								{link.label}
+							</a>
+							{subs.length > 0 && (
+								<button
+									type="button"
+									data-nav-sub-toggle
+									aria-expanded="false"
+									aria-label={`Раскрыть «${link.label}»`}
+									class="flex size-6 shrink-0 items-center justify-center text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-180"
+								>
+									<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+										<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+							)}
+						</div>
 						{active && subs.length === 0 && <div class="h-px w-[54px] bg-[#e38e9f]" aria-hidden="true"></div>}
 						{subs.length > 0 && (
-							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4">
+							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4" data-nav-sub hidden>
 								{subs.map((c2) => {
 									const kids2 = Array.isArray(c2.submenu)
 										? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
 										: [];
 									return (
-										<div class="flex flex-col gap-2">
-											<a
-												href={c2.href}
-												class="font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
-											>
-												{c2.label}
-											</a>
+										<div class="flex flex-col gap-2" data-nav-group={kids2.length > 0 ? "" : undefined}>
+											<div class="flex w-full items-center justify-between gap-2">
+												<a
+													href={c2.href}
+													class="font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
+												>
+													{c2.label}
+												</a>
+												{kids2.length > 0 && (
+													<button
+														type="button"
+														data-nav-sub-toggle
+														aria-expanded="false"
+														aria-label={`Раскрыть «${c2.label}»`}
+														class="flex size-5 shrink-0 items-center justify-center text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-180"
+													>
+														<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+															<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+														</svg>
+													</button>
+												)}
+											</div>
 											{kids2.length > 0 && (
-												<div class="flex flex-col gap-2 pl-4">
+												<div class="flex flex-col gap-2 pl-4" data-nav-sub hidden>
 													{kids2.map((k) => (
 														<a
 															href={k.href}
@@ -871,6 +902,9 @@ const headerHeartSvg =
 		</nav>
 	</div>
 
+	{/* Вложенные пункты в шторке раскрываются нажатием (пункт 25 документа
+	    владельца). Обработчик общий на все пять тем. */}
+	<script is:inline set:html={NAV_SUBMENU_TOGGLE_SOURCE} />
 	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 

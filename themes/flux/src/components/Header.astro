@@ -5,6 +5,7 @@ import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.as
 import { FLUX_ICON_SVGS } from "./icons/flux-icon-svgs";
 import { SITE_TITLE } from "../consts";
 import FluxNavItem from "./FluxNavItem.astro";
+import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import FluxWishlistLink from "./FluxWishlistLink.astro";
 
 interface NavLink {
@@ -620,7 +621,8 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 				const active = isActive(link);
 				const kids = Array.isArray(link.submenu) ? link.submenu : [];
 				return (
-					<div class="flex flex-col">
+					<div class="flex flex-col" data-nav-group={kids.length > 0 ? "" : undefined}>
+						<div class="flex w-full items-center gap-1">
 						<a
 							href={link.href}
 							class:list={[
@@ -643,10 +645,25 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 							<span>{link.label}</span>
 							<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
 						</a>
-						{/* Подменю в шторке — как в розе: вложенные пункты видны сразу,
-						    с отступом. Для «Бокового» типа это единственный путь к ним. */}
 						{kids.length > 0 && (
-							<div class="ml-3 flex flex-col border-l border-black/10 pl-3">
+							<button
+								type="button"
+								data-nav-sub-toggle
+								aria-expanded="false"
+								aria-label={`Раскрыть «${link.label}»`}
+								class="flex size-8 shrink-0 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 [&[aria-expanded=true]>svg]:rotate-180"
+							>
+								<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+									<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</button>
+						)}
+						</div>
+						{/* Подменю в шторке раскрывается нажатием на стрелку (пункт 25
+						    документа владельца: на телефоне — по нажатию). Для «Бокового»
+						    типа шторка — единственный путь к вложенным пунктам. */}
+						{kids.length > 0 && (
+							<div class="ml-3 flex flex-col border-l border-black/10 pl-3" data-nav-sub hidden>
 								{kids.map((k) => (
 									<a
 										href={k.href}
@@ -663,6 +680,9 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		</nav>
 	</div>
 
+	{/* Вложенные пункты в шторке раскрываются нажатием (пункт 25 документа
+	    владельца). Обработчик общий на все пять тем. */}
+	<script is:inline set:html={NAV_SUBMENU_TOGGLE_SOURCE} />
 	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 

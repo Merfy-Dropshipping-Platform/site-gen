@@ -5,7 +5,7 @@
 // переходы работали на ЛЮБОЙ странице, независимо от выбранного макета. Раньше
 // этот блок жил только в Layout.astro → страницы на BlogPost (например /about
 // до миграции, посты блога) оставались без скриптов витрины.
-import NtCartDrawer from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtCartDrawer.astro";
+import NtCartDrawer from "../../../../packages/theme-base/primitives/SchemeCartDrawer.astro";
 // Окно «Товар добавлен в корзину» (packages/theme-base/primitives/CartAddedModal.astro)
 // СНЯТО у rose (владелец, 16.09 — «работать только в bloom и flux должно»).
 // Без разметки окна `addedModal.exists()` в nt-cart.ts возвращает false, и клик

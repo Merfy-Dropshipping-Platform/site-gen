@@ -1,5 +1,7 @@
 ---
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
+import { BLOOM_ICON_SVGS } from "./icons/bloom-icon-svgs";
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import NavItem from "./NavItem.astro";
 import { SITE_TITLE } from "../consts";
@@ -244,10 +246,10 @@ const headerHeartSvg =
 				aria-controls="bloom-burger"
 			>
 				<span class="burger-icon" data-icon="open">
-					<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 				</span>
 				<span class="burger-icon hidden" data-icon="close">
-					<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 				</span>
 			</button>
 			<a href="/" class="flex items-center hover:opacity-80" aria-label={siteTitle}>
@@ -268,7 +270,7 @@ const headerHeartSvg =
 					aria-expanded="false"
 					aria-controls="bloom-search-panel"
 				>
-					<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 				</button>
 				<a
 					href="/wishlist"
@@ -295,7 +297,7 @@ const headerHeartSvg =
 					class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 					aria-label="Корзина"
 				>
-					<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="cart" sizeClass="size-5" />
 					<span
 						data-cart-count
 						data-empty="true"
@@ -303,7 +305,7 @@ const headerHeartSvg =
 					>0</span>
 				</button>
 				<a href="/login" data-auth-link class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80" aria-label="Аккаунт">
-					<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 				</a>
 			</div>
 		</div>
@@ -335,7 +337,7 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 									</button>
 									<a
 										href="/wishlist"
@@ -355,7 +357,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="cart" sizeClass="size-5" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -367,7 +369,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 									</a>
 									{isSidebar && (
 										<button
@@ -379,10 +381,10 @@ const headerHeartSvg =
 											aria-controls="bloom-burger"
 										>
 											<span class="burger-icon" data-icon="open">
-												<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 											</span>
 											<span class="burger-icon hidden" data-icon="close">
-												<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 											</span>
 										</button>
 									)}
@@ -415,7 +417,7 @@ const headerHeartSvg =
 										aria-expanded="false"
 										aria-controls="bloom-search-panel"
 									>
-										<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 									</button>
 								</div>
 
@@ -448,7 +450,7 @@ const headerHeartSvg =
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Корзина"
 									>
-										<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="cart" sizeClass="size-5" />
 										<span
 											data-cart-count
 											data-empty="true"
@@ -460,7 +462,7 @@ const headerHeartSvg =
 										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 										aria-label="Аккаунт"
 									>
-										<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 									</a>
 									{isSidebar && (
 										<button
@@ -472,10 +474,10 @@ const headerHeartSvg =
 											aria-controls="bloom-burger"
 										>
 											<span class="burger-icon" data-icon="open">
-												<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 											</span>
 											<span class="burger-icon hidden" data-icon="close">
-												<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 											</span>
 										</button>
 									)}
@@ -537,7 +539,7 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 								</button>
 								<a
 									href="/wishlist"
@@ -557,7 +559,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
+									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="cart" sizeClass="size-5" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -569,7 +571,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
+									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 								</a>
 								{isSidebar && (
 									<button
@@ -581,10 +583,10 @@ const headerHeartSvg =
 										aria-controls="bloom-burger"
 									>
 										<span class="burger-icon" data-icon="open">
-											<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 										</span>
 										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 										</span>
 									</button>
 								)}
@@ -625,7 +627,7 @@ const headerHeartSvg =
 									aria-expanded="false"
 									aria-controls="bloom-search-panel"
 								>
-									<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 								</button>
 								<a
 									href="/wishlist"
@@ -645,7 +647,7 @@ const headerHeartSvg =
 									class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
+									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="cart" sizeClass="size-5" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -657,7 +659,7 @@ const headerHeartSvg =
 									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
+									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 								</a>
 								{isSidebar && (
 									<button
@@ -669,10 +671,10 @@ const headerHeartSvg =
 										aria-controls="bloom-burger"
 									>
 										<span class="burger-icon" data-icon="open">
-											<NtIcon iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
 										</span>
 										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
 										</span>
 									</button>
 								)}
@@ -762,7 +764,7 @@ const headerHeartSvg =
 						class="relative flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
-						<NtIcon iconBasePath="/icons" name="cart" sizeClass="size-5" />
+						<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="cart" sizeClass="size-5" />
 						<span
 							data-cart-count
 							data-empty="true"
@@ -782,7 +784,7 @@ const headerHeartSvg =
 						class="min-w-0 flex-1 bg-transparent font-inter text-[12px] font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
 					/>
 					<button type="submit" class="flex h-5 w-5 shrink-0 items-center justify-center" aria-label="Найти">
-						<NtIcon iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+						<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
 					</button>
 				</form>
 				<a
@@ -790,7 +792,7 @@ const headerHeartSvg =
 					class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-accent,227_142_159))]"
 					aria-label="Профиль"
 				>
-					<NtIcon iconBasePath="/icons" name="user" sizeClass="size-5" />
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 				</a>
 			</div>
 		)}

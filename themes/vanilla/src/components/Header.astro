@@ -1,5 +1,7 @@
 ---
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
+import { VANILLA_ICON_SVGS } from "./icons/vanilla-icon-svgs";
 import VanilaLogo from "../icons/VanilaLogo.astro";
 import { SITE_TITLE } from "../consts";
 import { getProductById } from "../data/products";
@@ -197,10 +199,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				aria-controls="vanilla-burger"
 			>
 				<span class="burger-icon" data-icon="open">
-					<NtIcon name="menu-burger" sizeClass="size-6" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
 				</span>
 				<span class="burger-icon hidden" data-icon="close">
-					<NtIcon name="menu-close" sizeClass="size-6" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 				</span>
 			</button>
 			<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
@@ -215,14 +217,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					aria-expanded="false"
 					aria-controls="vanilla-search-panel"
 				>
-					<NtIcon name="search-sm" sizeClass="size-6" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-sm" sizeClass="size-6" />
 				</button>
 				<a
 					href="/wishlist"
 					class="relative flex size-6 items-center justify-center transition-opacity hover:opacity-80"
 					aria-label="Избранное"
 				>
-					<NtIcon name="favourite" sizeClass="size-4" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-4" />
 					<span
 						data-wishlist-count
 						data-empty="true"
@@ -234,7 +236,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					class="relative flex size-6 items-center justify-center"
 					aria-label="Корзина"
 				>
-					<NtIcon name="cart-sm" sizeClass="size-4" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart-sm" sizeClass="size-4" />
 					<span
 						data-cart-count
 						data-empty="true"
@@ -248,7 +250,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					aria-label="Аккаунт"
 					aria-haspopup="dialog"
 				>
-					<NtIcon name="user-sm" sizeClass="size-4" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user-sm" sizeClass="size-4" />
 				</button>
 			</div>
 		</div>
@@ -272,14 +274,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									aria-expanded="false"
 									aria-controls="vanilla-search-panel"
 								>
-									<NtIcon name="search-lg" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 								</button>
 								<a
 									href="/wishlist"
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<NtIcon name="favourite" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-6" />
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -291,7 +293,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -305,7 +307,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									aria-label="Аккаунт"
 									aria-haspopup="dialog"
 								>
-									<NtIcon name="user" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
 								</button>
 								{isSidebar && (
 									<button
@@ -317,10 +319,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										aria-controls="vanilla-burger"
 									>
 										<span class="burger-icon" data-icon="open">
-											<NtIcon name="menu-burger" sizeClass="size-5" class="brightness-0 invert" />
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
 										</span>
 										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon name="menu-close" sizeClass="size-5" class="brightness-0 invert" />
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
 										</span>
 									</button>
 								)}
@@ -367,7 +369,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									aria-expanded="false"
 									aria-controls="vanilla-search-panel"
 								>
-									<NtIcon name="search-lg" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 								</button>
 							</div>
 							<div class="flex items-center justify-center">
@@ -381,7 +383,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Избранное"
 								>
-									<NtIcon name="favourite" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-6" />
 									<span
 										data-wishlist-count
 										data-empty="true"
@@ -393,7 +395,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart" sizeClass="size-6" />
 									<span
 										data-cart-count
 										data-empty="true"
@@ -407,7 +409,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									aria-label="Аккаунт"
 									aria-haspopup="dialog"
 								>
-									<NtIcon name="user" sizeClass="size-6" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
 								</button>
 								{isSidebar && (
 									<button
@@ -419,10 +421,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										aria-controls="vanilla-burger"
 									>
 										<span class="burger-icon" data-icon="open">
-											<NtIcon name="menu-burger" sizeClass="size-5" class="brightness-0 invert" />
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
 										</span>
 										<span class="burger-icon hidden" data-icon="close">
-											<NtIcon name="menu-close" sizeClass="size-5" class="brightness-0 invert" />
+											<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
 										</span>
 									</button>
 								)}
@@ -510,14 +512,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							aria-expanded="false"
 							aria-controls="vanilla-search-panel"
 						>
-							<NtIcon name="search-lg" sizeClass="size-6" class="brightness-0 invert" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 						</button>
 						<a
 							href="/wishlist"
 							class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 							aria-label="Избранное"
 						>
-							<NtIcon name="favourite" sizeClass="size-6" class="brightness-0 invert" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-6" />
 							<span
 								data-wishlist-count
 								data-empty="true"
@@ -529,7 +531,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 							aria-label="Корзина"
 						>
-							<NtIcon name="cart" sizeClass="size-6" class="brightness-0 invert" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart" sizeClass="size-6" />
 							<span
 								data-cart-count
 								data-empty="true"
@@ -543,7 +545,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							aria-label="Аккаунт"
 							aria-haspopup="dialog"
 						>
-							<NtIcon name="user" sizeClass="size-6" class="brightness-0 invert" />
+							<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
 						</button>
 						{isSidebar && (
 							<button
@@ -555,10 +557,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								aria-controls="vanilla-burger"
 							>
 								<span class="burger-icon" data-icon="open">
-									<NtIcon name="menu-burger" sizeClass="size-5" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-burger" sizeClass="size-5" />
 								</span>
 								<span class="burger-icon hidden" data-icon="close">
-									<NtIcon name="menu-close" sizeClass="size-5" class="brightness-0 invert" />
+									<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-5" />
 								</span>
 							</button>
 						)}
@@ -625,7 +627,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					class="relative mr-3 flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 					aria-label="Избранное"
 				>
-					<NtIcon name="favourite" sizeClass="size-4" class="brightness-0" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-4" class="brightness-0" />
 					<span
 						data-wishlist-count
 						data-empty="true"
@@ -637,7 +639,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					class="relative flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 					aria-label="Корзина"
 				>
-					<NtIcon name="cart-sm" sizeClass="size-4" class="brightness-0" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="cart-sm" sizeClass="size-4" class="brightness-0" />
 					<span
 						data-cart-count
 						data-empty="true"
@@ -661,7 +663,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-dark)] placeholder:text-[var(--vanilla-muted)] outline-none"
 					/>
 					<button type="submit" class="flex size-10 shrink-0 items-center justify-center" aria-label="Найти">
-						<NtIcon name="search-sm" sizeClass="size-6" />
+						<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-sm" sizeClass="size-6" />
 					</button>
 				</form>
 				<button
@@ -671,7 +673,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					aria-label="Профиль"
 					aria-haspopup="dialog"
 				>
-					<NtIcon name="user" sizeClass="size-6" class="brightness-0 invert" />
+					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="user" sizeClass="size-6" />
 				</button>
 			</div>
 		)}

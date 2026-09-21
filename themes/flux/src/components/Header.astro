@@ -1,6 +1,8 @@
 ---
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
+import { FLUX_ICON_SVGS } from "./icons/flux-icon-svgs";
 import { SITE_TITLE } from "../consts";
 import FluxNavItem from "./FluxNavItem.astro";
 import FluxWishlistLink from "./FluxWishlistLink.astro";
@@ -231,10 +233,10 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			aria-controls="flux-burger"
 		>
 			<span class="burger-icon" data-icon="open">
-				<NtIcon name="menu-burger" sizeClass="size-6" />
+				<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
 			</span>
 			<span class="burger-icon hidden" data-icon="close">
-				<NtIcon name="menu-close" sizeClass="size-6" />
+				<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 			</span>
 		</button>
 		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
@@ -249,7 +251,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					class="relative flex size-11 items-center justify-center"
 					aria-label="Корзина"
 				>
-					<NtIcon name="cart" sizeClass="size-6" />
+					<SchemeIcon svgs={FLUX_ICON_SVGS} name="cart" sizeClass="size-6" />
 					<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 				</button>
 			)}
@@ -271,7 +273,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-6" />
+									<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
 						</div>
@@ -289,7 +291,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-6" />
+									<SchemeIcon svgs={FLUX_ICON_SVGS} name="cart" sizeClass="size-6" />
 									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 								</button>
 							)}
@@ -299,7 +301,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-6" />
+									<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 								</a>
 							)}
 							{isSidebar && (
@@ -312,10 +314,10 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									aria-controls="flux-burger"
 								>
 									<span class="burger-icon" data-icon="open">
-										<NtIcon name="menu-burger" sizeClass="size-6" />
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
 									</span>
 									<span class="burger-icon hidden" data-icon="close">
-										<NtIcon name="menu-close" sizeClass="size-6" />
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 									</span>
 								</button>
 							)}
@@ -353,7 +355,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Поиск"
 								>
-									<NtIcon name="search-lg" sizeClass="size-6" />
+									<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 								</button>
 							)}
 							<FluxWishlistLink badgeCls={badgeCls} />
@@ -364,7 +366,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
-									<NtIcon name="cart" sizeClass="size-6" />
+									<SchemeIcon svgs={FLUX_ICON_SVGS} name="cart" sizeClass="size-6" />
 									<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 								</button>
 							)}
@@ -374,7 +376,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Аккаунт"
 								>
-									<NtIcon name="user" sizeClass="size-6" />
+									<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 								</a>
 							)}
 							{isSidebar && (
@@ -387,10 +389,10 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									aria-controls="flux-burger"
 								>
 									<span class="burger-icon" data-icon="open">
-										<NtIcon name="menu-burger" sizeClass="size-6" />
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
 									</span>
 									<span class="burger-icon hidden" data-icon="close">
-										<NtIcon name="menu-close" sizeClass="size-6" />
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 									</span>
 								</button>
 							)}
@@ -454,7 +456,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Поиск"
 					>
-						<NtIcon name="search-lg" sizeClass="size-6" />
+						<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 					</button>
 				)}
 				<FluxWishlistLink badgeCls={badgeCls} />
@@ -465,7 +467,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="relative flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Корзина"
 					>
-						<NtIcon name="cart" sizeClass="size-6" />
+						<SchemeIcon svgs={FLUX_ICON_SVGS} name="cart" sizeClass="size-6" />
 						<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 					</button>
 				)}
@@ -475,7 +477,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
 						aria-label="Аккаунт"
 					>
-						<NtIcon name="user" sizeClass="size-6" />
+						<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 					</a>
 				)}
 				{isSidebar && (
@@ -488,10 +490,10 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						aria-controls="flux-burger"
 					>
 						<span class="burger-icon" data-icon="open">
-							<NtIcon name="menu-burger" sizeClass="size-6" />
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
 						</span>
 						<span class="burger-icon hidden" data-icon="close">
-							<NtIcon name="menu-close" sizeClass="size-6" />
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 						</span>
 					</button>
 				)}
@@ -562,7 +564,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 							class="relative flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 							aria-label="Корзина"
 						>
-							<NtIcon name="cart" sizeClass="size-6" />
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class={badgeCls}>0</span>
 						</button>
 					)}
@@ -580,7 +582,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
 						/>
 						<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
-							<NtIcon name="search-sm" sizeClass="size-6" />
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-sm" sizeClass="size-6" />
 						</button>
 					</form>
 				)}
@@ -597,7 +599,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						class="flex size-11 shrink-0 items-center justify-center rounded-[4px] bg-[rgb(var(--color-button-bg,0_0_0))]"
 						aria-label="Профиль"
 					>
-						<NtIcon name="user" sizeClass="size-6" class="invert" />
+						<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" colorClass="text-[rgb(var(--color-button-text,255_255_255))]" />
 					</a>
 				)}
 			</div>

@@ -380,8 +380,13 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					</div>
 				);
 			})}
-			<a href="/cart" class="font-manrope text-xs font-normal uppercase leading-normal text-[rgb(var(--color-muted,96_96_96))]">Корзина</a>
-			<a href="/auth/sign-up" class="font-manrope text-xs font-normal uppercase leading-normal text-[rgb(var(--color-muted,96_96_96))]">Регистрация</a>
+			{/* Здесь стояли ДВА зашитых пункта — «Корзина» и «Регистрация» — дописанных
+			    после цикла по меню мерчанта, то есть остатки демо-вёрстки, а не его
+			    настройка. «Регистрация» вела на страницу, которой нет: в сидах темы
+			    есть только `login`. На витрине nginx отдавал на этот адрес заглушку
+			    (200 с чужим содержимым), а в превью конструктора — 404 бэкенда
+			    («Cannot GET /register»), ровно тот, что попал в отчёт тестера.
+			    Меню шторки теперь показывает только пункты мерчанта. */}
 		</nav>
 	</div>
 

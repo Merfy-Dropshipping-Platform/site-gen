@@ -202,9 +202,15 @@ describe("rose: сетка шапки совпадает с сеткой сек�
       HEADER_SRC.indexOf("<!-- Desktop -->"),
       HEADER_SRC.indexOf("<!-- Поиск"),
     );
+    // Внутренний рельс может выбираться выражением: одна и та же строка шапки
+    // раскладывается гридом, когда логотип стоит по центру (иначе строка
+    // приходится позиционировать под absolute-логотип, и она перехватывает края
+    // у плашки «Расширенного» меню — пункт 26 документа владельца). Важно не
+    // написание, а что рельс берётся из констант desktopRail* — они собраны из
+    // ROSE_RAIL_INNER, то есть из канон-модуля сетки.
     const wrapped = [
       ...desktop.matchAll(
-        /<div class=\{desktopRowCls\}[^>]*>\s*<div class=\{desktopRail(?:Cls|ColumnCls)\}>/g,
+        /<div class=\{desktopRowCls\}[^>]*>\s*<div class=\{[^}]*desktopRail(?:Cls|ColumnCls|GridCls)[^}]*\}>/g,
       ),
     ];
     // Двухрядная (top-left / top-center) и однорядная (center-left / center-absolute).

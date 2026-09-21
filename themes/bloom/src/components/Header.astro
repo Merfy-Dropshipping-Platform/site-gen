@@ -4,6 +4,7 @@ import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.as
 import { BLOOM_ICON_SVGS } from "./icons/bloom-icon-svgs";
 import NtPromoBanner from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtPromoBanner.astro";
 import NavItem from "./NavItem.astro";
+import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import { SITE_TITLE } from "../consts";
 import { DEFAULT_CATEGORY_HREF, categoryPages, getCategoryBySlug } from "../data/categories";
 import { getProductById } from "../data/products";
@@ -151,10 +152,17 @@ const headerPadStyle = headerPad
 const desktopTwoRowWrapCls = headerPad
 	? "relative mx-auto hidden w-full max-w-[1920px] px-20 md:flex 2xl:px-[300px]"
 	: "relative mx-auto hidden w-full max-w-[1920px] px-20 py-6 md:flex 2xl:px-[300px]";
-// Single-row outer wrapper (center-left / center-absolute): single flex row, relative for absolute logo.
+// Single-row outer wrapper (center-left / center-absolute): single flex row.
+// Позиционированного предка здесь больше нет НИ В ОДНОМ положении: плашка
+// «Расширенного» меню считает края от ближайшего позиционированного предка, и с
+// ним она получалась уже шапки и налезала на строку пунктов (замер 1440: лист
+// 1280 при шапке 1440, накрыты все пункты верхнего уровня — ровно жалоба из
+// пункта 26 документа владельца). Логотип «по центру» центрируется гридом
+// [1fr auto 1fr], а не `absolute`, поэтому якорем плашки остаётся сам <header>.
+const needsPositionedRow = logoPosition === "center-absolute";
 const desktopSingleRowWrapCls = headerPad
-	? "relative mx-auto hidden w-full max-w-[1920px] items-center px-20 md:flex 2xl:px-[300px]"
-	: "relative mx-auto hidden w-full max-w-[1920px] items-center px-20 py-6 md:flex 2xl:px-[300px]";
+	? "mx-auto hidden w-full max-w-[1920px] items-center px-20 md:flex 2xl:px-[300px]"
+	: "mx-auto hidden w-full max-w-[1920px] items-center px-20 py-6 md:flex 2xl:px-[300px]";
 
 const pathname = pathnameBase(Astro.url.pathname);
 // Поиск по магазину ведёт в КАТАЛОГ, а не на демо-страницу темы.
@@ -507,12 +515,12 @@ const headerHeartSvg =
 		) : (
 			/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 			<div class={desktopSingleRowWrapCls} style={headerPadStyle}>
-				<div class="relative mx-auto flex w-full max-w-[1320px] items-center">
+				<div class:list={[needsPositionedRow ? "grid grid-cols-[1fr_auto_1fr]" : "flex", "mx-auto w-full max-w-[1320px] items-center"]}>
 					{logoPosition === "center-absolute" ? (
 						/* center-absolute: nav LEFT, logo ABSOLUTE-center, icons RIGHT */
 						<>
 							<nav
-								class:list={["flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
+								class:list={["col-start-1 flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
 								data-nav-inline
 								data-puck-subsection-parent={id}
@@ -524,7 +532,7 @@ const headerHeartSvg =
 								))}
 							</nav>
 
-							<a href="/" class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center hover:opacity-90" aria-label={siteTitle}>
+							<a href="/" class="col-start-2 flex items-center justify-self-center hover:opacity-90" aria-label={siteTitle}>
 								{
 									logo ? (
 										<img src={logo} alt={siteTitle} class={logoImgCls} />
@@ -534,7 +542,7 @@ const headerHeartSvg =
 								}
 							</a>
 
-							<div class="ml-auto flex items-center gap-4">
+							<div class="col-start-3 flex items-center gap-4 justify-self-end">
 								<button
 									type="button"
 									data-action="toggle-search"
@@ -719,6 +727,13 @@ const headerHeartSvg =
 	<div
 		id="bloom-burger"
 		class:list={[
+			// «Цветовая схема меню» красит и шторку, а не только инлайн-навигацию.
+			// Баг 24 документа владельца: «панель бокового меню остаётся белой, цвета
+			// выбранной схемы меню к ней не применяются». Замер: menuColorScheme
+			// доезжал до <nav>, но на корень шторки класс схемы никто не вешал — во
+			// ВСЕХ пяти темах, не только в bloom. Пусто, если схема меню не задана —
+			// тогда шторка наследует схему секции, как раньше.
+			menuSchemeClass,
 			// Полотно шторки — «Фон» СХЕМЫ, а не палитра Tailwind. `bg-white` Tailwind 4
 			// печатает как `var(--color-white)`: переменная ЕСТЬ, но её нет ни в одной
 			// схеме мерчанта, поэтому шторка замирает белой при любой схеме. Замер
@@ -808,34 +823,64 @@ const headerHeartSvg =
 					? link.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
 					: [];
 				return (
-					<div class="flex flex-col gap-3">
-						<a
-							href={link.href}
-							aria-current={active ? "page" : undefined}
-							class:list={[
-								"font-inter text-[14px] font-light leading-normal",
-								active ? "text-[#000000]" : "text-[rgb(var(--color-muted,153_153_153))]",
-							]}
-						>
-							{link.label}
-						</a>
+					<div class="flex flex-col gap-3" data-nav-group={subs.length > 0 ? "" : undefined}>
+						<div class="flex w-full items-center justify-between gap-2">
+							<a
+								href={link.href}
+								aria-current={active ? "page" : undefined}
+								class:list={[
+									"font-inter text-[14px] font-light leading-normal",
+									active ? "text-[#000000]" : "text-[rgb(var(--color-muted,153_153_153))]",
+								]}
+							>
+								{link.label}
+							</a>
+							{subs.length > 0 && (
+								<button
+									type="button"
+									data-nav-sub-toggle
+									aria-expanded="false"
+									aria-label={`Раскрыть «${link.label}»`}
+									class="flex size-6 shrink-0 items-center justify-center text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-180"
+								>
+									<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+										<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+							)}
+						</div>
 						{active && subs.length === 0 && <div class="h-px w-[54px] bg-[#e38e9f]" aria-hidden="true"></div>}
 						{subs.length > 0 && (
-							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4">
+							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4" data-nav-sub hidden>
 								{subs.map((c2) => {
 									const kids2 = Array.isArray(c2.submenu)
 										? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
 										: [];
 									return (
-										<div class="flex flex-col gap-2">
-											<a
-												href={c2.href}
-												class="font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
-											>
-												{c2.label}
-											</a>
+										<div class="flex flex-col gap-2" data-nav-group={kids2.length > 0 ? "" : undefined}>
+											<div class="flex w-full items-center justify-between gap-2">
+												<a
+													href={c2.href}
+													class="font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
+												>
+													{c2.label}
+												</a>
+												{kids2.length > 0 && (
+													<button
+														type="button"
+														data-nav-sub-toggle
+														aria-expanded="false"
+														aria-label={`Раскрыть «${c2.label}»`}
+														class="flex size-5 shrink-0 items-center justify-center text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-180"
+													>
+														<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+															<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+														</svg>
+													</button>
+												)}
+											</div>
 											{kids2.length > 0 && (
-												<div class="flex flex-col gap-2 pl-4">
+												<div class="flex flex-col gap-2 pl-4" data-nav-sub hidden>
 													{kids2.map((k) => (
 														<a
 															href={k.href}
@@ -864,6 +909,9 @@ const headerHeartSvg =
 		</nav>
 	</div>
 
+	{/* Вложенные пункты в шторке раскрываются нажатием (пункт 25 документа
+	    владельца). Обработчик общий на все пять тем. */}
+	<script is:inline set:html={NAV_SUBMENU_TOGGLE_SOURCE} />
 	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
 </div>
 

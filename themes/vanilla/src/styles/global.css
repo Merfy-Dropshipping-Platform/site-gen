@@ -113,6 +113,20 @@ body {
    --vanilla-* на scheme-токены. StorefrontRuntime вешает .color-scheme-N на
    корень [data-nt="vanilla-cart-drawer"] (он же #vanilla-cart-drawer-root).
    Без схемы селектор не матчится → дефолтные --vanilla-* (ноль регрессии). */
+/* Шторка БОКОВОГО МЕНЮ — тот же приём, что у корзины ниже: у vanilla полотно
+   покрашено переменными темы `--vanilla-*`, а не токенами схемы напрямую,
+   поэтому одного класса `color-scheme-N` на корне мало. Баг 24 документа
+   владельца: «панель бокового меню остаётся белой, цвета выбранной схемы меню к
+   ней не применяются». Замер: после добавления класса четыре темы поехали, а
+   vanilla осталась белой — ровно из-за этого слоя переменных. Без класса
+   селектор не матчится → прежний вид, ноль регрессии. */
+#vanilla-burger[class*="color-scheme-"] {
+  --vanilla-surface: rgb(var(--color-bg));
+  --vanilla-dark: rgb(var(--color-heading));
+  --vanilla-muted: rgb(var(--color-muted));
+  --vanilla-line: rgb(var(--color-muted) / 0.3);
+}
+
 [data-nt="vanilla-cart-drawer"][class*="color-scheme-"] {
   --vanilla-surface: rgb(var(--color-bg));
   --vanilla-dark: rgb(var(--color-heading));

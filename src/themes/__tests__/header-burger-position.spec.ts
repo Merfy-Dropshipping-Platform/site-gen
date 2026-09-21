@@ -61,6 +61,29 @@ function sidebarBurgerBlocks(
   return out;
 }
 
+/**
+ * Открывающий тег шторки целиком — от `<` до закрывающей `>`.
+ *
+ * Было окно в 900 символов от `id="<тема>-burger"`. Оно покраснело на правке,
+ * которая ДОБАВИЛА в тот же class:list пояснение и класс схемы меню: `right-0`
+ * просто уехал за край окна, хотя сторона панели не менялась. Считаем границу
+ * тега, а не символы: скобки `{…}` пропускаем, чтобы `>` внутри выражения не
+ * оборвал тег раньше времени.
+ */
+function drawerDecl(src: string, theme: string): string | null {
+  const at = src.indexOf(`id="${theme}-burger"`);
+  if (at < 0) return null;
+  const start = src.lastIndexOf("<", at);
+  let depth = 0;
+  for (let i = start; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+    else if (ch === ">" && depth === 0) return src.slice(start, i + 1);
+  }
+  return null;
+}
+
 const ACTION_LABEL = /aria-label="(Поиск|Избранное|Корзина|Аккаунт|Профиль)"/;
 
 describe("бургер стоит в группе иконок, а не рядом с логотипом", () => {
@@ -96,12 +119,12 @@ describe("бургер стоит в группе иконок, а не рядо
 
   it.each(THEMES)("%s: панель бокового меню закреплена справа", (theme) => {
     const src = headerSource(theme);
-    const at = src.indexOf(`id="${theme}-burger"`);
-    expect({ theme, панельНайдена: at > 0 }).toEqual({
+    const decl = drawerDecl(src, theme);
+    expect({ theme, панельНайдена: decl !== null }).toEqual({
       theme,
       панельНайдена: true,
     });
     // Канон стороны: бургер справа ⇒ панель справа. Ищем в объявлении панели.
-    expect(src.slice(at, at + 900)).toContain("right-0");
+    expect(decl).toContain("right-0");
   });
 });

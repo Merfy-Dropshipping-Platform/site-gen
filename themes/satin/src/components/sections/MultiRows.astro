@@ -375,7 +375,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    как остальные темы — media-text-pair.spec.ts). На мобильном (одна
 		    колонка) зазор оставлен, иначе ряды сливаются в кашу
 		    (multirows-row-gap.spec.ts). */}
-		<div class="flex flex-col gap-8 md:gap-0">
+		<div class="flex flex-col gap-8">
 			{
 				rows.map((row, i) => (
 					<div
@@ -394,7 +394,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						    (правило 2): картинка показывается ВСЕГДА, surface-rect не остаётся. */}
 						<div
 							class:list={[
-								"relative overflow-hidden rounded-[var(--radius-media,0px)] md:h-full",
+								// `w-full` обязателен рядом с `md:h-full`: без него `aspect-*` считает ШИРИНУ
+								// от высоты, и медиа вылезает за свою колонку сетки. Замер живого
+								// стенда satin 20.09: дорожка 312px, медиа 357px — текстовый блок
+								// наезжал на фото на 45px. У остальных четырёх тем класс был с самого
+								// начала, поэтому там этого не было.
+								"relative w-full overflow-hidden rounded-[var(--radius-media,0px)] md:h-full",
 								row.image ? "bg-[#111111]" : "bg-[#FBFBFB]",
 								row.aspectCls,
 								row.right && "md:order-2",

@@ -1344,6 +1344,15 @@ jobs:
       # атрибуты — 1, не сбрасывать минимум — 1, отключить рантайм — 1.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/variant-chip-equalize.spec.ts
+      # Жирность/курсив в «Тексте согласия» подписки: поле выводилось голой
+      # подстановкой, и мерчант видел «<strong>Согласен…</strong>» текстом
+      # (владелец 21.09). У vanilla и flux это уже было сделано верно —
+      # расхождение жило в трёх темах из пяти.
+      # Рендерит СОБРАННЫЕ секции тем → нужен pnpm build:theme-sections выше.
+      # Саботаж проверен: возврат голой подстановки в любой из двух веток
+      # (со ссылкой и без) красит 3 проверки.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/newsletter-consent-rich-text.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

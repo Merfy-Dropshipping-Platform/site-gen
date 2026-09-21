@@ -214,9 +214,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						/>
 						{
 							agreeLink ? (
-								<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70">{agreeText}</a>
+								<a href={agreeLink} target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 transition-opacity hover:opacity-70"><Fragment set:html={inlineFormat(agreeText)} /></a>
 							) : (
-								<span>{agreeText}</span>
+								<span><Fragment set:html={inlineFormat(agreeText)} /></span>
 							)
 						}
 					</label>

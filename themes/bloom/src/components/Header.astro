@@ -101,7 +101,7 @@ const isThemeAsset = logoPath === "/logo.svg" || logoPath.startsWith("/icons/");
 const logo = rawLogo && !isThemeAsset ? rawLogo : undefined;
 const logoImgCls = "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-contain";
 
-// Канон logoPosition: 'top-center' (canon-default) → TWO rows: row1=grid [search|logo|icons],
+// Канон logoPosition: 'top-center' (canon-default) → TWO rows: row1=grid [распорка|logo|search+icons],
 // row2=nav centered (ЛИТЕРАЛ верстальщика, пиксель-перфект).
 // 'top-left' → TWO rows: row1=flex [logo LEFT + icons RIGHT], row2=nav LEFT.
 // 'center-left' → ONE row: [logo LEFT] [nav CENTER] [icons RIGHT].
@@ -408,17 +408,11 @@ const headerHeartSvg =
 						/* ЛИТЕРАЛ верстальщика — пиксель-перфект bloom default */
 						<>
 							<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+						{/* Левая ячейка — распорка: она держит логотип ровно по центру грида.
+						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
+						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
+						    не разрывался. */}
 								<div class="flex items-center justify-start">
-									<button
-										type="button"
-										data-action="toggle-search"
-										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
-										aria-label="Поиск"
-										aria-expanded="false"
-										aria-controls="bloom-search-panel"
-									>
-										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
-									</button>
 								</div>
 
 								<a href="/" class="flex items-center justify-center hover:opacity-90" aria-label={siteTitle}>
@@ -432,6 +426,16 @@ const headerHeartSvg =
 								</a>
 
 								<div class="flex items-center justify-end gap-4">
+									<button
+										type="button"
+										data-action="toggle-search"
+										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+										aria-label="Поиск"
+										aria-expanded="false"
+										aria-controls="bloom-search-panel"
+									>
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="search-sm" sizeClass="size-5" />
+									</button>
 									<a
 										href="/wishlist"
 										class="relative flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
@@ -850,8 +854,13 @@ const headerHeartSvg =
 					</div>
 				);
 			})}
-			<a href="/cart" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">Корзина</a>
-			<a href="/auth/sign-up" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">Регистрация</a>
+			{/* Здесь стояли ДВА зашитых пункта — «Корзина» и «Регистрация» — дописанных
+			    после цикла по меню мерчанта, то есть остатки демо-вёрстки, а не его
+			    настройка. «Регистрация» вела на страницу, которой нет: в сидах темы
+			    есть только `login`. На витрине nginx отдавал на этот адрес заглушку
+			    (200 с чужим содержимым), а в превью конструктора — 404 бэкенда
+			    («Cannot GET /register»), ровно тот, что попал в отчёт тестера.
+			    Меню шторки теперь показывает только пункты мерчанта. */}
 		</nav>
 	</div>
 

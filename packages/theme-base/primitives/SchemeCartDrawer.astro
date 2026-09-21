@@ -1,0 +1,163 @@
+---
+/**
+ * Выдвижная панель корзины — версия темы, красится ЦВЕТОВОЙ СХЕМОЙ.
+ *
+ * Жалоба владельца 21.09: «цвета в корзине не поменялись». Замер на его живом
+ * магазине: внутри панели НОЛЬ токенов схемы, всё зашито — заголовок
+ * rgb(0,0,0), «Скрыть» и подписи rgb(153,153,153), кнопки белым по чёрному.
+ * Панель оставалась чёрным по белому при любой схеме, хотя шапка того же сайта
+ * уже была белым по чёрному.
+ *
+ * Оригинал живёт в опубликованном пакете дизайн-системы (node_modules) и
+ * правке не подлежит — та же ситуация, что была с NtIcon. Поэтому здесь копия
+ * с токенами вместо литералов; поведение, разметка и события не менялись.
+ *
+ * Роли цветов взяты как в секциях корзины: заголовок → --color-heading,
+ * обычный текст → --color-text, приглушённое → --color-muted, кнопка →
+ * --color-button-bg/--color-button-text, полотно → --color-bg. Затемнение
+ * позади панели (bg-black/35) остаётся литералом: это тень-подложка, а не
+ * поверхность схемы.
+ */
+/* События: `${eventPrefix}:open` | `:close` | `:toggle` (по умолчанию nt:cart:*). */
+interface Props {
+	rootId?: string;
+	eventPrefix?: string;
+	catalogHref?: string;
+	signInHref?: string;
+	cartHref?: string;
+	title?: string;
+	dismissLabel?: string;
+	class?: string;
+}
+
+const {
+	rootId = "nt-cart-drawer-root",
+	eventPrefix = "nt:cart",
+	catalogHref = "/catalog",
+	signInHref = "/auth/sign-in",
+	cartHref = "/cart",
+	title = "Корзина",
+	dismissLabel = "Скрыть",
+	class: className = "",
+} = Astro.props;
+
+const evOpen = `${eventPrefix}:open`;
+const evClose = `${eventPrefix}:close`;
+const evToggle = `${eventPrefix}:toggle`;
+---
+
+<div
+	id={rootId}
+	data-state="closed"
+	class:list={["invisible fixed inset-0 z-[80] data-[state=open]:visible", className]}
+	aria-hidden="true"
+	data-nt="cart-drawer"
+>
+	<button
+		type="button"
+		data-cart-close
+		aria-label="Закрыть панель корзины"
+		class="absolute inset-0 h-full w-full cursor-default bg-black/35 opacity-0 transition-opacity duration-300 data-[state=open]:opacity-100"
+		data-state="closed"
+	></button>
+
+	<aside
+		data-cart-panel
+		class="absolute right-0 top-0 flex h-full w-full max-w-[457px] translate-x-full flex-col bg-[rgb(var(--color-bg,255_255_255))] shadow-[0_4px_32px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out data-[state=open]:translate-x-0"
+		data-state="closed"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby={`${rootId}-title`}
+	>
+		<div class="flex items-start justify-between px-8 pt-8">
+			<h2
+				id={`${rootId}-title`}
+				class="font-comfortaa text-[20px] font-normal uppercase leading-normal text-[rgb(var(--color-heading,0_0_0))]"
+			>
+				{title}
+			</h2>
+			<button
+				type="button"
+				data-cart-close
+				class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-opacity hover:opacity-80"
+			>
+				{dismissLabel}
+			</button>
+		</div>
+
+		<div data-cart-body class="flex flex-1 flex-col gap-6 overflow-y-auto px-8 pb-8 pt-4">
+			<div data-cart-empty class="flex flex-col items-start gap-6">
+				<p class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))]">
+					Вы пока не добавили товар в корзину.
+				</p>
+				<a
+					href={catalogHref}
+					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
+				>
+					Продолжить покупки
+				</a>
+				<p class="font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))]">
+					Есть аккаунт?
+					<a href={signInHref} class="text-[rgb(var(--color-text,0_0_0))] hover:opacity-80">Войти</a>
+				</p>
+			</div>
+
+			<ul data-cart-items role="list" class="hidden flex-col gap-4"></ul>
+
+			<div data-cart-summary class="mt-auto hidden flex-col gap-4 pt-6">
+				<div class="flex items-center justify-between font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
+					<span>Итого</span>
+					<span data-cart-total>0 ₽</span>
+				</div>
+				<a
+					href={cartHref}
+					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
+				>
+					Оформить заказ
+				</a>
+			</div>
+		</div>
+	</aside>
+</div>
+
+<script is:inline define:vars={{ rootId, evOpen, evClose, evToggle }}>
+	const setState = (state) => {
+		const root = document.getElementById(rootId);
+		if (!root) return;
+		root.dataset.state = state;
+		root.setAttribute("aria-hidden", state === "open" ? "false" : "true");
+		root.querySelectorAll("[data-state]").forEach((el) => {
+			el.dataset.state = state;
+		});
+		document.body.style.overflow = state === "open" ? "hidden" : "";
+	};
+
+	const open = () => setState("open");
+	const close = () => setState("closed");
+
+	document.addEventListener("click", (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (target.closest("[data-cart-close]")) {
+			event.preventDefault();
+			close();
+			return;
+		}
+		if (target.closest("[data-cart-open]")) {
+			event.preventDefault();
+			open();
+		}
+	});
+
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") close();
+	});
+
+	window.addEventListener(evOpen, open);
+	window.addEventListener(evClose, close);
+	window.addEventListener(evToggle, () => {
+		const root = document.getElementById(rootId);
+		if (root && root.dataset.state === "open") close();
+		else open();
+	});
+</script>

@@ -326,6 +326,13 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	<div
 		id="satin-burger"
 		class:list={[
+			// «Цветовая схема меню» красит и шторку, а не только инлайн-навигацию.
+			// Баг 24 документа владельца: «панель бокового меню остаётся белой, цвета
+			// выбранной схемы меню к ней не применяются». Замер: menuColorScheme
+			// доезжал до <nav>, но на корень шторки класс схемы никто не вешал — во
+			// ВСЕХ пяти темах, не только в bloom. Пусто, если схема меню не задана —
+			// тогда шторка наследует схему секции, как раньше.
+			menuSchemeClass,
 			"fixed z-[55] hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
 			isSidebar
 				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"

@@ -91,7 +91,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, formatCartPrice } from "../../lib/cart";
+	import { getCart, formatCartPrice, variantPairs } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 	import { withBase } from "../../lib/with-base";
 
@@ -141,8 +141,13 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// только фон счётчика поехал за --color-button-bg, светлая кнопка
 				// мерчанта (замер: схема-1 даёт 255,255,255) дала бы белое по белому.
 				// Через currentColor штрих наследует --color-button-text и виден всегда.
-				const color = line.variant?.color ?? "";
-				const size = line.variant?.size ?? "";
+				// flux подписывает пары «Имя: Значение». Берём общий `variantPairs`:
+				// он читает variant.options («Формат: Порошок»), а прежняя пара
+				// color+size видела только легаси-поля и оставляла строку пустой —
+				// в корзине две одинаковые строки на два разных варианта.
+				const пары = variantPairs(line.variant);
+				const color = пары.find((p) => p.name === "Цвет")?.value ?? пары[0]?.value ?? "";
+				const size = пары.find((p) => p.name === "Размер")?.value ?? (пары[1]?.value ?? "");
 				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
 				const oldPrice = hasSale ? formatCartPrice(line.oldPrice as number) : "";
 				const discountPercent = hasSale

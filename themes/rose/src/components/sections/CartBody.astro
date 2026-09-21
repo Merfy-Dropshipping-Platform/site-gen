@@ -81,7 +81,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, formatCartPrice } from "../../lib/cart";
+	import { getCart, formatCartPrice, variantLabel } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const VARIANT_COLOR_LABELS: Record<string, string> = {
@@ -118,7 +118,12 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				const slug = line.variant?.color ?? "";
 				const colorLabel = slug ? (VARIANT_COLOR_LABELS[slug] ?? slug) : "";
 				const sizePart = line.variant?.size ?? "";
-				const variantUnderPrice = [colorLabel, sizePart].filter(Boolean).join(", ");
+				// Подпись варианта берём общим `variantLabel`: он читает variant.options
+				// («Формат: Порошок»), а склейка color+size видела только легаси-поля и
+				// оставляла подпись ПУСТОЙ — в корзине две одинаковые строки на два
+				// разных варианта (баг тестера, воспроизведён на живом стенде 21.09).
+				// CartSection это уже чинили, CartBody остался на старом пути.
+				const variantUnderPrice = variantLabel(line.variant) || [colorLabel, sizePart].filter(Boolean).join(", ");
 				const totalCurrent = formatCartPrice(line.price * line.quantity);
 				const totalOld =
 					typeof line.oldPrice === "number" && line.oldPrice > line.price

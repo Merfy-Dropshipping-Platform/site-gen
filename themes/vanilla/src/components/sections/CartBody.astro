@@ -74,7 +74,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, formatCartPrice } from "../../lib/cart";
+	import { getCart, formatCartPrice, variantLabel } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -104,6 +104,10 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 		itemsEl.innerHTML = lines
 			.map((line) => {
+				// Подпись варианта. Данные лежат в variant.options («Оттенок: Sugar
+				// Plum»), но строка их не выводила вовсе — два оттенка одного товара
+				// давали две неразличимые строки (баг тестера, воспроизведён 21.09).
+				const variantUnderName = variantLabel(line.variant);
 				const oldPriceHtml =
 					line.oldPrice && line.oldPrice > line.price
 						? `<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[16px]">${formatCartPrice(line.oldPrice * line.quantity)}</span>`
@@ -126,6 +130,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 							</a>
 							<div class="flex min-w-0 flex-col gap-2">
 								<a href="/products/${line.productId}" class="break-words font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]">${line.name}</a>
+								${variantUnderName ? `<span class="font-manrope text-[12px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[14px]">${variantUnderName}</span>` : ""}
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${formatCartPrice(line.price * line.quantity)}</span>
 									${oldPriceHtml}

@@ -1423,6 +1423,15 @@ jobs:
       # литерала одного порта — 1.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/newsletter-default-parity.spec.ts
+      # Строка корзины подписывает выбранный вариант. CartBody склеивал подпись
+      # из легаси color+size, а опции лежат в variant.options — две позиции
+      # разных вариантов выглядели одинаково (воспроизведено на живом стенде
+      # 21.09). CartSection на общий хелпер уже перевели, CartBody — нет.
+      # Рендерит СОБРАННЫЕ секции → нужен pnpm build:theme-sections выше.
+      # Саботаж проверен: возврат склейки у bloom — 1, снятие подписи из
+      # разметки vanilla — 1.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-page-variant-label.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

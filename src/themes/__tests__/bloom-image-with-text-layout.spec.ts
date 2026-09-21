@@ -50,17 +50,32 @@ describe("bloom ImageWithText — «Контейнер» (containerEnabled/posit
   const rows = render([
     { block: "ImageWithText", props: { ...base, containerEnabled: "false" } },
     { block: "ImageWithText", props: { ...base, containerEnabled: "true" } },
-    { block: "ImageWithText", props: { ...base, containerEnabled: "true", width: "small" } },
-    { block: "ImageWithText", props: { ...base, containerEnabled: "true", width: "large" } },
-    { block: "ImageWithText", props: { ...base, containerEnabled: "true", position: "top" } },
-    { block: "ImageWithText", props: { ...base, containerEnabled: "true", position: "bottom" } },
+    {
+      block: "ImageWithText",
+      props: { ...base, containerEnabled: "true", width: "small" },
+    },
+    {
+      block: "ImageWithText",
+      props: { ...base, containerEnabled: "true", width: "large" },
+    },
+    {
+      block: "ImageWithText",
+      props: { ...base, containerEnabled: "true", position: "top" },
+    },
+    {
+      block: "ImageWithText",
+      props: { ...base, containerEnabled: "true", position: "bottom" },
+    },
     // Легаси данные `layout` (сохранены 15-17.09, до переименования обратно
     // в «Контейнер») должны по-прежнему давать наложение — backward-compat
     // fallback №2 (приоритет №1 — сегодняшний containerEnabled).
     { block: "ImageWithText", props: { ...base, layout: "overlap" } },
     { block: "ImageWithText", props: { ...base, layout: "no-overlap" } },
     // Ещё более старые данные (containerEnabled='true' до 15.09) читаются напрямую.
-    { block: "ImageWithText", props: { ...base, containerEnabled: "true", layout: "no-overlap" } },
+    {
+      block: "ImageWithText",
+      props: { ...base, containerEnabled: "true", layout: "no-overlap" },
+    },
   ]);
 
   const [
@@ -96,15 +111,28 @@ describe("bloom ImageWithText — «Контейнер» (containerEnabled/posit
     expect(on.html).not.toBe(off.html);
   });
 
+  // 2026-09-21: конкретные доли (40/58/75 % карточки против 67.5/49.5/32.5 %
+  // фото) сторожит bloom-image-with-text-params.spec.ts — там же записан
+  // замер эталона владельца, из которого они взяты. Здесь остаётся поведение:
+  // «Ширина» обязана двигать пропорцию. Раньше тут стояли 36 % / 62 % — доли
+  // прежней раскладки, где карточка плавала внутри фото во всю ширину пары.
   it("width при включённом контейнере меняет ПРОПОРЦИЮ карточки (small ≠ large)", () => {
-    expect(onSmall.html).toMatch(/lg:w-\[36%\]/);
-    expect(onLarge.html).toMatch(/lg:w-\[62%\]/);
+    const cardPct = (html: string | undefined) =>
+      [...(html ?? "").matchAll(/lg:w-\[([\d.]+)%\]/g)]
+        .map((m) => m[1])
+        .join(",");
+    expect(cardPct(onSmall.html)).not.toBe("");
+    expect(cardPct(onLarge.html)).not.toBe("");
+    expect(cardPct(onSmall.html)).not.toEqual(cardPct(onLarge.html));
     expect(onSmall.html).not.toBe(onLarge.html);
   });
 
+  // Тоже 2026-09-21: карточка больше не абсолютная (абсолютное теперь фото —
+  // оно тянется на высоту пары), поэтому «Положение» двигает её не якорями
+  // top-6/bottom-6, а выключкой потока items-start/items-end.
   it("position меняет вертикальное положение карточки (top ≠ bottom) — не тронуто b79", () => {
-    expect(posTop.html).toMatch(/lg:top-6/);
-    expect(posBottom.html).toMatch(/lg:bottom-6/);
+    expect(posTop.html).toMatch(/lg:items-start/);
+    expect(posBottom.html).toMatch(/lg:items-end/);
     expect(posTop.html).not.toBe(posBottom.html);
   });
 

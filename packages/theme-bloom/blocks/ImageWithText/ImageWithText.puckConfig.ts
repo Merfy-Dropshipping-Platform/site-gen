@@ -134,7 +134,17 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
       ],
     },
     colorScheme: { type: 'colorScheme', label: 'Цветовая схема' },
-    containerColorScheme: { type: 'hidden', label: '' },
+    // Владелец 2026-09-22: «в сайдбар изображение с текстом добавить цветовая
+    // схема контейнера». Поле существовало с самого начала, но стояло
+    // `hidden` — мерчант красил секцию целиком и не мог покрасить саму
+    // карточку. Оно уже читается портом (карточка берёт эту схему, когда
+    // «Контейнер» включён), так что открываем ровно существующее поле, ничего
+    // не добавляя в схему блока. Только bloom: у остальных четырёх тем поле
+    // остаётся скрытым (канон theme-base), как и тумблер «Контейнер».
+    containerColorScheme: {
+      type: 'colorScheme',
+      label: 'Цветовая схема контейнера',
+    },
     padding: { type: 'padding', label: 'Отступы' },
     heading: {
       type: 'object',

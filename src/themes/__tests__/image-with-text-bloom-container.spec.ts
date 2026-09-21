@@ -29,7 +29,13 @@ type FieldCanon = { type: string | null; label: string; visibility: string };
 type BlockCanon = { label: string; fields: Record<string, FieldCanon> };
 
 const distReady = existsSync(
-  resolve(SITES_ROOT, "dist", "src", "controllers", "theme-puck-config.controller.js"),
+  resolve(
+    SITES_ROOT,
+    "dist",
+    "src",
+    "controllers",
+    "theme-puck-config.controller.js",
+  ),
 );
 
 const panels: Record<string, Record<string, BlockCanon>> = {};
@@ -44,15 +50,28 @@ beforeAll(() => {
   Object.assign(panels, JSON.parse(raw).themes);
 }, 300_000);
 
-function renderSection(theme: string, props: Record<string, unknown>): string | null {
-  const mf = resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json");
+function renderSection(
+  theme: string,
+  props: Record<string, unknown>,
+): string | null {
+  const mf = resolve(
+    SITES_ROOT,
+    "dist",
+    "theme-sections",
+    theme,
+    "manifest.json",
+  );
   if (!existsSync(mf)) return null;
   const rows = JSON.parse(
-    execFileSync("node", [RENDERER, theme, JSON.stringify([{ block: BLOCK, props }])], {
-      cwd: SITES_ROOT,
-      encoding: "utf-8",
-      maxBuffer: 128 * 1024 * 1024,
-    }),
+    execFileSync(
+      "node",
+      [RENDERER, theme, JSON.stringify([{ block: BLOCK, props }])],
+      {
+        cwd: SITES_ROOT,
+        encoding: "utf-8",
+        maxBuffer: 128 * 1024 * 1024,
+      },
+    ),
   ) as Array<{ html?: string; error?: string; missing?: boolean }>;
   const row = rows[0];
   expect(row?.error).toBeUndefined();
@@ -84,6 +103,27 @@ describe("«Изображение с текстом» — панель «Кон
       expect(Object.keys(fields)).not.toContain("containerEnabled");
     },
   );
+
+  // Владелец 2026-09-22: «в сайдбар изображение с текстом добавить цветовая
+  // схема контейнера». Поле было в блоке с самого начала, но стояло `hidden`:
+  // порт его читал (карточка красится им при включённом контейнере), а
+  // мерчант выбрать схему не мог. Открыли ровно его — и ровно у bloom.
+  it("bloom: containerColorScheme ВИДЕН в панели и подписан «Цветовая схема контейнера»", () => {
+    if (!distReady) return;
+    const field = panels.bloom?.[BLOCK]?.fields?.containerColorScheme;
+    expect(field?.type).toBe("colorScheme");
+    expect(field?.label).toBe("Цветовая схема контейнера");
+    expect(field?.visibility).toBe("panel");
+  });
+
+  it.each(THEMES.filter((t) => t !== "bloom"))(
+    "%s: containerColorScheme остаётся СКРЫТЫМ — «только в этой теме»",
+    (theme) => {
+      if (!distReady) return;
+      const field = panels[theme]?.[BLOCK]?.fields?.containerColorScheme;
+      expect(field?.visibility).toBe("off");
+    },
+  );
 });
 
 describe("«Изображение с текстом» (bloom) — рендер «Контейнер»", () => {
@@ -94,20 +134,29 @@ describe("«Изображение с текстом» (bloom) — рендер 
   });
 
   it("containerEnabled:'false': НЕТ surface-бокса", () => {
-    const html = renderSection("bloom", { id: "iwt-1", containerEnabled: "false" });
+    const html = renderSection("bloom", {
+      id: "iwt-1",
+      containerEnabled: "false",
+    });
     if (html === null) return;
     expect(html).not.toContain("py-8");
   });
 
   it("containerEnabled:'true': surface-бокс появляется на текстовой колонке", () => {
-    const html = renderSection("bloom", { id: "iwt-1", containerEnabled: "true" });
+    const html = renderSection("bloom", {
+      id: "iwt-1",
+      containerEnabled: "true",
+    });
     if (html === null) return;
     expect(html).toContain("py-8");
     expect(html).toContain("radius-card");
   });
 
   it("containerColorScheme применяется ТОЛЬКО при containerEnabled:'true'", () => {
-    const off = renderSection("bloom", { id: "iwt-1", containerColorScheme: "4" });
+    const off = renderSection("bloom", {
+      id: "iwt-1",
+      containerColorScheme: "4",
+    });
     const onWithoutToggle = off; // тот же вызов — containerEnabled не задан
     if (off === null) return;
     expect(onWithoutToggle).not.toContain("color-scheme-4");
@@ -124,7 +173,10 @@ describe("«Изображение с текстом» (bloom) — рендер 
   it.each(THEMES.filter((t) => t !== "bloom"))(
     "%s: containerEnabled:'true' не ломает рендер (поля нет — проп молча игнорируется)",
     (theme) => {
-      const html = renderSection(theme, { id: "iwt-1", containerEnabled: "true" });
+      const html = renderSection(theme, {
+        id: "iwt-1",
+        containerEnabled: "true",
+      });
       if (html === null) return;
       expect(html).not.toContain("py-8");
     },

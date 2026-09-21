@@ -4299,9 +4299,9 @@
             "visibility": "panel"
           },
           "containerColorScheme": {
-            "type": "hidden",
-            "label": "",
-            "visibility": "off"
+            "type": "colorScheme",
+            "label": "Цветовая схема контейнера",
+            "visibility": "panel"
           },
           "padding": {
             "type": "padding",

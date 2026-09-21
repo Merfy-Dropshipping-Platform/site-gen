@@ -11,9 +11,22 @@ interface Props {
 	class?: string;
 	iconBasePath?: string;
 	sizeClass?: string;
+	/**
+	 * Класс цвета. По умолчанию — текст активной схемы. Переопределяется там, где
+	 * иконка лежит НЕ на фоне схемы: на залитой кнопке она обязана брать
+	 * `--color-button-text`. Раньше для этого висел фильтр `brightness-0 invert`,
+	 * который гасил цвет в чёрный и делал схему бессмысленной.
+	 */
+	colorClass?: string;
 }
 
-const { name, class: className = "", iconBasePath: iconBaseProp, sizeClass = "size-[24px]" } = Astro.props as Props;
+const {
+	name,
+	class: className = "",
+	iconBasePath: iconBaseProp,
+	sizeClass = "size-[24px]",
+	colorClass = "text-[rgb(var(--color-text,0_0_0))]",
+} = Astro.props as Props;
 
 // Канон Nikita: иконки следуют цвету текста активной схемы (--color-text), не
 // хардкод. Старый NtIcon рендерил <img src="/icons/X.svg"> — <img> нельзя
@@ -22,7 +35,7 @@ const { name, class: className = "", iconBasePath: iconBaseProp, sizeClass = "si
 // viewBox) и stroke/fill="...black" (всегда чёрный). Решение: инлайн SVG с
 // currentColor из ROSE_ICON_SVGS. <img>-fallback для иконок не из карты (footer/др.).
 const raw = ROSE_ICON_SVGS[name];
-const iconCls = `shrink-0 text-[rgb(var(--color-text,0_0_0))] ${sizeClass} ${className}`.trim();
+const iconCls = `shrink-0 ${colorClass} ${sizeClass} ${className}`.trim();
 const inlined = raw ? raw.replace("<svg ", `<svg class="${iconCls}" aria-hidden="true" `) : null;
 // Путь = имя иконки + .svg — ровно правило DS (NT_ICON_FILES: 35 из 35 имён
 // отображаются как `<name>.svg`), но без её закрытого перечня, поэтому иконки

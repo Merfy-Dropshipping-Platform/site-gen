@@ -1,0 +1,65 @@
+---
+/**
+ * Иконка, которая следует цвету активной цветовой схемы.
+ *
+ * Жалоба владельца (документ «баги шапки и меню», пункты по vanilla, bloom и
+ * satin): «в схеме заданы Заголовок и Текст — текст меню перекрасился, а иконки
+ * поиска, избранного, корзины и профиля остались прежними». Причина
+ * механическая: NtIcon дизайн-системы рендерит `<img src="/icons/X.svg">`, а
+ * <img> перекрасить CSS-цветом нельзя в принципе.
+ *
+ * Решение повторяет rose, где это уже сделано вручную (RoseNtIcon +
+ * ROSE_ICON_SVGS): SVG инлайнится в разметку со `stroke/fill="currentColor"`,
+ * поэтому иконка берёт `--color-text` активной схемы вместе с текстом.
+ *
+ * Карту иконок тема передаёт СВОЮ — геометрия у тем разная, общая карта
+ * подменила бы одни иконки другими. Карты генерируются из собственных файлов
+ * темы: `node scripts/generate-theme-icon-svgs.mjs`.
+ *
+ * Иконки вне карты (подвал, пагинация) падают в прежний <img>-фолбэк — они
+ * схемой не красятся и не должны.
+ */
+interface Props {
+  name: string;
+  /** Карта темы: имя иконки → инлайн-SVG с currentColor. */
+  svgs: Record<string, string>;
+  class?: string;
+  sizeClass?: string;
+  iconBasePath?: string;
+  /**
+   * Класс цвета. По умолчанию — текст активной схемы. Переопределяется там, где
+   * иконка лежит НЕ на фоне схемы: например, на залитой кнопке она обязана брать
+   * `--color-button-text`, иначе на тёмной кнопке окажется тёмной.
+   */
+  colorClass?: string;
+}
+
+const {
+  name,
+  svgs,
+  class: className = "",
+  sizeClass = "size-[24px]",
+  iconBasePath = "/icons",
+  colorClass = "text-[rgb(var(--color-text,0_0_0))]",
+} = Astro.props as Props;
+
+const raw = svgs?.[name];
+const iconCls = `shrink-0 ${colorClass} ${sizeClass} ${className}`.trim();
+const inlined = raw ? raw.replace("<svg ", `<svg class="${iconCls}" aria-hidden="true" `) : null;
+const base = iconBasePath.replace(/\/$/, "");
+---
+
+{
+  inlined ? (
+    <Fragment set:html={inlined} />
+  ) : (
+    <img
+      src={`${base}/${name}.svg`}
+      alt=""
+      class={`shrink-0 object-contain pointer-events-none ${sizeClass} ${className}`.trim()}
+      width="24"
+      height="24"
+      aria-hidden="true"
+    />
+  )
+}

@@ -1,5 +1,7 @@
 ---
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
+import { SATIN_ICON_SVGS } from "./icons/satin-icon-svgs";
 import NavItem from "./header/NavItem.astro";
 import { SITE_TITLE } from "../consts";
 import { catalogProducts } from "../data/products";
@@ -140,18 +142,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				aria-expanded="false"
 				aria-controls="satin-burger"
 			>
-				<span class="burger-icon" data-icon="open"><NtIcon name="menu-burger" sizeClass="size-6" /></span>
-				<span class="burger-icon hidden" data-icon="close"><NtIcon name="menu-close" sizeClass="size-6" /></span>
+				<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+				<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
 			</button>
 			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-80">
 				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 			</a>
 			<div class="flex items-center gap-4">
 				<button type="button" data-action="toggle-search" class="flex h-6 w-6 items-center justify-center" aria-label="Поиск">
-					<NtIcon name="search-sm" sizeClass="size-6" />
+					<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-sm" sizeClass="size-6" />
 				</button>
 				<a href="/wishlist" class="relative flex h-6 w-6 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-					<NtIcon name="favourite" sizeClass="size-6" />
+					<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
 					{/* Цифра счётчика — роль схемы «Текст кнопки», а не `text-white`: белым
 					   списком матрицы прикрыта только ПЛАШКА (её фирменный цвет —
 					   узнаваемый вид темы), а цифра читаема на плашке любого цвета и
@@ -162,7 +164,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					<span data-wishlist-count data-empty="true" class="absolute -right-2 -top-2 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 				</a>
 				<button type="button" data-cart-open class="relative flex h-6 w-6 items-center justify-center" aria-label="Корзина">
-					<NtIcon name="cart-sm" sizeClass="size-6" />
+					<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart-sm" sizeClass="size-6" />
 					<span data-cart-count data-empty="true" class="absolute -right-2 -top-2 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 				</button>
 			</div>
@@ -178,8 +180,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								<div class="flex items-center gap-3">
 									{isSidebar && (
 										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><NtIcon name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><NtIcon name="menu-close" sizeClass="size-6" /></span>
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
 										</button>
 									)}
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
@@ -188,14 +190,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</div>
 								<div class="flex items-center gap-5">
 									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-										<NtIcon name="search-lg" sizeClass="size-6" />
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 									</button>
 									<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-										<NtIcon name="favourite" sizeClass="size-6" />
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
 										<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</a>
 									<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-										<NtIcon name="cart" sizeClass="size-6" />
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
 								</div>
@@ -219,12 +221,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								<div class="flex items-center gap-4">
 									{isSidebar && (
 										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><NtIcon name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><NtIcon name="menu-close" sizeClass="size-6" /></span>
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
 										</button>
 									)}
 									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-										<NtIcon name="search-lg" sizeClass="size-6" />
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 									</button>
 								</div>
 								<div class="flex items-center justify-center">
@@ -234,11 +236,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								</div>
 								<div class="flex items-center justify-end gap-5">
 									<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-										<NtIcon name="favourite" sizeClass="size-6" />
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
 										<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</a>
 									<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-										<NtIcon name="cart" sizeClass="size-6" />
+										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
 								</div>
@@ -262,8 +264,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				<div class={desktopRowCls} style={headerPadStyle}>
 					{isSidebar && (
 						<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-							<span class="burger-icon" data-icon="open"><NtIcon name="menu-burger" sizeClass="size-6" /></span>
-							<span class="burger-icon hidden" data-icon="close"><NtIcon name="menu-close" sizeClass="size-6" /></span>
+							<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+							<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
 						</button>
 					)}
 					<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]}>
@@ -283,14 +285,14 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					</nav>
 					<div class:list={["flex items-center gap-5", logoLeft && "flex-1 justify-end"]}>
 						<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
-							<NtIcon name="search-lg" sizeClass="size-6" />
+							<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 						</button>
 						<a href="/wishlist" class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-							<NtIcon name="favourite" sizeClass="size-6" />
+							<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
 							<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 						</a>
 						<button type="button" data-cart-open class="relative flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-							<NtIcon name="cart" sizeClass="size-6" />
+							<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 						</button>
 					</div>
@@ -336,11 +338,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				</a>
 				<div class="flex items-center gap-4">
 					<a href="/wishlist" class="relative flex h-8 w-8 shrink-0 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
-						<NtIcon name="favourite" sizeClass="size-6" />
+						<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
 						<span data-wishlist-count data-empty="true" class="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 					</a>
 					<button type="button" data-cart-open class="relative flex h-8 w-8 shrink-0 items-center justify-center transition-opacity hover:opacity-80" aria-label="Корзина">
-						<NtIcon name="cart" sizeClass="size-6" />
+						<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 						<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 					</button>
 				</div>
@@ -351,11 +353,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					<form class="flex h-10 min-h-10 flex-1 items-center justify-between border border-[#DDDDDD] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
 						<input type="search" name="q" placeholder="Поиск" autocomplete="off" class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-normal leading-normal text-[#000000] placeholder:text-[#999999] outline-none" />
 						<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
-							<NtIcon name="search-sm" sizeClass="size-6" />
+							<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-sm" sizeClass="size-6" />
 						</button>
 					</form>
 					<a href="/login" data-auth-link class="flex h-10 w-10 shrink-0 items-center justify-center bg-[rgb(var(--color-button-bg,0_0_0))]" aria-label="Профиль">
-						<NtIcon name="user" sizeClass="size-6" />
+						<SchemeIcon svgs={SATIN_ICON_SVGS} name="user" sizeClass="size-6" />
 					</a>
 				</div>
 				<div data-search-results role="listbox" aria-label="Подсказки поиска" class="mt-2 hidden flex-col border border-[#DDDDDD] bg-[rgb(var(--color-bg,255_255_255))]"></div>

@@ -1294,6 +1294,15 @@ jobs:
       # чистки companyName — 1, отпечаток без подписи — 2.
       - if: false
         run: pnpm exec jest --runInBand src/utils/__tests__/footer-data-signature.spec.ts
+      # Кнопки вариантов одной группы — одной ширины (жалоба владельца 21.09:
+      # «одинаковыми должны быть при одних и тех же показателях, S M L»).
+      # Канон верстальщиков задаёт ширину ПО ТЕКСТУ, поэтому сторожится НАШЕ
+      # правило: равнять по самому широкому, но не шире двух высот чипа.
+      # Саботаж проверен: убрать выравнивание — 4 проверки, отдать всё потолку —
+      # 3, эвристика по длине подписи — 1, снять наблюдателя — 1, подписка на
+      # атрибуты — 1, не сбрасывать минимум — 1, отключить рантайм — 1.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/variant-chip-equalize.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

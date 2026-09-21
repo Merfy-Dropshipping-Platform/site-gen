@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { renderBlock } from "../../../scripts/qa/lib/render";
@@ -48,6 +48,36 @@ describe("строка корзины: подпись варианта", () => {
     const склейка = /\[line\.variant\?\.color,\s*line\.variant\?\.size\]\.filter\(Boolean\)\.join/.test(html(t));
     expect({ t, склейка }).toEqual({ t, склейка: false });
   });
+
+  it.each(["bloom", "satin"])(
+    "%s: СТРАНИЦА корзины тоже на общем хелпере",
+    (t) => {
+      // rose/vanilla/flux — тонкий шелл, строки рисует секция. У bloom и satin
+      // страница несёт СВОЮ разметку, и правка секции её не касается: на живом
+      // стенде 21.09 код секции был выкачен, а строки всё равно одинаковые.
+      const src = readFileSync(
+        resolve(SITES_ROOT, "themes", t, "src/pages/cart.astro"),
+        "utf-8",
+      );
+      expect({ t, зовёт: /variantLabel\(line\.variant\)/.test(src) }).toEqual({ t, зовёт: true });
+      expect({ t, склейка: /\[line\.variant\?\.color,/.test(src) }).toEqual({ t, склейка: false });
+    },
+  );
+
+  it.each(["rose", "vanilla", "flux"])(
+    "%s: страница корзины остаётся тонким шеллом",
+    (t) => {
+      // Если у неё заведётся своя разметка строк — подпись снова разъедется.
+      const src = readFileSync(
+        resolve(SITES_ROOT, "themes", t, "src/pages/cart.astro"),
+        "utf-8",
+      );
+      expect({ t, своиСтроки: /lines\s*\.map\(|data-line-id/.test(src) }).toEqual({
+        t,
+        своиСтроки: false,
+      });
+    },
+  );
 
   it("vanilla выводит подпись в РАЗМЕТКЕ, а не только объявляет переменную", () => {
     if (!built("vanilla")) return;

@@ -237,12 +237,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								<>
 									<div class="flex w-full items-center justify-between">
 										<div class="flex items-center gap-3 lg:gap-4">
-										{isSidebar && (
-									<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-										<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-										<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-									</button>
-								)}
 										<a
 											href="/"
 											class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
@@ -294,6 +288,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
+												{isSidebar && (
+													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+													</button>
+												)}
 										</div>
 									</div>
 									<nav
@@ -314,12 +314,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								<>
 									<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
 										<div class="flex items-center gap-4 lg:gap-6">
-											{isSidebar && (
-									<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-										<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-										<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-									</button>
-								)}
 								<button
 												type="button"
 												data-action="toggle-search"
@@ -373,6 +367,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
+												{isSidebar && (
+													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+													</button>
+												)}
 										</div>
 									</div>
 									<nav
@@ -395,12 +395,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 						<div class={desktopRowCls} style={headerPadStyle}>
 						<div class={desktopRailCls}>
-							{isSidebar && (
-									<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-										<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-										<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-									</button>
-								)}
 								<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 							</a>
@@ -461,6 +455,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 								>
 									<RoseNtIcon name="user" sizeClass="size-6" />
 								</a>
+												{isSidebar && (
+													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+													</button>
+												)}
 							</div>
 						</div>
 						</div>

@@ -178,12 +178,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						<>
 							<div class="flex w-full items-center justify-between">
 								<div class="flex items-center gap-3">
-									{isSidebar && (
-										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-										</button>
-									)}
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
 										{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 									</a>
@@ -200,6 +194,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
+									{isSidebar && (
+										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+										</button>
+									)}
 								</div>
 							</div>
 							<nav
@@ -219,12 +219,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 						<>
 							<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
 								<div class="flex items-center gap-4">
-									{isSidebar && (
-										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-										</button>
-									)}
 									<button type="button" data-action="toggle-search" class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Поиск">
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="search-lg" sizeClass="size-6" />
 									</button>
@@ -243,6 +237,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
+									{isSidebar && (
+										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+										</button>
+									)}
 								</div>
 							</div>
 							<nav
@@ -262,12 +262,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 				</div>
 			) : (
 				<div class={desktopRowCls} style={headerPadStyle}>
-					{isSidebar && (
-						<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-							<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-							<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-						</button>
-					)}
 					<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]}>
 						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 					</a>
@@ -295,6 +289,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 							<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 						</button>
+											{isSidebar && (
+							<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+								<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+								<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+							</button>
+						)}
 					</div>
 				</div>
 			)}

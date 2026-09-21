@@ -84,9 +84,31 @@ describe("механизм покрывает ВСЕ пути рендера", (
     expect(src).toMatch(/removeProperty\('min-width'\)/);
   });
 
-  it("подключён к блоку «Товар»", () => {
-    expect(readFileSync(PRODUCT, "utf-8")).toMatch(
-      /import '\.\.\/\.\.\/runtime\/variant-chip-equalize'/,
+  it("подключён и к flux — он рисует «Товар» своей секцией", () => {
+    // flux резолвит Product в `FeaturedProduct.astro`, а не в блок theme-base:
+    // замер рендера 21.09 показал, что скрипт туда не попадал вовсе — четыре
+    // темы из пяти. Ровно «фича на одном пути из трёх», второй раз за задачу.
+    const flux = readFileSync(
+      resolve(SITES_ROOT, "themes/flux/src/components/sections/FeaturedProduct.astro"),
+      "utf-8",
     );
+    expect(flux).toMatch(/VARIANT_CHIP_EQUALIZE_SOURCE/);
+    expect(flux).toMatch(/set:html=\{VARIANT_CHIP_EQUALIZE_SOURCE\}/);
+  });
+
+  it("подключён к блоку «Товар» СТРОКОЙ, а не модулем", () => {
+    // Первый заход подключил рантайм как `<script>import …</script>`. На
+    // собранной витрине это дало src="/app/packages/…/Product.astro?astro&
+    // type=script" → 404 (замер на живом стенде 21.09): код не грузился вовсе,
+    // а гард при этом был зелёный — он сторожил строку импорта.
+    const product = readFileSync(PRODUCT, "utf-8");
+    expect(product).toMatch(/set:html=\{VARIANT_CHIP_EQUALIZE_SOURCE\}/);
+    expect(product).toMatch(/is:inline/);
+    expect(product).not.toMatch(/<script>\s*\n?\s*import '\.\.\/\.\.\/runtime\/variant-chip-equalize'/);
+  });
+
+  it("исходник отдаётся строкой и сам себя запускает", () => {
+    expect(src).toMatch(/export const VARIANT_CHIP_EQUALIZE_SOURCE = `/);
+    expect(src).toMatch(/document\.addEventListener\('DOMContentLoaded', start\)/);
   });
 });

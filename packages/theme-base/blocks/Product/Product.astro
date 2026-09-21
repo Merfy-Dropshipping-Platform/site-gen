@@ -24,6 +24,7 @@ import ProductGallery from './ProductGallery.astro';
 import ProductInfo from './ProductInfo.astro';
 import ProductPrice from './ProductPrice.astro';
 import ProductVariants from './ProductVariants.astro';
+import { VARIANT_CHIP_EQUALIZE_SOURCE } from '../../runtime/variant-chip-equalize';
 import ProductCounter from './ProductCounter.astro';
 import ProductActions from './ProductActions.astro';
 import ProductDescription from './ProductDescription.astro';
@@ -1164,9 +1165,9 @@ const cartImage = view.gallery.hero?.src ?? '';
   })();
 </script>
 
-<script>
-  // Кнопки вариантов одной группы — одной ширины (жалоба владельца 21.09).
-  // Наблюдатель внутри модуля ловит и серверный рендер, и все пять перерисовок
-  // гидрации тем, поэтому подключение здесь одно на всю страницу товара.
-  import '../../runtime/variant-chip-equalize';
-</script>
+<!-- Кнопки вариантов одной группы — одной ширины (жалоба владельца 21.09).
+     Наблюдатель внутри ловит и серверный рендер, и все пять перерисовок
+     гидрации тем, поэтому подключение здесь одно на всю страницу товара.
+     Вставка строкой, а НЕ `<script>import …</script>`: модульный импорт дал на
+     витрине src="/app/packages/…/Product.astro?astro&type=script" → 404. -->
+<script is:inline set:html={VARIANT_CHIP_EQUALIZE_SOURCE}></script>

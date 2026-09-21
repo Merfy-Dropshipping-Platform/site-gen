@@ -60,6 +60,10 @@
  * Popular/FluxProductDetail).
  */
 import { inlineFormat } from "../../lib/rich-text";
+// Кнопки вариантов одной группы — одной ширины. flux рисует «Товар» этой
+// секцией, а не блоком theme-base, поэтому общий исходник подключается и
+// здесь: иначе выравнивание работало бы в четырёх темах из пяти.
+import { VARIANT_CHIP_EQUALIZE_SOURCE } from "../../../../../packages/theme-base/runtime/variant-chip-equalize";
 import FluxPicture from "../img/FluxPicture.astro";
 import {
 	deriveVariantGroups,
@@ -1319,3 +1323,5 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	hydrateFeaturedProduct();
 	document.addEventListener("astro:page-load", hydrateFeaturedProduct);
 </script>
+
+<script is:inline set:html={VARIANT_CHIP_EQUALIZE_SOURCE}></script>

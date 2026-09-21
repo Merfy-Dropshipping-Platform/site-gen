@@ -26,8 +26,16 @@
  * ПОЧЕМУ НАБЛЮДАТЕЛЬ, А НЕ ПРАВКА В ШЕСТИ ФАЙЛАХ. Один и тот же ряд рисуют
  * шесть путей: `ProductVariants.astro` (сервер) и пять перерисовок гидрации
  * (rose `storefront-hydrate.ts`, ProductDetail у bloom/satin/vanilla/flux).
- * Правка в каждом — это ровно тот случай «фича на одном пути из трёх», на
- * котором эта задача уже горела. Наблюдатель ловит ЛЮБУЮ перерисовку.
+ * Правка в каждом — ровно тот случай «фича на одном пути из трёх», на котором
+ * эта задача уже горела. Наблюдатель ловит ЛЮБУЮ перерисовку.
+ *
+ * ПОЧЕМУ ИСХОДНИКОМ-СТРОКОЙ, А НЕ МОДУЛЕМ. Первый заход подключил рантайм как
+ * `<script>import …</script>`. На собранной витрине это дало
+ * `src="/app/packages/theme-base/blocks/Product/Product.astro?astro&type=script…"`
+ * — путь сборщика, который отдаёт 404 (проверено на живом стенде 21.09), то
+ * есть код не грузился вовсе. Клиентский код блоков здесь живёт строкой и
+ * вставляется `<script is:inline set:html={…}>` — так же, как
+ * `CHECKOUT_BUTTON_CONTRAST_SOURCE`.
  */
 
 /** Во сколько раз чип может быть шире своей высоты, оставаясь «токеном». */
@@ -42,82 +50,85 @@ export function chipTargetWidth(widest: number, height: number): number {
   return Math.min(widest, height * CAP_RATIO);
 }
 
-type Chip = HTMLElement;
+/** Тело скрипта для `<script is:inline set:html={…}>`. */
+export const VARIANT_CHIP_EQUALIZE_SOURCE = `
+(function () {
+  var CAP_RATIO = ${CAP_RATIO};
 
-/**
- * Группы чипов. Два вида разметки:
- *  • theme-base — чипы помечены `data-variant-chip` + `data-variant-key`;
- *  • порты тем и канон — строка `role="radiogroup"` с кнопками внутри.
- */
-function chipGroups(root: ParentNode): Chip[][] {
-  const out: Chip[][] = [];
-  const seen = new Set<Element>();
-
-  const byKey = new Map<string, Chip[]>();
-  root.querySelectorAll<Chip>('[data-variant-chip][data-variant-key]').forEach((el) => {
-    const key = el.getAttribute('data-variant-key') ?? '';
-    const list = byKey.get(key) ?? [];
-    list.push(el);
-    byKey.set(key, list);
-    seen.add(el);
-  });
-  byKey.forEach((list) => out.push(list));
-
-  root.querySelectorAll('[role="radiogroup"]').forEach((row) => {
-    const chips = Array.from(row.children).filter(
-      (c): c is Chip => c instanceof HTMLElement && c.tagName === 'BUTTON' && !seen.has(c),
-    );
-    if (chips.length) out.push(chips);
-  });
-
-  return out;
-}
-
-export function equalizeVariantChips(root: ParentNode = document): void {
-  for (const chips of chipGroups(root)) {
-    if (chips.length < 2) continue;
-    // Снимаем прошлый минимум — иначе повторный проход мерил бы уже
-    // выровненные чипы и ряд только рос бы.
-    for (const c of chips) c.style.removeProperty('min-width');
-    let widest = 0;
-    let height = 0;
-    for (const c of chips) {
-      const r = c.getBoundingClientRect();
-      widest = Math.max(widest, r.width);
-      height = Math.max(height, r.height);
+  // Группы чипов. Две разметки: theme-base помечает чипы
+  // data-variant-chip + data-variant-key, порты тем и канон — строкой
+  // role="radiogroup" с кнопками внутри.
+  function chipGroups(root) {
+    var out = [];
+    var seen = [];
+    var byKey = {};
+    var keyed = root.querySelectorAll('[data-variant-chip][data-variant-key]');
+    for (var i = 0; i < keyed.length; i++) {
+      var el = keyed[i];
+      var key = el.getAttribute('data-variant-key') || '';
+      if (!byKey[key]) byKey[key] = [];
+      byKey[key].push(el);
+      seen.push(el);
     }
-    if (widest <= 0 || height <= 0) continue;
-    const target = chipTargetWidth(widest, height);
-    for (const c of chips) c.style.minWidth = `${Math.ceil(target)}px`;
+    for (var k in byKey) if (Object.prototype.hasOwnProperty.call(byKey, k)) out.push(byKey[k]);
+
+    var rows = root.querySelectorAll('[role="radiogroup"]');
+    for (var r = 0; r < rows.length; r++) {
+      var chips = [];
+      var kids = rows[r].children;
+      for (var c = 0; c < kids.length; c++) {
+        if (kids[c].tagName === 'BUTTON' && seen.indexOf(kids[c]) === -1) chips.push(kids[c]);
+      }
+      if (chips.length) out.push(chips);
+    }
+    return out;
   }
-}
 
-function start(): void {
-  equalizeVariantChips();
+  function equalize(root) {
+    var groups = chipGroups(root || document);
+    for (var g = 0; g < groups.length; g++) {
+      var chips = groups[g];
+      if (chips.length < 2) continue;
+      // Снимаем прошлый минимум — иначе повторный проход мерил бы уже
+      // выровненные чипы и ряд только рос бы.
+      for (var i = 0; i < chips.length; i++) chips[i].style.removeProperty('min-width');
+      var widest = 0;
+      var height = 0;
+      for (var j = 0; j < chips.length; j++) {
+        var rect = chips[j].getBoundingClientRect();
+        if (rect.width > widest) widest = rect.width;
+        if (rect.height > height) height = rect.height;
+      }
+      if (widest <= 0 || height <= 0) continue;
+      var target = Math.min(widest, height * CAP_RATIO);
+      for (var m = 0; m < chips.length; m++) chips[m].style.minWidth = Math.ceil(target) + 'px';
+    }
+  }
 
-  // Наблюдаем ТОЛЬКО за появлением/исчезновением узлов: свою правку мы вносим
-  // в inline-стиль, а он childList не двигает — зацикливания нет.
-  let scheduled = false;
-  const observer = new MutationObserver(() => {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => {
-      scheduled = false;
-      equalizeVariantChips();
+  window.__merfyEqualizeVariantChips = equalize;
+
+  function start() {
+    equalize(document);
+    // Наблюдаем ТОЛЬКО за появлением/исчезновением узлов: свою правку мы вносим
+    // в inline-стиль, а он childList не двигает — зацикливания нет.
+    var scheduled = false;
+    var observer = new MutationObserver(function () {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(function () {
+        scheduled = false;
+        equalize(document);
+      });
     });
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Шрифты доезжают позже разметки и меняют ширину подписей.
-  const fonts = (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
-  if (fonts?.ready) void fonts.ready.then(() => equalizeVariantChips());
-  window.addEventListener('resize', () => equalizeVariantChips());
-}
-
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
+    observer.observe(document.body, { childList: true, subtree: true });
+    // Шрифты доезжают позже разметки и меняют ширину подписей.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { equalize(document); });
+    }
+    window.addEventListener('resize', function () { equalize(document); });
   }
-}
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+`;

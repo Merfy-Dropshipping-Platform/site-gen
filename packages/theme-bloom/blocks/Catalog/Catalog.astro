@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "./rich-text";
+import { PICK_DEFAULT_COMBINATION_SOURCE } from "../../../theme-base/runtime/nt-cart";
 // Catalog — РОДНОЙ каталог верстальщика bloom как per-theme override блока
 // Catalog (порт из themes/bloom/src/pages/catalog.astro). Заменяет generic
 // theme-base/blocks/Catalog/Catalog.astro на пиксель-перфектную вёрстку bloom:
@@ -734,8 +735,12 @@ const skeletons = Array.from({ length: skeletonCount });
     // несём её id в data-quick-add-combo-id (handler читает и шлёт в cartStore).
     const _vc = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
     const _hasVariants = p.hasVariants === true || _vc.length > 0;
+    // Первый вариант — тот, что ВИДИТ покупатель (первые значения каждой
+    // группы). Порядок комбинаций из ответа с порядком показа не совпадает:
+    // карточка молча клала последний оттенок (баг тестера 22.09, п.27).
+    // Логика одна на все темы — исходник в theme-base/runtime/nt-cart.
     const _firstCombo = _hasVariants
-      ? _vc.find((c) => c && c.available !== false) || _vc[0]
+      ? window.__merfyPickDefaultCombination(_vc, p.variantGroups)
       : null;
     const comboAttr = _firstCombo
       ? ` data-quick-add-combo-id="${escapeHtml(String(_firstCombo.id))}"`
@@ -1581,3 +1586,5 @@ const skeletons = Array.from({ length: skeletonCount });
   document.addEventListener("astro:page-load", hydrateCatalog);
   })();
 </script>
+
+<script is:inline set:html={PICK_DEFAULT_COMBINATION_SOURCE}></script>

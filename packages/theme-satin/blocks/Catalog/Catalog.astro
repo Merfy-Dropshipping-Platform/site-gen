@@ -21,6 +21,7 @@
 // резолвит). Корневой <section> несёт data-puck-component-id из props.id для
 // выделяемости в конструкторе.
 import SatinProductCard from "./SatinProductCard.astro";
+import { PICK_DEFAULT_COMBINATION_SOURCE } from "../../../theme-base/runtime/nt-cart";
 import { inlineFormat } from "./rich-text";
 import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
@@ -706,8 +707,12 @@ const skeletons = Array.from({ length: skeletonCount });
     // а не товар без варианта; без комбинаций (битый товар) — ссылка на PDP.
     const _vc = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
     const _hasVariants = p.hasVariants === true || _vc.length > 0;
+    // Первый вариант — тот, что ВИДИТ покупатель (первые значения каждой
+    // группы). Порядок комбинаций из ответа с порядком показа не совпадает:
+    // карточка молча клала последний оттенок (баг тестера 22.09, п.27).
+    // Логика одна на все темы — исходник в theme-base/runtime/nt-cart.
     const _firstCombo = _hasVariants
-      ? _vc.find((c) => c && c.available !== false) || _vc[0]
+      ? window.__merfyPickDefaultCombination(_vc, p.variantGroups)
       : null;
     const _comboOpt = (_firstCombo && _firstCombo.options) || {};
     const _comboColor = _comboOpt["Цвет"] || _comboOpt["Color"] || "";
@@ -1498,3 +1503,5 @@ const skeletons = Array.from({ length: skeletonCount });
   document.addEventListener("astro:page-load", hydrateCatalog);
   })();
 </script>
+
+<script is:inline set:html={PICK_DEFAULT_COMBINATION_SOURCE}></script>

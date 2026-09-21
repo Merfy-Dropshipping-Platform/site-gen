@@ -737,3 +737,50 @@ export function pickDefaultCombination<T extends NtVariantCombinationLike>(
 
 	return list.find((c) => c.available !== false) ?? list[0] ?? null;
 }
+
+/**
+ * То же правило выбора, но строкой — для `is:inline` скриптов.
+ *
+ * Каталожные порты тем (`packages/theme-<t>/blocks/Catalog/Catalog.astro`)
+ * компилируются как `is:inline`: модульный `<script>` там НЕ собирается и даёт
+ * 404 (об этом прямо сказано в самих портах). Импортировать `pickDefaultCombination`
+ * туда нельзя, а копировать логику в четыре файла — ровно та «вторая
+ * реализация», из-за которой баг и возвращался. Поэтому один исходник.
+ */
+export const PICK_DEFAULT_COMBINATION_SOURCE = `
+(function () {
+  if (window.__merfyPickDefaultCombination) return;
+  window.__merfyPickDefaultCombination = function (combinations, groups) {
+    var list = Array.isArray(combinations) ? combinations.filter(Boolean) : [];
+    if (list.length === 0) return null;
+    var first = {};
+    var hasFirst = false;
+    var gs = Array.isArray(groups) ? groups : [];
+    for (var i = 0; i < gs.length; i++) {
+      var g = gs[i] || {};
+      var name = typeof g.name === 'string' ? g.name.trim() : '';
+      var values = g.options || g.values || [];
+      var value = '';
+      for (var j = 0; j < values.length; j++) {
+        var v = typeof values[j] === 'string' ? values[j] : (values[j] && values[j].value);
+        if (typeof v === 'string' && v.trim()) { value = v.trim(); break; }
+      }
+      if (name && value) { first[name] = value; hasFirst = true; }
+    }
+    if (hasFirst) {
+      var fits = function (c) {
+        var opts = (c && c.options) || {};
+        for (var k in first) {
+          if (!Object.prototype.hasOwnProperty.call(first, k)) continue;
+          if (String(opts[k] || '').trim() !== first[k]) return false;
+        }
+        return true;
+      };
+      for (var a = 0; a < list.length; a++) if (fits(list[a]) && list[a].available !== false) return list[a];
+      for (var b = 0; b < list.length; b++) if (fits(list[b])) return list[b];
+    }
+    for (var d = 0; d < list.length; d++) if (list[d].available !== false) return list[d];
+    return list[0] || null;
+  };
+})();
+`;

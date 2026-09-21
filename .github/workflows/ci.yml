@@ -1353,6 +1353,14 @@ jobs:
       # (со ссылкой и без) красит 3 проверки.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/newsletter-consent-rich-text.spec.ts
+      # Дефолт «Текста» подписки в панели и на витрине — один и тот же.
+      # Баг тестера 18.09: в Bloom панель показывала «Узнавай о новинках и
+      # акциях первым», витрина — Figma-плейсхолдер, и расходились они ДАЖЕ БЕЗ
+      # правок мерчанта. Порты заменили текст верстальщика, панель осталась.
+      # Саботаж проверен: возврат старого дефолта панели — 5 проверок, увод
+      # литерала одного порта — 1.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/newsletter-default-parity.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

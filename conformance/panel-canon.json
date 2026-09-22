@@ -4276,7 +4276,7 @@
           },
           "containerEnabled": {
             "type": "toggle",
-            "label": "Контейнер",
+            "label": "Наложение",
             "visibility": "panel",
             "options": [
               "true=Показать",

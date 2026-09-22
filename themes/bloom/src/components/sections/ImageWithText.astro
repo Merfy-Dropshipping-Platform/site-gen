@@ -275,15 +275,21 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div
-		{/* lg:gap-10 — зазор пары по эталону rose (владелец 2026-09-15: «как пример работы можешь брать у розы»). rose держит 40px при всех трёх «Ширинах» в обоих блоках семьи; у bloom было 16px (`gap-4` без lg-ступени).
-		    Мобильный `gap-4` не трогаем — на 375px пара стоит в стопку (и при containerEnabled='true' наезда на мобиле НЕТ — карточка идёт обычным блоком под фото). */}
+		{/* Зазор пары — НОЛЬ в обоих окнах, когда наложения нет. Владелец
+		    2026-09-22: «и в мобиле не должно быть отступов если нет наложения, то
+		    есть и в десктопе; в мобиле вертикального между ними». Медиа и плашка
+		    стыкуются вплотную — так же на присланном референсе Shopify (пара 1231,
+		    текст 834, медиа 395, в сумме ровно 1231).
+		    Это СОЗНАТЕЛЬНЫЙ выход bloom из канона семьи «медиа + текст», где зазор
+		    был 40px «как у rose» (владелец, 2026-09-15). Остальные четыре темы не
+		    тронуты, их сторож в media-text-pair остался прежним. */}
 		{/* Порядок как у rose: `lg:items-center`/`positionItemsCls` НЕ последний перед интерполяцией.
 		    Класс, приклеенный к `${`, сканер Tailwind не извлекает — утилита не попадает
 		    в бандл темы, и правило молча не работает (у bloom так и было после main 4d4a11ce). */}
 		class={
 			isOverlap
 				? `relative mx-auto flex w-full ${outerWidthCls} flex-col gap-4 lg:block lg:gap-0`
-				: `mx-auto grid w-full ${outerWidthCls} grid-cols-1 gap-4 lg:grid-cols-2 ${positionItemsCls} lg:gap-10`
+				: `mx-auto grid w-full ${outerWidthCls} grid-cols-1 gap-0 lg:grid-cols-2 ${positionItemsCls} lg:gap-0`
 		}
 		data-animate
 	>

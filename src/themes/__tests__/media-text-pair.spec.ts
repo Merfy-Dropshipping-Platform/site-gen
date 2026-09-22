@@ -269,7 +269,12 @@ describe("пара «медиа + текст»: зазор, доли колон�
       const { pair } = pairParts("rose", "ImageWithText", "large");
       return gapPx("rose", pair);
     };
-    for (const theme of THEMES) {
+    // bloom с 2026-09-22 из этого канона ВЫВЕДЕН. Владелец, дословно: «и в
+    // мобиле не должно быть отступов если нет наложения, то есть и в
+    // десктопе; в мобиле вертикального между ними». На присланном референсе
+    // Shopify медиа и текст стыкуются вплотную: пара 1231, текст 834, медиа
+    // 395 — в сумме ровно 1231. Остальные четыре темы держат прежние 40px.
+    for (const theme of THEMES.filter((t) => t !== "bloom")) {
       it(`${theme} / ImageWithText: тот же зазор, что у rose, и не ноль`, () => {
         const { pair } = pairParts(theme, "ImageWithText", "large");
         const gap = gapPx(theme, pair);
@@ -278,6 +283,10 @@ describe("пара «медиа + текст»: зазор, доли колон�
         expect(gap as number).toBeGreaterThan(0);
       });
     }
+    it("bloom / ImageWithText: зазор пары РОВНО ноль (медиа и плашка стыкуются)", () => {
+      const { pair } = pairParts("bloom", "ImageWithText", "large");
+      expect({ gap: gapPx("bloom", pair) }).toEqual({ gap: 0 });
+    });
     // MultiRows — канон 2026-09-17: медиа и текст СТЫКУЮТСЯ, зазор РОВНО ноль
     // на всех трёх «Ширинах» (не «как у rose» — у rose теперь тоже ноль).
     for (const theme of THEMES) {

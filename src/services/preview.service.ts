@@ -1,7 +1,8 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { rewriteHtmlAssets } from '../themes/asset-resolver';
 import { composeV2Page, schemeIdFromProp } from '../themes/v2-page-composer';
-import { buildTokensCss, previewTokensCssWithFonts, CHECKOUT_SCHEME_ID } from '../themes/tokens-css';
+import { buildTokensCss, previewTokensCssWithFonts, siteTokensCss, CHECKOUT_SCHEME_ID } from '../themes/tokens-css';
+import { parityOn } from '../themes/parity-switch';
 import { getThemeManifest } from '../themes/theme-manifest-loader';
 import { IDIOMORPH_INLINE } from '../common/idiomorph-inline';
 import { CHROME_REORDER_INLINE } from '../common/chrome-reorder';
@@ -624,6 +625,9 @@ export class PreviewService {
     siteId?: string;
     /** revision.data.themeSettings — для tokens.css (паритет с live). */
     themeSettings?: unknown;
+    /** revision.data целиком — схема выдвижной корзины со страницы корзины
+     *  для общей функции токенов (siteTokensCss, выключатель PARITY_TOKENS). */
+    revisionData?: unknown;
     merfy?: RenderContext;
   }): Promise<string | null> {
     const shellHtml =
@@ -642,7 +646,9 @@ export class PreviewService {
       blockSchemes: await Promise.all(input.blocks.map((b) => this.resolveBlockScheme(b.type, b.props, input.themeId))),
       assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
       titleOverride: input.titleOverride,
-      tokensCss: previewTokensCssWithFonts(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
+      tokensCss: parityOn('TOKENS', input.siteId)
+        ? siteTokensCss(input.themeSettings ?? {}, input.revisionData, PreviewService.bareThemeKey(input.themeId))
+        : previewTokensCssWithFonts(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
     });
     if (composed === null) return null;
     // Агент конструктора (select/hot-replace/postMessage) — то, чего

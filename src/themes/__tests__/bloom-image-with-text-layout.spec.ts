@@ -131,8 +131,8 @@ describe("bloom ImageWithText — «Контейнер» (containerEnabled/posit
   // пропорцией), плашка — абсолютный слой поверх. «Положение» двигает её
   // якорями с отступом 3,3 % — это эталонный вылет медиа за плашку.
   it("position меняет вертикальное положение карточки (top ≠ bottom) — не тронуто b79", () => {
-    expect(posTop.html).toMatch(/lg:top-\[3\.3%\]/);
-    expect(posBottom.html).toMatch(/lg:bottom-\[3\.3%\]/);
+    expect(posTop.html).toMatch(/lg:justify-start/);
+    expect(posBottom.html).toMatch(/lg:justify-end/);
     expect(posTop.html).not.toBe(posBottom.html);
   });
 

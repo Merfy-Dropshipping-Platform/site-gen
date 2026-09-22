@@ -163,13 +163,22 @@ describe("«Изображение с текстом» (bloom) — инвент�
   });
 
   // ── Положение ─────────────────────────────────────────────────────────
-  it("Положение при наложении — три разных якоря плашки", () => {
+  // Плашка растянута по высоте медиа (владелец 22.09: «плашка слева тоже
+  // должна менять размеры»), поэтому двигать её якорем больше нечего —
+  // «Положение» выравнивает СОДЕРЖИМОЕ внутри неё, как и без наложения.
+  it("Положение при наложении двигает содержимое внутри растянутой плашки", () => {
     if (!built) return;
-    const a = (position: string) =>
-      cardClass(render({ containerEnabled: "true", position }));
-    expect(a("top")).toContain("lg:top-[3.3%]");
-    expect(a("bottom")).toContain("lg:bottom-[3.3%]");
-    expect(a("middle")).toContain("lg:-translate-y-1/2");
+    const j = (position: string) =>
+      /lg:justify-(start|center|end)/.exec(
+        cardClass(render({ containerEnabled: "true", position })),
+      )?.[0];
+    expect(j("top")).toBe("lg:justify-start");
+    expect(j("middle")).toBe("lg:justify-center");
+    expect(j("bottom")).toBe("lg:justify-end");
+    // Сама плашка при этом тянется на высоту медиа минус вылет.
+    expect(cardClass(render({ containerEnabled: "true" }))).toContain(
+      "lg:inset-y-10",
+    );
   });
 
   // ── Выравнивание ──────────────────────────────────────────────────────

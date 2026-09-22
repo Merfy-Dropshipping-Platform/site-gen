@@ -75,7 +75,11 @@ type Theme = (typeof THEMES)[number];
 
 const кэш = new Map<string, string>();
 
-function render(theme: Theme, block: string, props: Record<string, unknown>): string {
+function render(
+  theme: Theme,
+  block: string,
+  props: Record<string, unknown>,
+): string {
   const ключ = `${theme}::${block}::${JSON.stringify(props)}`;
   const готовое = кэш.get(ключ);
   if (готовое !== undefined) return готовое;
@@ -124,8 +128,14 @@ function bundleOf(theme: Theme): string {
   if (готовое !== undefined) return готовое;
   const tw = resolve(SITES_ROOT, "dist", "preview-tailwind.css");
   const th = resolve(SITES_ROOT, "dist", "theme-css", `${theme}.css`);
-  if (!existsSync(tw)) throw new Error("нет dist/preview-tailwind.css — pnpm build:preview-tailwind");
-  if (!existsSync(th)) throw new Error(`нет dist/theme-css/${theme}.css — pnpm build:theme-sections:all`);
+  if (!existsSync(tw))
+    throw new Error(
+      "нет dist/preview-tailwind.css — pnpm build:preview-tailwind",
+    );
+  if (!existsSync(th))
+    throw new Error(
+      `нет dist/theme-css/${theme}.css — pnpm build:theme-sections:all`,
+    );
   const css = `${readFileSync(tw, "utf-8")}\n${readFileSync(th, "utf-8")}`;
   бандлы.set(theme, css);
   return css;
@@ -170,19 +180,32 @@ function rankAt1024(cls: string): number | null {
 }
 
 /** Победитель каскада среди утилит узла на ≥1024px; null — никто не объявил. */
-function winningDecl(css: string, classes: string[], prop: string): string | null {
+function winningDecl(
+  css: string,
+  classes: string[],
+  prop: string,
+): string | null {
   let best: { rank: number; at: number; value: string } | null = null;
   for (const cls of classes) {
     const rank = rankAt1024(cls);
     if (rank === null) continue;
-    const re = new RegExp(`${forRegExp(cssSelectorOf(cls))}\\s*\\{([^}]*)\\}`, "g");
+    const re = new RegExp(
+      `${forRegExp(cssSelectorOf(cls))}\\s*\\{([^}]*)\\}`,
+      "g",
+    );
     let m: RegExpExecArray | null;
     while ((m = re.exec(css))) {
       // Тело правила может быть вложенным `@media (width >= 64rem) { … }` —
       // объявление тогда стоит с начала строки, а не после `;`.
-      const decl = new RegExp(`(?:^|[;{\\n])\\s*${prop}\\s*:\\s*([^;}]+)`).exec(m[1]);
+      const decl = new RegExp(`(?:^|[;{\\n])\\s*${prop}\\s*:\\s*([^;}]+)`).exec(
+        m[1],
+      );
       if (!decl) continue;
-      if (!best || rank > best.rank || (rank === best.rank && m.index > best.at))
+      if (
+        !best ||
+        rank > best.rank ||
+        (rank === best.rank && m.index > best.at)
+      )
         best = { rank, at: m.index, value: decl[1].trim() };
     }
   }
@@ -232,8 +255,8 @@ function galleryShape(theme: Theme, html: string): GalleryShape | null {
   const tiles = root.querySelectorAll('[data-puck-subsection-field="items"]');
   if (tiles.length < 2) return null;
   const hero = tiles[0];
-  const side = tiles[1].parentNode as HTMLElement;
-  const row = hero.parentNode as HTMLElement;
+  const side = tiles[1].parentNode;
+  const row = hero.parentNode;
   // Большая плитка и боковая обёртка обязаны быть СОСЕДЯМИ одной строки —
   // композиция исключается этим условием, а не списком тем.
   if (!side || !row || side === row || side.parentNode !== row) return null;
@@ -251,7 +274,13 @@ function galleryShape(theme: Theme, html: string): GalleryShape | null {
 }
 
 /** Темы с композицией «большая плитка + колонка» — их и проверяем. */
-const COLUMN_GALLERY_THEMES: Theme[] = ["rose", "vanilla", "bloom", "satin", "flux"];
+const COLUMN_GALLERY_THEMES: Theme[] = [
+  "rose",
+  "vanilla",
+  "bloom",
+  "satin",
+  "flux",
+];
 /**
  * Из них со СТОПКОЙ справа — только им нельзя делить полотно пополам.
  *
@@ -271,14 +300,26 @@ const COLUMN_GALLERY_THEMES: Theme[] = ["rose", "vanilla", "bloom", "satin", "fl
  * minmax(280px,429px)` + боковая `flex flex-col`) vanilla — пятая тема со
  * стопкой.
  */
-const STACKED_GALLERY_THEMES: Theme[] = ["rose", "vanilla", "bloom", "satin", "flux"];
+const STACKED_GALLERY_THEMES: Theme[] = [
+  "rose",
+  "vanilla",
+  "bloom",
+  "satin",
+  "flux",
+];
 
 // ───────────────────────────── калибровка ─────────────────────────────
 
 describe("резолвер каскада откалиброван по эталонам", () => {
   it("rose и flux: строка растягивает элементы, большая плитка берёт высоту строки", () => {
     for (const theme of ["rose", "flux"] as const) {
-      const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }));
+      const shape = galleryShape(
+        theme,
+        render(theme, "Gallery", {
+          colorScheme: "scheme-3",
+          items: CANON_ITEMS,
+        }),
+      );
       expect(shape).not.toBeNull();
       const align = prop(theme, shape!.row, "align-items");
       const height = prop(theme, shape!.hero, "height");
@@ -292,14 +333,22 @@ describe("резолвер каскада откалиброван по этал
 
   it("композиция распознаётся структурно: колонка у всех пяти тем (rose/vanilla/bloom/satin/flux)", () => {
     const found = THEMES.filter(
-      (t) => galleryShape(t, render(t, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS })) !== null,
+      (t) =>
+        galleryShape(
+          t,
+          render(t, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }),
+        ) !== null,
     );
     expect(found).toEqual(COLUMN_GALLERY_THEMES);
   });
 
   it("стопка справа — у rose/bloom/satin/flux", () => {
     const stacked = COLUMN_GALLERY_THEMES.filter(
-      (t) => galleryShape(t, render(t, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }))!.stacked,
+      (t) =>
+        galleryShape(
+          t,
+          render(t, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }),
+        )!.stacked,
     );
     expect(stacked).toEqual(STACKED_GALLERY_THEMES);
   });
@@ -317,7 +366,10 @@ describe("Галерея: низ большой плитки сходится с
   for (const theme of COLUMN_GALLERY_THEMES) {
     for (const [имя, items] of наборы) {
       it(`${theme}: ${имя} — строка растягивает элементы`, () => {
-        const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items }));
+        const shape = galleryShape(
+          theme,
+          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
+        );
         expect(shape).not.toBeNull();
         const align = prop(theme, shape!.row, "align-items");
         // null = свойство не объявлено, у грида умолчание stretch.
@@ -325,13 +377,19 @@ describe("Галерея: низ большой плитки сходится с
       });
 
       it(`${theme}: ${имя} — большая плитка берёт высоту строки`, () => {
-        const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items }));
+        const shape = galleryShape(
+          theme,
+          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
+        );
         expect(shape).not.toBeNull();
         expect(prop(theme, shape!.hero, "height")).toBe("100%");
       });
 
       it(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg`, () => {
-        const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items }));
+        const shape = galleryShape(
+          theme,
+          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
+        );
         expect(shape).not.toBeNull();
         const ar = prop(theme, shape!.hero, "aspect-ratio");
         expect([null, "auto"]).toContain(ar);
@@ -339,7 +397,13 @@ describe("Галерея: низ большой плитки сходится с
     }
 
     it(`${theme}: картинка большой плитки не задаёт высоту строки`, () => {
-      const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items: IMAGE_ITEMS }));
+      const shape = galleryShape(
+        theme,
+        render(theme, "Gallery", {
+          colorScheme: "scheme-3",
+          items: IMAGE_ITEMS,
+        }),
+      );
       expect(shape).not.toBeNull();
       const img = shape!.hero.querySelector("img");
       expect(img).not.toBeNull();
@@ -354,7 +418,13 @@ describe("Галерея: низ большой плитки сходится с
     if (!STACKED_GALLERY_THEMES.includes(theme)) continue;
 
     it(`${theme}: колонки на lg не делятся пополам под стопкой из двух плиток`, () => {
-      const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }));
+      const shape = galleryShape(
+        theme,
+        render(theme, "Gallery", {
+          colorScheme: "scheme-3",
+          items: CANON_ITEMS,
+        }),
+      );
       expect(shape).not.toBeNull();
       expect(shape!.sideCount).toBeGreaterThanOrEqual(2);
       const cols = prop(theme, shape!.row, "grid-template-columns");
@@ -362,11 +432,19 @@ describe("Галерея: низ большой плитки сходится с
       // `grid-cols-2` печатается как repeat(2,minmax(0,1fr)) — две равные
       // гибкие колонки. Стопка из двух почти квадратных плиток с подписями
       // выше квадрата ВСЕГДА, поэтому пополам делить нельзя.
-      expect(cols).not.toMatch(/^repeat\(\s*2\s*,\s*minmax\(0(?:px)?\s*,\s*1fr\)\s*\)$/);
+      expect(cols).not.toMatch(
+        /^repeat\(\s*2\s*,\s*minmax\(0(?:px)?\s*,\s*1fr\)\s*\)$/,
+      );
     });
 
     it(`${theme}: боковая колонка не уже большой плитки до lg`, () => {
-      const shape = galleryShape(theme, render(theme, "Gallery", { colorScheme: "scheme-3", items: CANON_ITEMS }));
+      const shape = galleryShape(
+        theme,
+        render(theme, "Gallery", {
+          colorScheme: "scheme-3",
+          items: CANON_ITEMS,
+        }),
+      );
       expect(shape).not.toBeNull();
       // До lg сетка в одну колонку: потолок ширины на боковой обёртке рисует
       // две плитки разной ширины друг под другом. У rose и flux потолка нет.
@@ -396,7 +474,10 @@ describe("Изображение с текстом: кнопка остаётс�
 
     it(`${theme}: дефолт темы не ставит ctaPosition: bottom-pinned`, () => {
       const manifest = JSON.parse(
-        readFileSync(resolve(SITES_ROOT, "packages", `theme-${theme}`, "theme.json"), "utf-8"),
+        readFileSync(
+          resolve(SITES_ROOT, "packages", `theme-${theme}`, "theme.json"),
+          "utf-8",
+        ),
       ) as { blockDefaults?: Record<string, Record<string, unknown>> };
       const ctaPosition = manifest.blockDefaults?.ImageWithText?.ctaPosition;
       expect({ theme, ctaPosition: ctaPosition ?? null }).toEqual({
@@ -410,15 +491,36 @@ describe("Изображение с текстом: кнопка остаётс�
     });
   }
 
-  it("bloom: текстовая колонка центрируется по вертикали относительно медиа (как rose)", () => {
-    for (const theme of ["rose", "flux", "bloom"] as const) {
+  /**
+   * Выключка пары по вертикали. До 2026-09-22 требование было одно на три
+   * темы — `center`, «как rose». Владелец 22.09 отменил его ДЛЯ BLOOM,
+   * дословно: «под размер медиафайла без контейнера меняется высота вот этой
+   * части, где нет медиа». При `center` текстовая колонка живёт своей высотой
+   * по длине текста, и «Размер» её не двигает вовсе: замер до правки —
+   * медиа 620, текст 172; после (`stretch`) — 620 и 620, а при «Размере
+   * Маленьком» 349 и 349.
+   *
+   * rose и flux остаются на `center` — их владелец не трогал, и эта проверка
+   * по-прежнему сторожит их от случайного сноса заодно с bloom.
+   */
+  it("rose и flux: текстовая колонка центрируется по вертикали относительно медиа", () => {
+    for (const theme of ["rose", "flux"] as const) {
       const html = render(theme, "ImageWithText", { colorScheme: "scheme-3" });
       const root = parse(html);
       const media = root.querySelector('[data-puck-subsection-field="image"]');
       expect(media).not.toBeNull();
-      const row = media!.parentNode as HTMLElement;
+      const row = media!.parentNode;
       expect(prop(theme, row, "align-items")).toBe("center");
     }
+  });
+
+  it("bloom: колонки тянутся на одну высоту — «Размер» двигает и текстовую", () => {
+    const html = render("bloom", "ImageWithText", { colorScheme: "scheme-3" });
+    const root = parse(html);
+    const media = root.querySelector('[data-puck-subsection-field="image"]');
+    expect(media).not.toBeNull();
+    const row = media!.parentNode;
+    expect(prop("bloom", row, "align-items")).toBe("stretch");
   });
 });
 
@@ -428,7 +530,12 @@ const SLIDE_ASSET = "/placeholders/landscape-slideshow.png";
 
 /** Два слайда мерчанта без картинок — ровно случай из баг-репорта. */
 const SLIDES_NO_IMAGE = [
-  { id: "s1", heading: "Слайд-шоу", subtitle: "Подзаголовок", ctaText: "Кнопка" },
+  {
+    id: "s1",
+    heading: "Слайд-шоу",
+    subtitle: "Подзаголовок",
+    ctaText: "Кнопка",
+  },
   { id: "s2", heading: "Второй", subtitle: "Текст", ctaText: "Кнопка" },
 ];
 
@@ -458,7 +565,10 @@ describe("Слайд-шоу: слайд без фото несёт дизайн-
       const imgs = parse(html)
         .querySelectorAll("img")
         .filter((el) => (el.getAttribute("src") ?? "").includes(SLIDE_ASSET));
-      expect({ theme, imgs: imgs.length }).toEqual({ theme, imgs: ОЖИДАНИЕ[theme] });
+      expect({ theme, imgs: imgs.length }).toEqual({
+        theme,
+        imgs: ОЖИДАНИЕ[theme],
+      });
     });
   }
 
@@ -485,12 +595,14 @@ describe("Слайд-шоу: слайд без фото несёт дизайн-
  */
 function centeredPager(root: HTMLElement): HTMLElement | null {
   return (
-    root
-      .querySelectorAll("div")
-      .find((el) => {
-        const c = el.getAttribute("class") ?? "";
-        return /(^|\s)absolute(\s|$)/.test(c) && /left-1\/2/.test(c) && /(^|\s)bottom-\d/.test(c);
-      }) ?? null
+    root.querySelectorAll("div").find((el) => {
+      const c = el.getAttribute("class") ?? "";
+      return (
+        /(^|\s)absolute(\s|$)/.test(c) &&
+        /left-1\/2/.test(c) &&
+        /(^|\s)bottom-\d/.test(c)
+      );
+    }) ?? null
   );
 }
 
@@ -515,7 +627,11 @@ function toPx(value: string | null): number {
 }
 
 /** Сумма нижних отступов от кнопки вверх до корня секции. */
-function reservedBelowCta(theme: Theme, root: HTMLElement, cta: HTMLElement): number {
+function reservedBelowCta(
+  theme: Theme,
+  root: HTMLElement,
+  cta: HTMLElement,
+): number {
   let sum = 0;
   let node: HTMLElement | null = cta;
   while (node && node !== root) {
@@ -566,8 +682,16 @@ describe("Слайд-шоу: нумерация не садится на кно�
         .find((el) => (el.textContent ?? "").trim() === "Кнопка");
       expect(cta).not.toBeUndefined();
       const нужно = pagerOffset(pager!) + ВЫСОТА_ПОЛОСЫ;
-      const есть = reservedBelowCta(theme, root as unknown as HTMLElement, cta as HTMLElement);
-      expect({ theme, есть: есть >= нужно, нужно }).toEqual({ theme, есть: true, нужно });
+      const есть = reservedBelowCta(
+        theme,
+        root as unknown as HTMLElement,
+        cta as HTMLElement,
+      );
+      expect({ theme, есть: есть >= нужно, нужно }).toEqual({
+        theme,
+        есть: true,
+        нужно,
+      });
     });
   }
 });

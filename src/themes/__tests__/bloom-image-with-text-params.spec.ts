@@ -175,10 +175,11 @@ describe("«Изображение с текстом» (bloom) — инвент�
     expect(j("top")).toBe("lg:justify-start");
     expect(j("middle")).toBe("lg:justify-center");
     expect(j("bottom")).toBe("lg:justify-end");
-    // Сама плашка при этом тянется на высоту медиа минус вылет.
-    expect(cardClass(render({ containerEnabled: "true" }))).toContain(
-      "lg:inset-y-10",
-    );
+    // Сама плашка при этом тянется на высоту медиа минус вылет — но как
+    // МИНИМУМ: жёсткий inset-y срезал заголовок при маленьком медиа.
+    const cls = cardClass(render({ containerEnabled: "true" }));
+    expect(cls).toContain("lg:top-10");
+    expect(cls).toContain("lg:min-h-[calc(100%-5rem)]");
   });
 
   // ── Выравнивание ──────────────────────────────────────────────────────
@@ -225,18 +226,18 @@ describe("«Изображение с текстом» (bloom) — инвент�
     expect(render({ colorScheme: "scheme-3" })).toContain("color-scheme-3");
   });
 
-  it("Схема контейнера красит КАРТОЧКУ и только при включённом контейнере", () => {
+  // Владелец 2026-09-22: «цветовая схема применяться должна даже без
+  // наложения». Раньше и заливка, и схема висели на тумблере — мерчант
+  // выбирал схему при выключённом наложении и не видел ничего.
+  it("Схема контейнера красит плашку в ОБОИХ режимах", () => {
     if (!built) return;
-    expect(
-      cardClass(
-        render({ containerEnabled: "true", containerColorScheme: "scheme-2" }),
-      ),
-    ).toContain("color-scheme-2");
-    expect(
-      cardClass(
-        render({ containerEnabled: "false", containerColorScheme: "scheme-2" }),
-      ),
-    ).not.toContain("color-scheme-2");
+    for (const containerEnabled of ["true", "false"]) {
+      expect(
+        cardClass(
+          render({ containerEnabled, containerColorScheme: "scheme-2" }),
+        ),
+      ).toContain("color-scheme-2");
+    }
   });
 
   // ── Скрытые поля панели ───────────────────────────────────────────────
@@ -409,9 +410,13 @@ describe("«Изображение с текстом» (bloom) — геомет�
     expect(a("small")).not.toEqual(a("large"));
   });
 
-  it("отдельной нижней границы высоты больше нет — её задаёт медиа", () => {
+  it("нижняя граница высоты плашки считается ОТ МЕДИА, а не фиксированной лестницей", () => {
     if (!built) return;
-    expect(render({ containerEnabled: "true" })).not.toMatch(/lg:min-h-\[/);
+    const html = render({ containerEnabled: "true" });
+    // Было `lg:min-h-[520px|630px|760px]` — ступени, не зависящие от медиа.
+    expect(html).not.toMatch(/lg:min-h-\[\d+px\]/);
+    // Стало — доля высоты самого медиа.
+    expect(html).toContain("lg:min-h-[calc(100%-5rem)]");
   });
 
   it("на мобильном наложения нет — пара идёт столбиком", () => {

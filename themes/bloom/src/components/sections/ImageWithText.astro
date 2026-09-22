@@ -154,11 +154,19 @@ const positionJustifyCls =
 // Тени на эталоне нет: карточка и фото стыкуются чистой кромкой (снимки 1-6,
 // граница наезда без размытия). shadow-xl был нужен прежней раскладке, где
 // карточка лежала ЦЕЛИКОМ на фото и без тени сливалась с ним.
-const containerSurfaceCls = isOverlap
-	? " rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8"
-	: "";
+// Контейнер (плашка под текстом) есть ВСЕГДА, а не только при наложении.
+// Владелец 2026-09-22: «цветовая схема применяться должна даже без
+// наложения» — он выбрал «Схему 3» для контейнера при выключенном тумблере и
+// не увидел ничего. Раньше и заливка, и схема висели на `isOverlap`, то есть
+// половина настройки была мертва. Теперь «Наложение» отвечает ровно за одно:
+// наезжает плашка на медиа или стоит с ним рядом.
+// Безопасно для существующих сайтов: у bloom `--color-surface` равен
+// `--color-bg` во всех четырёх схемах, поэтому без выбранной схемы контейнера
+// плашка остаётся невидимой ровно как раньше.
+const containerSurfaceCls =
+	" rounded-[var(--radius-card,12px)] bg-[rgb(var(--color-surface,255_255_255))] px-6 py-8";
 const containerSchemeCls =
-	isOverlap && typeof p.containerColorScheme === "string" && p.containerColorScheme
+	typeof p.containerColorScheme === "string" && p.containerColorScheme
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
@@ -203,7 +211,12 @@ const overlapCardSideCls = imageLeft ? "lg:right-0" : "lg:left-0";
 // медиа 864, но всего 14 при медиа 416). На эталоне он постоянный — 29 px при
 // паре 877 независимо от высоты медиа (585 и 439 дали тот же вылет), то есть
 // 3.3 % ШИРИНЫ пары. Наша пара на 1440-м вьюпорте 1280 → 40 px.
-const overlapCardVerticalCls = "lg:inset-y-10";
+// `inset-y` фиксировал высоту жёстко: при маленьком медиа плашка получалась
+// ниже своего содержимого, и заголовок срезало верхней кромкой (скриншот
+// владельца 22.09, «вёрстка едет» — «Размер: Маленький» + «Ширина:
+// Маленькая»). Поэтому высота медиа минус вылет — это МИНИМУМ, а не размер:
+// прижимаем плашку сверху и даём ей расти вниз, когда текста больше.
+const overlapCardVerticalCls = "lg:top-10 lg:min-h-[calc(100%-5rem)]";
 // Отдельная нижняя граница высоты пары больше не нужна: высоту задаёт само
 // медиа своим аспектом («Размер» × ширина медиа), а карточка лежит поверх.
 // Прежний `min-h` держал высоту вместо медиа и делал «Размер» невидимым —
@@ -299,7 +312,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			class={
 				isOverlap
-					? `relative z-10 flex w-full flex-col gap-6 ${positionJustifyCls} lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
+					? `relative z-10 -mt-12 flex w-full flex-col gap-6 ${positionJustifyCls} lg:mt-0 lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
 					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
 			}
 		>

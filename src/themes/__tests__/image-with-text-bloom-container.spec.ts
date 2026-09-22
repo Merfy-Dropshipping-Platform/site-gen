@@ -84,13 +84,17 @@ describe("«Изображение с текстом» — панель «Кон
     expect(distReady).toBe(true);
   });
 
+  // Подпись 22.09 сменилась на «Наложение» (владелец: «не контейнер, а
+  // наложение»): у соседних секций «Контейнер» включает подложку, а здесь
+  // тумблер включает наезд текста на фото. Ключ пропа `containerEnabled`
+  // прежний — он в сохранённых ревизиях.
   it("bloom: поле containerEnabled есть, toggle, Показать/Скрыть", () => {
     if (!distReady) return;
     const field = panels.bloom?.[BLOCK]?.fields?.containerEnabled as
       | (FieldCanon & { options?: string[] })
       | undefined;
     expect(field?.type).toBe("toggle");
-    expect(field?.label).toBe("Контейнер");
+    expect(field?.label).toBe("Наложение");
     expect(field?.visibility).toBe("panel");
     expect(field?.options).toEqual(["true=Показать", "false=Скрыть"]);
   });

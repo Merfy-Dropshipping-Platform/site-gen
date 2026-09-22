@@ -149,37 +149,43 @@ const containerSchemeCls =
 		? ` color-scheme-${String(p.containerColorScheme).replace("scheme-", "")}`
 		: "";
 
-// Пропорция «карточка / фото» при наложении (эталон владельца 2026-09-21,
-// шесть снимков; замер PIL по розовой плашке и кромке фото, вьюпорт снимка
-// 1280):
-//   Ширина=Большая — карточка 655, фото 287, пара 876, наезд 66
-//   Ширина=Средняя — карточка 508  (пара и наезд те же)
-//   Ширина=Маленькая — карточка 358, фото 582, пара 875, наезд 65
-// В долях пары: карточка 40 / 58 / 75 %, фото 67.5 / 49.5 / 32.5 %. Сумма
-// каждой пары — 107.5 %, то есть НАЕЗД РОВНО 7.5 % ширины пары при любой
-// «Ширине» (на снимках он и не плавает: 65-67 px из 876).
-// Важно: сумма долей > 100 % и даёт наезд сама — отдельного отрицательного
-// margin не нужно, фото абсолютное и прижато к своей стороне.
-const overlapCardWidthCls =
-	p.width === "small" ? "lg:w-[40%]" : p.width === "large" ? "lg:w-[75%]" : "lg:w-[58%]";
+// «Ширина» задаёт ширину МЕДИА, карточка забирает остаток пары. Владелец
+// 2026-09-22 прислал два снимка с ОДНИМ «Размером» и разной «Шириной»:
+//   Ширина=Большая — фото 585, карточка 359, пара 877, наезд 68
+//   Ширина=Средняя — фото 434, карточка 508, пара 877, наезд 66
+// То есть «Большая» РАСТИТ ФОТО и сужает карточку, а не наоборот. Первая
+// серия из шести снимков (21.09) читалась мной задом наперёд: 655 там была
+// карточка при «Маленькой», а не при «Большой».
+// В долях пары: медиа 32.5 / 49.5 / 67.5 %, карточка 75 / 58 / 40 %. Сумма
+// каждой пары — 107.5 %, то есть наезд ровно 7.5 % при любой «Ширине»
+// (на снимках он и не плавает: 65-68 px из 877). Сумма долей > 100 % даёт
+// наезд сама, отдельный отрицательный margin не нужен.
 const overlapPhotoWidthCls =
-	p.width === "small" ? "lg:w-[67.5%]" : p.width === "large" ? "lg:w-[32.5%]" : "lg:w-[49.5%]";
-// Фото прижато к своей стороне пары и растянуто на её высоту; карточка стоит
-// с противоположной стороны в потоке.
-const overlapPhotoSideCls = imageLeft ? "lg:left-0" : "lg:right-0";
-const overlapCardSideCls = imageLeft ? "lg:ml-auto" : "lg:mr-auto";
-// Вертикальный вылет фото за карточку: на снимках 27-30 px при паре 876, то
-// есть 3.3 % её ширины. Наша пара на 1440-м вьюпорте — 1280 px, те же 3.3 %
-// дают 40 px (lg:my-10). Считаем от эталонной ДОЛИ, а не от его пикселей:
-// снимки владельца сняты в превью конструктора, там пара уже окна.
-const overlapCardInsetCls = "lg:my-10";
-// «Размер» при наложении держит НИЖНЮЮ границу высоты пары: короткий текст не
-// должен схлопывать фото в полоску. Опора — снимок №4 эталона: карточка 248,
-// медиа всё равно 430 (49 % ширины пары), то есть высоту там держала именно
-// эта граница. 49 % от нашей пары 1280 = 630 px — ступень «Средний»; соседние
-// ступени на снимках не встречались, взяты тем же шагом ±20 %.
-const overlapMinHCls =
-	p.size === "small" ? "lg:min-h-[520px]" : p.size === "large" ? "lg:min-h-[760px]" : "lg:min-h-[630px]";
+	p.width === "small" ? "lg:w-[32.5%]" : p.width === "large" ? "lg:w-[67.5%]" : "lg:w-[49.5%]";
+const overlapCardWidthCls =
+	p.width === "small" ? "lg:w-[75%]" : p.width === "large" ? "lg:w-[40%]" : "lg:w-[58%]";
+// Высоту пары задаёт МЕДИА: оно стоит в потоке со своим аспектом («Размер»),
+// а карточка — абсолютный слой поверх. На обоих снимках владельца «Размер =
+// Большой» дал квадрат (585×585 и 434×439) — это ровно `aspect-square`
+// лестницы «Размера», то есть высота считается от ШИРИНЫ МЕДИА, а не от
+// длины текста. Прежняя правка (21.09) держала обратное — высоту задавала
+// карточка — и от «Размера» высота не зависела вовсе.
+const overlapPhotoSideCls = imageLeft ? "lg:mr-auto" : "lg:ml-auto";
+const overlapCardSideCls = imageLeft ? "lg:right-0" : "lg:left-0";
+// Вертикальный вылет медиа за карточку: 29 px при паре 877 = 3.3 % ширины
+// пары. Считаем от эталонной ДОЛИ, а не от пикселей снимка: он снят в превью
+// конструктора, где пара уже окна. Карточка абсолютная, поэтому вылет задаём
+// отступами её якоря (inset), а не margin.
+const overlapCardVerticalCls =
+	position === "top"
+		? "lg:top-[3.3%]"
+		: position === "bottom"
+			? "lg:bottom-[3.3%]"
+			: "lg:top-1/2 lg:-translate-y-1/2";
+// Отдельная нижняя граница высоты пары больше не нужна: высоту задаёт само
+// медиа своим аспектом («Размер» × ширина медиа), а карточка лежит поверх.
+// Прежний `min-h` держал высоту вместо медиа и делал «Размер» невидимым —
+// владелец 2026-09-22: «Размер влияет на медиафайл, именно на медиафайл».
 // Ширина ПАРЫ при наложении постоянна: на всех шести снимках она 875-876 px,
 // меняется только доля карточки внутри неё. Поэтому «Ширина» в этом режиме
 // правит пропорцию (выше), а не потолок блока — иначе «Маленькая» ужимала бы
@@ -241,7 +247,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    в бандл темы, и правило молча не работает (у bloom так и было после main 4d4a11ce). */}
 		class={
 			isOverlap
-				? `relative mx-auto flex w-full ${outerWidthCls} flex-col gap-4 ${overlapMinHCls} lg:flex-row ${positionItemsCls} lg:gap-0`
+				? `relative mx-auto flex w-full ${outerWidthCls} flex-col gap-4 lg:block lg:gap-0`
 				: `mx-auto grid w-full ${outerWidthCls} grid-cols-1 gap-4 lg:grid-cols-2 ${positionItemsCls} lg:gap-10`
 		}
 		data-animate
@@ -250,7 +256,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			class={
 				isOverlap
-					? `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls} lg:absolute lg:inset-y-0 lg:aspect-auto ${overlapPhotoWidthCls} ${overlapPhotoSideCls}`
+					? `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls} ${overlapPhotoWidthCls} ${overlapPhotoSideCls}`
 					: `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}`
 			}
 			data-puck-subsection-parent={id}
@@ -271,7 +277,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			class={
 				isOverlap
-					? `relative z-10 flex w-full flex-col gap-6 ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardInsetCls}${containerSurfaceCls}${containerSchemeCls}`
+					? `relative z-10 flex w-full flex-col gap-6 lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
 					: `flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
 			}
 		>

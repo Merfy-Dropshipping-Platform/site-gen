@@ -1198,11 +1198,6 @@
       "tier": "structural"
     },
     {
-      "fingerprint": "sha256:e1ff7763e01a8fb403d173ca6304cef85aae32ef1979b3683c6bc67a61747d16",
-      "id": "satin.flow.search.suggestions-data-source",
-      "tier": "structural"
-    },
-    {
       "fingerprint": "sha256:9e9c91e81bfa28822ca1db5339ee7ebcc66b83f1722834aadbe7e27f3a72948c",
       "id": "satin.flow.search.suggestions-data-source.requirement-missing",
       "tier": "structural"
@@ -1328,7 +1323,7 @@
       "tier": "structural"
     }
   ],
-  "parentBaselineDigest": "sha256:a1e3e2a93cc74bfb605c2a8b47e69a907a210992ba743f6121fdbd09ce953704",
+  "parentBaselineDigest": "sha256:c7f3b85ca626250b34b64574fbe8f9bb54a376bd3a3e251172abc5fbdec09036",
   "requirements": [
     {
       "fingerprint": "sha256:4f7dcef2bcd12c77f6a43da3cfa64e25e5fbe768bb947abf8427e0a722a9156f",

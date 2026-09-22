@@ -635,10 +635,52 @@ function restoreButtonEnvelopes(
   }
 }
 
+/**
+ * Заголовок, рассыпанный по буквам, — собрать обратно.
+ *
+ * Панель конструктора до 22.09 делала `{ ...currentProps.heading, size }` над
+ * заголовком, который у «Сворачиваемого раздела» хранится СТРОКОЙ. Спред строки
+ * даёт объект с числовыми ключами:
+ *   { "0":"Ч", "1":"а", "2":"с", …, "size":"large" }
+ * Панель починена (constructor: lib/textSizePatch.ts), но у магазинов, где
+ * настройку успели тронуть, испорченное значение уже лежит в ревизии, и текст
+ * заголовка на витрине потерян — объект без `text` уводит порт в свой дефолт.
+ * Чиним на чтении: ревизию переписывать не нужно, первое же сохранение
+ * запишет уже нормальную форму.
+ */
+function собратьРассыпаннуюСтроку(obj: Record<string, unknown>): string | null {
+  const индексы: number[] = [];
+  for (const k of Object.keys(obj)) {
+    if (/^\d+$/.test(k)) {
+      индексы.push(Number(k));
+      continue;
+    }
+    // Рядом с буквами допустимы только служебные поля конверта.
+    if (k !== 'size' && k !== 'alignment' && k !== 'enabled') return null;
+  }
+  if (индексы.length < 2) return null;
+  индексы.sort((a, b) => a - b);
+  // Индексы обязаны идти подряд с нуля — иначе это не рассыпанная строка.
+  if (индексы[0] !== 0 || индексы[индексы.length - 1] !== индексы.length - 1) return null;
+  let текст = '';
+  for (const i of индексы) {
+    const ч = obj[String(i)];
+    if (typeof ч !== 'string' || ч.length !== 1) return null;
+    текст += ч;
+  }
+  return текст;
+}
+
 function coerceLegacyValue(v: unknown): unknown {
   if (v === null || typeof v !== 'object') return v;
   if (Array.isArray(v)) return v.map(coerceLegacyValue);
   const obj = v as Record<string, unknown>;
+  const собранное = собратьРассыпаннуюСтроку(obj);
+  if (собранное !== null) {
+    // Размер рядом с буквами поднимет TEXT_SIZE_ENVELOPES выше по течению —
+    // здесь возвращаем только сам текст, как и для обычного конверта.
+    return собранное;
+  }
   const keys = Object.keys(obj);
 
   // {text: "...", size?, enabled?, alignment?} → text

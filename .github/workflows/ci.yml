@@ -1537,6 +1537,12 @@ jobs:
       # расхождение 3 к 2 заметили только на satin (баг тестера 22.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/hero-container-empty-state.spec.ts
+      # Заголовок, рассыпанный по буквам, собирается обратно на чтении. Панель
+      # до 22.09 спредила СТРОКУ заголовка ради размера и превращала её в
+      # объект с числовыми ключами; панель починена, но испорченные ревизии
+      # уже лежат у магазинов, где настройку успели тронуть.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/scattered-heading-repair.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

@@ -1,24 +1,78 @@
 {
   "content": [
-    { "type": "Header", "props": {
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-product",
+        "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+        "link": {
+          "text": "В каталог",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
         "id": "Header-product",
+        "siteTitle": "Vanilla Pilot",
+        "logo": "",
+        "logoPosition": "center-absolute",
+        "activeLinkIndicator": "underline",
+        "stickiness": "scroll-up",
+        "menuType": "dropdown",
         "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Доставка", "href": "/delivery" },
-          { "label": "Контакты", "href": "/contacts" }
-        ]
-      } },
-    { "type": "Product", "props": { "id": "Product-1" } },
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          }
+        ],
+        "actionButtons": {
+          "showSearch": true,
+          "showCart": true,
+          "showProfile": true
+        },
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 32,
+          "bottom": 32
+        }
+      }
+    },
+    {
+      "type": "Product",
+      "props": {
+        "id": "Product-1"
+      }
+    },
     {
       "type": "PopularProducts",
       "props": {
         "id": "PopularProducts-product",
-        "heading": { "text": "Вам также может понравиться", "size": "small" }
+        "heading": {
+          "text": "Вам также может понравиться",
+          "size": "small"
+        }
       }
     },
-    { "type": "Footer", "props": { "id": "Footer-product" } }
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-product"
+      }
+    }
   ],
-  "root": { "props": { "title": "Товар" } },
+  "root": {
+    "props": {
+      "title": "Товар"
+    }
+  },
   "zones": {}
 }

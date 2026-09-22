@@ -54,6 +54,26 @@ interface ThemeCase {
   /** packages/theme-<theme>/pages/home.json content, тот же порядок. */
   homeOrder: readonly string[];
   /**
+   * Полный список типов, для которых проверяется резолвер/маркер (рендер +
+   * манифест + «не theme-base»). По умолчанию совпадает с `homeOrder`; отдельно
+   * указывается, когда тема регистрирует канонический компонент, которого
+   * больше НЕТ в home.json (2026-09-23, vanilla-seed-into-package: главная
+   * vanilla — данные пакета, ровно то, что раньше эффективно давала миграция,
+   * Gallery на ней больше нет, но компонент остаётся зарегистрированным и
+   * ДОЛЖЕН резолвиться через V2, не молча откатываться на theme-base — сид
+   * `home.json` при этом НЕ расширяем, образец пропов для рендера берётся из
+   * `fallbackProps`, а не из home).
+   */
+  resolverOrder?: readonly string[];
+  /**
+   * Минимальные пропы для типов из `resolverOrder`, которых нет в home.json
+   * (см. `resolverOrder`). Проверено эмпирически: рендер Gallery для vanilla
+   * с одним лишь `{id}` (без items) успешно резолвится через V2 и несёт
+   * маркер темы — Gallery.astro отдаёт пустое состояние, а не падает/не
+   * откатывается.
+   */
+  fallbackProps?: Record<string, Record<string, unknown>>;
+  /**
    * Литерал (один на всю тему) ИЛИ карта {тип блока → литерал}, если единого
    * маркера на все канонические блоки темы не нашлось (bloom — часть блоков
    * не делит общий padding-класс с остальными). Каждый маркер проверен
@@ -77,7 +97,12 @@ function markerFor(
 const CASES: ThemeCase[] = [
   {
     theme: "vanilla",
-    homeOrder: [
+    // 2026-09-23 (vanilla-seed-into-package): главная теперь — данные пакета
+    // (10 блоков, ровно то, что раньше эффективно давала read-time миграция);
+    // Gallery на ней нет — сид не расширяем, поэтому Gallery ушёл из
+    // `homeOrder` в `resolverOrder` (см. ниже) с fallback-пропами.
+    homeOrder: ["Header", "Hero", "Collections", "PopularProducts", "Footer"],
+    resolverOrder: [
       "Header",
       "Hero",
       "Collections",
@@ -85,6 +110,9 @@ const CASES: ThemeCase[] = [
       "PopularProducts",
       "Footer",
     ],
+    fallbackProps: {
+      Gallery: { id: "Gallery-canon-probe" },
+    },
     // themes/vanilla/src/styles/global.css — утилитарный класс вёрстки
     // vanilla (padding-контейнер секций), которого нет в дженерик
     // theme-base/blocks/<Type> ни для одного из этих 6 типов.
@@ -207,7 +235,15 @@ function renderViaProbe(
 
 describe.each(CASES)(
   "theme=$theme — V2 section resolver: no silent theme-base fallback",
-  ({ theme, homeOrder, marker, markerLabel }) => {
+  ({
+    theme,
+    homeOrder,
+    resolverOrder: resolverOrderRaw,
+    fallbackProps,
+    marker,
+    markerLabel,
+  }) => {
+    const resolverOrder = resolverOrderRaw ?? homeOrder;
     const MANIFEST_PATH = resolve(
       SITES_ROOT,
       "dist",
@@ -224,14 +260,22 @@ describe.each(CASES)(
     );
 
     let manifest: Record<string, string>;
+    /** Ровно то, что лежит в home.json — источник для проверки #1 (`homeOrder`). */
     let homeBlocks: HomeBlock[];
+    /**
+     * Образцы для рендер/манифест/маркер-проверок (`resolverOrder`) — из
+     * home.json там, где тип реально есть, иначе синтетический блок из
+     * `fallbackProps` (см. интерфейс `ThemeCase`).
+     */
+    let renderBlocks: HomeBlock[];
     const rendered = new Map<string, ProbeResult>();
 
     beforeAll(async () => {
       try {
-        manifest = JSON.parse(
-          await readFile(MANIFEST_PATH, "utf-8"),
-        ) as Record<string, string>;
+        manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf-8")) as Record<
+          string,
+          string
+        >;
       } catch (err) {
         throw new Error(
           `dist/theme-sections/${theme}/manifest.json missing/unreadable at ${MANIFEST_PATH}. ` +
@@ -245,8 +289,24 @@ describe.each(CASES)(
       };
       homeBlocks = home.content.filter((b) => homeOrder.includes(b.type));
 
-      for (const block of homeBlocks) {
-        rendered.set(block.type, renderViaProbe(theme, block.type, block.props));
+      renderBlocks = resolverOrder.map((type) => {
+        const fromHome = home.content.find((b) => b.type === type);
+        if (fromHome) return fromHome;
+        const fallback = fallbackProps?.[type];
+        if (!fallback) {
+          throw new Error(
+            `${theme}/${type}: тип объявлен в resolverOrder, но отсутствует и в ` +
+              `home.json, и в fallbackProps — нечем рендерить образец.`,
+          );
+        }
+        return { type, props: fallback };
+      });
+
+      for (const block of renderBlocks) {
+        rendered.set(
+          block.type,
+          renderViaProbe(theme, block.type, block.props),
+        );
       }
     }, 30000);
 
@@ -256,14 +316,17 @@ describe.each(CASES)(
     });
 
     describe(`dist/theme-sections/${theme}/manifest.json маппит каждый канонический тип (собрано 'pnpm build:theme-sections ${theme}')`, () => {
-      it.each(homeOrder)("%s имеет непустой маппинг в манифесте", (type) => {
-        expect(typeof manifest[type]).toBe("string");
-        expect(manifest[type].length).toBeGreaterThan(0);
-      });
+      it.each(resolverOrder)(
+        "%s имеет непустой маппинг в манифесте",
+        (type) => {
+          expect(typeof manifest[type]).toBe("string");
+          expect(manifest[type].length).toBeGreaterThan(0);
+        },
+      );
     });
 
     describe(`PreviewService.renderBlock({ themeId: "${theme}" }) резолвит V2-секцию темы, а не theme-base fallback`, () => {
-      it.each(homeOrder)(
+      it.each(resolverOrder)(
         "%s: resolveV2Section рендерится успешно (без отката на theme-base)",
         (type) => {
           const result = rendered.get(type);
@@ -279,11 +342,11 @@ describe.each(CASES)(
         },
       );
 
-      it.each(homeOrder)(
+      it.each(resolverOrder)(
         "%s: data-puck-component-id на корне соответствует id блока (конструктор адресует секцию для hot-render)",
         (type) => {
           const result = rendered.get(type)!;
-          const block = homeBlocks.find((b) => b.type === type)!;
+          const block = renderBlocks.find((b) => b.type === type)!;
           const id = block.props.id as string;
           expect(typeof id).toBe("string");
           expect(id.length).toBeGreaterThan(0);
@@ -292,7 +355,7 @@ describe.each(CASES)(
       );
 
       if (marker !== null) {
-        it.each(homeOrder)(
+        it.each(resolverOrder)(
           `%s: рендер содержит маркер темы (${markerLabel}) — theme-base его не производит`,
           (type) => {
             const m = markerFor(marker, type);
@@ -306,7 +369,7 @@ describe.each(CASES)(
 
     if (marker !== null) {
       describe(`маркер темы (${markerLabel}) имеет "зубы": theme-base источники его НЕ содержат (иначе проверка выше бессмысленна)`, () => {
-        it.each(homeOrder)(
+        it.each(resolverOrder)(
           "%s: соответствующий packages/theme-base/blocks не содержит маркер темы",
           async (type) => {
             const m = markerFor(marker, type);

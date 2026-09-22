@@ -1,21 +1,65 @@
 {
   "content": [
-    { "type": "Header", "props": {
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-collection",
+        "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+        "link": {
+          "text": "В каталог",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
         "id": "Header-collection",
+        "siteTitle": "Vanilla Pilot",
+        "logo": "",
+        "logoPosition": "center-absolute",
+        "activeLinkIndicator": "underline",
+        "stickiness": "scroll-up",
+        "menuType": "dropdown",
         "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Доставка", "href": "/delivery" },
-          { "label": "Контакты", "href": "/contacts" }
-        ]
-      } },
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          }
+        ],
+        "actionButtons": {
+          "showSearch": true,
+          "showCart": true,
+          "showProfile": true
+        },
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 32,
+          "bottom": 32
+        }
+      }
+    },
     {
       "type": "Catalog",
       "props": {
         "id": "Catalog-collection",
-        "categoryTitle": { "text": "{{COLLECTION_NAME}}" },
-        "categorySubtitle": { "text": "{{COLLECTION_DESCRIPTION}}" },
-        "heading": { "text": "{{COLLECTION_NAME}}", "size": "large" },
+        "categoryTitle": {
+          "text": "{{COLLECTION_NAME}}"
+        },
+        "categorySubtitle": {
+          "text": "{{COLLECTION_DESCRIPTION}}"
+        },
+        "heading": {
+          "text": "{{COLLECTION_NAME}}",
+          "size": "large"
+        },
         "colorScheme": "scheme-3",
         "columns": 2,
         "cards": 12,
@@ -24,11 +68,23 @@
         "showSort": "true",
         "gridAspect": "1:1",
         "cardCaptionStyle": "uppercase",
-        "padding": { "top": 120, "bottom": 120 }
+        "padding": {
+          "top": 120,
+          "bottom": 120
+        }
       }
     },
-    { "type": "Footer", "props": { "id": "Footer-collection" } }
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-collection"
+      }
+    }
   ],
-  "root": { "props": { "title": "{{COLLECTION_NAME}}" } },
+  "root": {
+    "props": {
+      "title": "{{COLLECTION_NAME}}"
+    }
+  },
   "zones": {}
 }

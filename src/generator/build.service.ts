@@ -1634,7 +1634,7 @@ export async function runBuildPipeline(
       const { parityOn } = await import("../themes/parity-switch");
       const { siteTokensCss } = await import("../themes/tokens-css");
       const v2TokensCss = parityOn("TOKENS", params.siteId)
-        ? siteTokensCss(v2ThemeSettings ?? {}, ctx.revisionData, bareTheme)
+        ? siteTokensCss(v2ThemeSettings ?? {}, ctx.revisionData, bareTheme, { logoRule: parityOn("LOGO", params.siteId) })
         : buildTokensCss(
             v2ThemeSettings && typeof v2ThemeSettings === "object"
               ? { ...(v2ThemeSettings as Record<string, unknown>), cartDrawerScheme: v2CartDrawerScheme }

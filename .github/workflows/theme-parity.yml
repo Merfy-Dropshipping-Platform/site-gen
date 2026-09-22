@@ -66,6 +66,19 @@ jobs:
       - name: Install Playwright chromium
         run: npx playwright install chromium --with-deps
 
+      # Боковое меню глазами человека (документ «баги бокового меню», 22.09):
+      # на телефоне панель во весь экран, шапка одна, панель от верха экрана и
+      # после ресайза, в шапке панели только корзина, панель листается, а
+      # страница под ней нет, стрелка раскрывает вложенные и не закрывает меню.
+      # Всё это про то, что лежит сверху и куда уходит нажатие, — нужен браузер;
+      # статический сканер шапки (header-menu-scan в ci.yml) этого не видит.
+      # Chromium уже стоит шагом выше, поэтому замер живёт здесь, а не в ci.yml.
+      - name: Сборка секций для замера бокового меню
+        run: pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
+
+      - name: Боковое меню — правила от лица человека (5 тем × 8 сценариев)
+        run: pnpm qa:side-menu
+
       - name: Checkout monorepo figma-references (separate repo)
         # The super-repo commits the figma-references folder. In CI we run
         # from inside the sites repo only, so the references aren't present

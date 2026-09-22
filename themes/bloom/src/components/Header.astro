@@ -753,6 +753,12 @@ const headerHeartSvg =
 			// ВСЕХ пяти темах, не только в bloom. Пусто, если схема меню не задана —
 			// тогда шторка наследует схему секции, как раньше.
 			menuSchemeClass,
+			"fixed",
+			// Боковая панель лежит ПОВЕРХ шапки страницы. Мобильная строка шапки стоит
+			// на z-[60] и рисовалась поверх панели: две шапки одна на другой, крестик и
+			// иконки дважды (баги 1 и 3 документа «баги бокового меню», 22.09). Нижней
+			// шторке — прежний z-[55]: она открывается ПОД строкой шапки.
+			isSidebar ? "z-[70]" : "z-[55]",
 			// Полотно шторки — «Фон» СХЕМЫ, а не палитра Tailwind. `bg-white` Tailwind 4
 			// печатает как `var(--color-white)`: переменная ЕСТЬ, но её нет ни в одной
 			// схеме мерчанта, поэтому шторка замирает белой при любой схеме. Замер
@@ -762,9 +768,12 @@ const headerHeartSvg =
 			// невидимое меню: на заводской схеме bloom «Фон» розовый, а «Текст» белый —
 			// белые пункты лежали на белом полотне. Фолбэк 255_255_255 = прежний вид.
 			// Сторож: pnpm test:scheme-targets.
-			"fixed z-[55] hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
+			"hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
+			// Боковая панель на телефоне — во весь экран: было 90vw у правого края, и
+			// слева полосой просвечивала страница (баг 1). С md — колонка 360px на всю
+			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			isSidebar
-				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px]"
 				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
 		]}
 		role="dialog"
@@ -775,9 +784,11 @@ const headerHeartSvg =
 		data-search-limit="6"
 	>
 		{isSidebar ? (
-			/* Шапка открытой панели: на месте логотипа — крестик (пункт 29 документа
-			   владельца). Логотип рисовался дважды — в панели и в шапке страницы.
-			   `data-burger-toggle` — панель закрывает тот же скрипт темы. */
+			/* Шапка открытой панели: крестик и корзина. На месте логотипа — крестик
+			   (пункт 29 документа владельца): логотип рисовался дважды — в панели и в
+			   шапке страницы. Избранного здесь нет — остаётся только корзина (баг 4
+			   документа «баги бокового меню»). `data-burger-toggle` — панель
+			   закрывает тот же скрипт темы. */
 			<div class="flex items-center justify-between">
 				<button
 					type="button"
@@ -791,18 +802,6 @@ const headerHeartSvg =
 					<SchemeIcon svgs={BLOOM_ICON_SVGS} name="menu-close" sizeClass="size-5" />
 				</button>
 				<div class="flex items-center gap-3">
-					<a
-						href="/wishlist"
-						class="relative flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
-						aria-label="Избранное"
-					>
-						<span data-wishlist-icon class="block size-5 text-[rgb(var(--color-text,0_0_0))]" set:html={headerHeartSvg}></span>
-						<span
-							data-wishlist-count
-							data-empty="true"
-							class="absolute -right-1 -top-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#e38e9f] px-1 font-inter text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden"
-						>0</span>
-					</a>
 					<button
 						type="button"
 						data-cart-open
@@ -980,9 +979,13 @@ const headerHeartSvg =
 		return (promo?.offsetHeight ?? 32) + 64;
 	};
 
+	// Под шапку встаёт только нижняя шторка. Боковая панель стоит от верха экрана
+	// и сама накрывает шапку, а ресайз окна (адресная строка телефона, смена
+	// ширины в конструкторе) звал эту функцию без разбора — и панель съезжала под
+	// верхнее меню (баг 5 документа «баги бокового меню»). Так же у flux и satin.
 	const positionBurger = () => {
 		const burger = document.getElementById("bloom-burger");
-		if (!burger) return;
+		if (!burger || isSidebarDrawer()) return;
 		burger.style.top = `${headerOffsetBelowPromo()}px`;
 	};
 
@@ -1040,12 +1043,19 @@ const headerHeartSvg =
 		if (open) setSearchOpen(false);
 		burger.classList.toggle("hidden", !open);
 		syncBurgerButtonIcons(open);
-		document.body.style.overflow = open ? "hidden" : "";
+		// Страницу под открытым меню запираем на <html>, а не на <body>. У bloom
+		// `html { overflow-x: clip }` (global.css): overflow <body> тогда до окна не
+		// доходит, и страница под панелью уезжала колесом (замер: 0 → 1400px, баг 2
+		// документа «баги бокового меню»). Хуже того, <body> с overflow:hidden сам
+		// становится прокручиваемым контейнером и отрывает липкую шапку от окна.
+		// Замок на <html> запирает само окно — одинаково во всех пяти темах.
+		document.documentElement.style.overflow = open ? "hidden" : "";
 		// positionBurger only for mobile bottom-sheet (not right-side panel)
 		if (open && !isSidebarDrawer()) positionBurger();
 	};
 
 	const syncHeaderChromeAfterNavigation = () => {
+		document.documentElement.style.overflow = "";
 		document.body.style.overflow = "";
 		setSearchOpen(false);
 		const burgerEl = document.getElementById("bloom-burger");

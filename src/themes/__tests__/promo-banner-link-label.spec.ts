@@ -26,18 +26,29 @@ import { renderSections } from "../../../scripts/qa/lib/render";
 const ТЕМЫ = ["rose", "bloom", "satin", "vanilla", "flux"] as const;
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
 
-function ссылка(тема: string, link: unknown): { подпись: string | null; адрес: string | null } {
+function ссылка(
+  тема: string,
+  link: unknown,
+): { подпись: string | null; адрес: string | null } {
   const [строка] = renderSections(тема, [
     {
       block: "PromoBanner",
-      props: { id: "PromoBanner-1", colorScheme: "scheme-1", text: "Текст объявления", link },
+      props: {
+        id: "PromoBanner-1",
+        colorScheme: "scheme-1",
+        text: "Текст объявления",
+        link,
+      },
       catalog: КАТАЛОГ,
     },
   ]);
   const html = (строка?.html ?? "").replace(/\s+/g, " ");
   const подпись = html.match(/<a[^>]*>([^<]*)<\/a>/);
   const адрес = html.match(/<a[^>]*href="([^"]*)"/);
-  return { подпись: подпись ? подпись[1].trim() : null, адрес: адрес ? адрес[1] : null };
+  return {
+    подпись: подпись ? подпись[1].trim() : null,
+    адрес: адрес ? адрес[1] : null,
+  };
 }
 
 describe("подпись ссылки промо-баннера", () => {
@@ -50,7 +61,10 @@ describe("подпись ссылки промо-баннера", () => {
     });
 
     it(`${тема}: подпись и выбранная страница остаются каждая на своём месте`, () => {
-      const { подпись, адрес } = ссылка(тема, { text: "МЕТКА", href: "/about" });
+      const { подпись, адрес } = ссылка(тема, {
+        text: "МЕТКА",
+        href: "/about",
+      });
       expect(подпись).toBe("МЕТКА");
       expect(адрес).toBe("/about");
     });

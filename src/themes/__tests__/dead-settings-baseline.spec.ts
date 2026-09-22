@@ -33,11 +33,18 @@ const БАЗА = resolve(SITES_ROOT, "conformance/baselines/dead-settings.json")
 type Находка = { тема: string; секция: string; поле: string };
 
 function прогон(): string[] {
-  const файл = join(mkdtempSync(join(tmpdir(), "dead-settings-")), "отчёт.json");
-  execFileSync("pnpm", ["exec", "tsx", "scripts/qa/settings-audit.ts", "--json", файл], {
-    cwd: SITES_ROOT,
-    stdio: "pipe",
-  });
+  const файл = join(
+    mkdtempSync(join(tmpdir(), "dead-settings-")),
+    "отчёт.json",
+  );
+  execFileSync(
+    "pnpm",
+    ["exec", "tsx", "scripts/qa/settings-audit.ts", "--json", файл],
+    {
+      cwd: SITES_ROOT,
+      stdio: "pipe",
+    },
+  );
   const отчёт = JSON.parse(readFileSync(файл, "utf-8")) as {
     проверено: number;
     мёртвые: Находка[];

@@ -24,7 +24,13 @@ import { resolve } from "node:path";
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const КОРНИ = ["themes", "packages"];
-const ПРОПУСК = ["node_modules", "/dist/", "__snapshots__", "/.astro/", "/dist-"];
+const ПРОПУСК = [
+  "node_modules",
+  "/dist/",
+  "__snapshots__",
+  "/.astro/",
+  "/dist-",
+];
 
 type Запрет = {
   имя: string;
@@ -40,16 +46,29 @@ const ЗАПРЕТЫ: Запрет[] = [
     шаблон: /\[\s*line\.variant\?\.color\s*,\s*line\.variant\?\.size\s*\]/,
     вместо: "variantLabel / variantPairs из theme-base/runtime/nt-cart",
     исключения: [
-      { путь: "themes/luna/src/pages/cart.astro", почему: "luna вне объёма (AGENTS.md)" },
-      { путь: "themes/bloom/src/lib/nt-cart-bloom.ts", почему: "мёртвая копия ядра, импортов нет" },
-      { путь: "themes/satin/src/lib/nt-cart-satin.ts", почему: "мёртвая копия ядра, импортов нет" },
-      { путь: "themes/vanilla/src/lib/nt-cart-vanilla.ts", почему: "мёртвая копия ядра, импортов нет" },
+      {
+        путь: "themes/luna/src/pages/cart.astro",
+        почему: "luna вне объёма (AGENTS.md)",
+      },
+      {
+        путь: "themes/bloom/src/lib/nt-cart-bloom.ts",
+        почему: "мёртвая копия ядра, импортов нет",
+      },
+      {
+        путь: "themes/satin/src/lib/nt-cart-satin.ts",
+        почему: "мёртвая копия ядра, импортов нет",
+      },
+      {
+        путь: "themes/vanilla/src/lib/nt-cart-vanilla.ts",
+        почему: "мёртвая копия ядра, импортов нет",
+      },
     ],
   },
   {
     имя: "вариант по умолчанию = «первая доступная комбинация»",
     шаблон: /\.find\(\s*\(c\)\s*=>\s*c\s*&&\s*c\.available\s*!==\s*false\s*\)/,
-    вместо: "pickDefaultCombination (или __merfyPickDefaultCombination в is:inline)",
+    вместо:
+      "pickDefaultCombination (или __merfyPickDefaultCombination в is:inline)",
     // Вычищено везде — исключений нет.
     исключения: [],
   },
@@ -68,7 +87,8 @@ const ЗАПРЕТЫ: Запрет[] = [
   {
     имя: "клиентский рантайм блока подключён модульным import",
     шаблон: /<script>\s*\n?\s*import\s+'\.\.\/\.\.\/runtime\//,
-    вместо: "<script is:inline set:html={…_SOURCE}> — модульный даёт 404 на витрине",
+    вместо:
+      "<script is:inline set:html={…_SOURCE}> — модульный даёт 404 на витрине",
     исключения: [
       {
         путь: "packages/theme-base/blocks/Hero/Hero.astro",
@@ -127,7 +147,9 @@ describe("вторая реализация снятого анти-паттер
 
   it.each(ЗАПРЕТЫ.map((з) => [з.имя, з] as const))("%s", (_имя, з) => {
     const разрешено = new Set(з.исключения.map((и) => и.путь));
-    const нарушители = ВСЕ.filter((f) => !разрешено.has(f) && з.шаблон.test(код(f)));
+    const нарушители = ВСЕ.filter(
+      (f) => !разрешено.has(f) && з.шаблон.test(код(f)),
+    );
     expect({ запрет: з.имя, нарушители, вместо: з.вместо }).toEqual({
       запрет: з.имя,
       нарушители: [],
@@ -135,18 +157,19 @@ describe("вторая реализация снятого анти-паттер
     });
   });
 
-  it.each(ЗАПРЕТЫ.flatMap((з) => з.исключения.map((и) => [`${з.имя} — ${и.путь}`, з, и] as const)))(
-    "исключение живо: %s",
-    (_имя, з, и) => {
-      // Исключение без нарушения = список протух и начал прятать новое.
-      const есть = ВСЕ.includes(и.путь) && з.шаблон.test(код(и.путь));
-      expect({ путь: и.путь, почему: и.почему, ещёНужно: есть }).toEqual({
-        путь: и.путь,
-        почему: и.почему,
-        ещёНужно: true,
-      });
-    },
-  );
+  it.each(
+    ЗАПРЕТЫ.flatMap((з) =>
+      з.исключения.map((и) => [`${з.имя} — ${и.путь}`, з, и] as const),
+    ),
+  )("исключение живо: %s", (_имя, з, и) => {
+    // Исключение без нарушения = список протух и начал прятать новое.
+    const есть = ВСЕ.includes(и.путь) && з.шаблон.test(код(и.путь));
+    expect({ путь: и.путь, почему: и.почему, ещёНужно: есть }).toEqual({
+      путь: и.путь,
+      почему: и.почему,
+      ещёНужно: true,
+    });
+  });
 });
 
 /**
@@ -170,7 +193,10 @@ describe("выбор варианта в портах каталога не ра
   const тело = (rel: string): string => {
     const src = readFileSync(resolve(SITES_ROOT, rel), "utf-8");
     const i = src.indexOf("window.__merfyPickDefaultCombination = function");
-    expect({ порт: rel, найдено: i > -1 }).toEqual({ порт: rel, найдено: true });
+    expect({ порт: rel, найдено: i > -1 }).toEqual({
+      порт: rel,
+      найдено: true,
+    });
     const кусок = src.slice(i, src.indexOf("</script>", i));
     return кусок.replace(/\s+/g, " ").trim();
   };
@@ -178,14 +204,20 @@ describe("выбор варианта в портах каталога не ра
   it("все четыре порта несут одинаковую реализацию", () => {
     const эталон = тело(ПОРТЫ[0]);
     for (const порт of ПОРТЫ.slice(1)) {
-      expect({ порт, совпадает: тело(порт) === эталон }).toEqual({ порт, совпадает: true });
+      expect({ порт, совпадает: тело(порт) === эталон }).toEqual({
+        порт,
+        совпадает: true,
+      });
     }
   });
 
   it("каждый порт ЗОВЁТ её, а не только объявляет", () => {
     for (const порт of ПОРТЫ) {
       const src = код(порт);
-      expect({ порт, зовёт: src.includes("window.__merfyPickDefaultCombination(") }).toEqual({
+      expect({
+        порт,
+        зовёт: src.includes("window.__merfyPickDefaultCombination("),
+      }).toEqual({
         порт,
         зовёт: true,
       });

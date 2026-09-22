@@ -40,7 +40,10 @@ const ПРОПУСК_ТИПОВ = new Set([
 ]);
 
 type Поле = { тип: string; значения: unknown[] };
-type Панель = { тест: Record<string, Поле>; объявлены: Array<{ имя: string; тип: string; тело: string }> };
+type Панель = {
+  тест: Record<string, Поле>;
+  объявлены: Array<{ имя: string; тип: string; тело: string }>;
+};
 
 /** Два различимых значения поля — по его объявлению в панели. */
 function значенияПоля(f: Record<string, unknown>): unknown[] | null {
@@ -54,7 +57,11 @@ function значенияПоля(f: Record<string, unknown>): unknown[] | null 
   }
   if (тип === "colorScheme") return ["scheme-1", "scheme-2"];
   if (тип === "alignment") return ["left", "right"];
-  if (тип === "padding") return [{ top: 0, bottom: 0 }, { top: 120, bottom: 120 }];
+  if (тип === "padding")
+    return [
+      { top: 0, bottom: 0 },
+      { top: 120, bottom: 120 },
+    ];
   if (тип === "slider" || тип === "number") {
     const min = typeof f.min === "number" ? f.min : 0;
     const max = typeof f.max === "number" ? f.max : 100;
@@ -144,7 +151,9 @@ function поляБлока(файл: string): Панель {
     if (!km || !tm) return;
     объявлены.push({ имя: km[1], тип: tm[1], тело: txt });
     const f: Record<string, unknown> = { type: tm[1] };
-    const opts = [...txt.matchAll(/value:\s*'([^']*)'/g)].map((m) => ({ value: m[1] }));
+    const opts = [...txt.matchAll(/value:\s*'([^']*)'/g)].map((m) => ({
+      value: m[1],
+    }));
     if (opts.length) f.options = opts;
     const min = txt.match(/min:\s*(-?\d+)/);
     const max = txt.match(/max:\s*(-?\d+)/);
@@ -167,18 +176,30 @@ function поляБлока(файл: string): Панель {
 
 /** Секции, которые есть у темы (из собранного манифеста). */
 function секцииТемы(тема: string): string[] {
-  const p = resolve(SITES_ROOT, "dist", "theme-sections", тема, "manifest.json");
+  const p = resolve(
+    SITES_ROOT,
+    "dist",
+    "theme-sections",
+    тема,
+    "manifest.json",
+  );
   if (!existsSync(p)) return [];
   return Object.keys(JSON.parse(readFileSync(p, "utf-8")));
 }
 
 function файлПанели(блок: string): string | null {
-  const p = resolve(SITES_ROOT, "packages", "theme-base", "blocks", блок, `${блок}.puckConfig.ts`);
+  const p = resolve(
+    SITES_ROOT,
+    "packages",
+    "theme-base",
+    "blocks",
+    блок,
+    `${блок}.puckConfig.ts`,
+  );
   return existsSync(p) ? p : null;
 }
 
 type Находка = { тема: string; секция: string; поле: string; тип: string };
-
 
 /**
  * Живое наполнение секции.
@@ -201,27 +222,76 @@ const КАРТИНКА = "/images/placeholder.png";
 
 /** Структурное содержимое: массивы, картинки, платформенный резолв. */
 const СТРУКТУРА: Record<string, Record<string, unknown>> = {
-  Hero: { image: КАРТИНКА, backgroundImages: [КАРТИНКА], button: { text: "Кнопка", link: "/catalog" } },
+  Hero: {
+    image: КАРТИНКА,
+    backgroundImages: [КАРТИНКА],
+    button: { text: "Кнопка", link: "/catalog" },
+  },
   Slideshow: {
     slides: [
-      { id: "s1", heading: { text: "Слайд 1" }, text: { content: "Текст 1" }, image: КАРТИНКА, button: { text: "К", link: "/a" } },
-      { id: "s2", heading: { text: "Слайд 2" }, text: { content: "Текст 2" }, image: КАРТИНКА, button: { text: "К", link: "/b" } },
+      {
+        id: "s1",
+        heading: { text: "Слайд 1" },
+        text: { content: "Текст 1" },
+        image: КАРТИНКА,
+        button: { text: "К", link: "/a" },
+      },
+      {
+        id: "s2",
+        heading: { text: "Слайд 2" },
+        text: { content: "Текст 2" },
+        image: КАРТИНКА,
+        button: { text: "К", link: "/b" },
+      },
     ],
   },
   MultiColumns: {
     columns: [
-      { id: "c1", heading: "Колонка 1", text: "Текст 1", linkText: "Ссылка", link: "/a", image: КАРТИНКА },
-      { id: "c2", heading: "Колонка 2", text: "Текст 2", linkText: "Ссылка", link: "/b", image: КАРТИНКА },
+      {
+        id: "c1",
+        heading: "Колонка 1",
+        text: "Текст 1",
+        linkText: "Ссылка",
+        link: "/a",
+        image: КАРТИНКА,
+      },
+      {
+        id: "c2",
+        heading: "Колонка 2",
+        text: "Текст 2",
+        linkText: "Ссылка",
+        link: "/b",
+        image: КАРТИНКА,
+      },
     ],
   },
   MultiRows: {
     rows: [
-      { id: "r1", heading: "Ряд 1", text: "Текст 1", image: КАРТИНКА, button: { text: "Кнопка", link: "/a" } },
-      { id: "r2", heading: "Ряд 2", text: "Текст 2", image: КАРТИНКА, button: { text: "Кнопка", link: "/b" } },
+      {
+        id: "r1",
+        heading: "Ряд 1",
+        text: "Текст 1",
+        image: КАРТИНКА,
+        button: { text: "Кнопка", link: "/a" },
+      },
+      {
+        id: "r2",
+        heading: "Ряд 2",
+        text: "Текст 2",
+        image: КАРТИНКА,
+        button: { text: "Кнопка", link: "/b" },
+      },
     ],
   },
-  Gallery: { items: [{ id: "g1", image: КАРТИНКА, text: "Подпись 1" }, { id: "g2", image: КАРТИНКА, text: "Подпись 2" }] },
-  CollapsibleSection: { items: [{ id: "i1", heading: "Вопрос", text: "Ответ" }] },
+  Gallery: {
+    items: [
+      { id: "g1", image: КАРТИНКА, text: "Подпись 1" },
+      { id: "g2", image: КАРТИНКА, text: "Подпись 2" },
+    ],
+  },
+  CollapsibleSection: {
+    items: [{ id: "i1", heading: "Вопрос", text: "Ответ" }],
+  },
   ImageWithText: { image: КАРТИНКА, button: { text: "Кнопка", link: "/a" } },
   Video: { videoUrl: "https://example.com/v.mp4", poster: КАРТИНКА },
   // Рассылка в подвале по канону ВЫКЛЮЧЕНА (Footer.puckConfig defaults:
@@ -233,8 +303,20 @@ const СТРУКТУРА: Record<string, Record<string, unknown>> = {
   Catalog: { collectionId: "c1" },
   Collections: {
     collections: [
-      { id: "col-1", collectionId: "c1", heading: "Коллекция 1", description: "Описание 1", image: КАРТИНКА },
-      { id: "col-2", collectionId: "c2", heading: "Коллекция 2", description: "Описание 2", image: КАРТИНКА },
+      {
+        id: "col-1",
+        collectionId: "c1",
+        heading: "Коллекция 1",
+        description: "Описание 1",
+        image: КАРТИНКА,
+      },
+      {
+        id: "col-2",
+        collectionId: "c2",
+        heading: "Коллекция 2",
+        description: "Описание 2",
+        image: КАРТИНКА,
+      },
     ],
   },
 };
@@ -247,18 +329,64 @@ const СТРУКТУРА: Record<string, Record<string, unknown>> = {
  */
 const КАТАЛОГ = {
   products: [
-    { id: "p1", name: "Товар 1", slug: "t1", price: 1990, compareAtPrice: 2490, images: [КАРТИНКА], collections: [{ id: "c1" }] },
-    { id: "p2", name: "Товар 2", slug: "t2", price: 2990, images: [КАРТИНКА], collections: [{ id: "c1" }] },
-    { id: "p3", name: "Товар 3", slug: "t3", price: 3990, images: [КАРТИНКА], collections: [{ id: "c2" }] },
+    {
+      id: "p1",
+      name: "Товар 1",
+      slug: "t1",
+      price: 1990,
+      compareAtPrice: 2490,
+      images: [КАРТИНКА],
+      collections: [{ id: "c1" }],
+    },
+    {
+      id: "p2",
+      name: "Товар 2",
+      slug: "t2",
+      price: 2990,
+      images: [КАРТИНКА],
+      collections: [{ id: "c1" }],
+    },
+    {
+      id: "p3",
+      name: "Товар 3",
+      slug: "t3",
+      price: 3990,
+      images: [КАРТИНКА],
+      collections: [{ id: "c2" }],
+    },
   ],
   collections: [
     { id: "c1", name: "Коллекция 1", slug: "kollekciya-1", image: КАРТИНКА },
     { id: "c2", name: "Коллекция 2", slug: "kollekciya-2", image: КАРТИНКА },
   ],
   publications: [
-    { id: "pub1", title: "Публикация 1", slug: "pub-1", category: "blog", excerpt: "Анонс 1", coverImageUrl: КАРТИНКА, publishedAt: "2026-03-14T10:00:00.000Z" },
-    { id: "pub2", title: "Публикация 2", slug: "pub-2", category: "blog", excerpt: "Анонс 2", coverImageUrl: КАРТИНКА, publishedAt: "2026-04-01T12:30:00.000Z" },
-    { id: "pub3", title: "Публикация 3", slug: "pub-3", category: "blog", excerpt: "Анонс 3", coverImageUrl: КАРТИНКА, publishedAt: "2026-05-20T08:15:00.000Z" },
+    {
+      id: "pub1",
+      title: "Публикация 1",
+      slug: "pub-1",
+      category: "blog",
+      excerpt: "Анонс 1",
+      coverImageUrl: КАРТИНКА,
+      publishedAt: "2026-03-14T10:00:00.000Z",
+    },
+    {
+      id: "pub2",
+      title: "Публикация 2",
+      slug: "pub-2",
+      category: "blog",
+      excerpt: "Анонс 2",
+      coverImageUrl: КАРТИНКА,
+      publishedAt: "2026-04-01T12:30:00.000Z",
+    },
+    {
+      id: "pub3",
+      title: "Публикация 3",
+      slug: "pub-3",
+      category: "blog",
+      excerpt: "Анонс 3",
+      coverImageUrl: КАРТИНКА,
+      publishedAt: "2026-05-20T08:15:00.000Z",
+    },
   ],
 };
 
@@ -295,7 +423,10 @@ const ТЕКСТОВЫЕ = new Set(["text", "textarea", "aiText"]);
  * Имена вложенных полей читаются из панели — выдумывать их нельзя, на этом
  * уже сгорели ручные замеры.
  */
-function содержимоеОбъекта(тело: string, имя: string): Record<string, unknown> | null {
+function содержимоеОбъекта(
+  тело: string,
+  имя: string,
+): Record<string, unknown> | null {
   const i = тело.indexOf("objectFields:");
   if (i < 0) return null;
   const j = тело.indexOf("{", i);
@@ -317,7 +448,10 @@ function содержимоеОбъекта(тело: string, имя: string): R
     const km = txt.match(/^[\s\n]*\[?'?([a-zA-Z_]\w*)'?/);
     const tm = txt.match(/type:\s*'([^']+)'/);
     if (!km || !tm) return;
-    if (ТЕКСТОВЫЕ.has(tm[1])) out[km[1]] = текстПоля(km[1] === "text" || km[1] === "content" ? имя : km[1]);
+    if (ТЕКСТОВЫЕ.has(tm[1]))
+      out[km[1]] = текстПоля(
+        km[1] === "text" || km[1] === "content" ? имя : km[1],
+      );
   };
   for (const ch of внутри) {
     if (ch === "{" || ch === "[" || ch === "(") гл++;
@@ -362,7 +496,9 @@ function подполяОбъекта(тело: string): Record<string, Поле
     const tm = txt.match(/type:\s*'([^']+)'/);
     if (!km || !tm) return;
     const f: Record<string, unknown> = { type: tm[1] };
-    const opts = [...txt.matchAll(/value:\s*'([^']*)'/g)].map((m) => ({ value: m[1] }));
+    const opts = [...txt.matchAll(/value:\s*'([^']*)'/g)].map((m) => ({
+      value: m[1],
+    }));
     if (opts.length) f.options = opts;
     const min = txt.match(/min:\s*(-?\d+)/);
     const max = txt.match(/max:\s*(-?\d+)/);
@@ -418,7 +554,13 @@ const упало: Array<Находка & { причина: string }> = [];
  * (7 мин 38 с против 2 мин у соседних). renderSections принимает список
  * заданий — собираем все пары значений темы и просим разом.
  */
-type Замер = { поле: string; тип: string; секция: string; пропсA: Record<string, unknown>; пропсB: Record<string, unknown> };
+type Замер = {
+  поле: string;
+  тип: string;
+  секция: string;
+  пропсA: Record<string, unknown>;
+  пропсB: Record<string, unknown>;
+};
 
 for (const тема of темыДляПрогона) {
   const замеры: Замер[] = [];
@@ -448,13 +590,21 @@ for (const тема of темыДляПрогона) {
     for (const { имя, тип, тело } of объявлены) {
       if (тип !== "object") continue;
       const базовыйОбъект = (содержимое[имя] ?? {}) as Record<string, unknown>;
-      for (const [подполе, { тип: птип, значения }] of Object.entries(подполяОбъекта(тело))) {
+      for (const [подполе, { тип: птип, значения }] of Object.entries(
+        подполяОбъекта(тело),
+      )) {
         замеры.push({
           секция,
           поле: `${имя}.${подполе}`,
           тип: птип,
-          пропсA: { ...база, [имя]: { ...базовыйОбъект, [подполе]: значения[0] } },
-          пропсB: { ...база, [имя]: { ...базовыйОбъект, [подполе]: значения[1] } },
+          пропсA: {
+            ...база,
+            [имя]: { ...базовыйОбъект, [подполе]: значения[0] },
+          },
+          пропсB: {
+            ...база,
+            [имя]: { ...базовыйОбъект, [подполе]: значения[1] },
+          },
         });
       }
     }
@@ -471,7 +621,10 @@ for (const тема of темыДляПрогона) {
     const B = результаты[i * 2 + 1];
     const общая = { тема, секция: з.секция, поле: з.поле, тип: з.тип };
     if (!A?.html || !B?.html) {
-      упало.push({ ...общая, причина: (A?.error ?? B?.error ?? "нет HTML").slice(0, 60) });
+      упало.push({
+        ...общая,
+        причина: (A?.error ?? B?.error ?? "нет HTML").slice(0, 60),
+      });
       return;
     }
     проверено.push(общая);
@@ -483,7 +636,9 @@ console.log(`проверено полей: ${проверено.length}`);
 console.log(`не влияют на разметку: ${мёртвые.length}`);
 console.log(`не удалось отрендерить: ${упало.length}`);
 for (const м of мёртвые.slice(0, 40)) {
-  console.log(`  ❌ ${м.тема.padEnd(8)} ${м.секция.padEnd(20)} ${м.поле.padEnd(22)} (${м.тип})`);
+  console.log(
+    `  ❌ ${м.тема.padEnd(8)} ${м.секция.padEnd(20)} ${м.поле.padEnd(22)} (${м.тип})`,
+  );
 }
 
 const j = аргументы.indexOf("--json");

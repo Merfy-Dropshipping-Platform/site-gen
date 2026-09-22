@@ -1,4 +1,19 @@
-import { migrateVanillaHomePage } from "../revision-migrations";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+/**
+ * Раньше здесь звался `migrateVanillaHomePage(themeId, {})` — сид главной
+ * жил в миграции. Теперь домашний сид vanilla — это данные пакета
+ * (`packages/theme-vanilla/pages/home.json`), поэтому и проверка читает
+ * его прямо оттуда, без обращения к коду миграций.
+ */
+function vanillaHomeSeed(): unknown {
+  const raw = readFileSync(
+    resolve(__dirname, "../../../packages/theme-vanilla/pages/home.json"),
+    "utf-8",
+  );
+  return JSON.parse(raw);
+}
 
 /**
  * Баг тестера #2 (18.09): «Дефолтные пункты меню шапки 404-ят — „Мебель“ →
@@ -95,17 +110,17 @@ const достижима = (href: string): boolean =>
 
 describe("стартовый контент ведёт только туда, что есть у любого магазина", () => {
   it("vanilla: сид разобран и ссылки в нём найдены", () => {
-    const links = собратьСсылки(migrateVanillaHomePage({}, "vanilla"));
+    const links = собратьСсылки(vanillaHomeSeed());
     expect(links.length).toBeGreaterThan(5);
   });
 
   it("vanilla: каждая засеянная ссылка достижима без данных магазина", () => {
-    const links = собратьСсылки(migrateVanillaHomePage({}, "vanilla"));
+    const links = собратьСсылки(vanillaHomeSeed());
     expect(links.filter((href) => !достижима(href))).toEqual([]);
   });
 
   it("vanilla: плитки коллекций (база + слаг) тоже достижимы", () => {
-    const seeded = migrateVanillaHomePage({}, "vanilla");
+    const seeded = vanillaHomeSeed();
     const плитки = ссылкиПлиток(seeded);
     // Плитки в сиде есть — иначе проверка сторожит пустоту.
     expect(плитки.length).toBeGreaterThan(0);
@@ -113,7 +128,7 @@ describe("стартовый контент ведёт только туда, ч
   });
 
   it("vanilla: ни одного адреса вида /c/<slug>, /catalog/<slug>, /collections/<slug>", () => {
-    const seeded = migrateVanillaHomePage({}, "vanilla");
+    const seeded = vanillaHomeSeed();
     const все = [...собратьСсылки(seeded), ...ссылкиПлиток(seeded)];
     const поданным = все.filter((h) =>
       /^\/c\/.+|^\/catalog\/.+|^\/collections\/.+|^\/products?\/.+/.test(h),

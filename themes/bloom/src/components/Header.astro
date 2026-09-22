@@ -753,17 +753,21 @@ const headerHeartSvg =
 		aria-label="Меню"
 	>
 		{isSidebar ? (
-			/* Sidebar drawer: logo + cart at top */
+			/* Шапка открытой панели: на месте логотипа — крестик (пункт 29 документа
+			   владельца). Логотип рисовался дважды — в панели и в шапке страницы.
+			   `data-burger-toggle` — панель закрывает тот же скрипт темы. */
 			<div class="flex items-center justify-between">
-				<a href="/" class="flex items-center hover:opacity-90" aria-label={siteTitle}>
-					{
-						logo ? (
-							<img src={logo} alt={siteTitle} class={logoImgCls} />
-						) : (
-							<span class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,19px)] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,227_142_159))] hover:opacity-90">{siteTitle}</span>
-						)
-					}
-				</a>
+				<button
+					type="button"
+					data-burger-toggle
+					data-burger-close
+					aria-expanded="true"
+					aria-controls="bloom-burger"
+					aria-label="Закрыть меню"
+					class="flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-opacity hover:opacity-70"
+				>
+					<SchemeIcon svgs={BLOOM_ICON_SVGS} name="menu-close" sizeClass="size-5" />
+				</button>
 				<div class="flex items-center gap-3">
 					<a
 						href="/wishlist"
@@ -824,7 +828,26 @@ const headerHeartSvg =
 					: [];
 				return (
 					<div class="flex flex-col gap-3" data-nav-group={subs.length > 0 ? "" : undefined}>
-						<div class="flex w-full items-center justify-between gap-2">
+						{/* Пункт с вложенностью раскрывается ВСЕЙ СТРОКОЙ, стрелка одна
+						    (пункт 28 документа владельца). Ссылкой он не рисуется: нажатие
+						    уводило на страницу и закрывало меню вместо раскрытия. */}
+						{subs.length > 0 ? (
+							<button
+								type="button"
+								data-nav-sub-toggle
+								aria-expanded="false"
+								class:list={[
+									"flex w-full items-center justify-between gap-2 text-left font-inter text-[14px] font-light leading-normal transition-colors",
+									"[&[aria-expanded=true]>svg]:rotate-90",
+									active ? "text-[#000000]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[#000000]",
+								]}
+							>
+								<span>{link.label}</span>
+								<svg class="size-3 shrink-0 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+									<path d="M2.5 1 5.5 4 2.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</button>
+						) : (
 							<a
 								href={link.href}
 								aria-current={active ? "page" : undefined}
@@ -835,20 +858,7 @@ const headerHeartSvg =
 							>
 								{link.label}
 							</a>
-							{subs.length > 0 && (
-								<button
-									type="button"
-									data-nav-sub-toggle
-									aria-expanded="false"
-									aria-label={`Раскрыть «${link.label}»`}
-									class="flex size-6 shrink-0 items-center justify-center text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-180"
-								>
-									<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-										<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-									</svg>
-								</button>
-							)}
-						</div>
+						)}
 						{active && subs.length === 0 && <div class="h-px w-[54px] bg-[#e38e9f]" aria-hidden="true"></div>}
 						{subs.length > 0 && (
 							<div class="flex flex-col gap-2 border-l border-[#F5F5F5] pl-4" data-nav-sub hidden>
@@ -858,27 +868,26 @@ const headerHeartSvg =
 										: [];
 									return (
 										<div class="flex flex-col gap-2" data-nav-group={kids2.length > 0 ? "" : undefined}>
-											<div class="flex w-full items-center justify-between gap-2">
+											{kids2.length > 0 ? (
+												<button
+													type="button"
+													data-nav-sub-toggle
+													aria-expanded="false"
+													class="flex w-full items-center justify-between gap-2 text-left font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-90"
+												>
+													<span>{c2.label}</span>
+													<svg class="size-3 shrink-0 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+														<path d="M2.5 1 5.5 4 2.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+													</svg>
+												</button>
+											) : (
 												<a
 													href={c2.href}
 													class="font-inter text-[13px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000]"
 												>
 													{c2.label}
 												</a>
-												{kids2.length > 0 && (
-													<button
-														type="button"
-														data-nav-sub-toggle
-														aria-expanded="false"
-														aria-label={`Раскрыть «${c2.label}»`}
-														class="flex size-5 shrink-0 items-center justify-center text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[#000000] [&[aria-expanded=true]>svg]:rotate-180"
-													>
-														<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-															<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-														</svg>
-													</button>
-												)}
-											</div>
+											)}
 											{kids2.length > 0 && (
 												<div class="flex flex-col gap-2 pl-4" data-nav-sub hidden>
 													{kids2.map((k) => (

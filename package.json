@@ -22,6 +22,7 @@
     "build:themes": "node scripts/check-css-layers.mjs --check && tsx scripts/build-all-themes.ts",
     "check:css-layers": "node scripts/check-css-layers.mjs --check",
     "build:theme-sections": "node scripts/compile-theme-sections.mjs",
+    "scan:header-menu": "node scripts/scan-header-menu.mjs",
     "backfill:theme-schemes": "tsx scripts/backfill-theme-colorschemes.ts",
     "rollback:theme-schemes": "tsx scripts/rollback-theme-colorschemes.ts",
     "visual-diff:themes": "node scripts/visual-diff-themes.mjs",

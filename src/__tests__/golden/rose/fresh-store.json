@@ -1,0 +1,1161 @@
+{
+  "item": {
+    "createdAt": "<DATE>",
+    "data": {
+      "currentPageId": "home",
+      "lockVersion": 1,
+      "manifestVersion": "2.0",
+      "pages": [
+        {
+          "id": "home",
+          "isCustom": false,
+          "locale": null,
+          "name": "Главная страница",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-about",
+          "isCustom": false,
+          "locale": null,
+          "name": "О нас",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/about",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-delivery",
+          "isCustom": false,
+          "locale": null,
+          "name": "Доставка",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/delivery",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-contacts",
+          "isCustom": false,
+          "locale": null,
+          "name": "Контакты",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/contacts",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-catalog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/catalog",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-collection",
+          "isCustom": false,
+          "locale": null,
+          "name": "Страница коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/collections/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-cart",
+          "isCustom": false,
+          "locale": null,
+          "name": "Корзина",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/cart",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-product",
+          "isCustom": false,
+          "locale": null,
+          "name": "Товар",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/product",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout",
+          "isCustom": false,
+          "locale": null,
+          "name": "Оформление заказа",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout-result",
+          "isCustom": false,
+          "locale": null,
+          "name": "Спасибо за заказ",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout-result",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-profile",
+          "isCustom": false,
+          "locale": null,
+          "name": "Профиль",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/profile",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-wishlist",
+          "isCustom": false,
+          "locale": null,
+          "name": "Избранное",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/wishlist",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-orders",
+          "isCustom": false,
+          "locale": null,
+          "name": "Заказы",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/orders",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-login",
+          "isCustom": false,
+          "locale": null,
+          "name": "Вход",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/login",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        }
+      ],
+      "pagesData": {
+        "checkout": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "CheckoutHeader-1",
+                "logo": "/logo.svg",
+                "siteTitle": "Мой магазин"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-checkout",
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-checkout",
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "home": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-1"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-1",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "Hero-1"
+              },
+              "type": "Hero"
+            },
+            {
+              "props": {
+                "id": "Collections-1"
+              },
+              "type": "Collections"
+            },
+            {
+              "props": {
+                "id": "PopularProducts-1"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "id": "Gallery-1",
+                "items": [
+                  {
+                    "alt": "Изображение",
+                    "id": "item-1",
+                    "type": "image",
+                    "url": ""
+                  },
+                  {
+                    "id": "item-2",
+                    "productId": null,
+                    "type": "product"
+                  },
+                  {
+                    "collectionId": null,
+                    "id": "item-3",
+                    "type": "collection"
+                  }
+                ]
+              },
+              "type": "Gallery"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Мой магазин"
+            }
+          },
+          "zones": {}
+        },
+        "page-about": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-1"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-1",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "content": "<p>Мы создаём вещи, которые становятся частью повседневности. Каждая коллекция — это результат внимания к деталям, поиска идеального материала и формы.</p>",
+                "heading": "О нас",
+                "headingSize": "large",
+                "id": "Page-about",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-cart": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-1"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-1",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "CartBody-1",
+                "padding": {
+                  "bottom": 24,
+                  "top": 80
+                }
+              },
+              "type": "CartBody"
+            },
+            {
+              "props": {
+                "id": "CartSummary-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 0
+                }
+              },
+              "type": "CartSummary"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Корзина"
+            }
+          },
+          "zones": {}
+        },
+        "page-catalog": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-catalog"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-catalog",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "columns": 4,
+                "filters": {
+                  "enabled": "true"
+                },
+                "heading": {
+                  "size": "large",
+                  "text": "Каталог"
+                },
+                "id": "Catalog-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "pagination": {
+                  "enabled": "true",
+                  "pageSize": 24
+                },
+                "sort": {
+                  "enabled": "true"
+                }
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "Footer-catalog",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Каталог"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "CheckoutHeader-1",
+                "logo": "/logo.svg",
+                "siteTitle": "Мой магазин"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-checkout",
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-checkout",
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout-result": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "CheckoutHeader-1",
+                "logo": "/logo.svg",
+                "siteTitle": "Мой магазин"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "accentColor": "",
+                "banner": {
+                  "align": "center",
+                  "enabled": false,
+                  "placement": "order",
+                  "src": "",
+                  "width": 580
+                },
+                "bodyFont": "",
+                "bodyWeight": "",
+                "buttonColor": "",
+                "colorScheme": "scheme-2",
+                "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+                "confirmedTitle": "Ваш заказ подтверждён",
+                "detailsTitle": "Детали заказа",
+                "errorColor": "",
+                "greetingTemplate": "Спасибо за заказ, {name}!",
+                "headingFont": "",
+                "headingWeight": "",
+                "helpText": "Нужна помощь? Обратитесь к нам",
+                "id": "OrderConfirmation-1",
+                "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+                "orderBg": "",
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "returnButtonHref": "/",
+                "returnButtonText": "Вернуться к магазину",
+                "summaryBg": ""
+              },
+              "type": "OrderConfirmation"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Спасибо за заказ"
+            }
+          },
+          "zones": {}
+        },
+        "page-collection": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-collection"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-collection",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "columns": 4,
+                "filters": {
+                  "enabled": "true"
+                },
+                "heading": {
+                  "size": "large",
+                  "text": "Коллекция"
+                },
+                "id": "Catalog-collection",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "pagination": {
+                  "enabled": "true",
+                  "pageSize": 24
+                },
+                "sort": {
+                  "enabled": "true"
+                }
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "Footer-collection",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Коллекция"
+            }
+          },
+          "zones": {}
+        },
+        "page-contacts": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-1"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-1",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "ContactForm-1"
+              },
+              "type": "ContactForm"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Контакты"
+            }
+          },
+          "zones": {}
+        },
+        "page-delivery": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-1"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-1",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+                "heading": "Доставка",
+                "headingSize": "large",
+                "id": "Page-delivery",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "id": "Footer-1",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Доставка"
+            }
+          },
+          "zones": {}
+        },
+        "page-login": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-login"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-login",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "LoginSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "LoginSection"
+            },
+            {
+              "props": {
+                "id": "Footer-login",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Вход"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-orders": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-orders"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-orders",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "OrdersSection-1"
+              },
+              "type": "OrdersSection"
+            },
+            {
+              "props": {
+                "id": "Footer-orders",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Мои заказы"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-product": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-product"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-product",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "Product-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 40
+                },
+                "variants": {
+                  "displayStyle": "button",
+                  "shape": "none"
+                },
+                "visualConfig": {
+                  "showDescription": true
+                }
+              },
+              "type": "Product"
+            },
+            {
+              "props": {
+                "cards": 4,
+                "colorScheme": "scheme-2",
+                "dataSource": "auto",
+                "heading": {
+                  "size": "small",
+                  "text": "Вам также может понравиться"
+                },
+                "id": "PopularProducts-product",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "productCard": {
+                  "buttonStyle": "primary",
+                  "cardStyle": "portrait",
+                  "columns": 4
+                }
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "Footer-product",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Товар"
+            }
+          },
+          "zones": {}
+        },
+        "page-profile": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-profile"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-profile",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "AccountSection-1"
+              },
+              "type": "AccountSection"
+            },
+            {
+              "props": {
+                "id": "Footer-profile",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Основные данные"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-wishlist": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-wishlist"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "id": "Header-wishlist",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ]
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "WishlistSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "WishlistSection"
+            },
+            {
+              "props": {
+                "id": "Footer-wishlist",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Избранное"
+            }
+          },
+          "zones": {}
+        }
+      },
+      "siteOverrides": {
+        "blocks": {},
+        "pages": {}
+      },
+      "themeId": "rose",
+      "themeSettings": {}
+    },
+    "id": "<REVISION_ID>",
+    "siteId": "<SITE_ID>"
+  }
+}

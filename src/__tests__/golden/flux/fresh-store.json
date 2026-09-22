@@ -1,0 +1,1993 @@
+{
+  "item": {
+    "createdAt": "<DATE>",
+    "data": {
+      "currentPageId": "home",
+      "lockVersion": 1,
+      "manifestVersion": "2.0",
+      "pages": [
+        {
+          "id": "home",
+          "isCustom": false,
+          "locale": null,
+          "name": "Главная страница",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-about",
+          "isCustom": false,
+          "locale": null,
+          "name": "О нас",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/about",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-delivery",
+          "isCustom": false,
+          "locale": null,
+          "name": "Доставка",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/delivery",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-contacts",
+          "isCustom": false,
+          "locale": null,
+          "name": "Контакты",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/contacts",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-catalog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/catalog",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-collection",
+          "isCustom": false,
+          "locale": null,
+          "name": "Страница коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/collections/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-cart",
+          "isCustom": false,
+          "locale": null,
+          "name": "Корзина",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/cart",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-product",
+          "isCustom": false,
+          "locale": null,
+          "name": "Товар",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/product",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout",
+          "isCustom": false,
+          "locale": null,
+          "name": "Оформление заказа",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout-result",
+          "isCustom": false,
+          "locale": null,
+          "name": "Спасибо за заказ",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout-result",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-profile",
+          "isCustom": false,
+          "locale": null,
+          "name": "Профиль",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/profile",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-wishlist",
+          "isCustom": false,
+          "locale": null,
+          "name": "Избранное",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/wishlist",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-orders",
+          "isCustom": false,
+          "locale": null,
+          "name": "Заказы",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/orders",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-login",
+          "isCustom": false,
+          "locale": null,
+          "name": "Вход",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/login",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        }
+      ],
+      "pagesData": {
+        "checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-home",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "true"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "home": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-home",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-home",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "backgroundImages": {
+                  "url1": "https://minio.merfy.ru/product-images/f92e309e-009c-4e15-85cc-87a59a439dea.png?e2eSeed=0"
+                },
+                "id": "Hero-home"
+              },
+              "type": "Hero"
+            },
+            {
+              "props": {
+                "id": "Collections-home"
+              },
+              "type": "Collections"
+            },
+            {
+              "props": {
+                "id": "Product-home",
+                "variants": {
+                  "displayStyle": "button",
+                  "shape": "none"
+                }
+              },
+              "type": "Product"
+            },
+            {
+              "props": {
+                "id": "PopularProducts-home"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "id": "ImageWithText-home"
+              },
+              "type": "ImageWithText"
+            },
+            {
+              "props": {
+                "id": "Gallery-home",
+                "items": [
+                  {
+                    "alt": "Изображение",
+                    "id": "item-1",
+                    "type": "image",
+                    "url": "https://minio.merfy.ru/product-images/f76f3053-7cfa-4823-894a-ce30fee3f1e0.png?e2eSeed=1"
+                  },
+                  {
+                    "alt": "Изображение",
+                    "id": "item-2",
+                    "type": "image",
+                    "url": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png?e2eSeed=2"
+                  },
+                  {
+                    "alt": "Изображение",
+                    "id": "item-3",
+                    "type": "image",
+                    "url": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png?e2eSeed=3"
+                  }
+                ]
+              },
+              "type": "Gallery"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-home",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "true"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Главная"
+            }
+          },
+          "zones": {}
+        },
+        "page-about": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-about",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-about",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "content": "<p>Flux — это технологии, которые делают каждый день удобнее. Мы отбираем устройства, сочетающие продуманный дизайн, надёжность и честную цену, чтобы вы получали только лучшее.</p>",
+                "heading": "О нас",
+                "headingSize": "large",
+                "id": "Page-about",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-about",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-cart": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-cart",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-cart",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "CartBody-1",
+                "padding": {
+                  "bottom": 24,
+                  "top": 80
+                }
+              },
+              "type": "CartBody"
+            },
+            {
+              "props": {
+                "id": "CartSummary-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 0
+                }
+              },
+              "type": "CartSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-cart",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Корзина"
+            }
+          },
+          "zones": {}
+        },
+        "page-catalog": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-catalog",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-catalog",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "cards": 8,
+                "categorySubtitle": "",
+                "categorySubtitleColor": "accent",
+                "categoryTitle": "Каталог",
+                "colorScheme": "scheme-2",
+                "columns": 3,
+                "filterPosition": "side",
+                "id": "Catalog-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "productCard": {
+                  "buttonStyle": "primary",
+                  "cardBackground": "true",
+                  "cardStyle": "square",
+                  "nextPhoto": "false",
+                  "quickAdd": "cart"
+                },
+                "showFilter": "true",
+                "showSort": "true",
+                "subtitle": "false"
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-catalog",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Каталог"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-home",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "true"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout-result": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "CheckoutHeader-1",
+                "logo": "/logo.svg",
+                "siteTitle": "Мой магазин"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "accentColor": "",
+                "banner": {
+                  "align": "center",
+                  "enabled": false,
+                  "placement": "order",
+                  "src": "",
+                  "width": 580
+                },
+                "bodyFont": "",
+                "bodyWeight": "",
+                "buttonColor": "",
+                "colorScheme": "scheme-2",
+                "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+                "confirmedTitle": "Ваш заказ подтверждён",
+                "detailsTitle": "Детали заказа",
+                "errorColor": "",
+                "greetingTemplate": "Спасибо за заказ, {name}!",
+                "headingFont": "",
+                "headingWeight": "",
+                "helpText": "Нужна помощь? Обратитесь к нам",
+                "id": "OrderConfirmation-1",
+                "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+                "orderBg": "",
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "returnButtonHref": "/",
+                "returnButtonText": "Вернуться к магазину",
+                "summaryBg": ""
+              },
+              "type": "OrderConfirmation"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Спасибо за заказ"
+            }
+          },
+          "zones": {}
+        },
+        "page-collection": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-collection",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-collection",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "cards": 8,
+                "categorySubtitle": "",
+                "categorySubtitleColor": "accent",
+                "categoryTitle": "{{COLLECTION_NAME}}",
+                "colorScheme": "scheme-2",
+                "columns": 3,
+                "filterPosition": "side",
+                "id": "Catalog-collection",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "productCard": {
+                  "buttonStyle": "primary",
+                  "cardBackground": "true",
+                  "cardStyle": "square",
+                  "nextPhoto": "false",
+                  "quickAdd": "cart"
+                },
+                "showFilter": "true",
+                "showSort": "true",
+                "subtitle": "false"
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-collection",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Коллекция"
+            }
+          },
+          "zones": {}
+        },
+        "page-contacts": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-contacts",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-contacts",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "ContactForm-1"
+              },
+              "type": "ContactForm"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-contacts",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Контакты"
+            }
+          },
+          "zones": {}
+        },
+        "page-delivery": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-delivery",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-delivery",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+                "heading": "Доставка",
+                "headingSize": "large",
+                "id": "Page-delivery",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-delivery",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Доставка"
+            }
+          },
+          "zones": {}
+        },
+        "page-login": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-login",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-login",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "LoginSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "LoginSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-login",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "true"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Вход"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-orders": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-orders",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-orders",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "OrdersSection-1"
+              },
+              "type": "OrdersSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-orders",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "true"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Мои заказы"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-product": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-product",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-product",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "Product-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 40
+                },
+                "variants": {
+                  "displayStyle": "button",
+                  "shape": "none"
+                },
+                "visualConfig": {
+                  "showDescription": true
+                }
+              },
+              "type": "Product"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "heading": {
+                  "size": "small",
+                  "text": "Вам также может понравиться"
+                },
+                "id": "PopularProducts-product"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-product",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Товар"
+            }
+          },
+          "zones": {}
+        },
+        "page-profile": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-profile",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-profile",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "AccountSection-1"
+              },
+              "type": "AccountSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-profile",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "true"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Основные данные"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-wishlist": {
+          "content": [
+            {
+              "props": {
+                "id": "PromoBanner-wishlist",
+                "link": {
+                  "href": "/catalog",
+                  "text": "Смотреть больше"
+                },
+                "size": "large",
+                "text": "Бесплатная доставка на весь ассортимент до 31.12.2026.",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-wishlist",
+                "logo": "",
+                "logoPosition": "top-left",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/",
+                    "label": "Главная"
+                  },
+                  {
+                    "href": "/catalog/naushniki",
+                    "label": "Полноразмерные наушники"
+                  },
+                  {
+                    "href": "/catalog/tws",
+                    "label": "TWS-наушники с кейсом"
+                  },
+                  {
+                    "href": "/catalog/kolonki",
+                    "label": "Портативные колонки"
+                  },
+                  {
+                    "href": "/catalog/saundbary",
+                    "label": "Саундбары"
+                  }
+                ],
+                "padding": {
+                  "bottom": 12,
+                  "top": 12
+                },
+                "siteTitle": "Flux",
+                "stickiness": "always"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "WishlistSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "WishlistSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-wishlist",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Социальные сети"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Избранное"
+            }
+          },
+          "zones": {}
+        }
+      },
+      "siteOverrides": {
+        "blocks": {},
+        "pages": {}
+      },
+      "themeId": "flux",
+      "themeSettings": {}
+    },
+    "id": "<REVISION_ID>",
+    "siteId": "<SITE_ID>"
+  }
+}

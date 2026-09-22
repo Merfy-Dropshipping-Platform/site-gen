@@ -1,0 +1,1909 @@
+{
+  "item": {
+    "createdAt": "<DATE>",
+    "data": {
+      "currentPageId": "home",
+      "lockVersion": 1,
+      "manifestVersion": "2.0",
+      "pages": [
+        {
+          "id": "home",
+          "isCustom": false,
+          "locale": null,
+          "name": "Главная страница",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-about",
+          "isCustom": false,
+          "locale": null,
+          "name": "О нас",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/about",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-delivery",
+          "isCustom": false,
+          "locale": null,
+          "name": "Доставка",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/delivery",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-contacts",
+          "isCustom": false,
+          "locale": null,
+          "name": "Контакты",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/contacts",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-catalog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/catalog",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-collection",
+          "isCustom": false,
+          "locale": null,
+          "name": "Страница коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/collections/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-cart",
+          "isCustom": false,
+          "locale": null,
+          "name": "Корзина",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/cart",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-product",
+          "isCustom": false,
+          "locale": null,
+          "name": "Товар",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/product",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout",
+          "isCustom": false,
+          "locale": null,
+          "name": "Оформление заказа",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout-result",
+          "isCustom": false,
+          "locale": null,
+          "name": "Спасибо за заказ",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout-result",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-profile",
+          "isCustom": false,
+          "locale": null,
+          "name": "Профиль",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/profile",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-wishlist",
+          "isCustom": false,
+          "locale": null,
+          "name": "Избранное",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/wishlist",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-orders",
+          "isCustom": false,
+          "locale": null,
+          "name": "Заказы",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/orders",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-login",
+          "isCustom": false,
+          "locale": null,
+          "name": "Вход",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/login",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        }
+      ],
+      "pagesData": {
+        "checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-home",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "home": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-1",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "Hero-home"
+              },
+              "type": "Hero"
+            },
+            {
+              "props": {
+                "id": "Collections-home"
+              },
+              "type": "Collections"
+            },
+            {
+              "props": {
+                "id": "PopularProducts-home"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-home",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Главная"
+            }
+          },
+          "zones": {}
+        },
+        "page-about": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-about",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "content": "<p>Базовый гардероб, к которому хочется возвращаться: спокойные цвета, честные материалы и крой, который не подводит.</p>",
+                "heading": "О нас",
+                "headingSize": "large",
+                "id": "Page-about",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-about",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-cart": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-cart",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "CartBody-1",
+                "padding": {
+                  "bottom": 24,
+                  "top": 80
+                }
+              },
+              "type": "CartBody"
+            },
+            {
+              "props": {
+                "id": "CartSummary-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 0
+                }
+              },
+              "type": "CartSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-cart",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Корзина"
+            }
+          },
+          "zones": {}
+        },
+        "page-catalog": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-catalog",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "columns": 3,
+                "filterPosition": "side",
+                "heading": {
+                  "size": "large",
+                  "text": "КАТАЛОГ"
+                },
+                "id": "Catalog-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 40
+                },
+                "showFilter": "true",
+                "showSort": "true"
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-catalog",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Каталог"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-home",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout-result": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "accentColor": "",
+                "banner": {
+                  "align": "center",
+                  "enabled": false,
+                  "placement": "order",
+                  "src": "",
+                  "width": 580
+                },
+                "bodyFont": "",
+                "bodyWeight": "",
+                "buttonColor": "",
+                "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+                "confirmedTitle": "Ваш заказ подтверждён",
+                "detailsTitle": "Детали заказа",
+                "errorColor": "",
+                "greetingTemplate": "Спасибо за заказ, {name}!",
+                "headingFont": "",
+                "headingWeight": "",
+                "helpText": "Нужна помощь? Обратитесь к нам",
+                "id": "OrderConfirmation-1",
+                "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+                "orderBg": "",
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "returnButtonHref": "/",
+                "returnButtonText": "Вернуться к магазину",
+                "summaryBg": ""
+              },
+              "type": "OrderConfirmation"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Спасибо за заказ"
+            }
+          },
+          "zones": {}
+        },
+        "page-collection": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-collection",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "collectionSlug": "preview",
+                "colorScheme": "scheme-2",
+                "columns": 3,
+                "filterPosition": "side",
+                "heading": {
+                  "size": "large",
+                  "text": "{{COLLECTION_NAME}}"
+                },
+                "id": "Catalog-collection",
+                "padding": {
+                  "bottom": 80,
+                  "top": 40
+                },
+                "showFilter": "true",
+                "showSort": "true"
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-collection",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Коллекция"
+            }
+          },
+          "zones": {}
+        },
+        "page-contacts": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-contacts",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "ContactForm-1"
+              },
+              "type": "ContactForm"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-contacts",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Контакты"
+            }
+          },
+          "zones": {}
+        },
+        "page-delivery": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-delivery",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+                "heading": "Доставка",
+                "headingSize": "large",
+                "id": "Page-delivery",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-delivery",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Доставка"
+            }
+          },
+          "zones": {}
+        },
+        "page-login": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-login",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "LoginSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "LoginSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-login",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Вход"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-orders": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-orders",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "OrdersSection-1"
+              },
+              "type": "OrdersSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-orders",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Мои заказы"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-product": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-product",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "Product-1",
+                "variants": {
+                  "displayStyle": "button",
+                  "shape": "none"
+                }
+              },
+              "type": "Product"
+            },
+            {
+              "props": {
+                "heading": {
+                  "size": "small",
+                  "text": "Вам также может понравиться"
+                },
+                "id": "PopularProducts-product"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-product",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Товар"
+            }
+          },
+          "zones": {}
+        },
+        "page-profile": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-profile",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "AccountSection-1"
+              },
+              "type": "AccountSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-profile",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Основные данные"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-wishlist": {
+          "content": [
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-2",
+                "id": "Header-wishlist",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuColorScheme": "scheme-2",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "siteTitle": "Satin",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "WishlistSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "WishlistSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-wishlist",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/returns",
+                      "label": "Возврат"
+                    },
+                    {
+                      "href": "/payment",
+                      "label": "Оплата"
+                    }
+                  ],
+                  "title": "ИНФОРМАЦИЯ"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Коллекции"
+                    },
+                    {
+                      "href": "/catalog",
+                      "label": "Новые поступления"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О бренде"
+                    }
+                  ],
+                  "title": "МАГАЗИН"
+                },
+                "newsletter": {
+                  "enabled": "false"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "СВЯЗЬ"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Избранное"
+            }
+          },
+          "zones": {}
+        }
+      },
+      "siteOverrides": {
+        "blocks": {},
+        "pages": {}
+      },
+      "themeId": "satin",
+      "themeSettings": {}
+    },
+    "id": "<REVISION_ID>",
+    "siteId": "<SITE_ID>"
+  }
+}

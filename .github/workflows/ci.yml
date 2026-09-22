@@ -1562,6 +1562,12 @@ jobs:
       # про vanilla, замер показал bloom, поэтому проверка гоняет все пять.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/theme-default-shadows-input.spec.ts
+      # Строка корзины показывает ВСЕ опции варианта, каждую под своим именем, —
+      # проверяется ИСПОЛНЕНИЕМ скрипта секции в jsdom, а не чтением исходника.
+      # Прежний гард проверял только вызов общего помощника, и flux его прошёл,
+      # схлопывая пары в «Цвет/Размер» с жёсткими подписями (пункт 26, 22.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-variant-pairs-visible.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

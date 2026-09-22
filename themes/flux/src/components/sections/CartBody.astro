@@ -145,9 +145,12 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// он читает variant.options («Формат: Порошок»), а прежняя пара
 				// color+size видела только легаси-поля и оставляла строку пустой —
 				// в корзине две одинаковые строки на два разных варианта.
+				// Каждая пара подписывается СВОИМ именем группы. Раньше пары
+				// схлопывались в «цвет» и «размер» с жёсткими подписями «Цвет:» /
+				// «Размер:», и опция «Оттенок: Sugar Plum» печаталась как
+				// «Цвет: Sugar Plum», а третья опция не печаталась вовсе (замер
+				// 22.09 на стенде flux). Так же, как уже делает CartSection.
 				const пары = variantPairs(line.variant);
-				const color = пары.find((p) => p.name === "Цвет")?.value ?? пары[0]?.value ?? "";
-				const size = пары.find((p) => p.name === "Размер")?.value ?? (пары[1]?.value ?? "");
 				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
 				const oldPrice = hasSale ? formatCartPrice(line.oldPrice as number) : "";
 				const discountPercent = hasSale
@@ -156,10 +159,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				const badges = discountPercent
 					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))]">${discountPercent}</span></div>`
 					: "";
-				const varInfo =
-					color || size
-						? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${color ? `<span>Цвет:</span><span>${color}</span>` : ""}${size ? `<span class="ml-1">Размер:</span><span>${size}</span>` : ""}</div>`
-						: "";
+				const varInfo = пары.length
+					? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${пары
+							.map((pair, idx) => `<span class="${idx ? "ml-1" : ""}">${pair.name}:</span><span>${pair.value}</span>`)
+							.join("")}</div>`
+					: "";
 				return `
 					<li class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4" data-line-id="${line.id}">
 						<a href="/products/${line.productId}" class="relative block size-[207px] shrink-0 overflow-hidden rounded-[8px] bg-[#F5F5F5] max-sm:size-[140px]">

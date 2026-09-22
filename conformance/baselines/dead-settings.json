@@ -1,0 +1,21 @@
+{
+  "_описание": "Настройки панели, которые НЕ меняют разметку витрины. Список закреплён, чтобы новые появлялись красным, а не через тестера.",
+  "_как_обновить": "pnpm exec tsx scripts/qa/settings-audit.ts --json <файл>; починили настройку — уберите строку, завели новую мёртвую — сначала почините.",
+  "_замер": "22.09.2026, 397 полей по пяти темам, секции с живым наполнением",
+  "известные": [
+    "bloom/Collections/subtitleSize",
+    "bloom/MultiRows/buttonStyle",
+    "bloom/Publications/showDateTime",
+    "flux/Collections/subtitleSize",
+    "flux/ContactForm/description",
+    "flux/MultiRows/buttonStyle",
+    "flux/Publications/showDateTime",
+    "rose/MultiRows/buttonStyle",
+    "satin/Collections/subtitleSize",
+    "satin/MultiRows/buttonStyle",
+    "satin/Publications/showDateTime",
+    "vanilla/Collections/subtitleSize",
+    "vanilla/MultiRows/buttonStyle",
+    "vanilla/Publications/showDateTime"
+  ]
+}

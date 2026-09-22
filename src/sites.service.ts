@@ -180,46 +180,51 @@ export function carryOverUserPages(prevData: unknown, nextData: unknown): unknow
 }
 
 /**
- * Пункты меню, настроенные мерчантом, переживают смену темы.
+ * Пункты меню магазина переживают смену темы — всегда, как страницы мерчанта.
  *
- * Баг 27 документа владельца «баги шапки и меню»: «Настроенные пункты меню
- * пропадают после переключения темы». Причина — пересев ревизии при смене
- * themeId: `carryOverUserPages` переносит СТРАНИЦЫ мерчанта, а меню не
- * переносил никто, и шапка новой темы приходила со своим сидовым списком.
+ * Баг 27 документа «баги шапки и меню» и баг 7 документа «баги бокового меню»:
+ * «настроенные пункты меню пропадают после переключения темы; ожидаемо —
+ * сохраняются, тот же флоу, что для страниц». Пересев ревизии при смене themeId
+ * отдаёт канон новой темы, и шапка приходила со своим заводским списком.
  *
- * Переносим ТОЛЬКО если мерчант меню правил: сравниваем список текущей ревизии
- * с сидом ПРЕЖНЕЙ темы. Без этой проверки перенос был бы вреден — у тем разные
- * заводские меню (у flux «Смартфоны/Наушники/Ноутбуки», у bloom «Каталог/О нас/
- * Доставка/Контакты»), и переключение flux→bloom затащило бы в bloom чужое.
+ * Первая версия (21.09) переносила меню, только если мерчант его ПРАВИЛ:
+ * сравнивала список с сидом прежней темы. Эвристика подменяла меню, совпавшее с
+ * заводским, — у flux заводское меню своё («Полноразмерные наушники», «TWS…»),
+ * у остальных четырёх общее, и при переходах через flux пункты менялись сами.
+ * Решение владельца 23.09: меню — данные магазина, как страницы, и переезжает
+ * всегда. Заводское меню новой темы достаётся только новому магазину.
  *
- * Меню у всех страниц одно (его сводит `unifyHeaderWithHome`), поэтому берём
- * список с главной и раскладываем во ВСЕ шапки пересеянной ревизии.
+ * Меню у всех страниц одно (его сводит `unifyHeaderWithHome` от главной),
+ * поэтому список берём с главной и раскладываем во ВСЕ шапки пересеянной
+ * ревизии. Пустой список не переносим: пустое меню порты тем рисуют своим
+ * демо-меню, переносить нечего.
  */
 export function carryOverMenuLinks(
   prevData: unknown,
   nextData: unknown,
-  prevSeedData: unknown,
 ): unknown {
   const navOf = (data: unknown): unknown[] | null => {
     const pages = ((data ?? {}) as Record<string, any>).pagesData;
     if (!pages || typeof pages !== "object") return null;
-    for (const page of Object.values(pages as Record<string, any>)) {
+    const headerNav = (page: any): unknown[] | null => {
       const content = Array.isArray(page?.content) ? page.content : [];
-      for (const block of content) {
-        if (block?.type !== "Header") continue;
-        const links = block?.props?.navigationLinks;
-        if (Array.isArray(links)) return links;
-      }
+      const header = content.find((block: any) => block?.type === "Header");
+      const links = header?.props?.navigationLinks;
+      return Array.isArray(links) ? links : null;
+    };
+    // Источник правды — главная (так сводит unifyHeaderWithHome); остальные
+    // страницы — только если на главной шапки нет.
+    const fromHome = headerNav((pages as Record<string, any>).home);
+    if (fromHome) return fromHome;
+    for (const page of Object.values(pages as Record<string, any>)) {
+      const links = headerNav(page);
+      if (links) return links;
     }
     return null;
   };
 
   const merchantNav = navOf(prevData);
   if (!merchantNav || merchantNav.length === 0) return nextData;
-
-  const seedNav = navOf(prevSeedData);
-  // Мерчант меню не трогал — оставляем заводское новой темы.
-  if (seedNav && JSON.stringify(seedNav) === JSON.stringify(merchantNav)) return nextData;
 
   const next = (nextData ?? {}) as Record<string, any>;
   const pages = next.pagesData;
@@ -1046,18 +1051,10 @@ export class SitesDomainService {
             // carryOverUserPages): смена темы меняет дизайн, а не удаляет
             // контент. Без этого «Онлайн-магазин → Страницы» пустел при каждом
             // переключении темы.
-            // Страницы мерчанта + его пункты меню. Меню переносится только
-            // если он его правил — сравнение с сидом ПРЕЖНЕЙ темы (см.
-            // carryOverMenuLinks). Баг 27 документа владельца.
-            const prevSeed = prevThemeId
-              ? await this.buildInitialRevision(prevThemeId).catch(() => null)
-              : null;
+            // Страницы мерчанта + его пункты меню: меню магазина переезжает
+            // всегда (см. carryOverMenuLinks, решение владельца 23.09).
             const withPages = carryOverUserPages(prevRevisionData, defaultContent);
-            const seededData = carryOverMenuLinks(
-              prevRevisionData,
-              withPages,
-              prevSeed,
-            );
+            const seededData = carryOverMenuLinks(prevRevisionData, withPages);
             await this.createRevision({
               tenantId: params.tenantId,
               siteId: params.siteId,

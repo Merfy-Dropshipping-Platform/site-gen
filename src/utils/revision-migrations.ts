@@ -1104,7 +1104,14 @@ export function migrateVanillaHomePage(
             heading: { text: 'Мебель ручной работы', size: 'large' },
             text: { content: 'Натуральные материалы и авторский дизайн', size: 'medium' },
             buttonText: 'Смотреть мебель',
-            buttonLink: '/catalog/mebel',
+            // Каталог с фильтром, а не адрес коллекции. Коллекций «Мебель» и
+            // «Декор» у настоящего магазина может не быть, а страница
+            // /collections/<слаг> пишется сборкой ТОЛЬКО под существующие
+            // коллекции: замер 22.09 на магазине владельца — /catalog/mebel 404,
+            // /collections/mebel 404, /catalog?collection=mebel 200. Ту же
+            // причину уже записали у кнопки «Смотреть каталог» ниже, но слайды
+            // и плитки тогда не поправили — отсюда 404 у тестера.
+            buttonLink: '/catalog?collection=mebel',
           },
           {
             id: 'slide-vanilla-home-3',
@@ -1112,7 +1119,7 @@ export function migrateVanillaHomePage(
             heading: { text: 'Декор для дома', size: 'large' },
             text: { content: 'Уютные акценты для каждой комнаты', size: 'medium' },
             buttonText: 'Смотреть декор',
-            buttonLink: '/catalog/dekor',
+            buttonLink: '/catalog?collection=dekor',
           },
         ],
       } as Record<string, unknown>,
@@ -1148,7 +1155,10 @@ export function migrateVanillaHomePage(
           },
         ],
         columns: 2,
-        cardLinkBase: '/collections/',
+        // Канон-дефолт блока (Collections.puckConfig defaults) — тот же
+        // '/catalog?collection='. Сид уводил плитки на /collections/<слаг>,
+        // которого у магазина без этих коллекций нет.
+        cardLinkBase: '/catalog?collection=',
         colorScheme: 'scheme-3',
         // 084 Stage 2 Task 5 (v5): 120px y-padding per Figma 1:18973.
         // Pre-v5 was 80px (40px short of Figma).

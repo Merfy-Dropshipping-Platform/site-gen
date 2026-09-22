@@ -3,23 +3,31 @@ import { migrateVanillaHomePage } from '../revision-migrations';
 /**
  * Баг тестера #2 (18.09): «Дефолтные пункты меню шапки 404-ят — „Мебель“ →
  * /c/mebel, „Декор“ → /c/dekor. Оба 404, маршрута /c/<slug> на витрине нет».
+ * Перепроверка 20.09: форму ссылки сменили на /collections/<slug>, и она снова
+ * 404. Повтор 22.09 — тот же класс.
  *
- * Замер прода 19.09 (vanilla, 5c178ceecc1d): `/c/mebel` 404, `/c/dekor` 404,
- * `/collections/mebel` 200, `/collections/dekor` 200.
+ * ПОЧЕМУ ЛОВИЛОСЬ ТРИЖДЫ. Два прошлых гарда проверяли ФОРМУ ссылки: «похожа на
+ * живой маршрут» и «нет буквально mebel/dekor». Обе проверки зелёные на ссылке
+ * `/collections/` + `collectionId: 'mebel'` — база и слаг лежат в РАЗНЫХ полях
+ * сида и по отдельности выглядят безобидно. Проверять надо не форму, а
+ * достижимость: страница /collections/<слаг> пишется сборкой только под
+ * коллекции, которые у магазина есть (build.service: per-collection страницы из
+ * v2Store.collections), поэтому любой ЗАШИТЫЙ в сид слаг — обещание раздела,
+ * которого у магазина может не быть.
  *
- * Гард пишется на КЛАСС, а не на два адреса: любая ссылка, которую платформа
- * засевает сама, обязана попадать в маршрут, который витрина действительно
- * отдаёт. Мерчант свои ссылки ставит сам и отвечает за них, а стартовый контент
- * битых адресов содержать не может.
+ * Замер 22.09 на магазине владельца (7b64b7a527d2, коллекций mebel/dekor нет):
+ *   /catalog/mebel            404
+ *   /collections/mebel        404
+ *   /catalog?collection=mebel 200   ← каталог есть всегда, фильтр просто пуст
  */
 
-/** Маршруты, которые витрина реально отдаёт (замер прода 19.09). */
-const LIVE_ROUTES = [
+/**
+ * Маршруты, которые витрина отдаёт у ЛЮБОГО магазина, без оглядки на его
+ * товары и коллекции. Всё остальное сид обещать не вправе.
+ */
+const МАРШРУТЫ_БЕЗ_ДАННЫХ = [
 	/^\/$/,
 	/^\/catalog(\?|$)/,
-	/^\/collections\/[^/]+$/,
-	/^\/collections\/$/, // база ссылок карточек: cardLinkBase + slug
-	/^\/products?\/[^/]*$/,
 	/^\/cart$/,
 	/^\/checkout$/,
 	/^\/wishlist$/,
@@ -34,78 +42,79 @@ const LIVE_ROUTES = [
 	/^https?:\/\//,
 ];
 
-function collectLinks(node: unknown, out: string[] = []): string[] {
+/** Ссылки сида: собственно href-подобные поля. */
+function собратьСсылки(node: unknown, out: string[] = []): string[] {
 	if (Array.isArray(node)) {
-		for (const item of node) collectLinks(item, out);
+		for (const item of node) собратьСсылки(item, out);
 		return out;
 	}
 	if (node && typeof node === 'object') {
 		for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
 			if (
 				typeof value === 'string' &&
-				/^(href|link|url|cardLinkBase)$/.test(key) &&
+				/^(href|link|url|buttonLink|cardLinkBase)$/.test(key) &&
 				value.startsWith('/')
 			) {
 				out.push(value);
 			}
-			collectLinks(value, out);
+			собратьСсылки(value, out);
 		}
 		return out;
 	}
 	return out;
 }
 
-describe('стартовый контент не содержит битых маршрутов', () => {
-	it('vanilla: каждая засеянная ссылка попадает в живой маршрут витрины', () => {
-		const seeded = migrateVanillaHomePage({}, 'vanilla');
-		const links = collectLinks(seeded);
-
-		expect(links.length).toBeGreaterThan(5); // сид действительно разобран
-		const broken = links.filter((href) => !LIVE_ROUTES.some((re) => re.test(href)));
-		expect(broken).toEqual([]);
-	});
-
-	it('vanilla: ссылок на несуществующий /c/<slug> не осталось ни одной', () => {
-		const seeded = migrateVanillaHomePage({}, 'vanilla');
-		const links = collectLinks(seeded);
-
-		expect(links.filter((h) => h === '/c/' || h.startsWith('/c/'))).toEqual([]);
-	});
-
-	it('vanilla: карточки коллекций ведут на страницу коллекции', () => {
-		const seeded = migrateVanillaHomePage({}, 'vanilla');
-		const bases = collectLinks(seeded).filter((h) => h.endsWith('/'));
-
-		expect(bases).toContain('/collections/');
-	});
-});
-
 /**
- * Перепроверка тестера (20.09): «Дефолтные пункты меню шапки 404-ят. Vanilla:
- * „Мебель“ → /collections/mebel, „Декор“ → /collections/dekor, оба 404. Это
- * живые ссылки опубликованного магазина».
- *
- * Прошлая правка сменила форму ссылки (`/c/<slug>` → `/collections/<slug>`), но
- * не сняла главного: пункты ссылались на коллекции магазина ВЕРСТАЛЬЩИКОВ. На
- * демо-стенде такие коллекции есть, у реального магазина — нет, поэтому у
- * тестера 404, а на стенде 200. Стартовое меню не вправе обещать разделы,
- * которых у магазина может не быть.
+ * Ссылки плиток коллекций — база И слаг, как их склеит витрина. Ровно эта
+ * склейка и пряталась от прошлых гардов: по отдельности оба поля безобидны.
  */
-describe('стартовое меню не обещает чужих коллекций', () => {
-	it('в сиде нет ссылок на конкретные демо-коллекции', () => {
-		const seeded = migrateVanillaHomePage({}, 'vanilla');
-		const links = collectLinks(seeded);
-		const demo = links.filter((h) => /\/collections\/(mebel|dekor)\b/.test(h));
-		expect(demo).toEqual([]);
+function ссылкиПлиток(node: unknown, out: string[] = []): string[] {
+	if (Array.isArray(node)) {
+		for (const item of node) ссылкиПлиток(item, out);
+		return out;
+	}
+	if (node && typeof node === 'object') {
+		const o = node as Record<string, unknown>;
+		const база = typeof o.cardLinkBase === 'string' ? o.cardLinkBase : null;
+		if (база && Array.isArray(o.collections)) {
+			for (const c of o.collections as Array<Record<string, unknown>>) {
+				const слаг = c?.collectionId ?? c?.slug ?? c?.id;
+				if (typeof слаг === 'string' && слаг) out.push(`${база}${слаг}`);
+			}
+		}
+		for (const value of Object.values(o)) ссылкиПлиток(value, out);
+		return out;
+	}
+	return out;
+}
+
+const достижима = (href: string): boolean => МАРШРУТЫ_БЕЗ_ДАННЫХ.some((re) => re.test(href));
+
+describe('стартовый контент ведёт только туда, что есть у любого магазина', () => {
+	it('vanilla: сид разобран и ссылки в нём найдены', () => {
+		const links = собратьСсылки(migrateVanillaHomePage({}, 'vanilla'));
+		expect(links.length).toBeGreaterThan(5);
 	});
 
-	it('оставшиеся пункты меню ведут на маршруты, которые есть у любого магазина', () => {
+	it('vanilla: каждая засеянная ссылка достижима без данных магазина', () => {
+		const links = собратьСсылки(migrateVanillaHomePage({}, 'vanilla'));
+		expect(links.filter((href) => !достижима(href))).toEqual([]);
+	});
+
+	it('vanilla: плитки коллекций (база + слаг) тоже достижимы', () => {
 		const seeded = migrateVanillaHomePage({}, 'vanilla');
-		const menu = collectLinks(seeded).filter((h) => h.startsWith('/'));
-		for (const href of menu) {
-			// /collections/ — это база ссылок карточек, она достраивается слагом
-			// реальной коллекции магазина, а не зашита в сид.
-			expect(href === '/collections/' || !/^\/collections\/.+/.test(href)).toBe(true);
-		}
+		const плитки = ссылкиПлиток(seeded);
+		// Плитки в сиде есть — иначе проверка сторожит пустоту.
+		expect(плитки.length).toBeGreaterThan(0);
+		expect(плитки.filter((href) => !достижима(href))).toEqual([]);
+	});
+
+	it('vanilla: ни одного адреса вида /c/<slug>, /catalog/<slug>, /collections/<slug>', () => {
+		const seeded = migrateVanillaHomePage({}, 'vanilla');
+		const все = [...собратьСсылки(seeded), ...ссылкиПлиток(seeded)];
+		const поданным = все.filter((h) =>
+			/^\/c\/.+|^\/catalog\/.+|^\/collections\/.+|^\/products?\/.+/.test(h),
+		);
+		expect(поданным).toEqual([]);
 	});
 });

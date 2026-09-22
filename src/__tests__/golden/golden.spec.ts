@@ -56,25 +56,17 @@ function makeBareService(): any {
 const SITE_NAME = "Витрина";
 
 /**
- * НАХОДКА: `migrateVanillaHomePage` (utils/revision-migrations.ts:~1017)
- * печёт `Date.now()` прямо в id девяти блоков главной vanilla (PromoBanner,
- * Header, Collections, MainText, Video, ImageWithText, PopularProducts,
- * Newsletter, Footer) КАЖДЫЙ раз, когда `_vanillaHomeMigrationVersion` в
- * ревизии ниже текущей версии миграции — то есть на КАЖДОМ `getRevision()`
- * непересохранённого vanilla-магазина id меняются. Продовое поведение не
- * трогаем (задача прямо это запрещает), но снимок обязан быть
- * детерминированным — поэтому фиксируем `Date.now()` на время захвата.
+ * ИСПРАВЛЕНО (`merfy-mcp/docs/plans/2026-09-23-vanilla-seed-into-package.md`):
+ * раньше `migrateVanillaHomePage` (утилита удалена) пекла `Date.now()` прямо
+ * в id девяти блоков главной vanilla на КАЖДОМ `getRevision()` непересохра-
+ * нённого магазина — снимок требовал мок `Date.now`, иначе два прогона
+ * подряд отдавали разные id (см. `merfy-mcp/docs/proofs/p2-wave0-golden.txt`,
+ * находка волны 0). Десять блоков переехали в
+ * `packages/theme-vanilla/pages/home.json` с детерминированными id
+ * (`<Тип>-home`) — читающий путь `home` больше не трогает вовсе, снимок
+ * детерминирован без мока. Подробности и замер — в
+ * `merfy-mcp/docs/proofs/p2-vanilla-seed-into-package.txt`.
  */
-const FIXED_NOW = 0;
-
-async function withFixedNow<T>(fn: () => Promise<T>): Promise<T> {
-  const nowSpy = jest.spyOn(Date, "now").mockReturnValue(FIXED_NOW);
-  try {
-    return await fn();
-  } finally {
-    nowSpy.mockRestore();
-  }
-}
 
 /**
  * Строит мок-сервис и мок-БД так, чтобы `getRevision()` вернул ровно
@@ -129,12 +121,10 @@ function makeGetRevisionService(
  * магазина — см. buildInitialRevision() в 0.2) и прогоняет её через
  * `getRevision()`. Результат — «что видит конструктор» для свежего магазина. */
 async function captureFreshStore(themeId: string) {
-  return withFixedNow(async () => {
-    const builder = makeBareService();
-    const initialRevisionData = await builder.buildInitialRevision(themeId);
-    const service = makeGetRevisionService(themeId, initialRevisionData);
-    return service.getRevision("t1", "site-1", "rev-1");
-  });
+  const builder = makeBareService();
+  const initialRevisionData = await builder.buildInitialRevision(themeId);
+  const service = makeGetRevisionService(themeId, initialRevisionData);
+  return service.getRevision("t1", "site-1", "rev-1");
 }
 
 // ---------------------------------------------------------------------------
@@ -271,32 +261,26 @@ describe("золотой документ: смена темы rose → satin п
       currentRevisionId: "rev-1",
     } as any);
 
-    // withFixedNow: rose→satin сам по себе не трогает vanilla, но switch
-    // всегда прогоняет buildInitialRevision() для ДВУХ тем (следующей и
-    // предыдущей — см. prevSeed в update()), поэтому фиксируем время на
-    // случай, если один из участников свитча — vanilla (см. НАХОДКУ выше).
-    const result = await withFixedNow(async () => {
-      const updateResult = await updateService.update({
-        tenantId: "t1",
-        siteId: "site-1",
-        patch: { themeId: "satin" },
-        actorUserId: "u1",
-      });
-      expect(updateResult).toBe(true);
-
-      const revisionInsert = inserted.find(
-        (i) => i.table === schema.siteRevision,
-      );
-      expect(revisionInsert).toBeDefined();
-
-      // Пересеянная ревизия теперь лежит «в БД» — прогоняем её через
-      // getRevision() так же, как для свежего магазина.
-      const readService = makeGetRevisionService(
-        "satin",
-        revisionInsert!.value.data,
-      );
-      return readService.getRevision("t1", "site-1", "rev-1");
+    const updateResult = await updateService.update({
+      tenantId: "t1",
+      siteId: "site-1",
+      patch: { themeId: "satin" },
+      actorUserId: "u1",
     });
+    expect(updateResult).toBe(true);
+
+    const revisionInsert = inserted.find(
+      (i) => i.table === schema.siteRevision,
+    );
+    expect(revisionInsert).toBeDefined();
+
+    // Пересеянная ревизия теперь лежит «в БД» — прогоняем её через
+    // getRevision() так же, как для свежего магазина.
+    const readService = makeGetRevisionService(
+      "satin",
+      revisionInsert!.value.data,
+    );
+    const result = await readService.getRevision("t1", "site-1", "rev-1");
 
     expectMatchesGolden(goldenFile("switch-rose-to-satin.json"), result);
   });

@@ -18,7 +18,7 @@
         "heading": { "text": "{{COLLECTION_NAME}}", "size": "large" },
         "colorScheme": "scheme-3",
         "columns": 2,
-        "cards": 24,
+        "cards": 12,
         "showFilter": "true",
         "filterPosition": "side",
         "showSort": "true",

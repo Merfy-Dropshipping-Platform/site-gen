@@ -1,68 +1,237 @@
 {
   "content": [
     {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-home",
+        "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+        "link": { "text": "В каталог", "href": "/catalog" },
+        "size": "large",
+        "textTransform": "uppercase",
+        "colorScheme": "scheme-1",
+        "padding": { "top": 12, "bottom": 12 }
+      }
+    },
+    {
       "type": "Header",
       "props": {
         "id": "Header-home",
-        "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Доставка", "href": "/delivery" },
-          { "label": "Контакты", "href": "/contacts" }
-        ]
+        "siteTitle": "Vanilla Pilot",
+        "logo": "",
+        "logoPosition": "center-absolute",
+        "activeLinkIndicator": "underline",
+        "stickiness": "scroll-up",
+        "menuType": "dropdown",
+        "navigationLinks": [{ "label": "Каталог", "href": "/catalog" }],
+        "actionButtons": { "showSearch": true, "showCart": true, "showProfile": true },
+        "colorScheme": "scheme-1",
+        "padding": { "top": 32, "bottom": 32 }
       }
     },
     {
       "type": "Hero",
       "props": {
         "id": "Hero-home",
-        "backgroundImages": {
-          "url1": "https://minio.merfy.ru/product-images/f1f5ec7f-bf52-49fe-bf00-e46b15900881.webp"
-        }
-      }
-    },
-    {
-      "type": "Collections",
-      "props": {
-        "id": "Collections-home"
-      }
-    },
-    {
-      "type": "Gallery",
-      "props": {
-        "id": "Gallery-home",
-        "items": [
+        "mode": "carousel",
+        "size": "large",
+        "alignment": "left",
+        "contentAlign": "left",
+        "imageFullBleed": true,
+        "buttonStyle": "solid",
+        "pagination": "numbers",
+        "autoplay": true,
+        "interval": 5,
+        "container": "false",
+        "padding": { "top": 0, "bottom": 0 },
+        "title": "",
+        "subtitle": "",
+        "image": { "url": "", "alt": "" },
+        "cta": { "text": "", "href": "" },
+        "variant": "overlay",
+        "slides": [
           {
-            "id": "item-1",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/f1f5ec7f-bf52-49fe-bf00-e46b15900881.webp",
-            "alt": "Изображение"
+            "id": "slide-home-1",
+            "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/mebel/1.jpg",
+            "heading": { "text": "Искусство жить уютно", "size": "large" },
+            "text": { "content": "Товары, создающие атмосферу тепла и спокойствия", "size": "medium" },
+            "buttonText": "Перейти к коллекции",
+            "buttonLink": "/catalog"
           },
           {
-            "id": "item-2",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/d95952a6-28e9-43d5-8702-160327f714e0.webp",
-            "alt": "Изображение"
+            "id": "slide-home-2",
+            "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/mebel/15.jpg",
+            "heading": { "text": "Мебель ручной работы", "size": "large" },
+            "text": { "content": "Натуральные материалы и авторский дизайн", "size": "medium" },
+            "buttonText": "Смотреть мебель",
+            "buttonLink": "/catalog?collection=mebel"
           },
           {
-            "id": "item-3",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/b6f44849-58b3-4ca7-9a29-6b0c77bec440.webp",
-            "alt": "Изображение"
+            "id": "slide-home-3",
+            "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/dekor/1.jpg",
+            "heading": { "text": "Декор для дома", "size": "large" },
+            "text": { "content": "Уютные акценты для каждой комнаты", "size": "medium" },
+            "buttonText": "Смотреть декор",
+            "buttonLink": "/catalog?collection=dekor"
           }
         ]
       }
     },
     {
+      "type": "Collections",
+      "props": {
+        "id": "Collections-home",
+        "heading": "Коллекции",
+        "subtitle": "Мебель и декор для уютного дома",
+        "headingSize": "medium",
+        "titleAlignment": "left",
+        "imageView": "square",
+        "gridAspect": "1:1",
+        "cardCaptionStyle": "uppercase",
+        "dataSource": "manual",
+        "collections": [
+          {
+            "id": "col-mebel",
+            "collectionId": "mebel",
+            "heading": "Мебель",
+            "description": "Кресла, столы, стеллажи",
+            "image": ""
+          },
+          {
+            "id": "col-dekor",
+            "collectionId": "dekor",
+            "heading": "Декор",
+            "description": "Вазы, текстиль, аксессуары",
+            "image": ""
+          }
+        ],
+        "columns": 2,
+        "cardLinkBase": "/catalog?collection=",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    {
+      "type": "MainText",
+      "props": {
+        "id": "MainText-home",
+        "heading": { "text": "Тепло вашего дома начинается здесь", "size": "small" },
+        "text": {
+          "content": "Потому что настоящий уют рождается из деталей. Мы знаем, как важно возвращаться в дом, где каждая деталь дарит комфорт и радость. Натуральный хлопок, уютный велюр, мягкий лен и нежные оттенки — все это Vanila. Позвольте себе наслаждаться красотой в деталях и превратите повседневность в маленькое удовольствие. Создайте дом своей мечты вместе с Vanila.",
+          "size": "small"
+        },
+        "alignment": "center",
+        "position": "center",
+        "cta": { "text": "К покупкам", "href": "/catalog", "variant": "primary" },
+        "buttonStyle": "outlined",
+        "textStyle": "italic",
+        "colorScheme": "scheme-2",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    {
+      "type": "Video",
+      "props": {
+        "id": "Video-home",
+        "heading": "",
+        "videoUrl": "",
+        "poster": "",
+        "position": "contained",
+        "padded": true,
+        "align": "container",
+        "colorScheme": "scheme-1",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    {
+      "type": "ImageWithText",
+      "props": {
+        "id": "ImageWithText-home",
+        "image": { "url": "", "alt": "Мебель ручной работы" },
+        "heading": { "text": "Качество российских мастеров", "size": "large" },
+        "text": {
+          "content": "Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.",
+          "size": "medium"
+        },
+        "button": { "text": "Смотреть каталог", "link": "/catalog" },
+        "imagePosition": "right",
+        "ctaPosition": "bottom-pinned",
+        "textStyle": "italic",
+        "colorScheme": "scheme-2",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    {
       "type": "PopularProducts",
       "props": {
-        "id": "PopularProducts-home"
+        "id": "PopularProducts-home",
+        "heading": { "text": "Популярные товары", "size": "medium", "alignment": "left" },
+        "cards": 6,
+        "columns": 3,
+        "collection": "mebel",
+        "cardCaptionStyle": "uppercase",
+        "swatchOverlay": true,
+        "headingAlignment": "left",
+        "quickAdd": false,
+        "quickAddText": "В КОРЗИНУ",
+        "colorScheme": "scheme-3",
+        "padding": { "top": 120, "bottom": 120 }
+      }
+    },
+    {
+      "type": "Newsletter",
+      "props": {
+        "id": "Newsletter-home",
+        "heading": { "text": "Будьте в курсе уютных новостей", "size": "medium", "alignment": "left" },
+        "text": {
+          "content": "Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.",
+          "size": "small"
+        },
+        "description": "Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.",
+        "placeholder": "E-mail",
+        "buttonText": "Отправить",
+        "formLayout": "inline-submit",
+        "position": "left",
+        "alignment": "left",
+        "colorScheme": "scheme-2",
+        "padding": { "top": 120, "bottom": 120 }
       }
     },
     {
       "type": "Footer",
       "props": {
-        "id": "Footer-home"
+        "id": "Footer-home",
+        "variant": "2-part-asymmetric",
+        "bottomStrip": {
+          "enabled": true,
+          "text": "© 2025 Vanilla Theme. Powered by Merfy"
+        },
+        "copyright": { "showYear": true },
+        "newsletter": {
+          "enabled": false,
+          "heading": "",
+          "description": "",
+          "placeholder": ""
+        },
+        "heading": { "text": "", "size": "medium", "alignment": "left" },
+        "text": { "content": "", "size": "small" },
+        "navigationColumn": {
+          "title": "Магазин",
+          "links": [{ "label": "Каталог", "href": "/catalog" }]
+        },
+        "informationColumn": {
+          "title": "Информация",
+          "links": [
+            { "label": "Доставка", "href": "/delivery" },
+            { "label": "Контакты", "href": "/contacts" }
+          ]
+        },
+        "socialColumn": {
+          "title": "Связь",
+          "email": "",
+          "socialLinks": []
+        },
+        "colorScheme": "scheme-1",
+        "padding": { "top": 80, "bottom": 40 }
       }
     }
   ],

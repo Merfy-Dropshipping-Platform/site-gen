@@ -190,7 +190,6 @@
         }
       ],
       "pagesData": {
-        "_vanillaHomeMigrationVersion": 11,
         "checkout": {
           "content": [
             {
@@ -213,8 +212,63 @@
             },
             {
               "props": {
+                "bottomStrip": {
+                  "enabled": true,
+                  "text": "© 2025 Vanilla Theme. Powered by Merfy"
+                },
+                "colorScheme": "scheme-1",
+                "copyright": {
+                  "showYear": true
+                },
+                "heading": {
+                  "alignment": "left",
+                  "size": "medium",
+                  "text": ""
+                },
                 "id": "Footer-home",
-                "siteTitle": "Витрина"
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    }
+                  ],
+                  "title": "Магазин"
+                },
+                "newsletter": {
+                  "description": "",
+                  "enabled": false,
+                  "heading": "",
+                  "placeholder": ""
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "email": "",
+                  "socialLinks": [],
+                  "title": "Связь"
+                },
+                "text": {
+                  "content": "",
+                  "size": "small"
+                },
+                "variant": "2-part-asymmetric"
               },
               "type": "Footer"
             }
@@ -231,7 +285,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-0",
+                "id": "PromoBanner-home",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -251,7 +305,7 @@
                 },
                 "activeLinkIndicator": "underline",
                 "colorScheme": "scheme-1",
-                "id": "Header-1",
+                "id": "Header-home",
                 "logo": "",
                 "logoPosition": "center-absolute",
                 "menuType": "dropdown",
@@ -281,7 +335,7 @@
                   "href": "",
                   "text": ""
                 },
-                "id": "Hero-vanilla-home",
+                "id": "Hero-home",
                 "image": {
                   "alt": "",
                   "url": ""
@@ -303,7 +357,7 @@
                       "size": "large",
                       "text": "Искусство жить уютно"
                     },
-                    "id": "slide-vanilla-home-1",
+                    "id": "slide-home-1",
                     "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/mebel/1.jpg",
                     "text": {
                       "content": "Товары, создающие атмосферу тепла и спокойствия",
@@ -317,7 +371,7 @@
                       "size": "large",
                       "text": "Мебель ручной работы"
                     },
-                    "id": "slide-vanilla-home-2",
+                    "id": "slide-home-2",
                     "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/mebel/15.jpg",
                     "text": {
                       "content": "Натуральные материалы и авторский дизайн",
@@ -331,7 +385,7 @@
                       "size": "large",
                       "text": "Декор для дома"
                     },
-                    "id": "slide-vanilla-home-3",
+                    "id": "slide-home-3",
                     "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/dekor/1.jpg",
                     "text": {
                       "content": "Уютные акценты для каждой комнаты",
@@ -371,7 +425,7 @@
                 "gridAspect": "1:1",
                 "heading": "Коллекции",
                 "headingSize": "medium",
-                "id": "Collections-3",
+                "id": "Collections-home",
                 "imageView": "square",
                 "padding": {
                   "bottom": 120,
@@ -396,7 +450,7 @@
                   "size": "small",
                   "text": "Тепло вашего дома начинается здесь"
                 },
-                "id": "MainText-4",
+                "id": "MainText-home",
                 "padding": {
                   "bottom": 120,
                   "top": 120
@@ -415,7 +469,7 @@
                 "align": "container",
                 "colorScheme": "scheme-1",
                 "heading": "",
-                "id": "Video-5",
+                "id": "Video-home",
                 "padded": true,
                 "padding": {
                   "bottom": 120,
@@ -439,7 +493,7 @@
                   "size": "large",
                   "text": "Качество российских мастеров"
                 },
-                "id": "ImageWithText-6",
+                "id": "ImageWithText-home",
                 "image": {
                   "alt": "Мебель ручной работы",
                   "url": ""
@@ -470,7 +524,7 @@
                   "text": "Популярные товары"
                 },
                 "headingAlignment": "left",
-                "id": "PopularProducts-7",
+                "id": "PopularProducts-home",
                 "padding": {
                   "bottom": 120,
                   "top": 120
@@ -493,7 +547,7 @@
                   "size": "medium",
                   "text": "Будьте в курсе уютных новостей"
                 },
-                "id": "Newsletter-8",
+                "id": "Newsletter-home",
                 "padding": {
                   "bottom": 120,
                   "top": 120
@@ -515,7 +569,6 @@
                 },
                 "colorScheme": "scheme-1",
                 "copyright": {
-                  "companyName": "Vanilla Pilot",
                   "showYear": true
                 },
                 "heading": {
@@ -523,7 +576,7 @@
                   "size": "medium",
                   "text": ""
                 },
-                "id": "Footer-9",
+                "id": "Footer-home",
                 "informationColumn": {
                   "links": [
                     {
@@ -556,7 +609,7 @@
                   "bottom": 40,
                   "top": 80
                 },
-                "siteTitle": "Vanilla Pilot",
+                "siteTitle": "Витрина",
                 "socialColumn": {
                   "email": "",
                   "socialLinks": [],
@@ -836,8 +889,63 @@
             },
             {
               "props": {
+                "bottomStrip": {
+                  "enabled": true,
+                  "text": "© 2025 Vanilla Theme. Powered by Merfy"
+                },
+                "colorScheme": "scheme-1",
+                "copyright": {
+                  "showYear": true
+                },
+                "heading": {
+                  "alignment": "left",
+                  "size": "medium",
+                  "text": ""
+                },
                 "id": "Footer-home",
-                "siteTitle": "Витрина"
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    }
+                  ],
+                  "title": "Магазин"
+                },
+                "newsletter": {
+                  "description": "",
+                  "enabled": false,
+                  "heading": "",
+                  "placeholder": ""
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "email": "",
+                  "socialLinks": [],
+                  "title": "Связь"
+                },
+                "text": {
+                  "content": "",
+                  "size": "small"
+                },
+                "variant": "2-part-asymmetric"
               },
               "type": "Footer"
             }

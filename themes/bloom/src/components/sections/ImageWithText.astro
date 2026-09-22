@@ -128,8 +128,21 @@ const isOverlap =
 // Канон position: 'top' | 'middle' (дефолт, прежнее lg:items-center) | 'bottom'
 // — вертикальное положение карточки относительно фото (Shopify Position).
 const position = p.position === "top" ? "top" : p.position === "bottom" ? "bottom" : "middle";
-const positionItemsCls =
-	position === "top" ? "lg:items-start" : position === "bottom" ? "lg:items-end" : "lg:items-center";
+// БЕЗ наложения колонки тянутся на ОДНУ высоту (`items-stretch`). Владелец
+// 2026-09-22: «под размер медиафайла без контейнера меняется высота вот этой
+// части, где нет медиа». До этого стоял `items-center`: текстовая колонка
+// жила своей высотой по длине текста, и «Размер» её не двигал вовсе — менял
+// медиа, а соседний блок оставался прежним.
+const positionItemsCls = "lg:items-stretch";
+// «Положение» при этом не теряется — оно выравнивает СОДЕРЖИМОЕ внутри
+// растянутой колонки (верх / середина / низ), а в наложении двигает саму
+// плашку (overlapCardVerticalCls ниже).
+const positionJustifyCls =
+	position === "top"
+		? "lg:justify-start"
+		: position === "bottom"
+			? "lg:justify-end"
+			: "lg:justify-center";
 // Наложение: карточка стоит в потоке и ЗАДАЁТ высоту пары, фото — абсолютный
 // слой на всю высоту пары. «Положение» двигает карточку по вертикали тем же
 // `positionItemsCls`, что и в раскладке без наложения (карточка — единственный
@@ -278,7 +291,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			class={
 				isOverlap
 					? `relative z-10 flex w-full flex-col gap-6 lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
-					: `flex w-full flex-col gap-6${inlineCta ? "" : " h-full"}${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
+					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
 			}
 		>
 			{!isFieldHidden('heading') && (

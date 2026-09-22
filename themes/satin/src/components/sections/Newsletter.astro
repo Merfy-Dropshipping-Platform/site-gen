@@ -58,7 +58,12 @@ const descriptionRaw =
 const description = contentSet(["description", "text"], descriptionRaw) && descriptionRaw
 	? descriptionRaw
 	: "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
-const descSize = p.text?.size;
+// Размер берётся из top-level `textSize`, а конверт — только фолбэк. Конвейер
+// разворачивает `text: {content, size}` в строку ещё до рендера и поднимает
+// размер в `textSize` (page-blocks: TEXT_SIZE_ENVELOPES), поэтому `p.text?.size`
+// на живой витрине не существует НИКОГДА — «Размер текста» подписки не работал
+// во всех пяти темах. Фолбэк оставлен для путей, где конверт доезжает целым.
+const descSize = p.textSize ?? p.text?.size;
 const descSizeCls =
 	descSize === "small" ? "text-[14px]" : descSize === "large" ? "text-[19px]" : "text-[16px]";
 

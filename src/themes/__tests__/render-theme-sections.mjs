@@ -60,7 +60,15 @@ const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 
 async function main() {
   const theme = process.argv[2];
-  const jobs = JSON.parse(process.argv[3] ?? '[]');
+  // Задания приходят либо строкой JSON, либо «@путь» — файлом. Файл нужен не
+  // для красоты: Linux режет ОДИН аргумент командной строки на 128 КиБ
+  // (MAX_ARG_STRLEN), а пакетный прогон аудита настроек даёт ~330 КиБ. На
+  // macOS такого предела нет, поэтому проверка была зелёной локально и давала
+  // ноль прошедших проверок на раннере (CI 22.09, сегмент 9).
+  const сырое = process.argv[3] ?? '[]';
+  const jobs = JSON.parse(
+    сырое.startsWith('@') ? readFileSync(сырое.slice(1), 'utf-8') : сырое,
+  );
   const dist = resolve(SITES_ROOT, 'dist', 'theme-sections', theme);
   const manifest = JSON.parse(readFileSync(resolve(dist, 'manifest.json'), 'utf-8'));
   const { experimental_AstroContainer } = await import('astro/container');

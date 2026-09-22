@@ -6,14 +6,22 @@
  * обычные jest-гарды, которым браузер не нужен.
  */
 import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 
 import { SITES_ROOT, themeCss } from "./tailwind-css";
 import { schemeNum } from "./schemes";
 
-const RENDERER = resolve(SITES_ROOT, "src/themes/__tests__/render-theme-sections.mjs");
+const RENDERER = resolve(
+  SITES_ROOT,
+  "src/themes/__tests__/render-theme-sections.mjs",
+);
 /** flux/bloom/vanilla резолвят товар HTTP-запросом во фронтматтере. */
-const CATALOG_STUB = resolve(SITES_ROOT, "scripts/qa/product-six-images-stub.mjs");
+const CATALOG_STUB = resolve(
+  SITES_ROOT,
+  "scripts/qa/product-six-images-stub.mjs",
+);
 
 export type RenderJob = {
   block: string;
@@ -24,20 +32,50 @@ export type RenderJob = {
   pkg?: string;
 };
 
-export type RenderedBlock = { block: string; html?: string; error?: string; missing?: boolean };
+export type RenderedBlock = {
+  block: string;
+  html?: string;
+  error?: string;
+  missing?: boolean;
+};
 
 /**
  * Живой рендер порта темы — ТА ЖЕ лестница, что у витрины
  * (dist/theme-sections/<тема> → пакет темы → theme-base).
  */
-export function renderSections(theme: string, jobs: RenderJob[]): RenderedBlock[] {
+export function renderSections(
+  theme: string,
+  jobs: RenderJob[],
+): RenderedBlock[] {
   const full = jobs.map((j) => ({ cascade: true, live: true, ...j }));
-  const out = execFileSync(
-    "node",
-    ["--import", CATALOG_STUB, RENDERER, theme, JSON.stringify(full)],
-    { cwd: SITES_ROOT, encoding: "utf-8", maxBuffer: 256 * 1024 * 1024 },
-  );
-  return JSON.parse(out) as RenderedBlock[];
+  const payload = JSON.stringify(full);
+  // Большой список заданий уходит ФАЙЛОМ, а не аргументом: Linux режет ОДИН
+  // аргумент командной строки на 128 КиБ (MAX_ARG_STRLEN), macOS такого предела
+  // не имеет. Пакетный прогон аудита настроек даёт ~330 КиБ — локально зелено,
+  // на раннере execFileSync падает с E2BIG, и проверка отчитывалась нулём
+  // прошедших проверок (CI 22.09, сегмент 9). Порог с запасом: 64 КиБ.
+  const ФАЙЛОМ_ОТ = 64 * 1024;
+  let файл: string | null = null;
+  let аргумент = payload;
+  if (Buffer.byteLength(payload, "utf-8") > ФАЙЛОМ_ОТ) {
+    файл = join(mkdtempSync(join(tmpdir(), "render-sections-")), "jobs.json");
+    writeFileSync(файл, payload, "utf-8");
+    аргумент = `@${файл}`;
+  }
+  try {
+    const out = execFileSync(
+      "node",
+      ["--import", CATALOG_STUB, RENDERER, theme, аргумент],
+      {
+        cwd: SITES_ROOT,
+        encoding: "utf-8",
+        maxBuffer: 256 * 1024 * 1024,
+      },
+    );
+    return JSON.parse(out) as RenderedBlock[];
+  } finally {
+    if (файл) rmSync(dirname(файл), { recursive: true, force: true });
+  }
 }
 
 /** Один блок; нет HTML — падаем громко. */
@@ -47,9 +85,13 @@ export function renderBlock(
   props: Record<string, unknown> = {},
   extra: Partial<RenderJob> = {},
 ): string {
-  const row = renderSections(theme, [{ block, props: { id: `${block}-1`, ...props }, ...extra }])[0];
+  const row = renderSections(theme, [
+    { block, props: { id: `${block}-1`, ...props }, ...extra },
+  ])[0];
   if (!row?.html) {
-    throw new Error(`рендер ${block} (${theme}) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`);
+    throw new Error(
+      `рендер ${block} (${theme}) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`,
+    );
   }
   return row.html;
 }
@@ -84,4 +126,3 @@ export function pageHtml(opts: {
 <style>html,body{margin:0;padding:0;background:${opts.bodyStyle ?? "rgb(1,2,3)"}}</style>
 </head><body><main>${body}</main></body></html>`;
 }
-

@@ -70,7 +70,7 @@ function card(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext, drawer: bool
 		heart(hit, ctx) +
 		`</div>` +
 		`<a href="${ctx.escapeHtml(hit.href)}" class="flex flex-col gap-0.5 font-manrope font-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-opacity hover:opacity-70 focus-visible:opacity-70">` +
-		`<span class="truncate uppercase ${size}">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="truncate uppercase ${size}">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex items-center gap-1"><span class="${size}">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>${oldPrice}</span>` +
 		`</a></div></li>`
 	);

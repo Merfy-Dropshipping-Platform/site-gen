@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import {
   escapeHtml,
   formatPrice,
+  highlightMatch,
   type HeaderSearchHit,
   type HeaderSearchRenderContext,
 } from "../../../packages/theme-base/runtime/header-search";
@@ -33,6 +34,9 @@ import { renderSearchResults as vanillaView } from "../../../themes/vanilla/src/
 
 const ROOT = resolve(__dirname, "..", "..", "..");
 const THEMES = ["rose", "flux", "vanilla", "satin", "bloom"] as const;
+const MARK_OPEN =
+  '<mark data-search-mark style="background:none;color:inherit;font-weight:700">';
+const MARK_CLOSE = "</mark>";
 
 const headerSource = (theme: string) =>
   readFileSync(
@@ -169,12 +173,13 @@ describe("разметка выдачи темы", () => {
     ...over,
   });
 
-  const ctx = (layout: string): HeaderSearchRenderContext => ({
+  const ctx = (layout: string, query = "сумка"): HeaderSearchRenderContext => ({
     layout,
-    query: "сумка",
+    query,
     total: 1,
     formatPrice,
     escapeHtml,
+    highlight: (text: string) => highlightMatch(text, query),
   });
 
   const CASES = THEMES.flatMap((t) =>
@@ -243,5 +248,54 @@ describe("разметка выдачи темы", () => {
         ctx("panel"),
       ),
     ).not.toContain("data-search-dot");
+  });
+
+  describe("подсветка совпадения в выдаче темы", () => {
+    it.each(CASES)(
+      "%s/%s: название подсвечивается в текстовом узле выдачи",
+      (theme, layout) => {
+        const html = VIEWS[theme](
+          [hit({ title: "Кроссовки Runner" })],
+          ctx(layout, "кр"),
+        );
+        expect(html).toContain(`${MARK_OPEN}Кр${MARK_CLOSE}оссовки`);
+      },
+    );
+
+    it.each(CASES)(
+      "%s/%s: слово из двух букв не подсвечивается в середине слова",
+      (theme, layout) => {
+        const html = VIEWS[theme](
+          [hit({ title: "Ботинки красный" })],
+          ctx(layout, "ра"),
+        );
+        expect(html).not.toContain("<mark");
+      },
+    );
+
+    it.each(THEMES)(
+      "%s: запрос, совпадающий с частью вредоносного названия, всё равно экранируется",
+      (theme) => {
+        const html = VIEWS[theme](
+          [hit({ title: '<img src=x onerror="alert(1)">' })],
+          ctx("panel", "img"),
+        );
+        // Тег не должен пройти как есть — «img» ушло в <mark>, но «<» и «>» экранированы.
+        expect(html).not.toContain("<img src=x");
+        expect(html).toContain("&lt;");
+        expect(html).toContain(`${MARK_OPEN}img${MARK_CLOSE}`);
+      },
+    );
+
+    it("bloom: data-name кнопки «В корзину» — обычное экранирование, без подсветки", () => {
+      const html = bloomView(
+        [hit({ title: "Кроссовки Runner", available: true })],
+        ctx("drawer", "кр"),
+      );
+      expect(html).toContain('data-name="Кроссовки Runner"');
+      expect(html).not.toMatch(/data-name="[^"]*<mark/);
+      // Название в тексте карточки при этом подсвечено — атрибут остался плоским не из-за отсутствия совпадения.
+      expect(html).toContain(`${MARK_OPEN}Кр${MARK_CLOSE}оссовки`);
+    });
   });
 });

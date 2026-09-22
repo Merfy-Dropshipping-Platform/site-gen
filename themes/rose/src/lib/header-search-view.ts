@@ -44,7 +44,7 @@ function panelCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string
 		badge +
 		`</span>` +
 		`<span class="flex w-full flex-col gap-1 text-left">` +
-		`<span class="block w-full truncate font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="block w-full truncate font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex w-full flex-wrap items-baseline gap-2">` +
 		`<span class="font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))]">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>` +
 		oldPrice +
@@ -67,7 +67,7 @@ function drawerCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): strin
 		badge +
 		`</span>` +
 		`<span class="flex flex-col gap-1 font-manrope font-normal text-[rgb(var(--color-text,0_0_0))]">` +
-		`<span class="truncate text-[12px] leading-4">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="truncate text-[12px] leading-4">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex items-center gap-1.5">` +
 		`<span class="text-[12px] leading-4">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>` +
 		oldPrice +

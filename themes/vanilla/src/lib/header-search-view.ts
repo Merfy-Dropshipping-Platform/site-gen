@@ -42,7 +42,7 @@ function row(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext, drawer: boole
 		`<a href="${ctx.escapeHtml(hit.href)}" class="flex h-12 min-w-0 items-center gap-3 outline-none transition-opacity hover:opacity-70 focus-visible:opacity-70">` +
 		`<span class="size-12 shrink-0 overflow-hidden ${thumbBg}">${thumb(hit, ctx)}</span>` +
 		`<span class="flex min-w-0 flex-col gap-0.5 font-vanilla-arsenal font-normal ${textCls}">` +
-		`<span class="truncate text-[14px] leading-[18px]">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="truncate text-[14px] leading-[18px]">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex items-center gap-1"><span class="text-[14px] leading-[18px]">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>${oldPrice}</span>` +
 		`</span></a></li>`
 	);

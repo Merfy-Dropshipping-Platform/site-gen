@@ -115,6 +115,62 @@ function serve(html: string): Promise<{ base: string; server: Server }> {
   });
 }
 
+/**
+ * Запись кадров: на каждый requestAnimationFrame — левый край панели (null, если
+ * панель не отрисована). Левый край двигает и translate, поэтому по нему видно
+ * выезд. 700 мс хватает на любую разумную анимацию.
+ */
+async function startFrames(page: Page, sel: string): Promise<void> {
+  await page.evaluate((s) => {
+    const d = document.querySelector(s) as HTMLElement;
+    const w = window as any;
+    w.__frames = [];
+    const t0 = performance.now();
+    const tick = () => {
+      const shown = getComputedStyle(d).display !== "none";
+      w.__frames.push([Math.round(performance.now() - t0), shown ? Math.round(d.getBoundingClientRect().left * 10) / 10 : null]);
+      if (performance.now() - t0 < 700) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, sel);
+}
+
+function summarizeOpen(frames: Array<[number, number | null]>) {
+  const shown = frames.filter((f) => f[1] !== null) as Array<[number, number]>;
+  if (!shown.length) return { steps: 0, backwards: 0, settledMs: null, flash: false };
+  const final = shown[shown.length - 1][1];
+  const first = shown[0][1];
+  // Мигание: панель отрисовалась, пропала и отрисовалась снова.
+  const firstShownIdx = frames.findIndex((f) => f[1] !== null);
+  const flash = frames.slice(firstShownIdx).some((f) => f[1] === null);
+  const between = new Set(shown.map((f) => f[1]).filter((x) => x !== final && x !== first));
+  let backwards = 0;
+  for (let i = 1; i < shown.length; i++) {
+    const dir = Math.sign(final - first);
+    if (dir && Math.sign(shown[i][1] - shown[i - 1][1]) === -dir) backwards++;
+  }
+  const settled = shown.find((f) => f[1] === final);
+  return { steps: between.size, backwards, settledMs: settled ? settled[0] : null, flash };
+}
+
+function summarizeClose(frames: Array<[number, number | null]>) {
+  const shown = frames.filter((f) => f[1] !== null) as Array<[number, number]>;
+  const goneIdx = frames.findIndex((f) => f[1] === null);
+  const flash = goneIdx >= 0 && frames.slice(goneIdx).some((f) => f[1] !== null);
+  if (!shown.length) return { steps: 0, backwards: 0, goneMs: goneIdx >= 0 ? frames[goneIdx][0] : null, flash, hiddenBeforeOut: true };
+  const start = shown[0][1];
+  const last = shown[shown.length - 1][1];
+  const between = new Set(shown.map((f) => f[1]).filter((x) => x !== start));
+  let backwards = 0;
+  for (let i = 1; i < shown.length; i++) {
+    const dir = Math.sign(last - start);
+    if (dir && Math.sign(shown[i][1] - shown[i - 1][1]) === -dir) backwards++;
+  }
+  // Панель исчезла, не уехав: последний отрисованный кадр ещё на месте.
+  const hiddenBeforeOut = Math.abs(last - start) < 2;
+  return { steps: between.size, backwards, goneMs: goneIdx >= 0 ? frames[goneIdx][0] : null, flash, hiddenBeforeOut };
+}
+
 /** Центр ВИДИМОГО элемента, который первым подходит под селектор. */
 async function visibleCenter(page: Page, selector: string): Promise<{ x: number; y: number } | null> {
   return page.evaluate((sel) => {
@@ -158,6 +214,18 @@ export type Measure = {
     navigated: string | null;
     arrowsOnPlainItems: number;
   };
+  /**
+   * Анимация (документ «баги пунктов меню», баг 1): положение панели по кадрам
+   * после нажатия. `steps` — сколько РАЗНЫХ промежуточных положений между краем
+   * и местом, `backwards` — откаты назад (дёрганье), `settledMs` — когда встала,
+   * `flash` — панель пропала и появилась снова (мигание).
+   */
+  anim: {
+    open: { steps: number; backwards: number; settledMs: number | null; flash: boolean };
+    close: { steps: number; backwards: number; goneMs: number | null; flash: boolean; hiddenBeforeOut: boolean };
+    /** Сдвиг содержимого страницы при открытии, px (полоса прокрутки и т.п.). */
+    pageShift: number;
+  };
   notes: string[];
 };
 
@@ -189,6 +257,11 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
     headerTop: { before: null, open: null, afterWheel: null },
     scroll: { panelBefore: 0, panelAfter: 0, pageBefore: 0, pageAfter: 0, panelScrollable: false },
     arrow: { found: false, menuOpenAfter: false, subOpenAfter: false, navigated: null, arrowsOnPlainItems: 0 },
+    anim: {
+      open: { steps: 0, backwards: 0, settledMs: null, flash: false },
+      close: { steps: 0, backwards: 0, goneMs: null, flash: false, hiddenBeforeOut: false },
+      pageShift: 0,
+    },
     notes,
   };
   try {
@@ -220,8 +293,14 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
       notes.push("видимой кнопки меню нет");
       return blank;
     }
+    const pageLeftBefore = await page.evaluate(() => document.querySelector("[data-filler]")?.getBoundingClientRect().left ?? 0);
+    await startFrames(page, drawerSel);
     await page.mouse.click(toggle.x, toggle.y);
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(800);
+    const openFrames = await page.evaluate(() => (window as any).__frames as Array<[number, number | null]>);
+    blank.anim.pageShift = Math.round(
+      ((await page.evaluate(() => document.querySelector("[data-filler]")?.getBoundingClientRect().left ?? 0)) - pageLeftBefore) * 10,
+    ) / 10;
     blank.headerTop.open = await headerTop();
 
     const m = await page.evaluate((sel) => {
@@ -389,6 +468,24 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
       blank.arrow.subOpenAfter = res.sub;
       blank.arrow.navigated = res.nav;
     }
+    Object.assign(blank.anim.open, summarizeOpen(openFrames));
+
+    // Закрытие: крестик в шапке панели, запись кадров.
+    await page.evaluate((sel) => {
+      (document.querySelector(sel) as HTMLElement).scrollTop = 0;
+    }, drawerSel);
+    const close = await visibleCenter(page, `${drawerSel} [data-burger-close]`);
+    if (close && !blank.arrow.navigated) {
+      await page.mouse.move(close.x, close.y);
+      await page.waitForTimeout(150);
+      await startFrames(page, drawerSel);
+      await page.mouse.click(close.x, close.y);
+      await page.waitForTimeout(800);
+      const closeFrames = await page.evaluate(() => (window as any).__frames as Array<[number, number | null]>);
+      Object.assign(blank.anim.close, summarizeClose(closeFrames));
+    } else {
+      notes.push("крестика в панели не видно — закрытие не записано");
+    }
     return blank;
   } finally {
     await ctx.close();
@@ -487,6 +584,40 @@ export const RULES: Array<{ id: string; bug: string; title: string; check: (m: M
         ? null
         : `верх шапки: до ${t.before}, открыто ${t.open}, после колеса ${t.afterWheel}`;
     },
+  },
+  {
+    id: "плавно-выезжает",
+    bug: "м1",
+    title: "панель плавно выезжает: промежуточные положения, без откатов и мигания",
+    check: (m) => {
+      if (!m.opened) return null;
+      const a = m.anim.open;
+      if (a.flash) return "панель мигнула при открытии";
+      if (a.steps < 4) return `появилась рывком: промежуточных положений ${a.steps}`;
+      if (a.backwards > 0) return `дёргается: откатов назад ${a.backwards}`;
+      if (a.settledMs === null || a.settledMs > 600) return `не встала на место за 600 мс (${a.settledMs ?? "—"})`;
+      return null;
+    },
+  },
+  {
+    id: "плавно-уходит",
+    bug: "м1",
+    title: "панель плавно уходит: уезжает к краю и только потом пропадает",
+    check: (m) => {
+      if (!m.opened || m.arrow.navigated) return null;
+      const a = m.anim.close;
+      if (a.goneMs === null) return "панель не закрылась за 700 мс";
+      if (a.flash) return "панель мигнула при закрытии";
+      if (a.hiddenBeforeOut || a.steps < 4) return `пропала рывком: промежуточных положений ${a.steps}`;
+      if (a.backwards > 0) return `дёргается: откатов назад ${a.backwards}`;
+      return null;
+    },
+  },
+  {
+    id: "страница-не-дёргается",
+    bug: "м1",
+    title: "содержимое страницы не сдвигается, когда панель открывается",
+    check: (m) => (!m.opened || Math.abs(m.anim.pageShift) < 0.5 ? null : `страница сдвинулась на ${m.anim.pageShift}px`),
   },
   {
     id: "стрелки-только-у-вложенных",

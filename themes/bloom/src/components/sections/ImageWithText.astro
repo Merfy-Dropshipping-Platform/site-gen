@@ -227,6 +227,27 @@ const overlapCardVerticalCls = "lg:top-10 lg:min-h-[calc(100%-5rem)]";
 // и фото тоже, чего на эталоне нет. Без наложения `width` работает как прежде.
 const outerWidthCls = isOverlap ? "max-w-[1320px]" : widthCls;
 
+// Скругление — только по ВНЕШНЕМУ периметру пары, когда блоки стоят встык.
+// Владелец 2026-09-22 (снимок): «когда слепляется — не должно быть вот этих
+// засечек, border radius нужно убирать; они слипнутые, но там пустоты есть по
+// бокам». Два скруглённых угла, приставленные друг к другу, оставляют between
+// ними светлые серпики — их и видно на снимке.
+// На мобильном пара стоит в стопку: у медиа гасим НИЖНИЕ углы, у плашки —
+// ВЕРХНИЕ. На десктопе пара горизонтальная: гасим те углы, которыми блоки
+// повёрнуты друг к другу (сторона зависит от «Позиции фото»).
+// Тот же приём уже применён к «Мультирядам» (media-text-pair, канон
+// 2026-09-17) — здесь он повторяется один в один.
+const seamPhotoCls = isOverlap
+	? ""
+	: imageLeft
+		? " rounded-b-none lg:rounded-bl-[var(--radius-media,12px)] lg:rounded-r-none"
+		: " rounded-b-none lg:rounded-br-[var(--radius-media,12px)] lg:rounded-l-none";
+const seamCardCls = isOverlap
+	? ""
+	: imageLeft
+		? " rounded-t-none lg:rounded-tr-[var(--radius-card,12px)] lg:rounded-l-none"
+		: " rounded-t-none lg:rounded-tl-[var(--radius-card,12px)] lg:rounded-r-none";
+
 // Кнопка: canon button {text, href|link} — розовый pill манеры §3. Мерчант задал
 // текст → его; пусто → дословный Figma-плейсхолдер «Кнопка» (1:19335). Кнопка
 // рендерится всегда (часть дизайна пустого состояния), как «Кнопка» в
@@ -298,7 +319,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			class={
 				isOverlap
 					? `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls} ${overlapPhotoWidthCls} ${overlapPhotoSideCls}`
-					: `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}`
+					: `group relative w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))] ${aspectCls}${imageLeft ? "" : " lg:order-2"}${seamPhotoCls}`
 			}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
@@ -319,7 +340,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			class={
 				isOverlap
 					? `relative z-10 -mt-12 flex w-full flex-col gap-6 ${positionJustifyCls} lg:mt-0 lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
-					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
+					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${seamCardCls}${containerSchemeCls}`
 			}
 		>
 			{!isFieldHidden('heading') && (

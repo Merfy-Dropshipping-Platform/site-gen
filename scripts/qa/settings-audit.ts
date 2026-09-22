@@ -40,6 +40,7 @@ const ПРОПУСК_ТИПОВ = new Set([
 ]);
 
 type Поле = { тип: string; значения: unknown[] };
+type Панель = { тест: Record<string, Поле>; объявлены: Array<{ имя: string; тип: string; тело: string }> };
 
 /** Два различимых значения поля — по его объявлению в панели. */
 function значенияПоля(f: Record<string, unknown>): unknown[] | null {
@@ -65,11 +66,64 @@ function значенияПоля(f: Record<string, unknown>): unknown[] | null 
   return null;
 }
 
+/**
+ * Комментарии прочь — код внутри скобок должен быть сбалансирован.
+ *
+ * Разбор считает вложенность по скобкам, а в комментариях панелей их полно и
+ * они не парные: «(владелец, 2026-09-13: „такого поля отродясь не было“»,
+ * «text/link/size», «min-h 24/32/40/48)». Без чистки счётчик уезжал, соседние
+ * поля слипались в одно и ПРОПАДАЛИ из аудита молча: у «Промо-баннера»
+ * читалось 3 поля из 6 — «Текст» терялся, баннер рендерился пустым, и «Размер»
+ * объявлялся мёртвым, хотя работает во всех пяти темах.
+ *
+ * Кавычки уважаем: в значениях встречаются '/catalog' и 'https://…', и
+ * простое вырезание «// до конца строки» съело бы половину объявления.
+ */
+function безКомментариев(src: string): string {
+  let out = "";
+  let i = 0;
+  let кавычка: string | null = null;
+  while (i < src.length) {
+    const c = src[i];
+    const c2 = src[i + 1];
+    if (кавычка) {
+      out += c;
+      if (c === "\\") {
+        out += c2 ?? "";
+        i += 2;
+        continue;
+      }
+      if (c === кавычка) кавычка = null;
+      i++;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === "`") {
+      кавычка = c;
+      out += c;
+      i++;
+      continue;
+    }
+    if (c === "/" && c2 === "/") {
+      while (i < src.length && src[i] !== "\n") i++;
+      continue;
+    }
+    if (c === "/" && c2 === "*") {
+      i += 2;
+      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) i++;
+      i += 2;
+      continue;
+    }
+    out += c;
+    i++;
+  }
+  return out;
+}
+
 /** Поля панели блока — читаем исходник, чтобы не тянуть TS-модуль. */
-function поляБлока(файл: string): Record<string, Поле> {
-  const src = readFileSync(файл, "utf-8");
+function поляБлока(файл: string): Панель {
+  const src = безКомментариев(readFileSync(файл, "utf-8"));
   const i = src.indexOf("fields: {");
-  if (i < 0) return {};
+  if (i < 0) return { тест: {}, объявлены: [] };
   let depth = 1;
   let j = i + "fields: {".length;
   let body = "";
@@ -81,12 +135,14 @@ function поляБлока(файл: string): Record<string, Поле> {
     j++;
   }
   const out: Record<string, Поле> = {};
+  const объявлены: Array<{ имя: string; тип: string; тело: string }> = [];
   let d = 0;
   let cur = "";
   const сбросить = (txt: string) => {
     const km = txt.match(/^[\s\n]*\[?'?([a-zA-Z_]\w*)'?/);
     const tm = txt.match(/type:\s*'([^']+)'/);
     if (!km || !tm) return;
+    объявлены.push({ имя: km[1], тип: tm[1], тело: txt });
     const f: Record<string, unknown> = { type: tm[1] };
     const opts = [...txt.matchAll(/value:\s*'([^']*)'/g)].map((m) => ({ value: m[1] }));
     if (opts.length) f.options = opts;
@@ -106,7 +162,7 @@ function поляБлока(файл: string): Record<string, Поле> {
     } else cur += ch;
   }
   сбросить(cur);
-  return out;
+  return { тест: out, объявлены };
 }
 
 /** Секции, которые есть у темы (из собранного манифеста). */
@@ -124,49 +180,168 @@ function файлПанели(блок: string): string | null {
 type Находка = { тема: string; секция: string; поле: string; тип: string };
 
 
-/** Живое наполнение секции: без него рисуется плейсхолдер. */
-function НАПОЛНЕНИЕ(секция: string): Record<string, unknown> {
-  const картинка = "/images/placeholder.png";
-  const общее: Record<string, unknown> = {
-    heading: { text: "Заголовок секции" },
-    text: { content: "Текст секции" },
-    productId: "p1",
+/**
+ * Живое наполнение секции.
+ *
+ * ДВА ПРАВИЛА, каждое куплено ложным вердиктом:
+ *
+ * 1. Текст кладём ТОЛЬКО в поля, объявленные панелью этой секции. Раньше база
+ *    вслепую ставила `heading`/`text`/`productId` всем подряд. У «Формы связи»
+ *    поля `text` нет вовсе, но порт читает подзаголовок цепочкой
+ *    subtitle → text → description: выдуманный `text` перебивал `description`,
+ *    и настройка «Текст» выглядела мёртвой, хотя работает. Ровно этот класс —
+ *    выдуманные имена пропов — дал половину ложных вердиктов 21.09.
+ *
+ * 2. Настройка «как показывать» мертва без того, что показывать: «Размер
+ *    подзаголовка» ничего не двигает, пока подзаголовок пуст, а «Дата и время» —
+ *    пока в секции нет публикаций. Поэтому companion-содержимое (массивы,
+ *    картинки, платформенный резолв) задаётся явно.
+ */
+const КАРТИНКА = "/images/placeholder.png";
+
+/** Структурное содержимое: массивы, картинки, платформенный резолв. */
+const СТРУКТУРА: Record<string, Record<string, unknown>> = {
+  Hero: { image: КАРТИНКА, backgroundImages: [КАРТИНКА], button: { text: "Кнопка", link: "/catalog" } },
+  Slideshow: {
+    slides: [
+      { id: "s1", heading: { text: "Слайд 1" }, text: { content: "Текст 1" }, image: КАРТИНКА, button: { text: "К", link: "/a" } },
+      { id: "s2", heading: { text: "Слайд 2" }, text: { content: "Текст 2" }, image: КАРТИНКА, button: { text: "К", link: "/b" } },
+    ],
+  },
+  MultiColumns: {
+    columns: [
+      { id: "c1", heading: "Колонка 1", text: "Текст 1", linkText: "Ссылка", link: "/a", image: КАРТИНКА },
+      { id: "c2", heading: "Колонка 2", text: "Текст 2", linkText: "Ссылка", link: "/b", image: КАРТИНКА },
+    ],
+  },
+  MultiRows: {
+    rows: [
+      { id: "r1", heading: "Ряд 1", text: "Текст 1", image: КАРТИНКА, button: { text: "Кнопка", link: "/a" } },
+      { id: "r2", heading: "Ряд 2", text: "Текст 2", image: КАРТИНКА, button: { text: "Кнопка", link: "/b" } },
+    ],
+  },
+  Gallery: { items: [{ id: "g1", image: КАРТИНКА, text: "Подпись 1" }, { id: "g2", image: КАРТИНКА, text: "Подпись 2" }] },
+  CollapsibleSection: { items: [{ id: "i1", heading: "Вопрос", text: "Ответ" }] },
+  ImageWithText: { image: КАРТИНКА, button: { text: "Кнопка", link: "/a" } },
+  Video: { videoUrl: "https://example.com/v.mp4", poster: КАРТИНКА },
+  Product: { productId: "p1" },
+  PopularProducts: { productIds: ["p1", "p2", "p3"] },
+  Catalog: { collectionId: "c1" },
+  Collections: {
+    collections: [
+      { id: "col-1", collectionId: "c1", heading: "Коллекция 1", description: "Описание 1", image: КАРТИНКА },
+      { id: "col-2", collectionId: "c2", heading: "Коллекция 2", description: "Описание 2", image: КАРТИНКА },
+    ],
+  },
+};
+
+/**
+ * Каталог магазина. Передаётся ОТДЕЛЬНО от пропов, потому что живая цепочка
+ * рендера собирает `__merfy.resolved` сама (resolveBlockProps) и подсунутый в
+ * пропах `__merfy` затирается — проверено рендером: секция публикаций рисовала
+ * болванку «Публикация», и «Дата и время» выглядела мёртвой в 4 темах.
+ */
+const КАТАЛОГ = {
+  products: [
+    { id: "p1", name: "Товар 1", slug: "t1", price: 1990, compareAtPrice: 2490, images: [КАРТИНКА], collections: [{ id: "c1" }] },
+    { id: "p2", name: "Товар 2", slug: "t2", price: 2990, images: [КАРТИНКА], collections: [{ id: "c1" }] },
+    { id: "p3", name: "Товар 3", slug: "t3", price: 3990, images: [КАРТИНКА], collections: [{ id: "c2" }] },
+  ],
+  collections: [
+    { id: "c1", name: "Коллекция 1", slug: "kollekciya-1", image: КАРТИНКА },
+    { id: "c2", name: "Коллекция 2", slug: "kollekciya-2", image: КАРТИНКА },
+  ],
+  publications: [
+    { id: "pub1", title: "Публикация 1", slug: "pub-1", category: "blog", excerpt: "Анонс 1", coverImageUrl: КАРТИНКА, publishedAt: "2026-03-14T10:00:00.000Z" },
+    { id: "pub2", title: "Публикация 2", slug: "pub-2", category: "blog", excerpt: "Анонс 2", coverImageUrl: КАРТИНКА, publishedAt: "2026-04-01T12:30:00.000Z" },
+    { id: "pub3", title: "Публикация 3", slug: "pub-3", category: "blog", excerpt: "Анонс 3", coverImageUrl: КАРТИНКА, publishedAt: "2026-05-20T08:15:00.000Z" },
+  ],
+};
+
+/** Текст для объявленного панелью поля — по его имени, чтобы был осмысленным. */
+function текстПоля(имя: string): string {
+  const словарь: Record<string, string> = {
+    heading: "Заголовок секции",
+    subheading: "Надзаголовок",
+    subtitle: "Подзаголовок секции",
+    description: "Описание секции",
+    text: "Текст секции",
+    buttonText: "Кнопка",
+    buttonLink: "/catalog",
+    link: "/catalog",
+    label: "Подпись",
+    placeholder: "Введите значение",
+    primaryButton: "Кнопка",
+    secondaryButton: "Вторая кнопка",
+    cta: "Кнопка",
+    button: "Кнопка",
   };
-  const по: Record<string, Record<string, unknown>> = {
-    Hero: {
-      heading: { text: "Заголовок" },
-      text: { content: "Текст" },
-      image: картинка,
-      backgroundImages: [картинка],
-      button: { text: "Кнопка", link: "/catalog" },
-    },
-    Slideshow: {
-      slides: [
-        { id: "s1", heading: { text: "Слайд 1" }, text: { content: "Текст 1" }, image: картинка, button: { text: "К", link: "/a" } },
-        { id: "s2", heading: { text: "Слайд 2" }, text: { content: "Текст 2" }, image: картинка, button: { text: "К", link: "/b" } },
-      ],
-    },
-    MultiColumns: {
-      columns: [
-        { id: "c1", heading: "Колонка 1", text: "Текст 1", linkText: "Ссылка", link: "/a", image: картинка },
-        { id: "c2", heading: "Колонка 2", text: "Текст 2", linkText: "Ссылка", link: "/b", image: картинка },
-      ],
-    },
-    MultiRows: {
-      rows: [
-        { id: "r1", heading: "Ряд 1", text: "Текст 1", image: картинка },
-        { id: "r2", heading: "Ряд 2", text: "Текст 2", image: картинка },
-      ],
-    },
-    Gallery: { items: [{ id: "g1", image: картинка, text: "Подпись 1" }, { id: "g2", image: картинка, text: "Подпись 2" }] },
-    CollapsibleSection: { items: [{ id: "i1", heading: "Вопрос", text: "Ответ" }] },
-    Publications: { heading: { text: "Публикации" } },
-    PromoBanner: { text: "Акция", link: "/catalog" },
-    ImageWithText: { heading: { text: "Заголовок" }, text: { content: "Текст" }, image: картинка, button: { text: "Кнопка", link: "/a" } },
-    Video: { heading: "Видео", videoUrl: "https://example.com/v.mp4", poster: картинка },
-    Newsletter: { heading: "Подписка", text: { content: "Текст" } },
+  return словарь[имя] ?? `Значение ${имя}`;
+}
+
+const ТЕКСТОВЫЕ = new Set(["text", "textarea", "aiText"]);
+
+/**
+ * Содержимое составного поля — по его СОБСТВЕННОМУ объявлению `objectFields`.
+ *
+ * У Hero заголовок и текст объявлены не строками, а объектами
+ * ({ text, size } / { content, size }), и автозаполнение по типу их не видело:
+ * секция рендерилась вовсе без текста, а «Позиция», «Выравнивание» и
+ * «Контейнер» позиционировали пустоту и выглядели мёртвыми втроём разом.
+ * Имена вложенных полей читаются из панели — выдумывать их нельзя, на этом
+ * уже сгорели ручные замеры.
+ */
+function содержимоеОбъекта(тело: string, имя: string): Record<string, unknown> | null {
+  const i = тело.indexOf("objectFields:");
+  if (i < 0) return null;
+  const j = тело.indexOf("{", i);
+  if (j < 0) return null;
+  let d = 1;
+  let k = j + 1;
+  let внутри = "";
+  while (k < тело.length && d > 0) {
+    const c = тело[k];
+    if (c === "{") d++;
+    else if (c === "}") d--;
+    if (d > 0) внутри += c;
+    k++;
+  }
+  const out: Record<string, unknown> = {};
+  let гл = 0;
+  let cur = "";
+  const взять = (txt: string) => {
+    const km = txt.match(/^[\s\n]*\[?'?([a-zA-Z_]\w*)'?/);
+    const tm = txt.match(/type:\s*'([^']+)'/);
+    if (!km || !tm) return;
+    if (ТЕКСТОВЫЕ.has(tm[1])) out[km[1]] = текстПоля(km[1] === "text" || km[1] === "content" ? имя : km[1]);
   };
-  return { ...общее, ...(по[секция] ?? {}) };
+  for (const ch of внутри) {
+    if (ch === "{" || ch === "[" || ch === "(") гл++;
+    else if (ch === "}" || ch === "]" || ch === ")") гл--;
+    if (ch === "," && гл === 0) {
+      взять(cur);
+      cur = "";
+    } else cur += ch;
+  }
+  взять(cur);
+  return Object.keys(out).length ? out : null;
+}
+
+/** База рендера: структура секции + текст ТОЛЬКО в поля этой панели. */
+function наполнение(
+  секция: string,
+  объявлены: Array<{ имя: string; тип: string; тело: string }>,
+): Record<string, unknown> {
+  const из_панели: Record<string, unknown> = {};
+  for (const { имя, тип, тело } of объявлены) {
+    if (ТЕКСТОВЫЕ.has(тип)) {
+      из_панели[имя] = текстПоля(имя);
+    } else if (тип === "object") {
+      const вложенное = содержимоеОбъекта(тело, имя);
+      if (вложенное) из_панели[имя] = вложенное;
+    }
+  }
+  return { ...из_панели, ...(СТРУКТУРА[секция] ?? {}) };
 }
 
 const аргументы = process.argv.slice(2);
@@ -183,17 +358,18 @@ for (const тема of темыДляПрогона) {
   for (const секция of секцииТемы(тема)) {
     const панель = файлПанели(секция);
     if (!панель) continue;
-    const поля = поляБлока(панель);
-    for (const [поле, { тип, значения }] of Object.entries(поля)) {
+    const { тест, объявлены } = поляБлока(панель);
+    const содержимое = наполнение(секция, объявлены);
+    for (const [поле, { тип, значения }] of Object.entries(тест)) {
       // Секция БЕЗ содержимого рисует плейсхолдер, а в нём половина настроек
       // не применяется — и аудит объявил бы их мёртвыми. Ровно на этом сорвались
       // ручные замеры 21.09, поэтому каждой секции даётся живое наполнение.
-      const база = { id: `${секция}-1`, colorScheme: "scheme-1", ...НАПОЛНЕНИЕ(секция) };
+      const база = { id: `${секция}-1`, colorScheme: "scheme-1", ...содержимое };
       let A = "";
       let B = "";
       try {
-        A = renderBlock(тема, секция, { ...база, [поле]: значения[0] });
-        B = renderBlock(тема, секция, { ...база, [поле]: значения[1] });
+        A = renderBlock(тема, секция, { ...база, [поле]: значения[0] }, { catalog: КАТАЛОГ });
+        B = renderBlock(тема, секция, { ...база, [поле]: значения[1] }, { catalog: КАТАЛОГ });
       } catch (e) {
         упало.push({ тема, секция, поле, тип, причина: (e as Error).message.slice(0, 60) });
         continue;

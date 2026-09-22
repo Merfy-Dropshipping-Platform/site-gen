@@ -1543,6 +1543,12 @@ jobs:
       # уже лежат у магазинов, где настройку успели тронуть.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/scattered-heading-repair.spec.ts
+      # Дефолт темы не глушит ввод мерчанта. Панель пишет «Текст» подписки в
+      # `description`, а bloom нёс в theme.json `text.content` — порты читают
+      # цепочкой text → description, и дефолт побеждал всегда. Тестер сообщил
+      # про vanilla, замер показал bloom, поэтому проверка гоняет все пять.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/theme-default-shadows-input.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

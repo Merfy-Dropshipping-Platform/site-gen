@@ -127,12 +127,12 @@ describe("bloom ImageWithText — «Контейнер» (containerEnabled/posit
     expect(onSmall.html).not.toBe(onLarge.html);
   });
 
-  // Тоже 2026-09-21: карточка больше не абсолютная (абсолютное теперь фото —
-  // оно тянется на высоту пары), поэтому «Положение» двигает её не якорями
-  // top-6/bottom-6, а выключкой потока items-start/items-end.
+  // 2026-09-22: высоту пары задаёт МЕДИА (стоит в потоке со своей
+  // пропорцией), плашка — абсолютный слой поверх. «Положение» двигает её
+  // якорями с отступом 3,3 % — это эталонный вылет медиа за плашку.
   it("position меняет вертикальное положение карточки (top ≠ bottom) — не тронуто b79", () => {
-    expect(posTop.html).toMatch(/lg:items-start/);
-    expect(posBottom.html).toMatch(/lg:items-end/);
+    expect(posTop.html).toMatch(/lg:top-\[3\.3%\]/);
+    expect(posBottom.html).toMatch(/lg:bottom-\[3\.3%\]/);
     expect(posTop.html).not.toBe(posBottom.html);
   });
 

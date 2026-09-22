@@ -100,22 +100,22 @@ describe("«Изображение с текстом» (bloom) — инвент�
   });
 
   // ── Контейнер: тумблер наложения ──────────────────────────────────────
-  it("Контейнер: 'true' включает наложение, 'false' ставит пару встык", () => {
+  it("Наложение: 'true' кладёт плашку поверх медиа, 'false' ставит пару рядом", () => {
     if (!built) return;
-    expect(photoClass(render({ containerEnabled: "true" }))).toContain(
+    expect(cardClass(render({ containerEnabled: "true" }))).toContain(
       "lg:absolute",
     );
-    expect(photoClass(render({ containerEnabled: "false" }))).not.toContain(
+    expect(cardClass(render({ containerEnabled: "false" }))).not.toContain(
       "lg:absolute",
     );
   });
 
-  it("Контейнер принимает и boolean, и строку (§5 контракта)", () => {
+  it("Наложение принимает и boolean, и строку (§5 контракта)", () => {
     if (!built) return;
-    expect(photoClass(render({ containerEnabled: true }))).toContain(
+    expect(cardClass(render({ containerEnabled: true }))).toContain(
       "lg:absolute",
     );
-    expect(photoClass(render({ containerEnabled: false }))).not.toContain(
+    expect(cardClass(render({ containerEnabled: false }))).not.toContain(
       "lg:absolute",
     );
   });
@@ -145,13 +145,14 @@ describe("«Изображение с текстом» (bloom) — инвент�
   // ── Позиция фото ──────────────────────────────────────────────────────
   it("Позиция фото: карточка встаёт с противоположной стороны от фото", () => {
     if (!built) return;
-    // Фото прижато к своей стороне пары, карточка отжата к противоположной.
+    // Медиа стоит в потоке и отжато к своей стороне auto-margin'ом;
+    // плашка — абсолютный слой, прижатый к противоположному краю пары.
     const right = render({ containerEnabled: "true", imagePosition: "right" });
     const left = render({ containerEnabled: "true", imagePosition: "left" });
-    expect(photoClass(right)).toContain("lg:right-0");
-    expect(cardClass(right)).toContain("lg:mr-auto");
-    expect(photoClass(left)).toContain("lg:left-0");
-    expect(cardClass(left)).toContain("lg:ml-auto");
+    expect(photoClass(right)).toContain("lg:ml-auto");
+    expect(cardClass(right)).toContain("lg:left-0");
+    expect(photoClass(left)).toContain("lg:mr-auto");
+    expect(cardClass(left)).toContain("lg:right-0");
   });
 
   it("Позиция фото работает и БЕЗ наложения (порядок колонок)", () => {
@@ -162,15 +163,13 @@ describe("«Изображение с текстом» (bloom) — инвент�
   });
 
   // ── Положение ─────────────────────────────────────────────────────────
-  it("Положение: сверху / по центру / снизу — три разные выключки пары", () => {
+  it("Положение при наложении — три разных якоря плашки", () => {
     if (!built) return;
-    const p = (position: string) =>
-      /lg:items-(start|center|end)/.exec(
-        render({ containerEnabled: "true", position }),
-      )?.[0];
-    expect(p("top")).toBe("lg:items-start");
-    expect(p("middle")).toBe("lg:items-center");
-    expect(p("bottom")).toBe("lg:items-end");
+    const a = (position: string) =>
+      cardClass(render({ containerEnabled: "true", position }));
+    expect(a("top")).toContain("lg:top-[3.3%]");
+    expect(a("bottom")).toContain("lg:bottom-[3.3%]");
+    expect(a("middle")).toContain("lg:-translate-y-1/2");
   });
 
   // ── Выравнивание ──────────────────────────────────────────────────────
@@ -348,19 +347,21 @@ describe("«Изображение с текстом» (bloom) — геомет�
     expect(overlap("large")).toBeCloseTo(7.5, 1);
   });
 
-  it("«Ширина» растит карточку и ровно настолько же ужимает фото", () => {
+  // Эталон 22.09 (два снимка с одним «Размером»): Большая — медиа 585 и
+  // плашка 359; Средняя — медиа 434 и плашка 508. «Большая» растит МЕДИА.
+  it("«Ширина» растит медиа и ровно настолько же ужимает плашку", () => {
     if (!built) return;
-    expect(pct(card({ width: "small" }))).toBeLessThan(
-      pct(card({ width: "medium" })),
-    );
-    expect(pct(card({ width: "medium" }))).toBeLessThan(
-      pct(card({ width: "large" })),
-    );
-    expect(pct(photo({ width: "small" }))).toBeGreaterThan(
+    expect(pct(photo({ width: "small" }))).toBeLessThan(
       pct(photo({ width: "medium" })),
     );
-    expect(pct(photo({ width: "medium" }))).toBeGreaterThan(
+    expect(pct(photo({ width: "medium" }))).toBeLessThan(
       pct(photo({ width: "large" })),
+    );
+    expect(pct(card({ width: "small" }))).toBeGreaterThan(
+      pct(card({ width: "medium" })),
+    );
+    expect(pct(card({ width: "medium" }))).toBeGreaterThan(
+      pct(card({ width: "large" })),
     );
   });
 
@@ -376,31 +377,32 @@ describe("«Изображение с текстом» (bloom) — геомет�
     expect(outer("medium")).toEqual(outer("large"));
   });
 
-  it("фото прижато к своей стороне и растянуто на высоту пары", () => {
+  it("медиа стоит в потоке и своей пропорцией задаёт высоту пары", () => {
     if (!built) return;
-    const right = photo({ imagePosition: "right" });
-    expect(right).toContain("lg:absolute");
-    expect(right).toContain("lg:inset-y-0");
-    expect(right).toContain("lg:right-0");
-    expect(photo({ imagePosition: "left" })).toContain("lg:left-0");
-  });
-
-  it("карточка стоит в потоке и оставляет фото вертикальный вылет", () => {
-    if (!built) return;
-    const cls = card({});
+    const cls = photo({});
     expect(cls).not.toContain("lg:absolute");
-    expect(cls).toMatch(/lg:my-\d+/);
+    // Пропорция «Размера» остаётся на медиа — именно она даёт высоту.
+    expect(cls).toMatch(/aspect-\[|aspect-square/);
   });
 
-  it("«Размер» держит нижнюю границу высоты пары — три разные ступени", () => {
+  it("плашка — абсолютный слой поверх медиа", () => {
     if (!built) return;
-    const minh = (size: string) => {
-      const html = render({ containerEnabled: "true", size });
-      return /lg:min-h-\[(\d+)px\]/.exec(html)?.[1];
-    };
-    expect(minh("small")).toBeDefined();
-    expect(Number(minh("small"))).toBeLessThan(Number(minh("medium")));
-    expect(Number(minh("medium"))).toBeLessThan(Number(minh("large")));
+    expect(card({})).toContain("lg:absolute");
+  });
+
+  it("«Размер» меняет пропорцию медиа — три разные ступени", () => {
+    if (!built) return;
+    const a = (size: string) =>
+      /aspect-\[[^\]]+\]|aspect-square/.exec(photo({ size }))?.[0];
+    expect(a("small")).toBeDefined();
+    expect(a("small")).not.toEqual(a("medium"));
+    expect(a("medium")).not.toEqual(a("large"));
+    expect(a("small")).not.toEqual(a("large"));
+  });
+
+  it("отдельной нижней границы высоты больше нет — её задаёт медиа", () => {
+    if (!built) return;
+    expect(render({ containerEnabled: "true" })).not.toMatch(/lg:min-h-\[/);
   });
 
   it("на мобильном наложения нет — пара идёт столбиком", () => {
@@ -427,5 +429,73 @@ describe("«Изображение с текстом» (bloom) — геомет�
     expect(html).toContain("lg:grid-cols-2");
     expect(photoClass(html)).not.toContain("lg:absolute");
     expect(cardClass(html)).not.toContain("lg:absolute");
+  });
+});
+
+/**
+ * Требования владельца 2026-09-22, дословно: «для телефона не влияет
+ * настройки Ширина и позиция как с наложением, так и без него» и «под размер
+ * медиафайла без контейнера меняется высота вот этой части, где нет медиа».
+ *
+ * Первое проверяется составом классов: всё, что двигает пару, обязано нести
+ * префикс `lg:` — иначе оно доживёт до 375px. Второе — тем, что колонки без
+ * наложения тянутся на одну высоту (`items-stretch` + `lg:h-full`), а не
+ * центрируются каждая по своему содержимому.
+ */
+describe("«Изображение с текстом» (bloom) — телефон и высота без наложения", () => {
+  const bare = (cls: string, utility: string) =>
+    new RegExp(`(^|\\s)${utility}(\\s|$)`).test(cls);
+
+  it.each(["true", "false"])(
+    "containerEnabled=%s: ни один класс раскладки не доживает до телефона",
+    (containerEnabled) => {
+      if (!built) return;
+      for (const width of ["small", "medium", "large"]) {
+        for (const position of ["top", "middle", "bottom"]) {
+          const html = render({ containerEnabled, width, position });
+          const cls = `${cardClass(html)} ${photoClass(html)} ${html}`;
+          // Доли, якоря и выключка пары — только под lg.
+          for (const u of [
+            "w-[32.5%]",
+            "w-[49.5%]",
+            "w-[67.5%]",
+            "w-[40%]",
+            "w-[58%]",
+            "w-[75%]",
+          ]) {
+            expect(bare(cls, u.replace(/[[\]().%]/g, "\\$&"))).toBe(false);
+          }
+          for (const u of [
+            "items-start",
+            "items-end",
+            "items-center",
+            "items-stretch",
+            "absolute",
+          ]) {
+            expect(bare(cardClass(html), u)).toBe(false);
+          }
+        }
+      }
+    },
+  );
+
+  it("без наложения колонки тянутся на одну высоту — «Размер» двигает и текст", () => {
+    if (!built) return;
+    const html = render({ containerEnabled: "false" });
+    expect(html).toContain("lg:items-stretch");
+    expect(cardClass(html)).toContain("lg:h-full");
+    // Прежний `items-center` оставлял текстовую колонку по её содержимому.
+    expect(html).not.toContain("lg:items-center");
+  });
+
+  it("«Положение» без наложения выравнивает содержимое внутри колонки", () => {
+    if (!built) return;
+    const j = (position: string) =>
+      /lg:justify-(start|center|end)/.exec(
+        cardClass(render({ containerEnabled: "false", position })),
+      )?.[0];
+    expect(j("top")).toBe("lg:justify-start");
+    expect(j("middle")).toBe("lg:justify-center");
+    expect(j("bottom")).toBe("lg:justify-end");
   });
 });

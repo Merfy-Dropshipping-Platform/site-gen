@@ -2,11 +2,13 @@
 // (packages/theme-rose/pages/home.json): реестр меряет МЕХАНИЗМ настроек,
 // поэтому блок должен стартовать из состояния «вёрстка как есть», а не из
 // богатой пилотной композиции.
-// `_vanillaHomeMigrationVersion` выставлен в актуальную версию, иначе
-// migrateVanillaHomePage перезаписывает home на КАЖДОМ чтении.
+// Раньше здесь выставлялся `_vanillaHomeMigrationVersion`, чтобы
+// `migrateVanillaHomePage` не перезаписывал home на каждом чтении — миграция
+// удалена (домашний сид vanilla теперь живёт в
+// packages/theme-vanilla/pages/home.json), так что читающий путь home больше
+// не трогает вовсе, ключ не нужен.
 import amqplib from 'amqplib';
 import { randomUUID } from 'node:crypto';
-import { VANILLA_HOME_MIGRATION_VERSION } from '../src/utils/revision-migrations';
 
 const [tenantId, siteId] = process.argv.slice(2);
 if (!tenantId || !siteId) { console.error('usage: _vanilla-stand-seed.ts <tenantId> <siteId>'); process.exit(2); }
@@ -53,7 +55,6 @@ async function main() {
       'page-catalog': seedPage('catalog'),
       'page-product': seedPage('product'),
       'page-cart': seedPage('cart'),
-      _vanillaHomeMigrationVersion: VANILLA_HOME_MIGRATION_VERSION,
     },
     currentPageId: 'home',
     themeSettings: {},

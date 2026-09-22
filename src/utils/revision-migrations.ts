@@ -7,7 +7,15 @@
  * All migrations MUST be idempotent — running twice produces identical
  * output. New shapes must be detected by feature presence (e.g. "has Catalog
  * block in page-catalog content"), not by version number.
+ *
+ * Тема — это данные её пакета `packages/theme-<t>`, а не код: любое
+ * поведение, зависящее от того, ЧТО умеет тема (какие страницы у неё есть,
+ * какие блоки зарегистрированы), решается по МАНИФЕСТУ темы
+ * (`getThemeManifest`), а не литералом `themeId === 'vanilla'`/`'bloom'`/…
+ * Сторож: `src/utils/__tests__/no-theme-branches-in-migrations.spec.ts`.
  */
+
+import { getThemeManifest } from '../themes/theme-manifest-loader';
 
 type Block = { type?: string; props?: Record<string, unknown> };
 type PageData = { content?: Block[]; root?: { props?: Record<string, unknown> }; zones?: Record<string, unknown> };
@@ -879,13 +887,32 @@ function migrateCheckoutPage(pagesData: Record<string, unknown>): Record<string,
 }
 
 /**
- * Spec 103: thank-you страница `/checkout-result` (CheckoutHeader +
+ * Данные пакета решают, знает ли тема страницу `/checkout-result` — читаем
+ * `theme.json.pages`, а не сравниваем `themeId` со списком имён. Манифест
+ * типизирован без поля `pages` (`ThemeManifest` в theme-manifest-loader.ts
+ * покрывает только то, что читает он сам) — тот же приём локального
+ * каста, что уже используют `sites.service.ts#buildInitialRevision` и
+ * `page-blocks.ts`.
+ */
+function themeHasCheckoutResultPage(themeId: string | null | undefined): boolean {
+  if (!themeId) return false;
+  const manifest = getThemeManifest(themeId) as { pages?: Array<{ id?: string }> } | null;
+  return (manifest?.pages ?? []).some((p) => p?.id === 'page-checkout-result');
+}
+
+/**
+ * Spec 103/109: thank-you страница `/checkout-result` (CheckoutHeader +
  * OrderConfirmation «Спасибо за заказ»). Системная страница добавлена в
- * theme.json ПОСЛЕ того как существующие сайты достигли ревизии 2.0, поэтому
- * version-миграции её не бэкфилят. Аддитивно добавляем в pages[] + pagesData
- * (идемпотентно). Оперирует полной ревизией (нужен pages[]), а не только
- * pagesData. Вызывается ТОЛЬКО для rose — единственной темы с зарегистрированным
- * блоком OrderConfirmation.
+ * `theme.json` тем, у кого она есть, ПОСЛЕ того как существующие сайты
+ * достигли ревизии 2.0, поэтому version-миграции её не бэкфилят. Аддитивно
+ * добавляем в pages[] + pagesData (идемпотентно). Оперирует полной ревизией
+ * (нужен pages[]), а не только pagesData.
+ *
+ * Вызывающая сторона (`migrateRevisionData`) решает, звать ли эту функцию,
+ * по МАНИФЕСТУ темы (`theme.json.pages` содержит `page-checkout-result`?),
+ * а не по имени темы — состав страниц темы это данные пакета, не код. Сейчас
+ * страница есть у rose/flux/bloom/satin; vanilla её не заявляет — для vanilla
+ * функция просто не вызывается, `pages/checkout-result.json` у неё нет.
  */
 function seedCheckoutResultPage(
   out: Record<string, unknown>,
@@ -953,421 +980,13 @@ function seedCheckoutResultPage(
 }
 
 /**
- * 084 Stage 1: vanilla home seed migration (T025 v2).
- *
- * Если `themeId === 'vanilla'` AND текущая версия миграции на pagesData
- * меньше `VANILLA_HOME_MIGRATION_VERSION` — заполняет home канонической
- * последовательностью 10 блоков
- * `[PromoBanner, Header, Slideshow, Collections, MainText, Video,
- *   ImageWithText, PopularProducts, Newsletter, Footer]` со ссылками на
- * коллекции `mebel` и `dekor` (соответствует Figma vanilla `1:18954`)
- * И запекает в каждый блок vanilla-specific props (logoPosition,
- * buttonStyle, formLayout, swatchOverlay, bottomStrip, и т.д.) — чтобы
- * мерчант видел эти variants в админке без зависимости от render-time
- * blockDefaults из theme.json.
- *
- * Idempotency anchor — version-based:
- *   `pagesData._vanillaHomeMigrationVersion` (number, ≥ 2 = уже мигрирован
- *   на текущую версию). Старая Hero-seed версия (без флага) считается
- *   version 0 и автоматически апгрейдится до version 2.
- *
- * Для не-vanilla тем home.content остаётся нетронутым. Применяется
- * только когда themeId явно передан.
- */
-export const VANILLA_HOME_MIGRATION_VERSION = 11;
-
-/**
- * 084 Stage 3 Task 6 (v11): vanilla-specific Catalog blockDefaults baked
- * onto Catalog blocks living in `page-catalog.content` and
- * `page-collection.content`.
- *
- * When `force=true` (used during the v10 → v11 transition), all 9 props
- * are overwritten unconditionally — interpreted as a destructive restyle
- * because `migrateCatalogPage` runs first in the orchestrator and pre-seeds
- * page-catalog with all-themes defaults (scheme-2/columns:3/padding:80),
- * which are Figma-incorrect for vanilla. Idempotent at v11+ (early return
- * in `migrateVanillaHomePage`) preserves any post-v11 merchant edits.
- *
- * When `force=false` (default), only undefined props get filled.
- */
-const VANILLA_CATALOG_DEFAULTS: Record<string, unknown> = {
-  filterPosition: 'side',
-  showFilter: 'true',
-  showSort: 'true',
-  columns: 2,
-  cards: 12,
-  gridAspect: '1:1',
-  cardCaptionStyle: 'uppercase',
-  colorScheme: 'scheme-3',
-  padding: { top: 120, bottom: 120 },
-};
-
-function applyVanillaCatalogDefaults(block: Block, force: boolean = false): Block {
-  if (!block || block.type !== 'Catalog') return block;
-  const props = (block.props ?? {}) as Record<string, unknown>;
-  const merged: Record<string, unknown> = { ...props };
-  for (const [key, value] of Object.entries(VANILLA_CATALOG_DEFAULTS)) {
-    if (force || merged[key] === undefined) {
-      merged[key] = value;
-    }
-  }
-  return { ...block, props: merged };
-}
-
-export function migrateVanillaHomePage(
-  pagesData: Record<string, unknown>,
-  themeId: string | null | undefined,
-): Record<string, unknown> {
-  if (themeId !== 'vanilla') return pagesData;
-
-  const currentVersionRaw = pagesData['_vanillaHomeMigrationVersion'];
-  const currentVersion =
-    typeof currentVersionRaw === 'number' && Number.isFinite(currentVersionRaw)
-      ? currentVersionRaw
-      : 0;
-  if (currentVersion >= VANILLA_HOME_MIGRATION_VERSION) return pagesData;
-
-  const existing = pagesData['home'] as PageData | undefined;
-  const ts = Date.now();
-  const seedBlocks: Block[] = [
-    {
-      type: 'PromoBanner',
-      props: {
-        id: `PromoBanner-${ts}`,
-        text: 'СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10',
-        link: { text: 'В каталог', href: '/catalog' },
-        // 'large' = полоса вёрстки vanilla (48px). Раньше сид ставил 'thin', а порт
-        // молча подменял его на large; теперь 'thin' честно даёт 24px, поэтому сид
-        // обязан называть тот размер, который реально имеет в виду.
-        size: 'large',
-        textTransform: 'uppercase',
-        colorScheme: 'scheme-1',
-        padding: { top: 12, bottom: 12 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'Header',
-      props: {
-        id: `Header-${ts + 1}`,
-        siteTitle: 'Vanilla Pilot',
-        logo: '',
-        logoPosition: 'center-absolute',
-        activeLinkIndicator: 'underline',
-        stickiness: 'scroll-up',
-        menuType: 'dropdown',
-        navigationLinks: [
-          { label: 'Каталог', href: '/catalog' },
-          // Демо-пункты «Мебель» и «Декор» убраны: они ссылались на коллекции
-          // магазина верстальщиков, а у настоящего магазина их нет — стартовое
-          // меню отдавало 404 (баг тестера, перепроверено 20.09). Свои коллекции
-          // мерчант добавляет пикером, тот пишет рабочий /collections/<slug>.
-        ],
-        actionButtons: { showSearch: true, showCart: true, showProfile: true },
-        colorScheme: 'scheme-1',
-        // 084 Stage 2 Task 4 (v4): 32px y-padding to hit Figma 1:18957 80px
-        // header height. Pre-v4 seeded 16px (= 73px live, 7px short).
-        padding: { top: 32, bottom: 32 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'Hero',
-      props: {
-        id: 'Hero-vanilla-home',
-        mode: 'carousel',
-        size: 'large',
-        alignment: 'left',
-        contentAlign: 'left',
-        imageFullBleed: true,
-        buttonStyle: 'solid',
-        pagination: 'numbers',
-        autoplay: true,
-        interval: 5,
-        container: 'false',
-        padding: { top: 0, bottom: 0 },
-        title: '',
-        subtitle: '',
-        image: { url: '', alt: '' },
-        cta: { text: '', href: '' },
-        variant: 'overlay',
-        slides: [
-          {
-            id: 'slide-vanilla-home-1',
-            imageUrl: 'https://minio.merfy.ru/product-images/vanilla-pilot/mebel/1.jpg',
-            heading: { text: 'Искусство жить уютно', size: 'large' },
-            text: { content: 'Товары, создающие атмосферу тепла и спокойствия', size: 'medium' },
-            buttonText: 'Перейти к коллекции',
-            buttonLink: '/catalog',
-          },
-          {
-            id: 'slide-vanilla-home-2',
-            imageUrl: 'https://minio.merfy.ru/product-images/vanilla-pilot/mebel/15.jpg',
-            heading: { text: 'Мебель ручной работы', size: 'large' },
-            text: { content: 'Натуральные материалы и авторский дизайн', size: 'medium' },
-            buttonText: 'Смотреть мебель',
-            // Каталог с фильтром, а не адрес коллекции. Коллекций «Мебель» и
-            // «Декор» у настоящего магазина может не быть, а страница
-            // /collections/<слаг> пишется сборкой ТОЛЬКО под существующие
-            // коллекции: замер 22.09 на магазине владельца — /catalog/mebel 404,
-            // /collections/mebel 404, /catalog?collection=mebel 200. Ту же
-            // причину уже записали у кнопки «Смотреть каталог» ниже, но слайды
-            // и плитки тогда не поправили — отсюда 404 у тестера.
-            buttonLink: '/catalog?collection=mebel',
-          },
-          {
-            id: 'slide-vanilla-home-3',
-            imageUrl: 'https://minio.merfy.ru/product-images/vanilla-pilot/dekor/1.jpg',
-            heading: { text: 'Декор для дома', size: 'large' },
-            text: { content: 'Уютные акценты для каждой комнаты', size: 'medium' },
-            buttonText: 'Смотреть декор',
-            buttonLink: '/catalog?collection=dekor',
-          },
-        ],
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'Collections',
-      props: {
-        id: `Collections-${ts + 3}`,
-        heading: 'Коллекции',
-        subtitle: 'Мебель и декор для уютного дома',
-        headingSize: 'medium',
-        // 084 Stage 2 Task 5 (v5): titleAlignment=left per Figma 1:18973
-        // (items-start). Pre-v5 was 'center'.
-        titleAlignment: 'left',
-        imageView: 'square',
-        gridAspect: '1:1',
-        cardCaptionStyle: 'uppercase',
-        dataSource: 'manual',
-        collections: [
-          {
-            id: 'col-mebel',
-            collectionId: 'mebel',
-            heading: 'Мебель',
-            description: 'Кресла, столы, стеллажи',
-            image: '',
-          },
-          {
-            id: 'col-dekor',
-            collectionId: 'dekor',
-            heading: 'Декор',
-            description: 'Вазы, текстиль, аксессуары',
-            image: '',
-          },
-        ],
-        columns: 2,
-        // Канон-дефолт блока (Collections.puckConfig defaults) — тот же
-        // '/catalog?collection='. Сид уводил плитки на /collections/<слаг>,
-        // которого у магазина без этих коллекций нет.
-        cardLinkBase: '/catalog?collection=',
-        colorScheme: 'scheme-3',
-        // 084 Stage 2 Task 5 (v5): 120px y-padding per Figma 1:18973.
-        // Pre-v5 was 80px (40px short of Figma).
-        padding: { top: 120, bottom: 120 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'MainText',
-      props: {
-        id: `MainText-${ts + 4}`,
-        heading: { text: 'Тепло вашего дома начинается здесь', size: 'small' },
-        text: {
-          content:
-            'Потому что настоящий уют рождается из деталей. Мы знаем, как важно возвращаться в дом, где каждая деталь дарит комфорт и радость. Натуральный хлопок, уютный велюр, мягкий лен и нежные оттенки — все это Vanila. Позвольте себе наслаждаться красотой в деталях и превратите повседневность в маленькое удовольствие. Создайте дом своей мечты вместе с Vanila.',
-          size: 'small',
-        },
-        alignment: 'center',
-        position: 'center',
-        // 084 Stage 2 Task 6 (v6): use canonical `cta` shape (Astro reads
-        // `cta`, not `button`) so the «К покупкам» button actually renders.
-        cta: { text: 'К покупкам', href: '/catalog', variant: 'primary' },
-        buttonStyle: 'outlined',
-        textStyle: 'italic',
-        // 084 Stage 2 Task 6 (v6): scheme-2 = `#3a4530` dark olive bg with
-        // white text per Figma 1:18984. Pre-v6 used scheme-3 (light grey
-        // `#eee`) which was an inverse of the design.
-        colorScheme: 'scheme-2',
-        // 084 Stage 2 Task 6 (v6): 120px y-padding per Figma 1:18984.
-        padding: { top: 120, bottom: 120 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'Video',
-      props: {
-        id: `Video-${ts + 5}`,
-        heading: '',
-        videoUrl: '',
-        poster: '',
-        position: 'contained',
-        padded: true,
-        align: 'container',
-        // 084 Stage 2 Task 7 (v7): scheme-1 = brand-dark `#26311c`
-        // (rgb 38 49 28) bg per Figma 1:18989. Pre-v7 used scheme-3
-        // (light `#eee`) which inverted the design — Video must sit on
-        // the same deep olive band as PromoBanner.
-        colorScheme: 'scheme-1',
-        // 084 Stage 2 Task 7 (v7): 120px y-padding per Figma 1:18989.
-        // Pre-v7 was {top:0, bottom:80} (top padding missing entirely).
-        padding: { top: 120, bottom: 120 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'ImageWithText',
-      props: {
-        id: `ImageWithText-${ts + 6}`,
-        image: { url: '', alt: 'Мебель ручной работы' },
-        heading: { text: 'Качество российских мастеров', size: 'large' },
-        text: {
-          content:
-            'Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.',
-          size: 'medium',
-        },
-        // Кнопка ведёт в каталог, а не в коллекцию магазина верстальщиков:
-        // «Мебель» у настоящего магазина может не быть (та же причина, что у
-        // пунктов меню выше).
-        button: { text: 'Смотреть каталог', link: '/catalog' },
-        imagePosition: 'right',
-        ctaPosition: 'bottom-pinned',
-        textStyle: 'italic',
-        // 084 Stage 2 Task 8 (v8): scheme-2 = mid-olive `#3a4530`
-        // (rgb 58 69 48) bg per Figma 1:18992 with white text + outlined
-        // white CTA. Pre-v8 used scheme-3 (light `#eee`) which inverted
-        // the design — block must sit on dark olive band.
-        colorScheme: 'scheme-2',
-        // 084 Stage 2 Task 8 (v8): 120px y-padding per Figma 1:18992.
-        // Pre-v8 was 80/80 — too compact.
-        padding: { top: 120, bottom: 120 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'PopularProducts',
-      props: {
-        id: `PopularProducts-${ts + 7}`,
-        heading: { text: 'Популярные товары', size: 'medium', alignment: 'left' },
-        // 084 Stage 2 Task 9 (v9): Figma 1:18999 — 3-col × 2-row grid (6 cards),
-        // 120px y-padding, heading left-aligned. Pre-v9 had cards:4/columns:4
-        // (1-row only) and padding 80/80 (too tight).
-        cards: 6,
-        columns: 3,
-        collection: 'mebel',
-        cardCaptionStyle: 'uppercase',
-        swatchOverlay: true,
-        headingAlignment: 'left',
-        quickAdd: false,
-        quickAddText: 'В КОРЗИНУ',
-        colorScheme: 'scheme-3',
-        padding: { top: 120, bottom: 120 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'Newsletter',
-      props: {
-        id: `Newsletter-${ts + 8}`,
-        heading: { text: 'Будьте в курсе уютных новостей', size: 'medium', alignment: 'left' },
-        text: {
-          content:
-            'Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.',
-          size: 'small',
-        },
-        description:
-          'Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.',
-        placeholder: 'E-mail',
-        buttonText: 'Отправить',
-        formLayout: 'inline-submit',
-        position: 'left',
-        alignment: 'left',
-        colorScheme: 'scheme-2',
-        padding: { top: 120, bottom: 120 },
-      } as Record<string, unknown>,
-    },
-    {
-      type: 'Footer',
-      props: {
-        id: `Footer-${ts + 9}`,
-        siteTitle: 'Vanilla Pilot',
-        variant: '2-part-asymmetric',
-        bottomStrip: {
-          enabled: true,
-          text: '© 2025 Vanilla Theme. Powered by Merfy',
-        },
-        copyright: { companyName: 'Vanilla Pilot', showYear: true },
-        newsletter: {
-          enabled: false,
-          heading: '',
-          description: '',
-          placeholder: '',
-        },
-        heading: { text: '', size: 'medium', alignment: 'left' },
-        text: { content: '', size: 'small' },
-        navigationColumn: {
-          title: 'Магазин',
-          links: [
-            { label: 'Каталог', href: '/catalog' },
-            // Демо-пункты «Мебель» и «Декор» убраны: они ссылались на коллекции
-            // магазина верстальщиков, а у настоящего магазина их нет — стартовое
-            // меню отдавало 404 (баг тестера, перепроверено 20.09). Свои коллекции
-            // мерчант добавляет пикером, тот пишет рабочий /collections/<slug>.
-          ],
-        },
-        informationColumn: {
-          title: 'Информация',
-          links: [
-            { label: 'Доставка', href: '/delivery' },
-            { label: 'Контакты', href: '/contacts' },
-          ],
-        },
-        socialColumn: {
-          title: 'Связь',
-          email: '',
-          socialLinks: [],
-        },
-        colorScheme: 'scheme-1',
-        padding: { top: 80, bottom: 40 },
-      } as Record<string, unknown>,
-    },
-  ];
-
-  const baseExisting: PageData = existing && typeof existing === 'object' ? existing : { content: [] };
-
-  // 084 Stage 3 Task 6 (v11): bake vanilla Catalog defaults onto Catalog blocks
-  // in page-catalog and page-collection. Force-override (force=true) replaces
-  // pre-existing values unconditionally because we only reach this branch when
-  // currentVersion < VANILLA_HOME_MIGRATION_VERSION — the v10 → v11 transition
-  // is interpreted as a destructive restyle to overwrite migrateCatalogPage's
-  // all-themes seed (scheme-2/columns:3/padding:80). At v11+ the early return
-  // above preserves merchant edits.
-  const pageCatalogRaw = pagesData['page-catalog'] as PageData | undefined;
-  const updatedPageCatalog =
-    pageCatalogRaw && Array.isArray(pageCatalogRaw.content)
-      ? { ...pageCatalogRaw, content: pageCatalogRaw.content.map((b) => applyVanillaCatalogDefaults(b, true)) }
-      : pageCatalogRaw;
-
-  const pageCollectionRaw = pagesData['page-collection'] as PageData | undefined;
-  const updatedPageCollection =
-    pageCollectionRaw && Array.isArray(pageCollectionRaw.content)
-      ? { ...pageCollectionRaw, content: pageCollectionRaw.content.map((b) => applyVanillaCatalogDefaults(b, true)) }
-      : pageCollectionRaw;
-
-  return {
-    ...pagesData,
-    _vanillaHomeMigrationVersion: VANILLA_HOME_MIGRATION_VERSION,
-    home: {
-      ...baseExisting,
-      content: seedBlocks,
-      root: baseExisting.root ?? { props: { title: 'Главная' } },
-      zones: baseExisting.zones ?? {},
-    } as PageData,
-    ...(updatedPageCatalog ? { 'page-catalog': updatedPageCatalog } : {}),
-    ...(updatedPageCollection ? { 'page-collection': updatedPageCollection } : {}),
-  };
-}
-
-/**
  * Apply all server-side migrations to a revision data object. Mutates a
  * shallow copy — input is not modified.
  *
- * `themeId` опционален — если передан, активируется theme-specific
- * миграция (на текущий момент только vanilla home seed). Без themeId
- * theme-specific шаги пропускаются (back-compat для legacy callers).
+ * `themeId` опционален — используется шагами, которые решают своё поведение
+ * по МАНИФЕСТУ темы (`getThemeManifest(themeId)`, напр. знает ли тема
+ * страницу `/checkout-result`), а не литералом имени темы. Без themeId такие
+ * шаги пропускаются (back-compat для legacy callers).
  */
 /** Плейсхолдер-телефон верстальщиков (засевался во все темы). */
 const FOOTER_PLACEHOLDER_PHONE = '+7 (000) 000-00-00';
@@ -1885,61 +1504,6 @@ function normalizePromoBannerPadding(
       delete props.padding;
       pageChanged = true;
       return { ...b, props };
-    });
-    if (pageChanged) {
-      out[pageId] = { ...(page as object), content };
-      changed = true;
-    }
-  }
-  return changed ? out : pagesData;
-}
-
-/**
- * Bloom Header: снять сидовый `padding {0,0}` — вернуть канон темы {16,16}.
- *
- * Жалоба владельца 20.09: «отступы в шапке идут по пизде — сверху отступов нет,
- * снизу нет». Замер живой витрины подтвердил: обёртка получала инлайн
- * `padding-top:0;padding-bottom:0`, меню упиралось в нижний край шапки.
- *
- * Корень — сид: все 12 страниц `packages/theme-bloom/pages/*.json` клали шапке
- * `padding {top:0,bottom:0}`, хотя `theme.json` темы даёт {16,16}. Порт считает
- * ровно {16,16} каноном и рисует литерал верстальщика `py-6` (24px); любое
- * другое значение выбрасывает `py-6` и ставит инлайн-стиль. Ноль из сида и
- * означал «совсем без отступов» у каждого bloom-магазина.
- *
- * Сид уже исправлен, но у существующих магазинов ноль лежит В РЕВИЗИИ — сид
- * замораживает настройки, правка темы до них не доходит. Переносим ТОЛЬКО
- * точное {0,0} (значение сида) и только у bloom: осознанный ноль мерчанта в
- * другой теме не трогаем. Идемпотентна: после переноса значение уже {16,16}.
- */
-const BLOOM_HEADER_SEED_PADDING = { top: 0, bottom: 0 };
-const BLOOM_HEADER_CANON_PADDING = { top: 16, bottom: 16 };
-
-function migrateBloomHeaderPadding(
-  pagesData: Record<string, unknown>,
-  themeId?: string | null,
-): Record<string, unknown> {
-  if (themeId !== 'bloom') return pagesData;
-  let changed = false;
-  const out: Record<string, unknown> = { ...pagesData };
-  for (const pageId of Object.keys(pagesData)) {
-    const page = pagesData[pageId] as PageData | undefined;
-    if (!page || !Array.isArray(page.content)) continue;
-    let pageChanged = false;
-    const content = page.content.map((block) => {
-      const b = block as { type?: string; props?: Record<string, unknown> };
-      if (!b || b.type !== 'Header' || !b.props) return block;
-      const padding = b.props.padding as { top?: unknown; bottom?: unknown } | undefined;
-      if (
-        !padding ||
-        typeof padding !== 'object' ||
-        padding.top !== BLOOM_HEADER_SEED_PADDING.top ||
-        padding.bottom !== BLOOM_HEADER_SEED_PADDING.bottom
-      ) {
-        return block;
-      }
-      pageChanged = true;
-      return { ...b, props: { ...b.props, padding: { ...BLOOM_HEADER_CANON_PADDING } } };
     });
     if (pageChanged) {
       out[pageId] = { ...(page as object), content };
@@ -2742,9 +2306,6 @@ export function migrateRevisionData(
     out.pagesData = retagSeededCheckoutScheme(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
-    out.pagesData = migrateVanillaHomePage(out.pagesData as Record<string, unknown>, themeId);
-  }
-  if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = normalizeFooterContacts(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
@@ -2755,9 +2316,6 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = renameNewsletterPlaceholder(out.pagesData as Record<string, unknown>);
-  }
-  if (out.pagesData && typeof out.pagesData === 'object') {
-    out.pagesData = migrateBloomHeaderPadding(out.pagesData as Record<string, unknown>, themeId);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = dropSeededCartScheme(out.pagesData as Record<string, unknown>, themeId);
@@ -2792,9 +2350,12 @@ export function migrateRevisionData(
     out.pagesData = backfillVideoSizeSplit(out.pagesData as Record<string, unknown>);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
-  // (touches pages[] + pagesData), поэтому после pagesData-сидеров.
-  const withCheckoutResult =
-    themeId === 'rose' || themeId === 'flux' ? seedCheckoutResultPage(out) : out;
+  // (touches pages[] + pagesData), поэтому после pagesData-сидеров. Решает не
+  // по имени темы, а по манифесту темы — состав страниц темы это данные
+  // пакета (`theme.json.pages`), а не код.
+  const withCheckoutResult = themeHasCheckoutResultPage(themeId)
+    ? seedCheckoutResultPage(out)
+    : out;
 
   // Пункт 14: «Профиль» — для всех тем (страница витрины есть у всех пяти).
   const withProfile = seedProfilePage(withCheckoutResult);

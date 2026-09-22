@@ -1568,6 +1568,12 @@ jobs:
       # схлопывая пары в «Цвет/Размер» с жёсткими подписями (пункт 26, 22.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-variant-pairs-visible.spec.ts
+      # «Следующее фото при наведении» в «Каталоге товаров» работает во всех пяти
+      # темах. vanilla её не читала вовсе (0 упоминаний против 8–14 у остальных).
+      # Карточки рисует скрипт гидрации, поэтому скрипт исполняется в jsdom на
+      # подложенном ответе витринного API, а наведение — настоящим событием.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-next-photo-hover.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

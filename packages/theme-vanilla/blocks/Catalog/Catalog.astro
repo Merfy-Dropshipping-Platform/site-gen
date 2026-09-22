@@ -64,6 +64,8 @@ interface Props {
 		quickAddText?: string;
 		/** «Стиль кнопки» быстрого добавления: primary (заливка) · outlined (обводка). */
 		buttonStyle?: string;
+		/** «Следующее фото при наведении»: наведение на карточку показывает images[1]. */
+		nextPhoto?: boolean | "true" | "false";
 	};
 	/** Настройка «Выбор коллекции» конструктора (страница page-collection).
 	    Приходит как slug/id выбранной коллекции; null/пусто → весь каталог. */
@@ -153,6 +155,13 @@ const cardAspectClass =
 		: productCard?.cardStyle === "wide"
 			? "aspect-[4/3]"
 			: "aspect-square";
+
+// «Следующее фото при наведении» (productCard.nextPhoto). Панель показывает эту
+// настройку во всех пяти темах, а vanilla её не читала вовсе — переключатель
+// ничего не делал (аудит 22.09: 0 упоминаний в порте против 8–14 у остальных).
+// Поведение — как у rose: у картинки карточки data-img-primary/secondary, при
+// наведении src меняется на images[1], при уходе возвращается.
+const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
 
 // «Быстрое добавление»: 'none' (или отсутствие пропа) = канон вёрстки vanilla —
 // кнопки в карточке нет. Любое другое значение показывает кнопку.
@@ -470,7 +479,7 @@ const rowStockOptions: RadioOption[] = [
 	   обе вместе прятали ОБА варианта — каталог был пустой. */
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass }}>
+<script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass, nextPhotoOn }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
 	// перенесены телами 1:1 (без import/типов), данные frontmatter — через define:vars.
@@ -696,13 +705,42 @@ const rowStockOptions: RadioOption[] = [
 		}
 		bindQuickAdd();
 
+		// «Следующее фото при наведении»: делегат на документ (грид перерисовывается
+		// целиком), один раз на страницу. Как у rose: наведение → images[1], уход →
+		// images[0]. Без настройки у картинок нет data-img-secondary — ничего не делает.
+		function bindNextPhoto() {
+			if (!nextPhotoOn) return;
+			if (document.body.getAttribute("data-vn-next-photo") === "1") return;
+			document.body.setAttribute("data-vn-next-photo", "1");
+			document.addEventListener("mouseover", (event) => {
+				const img = event.target.closest("img[data-img-secondary]");
+				if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+				const sec = img.getAttribute("data-img-secondary");
+				if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
+			});
+			document.addEventListener("mouseout", (event) => {
+				const img = event.target.closest("img[data-img-primary]");
+				if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+				const prim = img.getAttribute("data-img-primary");
+				if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
+			});
+		}
+		bindNextPhoto();
+
 		// renderCardHtml — зеркалит vanilla-карточку (aspect-square, font-vanilla-arsenal).
 		function renderCardHtml(p) {
 			const href = escapeHtml(productHref(p));
 			const name = escapeHtml(p.name);
 			const rawImage = productImageRaw(p);
+			// Второе фото для «Следующего фото при наведении» — images[1]; атрибут
+			// secondary ставится только если оно есть, иначе смена — no-op.
+			const rawImage2 =
+				(nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+			const imgDataAttrs =
+				' data-img-primary="' + escapeHtml(rawImage) + '"' +
+				(rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "");
 			const media = rawImage
-				? `<img src="${escapeHtml(rawImage)}" alt="${name}" width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
+				? `<img src="${escapeHtml(rawImage)}"${imgDataAttrs} alt="${name}" width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
 				: CARD_MEDIA_FALLBACK_HTML;
 			const price = escapeHtml(formatPrice(p.price));
 			const oldRaw = formatPrice(p.oldPrice || p.compareAtPrice || null);

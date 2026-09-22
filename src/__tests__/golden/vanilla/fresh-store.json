@@ -1,0 +1,1445 @@
+{
+  "item": {
+    "createdAt": "<DATE>",
+    "data": {
+      "currentPageId": "home",
+      "lockVersion": 1,
+      "manifestVersion": "2.0",
+      "pages": [
+        {
+          "id": "home",
+          "isCustom": false,
+          "locale": null,
+          "name": "Главная страница",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-about",
+          "isCustom": false,
+          "locale": null,
+          "name": "О нас",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/about",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-delivery",
+          "isCustom": false,
+          "locale": null,
+          "name": "Доставка",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/delivery",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-contacts",
+          "isCustom": false,
+          "locale": null,
+          "name": "Контакты",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/contacts",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-catalog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/catalog",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-collection",
+          "isCustom": false,
+          "locale": null,
+          "name": "Страница коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/collections/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-cart",
+          "isCustom": false,
+          "locale": null,
+          "name": "Корзина",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/cart",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-product",
+          "isCustom": false,
+          "locale": null,
+          "name": "Товар",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/product",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout",
+          "isCustom": false,
+          "locale": null,
+          "name": "Оформление заказа",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-profile",
+          "isCustom": false,
+          "locale": null,
+          "name": "Профиль",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/profile",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-wishlist",
+          "isCustom": false,
+          "locale": null,
+          "name": "Избранное",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/wishlist",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-orders",
+          "isCustom": false,
+          "locale": null,
+          "name": "Заказы",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/orders",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-login",
+          "isCustom": false,
+          "locale": null,
+          "name": "Вход",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/login",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        }
+      ],
+      "pagesData": {
+        "_vanillaHomeMigrationVersion": 11,
+        "checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "id": "Footer-home",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "home": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-0",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-1",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "alignment": "left",
+                "autoplay": true,
+                "buttonStyle": "solid",
+                "container": "false",
+                "contentAlign": "left",
+                "cta": {
+                  "href": "",
+                  "text": ""
+                },
+                "id": "Hero-vanilla-home",
+                "image": {
+                  "alt": "",
+                  "url": ""
+                },
+                "imageFullBleed": true,
+                "interval": 5,
+                "mode": "carousel",
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "pagination": "numbers",
+                "size": "large",
+                "slides": [
+                  {
+                    "buttonLink": "/catalog",
+                    "buttonText": "Перейти к коллекции",
+                    "heading": {
+                      "size": "large",
+                      "text": "Искусство жить уютно"
+                    },
+                    "id": "slide-vanilla-home-1",
+                    "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/mebel/1.jpg",
+                    "text": {
+                      "content": "Товары, создающие атмосферу тепла и спокойствия",
+                      "size": "medium"
+                    }
+                  },
+                  {
+                    "buttonLink": "/catalog?collection=mebel",
+                    "buttonText": "Смотреть мебель",
+                    "heading": {
+                      "size": "large",
+                      "text": "Мебель ручной работы"
+                    },
+                    "id": "slide-vanilla-home-2",
+                    "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/mebel/15.jpg",
+                    "text": {
+                      "content": "Натуральные материалы и авторский дизайн",
+                      "size": "medium"
+                    }
+                  },
+                  {
+                    "buttonLink": "/catalog?collection=dekor",
+                    "buttonText": "Смотреть декор",
+                    "heading": {
+                      "size": "large",
+                      "text": "Декор для дома"
+                    },
+                    "id": "slide-vanilla-home-3",
+                    "imageUrl": "https://minio.merfy.ru/product-images/vanilla-pilot/dekor/1.jpg",
+                    "text": {
+                      "content": "Уютные акценты для каждой комнаты",
+                      "size": "medium"
+                    }
+                  }
+                ],
+                "subtitle": "",
+                "title": "",
+                "variant": "overlay"
+              },
+              "type": "Hero"
+            },
+            {
+              "props": {
+                "cardCaptionStyle": "uppercase",
+                "cardLinkBase": "/catalog?collection=",
+                "collections": [
+                  {
+                    "collectionId": "mebel",
+                    "description": "Кресла, столы, стеллажи",
+                    "heading": "Мебель",
+                    "id": "col-mebel",
+                    "image": ""
+                  },
+                  {
+                    "collectionId": "dekor",
+                    "description": "Вазы, текстиль, аксессуары",
+                    "heading": "Декор",
+                    "id": "col-dekor",
+                    "image": ""
+                  }
+                ],
+                "colorScheme": "scheme-3",
+                "columns": 2,
+                "dataSource": "manual",
+                "gridAspect": "1:1",
+                "heading": "Коллекции",
+                "headingSize": "medium",
+                "id": "Collections-3",
+                "imageView": "square",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "subtitle": "Мебель и декор для уютного дома",
+                "titleAlignment": "left"
+              },
+              "type": "Collections"
+            },
+            {
+              "props": {
+                "alignment": "center",
+                "buttonStyle": "outlined",
+                "colorScheme": "scheme-2",
+                "cta": {
+                  "href": "/catalog",
+                  "text": "К покупкам",
+                  "variant": "primary"
+                },
+                "heading": {
+                  "size": "small",
+                  "text": "Тепло вашего дома начинается здесь"
+                },
+                "id": "MainText-4",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "position": "center",
+                "text": {
+                  "content": "Потому что настоящий уют рождается из деталей. Мы знаем, как важно возвращаться в дом, где каждая деталь дарит комфорт и радость. Натуральный хлопок, уютный велюр, мягкий лен и нежные оттенки — все это Vanila. Позвольте себе наслаждаться красотой в деталях и превратите повседневность в маленькое удовольствие. Создайте дом своей мечты вместе с Vanila.",
+                  "size": "small"
+                },
+                "textStyle": "italic"
+              },
+              "type": "MainText"
+            },
+            {
+              "props": {
+                "align": "container",
+                "colorScheme": "scheme-1",
+                "heading": "",
+                "id": "Video-5",
+                "padded": true,
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "position": "contained",
+                "poster": "",
+                "videoUrl": ""
+              },
+              "type": "Video"
+            },
+            {
+              "props": {
+                "button": {
+                  "link": "/catalog",
+                  "text": "Смотреть каталог"
+                },
+                "colorScheme": "scheme-2",
+                "ctaPosition": "bottom-pinned",
+                "heading": {
+                  "size": "large",
+                  "text": "Качество российских мастеров"
+                },
+                "id": "ImageWithText-6",
+                "image": {
+                  "alt": "Мебель ручной работы",
+                  "url": ""
+                },
+                "imagePosition": "right",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "text": {
+                  "content": "Каждое изделие создано вручную — натуральные материалы, классические формы, современные акценты.",
+                  "size": "medium"
+                },
+                "textStyle": "italic"
+              },
+              "type": "ImageWithText"
+            },
+            {
+              "props": {
+                "cardCaptionStyle": "uppercase",
+                "cards": 6,
+                "collection": "mebel",
+                "colorScheme": "scheme-3",
+                "columns": 3,
+                "heading": {
+                  "alignment": "left",
+                  "size": "medium",
+                  "text": "Популярные товары"
+                },
+                "headingAlignment": "left",
+                "id": "PopularProducts-7",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "quickAdd": false,
+                "quickAddText": "В КОРЗИНУ",
+                "swatchOverlay": true
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "alignment": "left",
+                "buttonText": "Отправить",
+                "colorScheme": "scheme-2",
+                "description": "Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.",
+                "formLayout": "inline-submit",
+                "heading": {
+                  "alignment": "left",
+                  "size": "medium",
+                  "text": "Будьте в курсе уютных новостей"
+                },
+                "id": "Newsletter-8",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "placeholder": "E-mail",
+                "position": "left",
+                "text": {
+                  "content": "Станьте частью сообщества Vanila. Вас ждут свежие идеи для уюта, анонсы новинок, полезные советы по уходу за текстилем и специальные промокоды для подписчиков.",
+                  "size": "small"
+                }
+              },
+              "type": "Newsletter"
+            },
+            {
+              "props": {
+                "bottomStrip": {
+                  "enabled": true,
+                  "text": "© 2025 Vanilla Theme. Powered by Merfy"
+                },
+                "colorScheme": "scheme-1",
+                "copyright": {
+                  "companyName": "Vanilla Pilot",
+                  "showYear": true
+                },
+                "heading": {
+                  "alignment": "left",
+                  "size": "medium",
+                  "text": ""
+                },
+                "id": "Footer-9",
+                "informationColumn": {
+                  "links": [
+                    {
+                      "href": "/delivery",
+                      "label": "Доставка"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    }
+                  ],
+                  "title": "Магазин"
+                },
+                "newsletter": {
+                  "description": "",
+                  "enabled": false,
+                  "heading": "",
+                  "placeholder": ""
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Vanilla Pilot",
+                "socialColumn": {
+                  "email": "",
+                  "socialLinks": [],
+                  "title": "Связь"
+                },
+                "text": {
+                  "content": "",
+                  "size": "small"
+                },
+                "variant": "2-part-asymmetric"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Главная"
+            }
+          },
+          "zones": {}
+        },
+        "page-about": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-about",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-about",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "content": "<p>Мы создаём вещи, к которым хочется возвращаться: чистые линии, спокойные цвета и материалы, приятные каждый день.</p>",
+                "heading": "О нас",
+                "headingSize": "large",
+                "id": "Page-about",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "id": "Footer-about",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-cart": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-cart",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-cart",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "CartBody-1",
+                "padding": {
+                  "bottom": 24,
+                  "top": 80
+                }
+              },
+              "type": "CartBody"
+            },
+            {
+              "props": {
+                "id": "CartSummary-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 0
+                }
+              },
+              "type": "CartSummary"
+            },
+            {
+              "props": {
+                "id": "Footer-cart",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Корзина"
+            }
+          },
+          "zones": {}
+        },
+        "page-catalog": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-catalog",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-catalog",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "cardCaptionStyle": "uppercase",
+                "cards": 12,
+                "categoryTitle": {
+                  "text": "Каталог"
+                },
+                "colorScheme": "scheme-3",
+                "columns": 2,
+                "filterPosition": "side",
+                "gridAspect": "1:1",
+                "heading": {
+                  "size": "large",
+                  "text": "Каталог"
+                },
+                "id": "Catalog-1",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "showFilter": "true",
+                "showSort": "true"
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "id": "Footer-catalog",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Каталог"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "id": "Footer-home",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "page-collection": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-collection",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-collection",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "cardCaptionStyle": "uppercase",
+                "cards": 12,
+                "categorySubtitle": {
+                  "text": "{{COLLECTION_DESCRIPTION}}"
+                },
+                "categoryTitle": {
+                  "text": "{{COLLECTION_NAME}}"
+                },
+                "colorScheme": "scheme-3",
+                "columns": 2,
+                "filterPosition": "side",
+                "gridAspect": "1:1",
+                "heading": {
+                  "size": "large",
+                  "text": "{{COLLECTION_NAME}}"
+                },
+                "id": "Catalog-collection",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "showFilter": "true",
+                "showSort": "true"
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "id": "Footer-collection",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "{{COLLECTION_NAME}}"
+            }
+          },
+          "zones": {}
+        },
+        "page-contacts": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-contacts",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-contacts",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "ContactForm-1"
+              },
+              "type": "ContactForm"
+            },
+            {
+              "props": {
+                "id": "Footer-contacts",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Контакты"
+            }
+          },
+          "zones": {}
+        },
+        "page-delivery": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-delivery",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-delivery",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+                "heading": "Доставка",
+                "headingSize": "large",
+                "id": "Page-delivery",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "id": "Footer-delivery",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Доставка"
+            }
+          },
+          "zones": {}
+        },
+        "page-login": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-login",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-login",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "LoginSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "LoginSection"
+            },
+            {
+              "props": {
+                "id": "Footer-login",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Вход"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-orders": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-orders",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-orders",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "OrdersSection-1"
+              },
+              "type": "OrdersSection"
+            },
+            {
+              "props": {
+                "id": "Footer-orders",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Мои заказы"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-product": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-product",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-product",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "Product-1",
+                "variants": {
+                  "displayStyle": "button",
+                  "shape": "none"
+                }
+              },
+              "type": "Product"
+            },
+            {
+              "props": {
+                "heading": {
+                  "size": "small",
+                  "text": "Вам также может понравиться"
+                },
+                "id": "PopularProducts-product"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "id": "Footer-product",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Товар"
+            }
+          },
+          "zones": {}
+        },
+        "page-profile": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-profile",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-profile",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "AccountSection-1"
+              },
+              "type": "AccountSection"
+            },
+            {
+              "props": {
+                "id": "Footer-profile",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Основные данные"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-wishlist": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "id": "PromoBanner-page-wishlist",
+                "link": {
+                  "href": "/catalog",
+                  "text": "В каталог"
+                },
+                "size": "large",
+                "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+                "textTransform": "uppercase"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": true,
+                  "showProfile": true,
+                  "showSearch": true
+                },
+                "activeLinkIndicator": "underline",
+                "colorScheme": "scheme-1",
+                "id": "Header-wishlist",
+                "logo": "",
+                "logoPosition": "center-absolute",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  }
+                ],
+                "padding": {
+                  "bottom": 32,
+                  "top": 32
+                },
+                "siteTitle": "Vanilla Pilot",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "WishlistSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "WishlistSection"
+            },
+            {
+              "props": {
+                "id": "Footer-wishlist",
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Избранное"
+            }
+          },
+          "zones": {}
+        }
+      },
+      "siteOverrides": {
+        "blocks": {},
+        "pages": {}
+      },
+      "themeId": "vanilla",
+      "themeSettings": {}
+    },
+    "id": "<REVISION_ID>",
+    "siteId": "<SITE_ID>"
+  }
+}

@@ -561,11 +561,21 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		aria-label="Меню"
 	>
 		{isSidebar ? (
-			/* Sidebar drawer: logo + cart at top */
+			/* Шапка открытой панели: на месте логотипа — крестик (пункт 29 документа
+			   владельца). Логотип рисовался дважды: в панели и в шапке страницы.
+			   Атрибут data-burger-toggle отдаёт закрытие тому же скрипту темы. */
 			<div class="flex items-center justify-between">
-				<a href="/" class={mobileLogoCls} aria-label={siteTitle}>
-					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
-				</a>
+				<button
+					type="button"
+					data-burger-toggle
+					data-burger-close
+					aria-expanded="true"
+					aria-controls="flux-burger"
+					aria-label="Закрыть меню"
+					class="flex size-10 shrink-0 items-center justify-center transition-opacity hover:opacity-70"
+				>
+					<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+				</button>
 				<div class="flex items-center gap-3">
 					<FluxWishlistLink badgeCls={badgeCls} boxCls="size-10 shrink-0" iconSize="size-6" />
 					{showCart && (
@@ -622,7 +632,28 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 				const kids = Array.isArray(link.submenu) ? link.submenu : [];
 				return (
 					<div class="flex flex-col" data-nav-group={kids.length > 0 ? "" : undefined}>
-						<div class="flex w-full items-center gap-1">
+						{/* Пункт с вложенностью раскрывается ВСЕЙ СТРОКОЙ, и стрелка у него
+						    одна — родная стрелка темы «arrow-slide-right» (пункт 28 документа
+						    владельца: «две стрелки сразу, а по клику меню закрывается»).
+						    Ссылкой такой пункт больше не рисуется: нажатие уводило на
+						    страницу и закрывало меню вместо раскрытия. */}
+						{kids.length > 0 ? (
+							<button
+								type="button"
+								data-nav-sub-toggle
+								aria-expanded="false"
+								class:list={[
+									"flex h-11 w-full items-center justify-between rounded-[4px] px-3 pr-[10px] text-left font-roboto-flex text-[16px] leading-normal",
+									"[&[aria-expanded=true]_img]:rotate-90",
+									active
+										? "bg-[rgb(var(--color-button-bg,0_0_0))] font-normal text-[rgb(var(--color-button-text,255_255_255))]"
+										: "font-light text-[rgb(var(--color-heading,0_0_0))]",
+								]}
+							>
+								<span>{link.label}</span>
+								<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "transition-transform invert" : "transition-transform"} />
+							</button>
+						) : (
 						<a
 							href={link.href}
 							class:list={[
@@ -645,22 +676,10 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 							<span>{link.label}</span>
 							<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
 						</a>
-						{kids.length > 0 && (
-							<button
-								type="button"
-								data-nav-sub-toggle
-								aria-expanded="false"
-								aria-label={`Раскрыть «${link.label}»`}
-								class="flex size-8 shrink-0 items-center justify-center text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 [&[aria-expanded=true]>svg]:rotate-180"
-							>
-								<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-									<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-								</svg>
-							</button>
 						)}
-						</div>
-						{/* Подменю в шторке раскрывается нажатием на стрелку (пункт 25
-						    документа владельца: на телефоне — по нажатию). Для «Бокового»
+						{/* Подменю в шторке раскрывается нажатием на строку пункта (пункты 25
+						    и 28 документа владельца: на телефоне — по нажатию, и нажатие на
+						    сам пункт раскрывает уровень, а не закрывает меню). Для «Бокового»
 						    типа шторка — единственный путь к вложенным пунктам. */}
 						{kids.length > 0 && (
 							<div class="ml-3 flex flex-col border-l border-black/10 pl-3" data-nav-sub hidden>

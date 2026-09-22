@@ -644,9 +644,18 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			// ВСЕХ пяти темах, не только в bloom. Пусто, если схема меню не задана —
 			// тогда шторка наследует схему секции, как раньше.
 			menuSchemeClass,
-			"fixed z-[55] hidden overflow-y-auto bg-[var(--vanilla-surface)]",
+			"fixed",
+			// Боковая панель лежит ПОВЕРХ шапки страницы. Мобильная строка шапки стоит
+			// на z-[60] и рисовалась поверх панели: две шапки одна на другой, крестик и
+			// иконки дважды (баги 1 и 3 документа «баги бокового меню», 22.09). Нижней
+			// шторке — прежний z-[55]: она открывается ПОД строкой шапки.
+			isSidebar ? "z-[70]" : "z-[55]",
+			"hidden overflow-y-auto bg-[var(--vanilla-surface)]",
+			// Боковая панель на телефоне — во весь экран: было 90vw у правого края, и
+			// слева полосой просвечивала страница (баг 1). С md — колонка 360px на всю
+			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			isSidebar
-				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px]"
 				: "inset-x-0 bottom-0 w-full px-4 pb-8 pt-4 md:hidden",
 		]}
 		role="dialog"
@@ -657,8 +666,10 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		data-search-limit="8"
 	>
 		{isSidebar ? (
-			/* Шапка открытой панели: крестик на месте логотипа (пункт 29 документа
-			   владельца) — логотип рисовался и в панели, и в шапке страницы. */
+			/* Шапка открытой панели: крестик и корзина. Крестик на месте логотипа
+			   (пункт 29 документа владельца) — логотип рисовался и в панели, и в шапке
+			   страницы. Избранного здесь нет — остаётся только корзина (баг 4
+			   документа «баги бокового меню»). */
 			<div class="flex items-center justify-between">
 				<button
 					type="button"
@@ -671,18 +682,6 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				>
 					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 				</button>
-				<a
-					href="/wishlist"
-					class="relative mr-3 flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
-					aria-label="Избранное"
-				>
-					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="favourite" sizeClass="size-4" class="brightness-0" />
-					<span
-						data-wishlist-count
-						data-empty="true"
-						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--vanilla-header-bg)] px-1 font-manrope text-[10px] font-normal leading-none text-white data-[empty=true]:hidden"
-					>0</span>
-				</a>
 				<a
 					href="/cart"
 					class="relative flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
@@ -867,9 +866,13 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		return (promo?.offsetHeight ?? 48) + 80;
 	};
 
+	// Под шапку встаёт только нижняя шторка. Боковая панель стоит от верха экрана
+	// и сама накрывает шапку, а ресайз окна (адресная строка телефона, смена
+	// ширины в конструкторе) звал эту функцию без разбора — и панель съезжала под
+	// верхнее меню (баг 5 документа «баги бокового меню»). Так же у flux и satin.
 	const positionBurger = () => {
 		const burger = document.getElementById("vanilla-burger");
-		if (!burger) return;
+		if (!burger || isSidebarDrawer()) return;
 		burger.style.top = `${headerOffsetBelowPromo()}px`;
 	};
 
@@ -927,12 +930,19 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		if (open) setSearchOpen(false);
 		burger.classList.toggle("hidden", !open);
 		syncBurgerButtonIcons(open);
-		document.body.style.overflow = open ? "hidden" : "";
+		// Страницу под открытым меню запираем на <html>, а не на <body>. У vanilla
+		// `html { overflow-x: clip }` (global.css): overflow <body> тогда до окна не
+		// доходит, и страница под панелью уезжала колесом (замер: 0 → 1400px, баг 2
+		// документа «баги бокового меню»). Хуже того, <body> с overflow:hidden сам
+		// становится прокручиваемым контейнером и отрывает липкую шапку от окна.
+		// Замок на <html> запирает само окно — одинаково во всех пяти темах.
+		document.documentElement.style.overflow = open ? "hidden" : "";
 		// positionBurger only for mobile bottom-sheet (not right-side panel)
 		if (open && !isSidebarDrawer()) positionBurger();
 	};
 
 	const syncHeaderChromeAfterNavigation = () => {
+		document.documentElement.style.overflow = "";
 		document.body.style.overflow = "";
 		window.dispatchEvent(new CustomEvent("vanilla:login:close"));
 		setSearchOpen(false);

@@ -560,6 +560,12 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			// ВСЕХ пяти темах, не только в bloom. Пусто, если схема меню не задана —
 			// тогда шторка наследует схему секции, как раньше.
 			menuSchemeClass,
+			"fixed",
+			// Боковая панель лежит ПОВЕРХ шапки страницы. Мобильная строка шапки стоит
+			// на z-[60] и рисовалась поверх панели: две шапки одна на другой, крестик и
+			// иконки дважды (баги 1 и 3 документа «баги бокового меню», 22.09). Нижней
+			// шторке — прежний z-[55]: она открывается ПОД строкой шапки.
+			isSidebar ? "z-[70]" : "z-[55]",
 			// Полотно шторки — «Фон» СХЕМЫ, а не палитра Tailwind. `bg-white` Tailwind 4
 			// печатает как `var(--color-white)`: переменная ЕСТЬ, но её нет ни в одной
 			// схеме мерчанта, поэтому шторка замирает белой при любой схеме. Замер
@@ -569,9 +575,12 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			// невидимое меню: на заводской схеме bloom «Фон» розовый, а «Текст» белый —
 			// белые пункты лежали на белом полотне. Фолбэк 255_255_255 = прежний вид.
 			// Сторож: pnpm test:scheme-targets.
-			"fixed z-[55] hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
+			"hidden overflow-y-auto bg-[rgb(var(--color-bg,255_255_255))]",
+			// Боковая панель на телефоне — во весь экран: было 90vw у правого края, и
+			// слева полосой просвечивала страница (баг 1). С md — колонка 360px на всю
+			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			isSidebar
-				? "inset-y-0 right-0 bottom-0 w-[360px] max-w-[90vw] px-6 pt-6 pb-8"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px]"
 				: "inset-x-0 top-[80px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden",
 		]}
 		role="dialog"
@@ -582,9 +591,11 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		data-search-limit="8"
 	>
 		{isSidebar ? (
-			/* Шапка открытой панели: на месте логотипа — крестик (пункт 29 документа
-			   владельца). Логотип рисовался дважды: в панели и в шапке страницы.
-			   Атрибут data-burger-toggle отдаёт закрытие тому же скрипту темы. */
+			/* Шапка открытой панели: крестик и корзина. На месте логотипа — крестик
+			   (пункт 29 документа владельца): логотип рисовался дважды — в панели и в
+			   шапке страницы. Избранного здесь нет — остаётся только корзина (баг 4
+			   документа «баги бокового меню»). Атрибут data-burger-toggle отдаёт
+			   закрытие тому же скрипту темы. */
 			<div class="flex items-center justify-between">
 				<button
 					type="button"
@@ -598,7 +609,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 				</button>
 				<div class="flex items-center gap-3">
-					<FluxWishlistLink badgeCls={badgeCls} boxCls="size-10 shrink-0" iconSize="size-6" />
 					{showCart && (
 						<button
 							type="button"
@@ -704,7 +714,11 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 							]}
 						>
 							<span>{link.label}</span>
-							<NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />
+							{/* В «Боковом» меню стрелка — только у пункта с вложенными: она
+							    обещает раскрытие, а обычный пункт уводит на страницу и
+							    закрывает меню (баг 6 документа «баги бокового меню»). В нижней
+							    шторке стрелка у каждого пункта — это макет «Бургер» flux. */}
+							{!isSidebar && <NtIcon name="arrow-slide-right" sizeClass="size-6" class={active ? "invert" : ""} />}
 						</a>
 						)}
 						{/* Подменю в шторке раскрывается нажатием на строку пункта (пункты 25
@@ -802,10 +816,16 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		}
 		burger.classList.toggle("hidden", !open);
 		syncBurgerButtonIcons(open);
-		document.body.style.overflow = open ? "hidden" : "";
+		// Страницу под открытым меню запираем на <html>, а не на <body>: пока у
+		// <html> overflow «visible», замок <body> доходит до окна, но стоит теме
+		// задать `html { overflow-x: clip }` (так у bloom и vanilla) — и страница под
+		// панелью уезжает колесом (баг 2 документа «баги бокового меню»), а <body>
+		// с overflow:hidden отрывает липкую шапку от окна. Одинаково в пяти темах.
+		document.documentElement.style.overflow = open ? "hidden" : "";
 	};
 
 	const syncFluxAfterNavigation = () => {
+		document.documentElement.style.overflow = "";
 		document.body.style.overflow = "";
 		setSearchOpen(false);
 		const burger = document.getElementById("flux-burger");

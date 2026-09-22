@@ -62,6 +62,8 @@ describe("шапка и меню: сканер видимых правил", () 
     const m = out.match(/(\d+) клеток, (\d+) проверок/);
     expect(m).not.toBeNull();
     expect(Number(m![1])).toBe(15);
-    expect(Number(m![2])).toBeGreaterThanOrEqual(60);
+    // 80 = 70 прежних + 2 правила бокового меню × 5 тем (баги 4 и 6 документа
+    // «баги бокового меню», 22.09). Молча выпавшее правило опустит число.
+    expect(Number(m![2])).toBeGreaterThanOrEqual(80);
   });
 });

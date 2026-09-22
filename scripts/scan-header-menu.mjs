@@ -140,6 +140,39 @@ const RULES = [
     },
   },
   {
+    id: "в-шапке-панели-только-корзина",
+    заголовок: "в шапке открытой панели крестик и корзина, без избранного",
+    // Баг 4 документа «баги бокового меню» (22.09): «в шапке открытой панели
+    // остаются обе иконки — избранное и корзина; ожидаемо — только корзина».
+    menuTypes: ["sidebar"],
+    check(_root, drawer) {
+      const close = drawer?.querySelector("[data-burger-close]");
+      if (!close) return "кнопки закрытия нет";
+      // Строка шапки панели — ближайший предок крестика, внутри которого нет меню.
+      let row = close.parentNode;
+      while (row && row !== drawer && !row.querySelector("[data-cart-open], a[href='/cart']")) row = row.parentNode;
+      if (!row || row === drawer) return "корзины в шапке панели нет";
+      const hearts = row.querySelectorAll('a[href="/wishlist"]').length;
+      return hearts === 0 ? null : `избранное в шапке панели: ${hearts}`;
+    },
+  },
+  {
+    id: "стрелка-только-у-вложенных",
+    заголовок: "стрелка только у пункта с подпунктами",
+    // Баг 6 документа «баги бокового меню»: стрелка обещает раскрытие, а обычный
+    // пункт уводит на страницу и закрывает меню. У flux стрелка стояла у КАЖДОГО
+    // пункта боковой панели.
+    menuTypes: ["sidebar"],
+    check(_root, drawer) {
+      const nav = drawer?.querySelector("[data-nav-drawer]");
+      if (!nav) return "меню в панели не найдено";
+      const plain = nav.querySelectorAll("a[href]").filter((a) => (a.text || "").trim() === "О нас");
+      if (!plain.length) return "обычный пункт «О нас» не найден";
+      const glyphs = plain.reduce((n, a) => n + a.querySelectorAll("svg, img").length, 0);
+      return glyphs === 0 ? null : `стрелок у пункта без вложенных: ${glyphs}`;
+    },
+  },
+  {
     id: "бургер-в-крестик",
     заголовок: "иконка меню умеет превращаться в крестик",
     menuTypes: ["sidebar"],

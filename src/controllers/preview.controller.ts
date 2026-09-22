@@ -964,7 +964,7 @@ export class PreviewController {
       // body.themeSettings — несохранённые настройки из панели; схема корзины
       // и прочее — из сохранённой ревизии (как и было).
       const css = parityOn('TOKENS', siteId)
-        ? siteTokensCss(body.themeSettings ?? {}, loaded.data, loaded.themeId)
+        ? siteTokensCss(body.themeSettings ?? {}, loaded.data, loaded.themeId, { logoRule: parityOn('LOGO', siteId) })
         : buildTokensCss(
             this.withCartDrawerSchemeFallback(body.themeSettings ?? {}, loaded.data),
             loaded.themeId,
@@ -1126,7 +1126,7 @@ export class PreviewController {
     siteId: string,
   ): string {
     if (parityOn('TOKENS', siteId)) {
-      return siteTokensCss(data.themeSettings, data, themeId);
+      return siteTokensCss(data.themeSettings, data, themeId, { logoRule: parityOn('LOGO', siteId) });
     }
     return buildTokensCss(
       this.withCartDrawerSchemeFallback(data.themeSettings, data),
@@ -1412,7 +1412,7 @@ export class PreviewController {
     revisionData?: unknown,
   ): string {
     const css = parityOn('TOKENS', siteId)
-      ? siteTokensCss(themeSettings, revisionData, themeId)
+      ? siteTokensCss(themeSettings, revisionData, themeId, { logoRule: parityOn('LOGO', siteId) })
       : buildTokensCss(
           this.withCartDrawerSchemeFallback(themeSettings, revisionData),
           themeId,

@@ -320,15 +320,35 @@ export function siteTokensCss(
   themeSettings: unknown,
   revisionData: unknown,
   themeId: string | null,
+  opts: { logoRule?: boolean } = {},
 ): string {
   const ts = isPlainObject(themeSettings) ? themeSettings : {};
   const cartDrawerScheme =
     (ts as { cartDrawerScheme?: unknown }).cartDrawerScheme ??
     resolveCartDrawerSchemeId(revisionData);
-  return (
-    googleFontsImportCss(ts) + buildTokensCss({ ...ts, cartDrawerScheme }, themeId)
-  );
+  const css =
+    googleFontsImportCss(ts) + buildTokensCss({ ...ts, cartDrawerScheme }, themeId);
+  return opts.logoRule ? `${css}\n${LOGO_SIZE_CSS}\n` : css;
 }
+
+/**
+ * Размер логотипа-картинки — ровно то правило, которое агент превью
+ * (PREVIEW_NAV_AGENT_INLINE в preview.service.ts) вставляет в конструктор:
+ * высота = настройка «Размер логотипа» (`--size-logo-width`, токены задают её
+ * всегда), ширина — по пропорции до 160px.
+ *
+ * Пункт 2 сближения «витрина = конструктор» (владелец 23.09, эталон —
+ * конструктор): у vanilla порт держит потолок ширины `max-w-[89px]` (десктоп) /
+ * `max-w-[76px]` (мобайл), и на витрине логотип при высоте из панели сжимался
+ * (замер стенда: 127×40 в конструкторе → 89 в ширину на витрине). У bloom /
+ * flux / rose / satin потолок порта уже 160px — для них правило ничего не
+ * меняет. Правило вне @layer: перебивает утилиты Tailwind так же, как
+ * вставка агента в превью. Включается выключателем `PARITY_LOGO` поверх
+ * общей функции токенов (siteTokensCss). Текст обязан совпадать со строкой
+ * агента символ в символ — сторож logo-rule-parity.spec.ts.
+ */
+export const LOGO_SIZE_CSS =
+  '[class*="h-[var(--size-logo-width"]{height:var(--size-logo-width,24px);width:auto;max-width:160px;object-fit:contain}';
 
 
 // Список tokens которые emit'ятся явно в rootRules (с merchant cascade).

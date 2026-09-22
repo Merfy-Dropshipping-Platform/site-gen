@@ -189,12 +189,21 @@ const overlapCardSideCls = imageLeft ? "lg:right-0" : "lg:left-0";
 // пары. Считаем от эталонной ДОЛИ, а не от пикселей снимка: он снят в превью
 // конструктора, где пара уже окна. Карточка абсолютная, поэтому вылет задаём
 // отступами её якоря (inset), а не margin.
-const overlapCardVerticalCls =
-	position === "top"
-		? "lg:top-[3.3%]"
-		: position === "bottom"
-			? "lg:bottom-[3.3%]"
-			: "lg:top-1/2 lg:-translate-y-1/2";
+// Плашка ТЯНЕТСЯ по высоте медиа, а не сидит по своему содержимому.
+// Владелец 2026-09-22: «плашка слева тоже должна менять размеры» — на снимке
+// медиа было во всю высоту, а плашка висела маленьким прямоугольником
+// посередине. Эталон это подтверждает: плашка 527 при медиа 585 и 376 при
+// 439 — то есть ровно высота медиа минус вылет с обеих сторон (3.3 % ширины
+// пары). Значит `inset-y`, а не якорь одной кромкой.
+// «Положение» при этом не теряется: оно выравнивает СОДЕРЖИМОЕ внутри
+// растянутой плашки — тем же positionJustifyCls, что и в раскладке без
+// наложения.
+// Вылет задан в пикселях, а не в процентах: `inset-y` в процентах считается
+// от ВЫСОТЫ родителя, и вылет поплыл бы вслед за «Размером» (замер: 29 px при
+// медиа 864, но всего 14 при медиа 416). На эталоне он постоянный — 29 px при
+// паре 877 независимо от высоты медиа (585 и 439 дали тот же вылет), то есть
+// 3.3 % ШИРИНЫ пары. Наша пара на 1440-м вьюпорте 1280 → 40 px.
+const overlapCardVerticalCls = "lg:inset-y-10";
 // Отдельная нижняя граница высоты пары больше не нужна: высоту задаёт само
 // медиа своим аспектом («Размер» × ширина медиа), а карточка лежит поверх.
 // Прежний `min-h` держал высоту вместо медиа и делал «Размер» невидимым —
@@ -290,7 +299,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			class={
 				isOverlap
-					? `relative z-10 flex w-full flex-col gap-6 lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
+					? `relative z-10 flex w-full flex-col gap-6 ${positionJustifyCls} lg:absolute ${overlapCardWidthCls} ${overlapCardSideCls} ${overlapCardVerticalCls}${containerSurfaceCls}${containerSchemeCls}`
 					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${containerSchemeCls}`
 			}
 		>

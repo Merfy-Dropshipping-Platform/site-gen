@@ -124,7 +124,14 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id ? `${id}-title` : undefined;
+// Тогл «Скрыть заголовок и текст» (toggle 'true'/'false', default 'false'): при
+// 'true' блок heading+description не рендерится (форма/согласие остаются).
+// Читался во ВСЕХ темах, кроме bloom: здесь тумблер в панели был, а на витрине
+// не делал ничего — классический «настройка не влияет». Форма условия и место
+// применения — как у rose/flux/satin/vanilla.
+const hideTitle = p.hideTitle === "true";
+
+const titleId = id && !hideTitle ? `${id}-title` : undefined;
 
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
@@ -150,25 +157,27 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class="mx-auto w-full max-w-[1320px]" data-animate>
 		<div class={wrapCls}>
-			<div class={textBlockCls}>
-				{!isFieldHidden('heading') && (
-					<h2
-						id={titleId}
-						class={headingCls}
+			{!hideTitle && (
+				<div class={textBlockCls}>
+					{!isFieldHidden('heading') && (
+						<h2
+							id={titleId}
+							class={headingCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+							set:html={inlineFormat(heading)}
+						></h2>
+					)}
+					<p
+						class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
-						data-puck-subsection-field="heading"
-						set:html={inlineFormat(heading)}
-					></h2>
-				)}
-				<p
-					class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
-					data-puck-subsection-parent={id}
-					data-puck-subsection-index="101"
-					data-puck-subsection-field="text"
-					set:html={inlineFormat(description)}
-				></p>
-			</div>
+						data-puck-subsection-index="101"
+						data-puck-subsection-field="text"
+						set:html={inlineFormat(description)}
+					></p>
+				</div>
+			)}
 
 			<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">
 				{

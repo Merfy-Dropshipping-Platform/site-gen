@@ -26,6 +26,7 @@ import ProductPrice from './ProductPrice.astro';
 import ProductVariants from './ProductVariants.astro';
 import { VARIANT_CHIP_EQUALIZE_SOURCE } from '../../runtime/variant-chip-equalize';
 import { pickDefaultCombination } from '../../runtime/variant-default';
+import { resolveVariantDisplay } from '../../runtime/variant-display';
 import ProductCounter from './ProductCounter.astro';
 import ProductActions from './ProductActions.astro';
 import ProductDescription from './ProductDescription.astro';
@@ -182,34 +183,12 @@ const fallbackDescription = description?.content ?? '';
 // — Variant display controls (variants sub-panel: «Стиль» + «Вариации»). —
 //   displayStyle: button (опции чипами/свотчами) / list (лейбл + список).
 //   shape: circle / square (форма образца) / none (прямоугольная текст-кнопка).
-const vDisplayStyle = (variantsProp?.displayStyle ?? '') as string;
-const vStyle = (variantsProp?.style ?? '') as string;
-const vShape = (variantsProp?.shape ?? '') as string;
-// Figma 1:21431 — поля НЕЗАВИСИМЫ, и разрешаются они тоже независимо. Раньше
-// здесь оба схлопывались в один legacy-enum `mode`, который передавался в
-// ProductVariants единственным пропом; значение 'list' форму не несёт вовсе,
-// поэтому «Список» + «Круг/Квадрат» приезжал в блок как shape=undefined → 'none'
-// и мерчант видел голую выпадашку вместо образцов (баг тестировщика
-// 2026-09-14). Ветка «список с образцами» в ProductVariants при этом была
-// написана и недостижима.
-// Back-compat: старые ревизии держат merged `style`(button/circle/square/list)
-// без displayStyle/shape — раскладываем его на те же две оси.
-const variantsDisplayStyle: 'button' | 'list' =
-  vDisplayStyle === 'list'
-    ? 'list'
-    : vDisplayStyle === 'button'
-      ? 'button'
-      : vStyle === 'list'
-        ? 'list'
-        : 'button';
-const variantsShape: 'circle' | 'square' | 'none' =
-  vShape === 'circle' || vShape === 'square'
-    ? (vShape as 'circle' | 'square')
-    : vShape === 'none'
-      ? 'none'
-      : vStyle === 'circle' || vStyle === 'square'
-        ? (vStyle as 'circle' | 'square')
-        : 'none';
+// Правило одно на страницу товара, порт flux, сборку и превью — корзина по нему
+// рисует цвет той же формой (runtime/variant-display.ts). Поля НЕЗАВИСИМЫ:
+// раньше они схлопывались в один legacy-enum `mode`, и «Список» + «Круг/Квадрат»
+// приезжал в блок как shape=undefined → голая выпадашка (баг тестировщика
+// 2026-09-14).
+const { displayStyle: variantsDisplayStyle, shape: variantsShape } = resolveVariantDisplay(variantsProp);
 // Legacy-enum остаётся ТОЛЬКО для `data-variants-mode` (на него смотрят внешние
 // селекторы/снимки). Решения по рендеру принимают две оси выше.
 const variantsMode: 'button' | 'circle' | 'square' | 'list' =

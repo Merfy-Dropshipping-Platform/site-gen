@@ -164,9 +164,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 							.map(
 								(pair, idx) =>
 									`<span class="${idx ? "ml-1" : ""}">${escapeCartHtml(pair.name)}:</span>` +
-									// Цвет — кружком, не словом (владелец 23.09).
+									// Цвет — образцом формы страницы товара (владелец 23.09).
 									(pair.swatch
-										? variantSwatchHtml(pair.swatch, pair.value)
+										? variantSwatchHtml(pair.swatch, pair.value, pair.shape)
 										: `<span>${escapeCartHtml(pair.value)}</span>`),
 							)
 							.join("")}</div>`

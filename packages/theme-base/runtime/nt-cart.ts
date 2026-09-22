@@ -25,6 +25,7 @@ import { createCartAddedModal } from "./cart-added-modal";
 // Тот же разбор «название → цвет», что рисует образцы на странице товара
 // (ProductVariants.astro). Модуль без зависимостей.
 import { resolveVariantColor } from "../blocks/Product/variantColor";
+import type { VariantSwatchShape } from "./variant-display";
 
 export interface NtCartLineVariant {
 	color?: string;
@@ -41,11 +42,10 @@ export interface NtCartLineVariant {
 	/** combinationId реальной комбинации — уходит в backend cart → order_items. */
 	variantCombinationId?: string;
 	/**
-	 * Цвет образца для опций-цветов: «Цвет» → «#9CA3AF». Заполняет сверка с
-	 * каталогом (`labelNtLinesFromCatalog`): цвет мерчанта из платформы, иначе
-	 * цвет по названию. Такая опция в строке корзины рисуется кружком, а не
-	 * словом. Владелец 23.09: «цвет не надо словами писать, если там круг — то
-	 * круг».
+	 * Цвет образца опции: «Цвет» → «#9CA3AF». Заполняет сверка с каталогом
+	 * (`labelNtLinesFromCatalog`): цвет мерчанта из платформы, иначе цвет по
+	 * названию. Рисовать ли его образцом и какой формы, решает страница товара
+	 * сайта (см. `variantParts`).
 	 */
 	swatches?: Record<string, string>;
 }
@@ -95,8 +95,22 @@ export function variantPairs(
 	return pairs;
 }
 
-/** Группа-цвет по названию: «Цвет», «Оттенок», Color, Shade. */
-const COLOR_GROUP_RE = /цвет|оттен|colou?r|shade/i;
+/**
+ * Форма образца на странице товара ЭТОГО сайта («Вариации» секции «Товар»).
+ * Сборка витрины и превью кладут её глобалом на каждую страницу
+ * (`runtime/variant-display.ts`). Нет глобала — форма по умолчанию секции,
+ * круг.
+ */
+const pageSwatchShape = (): VariantSwatchShape => {
+	const raw = typeof window === "undefined" ? undefined : (window as { __MERFY_VARIANT_SWATCH__?: unknown }).__MERFY_VARIANT_SWATCH__;
+	return raw === "square" || raw === "none" ? raw : "circle";
+};
+
+/** Скругление образца по форме: как у чипа страницы товара (`rounded-full` / `rounded-none`). */
+const SWATCH_RADIUS: Record<Exclude<VariantSwatchShape, "none">, string> = {
+	circle: "9999px",
+	square: "0",
+};
 /**
  * В `style` уходит только цвет в строгой форме. Подсказка мерчанта (swatchHex)
  * приходит из данных, и проверка «начинается с rgb(» пропустила бы
@@ -117,40 +131,56 @@ export const escapeCartHtml = (raw: string): string =>
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#39;");
 
-/** Опция варианта в строке корзины. `swatch` — CSS-цвет, если опция — цвет. */
+/**
+ * Опция варианта в строке корзины. `swatch` — CSS-цвет, если опцию надо
+ * нарисовать образцом формы `shape`; null — словом.
+ */
 export interface NtVariantPart {
 	name: string;
 	value: string;
 	swatch: string | null;
+	shape: Exclude<VariantSwatchShape, "none">;
 }
 
 /**
- * Пары варианта с образцами. Цвет берётся из `variant.swatches` (сверка с
- * каталогом знает цвет мерчанта). Если сверки ещё не было, а группа —
- * цвет по названию, цвет разбирается по имени значения тем же разбором, что
- * у образцов страницы товара. Не цвет («Sugar Plum», «XS», «5 мл») — `null`,
- * строка напишет его словом.
+ * Пары варианта — так, как их показывает страница товара этого сайта.
+ * Владелец, 23.09: «если там кружок — то кружок, если квадратик — то
+ * квадратик… как карточка товара». Правило страницы (ProductVariants): при
+ * «Вариациях» круг/квадрат опция, у которой есть цвет, — образец этой формы,
+ * остальное словом; при «Нет» всё словами. Цвет — из `variant.swatches` (цвет
+ * мерчанта после сверки с каталогом), иначе по названию тем же разбором.
  */
-export function variantParts(variant: NtCartLineVariant | undefined): NtVariantPart[] {
+export function variantParts(
+	variant: NtCartLineVariant | undefined,
+	shape: VariantSwatchShape = pageSwatchShape(),
+): NtVariantPart[] {
+	const form = shape === "square" ? "square" : "circle";
 	return variantPairs(variant).map(({ name, value }) => {
-		const fromCatalog = safeSwatchColor(variant?.swatches?.[name]);
-		const byName = COLOR_GROUP_RE.test(name) ? safeSwatchColor(resolveVariantColor(value)) : null;
-		return { name, value, swatch: fromCatalog ?? byName };
+		const color =
+			shape === "none"
+				? null
+				: (safeSwatchColor(variant?.swatches?.[name]) ?? safeSwatchColor(resolveVariantColor(value)));
+		return { name, value, swatch: color, shape: form };
 	});
 }
 
 /**
- * Кружок цвета для строки корзины. Стили инлайном: ядро рисует его во всех
- * темах, а Tailwind каждой темы этот файл не сканирует. Название — в
- * подсказке и для чтения с экрана, глазами видно цвет.
+ * Образец цвета для строки корзины — кружок или квадратик, как на странице
+ * товара. Стили инлайном: ядро рисует его во всех темах, а Tailwind каждой
+ * темы этот файл не сканирует. Название — в подсказке и для чтения с экрана,
+ * глазами видно цвет.
  */
-export function variantSwatchHtml(color: string, label: string): string {
+export function variantSwatchHtml(
+	color: string,
+	label: string,
+	shape: Exclude<VariantSwatchShape, "none"> = "circle",
+): string {
 	const c = safeSwatchColor(color);
 	const text = escapeCartHtml(label);
 	if (!c) return text;
 	return (
-		`<span data-cart-variant-swatch role="img" aria-label="${text}" title="${text}"` +
-		` style="display:inline-block;width:1em;height:1em;border-radius:9999px;` +
+		`<span data-cart-variant-swatch="${shape}" role="img" aria-label="${text}" title="${text}"` +
+		` style="display:inline-block;width:1em;height:1em;border-radius:${SWATCH_RADIUS[shape]};` +
 		`background:${c};box-shadow:inset 0 0 0 1px rgb(0 0 0 / 0.15);vertical-align:-0.15em"></span>`
 	);
 }
@@ -168,7 +198,7 @@ export function variantHtml(
 	const parts = variantParts(variant);
 	return parts
 		.map((part, i) => {
-			const value = part.swatch ? variantSwatchHtml(part.swatch, part.value) : escapeCartHtml(part.value);
+			const value = part.swatch ? variantSwatchHtml(part.swatch, part.value, part.shape) : escapeCartHtml(part.value);
 			const piece = opts.names ? `${escapeCartHtml(part.name)}: ${value}` : value;
 			if (i === 0) return piece;
 			// Запятая — между словами. Рядом с кружком она висит: «M, ●».
@@ -331,7 +361,7 @@ const cleanOptions = (raw: unknown): Record<string, string> | undefined => {
 	return Object.keys(out).length > 0 ? out : undefined;
 };
 
-/** Цвета образцов для опций-цветов товара (см. `NtCartLineVariant.swatches`). */
+/** Цвета образцов опций товара (см. `NtCartLineVariant.swatches`). */
 function catalogSwatches(
 	product: NtCatalogProduct,
 	options: Record<string, string> | undefined,
@@ -347,10 +377,8 @@ function catalogSwatches(
 		);
 		const fromPlatform = platform.find((sw) => String(sw?.value ?? "").trim() === value);
 		const hint = safeSwatchColor(option?.swatchHex) ?? safeSwatchColor(fromPlatform?.color);
-		// Цвет — то, что платформа или мерчант назвали цветом: есть образец у
-		// опции, значение в образцах товара, или сама группа — «Цвет»/«Оттенок».
-		// «Материал: Серебро» кружком не станет.
-		if (!hint && !fromPlatform && !COLOR_GROUP_RE.test(name)) continue;
+		// Цвет мерчанта, иначе по названию — как у образцов страницы товара (она
+		// не смотрит на имя группы). Рисовать ли образцом, решает форма страницы.
 		const color = safeSwatchColor(resolveVariantColor(value, hint));
 		if (color) out[name] = color;
 	}

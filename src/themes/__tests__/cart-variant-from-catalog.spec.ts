@@ -153,8 +153,15 @@ describe("подпись варианта из комбинации", () => {
   });
 });
 
-describe("цвет — кружком", () => {
-  it("цвет мерчанта уходит в образец строки, не-цвета — нет", () => {
+const задатьФорму = (форма?: string) => {
+  const w = window as unknown as { __MERFY_VARIANT_SWATCH__?: string };
+  if (форма === undefined) delete w.__MERFY_VARIANT_SWATCH__;
+  else w.__MERFY_VARIANT_SWATCH__ = форма;
+};
+afterEach(() => задатьФорму(undefined));
+
+describe("цвет — образцом формы страницы товара", () => {
+  it("цвет мерчанта уходит в образец строки, у размеров цвета нет", () => {
     const { lines } = labelNtLinesFromCatalog(
       [
         строка({ variantCombinationId: "c-xs-grey" }, "p-2"),
@@ -163,8 +170,9 @@ describe("цвет — кружком", () => {
       [ФУТБОЛКА],
     );
     expect(lines[0].variant?.swatches).toEqual({ Цвет: "#9CA3AF" });
-    // «Материал: Серебро» — не группа-цвет, кружком не становится.
-    expect(lines[1].variant?.swatches).toBeUndefined();
+    // Как у страницы товара: образцом становится любая опция, у которой есть
+    // цвет, — «Серебро» тоже, размер «XS» — нет.
+    expect(lines[1].variant?.swatches).toEqual({ Материал: "#c0c0c0" });
   });
 
   it("мерчантский цвет с хвостом CSS отброшен, цвет берётся по названию", () => {
@@ -203,7 +211,34 @@ describe("цвет — кружком", () => {
     expect(document.body.textContent).toBe(" M, 5 мл");
   });
 
-  it("до сверки с каталогом цвет узнаётся по названию в группе «Цвет»", () => {
+  it("«Вариации: Квадрат» на странице товара — квадратик в корзине", () => {
+    задатьФорму("square");
+    document.body.innerHTML = `<p>${variantHtml({ options: { Цвет: "Серый" }, swatches: { Цвет: "#9CA3AF" } })}</p>`;
+    const образец = document.querySelector<HTMLElement>(
+      "[data-cart-variant-swatch]",
+    );
+    expect(образец?.getAttribute("data-cart-variant-swatch")).toBe("square");
+    expect(образец?.style.borderRadius).toMatch(/^0(px)?$/);
+  });
+
+  it("«Вариации: Круг» — кружок", () => {
+    задатьФорму("circle");
+    document.body.innerHTML = `<p>${variantHtml({ options: { Цвет: "Серый" }, swatches: { Цвет: "#9CA3AF" } })}</p>`;
+    const образец = document.querySelector<HTMLElement>(
+      "[data-cart-variant-swatch]",
+    );
+    expect(образец?.getAttribute("data-cart-variant-swatch")).toBe("circle");
+    expect(образец?.style.borderRadius).toBe("9999px");
+  });
+
+  it("«Вариации: Нет» — страница пишет цвет словом, и корзина тоже", () => {
+    задатьФорму("none");
+    document.body.innerHTML = `<p>${variantHtml({ options: { Цвет: "Серый", Размер: "M" }, swatches: { Цвет: "#9CA3AF" } })}</p>`;
+    expect(document.querySelector("[data-cart-variant-swatch]")).toBeNull();
+    expect(document.body.textContent).toBe("Серый, M");
+  });
+
+  it("до сверки с каталогом цвет узнаётся по названию", () => {
     const [размер, цвет] = variantParts({
       options: { Размер: "S", Цвет: "Чёрный" },
     });

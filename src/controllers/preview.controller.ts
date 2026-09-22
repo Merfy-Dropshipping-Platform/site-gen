@@ -50,6 +50,10 @@ import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
 import { injectPreviewAccountGlobal } from '../common/preview-account-inline';
 import {
+  variantSwatchShapeFromRevision,
+  type VariantSwatchShape,
+} from '../../packages/theme-base/runtime/variant-display';
+import {
   injectPreviewCollectionGlobal,
   type PreviewCollectionContext,
 } from '../common/preview-collection-inline';
@@ -417,6 +421,7 @@ export class PreviewController {
               PreviewService.bareThemeKey(loaded.themeId!),
               this.productSectionFromRevision(loaded.data),
               collectionContext,
+              variantSwatchShapeFromRevision(loaded.data),
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -607,6 +612,7 @@ export class PreviewController {
         PreviewService.bareThemeKey(loaded.themeId!),
         this.productSectionFromRevision(loaded.data),
         collectionContext,
+        variantSwatchShapeFromRevision(loaded.data),
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -1144,6 +1150,7 @@ export class PreviewController {
     themeName?: string | null,
     productSection?: { showBuyNow: boolean; showAddToCart: boolean; addToCartLabel: string } | null,
     collectionContext?: PreviewCollectionContext | undefined,
+    variantSwatch?: VariantSwatchShape | null,
   ): string {
     let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
@@ -1201,6 +1208,14 @@ export class PreviewController {
       html = html.replace(
         /<head(\s[^>]*)?>/i,
         (m) => `${m}<script>window.__MERFY_THEME__ = ${JSON.stringify(themeName)};</script>`,
+      );
+    }
+    // Форма образца варианта со страницы товара — зеркало build-инжекта
+    // __MERFY_VARIANT_SWATCH__: корзина превью рисует цвет той же формой.
+    if (variantSwatch) {
+      html = html.replace(
+        /<head(\s[^>]*)?>/i,
+        (m) => `${m}<script>window.__MERFY_VARIANT_SWATCH__ = ${JSON.stringify(variantSwatch)};</script>`,
       );
     }
     // Баг-репорт владельца (16.09, п.3): «иконка корзины на странице Корзина

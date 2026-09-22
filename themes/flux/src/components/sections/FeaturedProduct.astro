@@ -64,6 +64,7 @@ import { inlineFormat } from "../../lib/rich-text";
 // секцией, а не блоком theme-base, поэтому общий исходник подключается и
 // здесь: иначе выравнивание работало бы в четырёх темах из пяти.
 import { VARIANT_CHIP_EQUALIZE_SOURCE } from "../../../../../packages/theme-base/runtime/variant-chip-equalize";
+import { resolveVariantDisplay } from "../../../../../packages/theme-base/runtime/variant-display";
 import FluxPicture from "../img/FluxPicture.astro";
 import {
 	deriveVariantGroups,
@@ -233,9 +234,14 @@ const activeCombo = hasVariants ? findCombination(combos, selectedOptions) : nul
 // theme-base ProductVariants); none/'' — текст-чипы (канон flux). Реестр
 // 2026-08-10: прежний комментарий «shape не применима» был неверен — rose
 // рисует свотчи, flux обязан тоже (гейт variants.shape).
-const variantsDisplayStyle = p.variants?.displayStyle === "list" ? "list" : "button";
-const variantsShapeRaw = typeof p.variants?.shape === "string" ? p.variants.shape : "";
-const variantsShape = variantsShapeRaw === "circle" || variantsShapeRaw === "square" ? variantsShapeRaw : "";
+// Разрешение «Стиля» и «Вариаций» — ОБЩЕЕ правило со страницей товара
+// theme-base, сборкой и превью (корзина рисует цвет той же формой):
+// runtime/variant-display.ts. Раньше порт читал только новые поля и не понимал
+// legacy `style` — при старой ревизии flux показывал слова там, где остальные
+// темы рисуют образцы. «Нет» у порта — пустая строка.
+const variantDisplay = resolveVariantDisplay(p.variants);
+const variantsDisplayStyle = variantDisplay.displayStyle;
+const variantsShape = variantDisplay.shape === "none" ? "" : variantDisplay.shape;
 // «Стиль» и «Вариации» НЕЗАВИСИМЫ. Раньше ветка «Списка» звала выпадашку, у
 // которой в сигнатуре формы нет вовсе, — и «Круг/Квадрат» пропадал вместе с
 // образцами (баг тестировщика 2026-09-14). Список + форма = закрытый список с

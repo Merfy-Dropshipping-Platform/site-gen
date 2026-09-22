@@ -636,7 +636,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-about",
+                "id": "PromoBanner-about",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -709,7 +709,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-cart",
+                "id": "PromoBanner-cart",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -788,7 +788,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-catalog",
+                "id": "PromoBanner-catalog",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -962,7 +962,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-collection",
+                "id": "PromoBanner-collection",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1049,7 +1049,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-contacts",
+                "id": "PromoBanner-contacts",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1114,7 +1114,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-delivery",
+                "id": "PromoBanner-delivery",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1187,7 +1187,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-login",
+                "id": "PromoBanner-login",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1259,7 +1259,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-orders",
+                "id": "PromoBanner-orders",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1327,7 +1327,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-product",
+                "id": "PromoBanner-product",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1406,7 +1406,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-profile",
+                "id": "PromoBanner-profile",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"
@@ -1474,7 +1474,7 @@
             {
               "props": {
                 "colorScheme": "scheme-1",
-                "id": "PromoBanner-page-wishlist",
+                "id": "PromoBanner-wishlist",
                 "link": {
                   "href": "/catalog",
                   "text": "В каталог"

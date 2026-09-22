@@ -14,7 +14,15 @@ import { migrateRevisionData } from "../../utils/revision-migrations";
  * `padding-top:0;padding-bottom:0`, меню упиралось в нижний край шапки.
  */
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
-const SEEDS_DIR = resolve(__dirname, "..", "..", "..", "packages", "theme-bloom", "pages");
+const SEEDS_DIR = resolve(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "packages",
+  "theme-bloom",
+  "pages",
+);
 
 const LINKS = [
   { text: "Каталог", href: "/catalog" },
@@ -31,7 +39,11 @@ function renderHeader(logoPosition: string): string {
   };
   const out = execFileSync(
     "node",
-    [RENDERER, "bloom", JSON.stringify([{ block: "Header", props, live: true }])],
+    [
+      RENDERER,
+      "bloom",
+      JSON.stringify([{ block: "Header", props, live: true }]),
+    ],
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   const [res] = JSON.parse(out) as Array<{ html?: string; error?: string }>;
@@ -41,20 +53,23 @@ function renderHeader(logoPosition: string): string {
 
 /** Иконки десктопных рядов: всё, что идёт после мобильной строки `md:hidden`. */
 function desktopPart(html: string): string {
-  const cut = html.indexOf('max-w-[1920px]');
+  const cut = html.indexOf("max-w-[1920px]");
   return cut > 0 ? html.slice(cut) : html;
 }
 
 const LAYOUTS = ["top-center", "top-left", "center-left", "center-absolute"];
 
 describe("шапка bloom: размер иконок по эталону верстальщиков", () => {
-  it.each(LAYOUTS)("%s: десктопные иконки — size-5, ни одной size-6", (layout) => {
-    const desktop = desktopPart(renderHeader(layout));
-    // хотя бы одна иконка отрисована
-    expect(desktop).toMatch(/size-5/);
-    // размер верстальщиков 24px (size-6) вернуться не должен
-    expect(desktop).not.toMatch(/size-6/);
-  });
+  it.each(LAYOUTS)(
+    "%s: десктопные иконки — size-5, ни одной size-6",
+    (layout) => {
+      const desktop = desktopPart(renderHeader(layout));
+      // хотя бы одна иконка отрисована
+      expect(desktop).toMatch(/size-5/);
+      // размер верстальщиков 24px (size-6) вернуться не должен
+      expect(desktop).not.toMatch(/size-6/);
+    },
+  );
 });
 
 describe("шапка bloom: сид не обнуляет отступы", () => {
@@ -64,7 +79,7 @@ describe("шапка bloom: сид не обнуляет отступы", () => 
     expect(seeds.length).toBeGreaterThan(5);
   });
 
-  it.each(seeds)("%s: у шапки канонные отступы, а не нули", (file) => {
+  it.each(seeds)("%s: у шапки канонные отступы {16,16}, не нули", (file) => {
     const raw = readFileSync(join(SEEDS_DIR, file), "utf8");
     const found: Array<Record<string, unknown>> = [];
     const walk = (node: unknown): void => {
@@ -81,14 +96,45 @@ describe("шапка bloom: сид не обнуляет отступы", () => 
     };
     walk(JSON.parse(raw));
     for (const props of found) {
-      const pad = props.padding as { top?: unknown; bottom?: unknown } | undefined;
+      const pad = props.padding as
+        | { top?: unknown; bottom?: unknown }
+        | undefined;
       if (!pad) continue;
-      expect({ file, ...pad }).not.toEqual({ file, top: 0, bottom: 0 });
+      // Позитивный факт (не только «не ноль»): пакетный сид ДАЁТ канон
+      // {16,16} сам по себе, с создания магазина — без read-time миграции.
+      expect({ file, ...pad }).toEqual({ file, top: 16, bottom: 16 });
     }
   });
 });
 
-describe("миграция: сидовый ноль у существующих магазинов становится каноном", () => {
+/**
+ * 2026-09-23 (vanilla-seed-into-package): `migrateBloomHeaderPadding`
+ * (read-time миграция, чинившая только `bloom` через `if (themeId ===
+ * 'bloom')`) удалена — тема - это данные её пакета, не код на общем пути
+ * чтения ревизии. Правило владельца: в платформе не должно быть веток «под
+ * одну тему».
+ *
+ * Замер (см. `merfy-mcp/docs/proofs/p2-vanilla-seed-into-package.txt`, п.1):
+ * `filterSeededPagesOnWrite` (B17) никогда не отсекает `home`, а
+ * `seedContentPagesFromTheme` её не досевает — значит РЕЗУЛЬТАТ read-time
+ * фикса, который раньше был ЭФЕМЕРНЫМ (не писался в БД, пока мерчант не
+ * сохранял магазин), был ЕДИНСТВЕННЫМ способом починки для непересохранённых
+ * старых bloom-магазинов. Он ушёл — два факта заменяют его:
+ *
+ *   1. Пакетный сид (см. describe выше «сид не обнуляет отступы») ДАЁТ канон
+ *      {16,16} с самого создания магазина — новый bloom-магазин корректен без
+ *      миграции вообще.
+ *   2. Read-путь (`migrateRevisionData`) теперь НЕ трогает `padding` Header
+ *      вовсе — ни для bloom, ни для какой-либо другой темы: значение, каким
+ *      бы оно ни было (в т.ч. унаследованный сидовый {0,0} у СТАРЫХ, ни разу
+ *      не пересохранённых магазинов), проходит без изменений.
+ *
+ * Существующие bloom-магазины, у которых {0,0} УЖЕ вморожен в ревизию
+ * (сохранены хотя бы раз ДО фикса пакетного сида) — чинятся не read-time
+ * миграцией, а одноразовым скриптом `scripts/reseed-untouched-home.ts`
+ * (TARGET=bloom-header-padding, написан, не запущен).
+ */
+describe("миграция: read-путь не трогает padding Header ни для одной темы", () => {
   const revision = (padding: unknown) => ({
     pagesData: {
       home: {
@@ -97,28 +143,39 @@ describe("миграция: сидовый ноль у существующих 
     },
   });
   const headerPadding = (data: Record<string, unknown>) => {
-    const pages = data.pagesData as Record<string, { content: Array<{ props: Record<string, unknown> }> }>;
+    const pages = data.pagesData as Record<
+      string,
+      { content: Array<{ props: Record<string, unknown> }> }
+    >;
     return pages.home.content[0].props.padding;
   };
+  const THEMES_TO_CHECK = [
+    "bloom",
+    "rose",
+    "flux",
+    "satin",
+    "vanilla",
+  ] as const;
 
-  it("bloom: {0,0} → {16,16}", () => {
-    const out = migrateRevisionData(revision({ top: 0, bottom: 0 }), "bloom");
-    expect(headerPadding(out)).toEqual({ top: 16, bottom: 16 });
-  });
+  it.each(THEMES_TO_CHECK)(
+    "%s: сидовый {0,0} остаётся {0,0} — read-путь его не переписывает",
+    (theme) => {
+      const out = migrateRevisionData(revision({ top: 0, bottom: 0 }), theme);
+      expect(headerPadding(out)).toEqual({ top: 0, bottom: 0 });
+    },
+  );
 
-  it("bloom: осознанное значение мерчанта не трогаем", () => {
-    const out = migrateRevisionData(revision({ top: 8, bottom: 40 }), "bloom");
-    expect(headerPadding(out)).toEqual({ top: 8, bottom: 40 });
-  });
+  it.each(THEMES_TO_CHECK)(
+    "%s: осознанное значение мерчанта не трогаем",
+    (theme) => {
+      const out = migrateRevisionData(revision({ top: 8, bottom: 40 }), theme);
+      expect(headerPadding(out)).toEqual({ top: 8, bottom: 40 });
+    },
+  );
 
-  it("другая тема: ноль оставляем как есть", () => {
-    const out = migrateRevisionData(revision({ top: 0, bottom: 0 }), "rose");
-    expect(headerPadding(out)).toEqual({ top: 0, bottom: 0 });
-  });
-
-  it("идемпотентна: повторный прогон ничего не меняет", () => {
+  it("идемпотентна: повторный прогон ничего не меняет (bloom, {0,0})", () => {
     const once = migrateRevisionData(revision({ top: 0, bottom: 0 }), "bloom");
     const twice = migrateRevisionData(once, "bloom");
-    expect(headerPadding(twice)).toEqual({ top: 16, bottom: 16 });
+    expect(headerPadding(twice)).toEqual({ top: 0, bottom: 0 });
   });
 });

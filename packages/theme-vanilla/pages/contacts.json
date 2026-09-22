@@ -1,17 +1,68 @@
 {
   "content": [
-    { "type": "Header", "props": {
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-contacts",
+        "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+        "link": {
+          "text": "В каталог",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
         "id": "Header-contacts",
+        "siteTitle": "Vanilla Pilot",
+        "logo": "",
+        "logoPosition": "center-absolute",
+        "activeLinkIndicator": "underline",
+        "stickiness": "scroll-up",
+        "menuType": "dropdown",
         "navigationLinks": [
-          { "label": "Каталог", "href": "/catalog" },
-          { "label": "О нас", "href": "/about" },
-          { "label": "Доставка", "href": "/delivery" },
-          { "label": "Контакты", "href": "/contacts" }
-        ]
-      } },
-    { "type": "ContactForm", "props": { "id": "ContactForm-1" } },
-    { "type": "Footer", "props": { "id": "Footer-contacts" } }
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          }
+        ],
+        "actionButtons": {
+          "showSearch": true,
+          "showCart": true,
+          "showProfile": true
+        },
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 32,
+          "bottom": 32
+        }
+      }
+    },
+    {
+      "type": "ContactForm",
+      "props": {
+        "id": "ContactForm-1"
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-contacts"
+      }
+    }
   ],
-  "root": { "props": { "title": "Контакты" } },
+  "root": {
+    "props": {
+      "title": "Контакты"
+    }
+  },
   "zones": {}
 }

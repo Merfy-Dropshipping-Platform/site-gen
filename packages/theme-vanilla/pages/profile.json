@@ -1,27 +1,49 @@
 {
   "content": [
     {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-profile",
+        "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+        "link": {
+          "text": "В каталог",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
       "type": "Header",
       "props": {
         "id": "Header-profile",
+        "siteTitle": "Vanilla Pilot",
+        "logo": "",
+        "logoPosition": "center-absolute",
+        "activeLinkIndicator": "underline",
+        "stickiness": "scroll-up",
+        "menuType": "dropdown",
         "navigationLinks": [
           {
             "label": "Каталог",
             "href": "/catalog"
-          },
-          {
-            "label": "О нас",
-            "href": "/about"
-          },
-          {
-            "label": "Доставка",
-            "href": "/delivery"
-          },
-          {
-            "label": "Контакты",
-            "href": "/contacts"
           }
-        ]
+        ],
+        "actionButtons": {
+          "showSearch": true,
+          "showCart": true,
+          "showProfile": true
+        },
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 32,
+          "bottom": 32
+        }
       }
     },
     {

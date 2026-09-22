@@ -165,12 +165,17 @@ export function variantHtml(
 	variant: NtCartLineVariant | undefined,
 	opts: { names?: boolean } = {},
 ): string {
-	return variantParts(variant)
-		.map((part) => {
+	const parts = variantParts(variant);
+	return parts
+		.map((part, i) => {
 			const value = part.swatch ? variantSwatchHtml(part.swatch, part.value) : escapeCartHtml(part.value);
-			return opts.names ? `${escapeCartHtml(part.name)}: ${value}` : value;
+			const piece = opts.names ? `${escapeCartHtml(part.name)}: ${value}` : value;
+			if (i === 0) return piece;
+			// Запятая — между словами. Рядом с кружком она висит: «M, ●».
+			const sep = opts.names || part.swatch || parts[i - 1].swatch ? " " : ", ";
+			return sep + piece;
 		})
-		.join(opts.names ? " " : ", ");
+		.join("");
 }
 
 /** Разбор `data-variant-options` (JSON от страницы товара) в опции позиции. */
@@ -355,6 +360,34 @@ function catalogSwatches(
 const sameRecord = (a?: Record<string, string>, b?: Record<string, string>): boolean =>
 	JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
+/** Те же пары «группа → значение» без учёта порядка ключей. */
+const sameEntries = (a?: Record<string, string>, b?: Record<string, string>): boolean => {
+	if (!a || !b) return !a && !b;
+	const ka = Object.keys(a);
+	return ka.length === Object.keys(b).length && ka.every((k) => b[k] === a[k]);
+};
+
+/**
+ * Опции в порядке групп товара — так их видит покупатель на странице товара.
+ * Порядок ключей в самой комбинации задаёт сервис товаров, и он другой:
+ * у худи на витрине тестировщика «Размер, Цвет» при показе «Цвет, Размер».
+ */
+function orderByGroups(
+	options: Record<string, string>,
+	groups: NtCatalogProduct["variantGroups"],
+): Record<string, string> {
+	const names = (Array.isArray(groups) ? groups : []).map((g) => String(g?.name ?? "").trim());
+	const rank = (k: string) => {
+		const i = names.indexOf(k);
+		return i === -1 ? names.length : i;
+	};
+	const keys = Object.keys(options);
+	const sorted = keys.slice().sort((a, b) => rank(a) - rank(b) || keys.indexOf(a) - keys.indexOf(b));
+	const out: Record<string, string> = {};
+	for (const k of sorted) out[k] = options[k];
+	return out;
+}
+
 /**
  * Подпись варианта строки — ИЗ КОМБИНАЦИИ, которая уйдёт в заказ.
  *
@@ -388,7 +421,12 @@ export function labelNtLinesFromCatalog(
 		const vcId = line.variant.variantCombinationId;
 		const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
 		const combo = vcId ? combos.find((c) => String(c.id) === String(vcId)) : undefined;
-		const options = cleanOptions(combo?.options) ?? cleanOptions(line.variant.options);
+		const current = cleanOptions(line.variant.options);
+		const fromCombo = cleanOptions(combo?.options);
+		// Разошлись с комбинацией или названий нет — берём комбинацию. Порядок
+		// всегда по группам товара, как на экране.
+		const base = fromCombo && !sameEntries(fromCombo, current) ? fromCombo : (current ?? fromCombo);
+		const options = base ? orderByGroups(base, p.variantGroups) : undefined;
 		const swatches = catalogSwatches(p, options);
 		if (sameRecord(options, line.variant.options) && sameRecord(swatches, line.variant.swatches)) return line;
 		changed = true;

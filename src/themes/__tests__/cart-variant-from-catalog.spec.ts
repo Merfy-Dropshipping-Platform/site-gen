@@ -127,6 +127,23 @@ describe("подпись варианта из комбинации", () => {
     expect(второй.changed).toBe(false);
   });
 
+  it("подпись идёт в порядке групп товара, как на экране", () => {
+    // У сервиса товаров ключи комбинации в своём порядке: худи на витрине
+    // тестировщика — «Размер, Цвет» при показе «Цвет, Размер» (23.09).
+    const товар: NtCatalogProduct = {
+      ...ФУТБОЛКА,
+      variantGroups: [ФУТБОЛКА.variantGroups![1], ФУТБОЛКА.variantGroups![0]],
+    };
+    const { lines } = labelNtLinesFromCatalog(
+      [строка({ variantCombinationId: "c-xs-grey" }, "p-2")],
+      [товар],
+    );
+    expect(Object.keys(lines[0].variant?.options ?? {})).toEqual([
+      "Цвет",
+      "Размер",
+    ]);
+  });
+
   it("полное самолечение при загрузке страницы тоже подписывает", () => {
     const { lines } = reconcileNtLines(
       [строка({ variantCombinationId: "c-sp" })],
@@ -175,6 +192,15 @@ describe("цвет — кружком", () => {
     // Глазами видно размер словом и цвет кружком — слова «Серый» в тексте нет.
     expect(document.body.textContent).toContain("XS");
     expect(document.body.textContent).not.toContain("Серый");
+  });
+
+  it("рядом с кружком запятой нет: «● M», а слова — через запятую", () => {
+    const html = variantHtml({
+      options: { Цвет: "Серый", Размер: "M", Объём: "5 мл" },
+      swatches: { Цвет: "#9CA3AF" },
+    });
+    document.body.innerHTML = `<p>${html}</p>`;
+    expect(document.body.textContent).toBe(" M, 5 мл");
   });
 
   it("до сверки с каталогом цвет узнаётся по названию в группе «Цвет»", () => {

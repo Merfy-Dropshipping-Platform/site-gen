@@ -108,7 +108,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 </Layout>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantLabel } from "../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantHtml } from "../lib/cart";
 	import { cartLineThumbPictureHtml } from "../lib/cart-thumb-html";
 	import { loadRealProducts, renderCardHtml, escapeHtml } from "../lib/storefront-hydrate";
 
@@ -156,7 +156,7 @@ const apiUrl = "https://gateway.merfy.ru/api";
 				// bloom и satin несёт свою разметку — и осталась на старом пути.
 				// Проверено на живом стенде 21.09: код секции выкачен, а строки всё
 				// равно одинаковые, потому что /cart рисует этот файл.
-				const variant = variantLabel(line.variant);
+				const variant = variantHtml(line.variant);
 				return `
 					<li class="flex flex-col gap-4 border-b border-[#F5F5F5] pb-6 md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">
 						<div class="flex gap-4">

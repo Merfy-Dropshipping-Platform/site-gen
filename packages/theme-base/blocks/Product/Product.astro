@@ -25,6 +25,7 @@ import ProductInfo from './ProductInfo.astro';
 import ProductPrice from './ProductPrice.astro';
 import ProductVariants from './ProductVariants.astro';
 import { VARIANT_CHIP_EQUALIZE_SOURCE } from '../../runtime/variant-chip-equalize';
+import { pickDefaultCombination } from '../../runtime/variant-default';
 import ProductCounter from './ProductCounter.astro';
 import ProductActions from './ProductActions.astro';
 import ProductDescription from './ProductDescription.astro';
@@ -264,14 +265,31 @@ const brandText = textContent || view.brand || '';
 // On live SSG the product is resolved server-side, so the add-to-cart button
 // ships with real data baked in and works on first paint (before hydration).
 // Hydration (inline script below) refreshes these as variant/qty change.
-// Default variant = first combination, mirroring the live PDP.
-const defaultVariantId = resolved
-  ? String(
-      resolved.variants?.[0]?.id ??
-        resolved.variantCombinations?.[0]?.id ??
-        '',
-    )
-  : '';
+// Вариант по умолчанию = ТОТ, ЧТО ВЫДЕЛЕН НА ЭКРАНЕ: первое значение каждой
+// группы в порядке показа (ProductVariants делает активным optIdx === 0).
+//
+// Было: первая комбинация МАССИВА. У тинта на живом сайте 22.09 массив шёл
+// «Berry Glaze, Cold Brew, Sugar Plum», а на экране первым и выделенным стоял
+// Sugar Plum — покупатель, нажавший «В корзину» без выбора, получал Berry
+// Glaze, и корзина об этом молчала (пункт 26 тестера). Правило то же, что у
+// быстрого добавления в каталоге: общий pickDefaultCombination.
+const _combosForDefault = resolved
+  ? ((Array.isArray(resolved.variants) && resolved.variants.length
+      ? resolved.variants
+      : resolved.variantCombinations) ?? [])
+  : [];
+const _defaultCombo = pickDefaultCombination(
+  _combosForDefault as Array<{ id?: string; options?: Record<string, string>; available?: boolean }>,
+  view.variantGroups.map((g) => ({ name: g.key, options: g.options.map((o) => ({ value: o.value })) })),
+);
+const defaultVariantId = _defaultCombo?.id ? String(_defaultCombo.id) : '';
+// Названия выбранных опций — в кнопку СРАЗУ, с сервера. Раньше их дописывал
+// только клик по варианту: товар, добавленный «как есть», ложился в корзину
+// без названия варианта, и ни страница, ни сайдбар его не показывали.
+const defaultVariantOptions =
+  _defaultCombo?.options && Object.keys(_defaultCombo.options).length
+    ? JSON.stringify(_defaultCombo.options)
+    : '';
 const cartProductId = view.id || productId || '';
 const cartUnitPrice = view.price.amount > 0 ? Math.round(view.price.amount) : '';
 const cartOldPrice = view.hasDiscount ? Math.round(view.oldPrice.amount) : '';
@@ -395,6 +413,7 @@ const cartImage = view.gallery.hero?.src ?? '';
               oldPrice={cartOldPrice}
               image={cartImage}
               variantCombinationId={defaultVariantId}
+              variantOptions={defaultVariantOptions}
             />
           </div>
         )}
@@ -493,10 +512,31 @@ const cartImage = view.gallery.hero?.src ?? '';
       if (Array.isArray(productData.variantCombinations) && productData.variantCombinations.length) return productData.variantCombinations;
       return [];
     }
+    // Выбор, который ВИДИТ покупатель, — источник истины для цены, наличия и
+    // кнопки «В корзину». Пока ничего не нажато, selectedOptions пуст, и
+    // активной считалась vs[0] — первая комбинация МАССИВА, а не выделенная на
+    // экране (пункт 26 тестера: на экране Sugar Plum, в корзину — Berry Glaze,
+    // и без названия варианта). Недостающие группы добираем из выделенных
+    // чипов/списков. selectedOptions НЕ трогаем: по нему меняется главное фото,
+    // а при открытии страницы должно стоять фото товара, не фото варианта.
+    function visibleSelection() {
+      const sel = Object.assign({}, selectedOptions);
+      root.querySelectorAll('[data-variant-chip][data-variant-active="true"]').forEach(function (c) {
+        var k = c.getAttribute('data-variant-key');
+        var v = c.getAttribute('data-variant-value');
+        if (k && v && !Object.prototype.hasOwnProperty.call(sel, k)) sel[k] = v;
+      });
+      root.querySelectorAll('[data-variant-select]').forEach(function (el) {
+        var k = el.getAttribute('data-variant-key');
+        if (k && el.value && !Object.prototype.hasOwnProperty.call(sel, k)) sel[k] = el.value;
+      });
+      return sel;
+    }
     function getActiveVariant() {
       const vs = getProductVariants();
       if (!vs.length) return null;
-      if (Object.keys(selectedOptions).length > 0) return findVariantByOptions(vs, selectedOptions);
+      const sel = visibleSelection();
+      if (Object.keys(sel).length > 0) return findVariantByOptions(vs, sel) || vs[0] || null;
       return vs[0] || null;
     }
     function getActiveVariantId() {
@@ -614,11 +654,13 @@ const cartImage = view.gallery.hero?.src ?? '';
       if (vid) addBtn.setAttribute('data-variant-combination-id', vid);
       else addBtn.removeAttribute('data-variant-combination-id');
       // Map selected options → color/size (nt-cart line label + identity).
+      // Выбор — видимый (см. visibleSelection): кнопка кладёт то, что на экране.
+      const shown = visibleSelection();
       let col = '', sz = '';
-      for (const k in selectedOptions) {
+      for (const k in shown) {
         const kl = k.toLowerCase();
-        if (kl === 'цвет' || kl === 'color') col = selectedOptions[k];
-        else if (kl === 'размер' || kl === 'size') sz = selectedOptions[k];
+        if (kl === 'цвет' || kl === 'color') col = shown[k];
+        else if (kl === 'размер' || kl === 'size') sz = shown[k];
       }
       if (col) addBtn.setAttribute('data-variant-color', col); else addBtn.removeAttribute('data-variant-color');
       if (sz) addBtn.setAttribute('data-variant-size', sz); else addBtn.removeAttribute('data-variant-size');
@@ -627,8 +669,8 @@ const cartImage = view.gallery.hero?.src ?? '';
       // два разных варианта (баг тестера #7).
       var optsOut = {};
       var hasOpts = false;
-      for (const k2 in selectedOptions) {
-        const val2 = selectedOptions[k2];
+      for (const k2 in shown) {
+        const val2 = shown[k2];
         if (typeof val2 === 'string' && val2.trim()) { optsOut[k2] = val2.trim(); hasOpts = true; }
       }
       if (hasOpts) addBtn.setAttribute('data-variant-options', JSON.stringify(optsOut));

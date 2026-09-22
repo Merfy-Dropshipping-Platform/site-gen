@@ -13,6 +13,10 @@
 import {
 	createNtCart,
 	variantLabel,
+	variantHtml,
+	variantParts,
+	variantSwatchHtml,
+	escapeCartHtml,
 	variantPairs,
 	type NtCartLine,
 	type NtCartLineVariant,
@@ -35,7 +39,8 @@ const api = createNtCart({
 	// форму). Плашка-плейсхолдер (#F5F5F5) — законное исключение, как в
 	// CartBody.astro. Сторож: pnpm test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
-		const variant = variantLabel(line.variant);
+		// Готовая разметка: текст экранирован, цвет — кружок (пункт 26).
+		const variant = variantHtml(line.variant);
 		const pHref = `${productPathPrefix}/${line.productId}`;
 		const thumb = cartLineThumbPictureHtml(line.image, line.name);
 		return `
@@ -86,4 +91,4 @@ export const initCartUI = api.initCartUI;
 
 // Подпись варианта нужна и странице корзины (CartSection), а не только
 // дроверу: там она собиралась из color+size и теряла произвольные группы.
-export { variantLabel, variantPairs };
+export { variantLabel, variantPairs, variantHtml, variantParts, variantSwatchHtml, escapeCartHtml };

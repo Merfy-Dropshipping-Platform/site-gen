@@ -378,6 +378,10 @@ const addToCartAttrs = {
 	"data-variant-color": cartColor,
 	"data-variant-size": cartSize,
 	"data-variant-combination-id": activeCombo?.id || "",
+	// ВСЕ выбранные опции, а не только Цвет/Размер: «Оттенок: Sugar Plum»
+	// иначе доезжал до корзины без подписи (пункт 26 тестера, 23.09).
+	"data-variant-options":
+		hasVariants && Object.keys(selectedOptions).length ? JSON.stringify(selectedOptions) : "",
 	"data-quantity": "1",
 };
 
@@ -1185,6 +1189,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					addBtn.setAttribute("data-variant-combination-id", (combo && combo.id) || "");
 					addBtn.setAttribute("data-variant-color", pick(selected, ["Цвет", "Color"]));
 					addBtn.setAttribute("data-variant-size", pick(selected, ["Размер", "Size"]));
+					addBtn.setAttribute("data-variant-options", Object.keys(selected).length ? JSON.stringify(selected) : "");
 				}
 			}
 

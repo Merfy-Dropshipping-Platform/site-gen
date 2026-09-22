@@ -71,6 +71,12 @@ export interface CartAddedModalPayload {
 	price: string;
 	image: string;
 	volume?: string;
+	/**
+	 * Подпись варианта ГОТОВОЙ безопасной разметкой (`variantHtml` из nt-cart:
+	 * текст экранирован, цвет — кружок). Пункт 26 тестера: окно показывало
+	 * товар без выбранного варианта.
+	 */
+	variantHtml?: string;
 	/** Итог по строке корзины: цена × количество. */
 	lineTotal?: number;
 	/** Итог по строке ДО скидки: старая цена × количество. */
@@ -283,6 +289,12 @@ export const createCartAddedModal = (deps: CartAddedModalDeps) => {
 		if (volumeEl) {
 			volumeEl.textContent = payload.volume ? `Объём: ${payload.volume}` : "";
 			volumeEl.classList.toggle("hidden", !payload.volume);
+		}
+
+		const variantEl = modal.querySelector<HTMLElement>("[data-cart-modal-variant]");
+		if (variantEl) {
+			variantEl.innerHTML = payload.variantHtml ?? "";
+			variantEl.classList.toggle("hidden", !payload.variantHtml);
 		}
 
 		if (priceEl) {

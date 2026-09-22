@@ -19,6 +19,10 @@
 import {
 	createNtCart,
 	variantLabel,
+	variantHtml,
+	variantParts,
+	variantSwatchHtml,
+	escapeCartHtml,
 	variantPairs,
 	type NtCartLine,
 	type NtCartLineVariant,
@@ -55,7 +59,8 @@ const api = createNtCart({
 	// Плашка-плейсхолдер уже была токеном (--color-surface) — не трогаем.
 	// Сторож: pnpm test:cart-drawer-items-scheme.
 	renderDrawerItem: (line, { formatPrice, productPathPrefix }) => {
-		const variant = variantLabel(line.variant);
+		// Готовая разметка: текст экранирован, цвет — кружок (пункт 26).
+		const variant = variantHtml(line.variant);
 		const pHref = `${productPathPrefix}/${encodeURIComponent(line.productId)}`;
 		const thumb = cartLineThumbPictureHtml(line.image, line.name);
 		return `
@@ -67,7 +72,7 @@ const api = createNtCart({
 							<div class="flex items-start justify-between gap-2">
 								<div class="flex flex-col gap-1">
 									<a href="${pHref}" class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${escapeHtml(line.name)}</a>
-									${variant ? `<span class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${escapeHtml(variant)}</span>` : ""}
+									${variant ? `<span class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]">${variant}</span>` : ""}
 								</div>
 								<button type="button" data-cart-remove data-id="${escapeHtml(line.id)}" class="font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))] transition-colors hover:text-[rgb(var(--color-accent,227_142_159))]" aria-label="Удалить">Удалить</button>
 							</div>
@@ -107,4 +112,4 @@ export const initCartUI = api.initCartUI;
 
 // Подпись варианта нужна и странице корзины (CartSection), а не только
 // дроверу: там она собиралась из color+size и теряла произвольные группы.
-export { variantLabel, variantPairs };
+export { variantLabel, variantPairs, variantHtml, variantParts, variantSwatchHtml, escapeCartHtml };

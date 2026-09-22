@@ -79,7 +79,9 @@ describe('вариант доезжает от страницы товара д�
         join(__dirname, '..', '..', '..', 'themes', theme, 'src', 'lib', 'cart.ts'),
         'utf8',
       );
-      expect(cart).toContain('variantLabel(line.variant)');
+      // 23.09: дровер рисует подпись через variantHtml — те же опции, но цвет
+      // кружком (владелец: «цвет не надо словами писать»).
+      expect(cart).toContain('variantHtml(line.variant)');
       expect(cart).not.toContain('line.variant?.color, line.variant?.size');
     }
   });

@@ -46,6 +46,12 @@ export type RenderedBlock = {
 export function renderSections(
   theme: string,
   jobs: RenderJob[],
+  /**
+   * Добавка к окружению процесса рендера — например, MERFY_QA_STUB_PRODUCT
+   * (товар заглушки storefront-data). Передаётся ЯВНО: `process.env`,
+   * изменённый внутри jest-теста, до дочернего процесса не доходит.
+   */
+  env?: Record<string, string>,
 ): RenderedBlock[] {
   const full = jobs.map((j) => ({ cascade: true, live: true, ...j }));
   const payload = JSON.stringify(full);
@@ -70,6 +76,7 @@ export function renderSections(
         cwd: SITES_ROOT,
         encoding: "utf-8",
         maxBuffer: 256 * 1024 * 1024,
+        env: env ? { ...process.env, ...env } : process.env,
       },
     );
     return JSON.parse(out) as RenderedBlock[];

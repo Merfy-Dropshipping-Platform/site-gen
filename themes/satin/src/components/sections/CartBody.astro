@@ -83,7 +83,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, formatCartPrice, updateQuantity, removeFromCart, variantLabel } from "../../lib/cart";
+	import { getCart, formatCartPrice, updateQuantity, removeFromCart, variantHtml } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -118,7 +118,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// оставляла подпись ПУСТОЙ — в корзине две одинаковые строки на два
 				// разных варианта (баг тестера, воспроизведён на живом стенде 21.09).
 				// CartSection это уже чинили, CartBody остался на старом пути.
-				const variant = variantLabel(line.variant);
+				const variant = variantHtml(line.variant);
 				const borderClass = index === arr.length - 1 ? "" : "border-b border-[rgb(var(--color-muted,153_153_153)/0.3)] pb-6";
 				return `
 					<li class="flex flex-col gap-4 ${borderClass} md:flex-row md:items-start md:justify-between" data-line-id="${line.id}">

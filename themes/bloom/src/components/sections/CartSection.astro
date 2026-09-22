@@ -110,7 +110,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantLabel } from "../../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantHtml } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -138,7 +138,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// Подпись варианта — общим хелпером: произвольные группы («Оттенок», «Объём»)
 					// лежат в variant.options и при склейке color+size терялись — два разных
 					// варианта давали неразличимые строки (баг тестера).
-					const variant = variantLabel(line.variant);
+					const variant = variantHtml(line.variant);
 				const totalCurrent = formatCartPrice(line.price * line.quantity);
 				// Старая (зачёркнутая) цена — жалоба владельца 17.09: «не отображается
 				// цена без скидки». Эталон rose/flux CartSection.astro: line.oldPrice

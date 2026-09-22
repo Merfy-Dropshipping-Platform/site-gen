@@ -18,7 +18,7 @@ import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { renderBlock } from "./lib/render";
+import { renderSections } from "./lib/render";
 
 const SITES_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ТЕМЫ = ["rose", "bloom", "satin", "vanilla", "flux"] as const;
@@ -224,6 +224,10 @@ const СТРУКТУРА: Record<string, Record<string, unknown>> = {
   CollapsibleSection: { items: [{ id: "i1", heading: "Вопрос", text: "Ответ" }] },
   ImageWithText: { image: КАРТИНКА, button: { text: "Кнопка", link: "/a" } },
   Video: { videoUrl: "https://example.com/v.mp4", poster: КАРТИНКА },
+  // Рассылка в подвале по канону ВЫКЛЮЧЕНА (Footer.puckConfig defaults:
+  // newsletter.enabled=false), и vanilla честно её не рисует. Без явного
+  // включения её «Заголовок» и «Текст» двигали то, чего нет на странице.
+  Footer: { newsletter: { enabled: true } },
   Product: { productId: "p1" },
   PopularProducts: { productIds: ["p1", "p2", "p3"] },
   Catalog: { collectionId: "c1" },
@@ -327,6 +331,58 @@ function содержимоеОбъекта(тело: string, имя: string): R
   return Object.keys(out).length ? out : null;
 }
 
+/**
+ * Тестируемые ПОДполя составного поля — из его же `objectFields`.
+ *
+ * Настройки под-панели («Основной текст ▸ Заголовок», «Текст» подписки, кегль
+ * заголовка у каждой секции) живут внутри объекта, и проверка их не видела: тип
+ * `object` стоял в списке пропуска целиком. Ровно там сидят пункты 6 и 8 из
+ * пачки тестера 22.09 — дыра была в самой проверке, а не в темах.
+ */
+function подполяОбъекта(тело: string): Record<string, Поле> {
+  const i = тело.indexOf("objectFields:");
+  if (i < 0) return {};
+  const j = тело.indexOf("{", i);
+  if (j < 0) return {};
+  let d = 1;
+  let k = j + 1;
+  let внутри = "";
+  while (k < тело.length && d > 0) {
+    const c = тело[k];
+    if (c === "{") d++;
+    else if (c === "}") d--;
+    if (d > 0) внутри += c;
+    k++;
+  }
+  const out: Record<string, Поле> = {};
+  let гл = 0;
+  let cur = "";
+  const взять = (txt: string) => {
+    const km = txt.match(/^[\s\n]*\[?'?([a-zA-Z_]\w*)'?/);
+    const tm = txt.match(/type:\s*'([^']+)'/);
+    if (!km || !tm) return;
+    const f: Record<string, unknown> = { type: tm[1] };
+    const opts = [...txt.matchAll(/value:\s*'([^']*)'/g)].map((m) => ({ value: m[1] }));
+    if (opts.length) f.options = opts;
+    const min = txt.match(/min:\s*(-?\d+)/);
+    const max = txt.match(/max:\s*(-?\d+)/);
+    if (min) f.min = Number(min[1]);
+    if (max) f.max = Number(max[1]);
+    const знач = значенияПоля(f);
+    if (знач) out[km[1]] = { тип: tm[1], значения: знач };
+  };
+  for (const ch of внутри) {
+    if (ch === "{" || ch === "[" || ch === "(") гл++;
+    else if (ch === "}" || ch === "]" || ch === ")") гл--;
+    if (ch === "," && гл === 0) {
+      взять(cur);
+      cur = "";
+    } else cur += ch;
+  }
+  взять(cur);
+  return out;
+}
+
 /** База рендера: структура секции + текст ТОЛЬКО в поля этой панели. */
 function наполнение(
   секция: string,
@@ -354,30 +410,73 @@ const мёртвые: Находка[] = [];
 const проверено: Находка[] = [];
 const упало: Array<Находка & { причина: string }> = [];
 
+/**
+ * Рендер идёт ОДНИМ прогоном на тему, а не процессом на каждый замер.
+ *
+ * Каждый вызов renderBlock поднимает отдельный node: на 478 полей это под
+ * тысячу холодных стартов, и проверка стала самым длинным сегментом CI
+ * (7 мин 38 с против 2 мин у соседних). renderSections принимает список
+ * заданий — собираем все пары значений темы и просим разом.
+ */
+type Замер = { поле: string; тип: string; секция: string; пропсA: Record<string, unknown>; пропсB: Record<string, unknown> };
+
 for (const тема of темыДляПрогона) {
+  const замеры: Замер[] = [];
   for (const секция of секцииТемы(тема)) {
     const панель = файлПанели(секция);
     if (!панель) continue;
     const { тест, объявлены } = поляБлока(панель);
+    // Секция БЕЗ содержимого рисует плейсхолдер, а в нём половина настроек
+    // не применяется — и аудит объявил бы их мёртвыми. Ровно на этом сорвались
+    // ручные замеры 21.09, поэтому каждой секции даётся живое наполнение.
     const содержимое = наполнение(секция, объявлены);
+    const база = { id: `${секция}-1`, colorScheme: "scheme-1", ...содержимое };
+
     for (const [поле, { тип, значения }] of Object.entries(тест)) {
-      // Секция БЕЗ содержимого рисует плейсхолдер, а в нём половина настроек
-      // не применяется — и аудит объявил бы их мёртвыми. Ровно на этом сорвались
-      // ручные замеры 21.09, поэтому каждой секции даётся живое наполнение.
-      const база = { id: `${секция}-1`, colorScheme: "scheme-1", ...содержимое };
-      let A = "";
-      let B = "";
-      try {
-        A = renderBlock(тема, секция, { ...база, [поле]: значения[0] }, { catalog: КАТАЛОГ });
-        B = renderBlock(тема, секция, { ...база, [поле]: значения[1] }, { catalog: КАТАЛОГ });
-      } catch (e) {
-        упало.push({ тема, секция, поле, тип, причина: (e as Error).message.slice(0, 60) });
-        continue;
+      замеры.push({
+        секция,
+        поле,
+        тип,
+        пропсA: { ...база, [поле]: значения[0] },
+        пропсB: { ...база, [поле]: значения[1] },
+      });
+    }
+
+    // Под-панели: «Заголовок ▸ Размер», «Текст ▸ Размер» и прочее внутри
+    // составных полей. Базовое значение объекта берём из наполнения, чтобы
+    // менялось ровно одно подполе.
+    for (const { имя, тип, тело } of объявлены) {
+      if (тип !== "object") continue;
+      const базовыйОбъект = (содержимое[имя] ?? {}) as Record<string, unknown>;
+      for (const [подполе, { тип: птип, значения }] of Object.entries(подполяОбъекта(тело))) {
+        замеры.push({
+          секция,
+          поле: `${имя}.${подполе}`,
+          тип: птип,
+          пропсA: { ...база, [имя]: { ...базовыйОбъект, [подполе]: значения[0] } },
+          пропсB: { ...база, [имя]: { ...базовыйОбъект, [подполе]: значения[1] } },
+        });
       }
-      проверено.push({ тема, секция, поле, тип });
-      if (A === B) мёртвые.push({ тема, секция, поле, тип });
     }
   }
+
+  const задания = замеры.flatMap((з) => [
+    { block: з.секция, props: з.пропсA, catalog: КАТАЛОГ },
+    { block: з.секция, props: з.пропсB, catalog: КАТАЛОГ },
+  ]);
+  const результаты = задания.length ? renderSections(тема, задания) : [];
+
+  замеры.forEach((з, i) => {
+    const A = результаты[i * 2];
+    const B = результаты[i * 2 + 1];
+    const общая = { тема, секция: з.секция, поле: з.поле, тип: з.тип };
+    if (!A?.html || !B?.html) {
+      упало.push({ ...общая, причина: (A?.error ?? B?.error ?? "нет HTML").slice(0, 60) });
+      return;
+    }
+    проверено.push(общая);
+    if (A.html === B.html) мёртвые.push(общая);
+  });
 }
 
 console.log(`проверено полей: ${проверено.length}`);

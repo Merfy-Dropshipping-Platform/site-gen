@@ -1506,6 +1506,12 @@ jobs:
       # Рендерит СОБРАННЫЕ секции → нужен pnpm build:theme-sections выше.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/dead-settings-baseline.spec.ts
+      # Подпись ссылки «Панели объявлений» доезжает до витрины, даже когда
+      # мерчант не выбрал страницу. Конверт {text} без href схлопывался в
+      # строку, и подпись приезжала в тему АДРЕСОМ: сломаны были все пять тем,
+      # каждая по-своему. Нашёл аудит настроек, не тестер.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/promo-banner-link-label.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

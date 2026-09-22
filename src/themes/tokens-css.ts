@@ -21,6 +21,7 @@ import { getThemeManifest } from './theme-manifest-loader';
 import { BASE_DEFAULTS } from '../../packages/theme-contract/tokens/base-defaults';
 import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
 import { CONTENT_SURFACE_CSS } from './content-surface-css';
+import { resolveCartDrawerSchemeId } from './cart-drawer-contract';
 
 /**
  * Корни секций-страниц личного кабинета. Ровно эти четыре страницы конструктор
@@ -283,12 +284,50 @@ export function previewTokensCssWithFonts(
     (themeSettings as Record<string, unknown>) ?? {},
     themeId,
   );
+  return googleFontsImportCss(themeSettings) + css;
+}
+
+/**
+ * `@import` Google Fonts под шрифты, выбранные мерчантом в панели
+ * (`headingFont` / `bodyFont`), или пустая строка. Стоит ПЕРВОЙ строкой
+ * токенов: `@import` действует, только пока перед ним нет других правил.
+ */
+export function googleFontsImportCss(themeSettings: unknown): string {
   const s = themeSettings as { headingFont?: unknown; bodyFont?: unknown } | null;
   const hf = typeof s?.headingFont === 'string' ? s.headingFont : '';
   const bf = typeof s?.bodyFont === 'string' ? s.bodyFont : '';
-  if (!hf && !bf) return css;
+  if (!hf && !bf) return '';
   const url = generateGoogleFontsUrl(hf, bf);
-  return url ? `@import url("${url}");\n${css}` : css;
+  return url ? `@import url("${url}");\n` : '';
+}
+
+/**
+ * Токены сайта — ОДНА функция на все пути: превью конструктора (первая
+ * загрузка страницы, правка настроек темы, особые страницы) и живая сборка.
+ *
+ * До неё токены строились в пяти местах по-разному: первая загрузка страницы
+ * в превью несла шрифты мерчанта, но не схему выдвижной корзины; правка
+ * настроек и особые страницы превью — наоборот (и после первой же правки
+ * шрифты мерчанта в конструкторе пропадали); живая сборка шрифтов мерчанта не
+ * грузила вовсе — шрифт, выбранный в панели, на витрине подменялся запасным.
+ *
+ * Эталон — конструктор при загрузке страницы, плюс схема корзины, которую
+ * конструктор уже показывает после первой правки: шрифты мерчанта + схема
+ * дровера с явной настройки либо со страницы корзины (`cart-drawer-contract`).
+ * Включается выключателем `PARITY_TOKENS` (см. parity-switch.ts).
+ */
+export function siteTokensCss(
+  themeSettings: unknown,
+  revisionData: unknown,
+  themeId: string | null,
+): string {
+  const ts = isPlainObject(themeSettings) ? themeSettings : {};
+  const cartDrawerScheme =
+    (ts as { cartDrawerScheme?: unknown }).cartDrawerScheme ??
+    resolveCartDrawerSchemeId(revisionData);
+  return (
+    googleFontsImportCss(ts) + buildTokensCss({ ...ts, cartDrawerScheme }, themeId)
+  );
 }
 
 

@@ -1628,12 +1628,19 @@ export async function runBuildPipeline(
         (v2ThemeSettings && typeof v2ThemeSettings === "object"
           ? (v2ThemeSettings as { cartDrawerScheme?: unknown }).cartDrawerScheme
           : undefined) ?? resolveCartDrawerSchemeId(ctx.revisionData);
-      const v2TokensCss = buildTokensCss(
-        v2ThemeSettings && typeof v2ThemeSettings === "object"
-          ? { ...(v2ThemeSettings as Record<string, unknown>), cartDrawerScheme: v2CartDrawerScheme }
-          : { cartDrawerScheme: v2CartDrawerScheme },
-        bareTheme,
-      );
+      // PARITY_TOKENS (parity-switch.ts): та же функция, что в превью
+      // конструктора, — шрифты мерчанта (@import) + схема корзины. Выключено —
+      // прежний путь без шрифтов мерчанта.
+      const { parityOn } = await import("../themes/parity-switch");
+      const { siteTokensCss } = await import("../themes/tokens-css");
+      const v2TokensCss = parityOn("TOKENS", params.siteId)
+        ? siteTokensCss(v2ThemeSettings ?? {}, ctx.revisionData, bareTheme)
+        : buildTokensCss(
+            v2ThemeSettings && typeof v2ThemeSettings === "object"
+              ? { ...(v2ThemeSettings as Record<string, unknown>), cartDrawerScheme: v2CartDrawerScheme }
+              : { cartDrawerScheme: v2CartDrawerScheme },
+            bareTheme,
+          );
       const tokenized = await injectTokensCssIntoDist(ctx.distDir, v2TokensCss);
       logger.log(`[themes-v2] Injected tokens.css into ${tokenized} HTML files for site ${params.siteId}`);
       time("themes-v2-copy", t);

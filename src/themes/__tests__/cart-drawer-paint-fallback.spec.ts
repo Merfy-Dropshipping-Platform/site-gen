@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { buildTokensCss } from "../tokens-css";
+import { buildTokensCss, siteTokensCss } from "../tokens-css";
 import { resolveCartDrawerSchemeId } from "../cart-drawer-contract";
 
 /**
@@ -178,9 +178,14 @@ describe("build.service.ts — источник домешивает фолбэ�
   });
 
   it("вызов buildTokensCss для v2TokensCss домешивает cartDrawerScheme", () => {
-    const idx = src.indexOf("const v2TokensCss = buildTokensCss(");
+    // 22.09 (PARITY_TOKENS): v2TokensCss строится либо общей siteTokensCss
+    // (фолбэк внутри — поведенческая проверка ниже), либо прежним
+    // buildTokensCss с v2CartDrawerScheme. Обе ветки обязаны быть на месте.
+    const idx = src.indexOf("const v2TokensCss =");
     expect(idx).toBeGreaterThan(-1);
-    const around = src.slice(idx, idx + 700);
+    const around = src.slice(idx, idx + 900).replace(/\s+/g, " ");
+    expect(around).toContain("siteTokensCss(");
+    expect(around).toContain("buildTokensCss(");
     expect(around).toContain("v2CartDrawerScheme");
   });
 
@@ -232,9 +237,49 @@ describe("preview.controller.ts — все пути превью домешив�
     ["injectTokensIntoBlobPage — built-theme blob-страницы превью", "private injectTokensIntoBlobPage(", "buildTokensCss(\n      this.withCartDrawerSchemeFallback"],
     ["renderTokensCss — POST /preview/tokens-css, живой хот-свап настроек", "async renderTokensCss(", "buildTokensCss(\n        this.withCartDrawerSchemeFallback"],
   ])("%s зовёт buildTokensCss через фолбэк-хелпер", (_label, anchor, expectedCallStart) => {
+    // Пробелы не важны: 22.09 вызовы обёрнуты выключателем PARITY_TOKENS, и
+    // отступ старой ветки сдвинулся. Сторожим смысл — вызов идёт через хелпер.
     const at = src.indexOf(anchor);
     expect(at).toBeGreaterThan(-1);
-    const body = src.slice(at, at + 900);
-    expect(body).toContain(expectedCallStart);
+    const flat = (t: string) => t.replace(/\s+/g, " ");
+    const body = flat(src.slice(at, at + 1100));
+    expect(body).toContain(flat(expectedCallStart));
+  });
+
+  it.each([
+    ["tokensCssFromSettings", "private tokensCssFromSettings("],
+    ["injectTokensIntoBlobPage", "private injectTokensIntoBlobPage("],
+    ["renderTokensCss", "async renderTokensCss("],
+  ])("%s под PARITY_TOKENS зовёт общую siteTokensCss", (_label, anchor) => {
+    const at = src.indexOf(anchor);
+    expect(at).toBeGreaterThan(-1);
+    const body = src.slice(at, at + 1100).replace(/\s+/g, " ");
+    expect(body).toContain("parityOn('TOKENS', siteId)");
+    expect(body).toContain("siteTokensCss(");
+  });
+});
+
+/**
+ * 22.09 (PARITY_TOKENS): общая функция токенов для превью и живой сборки
+ * обязана сама домешивать фолбэк схемы дровера — иначе включение выключателя
+ * вернуло бы баг тестера 17.09 на всех путях разом. Проверка по поведению,
+ * не по тексту источника.
+ */
+describe("siteTokensCss — фолбэк схемы дровера внутри общей функции", () => {
+  const DARK = {
+    id: "scheme-3",
+    background: "#111111",
+    surfaceBg: "#222222",
+    heading: "#ffffff",
+    text: "#eeeeee",
+    muted: "#bbbbbb",
+    primaryButton: { background: "#ffffff", text: "#111111" },
+    secondaryButton: { background: "#222222", text: "#ffffff" },
+  };
+
+  it("схема со страницы корзины красит дровер без явной настройки", () => {
+    const css = siteTokensCss({ colorSchemes: [DARK] }, PAGE_CART_WITH_SCHEME, "flux");
+    const rule = css.match(/\[data-nt\$="cart-drawer"\][^{]*\{[^}]*\}/)?.[0] ?? "";
+    expect(rule).not.toBe("");
   });
 });

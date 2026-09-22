@@ -26,7 +26,8 @@ import {
 import { applyFooterData } from '../utils/footer-data';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
-import { buildTokensCss } from '../themes/tokens-css';
+import { buildTokensCss, siteTokensCss } from '../themes/tokens-css';
+import { parityOn } from '../themes/parity-switch';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { resolveCartDrawerSchemeId } from '../themes/cart-drawer-contract';
 import {
@@ -382,6 +383,7 @@ export class PreviewController {
             blocks: v2Blocks,
             titleOverride: pageTitle,
             themeSettings: (loaded.data as Record<string, unknown> | null)?.themeSettings,
+            revisionData: loaded.data,
             merfy,
           });
           if (v2Html !== null) {
@@ -670,7 +672,7 @@ export class PreviewController {
     try {
       let html = await this.preview.renderPreviewPage({
         blocks,
-        tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId),
+        tokensCss: this.tokensCssFromSettings(loaded.data, loaded.themeId, siteId),
         fontHead: googleFontHead(loaded.themeId),
         themeId: loaded.themeId,
         page,
@@ -959,10 +961,14 @@ export class PreviewController {
           .send('/* tokens-css render error: site has no themeId */');
         return;
       }
-      const css = buildTokensCss(
-        this.withCartDrawerSchemeFallback(body.themeSettings ?? {}, loaded.data),
-        loaded.themeId,
-      );
+      // body.themeSettings — несохранённые настройки из панели; схема корзины
+      // и прочее — из сохранённой ревизии (как и было).
+      const css = parityOn('TOKENS', siteId)
+        ? siteTokensCss(body.themeSettings ?? {}, loaded.data, loaded.themeId)
+        : buildTokensCss(
+            this.withCartDrawerSchemeFallback(body.themeSettings ?? {}, loaded.data),
+            loaded.themeId,
+          );
       res.type('text/css').send(css);
     } catch (err: unknown) {
       const e = err as Error;
@@ -1117,7 +1123,11 @@ export class PreviewController {
   private tokensCssFromSettings(
     data: Record<string, unknown>,
     themeId: string | null,
+    siteId: string,
   ): string {
+    if (parityOn('TOKENS', siteId)) {
+      return siteTokensCss(data.themeSettings, data, themeId);
+    }
     return buildTokensCss(
       this.withCartDrawerSchemeFallback(data.themeSettings, data),
       themeId,
@@ -1401,11 +1411,13 @@ export class PreviewController {
     themeSettings: unknown,
     revisionData?: unknown,
   ): string {
-    const css = buildTokensCss(
-      this.withCartDrawerSchemeFallback(themeSettings, revisionData),
-      themeId,
-    );
-    const listener = `window.addEventListener('message',function(ev){if(!ev.data||ev.data.type!=='update-tokens')return;fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})}).then(function(r){return r.text()}).then(function(t){var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;}).catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
+    const css = parityOn('TOKENS', siteId)
+      ? siteTokensCss(themeSettings, revisionData, themeId)
+      : buildTokensCss(
+          this.withCartDrawerSchemeFallback(themeSettings, revisionData),
+          themeId,
+        );
+    const listener =`window.addEventListener('message',function(ev){if(!ev.data||ev.data.type!=='update-tokens')return;fetch('/api/sites/${siteId}/preview/tokens-css',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themeSettings:ev.data.themeSettings,themeId:'${themeId}'})}).then(function(r){return r.text()}).then(function(t){var s=document.getElementById('__merfy_tokens_css');if(s)s.textContent=t;}).catch(function(e){console.error('[preview] blob update-tokens failed',e)});});`;
     htmlIn = injectTokensCssIntoHtml(htmlIn, css);
     return htmlIn.replace(/<\/head>/i, `<script>${listener}</script></head>`);
   }

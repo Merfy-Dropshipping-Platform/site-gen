@@ -144,10 +144,10 @@ export function formatPrice(value: number): string {
 }
 
 /**
- * Подсветка совпадения запроса в названии товара (первая ступень поиска, план
- * 23.09) — конвейер маленьких чистых функций: нормализовать → найти отрезки
- * совпадений по каждому слову запроса → склеить пересечения → отрисовать
- * экранированный HTML с <mark> на найденных отрезках.
+ * Подсветка совпадения запроса в названии товара — конвейер маленьких чистых
+ * функций: нормализовать → найти отрезки совпадений по каждому слову запроса
+ * → склеить пересечения → отрисовать экранированный HTML с <mark> на
+ * найденных отрезках.
  *
  * Нормализация — как на сервере (product.searchStorefront): нижний регистр,
  * ё→е, небуквенное и нечисловое — пробел. Отличие от серверной
@@ -163,17 +163,27 @@ function isWordChar(ch: string): boolean {
 	return WORD_CHAR.test(ch);
 }
 
+/**
+ * Нижний регистр ОДНОГО code unit. У некоторых символов ('İ' → "i" + точка
+ * сверху) toLowerCase даёт больше одного code unit — целой строкой это молча
+ * удлинило бы её и увело индексы совпадения от исходного текста. Берём только
+ * первый code unit результата — длина входа и выхода всегда совпадает 1:1.
+ */
+function toLowerSingleUnit(ch: string): string {
+	return ch.toLowerCase().charAt(0);
+}
+
 /** Один символ → нижний регистр, ё→е, небуквенное → пробел. Длина не меняется. */
 function normalizeChar(ch: string): string {
-	if (ch === "ё") return "е";
-	if (isWordChar(ch)) return ch;
+	const lower = toLowerSingleUnit(ch);
+	if (lower === "ё") return "е";
+	if (isWordChar(lower)) return lower;
 	return " ";
 }
 
 /** Посимвольная нормализация без изменения длины строки. */
 function normalizeForMatch(value: string): string {
-	const lower = value.toLowerCase();
-	const chars = lower.split("");
+	const chars = value.split("");
 	const normalizedChars = chars.map(normalizeChar);
 	return normalizedChars.join("");
 }

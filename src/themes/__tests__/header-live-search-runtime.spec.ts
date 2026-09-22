@@ -191,6 +191,14 @@ describe("highlightMatch — подсветка совпадения с запр
       "&lt;b&gt;Кроссовки&lt;/b&gt;",
     );
   });
+
+  it("буква, чья нижняя форма занимает два code unit ('İ'), не сдвигает подсветку", () => {
+    // 'İ'.toLowerCase() === 'i̇' (два code unit: i + точка сверху) — нормализация
+    // целой строкой удлинила бы её и увела индекс совпадения от текста дальше по строке.
+    expect(highlightMatch("İstanbul Sneakers", "sneakers")).toBe(
+      `İstanbul ${MARK_OPEN}Sneakers${MARK_CLOSE}`,
+    );
+  });
 });
 
 describe("resolveSearchEndpoint — магазин и gateway", () => {

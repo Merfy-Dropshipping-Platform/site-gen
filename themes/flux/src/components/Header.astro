@@ -146,6 +146,10 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 const pathname = Astro.url.pathname;
 const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathname === link.href);
 
+// Магазин для живого поиска: build.service патчит `const shopId = ""` → siteId на
+// публикации (patchShopIdInDist), ровно как у подвала и корзины темы.
+const shopId = "";
+
 // Бейдж счётчика (корзина и избранное) — эталон верстальщика: -right-1 -top-1,
 // h-[18px] min-w-[18px], bg-[#1e2952], Roboto Flex 11px.
 // ЦИФРА — роль схемы «Текст кнопки», а не `text-white`: белым списком матрицы
@@ -505,28 +509,42 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		</div>
 	)}
 
-	<!-- Desktop Search Panel (expandable) — эталон: border-t #F5F5F5, форма h-16 rounded-8 border #1e2952 -->
+	<!-- Поиск (Figma «Поиск» 1320×232): коробка выпадает ПОВЕРХ страницы под шапкой,
+	     а не раздвигает её. Сверху строка поиска с линией, ниже — живые результаты
+	     (общий модуль theme-base/runtime/header-search, вид — lib/header-search-view).
+	     Цвета: строка поиска — Схема 1 (правило form[role="search"], решение
+	     владельца 15.09 про поле и кнопку), коробка и выдача — схема шапки, как у
+	     выпадающих меню. «Найти» и Enter по-прежнему ведут в каталог ?q=. -->
 	<div
 		data-search-panel
-		class="hidden w-full border-t border-[#F5F5F5] bg-[rgb(var(--color-bg,255_255_255))] py-4"
+		class="absolute left-0 right-0 top-full z-40 hidden w-full"
 		hidden
 	>
 		<div class={deskContainerBase}>
-			<form role="search" action="/catalog" method="get" class="flex h-16 w-full items-center justify-between gap-2 rounded-[8px] border border-[#1e2952] bg-white pl-4 pr-2">
-				<input
-					type="search"
-					name="q"
-					placeholder="Поиск..."
-					aria-label="Поиск"
-					class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
-				/>
-				<button
-					type="submit"
-					class="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-[#1e2952] px-4 py-2 font-roboto-flex text-[14px] font-normal leading-normal text-white transition-opacity hover:opacity-95"
-				>
-					Найти
-				</button>
-			</form>
+			<div
+				data-header-search
+				data-search-layout="panel"
+				data-search-limit="9"
+				class="flex w-full flex-col bg-[rgb(var(--color-bg,255_255_255))] shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+			>
+				<form role="search" action="/catalog" method="get" class="flex h-12 items-center justify-between gap-2 border-b border-[rgb(var(--color-button-bg,30_41_82))] pl-3 pr-1">
+					<input
+						type="search"
+						name="q"
+						placeholder="Поиск..."
+						aria-label="Поиск"
+						autocomplete="off"
+						class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-[19px] placeholder:text-[rgb(var(--color-text,0_0_0)/0.4)] outline-none"
+					/>
+					<button
+						type="submit"
+						class="flex h-10 shrink-0 items-center justify-center rounded-[4px] bg-[#1e2952] px-3 font-roboto-flex text-[14px] font-normal uppercase leading-4 text-white transition-opacity hover:opacity-95"
+					>
+						Найти
+					</button>
+				</form>
+				<div data-search-results hidden aria-live="polite" class="max-h-[60vh] overflow-y-auto p-3 aria-busy:opacity-60"></div>
+			</div>
 		</div>
 	</div>
 	</header>
@@ -559,6 +577,9 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		role="dialog"
 		aria-modal="true"
 		aria-label="Меню"
+		data-header-search
+		data-search-layout="drawer"
+		data-search-limit="8"
 	>
 		{isSidebar ? (
 			/* Шапка открытой панели: на месте логотипа — крестик (пункт 29 документа
@@ -592,15 +613,18 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 				</div>
 			</div>
 		) : (
-			/* Mobile drawer (эталон): поиск + профиль сверху */
+			/* Mobile drawer (эталон): поиск + профиль сверху. Строка поиска — по
+			   макету «Бургер» 375: высота 40, только нижняя линия, Roboto Flex 300 14. */
 			<div class="flex items-center gap-2">
 				{showSearch && (
-					<form class="flex h-11 min-h-11 flex-1 items-center justify-between rounded-[4px] border border-[#F5F5F5] bg-white pl-3 pr-2" role="search" action="/catalog" method="get">
+					<form class="flex h-10 min-h-10 flex-1 items-center justify-between gap-2 border-b border-[rgb(var(--color-heading,0_0_0))]" role="search" action="/catalog" method="get">
 						<input
 							type="search"
 							name="q"
 							placeholder="Поиск"
-							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#cccccc] outline-none"
+							aria-label="Поиск"
+							autocomplete="off"
+							class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[14px] font-light leading-4 placeholder:text-[rgb(var(--color-muted,153_153_153))] outline-none"
 						/>
 						<button type="submit" class="flex h-6 w-6 shrink-0 items-center justify-center" aria-label="Найти">
 							<SchemeIcon svgs={FLUX_ICON_SVGS} name="search-sm" sizeClass="size-6" />
@@ -626,7 +650,13 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			</div>
 		)}
 
-		<nav class:list={["flex flex-col gap-3", isSidebar ? "mt-6" : "mt-[52px]"]} aria-label="Основное меню" data-nav-drawer>
+		{/* Живые результаты поиска шторки: пока они на экране, меню спрятано
+		    (`data-search-idle`), как в макете «Бургер» 375 — выдача на месте пунктов. */}
+		{!isSidebar && showSearch && (
+			<div data-search-results hidden aria-live="polite" class="mt-3.5 aria-busy:opacity-60"></div>
+		)}
+
+		<nav class:list={["flex flex-col gap-3", isSidebar ? "mt-6" : "mt-[52px]"]} aria-label="Основное меню" data-nav-drawer data-search-idle>
 			{nav.filter((l) => l.href !== "/").map((link) => {
 				const active = isActive(link);
 				const kids = Array.isArray(link.submenu) ? link.submenu : [];
@@ -703,9 +733,42 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	    владельца). Обработчик общий на все пять тем. */}
 	<script is:inline set:html={NAV_SUBMENU_TOGGLE_SOURCE} />
 	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
+	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
+	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
+	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
+	<script is:inline define:vars={{ shopId }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
+	</script>
 </div>
 
 <script>
+	import { focusSearchToggle, initHeaderSearch } from "../../../../packages/theme-base/runtime/header-search";
+	import { renderSearchResults, SEARCH_MESSAGE_CLASS } from "../lib/header-search-view";
+
+	// Живой поиск из лупы: панель шапки и шторка бургера (общий модуль на пять тем).
+	initHeaderSearch({ render: renderSearchResults, messageClass: SEARCH_MESSAGE_CLASS });
+
+	const setSearchOpen = (open: boolean) => {
+		const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+		if (!panel) return;
+		if (open) {
+			panel.removeAttribute("hidden");
+			panel.classList.remove("hidden");
+			panel.classList.add("block");
+			panel.querySelector<HTMLInputElement>("input[type='search']")?.focus();
+		} else {
+			panel.setAttribute("hidden", "");
+			panel.classList.add("hidden");
+			panel.classList.remove("block");
+		}
+	};
+
+	const isSearchPanelOpen = () => {
+		const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+		return Boolean(panel && !panel.hasAttribute("hidden"));
+	};
+
 	const syncBurgerButtonIcons = (open: boolean) => {
 		// Update ALL burger toggle buttons (mobile #flux-burger-btn + desktop [data-burger-toggle])
 		document.querySelectorAll<HTMLElement>("[data-burger-toggle]").forEach((btn) => {
@@ -718,9 +781,25 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 		});
 	};
 
+	// Мобильная шторка встаёт под ФАКТИЧЕСКИЙ низ шапки. Класс `top-[80px]` —
+	// только фолбэк: над шапкой бывает полоса объявления, и тогда верх шторки
+	// (строка поиска) уезжал под мобильную строку шапки (замер 375: шапка
+	// 48…128, шторка с 80 — 48px поиска закрыты). Так же rose/vanilla/bloom.
+	const positionBurger = () => {
+		const burger = document.getElementById("flux-burger");
+		if (!burger || burger.classList.contains("inset-y-0")) return;
+		const header = document.querySelector<HTMLElement>('[data-nt="flux-header"]');
+		if (!header) return;
+		burger.style.top = `${Math.max(0, Math.round(header.getBoundingClientRect().bottom))}px`;
+	};
+
 	const setBurger = (open: boolean) => {
 		const burger = document.getElementById("flux-burger");
 		if (!burger) return;
+		if (open) {
+			setSearchOpen(false);
+			positionBurger();
+		}
 		burger.classList.toggle("hidden", !open);
 		syncBurgerButtonIcons(open);
 		document.body.style.overflow = open ? "hidden" : "";
@@ -728,15 +807,20 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 
 	const syncFluxAfterNavigation = () => {
 		document.body.style.overflow = "";
+		setSearchOpen(false);
 		const burger = document.getElementById("flux-burger");
 		if (burger) burger.classList.add("hidden");
 		syncBurgerButtonIcons(false);
 	};
 
-	let fluxDelegatesBound = false;
+	// Гард на WINDOW, а не module-scope: контентные страницы несут две копии этого
+	// скрипта (Astro-hoisted и инлайн из renderBlock шапки при сборке хрома), и
+	// у каждой свой module-scope. Две привязки = два переключения за клик: панель
+	// поиска открывалась и тут же закрывалась (разбор у rose, Header.astro).
+	const fluxWin = window as unknown as { __fluxHeaderBound?: boolean };
 	const bindFluxDelegatedClicks = () => {
-		if (fluxDelegatesBound) return;
-		fluxDelegatesBound = true;
+		if (fluxWin.__fluxHeaderBound) return;
+		fluxWin.__fluxHeaderBound = true;
 
 		document.addEventListener("click", (event: MouseEvent) => {
 			const raw = event.target;
@@ -753,19 +837,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 
 			if (el.closest("[data-action='toggle-search']")) {
 				event.preventDefault();
-				const panel = document.querySelector<HTMLElement>("[data-search-panel]");
-				if (!panel) return;
-				const hidden = panel.hasAttribute("hidden");
-				if (hidden) {
-					panel.removeAttribute("hidden");
-					panel.classList.remove("hidden");
-					panel.classList.add("block");
-					panel.querySelector<HTMLInputElement>("input[type='search']")?.focus();
-				} else {
-					panel.setAttribute("hidden", "");
-					panel.classList.add("hidden");
-					panel.classList.remove("block");
-				}
+				setSearchOpen(!isSearchPanelOpen());
 				return;
 			}
 
@@ -773,6 +845,27 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 				setBurger(false);
 			}
 		});
+
+		// Панель поиска — выпадающая коробка поверх страницы: клик мимо неё закрывает.
+		document.addEventListener("click", (event: MouseEvent) => {
+			if (!isSearchPanelOpen()) return;
+			const target = event.target;
+			if (!(target instanceof Node)) return;
+			const panel = document.querySelector<HTMLElement>("[data-search-panel]");
+			if (panel?.contains(target)) return;
+			const tEl = target instanceof Element ? target : null;
+			if (tEl?.closest?.("[data-action='toggle-search']")) return;
+			setSearchOpen(false);
+		});
+
+		// Escape закрывает панель (первый Escape в непустом поле его очищает — модуль поиска).
+		document.addEventListener("keydown", (event: KeyboardEvent) => {
+			if (event.key !== "Escape" || !isSearchPanelOpen()) return;
+			setSearchOpen(false);
+			focusSearchToggle();
+		});
+
+		window.addEventListener("resize", positionBurger);
 	};
 
 	bindFluxDelegatedClicks();

@@ -198,6 +198,10 @@ const menuSchemeClass = menuColorScheme ? `color-scheme-${menuColorScheme.replac
 // Каталог умеет ?q= — см. порты Catalog и /api/store/products.
 const catalogSearchAction = "/catalog";
 
+// Магазин для живого поиска: build.service патчит `const shopId = ""` → siteId на
+// публикации (patchShopIdInDist), ровно как у подвала и корзины темы.
+const shopId = "";
+
 const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.url.pathname === link.href);
 ---
 
@@ -581,7 +585,12 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			)}
 		</div>
 
-		<!-- Поиск: как в rose-theme — выезжает вниз по клику (1320×48), кнопка в цвете Vanilla -->
+		<!-- Поиск (макет «Поиск» 1320×232): выезжает вниз по клику — строка с линией
+		     снизу и список до трёх строк с прокруткой. Живые результаты — общий модуль
+		     theme-base/runtime/header-search, вид — lib/header-search-view. Цвета:
+		     строка поиска — Схема 1 (правило form[role="search"], решение владельца
+		     15.09 про поле и кнопку), коробка и выдача — схема шапки, как выпадающие
+		     меню vanilla. «Найти» по-прежнему ведёт в каталог. -->
 			<div
 			id="vanilla-search-panel"
 			data-search-panel
@@ -590,27 +599,36 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			aria-hidden="true"
 		>
 			<div class="vanilla-pad py-2 lg:py-2">
-				<form
-					role="search"
-					action={catalogSearchAction}
-					method="get"
-					class="pointer-events-auto mx-auto flex h-12 w-full max-w-[1320px] items-center gap-2 rounded-[4px] border border-[#E5E5E5] bg-white pl-3 pr-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+				<div
+					data-header-search
+					data-search-layout="panel"
+					data-search-limit="10"
+					class="pointer-events-auto mx-auto flex w-full max-w-[1320px] flex-col bg-[rgb(var(--color-bg,255_255_255))] text-[rgb(var(--color-text,0_0_0))] shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
 				>
-					<input
-						id="vanilla-site-search-input"
-						type="search"
-						name="q"
-						placeholder="Поиск..."
-						aria-label="Поиск"
-						class="min-h-0 min-w-0 flex-1 bg-transparent py-1 font-manrope text-[16px] font-light leading-normal text-[#000000] placeholder:text-[#999999] outline-none"
-					/>
-					<button
-						type="submit"
-						class="flex h-10 shrink-0 items-center justify-center rounded-[4px] border-0 bg-[var(--vanilla-header-bg)] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none text-white transition-opacity hover:opacity-90"
+					<form
+						role="search"
+						action={catalogSearchAction}
+						method="get"
+						class="flex h-12 items-center gap-2 border-b border-[rgb(var(--color-text,0_0_0))] pl-3 pr-1"
 					>
-						Найти
-					</button>
-				</form>
+						<input
+							id="vanilla-site-search-input"
+							type="search"
+							name="q"
+							placeholder="Поиск..."
+							aria-label="Поиск"
+							autocomplete="off"
+							class="min-h-0 min-w-0 flex-1 bg-transparent py-1 font-vanilla-arsenal text-[16px] font-normal leading-5 text-[#000000] placeholder:text-[#999999] outline-none"
+						/>
+						<button
+							type="submit"
+							class="flex h-10 shrink-0 items-center justify-center border-0 bg-[var(--vanilla-header-bg)] px-3 py-2.5 font-vanilla-arsenal text-[14px] font-normal uppercase leading-[18px] text-white transition-opacity hover:opacity-90"
+						>
+							Найти
+						</button>
+					</form>
+					<div data-search-results hidden aria-live="polite" class="px-3 py-3 aria-busy:opacity-60"></div>
+				</div>
 			</div>
 		</div>
 	</header>
@@ -634,6 +652,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		role="dialog"
 		aria-modal="true"
 		aria-label="Меню"
+		data-header-search
+		data-search-layout="drawer"
+		data-search-limit="8"
 	>
 		{isSidebar ? (
 			/* Шапка открытой панели: крестик на месте логотипа (пункт 29 документа
@@ -676,10 +697,11 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				</a>
 			</div>
 		) : (
-			/* Mobile drawer: search + profile */
+			/* Mobile drawer: search + profile. Строка поиска — по макету «Бургер» 375:
+			   40px, только линия снизу, Arsenal 14/18. */
 			<div class="flex items-center gap-2">
 				<form
-					class="flex h-10 min-h-10 flex-1 items-center justify-between rounded-[4px] border border-[var(--vanilla-line)] bg-white pl-3 pr-2"
+					class="flex h-10 min-h-10 flex-1 items-center justify-between gap-2 border-b border-[var(--vanilla-dark)]"
 					role="search"
 					action={catalogSearchAction}
 					method="get"
@@ -688,7 +710,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						type="search"
 						name="q"
 						placeholder="Поиск"
-						class="min-w-0 flex-1 bg-transparent font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-dark)] placeholder:text-[var(--vanilla-muted)] outline-none"
+						aria-label="Поиск"
+						autocomplete="off"
+						class="min-w-0 flex-1 bg-transparent font-vanilla-arsenal text-[14px] font-normal leading-[18px] text-[var(--vanilla-dark)] placeholder:text-[var(--vanilla-muted)] outline-none"
 					/>
 					<button type="submit" class="flex size-10 shrink-0 items-center justify-center" aria-label="Найти">
 						<SchemeIcon svgs={VANILLA_ICON_SVGS} name="search-sm" sizeClass="size-6" />
@@ -706,7 +730,13 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			</div>
 		)}
 
-		<nav class="mt-10 flex flex-col gap-5" aria-label="Основное меню" data-nav-drawer>
+		{/* Живые результаты поиска шторки: пока они на экране, меню спрятано
+		    (`data-search-idle`) — выдача встаёт на место пунктов. */}
+		{!isSidebar && (
+			<div data-search-results hidden aria-live="polite" class="mt-6 text-[var(--vanilla-dark)] aria-busy:opacity-60"></div>
+		)}
+
+		<nav class="mt-10 flex flex-col gap-5" aria-label="Основное меню" data-nav-drawer data-search-idle>
 			{nav.map((link) => {
 				const active = isActive(link);
 				// Вложенные пункты в шторке vanilla не рисовались вовсе — как и в
@@ -810,15 +840,31 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 	    владельца). Обработчик общий на все пять тем. */}
 	<script is:inline set:html={NAV_SUBMENU_TOGGLE_SOURCE} />
 	{stickiness === "scroll-up" && <script is:inline set:html={SCROLL_UP_JS} />}
+	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
+	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
+	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
+	<script is:inline define:vars={{ shopId }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
+	</script>
 </div>
 
 <script>
+	import { focusSearchToggle, initHeaderSearch } from "../../../../packages/theme-base/runtime/header-search";
+	import { renderSearchResults, SEARCH_MESSAGE_CLASS } from "../lib/header-search-view";
+
+	// Живой поиск из лупы: панель шапки и шторка бургера (общий модуль на пять тем).
+	initHeaderSearch({ render: renderSearchResults, messageClass: SEARCH_MESSAGE_CLASS });
+
+	// Шторка встаёт под ФАКТИЧЕСКИЙ низ шапки. Сумма «промо + шапка» врала в двух
+	// случаях: полосы объявления нет (брался фолбэк 48px — щель, сквозь которую
+	// видна страница над строкой поиска шторки) и страница прокручена под липкой
+	// шапкой (промо уже уехало вверх). Сумма осталась фолбэком, если шапки нет.
 	const headerOffsetBelowPromo = () => {
-		const promo = document.querySelector<HTMLElement>("[data-vanilla-announcement]");
 		const headerEl = document.querySelector<HTMLElement>('[data-nt="vanilla-header"]');
-		const p = promo?.offsetHeight ?? 48;
-		const h = headerEl?.offsetHeight ?? 80;
-		return p + h;
+		if (headerEl) return Math.max(0, Math.round(headerEl.getBoundingClientRect().bottom));
+		const promo = document.querySelector<HTMLElement>("[data-vanilla-announcement]");
+		return (promo?.offsetHeight ?? 48) + 80;
 	};
 
 	const positionBurger = () => {
@@ -896,10 +942,28 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		if (!isSidebarDrawer()) positionBurger();
 	};
 
-	let headerDelegatesBound = false;
+	// На телефоне поиск живёт в шторке бургера (макет «Бургер» 375): лупа
+	// мобильной строки открывает шторку и ставит курсор в поле, а не выдвигает
+	// десктопную панель. «Боковое» меню поля не несёт — тогда, как раньше, панель.
+	const MOBILE_QUERY = "(max-width: 767.98px)";
+	const openDrawerSearch = (): boolean => {
+		if (!window.matchMedia(MOBILE_QUERY).matches) return false;
+		const burgerEl = document.getElementById("vanilla-burger");
+		const input = burgerEl?.querySelector<HTMLInputElement>("input[type='search']");
+		if (!burgerEl || !input) return false;
+		if (burgerEl.classList.contains("hidden")) setBurger(true);
+		input.focus();
+		return true;
+	};
+
+	// Гард на WINDOW, а не module-scope: контентные страницы несут две копии этого
+	// скрипта (Astro-hoisted и инлайн из renderBlock шапки при сборке хрома), у
+	// каждой свой module-scope — две привязки дают два переключения за клик
+	// (панель открывалась и тут же закрывалась; разбор у rose, Header.astro).
+	const vanillaWin = window as unknown as { __vanillaHeaderBound?: boolean };
 	const bindHeaderDelegatedClicks = () => {
-		if (headerDelegatesBound) return;
-		headerDelegatesBound = true;
+		if (vanillaWin.__vanillaHeaderBound) return;
+		vanillaWin.__vanillaHeaderBound = true;
 
 		document.addEventListener(
 			"click",
@@ -929,6 +993,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 			if (el.closest("[data-action='toggle-search']")) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (openDrawerSearch()) return;
 				const willOpen = !isSearchPanelOpen();
 				const burger = document.getElementById("vanilla-burger");
 				if (willOpen && burger && !burger.classList.contains("hidden")) {
@@ -957,6 +1022,17 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		window.addEventListener("resize", () => {
 			syncSearchPanelHeight();
 			positionBurger();
+		});
+
+		// Панель выезжает анимацией max-height: после ответа поиска её высота
+		// меняется — подгоняем, иначе список обрезался бы по старой высоте.
+		document.addEventListener("merfy:header-search", syncSearchPanelHeight);
+
+		// Escape закрывает панель (первый Escape в непустом поле его очищает — модуль поиска).
+		document.addEventListener("keydown", (event: KeyboardEvent) => {
+			if (event.key !== "Escape" || !isSearchPanelOpen()) return;
+			setSearchOpen(false);
+			focusSearchToggle();
 		});
 	};
 

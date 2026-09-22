@@ -88,7 +88,8 @@ type Case = {
     | "--color-button-text"
     | "--color-button-2-bg"
     | "--color-button-2-text"
-    | "--color-muted";
+    | "--color-muted"
+    | "--color-surface";
   /**
    * Пропы, без которых мишень не рендерится вовсе. С 20.09 подвал не собирает
    * копирайт сам (владелец: «идёт только из блока информации, если заполнено»),
@@ -233,7 +234,10 @@ const CASES: Case[] = [
   // [подсказки поиска] Выпадашка satin сидела белой, пока её собственная панель
   // ([data-search-panel]) уже ехала за схемой. Поле и кнопку поиска НЕ трогали:
   // их владелец прибил к Схеме 1 (см. search-always-scheme-1.spec.ts).
-  { theme: "satin", block: "Header", label: "Шапка", target: "фон подсказок поиска", marker: "data-search-results", prop: "background-color", expect: "--color-bg" },
+  // 22.09 подсказки стали живой выдачей (header-live-search-ports.spec.ts), и
+  // по макету «Поиск» 1320×374 коробка выдачи satin серая (#F5F5F5) — это роль
+  // «Поверхность», а не «Фон». Мишень та же: цвет едет за схемой шапки.
+  { theme: "satin", block: "Header", label: "Шапка", target: "фон подсказок поиска", marker: "data-search-results", prop: "background-color", expect: "--color-surface" },
   // [подвал] Поле подписки — единственная белая заплата на полотне подвала.
   ...(["rose", "bloom", "flux"] as const).map((theme) => (
     { theme, block: "Footer", label: "Подвал", target: "фон поля подписки", marker: "data-newsletter-form", prop: "background-color", expect: "--color-bg" } as Case

@@ -109,6 +109,7 @@
     "test:media-radius": "jest --runInBand src/themes/__tests__/product-media-radius.spec.ts",
     "test:collection-name": "jest --runInBand src/__tests__/collection-name-placeholder.spec.ts",
     "test:search-scheme": "jest --runInBand src/themes/__tests__/search-always-scheme-1.spec.ts",
+    "test:header-search": "jest --runInBand src/themes/__tests__/header-live-search-runtime.spec.ts src/themes/__tests__/header-live-search-ports.spec.ts",
     "test:size-settings": "jest --runInBand src/themes/__tests__/theme-size-settings-reach-theme.spec.ts",
     "test:media-text-pair": "jest --runInBand src/themes/__tests__/media-text-pair.spec.ts",
     "test:media-columns": "jest --runInBand src/themes/__tests__/media-section-column-parity.spec.ts",

@@ -133,13 +133,10 @@ const TABLE: readonly Row[] = [
     observedCode: 'scheme-context-diverges',
     ref: 'src/generator/build.service.ts#/checkout-scheme',
   },
-  {
-    id: 'satin.flow.search.suggestions-data-source',
-    status: 'GAP',
-    expectedCode: 'suggestions-from-catalog',
-    observedCode: 'suggestions-from-demo',
-    ref: 'themes/satin/src/scripts/gsap/search.ts',
-  },
+  // satin.flow.search.suggestions-data-source (GAP «подсказки из демо-товаров»)
+  // закрыт 22.09: подсказки шапки теперь живые — общий модуль
+  // packages/theme-base/runtime/header-search, запрос в gateway
+  // /api/store/products/search (сторож header-live-search-ports.spec.ts).
   {
     id: 'satin.flow.search.catalog-read-q',
     status: 'GAP',
@@ -343,10 +340,10 @@ const TABLE: readonly Row[] = [
   },
 ];
 
-/** The 33 canonical known-current semantic rows the plan enumerates AFTER the
- *  three remediated Slideshow/MultiColumns rows were shrunk out (was 36). The
- *  ≥37 floor stays met by the 33 semantic rows + the explicit
- *  lifecycle/authoring decisions (42 total structural findings). */
+/** The 32 canonical known-current semantic rows the plan enumerates AFTER the
+ *  three remediated Slideshow/MultiColumns rows (was 36) and the remediated
+ *  header-search suggestions row (22.09) were shrunk out. The ≥36 floor stays
+ *  met by the 32 semantic rows + the explicit lifecycle/authoring decisions. */
 const SEMANTIC_ROWS = TABLE.filter((r) => !r.id.startsWith('satin.decision.'));
 
 /** Strip the `#/selector` from a ref → repo-relative file path. */
@@ -414,10 +411,11 @@ describe('Satin known-current classification — REAL pipeline reproduces the ta
     expect(missing).toEqual([]);
   });
 
-  it('reproduces at least the 37 enumerated semantic + decision findings', () => {
-    // 33 semantic rows (36 − 3 remediated) + the explicit lifecycle/authoring
-    // decisions ≥ 37 (the real pipeline emits 42 total structural findings).
-    expect(CURRENT.length).toBeGreaterThanOrEqual(37);
+  it('reproduces at least the 36 enumerated semantic + decision findings', () => {
+    // 32 semantic rows (36 − 3 remediated − 1 header-search suggestions,
+    // 22.09) + the explicit lifecycle/authoring decisions ≥ 36 (the real
+    // pipeline emitted 36 structural findings on 22.09).
+    expect(CURRENT.length).toBeGreaterThanOrEqual(36);
     // No emitted id may be a PASS-status leak.
     for (const i of CURRENT) expect(i.status).not.toBe('PASS');
   });

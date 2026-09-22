@@ -568,8 +568,14 @@ const shopId = "";
 			// экран: было 90vw у правого края, и слева полосой просвечивала страница
 			// (баг 1). С lg — колонка 360px на всю высоту. overscroll-contain:
 			// прокрутка панели не утекает на страницу.
+			// Выезд справа за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
+			// панель появлялась и пропадала за один кадр). Скрипт темы по-прежнему
+			// переключает `hidden`; переход через display: none дают
+			// `transition-discrete` и `starting:` (@starting-style) — без них
+			// display не анимируется, и панель прыгала бы. Где их не поддерживает
+			// браузер — панель просто появляется, как раньше.
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px]"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:translate-x-full [&.hidden]:translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 sm:px-5 md:px-10 lg:hidden",
 		]}
 		role="dialog"

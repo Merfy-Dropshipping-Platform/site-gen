@@ -362,9 +362,19 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 	>
 		{isSidebar ? (
 			<div class="flex items-center justify-between">
-				<a href="/" class="font-logo text-[length:var(--size-logo-width,22px)] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
-					{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
-				</a>
+				{/* Шапка открытой панели: крестик на месте логотипа (пункт 29 документа
+				    владельца) — логотип рисовался и в панели, и в шапке страницы. */}
+				<button
+					type="button"
+					data-burger-toggle
+					data-burger-close
+					aria-expanded="true"
+					aria-controls="satin-burger"
+					aria-label="Закрыть меню"
+					class="flex h-10 w-10 shrink-0 items-center justify-center transition-opacity hover:opacity-70"
+				>
+					<SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+				</button>
 				<div class="flex items-center gap-4">
 					<a href="/wishlist" class="relative flex h-8 w-8 shrink-0 items-center justify-center transition-opacity hover:opacity-80" aria-label="Избранное">
 						<SchemeIcon svgs={SATIN_ICON_SVGS} name="favourite" sizeClass="size-6" />
@@ -401,25 +411,31 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 					: [];
 				return (
 					<div class="flex flex-col gap-1.5" data-nav-group={subs.length > 0 ? "" : undefined}>
-						<div class="flex w-full items-center justify-between gap-2">
+						{/* Пункт с вложенностью раскрывается ВСЕЙ СТРОКОЙ, стрелка одна
+						    (пункт 28 документа владельца). Ссылкой он не рисуется: нажатие
+						    уводило на страницу и закрывало меню вместо раскрытия. */}
+						{subs.length > 0 ? (
+							<button
+								type="button"
+								data-nav-sub-toggle
+								aria-expanded="false"
+								class:list={[
+									"flex w-full items-center justify-between gap-2 text-left font-manrope text-xs font-normal leading-normal transition-colors",
+									"[&[aria-expanded=true]>svg]:rotate-90",
+									active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,96_96_96))] hover:text-[rgb(var(--color-text,0_0_0))]",
+								]}
+							>
+								<span>{link.label}</span>
+								<svg class="size-3 shrink-0 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+									<path d="M2.5 1 5.5 4 2.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</button>
+						) : (
 							<a href={link.href} class:list={["font-manrope text-xs font-normal leading-normal", active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,96_96_96))]"]}>{link.label}</a>
-							{subs.length > 0 && (
-								<button
-									type="button"
-									data-nav-sub-toggle
-									aria-expanded="false"
-									aria-label={`Раскрыть «${link.label}»`}
-									class="flex size-6 shrink-0 items-center justify-center text-[rgb(var(--color-muted,96_96_96))] transition-colors hover:text-[rgb(var(--color-text,0_0_0))] [&[aria-expanded=true]>svg]:rotate-180"
-								>
-									<svg class="h-3 w-3 transition-transform" viewBox="0 0 8 8" fill="none" aria-hidden="true">
-										<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
-									</svg>
-								</button>
-							)}
-						</div>
+						)}
 						{active && <div class="h-0.5 w-12 bg-[rgb(var(--color-text,0_0_0))]" aria-hidden="true"></div>}
-						{/* Вложенные пункты раскрываются нажатием на стрелку (пункт 25
-						    документа владельца: на телефоне — по нажатию). */}
+						{/* Вложенные пункты раскрываются нажатием на строку пункта (пункты
+						    25 и 28 документа владельца). */}
 						{subs.length > 0 && (
 							<div class="flex flex-col gap-1.5" data-nav-sub hidden>
 								{subs.map((s) => (

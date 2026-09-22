@@ -131,47 +131,48 @@ describe("«Изображение с текстом» — панель «Кон
 });
 
 describe("«Изображение с текстом» (bloom) — рендер «Контейнер»", () => {
-  it("без пропа: НЕТ surface-бокса (нет регрессии у существующих секций)", () => {
-    const html = renderSection("bloom", { id: "iwt-1" });
-    if (html === null) return;
-    expect(html).not.toContain("py-8");
-  });
+  // 2026-09-22 владелец отменил связку «плашка только при наложении»:
+  // «цветовая схема применяться должна даже без наложения». Контейнер теперь
+  // есть ВСЕГДА, а тумблер отвечает ровно за наезд. Регрессии для старых
+  // сайтов нет: у bloom `--color-surface` равен `--color-bg` во всех схемах,
+  // поэтому без выбранной схемы контейнера плашка невидима, как и раньше.
+  it.each(["true", "false", undefined])(
+    "surface-бокс есть при containerEnabled=%s",
+    (containerEnabled) => {
+      const props: Record<string, unknown> = { id: "iwt-1" };
+      if (containerEnabled !== undefined)
+        props.containerEnabled = containerEnabled;
+      const html = renderSection("bloom", props);
+      if (html === null) return;
+      expect(html).toContain("py-8");
+      expect(html).toContain("radius-card");
+    },
+  );
 
-  it("containerEnabled:'false': НЕТ surface-бокса", () => {
-    const html = renderSection("bloom", {
-      id: "iwt-1",
-      containerEnabled: "false",
-    });
-    if (html === null) return;
-    expect(html).not.toContain("py-8");
-  });
-
-  it("containerEnabled:'true': surface-бокс появляется на текстовой колонке", () => {
-    const html = renderSection("bloom", {
-      id: "iwt-1",
-      containerEnabled: "true",
-    });
-    if (html === null) return;
-    expect(html).toContain("py-8");
-    expect(html).toContain("radius-card");
-  });
-
-  it("containerColorScheme применяется ТОЛЬКО при containerEnabled:'true'", () => {
-    const off = renderSection("bloom", {
-      id: "iwt-1",
-      containerColorScheme: "4",
-    });
-    const onWithoutToggle = off; // тот же вызов — containerEnabled не задан
-    if (off === null) return;
-    expect(onWithoutToggle).not.toContain("color-scheme-4");
-
+  it("наезд даёт ТОЛЬКО тумблер — он и есть разница двух режимов", () => {
     const on = renderSection("bloom", {
       id: "iwt-1",
       containerEnabled: "true",
-      containerColorScheme: "4",
     });
-    expect(on).toContain("color-scheme-4");
-    expect(on).toContain("py-8");
+    const off = renderSection("bloom", {
+      id: "iwt-1",
+      containerEnabled: "false",
+    });
+    if (on === null || off === null) return;
+    expect(on).toContain("lg:absolute");
+    expect(off).not.toContain("lg:absolute");
+  });
+
+  it("containerColorScheme применяется в ОБОИХ режимах", () => {
+    for (const containerEnabled of ["true", "false"]) {
+      const html = renderSection("bloom", {
+        id: "iwt-1",
+        containerEnabled,
+        containerColorScheme: "4",
+      });
+      if (html === null) return;
+      expect(html).toContain("color-scheme-4");
+    }
   });
 
   it.each(THEMES.filter((t) => t !== "bloom"))(
@@ -182,7 +183,8 @@ describe("«Изображение с текстом» (bloom) — рендер 
         containerEnabled: "true",
       });
       if (html === null) return;
-      expect(html).not.toContain("py-8");
+      // У чужих тем плашки нет вовсе — ни заливки, ни наезда.
+      expect(html).not.toContain("lg:absolute");
     },
   );
 });

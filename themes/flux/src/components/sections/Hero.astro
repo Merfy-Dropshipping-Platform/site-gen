@@ -372,6 +372,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<div class="pointer-events-none absolute inset-0 z-[1] bg-black/30" aria-hidden="true" />
 			<div class={`relative w-full ${heroHeightCls}`}>
 				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 py-8 text-center md:gap-10 md:px-20 md:py-10 2xl:px-80">
+					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой
+					    рисуется этой веткой, и плашка до неё не доходила: мерчант щёлкал
+					    переключателем и не видел ничего (баг тестера 22.09, satin; замер
+					    прода — разметка байт-в-байт). bloom и vanilla пустую секцию
+					    рисуют обычной веткой, поэтому у них работало — расхождение 3 к 2.
+					    Выключенный контейнер = `contents`: обёртка исчезает из раскладки
+					    целиком, прежний вид сохраняется байт-в-байт. */}
+					<div class:list={[boxed ? `flex flex-col items-center gap-6 md:gap-10${boxedCls}` : "contents"]}>
 					<div class="flex max-w-[432px] flex-col items-center gap-2 text-center">
 						{!isFieldHidden('heading') && (
 							<h1
@@ -417,6 +425,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</a>
 					</div>
 					)}
+					</div>
 				</div>
 			</div>
 		</section>

@@ -1520,6 +1520,13 @@ jobs:
       # каждая по-своему. Нашёл аудит настроек, не тестер.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/promo-banner-link-label.spec.ts
+      # Выключатель «Контейнер» секции «Изображение» виден сразу после добавления
+      # секции, а не только когда мерчант что-то в неё написал. Свежий герой
+      # рисуется веткой пустого состояния, и плашка до неё не доходила во flux,
+      # rose и satin; bloom и vanilla пустую секцию рисуют обычной веткой —
+      # расхождение 3 к 2 заметили только на satin (баг тестера 22.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/hero-container-empty-state.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

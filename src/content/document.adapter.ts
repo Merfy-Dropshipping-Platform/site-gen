@@ -26,6 +26,7 @@ import { getPageResolver } from '../themes/page-resolver-instance';
 import { seedContentPagesFromTheme } from '../themes/content-page-seed';
 import { resolveAssetUrls } from '../themes/asset-resolver';
 import { filterSeededPagesOnWrite } from '../utils/revision-write-filter';
+import { parityOn } from '../themes/parity-switch';
 import type {
   LoadOptions,
   LoadResult,
@@ -45,6 +46,14 @@ type StepContext = {
   publicUrl: string | null;
   siteName: string | null;
   logger: Logger;
+  /**
+   * Ребейз на PARITY_FOOTER (main, 23.09): подвал досеянной/мигрированной
+   * страницы = подвал главной. Вычисляется один раз в `load()` — тот же
+   * выключатель `parityOn("FOOTER", siteId)`, что и в getRevision на main,
+   * до порта. PARITY_CHROME проверен отдельно (51f79375) — он живёт в
+   * assembleChrome/pagePropsPreparer, шага load() не касается вовсе.
+   */
+  unifyFooter: boolean;
 };
 
 type LoadStep = {
@@ -56,10 +65,9 @@ type LoadStep = {
 };
 
 function migrateStep(data: Record<string, unknown>, ctx: StepContext) {
-  return migrateRevisionData(data, ctx.themeId, ctx.siteName) as Record<
-    string,
-    unknown
-  >;
+  return migrateRevisionData(data, ctx.themeId, ctx.siteName, {
+    unifyFooter: ctx.unifyFooter,
+  }) as Record<string, unknown>;
 }
 
 /**
@@ -83,7 +91,9 @@ function normalizeStep(data: Record<string, unknown>, ctx: StepContext) {
 }
 
 function seedStep(data: Record<string, unknown>, ctx: StepContext) {
-  return seedContentPagesFromTheme(data, ctx.themeId);
+  return seedContentPagesFromTheme(data, ctx.themeId, {
+    unifyFooter: ctx.unifyFooter,
+  });
 }
 
 function resolveStep(data: Record<string, unknown>, ctx: StepContext) {
@@ -132,6 +142,7 @@ export class DocumentAdapter implements StoreContent {
       publicUrl: opts.site.publicUrl,
       siteName: opts.site.name ?? null,
       logger: this.logger,
+      unifyFooter: parityOn('FOOTER', siteId),
     };
     const document = await runLoadSteps(
       rev.data as Record<string, unknown> | undefined,

@@ -1011,12 +1011,20 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
   // секции со своей схемой (обёртка [data-block-scheme] от v2-page-composer)
   // зазор уходит внутрь обёртки верхним отступом, и эта полоса красится фоном
   // её схемы. Красится только сама полоса: секции с прозрачными краями
-  // выглядят как раньше. Секция без своей схемы стоит на фоне страницы — ей
-  // зазор полем, как было. Дефолт 0px — нулевая регрессия.
+  // выглядят как раньше.
+  //
+  // Секция без своей схемы (без обёртки) красится схемой по умолчанию, а фон
+  // страницы у bloom и flux — жёсткий белый `body`. Поле над такой секцией было
+  // белой полосой между цветными секциями (тестировщик, страница товара bloom,
+  // 23.09). Зазор у неё остаётся полем, а полосу красит её собственная тень
+  // цветом её фона: тень сдвинута вверх ровно на зазор, внутри своей секции
+  // обрезана и раскладку не трогает. Своих теней у корней секций нет ни в одной
+  // теме (замер 23.09). Дефолт 0px — нулевая регрессия.
   const NOT_SECTION = ':not(style,script,template,link,noscript,header)';
   const sectionGapRule =
-    `main>${NOT_SECTION}~${NOT_SECTION}{margin-top:var(--section-gap, 0px)}` +
-    `main>${NOT_SECTION}~[data-block-scheme]{margin-top:0;padding-top:var(--section-gap, 0px);` +
+    `main>${NOT_SECTION}~${NOT_SECTION}{margin-top:var(--section-gap, 0px);` +
+    'box-shadow:0 calc(-1 * var(--section-gap, 0px)) 0 rgb(var(--color-bg))}' +
+    `main>${NOT_SECTION}~[data-block-scheme]{margin-top:0;box-shadow:none;padding-top:var(--section-gap, 0px);` +
     'background:linear-gradient(rgb(var(--color-bg)),rgb(var(--color-bg))) top/100% var(--section-gap, 0px) no-repeat}';
 
   // «Жирность/Шрифт заголовка-текста» — порты хардкодят font-family/weight по

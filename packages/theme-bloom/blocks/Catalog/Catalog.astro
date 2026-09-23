@@ -269,12 +269,13 @@ const skeletons = Array.from({ length: skeletonCount });
       </header>
 
       {/* Раскладка top — фильтры строкой над гридом (родной вид bloom). На
-          телефоне строка уезжает в шторку «Фильтры и сортировка» (вёрстка
-          BloomFiltersSheet): там она столбиком — правила в общем
-          catalog-filters.css по data-filters-sheet="stack". */}
+          телефоне вместо строки — кнопка «Фильтры и сортировка» и шторка с
+          боковой панелью фильтров (BloomFiltersSheet). */}
       <div class="flex flex-col gap-6" data-catalog-variant="top">
         <BloomFiltersSheet blockId={id} enabled={filterVisible || sortVisible}>
-        <div class="relative z-30 flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
+          <NtFilterSidebar instance="sheet" sortVisible={sortVisible} filtersVisible={filterVisible} />
+        </BloomFiltersSheet>
+        <div class="relative z-30 flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters" data-filters-sheet-below="md">
           <div class="flex flex-wrap items-start gap-3">
             {filterVisible && (
               <>
@@ -338,7 +339,6 @@ const skeletons = Array.from({ length: skeletonCount });
             </details>
           )}
         </div>
-        </BloomFiltersSheet>
 
         <ul
           class="grid w-full grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"

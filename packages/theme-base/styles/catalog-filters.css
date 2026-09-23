@@ -183,65 +183,63 @@
     }
   }
 
-  /* ── Шторка «Фильтры и сортировка»: вид строки внутри ────────────────────
+  /* ── Шторка «Фильтры и сортировка» на телефоне ─────────────────────────
    *
-   * На телефоне строка фильтров уезжает в шторку темы (порт *FiltersSheet из
-   * вёрстки 17.09; владелец 23.09: «адаптив мобилы взять с вёрстки»). Как
-   * строка выглядит в шторке, тема задаёт ДАННЫМИ — словами в атрибуте
-   * `data-filters-sheet`, а не именем темы в селекторе:
-   *   flat  — выпадашки плоские: без рамки, заливки и полей (flux, bloom);
-   *   stack — столбиком: выпадашка во всю ширину, стрелка у правого края,
-   *           панель раскрывается в потоке и толкает соседей вниз (bloom).
+   * Владелец 23.09: на телефоне во всех темах — кнопка «Фильтры и сортировка»
+   * и шторка с боковой панелью фильтров (макет «Фильтры/Сбоку», 493:5523):
+   * «Сортировать» из четырёх пунктов, «Наличие», «Стоимость», «Цвет». Строку
+   * выпадашек на это время прячем — тема ставит на ней брейкпоинт данными,
+   * `data-filters-sheet-below="md|lg"`, а не именем темы в селекторе.
    *
    * Правила здесь, а не классами в порте: этот файл подключают и превью, и
    * живая витрина, а классы из packages/theme-<t>/blocks живая сборка не
    * сканирует (замер 23.09: `max-md:static` порта bloom есть в разметке
-   * витрины, правила в её CSS нет).
-   *
-   * Специфичность (0,2,x) выше правил строки выше (0,1,2) и утилит (0,1,0).
-   * На десктопе обёртка — display:contents, медиа-условие сюда не пускает. */
+   * витрины, правила в её CSS нет). */
   @media (max-width: 767.98px) {
-    [data-filters-sheet~="flat"] [data-nt="catalog-filters"] summary {
-      min-width: 0;
-      border-width: 0;
-      border-radius: 0;
-      background: transparent;
-      padding-inline: 0;
-    }
-
-    [data-filters-sheet~="stack"] [data-nt="catalog-filters"],
-    [data-filters-sheet~="stack"] [data-nt="catalog-filters"] > div {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 1.25rem;
-      width: 100%;
-    }
-
-    [data-filters-sheet~="stack"] [data-nt="catalog-filters"] details {
-      width: 100%;
-    }
-
-    [data-filters-sheet~="stack"] [data-nt="catalog-filters"] summary {
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    [data-filters-sheet~="stack"] [data-nt="catalog-filters"] details > :not(summary) {
-      position: static;
-      width: 100%;
-      margin-top: 0.5rem;
+    [data-nt="catalog-filters"][data-filters-sheet-below="md"] {
+      display: none;
     }
   }
 
-  /* ── Строка, которую ниже lg заменяет шторка со своим содержимым ──────────
-   *
-   * У vanilla в шторке не строка, а сайдбар (как в вёрстке), поэтому строка
-   * остаётся на странице и прячется здесь: `data-filters-sheet-below="lg"` на
-   * самой строке. Классом порта (max-lg:hidden) нельзя — его нет в CSS живой
-   * витрины (см. выше). */
   @media (max-width: 1023.98px) {
     [data-nt="catalog-filters"][data-filters-sheet-below="lg"] {
       display: none;
     }
+  }
+
+  /* Панель в шторке — во всю ширину и в цветах схемы. Кольцо радио DS
+   * рисуется литералами макета (#999999 / #000000); в раскладке «Сбоку» его
+   * перекрашивают стили портов, а в шторке — это правило, одно на все темы.
+   * Специфичность (0,3,x) и выше перебивает утилиты кольца
+   * (`border-[#999999]`, `peer-checked:border-[#000000]`). */
+  [data-filters-sheet] [data-nt="filter-sidebar"] {
+    width: 100%;
+    max-width: 100%;
+    background-color: transparent;
+  }
+
+  [data-filters-sheet] [data-nt="filter-sidebar"] > div > p {
+    color: rgb(var(--color-text, 0 0 0));
+  }
+
+  [data-filters-sheet] [data-nt="radio-field"] > span[aria-hidden="true"] {
+    border-color: rgb(var(--color-muted, 153 153 153));
+    outline-color: rgb(var(--color-text, 0 0 0));
+  }
+
+  [data-filters-sheet] [data-nt="radio-field"] > span[aria-hidden="true"]::after {
+    background-color: rgb(var(--color-text, 0 0 0));
+  }
+
+  [data-filters-sheet] [data-nt="radio-field"] > input:checked ~ span[aria-hidden="true"] {
+    border-color: rgb(var(--color-text, 0 0 0));
+  }
+
+  [data-filters-sheet] [data-nt="radio-field"] > span:last-child {
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+
+  [data-filters-sheet] [data-nt="radio-field"] > input:checked ~ span:last-child {
+    color: rgb(var(--color-text, 0 0 0));
   }
 }

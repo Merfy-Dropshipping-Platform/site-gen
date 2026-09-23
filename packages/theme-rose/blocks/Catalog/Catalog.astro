@@ -270,7 +270,9 @@ const skeletons = Array.from({ length: skeletonCount });
       {/* Раскладка top — фильтры строкой над гридом (родной вид rose) */}
       <div class="flex flex-col gap-6 lg:gap-8" data-catalog-variant="top">
         <RoseFiltersSheet blockId={id} enabled={filterVisible || sortVisible}>
-        <div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters">
+          <NtFilterSidebar instance="sheet" sortVisible={sortVisible} filtersVisible={filterVisible} />
+        </RoseFiltersSheet>
+        <div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters" data-filters-sheet-below="lg">
           <div class="flex flex-wrap items-center gap-3">
             {filterVisible && (
               <>
@@ -346,7 +348,6 @@ const skeletons = Array.from({ length: skeletonCount });
             </details>
           )}
         </div>
-        </RoseFiltersSheet>
 
         <ul
           class="grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 md:grid-cols-3 md:gap-x-4 md:gap-y-10 xl:grid-cols-4 xl:gap-x-5"

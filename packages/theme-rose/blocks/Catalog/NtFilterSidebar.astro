@@ -13,9 +13,22 @@ interface Props {
   /** Тумблер «Сортировка» из панели секции. Блок «Сортировать» жил в сайдбаре
    *  безусловно — при «Скрыть» каталог выглядел так же, как при «Показать». */
   sortVisible?: boolean;
+  /** Окончание имён радио. У шторки «Фильтры и сортировка» на телефоне свой
+   *  экземпляр панели (instance="sheet"): с теми же именами его радио слились
+   *  бы в одну группу с радио раскладки «Сбоку», и выбор в одной снимал бы
+   *  выбор в другой. Скрипт каталога ищет радио по началу имени. */
+  instance?: string;
+  /** Тумблер «Фильтры» из панели секции: без него остаётся только «Сортировать». */
+  filtersVisible?: boolean;
 }
 
-const { density = "1920", class: className = "", sortVisible = true } = Astro.props;
+const {
+  density = "1920",
+  class: className = "",
+  sortVisible = true,
+  instance = "",
+  filtersVisible = true,
+} = Astro.props;
 const is1280 = density === "1280";
 const W = is1280 ? "w-[172px]" : "w-[294px]";
 const sectionPad = is1280 ? "p-1" : "p-3";
@@ -23,7 +36,7 @@ const sectionGap = is1280 ? "gap-2" : "gap-3";
 const titleSm = is1280 ? "text-[12px]" : "text-[16px]";
 const titlePrice = is1280 ? "text-[14px]" : "text-[16px]";
 const sortStackGap = is1280 ? "gap-1" : "gap-3";
-const nameSfx = is1280 ? "-1280" : "";
+const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
 ---
 
 <aside
@@ -37,9 +50,15 @@ const nameSfx = is1280 ? "-1280" : "";
       <div class:list={["flex flex-col", sortStackGap]}>
         <NtRadioField
           name={`nt-sort-side${nameSfx}`}
+          value="popularity"
+          label="По популярности"
+          checked
+          density={density}
+        />
+        <NtRadioField
+          name={`nt-sort-side${nameSfx}`}
           value="new"
           label="По новизне"
-          checked
           density={density}
         />
         <NtRadioField
@@ -58,6 +77,8 @@ const nameSfx = is1280 ? "-1280" : "";
     </div>
   )}
 
+  {filtersVisible && (
+  <>
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
     <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Наличие</p>
     <div class:list={["flex flex-col", sortStackGap]}>
@@ -99,4 +120,6 @@ const nameSfx = is1280 ? "-1280" : "";
       />
     </div>
   </div>
+  </>
+  )}
 </aside>

@@ -13,9 +13,22 @@ interface Props {
   /** Тумблер «Сортировка» из панели секции. Блок «Сортировать» жил в сайдбаре
    *  безусловно — при «Скрыть» каталог выглядел так же, как при «Показать». */
   sortVisible?: boolean;
+  /** Окончание имён радио. У шторки «Фильтры и сортировка» на телефоне свой
+   *  экземпляр панели (instance="sheet"): с теми же именами его радио слились
+   *  бы в одну группу с радио раскладки «Сбоку», и выбор в одной снимал бы
+   *  выбор в другой. Скрипт каталога ищет радио по началу имени. */
+  instance?: string;
+  /** Тумблер «Фильтры» из панели секции: без него остаётся только «Сортировать». */
+  filtersVisible?: boolean;
 }
 
-const { density = "1920", class: className = "", sortVisible = true } = Astro.props;
+const {
+  density = "1920",
+  class: className = "",
+  sortVisible = true,
+  instance = "",
+  filtersVisible = true,
+} = Astro.props;
 const is1280 = density === "1280";
 const W = is1280 ? "w-[172px]" : "w-[294px]";
 const sectionPad = is1280 ? "p-1" : "p-3";
@@ -23,23 +36,29 @@ const sectionGap = is1280 ? "gap-2" : "gap-3";
 const titleSm = is1280 ? "text-[12px]" : "text-[16px]";
 const titlePrice = is1280 ? "text-[14px]" : "text-[16px]";
 const sortStackGap = is1280 ? "gap-1" : "gap-3";
-const nameSfx = is1280 ? "-1280" : "";
+const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
 ---
 
 <aside
-  class:list={["flex max-w-full flex-col gap-4 bg-[#FFFFFF] font-manrope", W, className]}
+  class:list={["flex max-w-full flex-col gap-4 bg-[rgb(var(--color-bg,255_255_255))] font-manrope", W, className]}
   data-nt="filter-sidebar"
   data-nt-density={density}
 >
   {sortVisible && (
     <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-      <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Сортировать</p>
+      <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Сортировать</p>
       <div class:list={["flex flex-col", sortStackGap]}>
+        <NtRadioField
+          name={`nt-sort-side${nameSfx}`}
+          value="popularity"
+          label="По популярности"
+          checked
+          density={density}
+        />
         <NtRadioField
           name={`nt-sort-side${nameSfx}`}
           value="new"
           label="По новизне"
-          checked
           density={density}
         />
         <NtRadioField
@@ -58,8 +77,10 @@ const nameSfx = is1280 ? "-1280" : "";
     </div>
   )}
 
+  {filtersVisible && (
+  <>
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Наличие</p>
+    <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Наличие</p>
     <div class:list={["flex flex-col", sortStackGap]}>
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="all" label="Все" checked density={density} />
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="in" label="В наличии" density={density} />
@@ -68,12 +89,12 @@ const nameSfx = is1280 ? "-1280" : "";
   </div>
 
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["font-normal leading-normal text-[#000000]", titlePrice]}>Стоимость</p>
+    <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titlePrice]}>Стоимость</p>
     <NtFilterPriceRows variant={is1280 ? "sidebar1280" : "sidebar"} />
   </div>
 
   <div class:list={["flex flex-col gap-3 rounded-[8px]", sectionPad]}>
-    <p class:list={["font-normal leading-normal text-[#000000]", titleSm]}>Цвет</p>
+    <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Цвет</p>
     <div class="flex flex-col gap-3">
       <NtRadioField
         name={`nt-color-side${nameSfx}`}
@@ -99,4 +120,6 @@ const nameSfx = is1280 ? "-1280" : "";
       />
     </div>
   </div>
+  </>
+  )}
 </aside>

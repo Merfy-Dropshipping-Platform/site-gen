@@ -1,15 +1,17 @@
 ---
 /**
- * «Фильтры и сортировка» на телефоне (< md) — порт FluxFiltersSheet из
- * вёрстки (flux-theme, 17.09): кнопка открывает шторку под шапкой, внизу
- * «Показать» / «Закрыть». Владелец 23.09: «адаптив мобилы взять с вёрстки».
+ * «Фильтры и сортировка» на телефоне (< md): кнопка открывает шторку под шапкой,
+ * внизу «Показать» / «Закрыть» — кнопка, шторка и их классы из вёрстки
+ * (flux-theme, FluxFiltersSheet, 17.09). Внутри — боковая панель фильтров
+ * (NtFilterSidebar, макет «Фильтры/Сбоку» 493:5523): «Сортировать» из четырёх пунктов,
+ * «Наличие», «Стоимость», «Цвет» — владелец 23.09: «вот как должно быть в
+ * мобильных фильтрах, в каждой теме».
  *
- * Строка фильтров в шторке остаётся строкой, выпадашки плоские — как в вёрстке
- * flux (`data-filters-sheet="flat"`, правила в общем catalog-filters.css).
- *
- * На обёртке нет ни цвета текста, ни шрифта: на десктопе она display:contents,
- * и строка их унаследовала бы. Классы этого файла попадают в CSS живой витрины
- * через `@source` в themes/flux/src/styles/global.css — классы из
+ * У панели в шторке свой экземпляр (instance="sheet"): на десктопе фильтры —
+ * строка или сайдбар раскладки «Сбоку», а шторка прячется целиком
+ * (md:hidden!). Строку выпадашек ниже md прячет общий catalog-filters.css
+ * по data-filters-sheet-below. Классы этого файла попадают в CSS живой
+ * витрины через `@source` в themes/flux/src/styles/global.css — классы из
  * packages/theme-flux/blocks живая сборка иначе не сканирует.
  *
  * Скрипт шторки общий для пяти тем (контракт lib/filters-sheet.ts вёрстки):
@@ -40,12 +42,12 @@ const sheetId = `filters-sheet-${blockId}`;
 
     <div
       id={sheetId}
-      class="fixed inset-x-0 bottom-0 z-[55] hidden w-full flex-col gap-6 overflow-y-auto overscroll-contain bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-8 pt-4 md:contents!"
+      class="fixed inset-x-0 bottom-0 z-[55] hidden w-full flex-col gap-6 overflow-y-auto overscroll-contain bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-8 pt-4 md:hidden!"
       role="dialog"
       aria-modal="true"
       aria-label="Фильтры и сортировка"
       aria-hidden="true"
-      data-filters-sheet="flat"
+      data-filters-sheet
     >
       <div class="flex items-center justify-between text-[rgb(var(--color-text,0_0_0))] md:hidden">
         <p class="font-roboto-flex text-[16px] font-light leading-none">Фильтры и сортировка</p>

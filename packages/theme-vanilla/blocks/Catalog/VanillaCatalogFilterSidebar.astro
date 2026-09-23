@@ -46,8 +46,11 @@ const {
 	showFilters = true,
 } = Astro.props;
 
+// «Сортировать» — 4 пункта, как в макете боковых фильтров (493:5523 / 493:5524):
+// «По популярности» первым и выбрано. Скрипт каталога понимает popularity.
 const sortOptions: RadioOption[] = [
-	{ value: "new", label: "По новизне", checked: true },
+	{ value: "popularity", label: "По популярности", checked: true },
+	{ value: "new", label: "По новизне" },
 	{ value: "price-desc", label: "По убыванию цены" },
 	{ value: "price-asc", label: "По возрастанию цены" },
 ];

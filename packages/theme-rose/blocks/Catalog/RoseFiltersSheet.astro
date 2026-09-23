@@ -1,15 +1,17 @@
 ---
 /**
- * «Фильтры и сортировка» на телефоне (< lg) — порт RoseFiltersSheet из
- * вёрстки (rose-theme, 17.09): кнопка открывает шторку под шапкой, внизу
- * «Показать» / «Закрыть». Владелец 23.09: «адаптив мобилы взять с вёрстки».
+ * «Фильтры и сортировка» на телефоне (< lg): кнопка открывает шторку под шапкой,
+ * внизу «Показать» / «Закрыть» — кнопка, шторка и их классы из вёрстки
+ * (rose-theme, RoseFiltersSheet, 17.09). Внутри — боковая панель фильтров
+ * (NtFilterSidebar, макет «Фильтры/Сбоку» 493:5523): «Сортировать» из четырёх пунктов,
+ * «Наличие», «Стоимость», «Цвет» — владелец 23.09: «вот как должно быть в
+ * мобильных фильтрах, в каждой теме».
  *
- * Строка фильтров в шторке остаётся строкой, как в вёрстке rose. Счётчик
- * «(N)» у кнопки — свой у rose с 18.09, считает его скрипт каталога.
- *
- * На обёртке нет ни цвета текста, ни шрифта: на десктопе она display:contents,
- * и строка их унаследовала бы. Классы этого файла попадают в CSS живой витрины
- * через `@source` в themes/rose/src/styles/global.css — классы из
+ * У панели в шторке свой экземпляр (instance="sheet"): на десктопе фильтры —
+ * строка или сайдбар раскладки «Сбоку», а шторка прячется целиком
+ * (lg:hidden!). Строку выпадашек ниже lg прячет общий catalog-filters.css
+ * по data-filters-sheet-below. Классы этого файла попадают в CSS живой
+ * витрины через `@source` в themes/rose/src/styles/global.css — классы из
  * packages/theme-rose/blocks живая сборка иначе не сканирует.
  *
  * Скрипт шторки общий для пяти тем (контракт lib/filters-sheet.ts вёрстки):
@@ -45,7 +47,7 @@ const sheetId = `filters-sheet-${blockId}`;
 
     <div
       id={sheetId}
-      class="fixed inset-x-0 bottom-0 z-[55] hidden w-full flex-col gap-6 overflow-y-auto overscroll-contain bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-8 pt-4 sm:px-5 md:px-10 lg:contents!"
+      class="fixed inset-x-0 bottom-0 z-[55] hidden w-full flex-col gap-6 overflow-y-auto overscroll-contain bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-8 pt-4 sm:px-5 md:px-10 lg:hidden!"
       role="dialog"
       aria-modal="true"
       aria-label="Фильтры и сортировка"

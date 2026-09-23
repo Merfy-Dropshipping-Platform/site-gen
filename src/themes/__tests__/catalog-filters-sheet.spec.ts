@@ -12,11 +12,17 @@
  * 18.09 владелец уже просил «адаптив фильтров и сортировки взять из rose» —
  * тогда сделали одну тему из пяти.
  *
+ * Уточнение владельца, 23.09 (макет «Фильтры/Сбоку», 493:5523): «вот как должно
+ * быть в мобильных фильтрах, в каждой теме» — в шторке боковая панель:
+ * «Сортировать» из четырёх пунктов («По популярности» выбрано), «Наличие»,
+ * «Стоимость», «Цвет». Строка выпадашек в шторку больше не уезжает.
+ *
  * Проверки — от лица покупателя, по всем пяти темам, со своим скриптом каталога
  * и шторки (jsdom, в CI браузера нет):
  *   • на телефоне одна кнопка «Фильтры и сортировка», шторка закрыта;
- *   • в шторке — фильтры и сортировка: у bloom/satin/flux/rose та же строка,
- *     что на десктопе (один DOM, как в вёрстке), у vanilla — сайдбар;
+ *   • в шторке — боковая панель: «Сортировать» из четырёх пунктов с выбранным
+ *     «По популярности», «Наличие», «Стоимость»; её радио не сливаются с радио
+ *     раскладки «Сбоку»; строка выпадашек ниже брейкпоинта уступает шторке;
  *   • нажал кнопку — шторка открыта, прокрутка заперта на <html>;
  *   • «Закрыть», «Показать» и Esc закрывают и снимают замок;
  *   • «Фильтры» и «Сортировка» выключены — ни кнопки, ни шторки;
@@ -32,42 +38,25 @@ import { BLOCK_ROOT_INLINE } from "../../common/block-root-inline";
 
 type Тема = "bloom" | "satin" | "flux" | "rose" | "vanilla";
 
-/** Как в вёрстке: где кончается телефон и что шторка делает на десктопе. */
-const ВЁРСТКА: Record<
-  Тема,
-  { кнопкаНаДесктопе: string; шторкаНаДесктопе: string; внутри: string }
-> = {
-  bloom: {
-    кнопкаНаДесктопе: "md:hidden",
-    шторкаНаДесктопе: "md:contents!",
-    внутри: '[data-nt="catalog-filters"]',
-  },
-  satin: {
-    кнопкаНаДесктопе: "md:hidden",
-    шторкаНаДесктопе: "md:contents!",
-    внутри: '[data-nt="catalog-filters"]',
-  },
-  flux: {
-    кнопкаНаДесктопе: "md:hidden",
-    шторкаНаДесктопе: "md:contents!",
-    внутри: '[data-nt="catalog-filters"]',
-  },
-  rose: {
-    кнопкаНаДесктопе: "lg:hidden",
-    шторкаНаДесктопе: "lg:contents!",
-    внутри: '[data-nt="catalog-filters"]',
-  },
-  // У vanilla в шторке сайдбар, а раскладок у нас две: на десктопе шторка
-  // прячется целиком, сайдбар «Сбоку» — свой.
-  vanilla: {
-    кнопкаНаДесктопе: "lg:hidden",
-    шторкаНаДесктопе: "lg:hidden!",
-    внутри: '[data-nt="filter-sidebar"]',
-  },
+/**
+ * Где кончается телефон (как в вёрстке темы): с этой ширины кнопки нет, шторка
+ * скрыта целиком, фильтры — строка или сайдбар раскладки «Сбоку».
+ */
+const ПОРОГ: Record<Тема, "md" | "lg"> = {
+  bloom: "md",
+  satin: "md",
+  flux: "md",
+  rose: "lg",
+  vanilla: "lg",
 };
-const ТЕМЫ = Object.keys(ВЁРСТКА) as Тема[];
+const ТЕМЫ = Object.keys(ПОРОГ) as Тема[];
 
 const тик = () => new Promise((r) => setTimeout(r, 0));
+
+// Рендер секции — отдельный процесс, на кейс уходят секунды: одинаковые пропы
+// рендерим один раз (скрипты всё равно исполняются заново на каждом показе).
+jest.setTimeout(60_000);
+const рендеры = new Map<string, string>();
 
 type Слушатель = {
   цель: EventTarget;
@@ -142,24 +131,28 @@ async function показать(
     снять();
     (0, eval)(BLOCK_ROOT_INLINE.replace(/^<script>|<\/script>$/g, ""));
   }
-  const [r] = renderSections(тема, [
-    {
-      block: "Catalog",
-      props: {
-        id: "Catalog-1",
-        siteId: "site-1",
-        colorScheme: "scheme-1",
-        cards: 4,
-        columns: 2,
-        showFilter: "true",
-        showSort: "true",
-        filterPosition: "top",
-        ...props,
+  const ключ = `${тема} ${JSON.stringify(props)}`;
+  if (!рендеры.has(ключ)) {
+    const [r] = renderSections(тема, [
+      {
+        block: "Catalog",
+        props: {
+          id: "Catalog-1",
+          siteId: "site-1",
+          colorScheme: "scheme-1",
+          cards: 4,
+          columns: 2,
+          showFilter: "true",
+          showSort: "true",
+          filterPosition: "top",
+          ...props,
+        },
       },
-    },
-  ]);
-  if (r.error) throw new Error(`${тема}: ${r.error}`);
-  const html = r.html ?? "";
+    ]);
+    if (r.error) throw new Error(`${тема}: ${r.error}`);
+    рендеры.set(ключ, r.html ?? "");
+  }
+  const html = рендеры.get(ключ) ?? "";
   const скрипты = [
     ...html.matchAll(
       /<script(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g,
@@ -192,7 +185,7 @@ const шторкаОткрыта = (корень: HTMLElement) =>
 const замок = () => document.documentElement.style.overflow || "нет";
 
 describe.each(ТЕМЫ)("«Фильтры и сортировка» на телефоне — %s", (тема) => {
-  const вёрстка = ВЁРСТКА[тема];
+  const порог = ПОРОГ[тема];
 
   it("одна кнопка «Фильтры и сортировка», шторка закрыта", async () => {
     const корень = await показать(тема);
@@ -218,7 +211,7 @@ describe.each(ТЕМЫ)("«Фильтры и сортировка» на тел�
     const шторка = корень.querySelector("[data-filters-sheet]")!;
     const текст = (шторка.textContent ?? "").replace(/\s+/g, " ");
     expect({
-      содержимое: !!шторка.querySelector(вёрстка.внутри),
+      содержимое: !!шторка.querySelector('[data-nt="filter-sidebar"]'),
       наличие: /Наличие/i.test(текст),
       стоимость: /Стоимость/i.test(текст),
       сортировка: /популярности|Сортировать|новизне/i.test(текст),
@@ -236,37 +229,75 @@ describe.each(ТЕМЫ)("«Фильтры и сортировка» на тел�
     });
   });
 
-  if (вёрстка.внутри === '[data-nt="catalog-filters"]') {
-    it("строка фильтров одна — в шторке та же, что на десктопе", async () => {
-      const корень = await показать(тема);
-      const строки = корень.querySelectorAll('[data-nt="catalog-filters"]');
-      expect({
-        строк: строки.length,
-        вШторке: !!строки[0]?.closest("[data-filters-sheet]"),
-      }).toEqual({ строк: 1, вШторке: true });
+  it("«Сортировать» — четыре пункта, как на макете, «По популярности» выбрано", async () => {
+    const корень = await показать(тема);
+    const шторка = корень.querySelector("[data-filters-sheet]")!;
+    const заголовок = [...шторка.querySelectorAll("p")].find(
+      (p) => (p.textContent ?? "").trim() === "Сортировать",
+    );
+    const радио = [
+      ...(заголовок?.parentElement?.querySelectorAll<HTMLInputElement>(
+        'input[type="radio"]',
+      ) ?? []),
+    ];
+    const подпись = (i: HTMLInputElement) =>
+      (i.closest("label")?.textContent ?? "").replace(/\s+/g, " ").trim();
+    expect({
+      пункты: радио.map(подпись),
+      выбрано: радио.filter((i) => i.checked).map(подпись),
+    }).toEqual({
+      пункты: [
+        "По популярности",
+        "По новизне",
+        "По убыванию цены",
+        "По возрастанию цены",
+      ],
+      выбрано: ["По популярности"],
     });
-  } else {
-    it("радио сайдбара в шторке не сливаются с радио остальной секции", async () => {
-      const корень = await показать(тема);
-      const шторка = корень.querySelector("[data-filters-sheet]")!;
-      const имена = (где: Iterable<Element>) =>
-        new Set(
-          [...где]
-            .filter((i) => (i as HTMLInputElement).type === "radio")
-            .map((i) => i.getAttribute("name")),
-        );
-      const внутри = имена(шторка.querySelectorAll("input"));
-      const снаружи = имена(
-        [...корень.querySelectorAll("input")].filter(
-          (i) => !шторка.contains(i),
-        ),
+  });
+
+  it("радио панели в шторке не сливаются с радио остальной секции", async () => {
+    const корень = await показать(тема);
+    const шторка = корень.querySelector("[data-filters-sheet]")!;
+    const имена = (где: Iterable<Element>) =>
+      new Set(
+        [...где]
+          .filter((i) => (i as HTMLInputElement).type === "radio")
+          .map((i) => i.getAttribute("name")),
       );
-      expect({
-        радиоВШторке: внутри.size > 0,
-        общих: [...внутри].filter((n) => снаружи.has(n)),
-      }).toEqual({ радиоВШторке: true, общих: [] });
-    });
-  }
+    const внутри = имена(шторка.querySelectorAll("input"));
+    const снаружи = имена(
+      [...корень.querySelectorAll("input")].filter((i) => !шторка.contains(i)),
+    );
+    expect({
+      радиоВШторке: внутри.size > 0,
+      общих: [...внутри].filter((n) => снаружи.has(n)),
+    }).toEqual({ радиоВШторке: true, общих: [] });
+  });
+
+  it("строка выпадашек ниже брейкпоинта уступает место шторке", async () => {
+    const корень = await показать(тема);
+    const строки = [...корень.querySelectorAll('[data-nt="catalog-filters"]')];
+    expect({
+      строк: строки.length,
+      вШторке: строки.some((r) => !!r.closest("[data-filters-sheet]")),
+      прячетсяНиже: строки.map((r) =>
+        r.getAttribute("data-filters-sheet-below"),
+      ),
+    }).toEqual({ строк: 1, вШторке: false, прячетсяНиже: [порог] });
+  });
+
+  it("«Фильтры» выключены — в шторке остаётся только «Сортировать»", async () => {
+    const корень = await показать(тема, { showFilter: "false" });
+    const текст = (
+      корень.querySelector("[data-filters-sheet]")?.textContent ?? ""
+    ).replace(/\s+/g, " ");
+    expect({
+      сортировка: /Сортировать/.test(текст),
+      наличие: /Наличие/.test(текст),
+      стоимость: /Стоимость/.test(текст),
+    }).toEqual({ сортировка: true, наличие: false, стоимость: false });
+  });
 
   it("нажал кнопку — открыта и прокрутка заперта; «Закрыть» — закрыта и отперта", async () => {
     const корень = await показать(тема);
@@ -336,8 +367,8 @@ describe.each(ТЕМЫ)("«Фильтры и сортировка» на тел�
     const кнопка = корень.querySelector("[data-filters-open]")!;
     const шторка = корень.querySelector("[data-filters-sheet]")!;
     expect({
-      кнопка: кнопка.classList.contains(вёрстка.кнопкаНаДесктопе),
-      шторка: шторка.classList.contains(вёрстка.шторкаНаДесктопе),
+      кнопка: кнопка.classList.contains(`${порог}:hidden`),
+      шторка: шторка.classList.contains(`${порог}:hidden!`),
     }).toEqual({ кнопка: true, шторка: true });
   });
 });

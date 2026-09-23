@@ -229,14 +229,9 @@ describe.each(THEMES)("каталог / %s: разметка строки фил
     const list = dropdowns(theme);
     expect(list.length).toBeGreaterThanOrEqual(3);
     for (const { label, panel } of list) {
-      // В шторке «Фильтры и сортировка» вида «столбиком» (вёрстка bloom,
-      // 23.09) панель раскрывается в потоке и толкает соседей вниз — это
-      // правило общего файла по data-filters-sheet~="stack", а не утилита.
-      const stacked = !!panel.closest('[data-filters-sheet~="stack"]');
-      const win = winner(theme, panel, "position");
       expect(
-        `${label}: ${win?.decls.position}${stacked ? ` / общий=${fromSharedFile(win)}` : ""}`,
-      ).toBe(`${label}: ${stacked ? "static / общий=true" : "absolute"}`);
+        `${label}: ${winner(theme, panel, "position")?.decls.position}`,
+      ).toBe(`${label}: absolute`);
     }
   });
 });

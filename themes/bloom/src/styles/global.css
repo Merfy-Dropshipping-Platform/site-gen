@@ -16,11 +16,12 @@
 @source "../../node_modules/@merfy-dropshipping-platform/design-systems-theme/src/**/*.{astro,ts,tsx,js,jsx}";
 /* Блоки theme-base (фоллбек Video/Publications/… через Container API) — без скана их утилиты (aspect-video и пр.) не попадают в CSS темы */
 @source "../../../../packages/theme-base/blocks/**/*.{astro,ts}";
-/* Шторка «Фильтры и сортировка» каталога — компонент порта (packages/theme-bloom/
-   blocks/Catalog). Живая сборка блоки пакета темы не сканирует, без этой строки
-   классы шторки есть в разметке витрины, а правил для них в CSS нет. Скан узкий,
-   на один файл: весь пакет разом оживил бы на витрине чужие «мёртвые» классы. */
-@source "../../../../packages/theme-bloom/blocks/Catalog/BloomFiltersSheet.astro";
+/* Шторка «Фильтры и сортировка» каталога и панель фильтров в ней — компоненты
+   порта (packages/theme-bloom/blocks/Catalog). Живая сборка блоки пакета темы не
+   сканирует: без этой строки классы есть в разметке витрины, а правил для них в
+   CSS нет. Скан узкий, на эти файлы: весь пакет разом оживил бы на витрине
+   чужие «мёртвые» классы (замер 23.09: 12–69 на тему). */
+@source "../../../../packages/theme-bloom/blocks/Catalog/{BloomFiltersSheet,NtFilterSidebar,NtRadioField,NtFilterPriceRows}.astro";
 /* Общие примитивы theme-base (окно «Товар добавлен в корзину») — без этой
    строки Tailwind не увидит их классы и окно приедет без стилей. */
 @source "../../../../packages/theme-base/primitives/**/*.{astro,ts}";

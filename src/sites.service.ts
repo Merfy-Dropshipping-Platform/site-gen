@@ -39,8 +39,7 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
 import { getThemeManifest } from "./themes/theme-manifest-loader";
-import { DocumentAdapter } from "./content/document.adapter";
-import { StoreContentService } from "./content/store-content.service";
+import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import type { StoreContent, StoreContentSite } from "./content/store-content.port";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
@@ -296,13 +295,10 @@ export class SitesDomainService {
 
   private storeContentInstance?: StoreContent;
 
-  /** Ленивый фолбэк: вне Nest-контейнера (тесты) строит DocumentAdapter сам. */
+  /** Ленивый фолбэк: вне Nest-контейнера (тесты) строит DocumentAdapter сам
+   * (фабрика — content/store-content.service.ts, общая с PreviewController). */
   private get storeContent(): StoreContent {
-    if (!this.storeContentInstance) {
-      this.storeContentInstance =
-        this.injectedStoreContent ?? new StoreContentService(new DocumentAdapter(this.db));
-    }
-    return this.storeContentInstance;
+    return (this.storeContentInstance ??= resolveStoreContent(this.injectedStoreContent, this.db));
   }
 
   /** Подмножество `site`, нужное порту StoreContent (см. store-content.port.ts). */

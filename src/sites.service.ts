@@ -32,6 +32,7 @@ import { buildSiteHost, buildSitePublicUrl } from "./common/site-domain";
 import { resolveAssetUrls } from "./themes/asset-resolver";
 import { filterSeededPagesOnWrite } from "./utils/revision-write-filter";
 import { seedContentPagesFromTheme } from "./themes/content-page-seed";
+import { parityOn } from "./themes/parity-switch";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
 import { SitesEventsService } from "./events/events.service";
@@ -1653,10 +1654,12 @@ export class SitesDomainService {
     // constructor and preview always see the canonical shape regardless of
     // when the revision was saved. Idempotent. themeId — для активации
     // theme-specific миграций (e.g. vanilla home seed, spec 084).
+    const unifyFooter = parityOn("FOOTER", siteId);
     const migratedData = migrateRevisionData(
       rev.data as Record<string, unknown> | undefined,
       site.themeId,
       site.name,
+      { unifyFooter },
     );
     let normalizedData: any = migratedData;
     if (USE_PAGE_RESOLVER && site.themeId) {
@@ -1674,6 +1677,7 @@ export class SitesDomainService {
     normalizedData = await seedContentPagesFromTheme(
       normalizedData as Record<string, unknown>,
       site.themeId,
+      { unifyFooter },
     );
     // Resolve relative asset paths → absolute URLs (via site.publicUrl) so
     // constructor sidebar image previews load directly. Merchant uploads

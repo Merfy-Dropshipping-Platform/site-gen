@@ -104,7 +104,7 @@ function ensureChrome(content: Block[], pagesData: Record<string, unknown>): Blo
  * Идемпотентна: повторный прогон даёт тот же объект (порядок ключей фиксирован
  * `{...canon, id}`), неизменённые страницы возвращаются по прежней ссылке.
  */
-function headerHasSettings(block: Block | undefined): boolean {
+function blockHasSettings(block: Block | undefined): boolean {
   if (!block) return false;
   return Object.keys(block.props ?? {}).some((k) => k !== 'id');
 }
@@ -141,7 +141,7 @@ export function unifyHeaderWithHome(
   const home = pagesData['home'] as PageData | undefined;
   const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
   const source = homeContent.find((b) => b?.type === 'Header');
-  if (!headerHasSettings(source)) return pagesData;
+  if (!blockHasSettings(source)) return pagesData;
 
   // Эталонная группа: блоки группы «Шапка» в порядке главной.
   const homeGroup = homeContent.filter((b) => isHeaderGroup(b?.type));
@@ -192,6 +192,51 @@ function sameContentShallow(a: Block[], b: Block[]): boolean {
     (blk, i) =>
       blk?.type === b[i]?.type && samePropsShallow(blk?.props, b[i]?.props ?? {}),
   );
+}
+
+/**
+ * Подвал на ВСЕХ страницах = подвал ГЛАВНОЙ. Пункт 3б сближения «витрина =
+ * конструктор»: владелец 23.09 выбрал общий хром, как в Shopify. Зеркало
+ * {@link unifyHeaderWithHome} для подвала.
+ *
+ * Зачем. Витрина уже рисует на внутренних страницах подвал главной
+ * (`applyChromeToDist`), а превью конструктора — копию блока со страницы. У «О
+ * нас», «Доставки», «Контактов», досеянных из пакета темы, эта копия — подвал
+ * темы по умолчанию (замер 23.09: превью этих страниц ≠ главной на всех пяти
+ * QA-сайтах и у стендов flux/bloom/rose), а у сохранённых страниц — старая
+ * копия. Панель конструктора при этом показывает подвал главной: превью
+ * расходилось и с панелью, и с витриной.
+ *
+ * Правила те же, что у шапки: props главной целиком, собственный `id` блока
+ * сохраняется, вырожденный подвал главной (только `id`) не раскатывается.
+ * Состав страниц не меняется: подвал заменяется только там, где он уже есть.
+ */
+export function unifyFooterWithHome(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  const homeContent = (pagesData['home'] as PageData | undefined)?.content;
+  const source = Array.isArray(homeContent)
+    ? homeContent.find((b) => b?.type === 'Footer')
+    : undefined;
+  if (!source || !blockHasSettings(source)) return pagesData;
+  const canon = source.props ?? {};
+
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    if (pageId === 'home') continue;
+    const content = (page as PageData | undefined)?.content;
+    if (!Array.isArray(content)) continue;
+    const withHomeFooter = (b: Block): Block =>
+      b?.type === 'Footer'
+        ? { ...b, props: { ...canon, id: b.props?.id ?? `Footer-${pageId}` } }
+        : b;
+    const next = content.map(withHomeFooter);
+    if (sameContentShallow(content, next)) continue;
+    out[pageId] = { ...(page as PageData), content: next };
+    changed = true;
+  }
+  return changed ? out : pagesData;
 }
 
 /**
@@ -2280,6 +2325,11 @@ export function migrateRevisionData(
   themeId?: string | null,
   /** Название магазина из админки — подставляется в подвал вместо имени темы. */
   siteName?: string | null,
+  /**
+   * Пункт 3б: подвал = подвал главной ({@link unifyFooterWithHome}). Решает
+   * вызывающий по выключателю PARITY_FOOTER (знает siteId).
+   */
+  options: { unifyFooter?: boolean } = {},
 ): Record<string, unknown> {
   if (!data || typeof data !== 'object') return {};
   const out: Record<string, unknown> = { ...data };
@@ -2380,6 +2430,11 @@ export function migrateRevisionData(
     withLogin.pagesData = unifyHeaderWithHome(
       withLogin.pagesData as Record<string, unknown>,
     );
+    if (options.unifyFooter) {
+      withLogin.pagesData = unifyFooterWithHome(
+        withLogin.pagesData as Record<string, unknown>,
+      );
+    }
   }
   return withLogin;
 }

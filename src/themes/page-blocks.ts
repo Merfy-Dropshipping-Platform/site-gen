@@ -3,7 +3,8 @@ import { getThemeManifest, type ThemeManifest } from './theme-manifest-loader';
 import { applyPageBinding } from '../render/page-transclude';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
-import { unifyHeaderWithHome } from '../utils/revision-migrations';
+import { unifyFooterWithHome, unifyHeaderWithHome } from '../utils/revision-migrations';
+import { parityOn } from './parity-switch';
 import { isBodyBlockOnPage } from './page-registry';
 
 /**
@@ -79,10 +80,14 @@ export async function extractPageBlocks(
           // файла темы, а главная — шапку мерчанта. Ключ `__lazy` временный:
           // unifyHeaderWithHome работает над картой страниц, а home берёт из
           // самой ревизии, поэтому подкладываем её рядом.
-          const unified = unifyHeaderWithHome({
+          const withHomeHeader = unifyHeaderWithHome({
             home: (data.pagesData as Record<string, unknown> | undefined)?.['home'],
             __lazy: { content: blocks },
-          }) as Record<string, { content?: unknown[] } | undefined>;
+          });
+          // Пункт 3б: подвал досеянной страницы — тоже с главной (PARITY_FOOTER).
+          const unified = (
+            parityOn('FOOTER', siteId) ? unifyFooterWithHome(withHomeHeader) : withHomeHeader
+          ) as Record<string, { content?: unknown[] } | undefined>;
           pageData = { content: unified.__lazy?.content ?? blocks };
           break;
         } catch {

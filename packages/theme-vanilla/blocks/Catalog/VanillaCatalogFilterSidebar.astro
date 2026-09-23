@@ -35,7 +35,7 @@ interface Props {
 	namePrefix?: string;
 	/** Показывать «Сортировать» (настройка секции «Сортировка»). */
 	showSort?: boolean;
-	/** Показывать фильтры: коллекции, наличие, стоимость (настройка «Фильтры»). */
+	/** Показывать фильтры: коллекции, наличие, стоимость, цвет (настройка «Фильтры»). */
 	showFilters?: boolean;
 }
 
@@ -152,6 +152,14 @@ const stockOptions: RadioOption[] = [
 				</div>
 			</div>
 		</div>
+	</div>
+
+	{/* Фильтр по цвету (макет «Фильтры/Сбоку» 493:5523): скрыт, пока нет данных.
+	    Гидрация (Catalog.astro) показывает его, если у товаров магазина есть
+	    группа «Цвет» (/api/store/filters), и рисует радио «Все» + цвета. */}
+	<div class="flex flex-col gap-3 py-3" data-nt="catalog-color-filter" style="display:none;">
+		<p class={CATALOG_FILTER_TITLE}>Цвет</p>
+		<div data-color-options class="flex flex-col gap-3"></div>
 	</div>
 	</>
 	)}

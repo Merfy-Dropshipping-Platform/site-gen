@@ -1,7 +1,8 @@
 ---
 /**
  * NtRadioField (порт из design-systems-theme/components/ui/NtRadioField.astro).
- * Радио — 1920: 24px / 16px Manrope (493:5523); 1280: 20px / 12px (493:5524).
+ * Радио — 1920: 24px / 16px (493:5523); 1280: 20px / 12px (493:5524). Шрифт — из
+ * «Настроек темы»: наследуется от корня панели (catalog-filters.css).
  * Цвет в 1280: подписи 14px — задайте labelClass. Без внешних импортов — копия 1:1.
  */
 interface Props {
@@ -37,7 +38,7 @@ const textSize = isDense ? "text-[12px]" : "text-[16px]";
 <label
   for={id}
   class:list={[
-    "group flex cursor-pointer items-center gap-2 font-manrope leading-normal",
+    "group flex cursor-pointer items-center gap-2 leading-normal",
     textSize,
     className,
   ]}

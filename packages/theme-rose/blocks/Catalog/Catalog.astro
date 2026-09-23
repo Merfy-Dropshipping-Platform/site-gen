@@ -270,14 +270,14 @@ const skeletons = Array.from({ length: skeletonCount });
       {/* Раскладка top — фильтры строкой над гридом (родной вид rose) */}
       <div class="flex flex-col gap-6 lg:gap-8" data-catalog-variant="top">
         <RoseFiltersSheet blockId={id} enabled={filterVisible || sortVisible}>
-          <NtFilterSidebar instance="sheet" sortVisible={sortVisible} filtersVisible={filterVisible} />
+          <NtFilterSidebar instance="sheet" sortVisible={sortVisible} filtersVisible={filterVisible} collections />
         </RoseFiltersSheet>
         <div class="relative z-30 flex flex-wrap items-center justify-between gap-3 lg:gap-4" data-nt="catalog-filters" data-filters-sheet-below="lg">
           <div class="flex flex-wrap items-center gap-3">
             {filterVisible && (
               <>
                 <details class="relative max-md:static [&[open]]:z-30">
-                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                  <summary class="cursor-pointer list-none text-[16px] leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span>Наличие</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -289,7 +289,7 @@ const skeletons = Array.from({ length: skeletonCount });
                 </details>
 
                 <details class="relative max-md:static [&[open]]:z-30">
-                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                  <summary class="cursor-pointer list-none text-[16px] leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span>Стоимость</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -301,7 +301,7 @@ const skeletons = Array.from({ length: skeletonCount });
                 </details>
 
                 <details class="relative max-md:static [&[open]]:z-30">
-                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                  <summary class="cursor-pointer list-none text-[16px] leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span>Цвет</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -318,14 +318,14 @@ const skeletons = Array.from({ length: skeletonCount });
                     открытая панель — 1:1 рецепт корня NtFilterPanel. Активное
                     состояние синхронизируется с секцией сайдбара (side). */}
                 <details class="relative max-md:static [&[open]]:z-30" data-nt="catalog-collections-filter" style="display:none;">
-                  <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+                  <summary class="cursor-pointer list-none text-[16px] leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-2">
                       <span data-collections-label>Коллекции</span>
                       <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
                     </span>
                   </summary>
                   <div class="absolute left-0 top-full z-30 mt-2 w-[180px] max-md:left-0 max-md:right-0 max-md:w-auto">
-                    <div class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-surface,255_255_255))] p-3 font-manrope text-[14px] font-normal leading-[100%]">
+                    <div class="flex min-h-[97px] w-[180px] flex-col justify-center gap-2 rounded-[6px] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-surface,255_255_255))] p-3 text-[14px] leading-[100%]">
                       <ul data-collections-options class="m-0 flex list-none flex-col gap-2 p-0"></ul>
                     </div>
                   </div>
@@ -336,7 +336,7 @@ const skeletons = Array.from({ length: skeletonCount });
 
           {sortVisible && (
             <details class="relative max-md:static [&[open]]:z-30">
-              <summary class="cursor-pointer list-none font-manrope text-[16px] font-normal leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
+              <summary class="cursor-pointer list-none text-[16px] leading-[100%] text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden">
                 <span class="flex items-center gap-2">
                   <span>По популярности</span>
                   <RoseNtIcon name="dropdown-chevron" sizeClass="w-[10px] h-[6px]" class="translate-y-[2px]" />
@@ -388,12 +388,12 @@ const skeletons = Array.from({ length: skeletonCount });
               скрыт на demo-сборке, гидрация показывает его при наличии коллекций
               магазина и синхронизирует выбор с дропдауном top-раскладки. */}
           <div
-            class="flex flex-col gap-3 rounded-[8px] p-3 font-manrope"
+            class="flex flex-col gap-3 rounded-[8px] p-3"
             data-nt="catalog-collections-filter"
             data-collections-style="sidebar"
             style="display:none;"
           >
-            <p class="text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">Коллекции</p>
+            <p class="text-[16px] leading-normal text-[rgb(var(--color-text,0_0_0))]">Коллекции</p>
             <ul data-collections-options class="m-0 flex list-none flex-col gap-3 p-0"></ul>
           </div>
         </div>
@@ -1088,6 +1088,9 @@ const skeletons = Array.from({ length: skeletonCount });
     if (filters.stock !== "all") n += 1;
     if (filters.priceMin != null || filters.priceMax != null) n += 1;
     if (Array.isArray(filters.colors) && filters.colors.length > 0) n += 1;
+    // Коллекция, выбранная покупателем (в шторке она теперь тоже есть), —
+    // фильтр. Коллекция страницы из настройки секции — нет.
+    if (new URLSearchParams(window.location.search).get("collection")) n += 1;
     for (var el of document.querySelectorAll("[data-filters-count]")) {
       el.textContent = "(" + n + ")";
       el.style.display = n > 0 ? "" : "none";
@@ -1225,7 +1228,7 @@ const skeletons = Array.from({ length: skeletonCount });
   function colorOptionHtml(value, active, sidebar) {
     if (sidebar) {
       const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
-      return `<button type="button" data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(value)}</span></button>`;
+      return `<button type="button" data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left text-[16px] leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(value)}</span></button>`;
     }
     return `<p data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="cursor-pointer transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(value)}</p>`;
   }
@@ -1255,11 +1258,11 @@ const skeletons = Array.from({ length: skeletonCount });
     if (!btn) return;
     const value = btn.getAttribute("data-color-option") ?? "";
     if (!value) return;
-    if (filters.colors.includes(value)) {
-      filters.colors = filters.colors.filter((c) => c !== value);
-    } else {
-      filters.colors.push(value);
-    }
+    // Цвет выбирается ОДИН: сервер фильтрует по одному значению группы
+    // (variantFilters: Record<string, string>). Раньше можно было отметить
+    // два цвета, а в запрос уходил первый — второй «выбран», но не работал.
+    // Нажатие на выбранный цвет снимает выбор.
+    filters.colors = filters.colors.includes(value) ? [] : [value];
     syncColorUi();
     resetPageAndRender();
   }
@@ -1453,9 +1456,9 @@ const skeletons = Array.from({ length: skeletonCount });
   function collectionOptionHtml(value, name, active, sidebar) {
     if (sidebar) {
       const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
-      return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left font-manrope text-[16px] font-normal leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(name)}</span></button></li>`;
+      return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left text-[16px] leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(name)}</span></button></li>`;
     }
-    return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="w-full cursor-pointer text-left font-manrope text-[14px] font-normal leading-[100%] transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(name)}</button></li>`;
+    return `<li><button type="button" data-collection-option="${escapeHtml(value)}" aria-pressed="${active}" class="w-full cursor-pointer text-left text-[14px] leading-[100%] transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(name)}</button></li>`;
   }
 
   // Перерисовывает опции и активное состояние во ВСЕХ контейнерах фильтра коллекций
@@ -1497,6 +1500,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const col = (catalogCollections && catalogCollections.find((c) => (c.slug ?? c.id) === value)) ?? null;
     syncCollectionsUi(col); // активное состояние синхронно в обоих контейнерах
     syncCatalogHeading(col);
+    syncMobileFilterCount();
     // details-дропдаун top-раскладки закрываем; для секции сайдбара — безвредный no-op
     const box = btn.closest('[data-nt="catalog-collections-filter"]');
     if (box) box.removeAttribute("open");

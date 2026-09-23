@@ -3,6 +3,9 @@
  * NtFilterSidebar (порт из design-systems-theme/components/ui/NtFilterSidebar.astro).
  * Боковые фильтры — 493:5523 (1920, 294px) и 493:5524 (1280, 172px).
  * Импорты NtFilterPriceRows / NtRadioField — siblings в этой же block-папке (./).
+ * Шрифт и жирность текста — из «Настроек темы» (--font-body / --weight-body):
+ * их ставит корню панели packages/theme-base/styles/catalog-filters.css, дети
+ * наследуют — своих font-* классов у разметки панели нет.
  */
 import NtFilterPriceRows from "./NtFilterPriceRows.astro";
 import NtRadioField from "./NtRadioField.astro";
@@ -20,6 +23,10 @@ interface Props {
   instance?: string;
   /** Тумблер «Фильтры» из панели секции: без него остаётся только «Сортировать». */
   filtersVisible?: boolean;
+  /** Раздел «Коллекции» (шторка на телефоне). Скрыт, пока скрипт каталога не
+   *  найдёт коллекции магазина; опции рисует он же (collectionOptionHtml). В
+   *  раскладке «Сбоку» у коллекций свой блок рядом с панелью, там не нужен. */
+  collections?: boolean;
 }
 
 const {
@@ -28,6 +35,7 @@ const {
   sortVisible = true,
   instance = "",
   filtersVisible = true,
+  collections = false,
 } = Astro.props;
 const is1280 = density === "1280";
 const W = is1280 ? "w-[172px]" : "w-[294px]";
@@ -40,13 +48,13 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
 ---
 
 <aside
-  class:list={["flex max-w-full flex-col gap-4 bg-[rgb(var(--color-bg,255_255_255))] font-manrope", W, className]}
+  class:list={["flex max-w-full flex-col gap-4 bg-[rgb(var(--color-bg,255_255_255))]", W, className]}
   data-nt="filter-sidebar"
   data-nt-density={density}
 >
   {sortVisible && (
     <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-      <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Сортировать</p>
+      <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Сортировать</p>
       <div class:list={["flex flex-col", sortStackGap]}>
         <NtRadioField
           name={`nt-sort-side${nameSfx}`}
@@ -80,7 +88,7 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
   {filtersVisible && (
   <>
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Наличие</p>
+    <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Наличие</p>
     <div class:list={["flex flex-col", sortStackGap]}>
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="all" label="Все" checked density={density} />
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="in" label="В наличии" density={density} />
@@ -89,12 +97,12 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
   </div>
 
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titlePrice]}>Стоимость</p>
+    <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titlePrice]}>Стоимость</p>
     <NtFilterPriceRows variant={is1280 ? "sidebar1280" : "sidebar"} />
   </div>
 
   <div class:list={["flex flex-col gap-3 rounded-[8px]", sectionPad]}>
-    <p class:list={["font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Цвет</p>
+    <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Цвет</p>
     <div class="flex flex-col gap-3">
       <NtRadioField
         name={`nt-color-side${nameSfx}`}
@@ -120,6 +128,18 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
       />
     </div>
   </div>
+
+  {collections && (
+    <div
+      class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}
+      data-nt="catalog-collections-filter"
+      data-collections-style="sidebar"
+      style="display:none;"
+    >
+      <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Коллекции</p>
+      <ul data-collections-options class:list={["m-0 flex list-none flex-col p-0", sortStackGap]}></ul>
+    </div>
+  )}
   </>
   )}
 </aside>

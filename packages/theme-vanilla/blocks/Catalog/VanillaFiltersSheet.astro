@@ -16,6 +16,9 @@
  *
  * Скрипт шторки общий для пяти тем (контракт lib/filters-sheet.ts вёрстки):
  * текст одинаков во всех портах — сторожит no-second-implementation.spec.ts.
+ *
+ * Шрифт и жирность текста — из «Настроек темы» (--font-body / --weight-body):
+ * их ставит кнопке и шторке packages/theme-base/styles/catalog-filters.css.
  */
 interface Props {
   /** Id блока — для aria-controls: секций каталога на странице может быть две. */
@@ -37,7 +40,7 @@ const sheetId = `filters-sheet-${blockId}`;
       class="flex w-fit items-center gap-2 text-[rgb(var(--color-text,0_0_0))] lg:hidden"
     >
       <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11.9996H9.98243M6.44649 11.9996H5M6.44649 11.9996C6.44649 11.539 6.63271 11.0973 6.9642 10.7717C7.29568 10.446 7.74527 10.263 8.21405 10.263C8.68284 10.263 9.13243 10.446 9.46391 10.7717C9.7954 11.0973 9.98162 11.539 9.98162 11.9996C9.98162 12.4602 9.7954 12.9019 9.46391 13.2275C9.13243 13.5532 8.68284 13.7362 8.21405 13.7362C7.74527 13.7362 7.29568 13.5532 6.9642 13.2275C6.63271 12.9019 6.44649 12.4602 6.44649 11.9996ZM20 17.2626H15.3395M15.3395 17.2626C15.3395 17.7233 15.1528 18.1655 14.8212 18.4913C14.4897 18.817 14.04 19 13.5711 19C13.1023 19 12.6527 18.8162 12.3212 18.4906C11.9897 18.1649 11.8035 17.7232 11.8035 17.2626M15.3395 17.2626C15.3395 16.802 15.1528 16.3606 14.8212 16.0348C14.4897 15.7091 14.04 15.5261 13.5711 15.5261C13.1023 15.5261 12.6527 15.709 12.3212 16.0347C11.9897 16.3604 11.8035 16.8021 11.8035 17.2626M11.8035 17.2626H5M20 6.73656H17.4824M13.9465 6.73656H5M13.9465 6.73656C13.9465 6.27599 14.1327 5.83429 14.4642 5.50863C14.7957 5.18296 15.2453 5 15.7141 5C15.9462 5 16.176 5.04492 16.3905 5.13219C16.6049 5.21946 16.7998 5.34737 16.9639 5.50863C17.128 5.66988 17.2582 5.86132 17.3471 6.07201C17.4359 6.28269 17.4816 6.50851 17.4816 6.73656C17.4816 6.96461 17.4359 7.19042 17.3471 7.40111C17.2582 7.6118 17.128 7.80323 16.9639 7.96449C16.7998 8.12574 16.6049 8.25366 16.3905 8.34093C16.176 8.4282 15.9462 8.47311 15.7141 8.47311C15.2453 8.47311 14.7957 8.29016 14.4642 7.96449C14.1327 7.63882 13.9465 7.19712 13.9465 6.73656Z" stroke="currentColor" stroke-miterlimit="10" stroke-linecap="round" /></svg>
-      <span class="font-vanilla-arsenal text-[14px] font-normal uppercase leading-none">Фильтры и сортировка</span>
+      <span class="text-[14px] uppercase leading-none">Фильтры и сортировка</span>
     </button>
 
     <div
@@ -50,7 +53,7 @@ const sheetId = `filters-sheet-${blockId}`;
       data-filters-sheet
     >
       <div class="flex items-center justify-between text-[rgb(var(--color-text,0_0_0))] lg:hidden">
-        <p class="font-vanilla-arsenal text-base font-normal uppercase leading-none">Фильтры и сортировка</p>
+        <p class="text-base uppercase leading-none">Фильтры и сортировка</p>
         <button
           type="button"
           data-filters-close
@@ -67,12 +70,12 @@ const sheetId = `filters-sheet-${blockId}`;
         <button
           type="button"
           data-filters-apply
-          class="inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button,0px)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none bg-[rgb(var(--color-button-bg,58_69_48))] text-[rgb(var(--color-button-text,255_255_255))] transition-colors hover:bg-[rgb(var(--color-button-bg-hover,var(--color-button-bg,58_69_48)))] hover:text-[rgb(var(--color-button-text-hover,var(--color-button-text,255_255_255)))]"
+          class="inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button,0px)] px-4 text-base uppercase leading-none bg-[rgb(var(--color-button-bg,58_69_48))] text-[rgb(var(--color-button-text,255_255_255))] transition-colors hover:bg-[rgb(var(--color-button-bg-hover,var(--color-button-bg,58_69_48)))] hover:text-[rgb(var(--color-button-text-hover,var(--color-button-text,255_255_255)))]"
         >Показать</button>
         <button
           type="button"
           data-filters-close
-          class="inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button,0px)] border border-[rgb(var(--color-text,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,58_69_48))] transition-opacity hover:opacity-70"
+          class="inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button,0px)] border border-[rgb(var(--color-text,58_69_48))] px-4 text-base uppercase leading-none text-[rgb(var(--color-text,58_69_48))] transition-opacity hover:opacity-70"
         >Закрыть</button>
       </div>
     </div>

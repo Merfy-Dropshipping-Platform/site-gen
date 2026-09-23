@@ -8,13 +8,17 @@
  * на родную палитру vanilla (#000000 / #999999 / #444444 / #eeeeee): без схемы
  * вид не меняется ни на пиксель, со схемой фильтры красятся вместе со страницей.
  *
+ * Шрифта и жирности в классах нет: их задают «Настройки темы» (--font-body /
+ * --weight-body) корням фильтров — packages/theme-base/styles/catalog-filters.css,
+ * текст наследует.
+ *
  * Порт из themes/vanilla/src/components/catalog/filter-classes.ts (sibling
  * блока — Catalog.astro и VanillaCatalogFilterSidebar импортят ./filter-classes).
  */
 
-/** Заголовок секции фильтров («Сортировать», «Наличие», «Стоимость», «Коллекции»). */
+/** Заголовок секции фильтров («Сортировать», «Наличие», «Стоимость», «Цвет», «Коллекции»). */
 export const CATALOG_FILTER_TITLE =
-	"font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,0_0_0))]";
+	"text-base leading-none text-[rgb(var(--color-text,0_0_0))]";
 
 /** Радио-кружок в манере сайдбара vanilla: приглушённая окружность, точка цвета текста. */
 export const CATALOG_RADIO_CIRCLE =
@@ -22,7 +26,7 @@ export const CATALOG_RADIO_CIRCLE =
 
 /** Подпись радио-опции: приглушённая, выбранная — цветом текста. */
 export const CATALOG_RADIO_TEXT =
-	"font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-muted,153_153_153))] peer-checked:text-[rgb(var(--color-text,0_0_0))]";
+	"text-base leading-none text-[rgb(var(--color-muted,153_153_153))] peer-checked:text-[rgb(var(--color-text,0_0_0))]";
 
 /** Кнопка-опция дропдауна «Коллекции» (top-вид): приглушённая → активная цветом текста. */
 export const CATALOG_OPTION_IDLE =
@@ -31,7 +35,7 @@ export const CATALOG_OPTION_ACTIVE = "text-[rgb(var(--color-text,0_0_0))]";
 
 /** Блок «Стоимость»: обёртка, строка «от/до» (подпись #444444 → muted) и значение. */
 export const CATALOG_PRICE_WRAP =
-	"flex w-full flex-col font-vanilla-arsenal text-base font-normal leading-none";
+	"flex w-full flex-col text-base leading-none";
 export const CATALOG_PRICE_ROW =
 	"flex h-10 w-full items-center justify-between border-b border-[rgb(var(--color-muted,153_153_153))] text-[rgb(var(--color-muted,68_68_68))]";
 export const CATALOG_PRICE_VALUE = "flex items-center gap-2 text-[rgb(var(--color-text,0_0_0))]";

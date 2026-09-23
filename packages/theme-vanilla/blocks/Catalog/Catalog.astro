@@ -249,8 +249,9 @@ function pluralizeProducts(count: number): string {
 const productCountLabel = pluralizeProducts(0);
 
 // Summary/панель дропдаунов top-вида (манера vanilla: плоские панели, фон страницы).
+// Шрифт строки — из «Настроек темы» (catalog-filters.css ставит его корню строки).
 const rowSummaryClass =
-	"flex cursor-pointer list-none items-center gap-2 font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden";
+	"flex cursor-pointer list-none items-center gap-2 text-base leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70 [&::-webkit-details-marker]:hidden";
 const rowPanelClass =
 	"absolute top-full z-30 mt-2 flex w-[240px] flex-col gap-3 border border-[rgb(var(--color-muted,153_153_153))] bg-[rgb(var(--color-bg,238_238_238))] p-4";
 
@@ -397,6 +398,19 @@ const rowStockOptions: RadioOption[] = [
 									</div>
 								</details>
 
+								{/* Фильтр по цвету (row-ветка): дропдаун. Скрыт, пока нет данных;
+								    гидрация показывает его, если у товаров магазина есть группа
+								    «Цвет» (/api/store/filters). */}
+								<details class="relative max-md:static [&[open]]:z-30" data-nt="catalog-color-filter" data-color-dropdown style="display:none;">
+									<summary class={rowSummaryClass}>
+										<span data-color-label>Цвет</span>
+										<svg aria-hidden="true" viewBox="0 0 10 6" fill="none" class="h-[6px] w-[10px]"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" /></svg>
+									</summary>
+									<div class={`${rowPanelClass} left-0`}>
+										<div data-color-options class="flex flex-col gap-3"></div>
+									</div>
+								</details>
+
 								{/* Фильтр по коллекциям (row-ветка): дропдаун. Скрыт на demo-сборке,
 								    гидрация показывает его при наличии коллекций магазина. */}
 								<details class="relative max-md:static [&[open]]:z-30" data-nt="catalog-collections-filter" data-collections-dropdown style="display:none;">
@@ -503,22 +517,22 @@ const rowStockOptions: RadioOption[] = [
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
 	// перенесены телами 1:1 (без import/типов), данные frontmatter — через define:vars.
-	// У vanilla НЕТ фильтра по цвету.
+	// Фильтр по цвету — как у rose: значения из /api/store/filters (группа «Цвет»).
 	(function () {
 		const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue.svg";
 		let cachedCollections;
 
 		// Классы фильтров (зеркало ./filter-classes — is:inline не поддерживает import).
-		// ⚠️ ГОЧА: в client-JS строках (innerHTML) arbitrary after:bg-[rgb(var())] НЕ
-		// генерится previewTailwind (@source не сканит themes/theme-vanilla) →
-		// точка radio была бы невидимой в превью конструктора. Цвет точки vanilla =
-		// текст (--color-text дефолт 0 0 0) → core-utility after:bg-black (как rose).
+		// Радио — СТРОКА В СТРОКУ как CATALOG_RADIO_CIRCLE / CATALOG_RADIO_TEXT: те
+		// классы сканируют и превью, и живая витрина (filter-classes.ts в @source
+		// темы). Своя версия с `after:h-[10px]` в CSS витрины не попадала — у
+		// выбранной коллекции на сайте не было точки (локальная сцена 23.09).
 		const OPT_ACTIVE = "text-[rgb(var(--color-text,0_0_0))]";
 		const OPT_IDLE = "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]";
 		const RADIO_CIRCLE =
-			"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100";
+			"relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[rgb(var(--color-muted,153_153_153))] after:pointer-events-none after:absolute after:h-[14px] after:w-[14px] after:rounded-full after:bg-[rgb(var(--color-text,0_0_0))] after:opacity-0 after:content-[''] peer-checked:border-[rgb(var(--color-text,0_0_0))] peer-checked:after:opacity-100 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[rgb(var(--color-text,0_0_0))]";
 		const RADIO_TEXT =
-			"font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-muted,153_153_153))] peer-checked:text-[rgb(var(--color-text,0_0_0))]";
+			"text-base leading-none text-[rgb(var(--color-muted,153_153_153))] peer-checked:text-[rgb(var(--color-text,0_0_0))]";
 
 		// ЖИВОЙ storefront API (спек 098, rose-канон — «не products.json»). store_id
 		// (shopId) = siteId (storefront-data.controller: «Products are stored with
@@ -876,8 +890,7 @@ const rowStockOptions: RadioOption[] = [
 		// ─────────────────────── Каталог: state + orchestration ───────────────────────
 		// СЕРВЕРНАЯ пагинация (rose-канон): товары грузятся ПОСТРАНИЧНО реальными
 		// запросами /api/store/products?page=N с серверными фильтрами (sort/price/
-		// availability/collection). Клиент НЕ держит весь каталог и НЕ слайсит.
-		// У vanilla НЕТ фильтра по цвету — variant-параметр не отправляем.
+		// availability/collection/цвет). Клиент НЕ держит весь каталог и НЕ слайсит.
 		let catalogCollections = null;
 		const filters = {
 			// Поисковый запрос из шапки: /catalog?q=… . Читается один раз при
@@ -889,6 +902,8 @@ const rowStockOptions: RadioOption[] = [
 			stock: "all",
 			priceMin: null,
 			priceMax: null,
+			// Выбранный цвет ("" — все). Один: сервер фильтрует по одному значению группы.
+			color: "",
 			sort: "popularity",
 			page: 1,
 		};
@@ -913,7 +928,8 @@ const rowStockOptions: RadioOption[] = [
 
 		// buildProductsQuery: query-строка /api/store/products из текущего filters
 		// (rose-канон). min_price/max_price API сравнивает с basePrice в КОПЕЙКАХ →
-		// рубли × 100. out-of-stock в API = `sold_out` (DTO enum). Без variant-цвета.
+		// рубли × 100. out-of-stock в API = `sold_out` (DTO enum). Цвет — параметром
+		// с именем группы («Цвет=Белый»), как у rose.
 		function buildProductsQuery(page) {
 			const qp = new URLSearchParams();
 			qp.set("store_id", String(storeId ?? ""));
@@ -942,6 +958,8 @@ const rowStockOptions: RadioOption[] = [
 
 			if (filters.stock === "in") qp.set("availability", "in_stock");
 			else if (filters.stock === "out") qp.set("availability", "sold_out");
+
+			if (filters.color) qp.set(COLOR_GROUP_NAME, filters.color);
 
 			// Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
 			// Резолвим slug→id через кэш; если резолва нет — передаём ref как есть.
@@ -1131,8 +1149,71 @@ const rowStockOptions: RadioOption[] = [
 			});
 		}
 
-		// ─────────── Коллекции (top: дропдаун-кнопки; side: radio) ───────────
+		// ─────────── Выбор «Все» + значения (коллекции, цвет) ───────────
+		// Один вид на оба фильтра: в выпадашке строки top — кнопки (активная цветом
+		// текста), в сайдбаре и шторке — радио, как «Наличие». Пункты — данными:
+		// [{ value, label, active }], первым «Все» (value "").
+		const CHOICE = {
+			collection: { list: "[data-collections-options]", label: "[data-collections-label]", dropdown: "data-collections-dropdown", attr: "data-collection-option", radio: "vanilla-collection", title: "Коллекции" },
+			color: { list: "[data-color-options]", label: "[data-color-label]", dropdown: "data-color-dropdown", attr: "data-color-option", radio: "vanilla-color", title: "Цвет" },
+		};
 		let radioNameSeq = 0;
+		const choiceButtonHtml = (kind, o) =>
+			`<button type="button" ${kind.attr}="${escapeHtml(o.value)}" class="cursor-pointer text-left text-base leading-none transition-colors ${o.active ? OPT_ACTIVE : OPT_IDLE}">${escapeHtml(o.label)}</button>`;
+		const choiceRadioHtml = (kind, name, o) =>
+			`<label class="group flex cursor-pointer items-center gap-2"><input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(o.value)}" ${kind.attr}="${escapeHtml(o.value)}"${o.active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(o.label)}</span></label>`;
+		// Своё имя группы радио у каждого места (сайдбар, шторка): иначе выбор в
+		// одном снимал бы выбор в другом.
+		function radioNameOf(box, kind) {
+			const name = box.getAttribute("data-cf-radio-name") || `${kind.radio}-${++radioNameSeq}`;
+			box.setAttribute("data-cf-radio-name", name);
+			return name;
+		}
+		function renderChoice(box, kind, items, currentLabel) {
+			const list = box.querySelector(kind.list);
+			if (!list) return;
+			if (!box.hasAttribute(kind.dropdown)) {
+				const name = radioNameOf(box, kind);
+				list.innerHTML = items.map((o) => choiceRadioHtml(kind, name, o)).join("");
+				return;
+			}
+			const label = box.querySelector(kind.label);
+			if (label) label.textContent = currentLabel || kind.title;
+			list.innerHTML = items.map((o) => choiceButtonHtml(kind, o)).join("");
+		}
+		// Слушатели на списке переживают перерисовку innerHTML.
+		function bindChoice(box, kind, pick) {
+			const list = box.querySelector(kind.list);
+			list.addEventListener("change", (ev) => {
+				const input = ev.target.closest(`input[${kind.attr}]`);
+				if (input) pick(input.value);
+			});
+			list.addEventListener("click", (ev) => {
+				const btn = ev.target.closest(`button[${kind.attr}]`);
+				if (btn) pick(btn.getAttribute(kind.attr) ?? "");
+			});
+		}
+		// Показать фильтр во всех его местах (строка, сайдбар, шторка), один раз на узел.
+		function hydrateChoice(selector, kind, render, pick) {
+			for (const box of Array.from(document.querySelectorAll(selector))) {
+				if (box.getAttribute("data-cf-hydrated") === "true") continue;
+				if (!box.querySelector(kind.list)) continue;
+				box.setAttribute("data-cf-hydrated", "true");
+				box.style.display = "";
+				render(box);
+				bindChoice(box, kind, pick);
+			}
+		}
+		// После выбора: все места показывают новое значение, выпадашка закрыта.
+		function rerenderChoice(selector, render) {
+			for (const box of Array.from(document.querySelectorAll(`${selector}[data-cf-hydrated="true"]`))) {
+				render(box);
+				box.removeAttribute("open");
+			}
+		}
+
+		// ─────────── Коллекции ───────────
+		const COLLECTIONS_BOX = '[data-nt="catalog-collections-filter"]';
 		function collectionOptions() {
 			return (catalogCollections ?? [])
 				.map((c) => {
@@ -1144,58 +1225,77 @@ const rowStockOptions: RadioOption[] = [
 				.filter((o) => o.value !== "" && o.label !== "");
 		}
 		function renderCollectionsBox(box) {
-			const list = box.querySelector("[data-collections-options]");
-			if (!list) return;
 			const options = collectionOptions();
 			if (options.length === 0) return;
 			const current = findCollection(catalogCollections, currentCollectionRef());
-			if (box.hasAttribute("data-collections-dropdown")) {
-				const label = box.querySelector("[data-collections-label]");
-				const currentLabel = typeof (current && current.name) === "string" ? current.name.trim() : "";
-				if (label) label.textContent = currentLabel || "Коллекции";
-				const optionHtml = (value, name, active) =>
-					`<button type="button" data-collection-option="${escapeHtml(value)}" class="cursor-pointer text-left font-vanilla-arsenal text-base font-normal leading-none transition-colors ${active ? OPT_ACTIVE : OPT_IDLE}">${escapeHtml(name)}</button>`;
-				list.innerHTML = optionHtml("", "Все", !current) + options.map((o) => optionHtml(o.value, o.label, !!current && current.id === o.id)).join("");
-			} else {
-				let radioName = box.getAttribute("data-cf-radio-name");
-				if (!radioName) { radioName = `vanilla-collection-${++radioNameSeq}`; box.setAttribute("data-cf-radio-name", radioName); }
-				const optionHtml = (value, name, active) =>
-					`<label class="group flex cursor-pointer items-center gap-2"><input type="radio" name="${escapeHtml(radioName)}" value="${escapeHtml(value)}" data-collection-option="${escapeHtml(value)}"${active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(name)}</span></label>`;
-				list.innerHTML = optionHtml("", "Все", !current) + options.map((o) => optionHtml(o.value, o.label, !!current && current.id === o.id)).join("");
-			}
+			const currentName = typeof (current && current.name) === "string" ? current.name.trim() : "";
+			renderChoice(box, CHOICE.collection, [
+				{ value: "", label: "Все", active: !current },
+				...options.map((o) => ({ value: o.value, label: o.label, active: !!current && current.id === o.id })),
+			], currentName);
 		}
 		function applyCollectionSelection(value) {
 			const params = new URLSearchParams(window.location.search);
 			if (value) params.set("collection", value); else params.delete("collection");
 			const qs = params.toString();
 			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-			for (const box of Array.from(document.querySelectorAll('[data-nt="catalog-collections-filter"][data-cf-hydrated="true"]'))) {
-				renderCollectionsBox(box);
-				box.removeAttribute("open");
-			}
+			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox);
 			resetPageAndRender();
 		}
 		async function initCollectionsFilter() {
-			const boxes = Array.from(document.querySelectorAll('[data-nt="catalog-collections-filter"]'));
-			if (boxes.length === 0) return;
+			if (!document.querySelector(COLLECTIONS_BOX)) return;
 			catalogCollections = await loadRealCollections();
 			if (collectionOptions().length === 0) return;
-			for (const box of boxes) {
-				if (box.getAttribute("data-cf-hydrated") === "true") continue;
-				const list = box.querySelector("[data-collections-options]");
-				if (!list) continue;
-				box.setAttribute("data-cf-hydrated", "true");
-				box.style.display = "";
-				renderCollectionsBox(box);
-				list.addEventListener("change", (ev) => {
-					const input = ev.target.closest("input[data-collection-option]");
-					if (input) applyCollectionSelection(input.value);
-				});
-				list.addEventListener("click", (ev) => {
-					const btn = ev.target.closest("button[data-collection-option]");
-					if (btn) applyCollectionSelection(btn.getAttribute("data-collection-option") ?? "");
-				});
+			hydrateChoice(COLLECTIONS_BOX, CHOICE.collection, renderCollectionsBox, applyCollectionSelection);
+		}
+
+		// ─────────── Цвет ───────────
+		// Значения — из ЖИВОГО /api/store/filters (группа «Цвет»), как у rose:
+		// товары грузятся постранично, собрать цвета каталога на клиенте нельзя.
+		// Нет группы или сеть упала — фильтр остаётся скрытым. Сервер фильтрует по
+		// ОДНОМУ значению группы (variantFilters: Record<string, string>), поэтому
+		// выбор одиночный: «Все» или один цвет.
+		const COLOR_GROUP_NAME = "Цвет";
+		const COLOR_BOX = '[data-nt="catalog-color-filter"]';
+		let availableColors = [];
+		let colorsRequest = null;
+		async function fetchAvailableColors() {
+			if (!storeId) return [];
+			try {
+				const res = await fetch(`${apiBase}/api/store/filters?store_id=${encodeURIComponent(storeId)}`);
+				if (!res.ok) return [];
+				const json = await res.json();
+				const groups =
+					(json && json.data && Array.isArray(json.data.groups) && json.data.groups) ||
+					(json && Array.isArray(json.groups) && json.groups) ||
+					[];
+				const group = groups.find((g) => g && typeof g.name === "string" && g.name.trim() === COLOR_GROUP_NAME);
+				const values = group && Array.isArray(group.values) ? group.values : [];
+				return values
+					.map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
+					.filter((v) => typeof v === "string" && v !== "");
+			} catch {
+				return [];
 			}
+		}
+		function loadAvailableColors() {
+			colorsRequest = colorsRequest || fetchAvailableColors();
+			return colorsRequest;
+		}
+		function renderColorBox(box) {
+			renderChoice(box, CHOICE.color, [
+				{ value: "", label: "Все", active: !filters.color },
+				...availableColors.map((c) => ({ value: c, label: c, active: c === filters.color })),
+			], filters.color);
+		}
+		function applyColorSelection(value) {
+			filters.color = availableColors.includes(value) ? value : "";
+			rerenderChoice(COLOR_BOX, renderColorBox);
+			resetPageAndRender();
+		}
+		function initColorFilter() {
+			if (availableColors.length === 0) return;
+			hydrateChoice(COLOR_BOX, CHOICE.color, renderColorBox, applyColorSelection);
 		}
 
 		// ─────────── Дропдауны верхних (top) фильтров ───────────
@@ -1252,9 +1352,10 @@ const rowStockOptions: RadioOption[] = [
 				// Снимок скелетон-лоадера из SSG-грида ДО первого fetch (renderCatalog
 				// replace затрёт скелетон) — нужен для replace при смене фильтра/сортировки.
 				captureSkeleton();
-				// Коллекции (для collection_id серверного фильтра) грузим ДО товаров,
-				// чтобы buildProductsQuery резолвил slug→id уже на первой странице.
-				catalogCollections = await loadRealCollections();
+				// Коллекции (для collection_id серверного фильтра) и цвета (фильтр
+				// «Цвет») грузим ДО товаров и параллельно — buildProductsQuery резолвит
+				// slug→id уже на первой странице.
+				[catalogCollections, availableColors] = await Promise.all([loadRealCollections(), loadAvailableColors()]);
 				bindStock();
 				bindSort();
 				bindPrice();
@@ -1262,6 +1363,7 @@ const rowStockOptions: RadioOption[] = [
 				bindFilterDropdowns();
 				syncStockUi();
 				syncSortUi();
+				initColorFilter();
 				// Первая страница товаров (REPLACE) — реальный fetch /api/store/products.
 				await renderCatalog(false);
 				// UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).

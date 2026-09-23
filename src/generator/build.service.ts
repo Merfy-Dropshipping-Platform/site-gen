@@ -1807,6 +1807,10 @@ async function stageMerge(
       branding: schema.site.branding,
       settings: schema.site.settings,
       templateId: schema.theme.templateId,
+      // Волна 1 порта контента: без неё storeContent.load() тихо резолвился
+      // бы в DocumentAdapter для ЛЮБОГО магазина — "явная ошибка для
+      // неизвестной модели" работала бы только у конструктора.
+      contentModel: schema.site.contentModel,
     })
     .from(schema.site)
     .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
@@ -1865,6 +1869,7 @@ async function stageMerge(
       themeId: siteRow.themeId,
       publicUrl: siteRow.publicUrl,
       name: siteRow.name ?? null,
+      contentModel: siteRow.contentModel ?? null,
     },
   });
   ctx.revisionId = revisionId;

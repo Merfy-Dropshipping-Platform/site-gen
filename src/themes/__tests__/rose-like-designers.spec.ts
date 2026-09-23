@@ -363,7 +363,7 @@ describe("rose: Hero — первый экран как у верстальщи�
     for (const v of варианты) expect(v).not.toEqual(исходная);
   });
 
-  it("два фото и пустое состояние не меняются признаком (у верстальщиков их нет)", () => {
+  it("два фото не меняются признаком, пустое состояние — только высотой", () => {
     const дваФото = {
       ...ПОЛНАЯ,
       backgroundImages: { url1: ФОТО, url2: ФОТО2 },
@@ -377,7 +377,14 @@ describe("rose: Hero — первый экран как у верстальщи�
     ]);
     expect(дваВкл).toContain("grid grid-cols-2");
     expect(дваВкл).toContain("object-cover");
-    expect(пустоВкл).toEqual(пустоВыкл);
+    // Пустое состояние отличается ТОЛЬКО высотой блока (см. отдельный
+    // describe ниже): у нового магазина первый экран именно такой.
+    const безВысоты = (html: string) =>
+      html.replace(
+        /<div class="relative w-full [^"]*"/,
+        '<div class="relative w-full"',
+      );
+    expect(безВысоты(пустоВкл)).toEqual(безВысоты(пустоВыкл));
     // Два фото: признак не переносит оверлей-геометрию на мобиль-стек 4/3 —
     // единственная разница — контейнер секции (высота/оверлей), сама раскладка
     // 50/50 (grid-cols-2 внутри) остаётся прежней у обоих.
@@ -400,5 +407,26 @@ describe("rose: Hero — первый экран как у верстальщи�
       { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ } },
     ]);
     expect(html).not.toMatch(/class="[^"]*\buppercase\b/);
+  });
+});
+
+describe("rose: пустой первый экран — высота как у верстальщиков под PARITY_DESIGN", () => {
+  const пусто = { id: "Hero-1", colorScheme: "scheme-1" };
+  const [вкл, выкл, безПризнака] = renderSections("rose", [
+    { block: "Hero", props: { ...пусто, __designParity: true }, catalog: {} },
+    { block: "Hero", props: пусто, catalog: {} },
+    { block: "Hero", props: { ...пусто, __designParity: false }, catalog: {} },
+  ]).map((r) => r.html ?? "");
+
+  it("с признаком — пропорции и высота от экрана как у верстальщиков", () => {
+    expect(вкл).toContain("min-h-[calc(100svh-92px)]");
+    expect(вкл).toContain("2xl:aspect-[21/9]");
+    expect(вкл).toContain("landscape-image.png");
+  });
+
+  it("без признака — прежняя лестница высот, разметка та же", () => {
+    expect(выкл).toContain("min-h-[min(46svh,320px)]");
+    expect(выкл).not.toContain("min-h-[calc(100svh-92px)]");
+    expect(безПризнака).toEqual(выкл);
   });
 });

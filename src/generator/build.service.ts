@@ -1865,9 +1865,13 @@ async function stageMerge(
   // pipeline sees the canonical shape regardless of when the revision was
   // saved. Idempotent — running on already-migrated revisions is a no-op.
   // Pass themeId so vanilla-specific home seed (084) activates for vanilla sites.
+  // Пункт 3б (PARITY_FOOTER): подвал = подвал главной на чтении, как в превью.
+  const { parityOn } = await import("../themes/parity-switch");
   const migrated = migrateRevisionData(
     revRow?.data as Record<string, unknown> | undefined,
     siteRow.themeId,
+    undefined,
+    { unifyFooter: parityOn("FOOTER", ctx.siteId) },
   );
   // Resolve relative asset paths (theme defaults `/main-image.png`) → absolute
   // URLs via site.publicUrl. Live и preview iframe видят один и тот же URL,

@@ -1043,6 +1043,7 @@ export class PreviewController {
       rev.data as Record<string, unknown>,
       site.themeId ?? null,
       site.name ?? null,
+      { unifyFooter: parityOn('FOOTER', siteId) },
     );
     // Подтягиваем данные футера (контакты/политики/произвольные поля/касса) из
     // БД в Footer-блоки — чтобы превью конструктора показывало тот же футер, что

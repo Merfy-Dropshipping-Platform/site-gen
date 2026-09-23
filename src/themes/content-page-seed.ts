@@ -15,7 +15,7 @@
  * `revision-write-filter` не даёт записать этот сид обратно в ревизию.
  */
 import { getPageResolver } from './page-resolver-instance';
-import { unifyHeaderWithHome } from '../utils/revision-migrations';
+import { unifyFooterWithHome, unifyHeaderWithHome } from '../utils/revision-migrations';
 
 /** Совпадает с `CONTENT_PAGE_TITLES` в revision-migrations и с клиентским списком. */
 export const CONTENT_PAGE_IDS = ['page-about', 'page-delivery', 'page-contacts'] as const;
@@ -27,6 +27,8 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 export async function seedContentPagesFromTheme(
   data: Record<string, unknown>,
   themeId: string | null | undefined,
+  /** Пункт 3б: подвал досеянной страницы = подвал главной (выключатель PARITY_FOOTER). */
+  options: { unifyFooter?: boolean } = {},
 ): Promise<Record<string, unknown>> {
   if (!themeId || !isPlainObject(data)) return data;
   const pagesData = isPlainObject(data.pagesData) ? { ...data.pagesData } : {};
@@ -59,10 +61,13 @@ export async function seedContentPagesFromTheme(
       // Шапка страницы — всегда шапка главной (тот же канон, что на чтении
       // ревизии). Ключ `__seed` временный: unifyHeaderWithHome работает над
       // картой страниц и берёт `home` оттуда же.
-      const unified = unifyHeaderWithHome({
+      const withHomeHeader = unifyHeaderWithHome({
         home: pagesData['home'],
         __seed: { content: blocks },
-      }) as Record<string, { content?: unknown[] } | undefined>;
+      });
+      const unified = (
+        options.unifyFooter ? unifyFooterWithHome(withHomeHeader) : withHomeHeader
+      ) as Record<string, { content?: unknown[] } | undefined>;
       pagesData[pageId] = {
         content: unified.__seed?.content ?? blocks,
         root: isPlainObject(raw) ? ((raw as { root?: unknown }).root ?? { props: {} }) : { props: {} },

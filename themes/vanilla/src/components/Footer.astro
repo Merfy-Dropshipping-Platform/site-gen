@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
 import VanilaFooterLogo from "../icons/VanilaFooterLogo.astro";
+import VanilaFooterLogoDesigners from "../icons/VanilaFooterLogoDesigners.astro";
 import SocialTelegramWhite from "../icons/SocialTelegramWhite.astro";
 import SocialVkWhite from "../icons/SocialVkWhite.astro";
 import SocialTiktokWhite from "../icons/SocialTiktokWhite.astro";
@@ -254,6 +255,22 @@ const _footerSchemeId =
 			? String(_footerSchemeRaw).replace("scheme-", "")
 			: "";
 const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : "";
+
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// вордмарк и соцсети подвала по актуальной вёрстке Vanilla-theme @c65d9e1c.
+// Вордмарк — рисунок другой (у них «Vanilla» двумя «l», у нас «Vanila» одной,
+// не только размер — diff путей это подтвердил), поэтому под флагом рисуется
+// отдельный компонент VanilaFooterLogoDesigners. Соцсети — только зазор и
+// область клика (иконка та же). Настройки и цвета не меняются; без признака —
+// прежние классы и прежний VanilaFooterLogo байт-в-байт. Признак ставит sites.
+const designParity = p.__designParity === true;
+const FOOTER_LOGO_CLS = designParity ? "h-7 w-[98px]" : "h-7 w-[89px]";
+const SOCIAL_ROW_CLS = designParity
+	? "flex flex-wrap items-center justify-center gap-1 md:justify-end"
+	: "flex flex-wrap items-center justify-center gap-3 md:justify-end";
+const SOCIAL_LINK_CLS = designParity
+	? "flex min-h-11 min-w-11 items-center justify-center transition-opacity hover:opacity-70"
+	: "flex size-5 items-center justify-center transition-opacity hover:opacity-70";
 ---
 
 <footer class:list={["flex w-full flex-col", footerSchemeClass ? "text-[rgb(var(--color-text,255_255_255))]" : "text-white", footerSchemeClass]} data-vanilla-footer data-puck-component-id={id}>
@@ -326,7 +343,7 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 			>
 				<div class="flex flex-col gap-8 max-sm:items-center">
 					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label={logoAriaLabel}>
-						<VanilaFooterLogo class="h-7 w-[89px]" />
+						{designParity ? <VanilaFooterLogoDesigners class={FOOTER_LOGO_CLS} /> : <VanilaFooterLogo class={FOOTER_LOGO_CLS} />}
 					</a>
 					<ul
 						class="flex flex-col gap-2"
@@ -384,14 +401,14 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 					</div>
 					<div class="flex flex-col items-start gap-6 max-sm:items-center md:mt-auto md:items-end">
 						{socials.length > 0 && (
-						<div class="flex flex-wrap items-center justify-center gap-3 md:justify-end" aria-label="Социальные сети">
+						<div class={SOCIAL_ROW_CLS} aria-label="Социальные сети">
 							{socials.map(({ platform, href, Icon }) => (
 								<a
 									href={href}
 									target="_blank"
 									rel="noopener noreferrer"
 									aria-label={platform}
-									class="flex size-5 items-center justify-center transition-opacity hover:opacity-70"
+									class={SOCIAL_LINK_CLS}
 								>
 									<Icon class="h-5 w-auto max-h-5" />
 								</a>

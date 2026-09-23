@@ -46,19 +46,28 @@ const headingCls =
 		: headingSize === "large"
 			? "font-vanilla-bitter text-[24px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]"
 			: "font-vanilla-bitter text-[20px] font-normal italic leading-none tracking-normal text-[rgb(var(--color-heading,38_49_28))]";
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// шапка секции — геометрия обёртки по .vanilla-section-head/.vanilla-section-
+// subtitle верстальщика (Vanilla-theme global.css @c65d9e1c): обёртка шире
+// (max-w 1320 вместо 760, gap уже 0.5rem = gap-2), подзаголовок не переносится
+// с lg. Шрифт/цвета/капс не меняются; без признака — прежние классы байт-в-байт.
+const designParity = p.__designParity === true;
+const SUBTITLE_GEOMETRY_CLS = designParity ? " w-full max-w-[1320px] lg:whitespace-nowrap" : "";
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = подзаголовок
 // верстальщика дословно (Arsenal italic 16). Лестница §9: medium 19, large 23.
 const subtitleCls =
 	p.subtitleSize === "medium"
-		? "font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]"
+		? `font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
 		: p.subtitleSize === "large"
-			? "font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]"
-			: "font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]";
+			? `font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
+			: `font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`;
 // Канон titleAlignment: 'left' (canon-default из blockDefaults vanilla) и
 // отсутствие = литерал верстальщика (шапка слева, без класса).
 const titleAlignCls =
 	p.titleAlignment === "center" ? " text-center" : p.titleAlignment === "right" ? " text-right" : "";
-const headWrapCls = `flex max-w-[760px] flex-col gap-2${titleAlignCls}`;
+const headWrapCls = designParity
+	? `flex w-full max-w-[1320px] flex-col gap-2${titleAlignCls}`
+	: `flex max-w-[760px] flex-col gap-2${titleAlignCls}`;
 
 // Канон columns 1-6: 2 (срез верстальщика = canon-default, blockDefaults
 // columns не задают) и отсутствие → дефолт-ветка (литерал md:grid-cols-2);

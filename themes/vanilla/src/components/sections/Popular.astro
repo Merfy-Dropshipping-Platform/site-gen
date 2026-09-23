@@ -45,12 +45,20 @@ const headingCls =
 // Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок
 // верстальщика дословно (Arsenal italic 16). Лестница §9: medium 19, large 23.
 const textSize = p.textSize ?? p.text?.size;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// шапка секции — геометрия обёртки по .vanilla-section-head/.vanilla-section-
+// subtitle верстальщика (Vanilla-theme global.css @c65d9e1c): обёртка шире
+// (max-w 1320 вместо 760, gap уже 0.5rem = gap-2), подзаголовок не переносится
+// с lg. Шрифт/цвета/капс не меняются; без признака — прежние классы байт-в-байт.
+const designParity = p.__designParity === true;
+const SUBTITLE_GEOMETRY_CLS = designParity ? " w-full max-w-[1320px] lg:whitespace-nowrap" : "";
 const subtitleCls =
 	textSize === "medium"
-		? "font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]"
+		? `font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
 		: textSize === "large"
-			? "font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]"
-			: "font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]";
+			? `font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
+			: `font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`;
+const HEAD_WRAP_CLS = designParity ? "flex w-full max-w-[1320px] flex-col gap-2" : "flex max-w-[760px] flex-col gap-2";
 
 // Канон cards 2-24: лимит demo-среза и гидрации (data-cards на гриде).
 // 6 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
@@ -342,7 +350,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
 		{!isFieldHidden('heading') && (
 		<div
-			class="flex max-w-[760px] flex-col gap-2"
+			class={HEAD_WRAP_CLS}
 			data-animate
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"

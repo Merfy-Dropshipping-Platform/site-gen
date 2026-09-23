@@ -36,7 +36,7 @@ interface Props {
 const {
 	rootId = "vanilla-cart-drawer-root",
 	eventPrefix = "vanilla:cart",
-	catalogHref = "/catalog/textile",
+	catalogHref = "/catalog",
 	signInHref = "/login",
 	cartHref = "/cart",
 	// Кнопка панели ведёт в ЧЕКАУТ. Панель — это и есть корзина, просто в
@@ -100,7 +100,7 @@ const evToggle = `${eventPrefix}:toggle`;
 					Вы пока не добавили товар в корзину.
 				</p>
 				<a
-					href={catalogHref}
+					href={catalogHref} data-continue-shopping
 					class="inline-flex h-12 items-center justify-center border border-[var(--vanilla-header-bg)] bg-[var(--vanilla-header-bg)] px-6 font-vanilla-arsenal text-[12px] font-medium uppercase leading-none tracking-[0.02em] text-white transition-opacity hover:opacity-90"
 				>
 					Продолжить покупки
@@ -173,4 +173,12 @@ const evToggle = `${eventPrefix}:toggle`;
 		if (root && root.dataset.state === "open") close();
 		else open();
 	});
+</script>
+
+<script>
+	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
+	// (коллекция по умолчанию; в разметке запасной адрес /catalog).
+	import { bindContinueShopping } from "../../../../packages/theme-base/runtime/continue-shopping";
+	void bindContinueShopping();
+	document.addEventListener("astro:page-load", () => void bindContinueShopping());
 </script>

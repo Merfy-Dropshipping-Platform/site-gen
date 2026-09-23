@@ -5,7 +5,6 @@
 // главная, корзину можно двигать/настраивать, добавлять другие секции вокруг.
 // Корзина одна на странице (maxInstances:1) → document.querySelector безопасен
 // (first-match не ловит дубль). Резолвится раньше theme-base скаффолда (resolveV2Section).
-import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 
 interface Props {
 	id?: string;
@@ -68,7 +67,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			    0_0_0 / 255_255_255 = прежний вид.
 			    Сторож: pnpm test:cart-scheme, pnpm test:scheme-targets. */}
 			<a
-				href={DEFAULT_CATEGORY_HREF}
+				href="/catalog" data-continue-shopping
 				class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
 			>
 				Продолжить покупки
@@ -244,3 +243,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </script>
 <script is:inline type="module" src="/scripts/cart-api.js"></script>
 <script is:inline type="module" src="/scripts/cart-store.js"></script>
+
+<script>
+	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
+	// (коллекция по умолчанию; в разметке запасной адрес /catalog).
+	import { bindContinueShopping } from "../../../../../packages/theme-base/runtime/continue-shopping";
+	void bindContinueShopping();
+	document.addEventListener("astro:page-load", () => void bindContinueShopping());
+</script>

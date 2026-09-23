@@ -62,7 +62,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			    схемы-зонды 1 → 4: #000 → #000 и #fff → #fff). Фолбэки = прежний вид.
 			    Сторож: pnpm test:cart-scheme, pnpm test:scheme-targets. */}
 			<a
-				href="/catalog"
+				href="/catalog" data-continue-shopping
 				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 			>
 				Продолжить покупки
@@ -272,3 +272,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </script>
 <script is:inline type="module" src="/scripts/cart-api.js"></script>
 <script is:inline type="module" src="/scripts/cart-store.js"></script>
+
+<script>
+	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
+	// (коллекция по умолчанию; в разметке запасной адрес /catalog).
+	import { bindContinueShopping } from "../../../../../packages/theme-base/runtime/continue-shopping";
+	void bindContinueShopping();
+	document.addEventListener("astro:page-load", () => void bindContinueShopping());
+</script>

@@ -1509,7 +1509,9 @@ export async function runBuildPipeline(
           const productIds = (v2Store.products as Array<Record<string, any>>)
             .filter((p) => Array.isArray(p.collections) && p.collections.some((pc: any) => pc && (pc.id === c.id || (pc.slug && pc.slug === slug))))
             .map((p) => p.id);
-          return { id: c.id, name: c.name ?? c.title, slug, image, productIds };
+          // isDefault — «общая» коллекция магазина: на неё ведёт «Продолжить
+          // покупки» пустой корзины (packages/theme-base/runtime/continue-shopping.ts).
+          return { id: c.id, name: c.name ?? c.title, slug, image, productIds, isDefault: c.isDefault === true };
         });
         const v2CollectionsPath = path.join(ctx.distDir, "data", "collections.json");
         await fs.mkdir(path.dirname(v2CollectionsPath), { recursive: true });

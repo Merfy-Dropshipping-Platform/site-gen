@@ -54,7 +54,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				Вы пока не добавили товар в корзину.
 			</p>
 			<a
-				href="/catalog"
+				href="/catalog" data-continue-shopping
 				class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 			>
 				Продолжить покупки
@@ -212,3 +212,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </script>
 <script is:inline type="module" src="/scripts/cart-api.js"></script>
 <script is:inline type="module" src="/scripts/cart-store.js"></script>
+
+<script>
+	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
+	// (коллекция по умолчанию; в разметке запасной адрес /catalog).
+	import { bindContinueShopping } from "../../../../../packages/theme-base/runtime/continue-shopping";
+	void bindContinueShopping();
+	document.addEventListener("astro:page-load", () => void bindContinueShopping());
+</script>

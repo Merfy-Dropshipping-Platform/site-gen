@@ -53,7 +53,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<p class="font-manrope text-[14px] font-normal leading-normal text-[var(--vanilla-muted)]">
 				Вы пока не добавили товар в корзину.
 			</p>
-			<a href="/catalog/textile" class="vanilla-button vanilla-button-cart">
+			<a href="/catalog" data-continue-shopping class="vanilla-button vanilla-button-cart">
 				Продолжить покупки
 			</a>
 			<p class="font-manrope text-[12px] font-normal leading-normal text-[var(--vanilla-muted)]">
@@ -219,3 +219,11 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 		}
 	}
 </style>
+
+<script>
+	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
+	// (коллекция по умолчанию; в разметке запасной адрес /catalog).
+	import { bindContinueShopping } from "../../../../../packages/theme-base/runtime/continue-shopping";
+	void bindContinueShopping();
+	document.addEventListener("astro:page-load", () => void bindContinueShopping());
+</script>

@@ -67,7 +67,7 @@ function panelCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="flex min-w-0 flex-col gap-5">` +
 		media(hit, ctx) +
 		`<a href="${ctx.escapeHtml(hit.href)}" class="flex flex-col gap-1 font-inter font-light text-[rgb(var(--color-text,0_0_0))] outline-none transition-opacity hover:opacity-70 focus-visible:opacity-70">` +
-		`<span class="truncate text-[16px] leading-[19px]">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="truncate text-[16px] leading-[19px]">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex items-center gap-2"><span class="text-[16px] leading-[19px]">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>${oldPrice}</span>` +
 		`</a></li>`
 	);
@@ -102,7 +102,7 @@ function drawerCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): strin
 		media(hit, ctx) +
 		`<div class="flex flex-col gap-[18px]">` +
 		`<a href="${ctx.escapeHtml(hit.href)}" class="flex flex-col gap-1 font-inter font-light text-[rgb(var(--color-text,0_0_0))] outline-none">` +
-		`<span class="truncate text-[14px] leading-[17px]">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="truncate text-[14px] leading-[17px]">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex items-center gap-2"><span class="text-[14px] leading-[17px]">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>${oldPrice}</span>` +
 		`</a>` +
 		addToCart(hit, ctx) +

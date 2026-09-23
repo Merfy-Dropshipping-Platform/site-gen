@@ -10028,3 +10028,19 @@ ILIKE, через product-service и gateway, на всех пяти темах,
 - Нижняя шторка «Выпадающего»/«Расширенного» меню спадает из-под шапки за
   300 мс (clip-path) и так же уходит.
 - `qa:side-menu`: 50 клеток, 700 проверок, 0 нарушений; саботаж 2/2.
+
+## 2026-09-23 — подсветка совпадения в выдаче поиска
+
+Ветка `feat/header-search-highlight`, worktree `.worktrees/search-highlight`.
+
+- `packages/theme-base/runtime/header-search.ts`: `highlightMatch(text, query)` + `ctx.highlight`
+  в `HeaderSearchRenderContext`. Нормализация посимвольно (нижний регистр по первому code unit —
+  чтобы 'İ' и подобные не меняли длину строки, ё→е, небуквенное → пробел); слово 1–2 буквы — только
+  с начала слова, от 3 — где угодно; пересечения склеиваются в один `<mark>`.
+- Во всех пяти `themes/<t>/src/lib/header-search-view.ts` название товара переведено на
+  `ctx.highlight`; атрибуты (bloom `data-name`) остались на `ctx.escapeHtml`.
+- Сторож: `pnpm test:header-search`, было 77, стало 113; саботаж 4/4 (правило «с начала слова»,
+  ё→е, экранирование, 'İ'/два code unit) — каждый красит свою проверку, возвращено.
+- Хвост не мой: `test:section-snapshots`/`conformance:satin` падают на 4 блоках satin
+  (Newsletter/CollapsibleSection/MultiColumns/Publications) — причина в `node_modules` вне корня
+  worktree и внешнем импорте `NtIcon.astro`; проверит CI.

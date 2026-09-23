@@ -10044,3 +10044,21 @@ ILIKE, через product-service и gateway, на всех пяти темах,
 - Хвост не мой: `test:section-snapshots`/`conformance:satin` падают на 4 блоках satin
   (Newsletter/CollapsibleSection/MultiColumns/Publications) — причина в `node_modules` вне корня
   worktree и внешнем импорте `NtIcon.astro`; проверит CI.
+
+## 2026-09-23 — минимум запроса лупы и «Найти» в превью
+
+Ветка `fix/preview-search-submit`, worktree `.worktrees/preview-search-submit`.
+
+- `packages/theme-base/runtime/header-search.ts`: `minChars` по умолчанию 1 (было 2) — сервер и
+  так ищет с начала слова, второй символ ожидания был лишним.
+- Агент превью (`PREVIEW_NAV_AGENT_INLINE`, submit-обработчик в `preview.service.ts`): форма
+  поиска шапки (`form[role="search"]`) шлёт `navigate` на `action + ?q=<запрос>` (через
+  `URLSearchParams`, пустой запрос — без query) вместо молчаливого `form-submit-blocked` — «Найти»
+  и Enter в превью конструктора теперь переключают каталог, как на живой витрине. Остальные формы
+  по-прежнему блокируются.
+- Сторожа: `pnpm test:header-search` 113→114 (саботаж 1/1, откат); новый
+  `src/services/__tests__/preview-agent-search-submit.spec.ts` 3/3 (саботаж 2/3 — поисковые кейсы
+  красные, «другая форма» осталась зелёной), заведён в ci.yml рядом с
+  `preview-agent-frame-scroll.spec.ts`.
+- Сборка по цепочке CI и `conformance:satin` зелёные; инвентарь satin обновлён отдельным коммитом
+  (byte-diff от правки header-search.ts).

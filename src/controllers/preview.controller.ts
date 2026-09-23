@@ -1067,6 +1067,11 @@ export class PreviewController {
         // (там getRevision передаёт имя), а превью рисовало заглушку — потому
         // что ЭТОТ путь чтения имя не передавал.
         name: schema.site.name,
+        // Волна 1 порта контента: без неё storeContent.load() у ЛЮБОГО
+        // магазина (даже на 'delta') тихо резолвился бы в DocumentAdapter —
+        // проверка "явная ошибка для неизвестной модели" работала бы только
+        // у конструктора (там contentModel уже идёт через site.get()).
+        contentModel: schema.site.contentModel,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -1086,6 +1091,7 @@ export class PreviewController {
           themeId: site.themeId ?? null,
           publicUrl: site.publicUrl ?? null,
           name: site.name ?? null,
+          contentModel: site.contentModel ?? null,
         },
       });
     } catch {

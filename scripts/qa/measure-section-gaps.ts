@@ -105,17 +105,22 @@ async function openPage(browser: Browser, html: string, width: number) {
 async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]> {
   const CHUNK = 600;
   const out: string[] = [];
-  for (let y = y0; y < y1; y += CHUNK) {
-    const h = Math.min(CHUNK, y1 - y);
-    const scrollY = await pg.evaluate((top) => {
+  for (let y = y0; y < y1; ) {
+    // У низа документа окно дальше не едет: кусок не выше, чем осталось места
+    // в окне после ФАКТИЧЕСКОЙ прокрутки (иначе clip вылезает за снимок).
+    const view = await pg.evaluate((top) => {
       window.scrollTo({ top, behavior: "instant" as ScrollBehavior });
-      return window.scrollY;
+      return { scrollY: window.scrollY, height: window.innerHeight };
     }, Math.max(0, y - 100));
-    const png = PNG.sync.read(await pg.screenshot({ clip: { x: 4, y: y - scrollY, width: 1, height: h } }));
+    const top = y - view.scrollY;
+    const h = Math.min(CHUNK, y1 - y, view.height - top);
+    if (h <= 0) throw new Error(`строка ${y} вне окна после прокрутки на ${view.scrollY}`);
+    const png = PNG.sync.read(await pg.screenshot({ clip: { x: 4, y: top, width: 1, height: h } }));
     for (let row = 0; row < png.height; row++) {
       const i = row * png.width * 4;
       out.push(`rgb(${png.data[i]}, ${png.data[i + 1]}, ${png.data[i + 2]})`);
     }
+    y += h;
   }
   return out;
 }

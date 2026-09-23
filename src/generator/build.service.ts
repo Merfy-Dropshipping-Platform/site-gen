@@ -16,7 +16,6 @@ import { Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
-import { resolveAssetUrls } from "../themes/asset-resolver";
 import { variantSwatchShapeFromRevision } from "../../packages/theme-base/runtime/variant-display";
 import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
@@ -35,7 +34,8 @@ import type * as schemaTypes from "../db/schema";
 import { fetchStoreData, fetchAllCollectionProducts, fetchPublications, type FetchedStoreData } from "./data-fetcher";
 import { escapeHtml, patchPdpMetaTags, patchCollectionMetaTags } from "./seo-meta";
 import { writeCatalogRedirects } from "./catalog-redirects";
-import { migrateRevisionData } from "../utils/revision-migrations";
+import { DocumentAdapter } from "../content/document.adapter";
+import { StoreContentService } from "../content/store-content.service";
 import { applyFooterData } from "../utils/footer-data";
 import { applyPageBinding } from "../render/page-transclude";
 import {
@@ -1805,6 +1805,10 @@ async function stageMerge(
       branding: schema.site.branding,
       settings: schema.site.settings,
       templateId: schema.theme.templateId,
+      // Волна 1 порта контента: без неё storeContent.load() тихо резолвился
+      // бы в DocumentAdapter для ЛЮБОГО магазина — "явная ошибка для
+      // неизвестной модели" работала бы только у конструктора.
+      contentModel: schema.site.contentModel,
     })
     .from(schema.site)
     .leftJoin(schema.theme, eq(schema.site.themeId, schema.theme.id))
@@ -1851,32 +1855,30 @@ async function stageMerge(
     logger.log(`[merge] Created initial revision ${revisionId} with default theme blocks (template: ${ctx.templateId})`);
   }
 
-  // Load revision data
-  const [revRow] = await deps.db
-    .select({
-      data: schema.siteRevision.data,
-      meta: schema.siteRevision.meta,
-    })
+  // Ревизия темы — через порт (DocumentAdapter): migrateRevisionData →
+  // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
+  // Тот же путь, что у конструктора (SitesDomainService.getRevision) и
+  // превью (PreviewController.loadRevisionData). Замер до/после — сборка
+  // satin-стенда без отличий в dist (merfy-mcp/docs/proofs/p2-wave1-content-port.txt).
+  const storeContent = new StoreContentService(new DocumentAdapter(deps.db));
+  const loaded = await storeContent.load(params.siteId, {
+    revisionId,
+    site: {
+      themeId: siteRow.themeId,
+      publicUrl: siteRow.publicUrl,
+      name: siteRow.name ?? null,
+      contentModel: siteRow.contentModel ?? null,
+    },
+  });
+  ctx.revisionId = revisionId;
+  ctx.revisionData = loaded.document;
+
+  // meta (title/mode) — конверт ревизии, не содержимое: отдельным SELECT,
+  // как и раньше (порт несёт только data, не эти поля).
+  const [revMetaRow] = await deps.db
+    .select({ meta: schema.siteRevision.meta })
     .from(schema.siteRevision)
     .where(eq(schema.siteRevision.id, revisionId));
-
-  ctx.revisionId = revisionId;
-  // Apply server-side migrations (e.g. catalog page → Catalog block) so build
-  // pipeline sees the canonical shape regardless of when the revision was
-  // saved. Idempotent — running on already-migrated revisions is a no-op.
-  // Pass themeId so vanilla-specific home seed (084) activates for vanilla sites.
-  // Пункт 3б (PARITY_FOOTER): подвал = подвал главной на чтении, как в превью.
-  const { parityOn } = await import("../themes/parity-switch");
-  const migrated = migrateRevisionData(
-    revRow?.data as Record<string, unknown> | undefined,
-    siteRow.themeId,
-    undefined,
-    { unifyFooter: parityOn("FOOTER", ctx.siteId) },
-  );
-  // Resolve relative asset paths (theme defaults `/main-image.png`) → absolute
-  // URLs via site.publicUrl. Live и preview iframe видят один и тот же URL,
-  // merchant uploads (уже absolute) — без изменений. Single source of truth.
-  ctx.revisionData = resolveAssetUrls(migrated, siteRow.publicUrl);
 
   // Название магазина из админки — в подвал, ВСЕГДА, когда оно задано.
   //
@@ -1899,7 +1901,7 @@ async function stageMerge(
   // мерчант правил текст в админке и не видел изменения нигде.
   // Вызов: injectFooterData(), сразу после stageMerge.
 
-  ctx.revisionMeta = (revRow?.meta as Record<string, unknown>) ?? {};
+  ctx.revisionMeta = (revMetaRow?.meta as Record<string, unknown>) ?? {};
 
   // Update build record with revisionId
   await deps.db

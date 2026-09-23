@@ -21,18 +21,13 @@ import * as fs from "fs";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
 import {
   COOLIFY_RMQ_SERVICE,
   PG_CONNECTION,
   CENTRAL_PROXY_APP_SENTINEL,
 } from "./constants";
-import { migrateRevisionData } from "./utils/revision-migrations";
 import { buildSiteHost, buildSitePublicUrl } from "./common/site-domain";
-import { resolveAssetUrls } from "./themes/asset-resolver";
-import { filterSeededPagesOnWrite } from "./utils/revision-write-filter";
-import { seedContentPagesFromTheme } from "./themes/content-page-seed";
-import { parityOn } from "./themes/parity-switch";
 import * as schema from "./db/schema";
 import { SiteGeneratorService } from "./generator/generator.service";
 import { SitesEventsService } from "./events/events.service";
@@ -44,6 +39,8 @@ import { BuildQueuePublisher } from "./rabbitmq/build-queue.service";
 import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
 import { getThemeManifest } from "./themes/theme-manifest-loader";
+import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
+import type { StoreContent, StoreContentSite } from "./content/store-content.port";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
@@ -286,7 +283,40 @@ export class SitesDomainService {
     // SitesDomainService do not need to be rewritten.
     @Optional()
     private readonly activityLogPublisher?: ActivityLogPublisher,
+    // Волна 1 порта контента (src/content/): одна дверь load/save для
+    // ревизии. Optional — как activityLogPublisher выше — чтобы существующие
+    // тесты, которые собирают SitesDomainService напрямую (site-create-theme.
+    // characterization, golden, revision-create-cas, sites.service.spec и
+    // др.), не нужно было переписывать; без DI-инъекции геттер storeContent
+    // ниже сам строит DocumentAdapter на этом же this.db.
+    @Optional()
+    private readonly injectedStoreContent?: StoreContentService,
   ) {}
+
+  private storeContentInstance?: StoreContent;
+
+  /** Ленивый фолбэк: вне Nest-контейнера (тесты) строит DocumentAdapter сам
+   * (фабрика — content/store-content.service.ts, общая с PreviewController). */
+  private get storeContent(): StoreContent {
+    return (this.storeContentInstance ??= resolveStoreContent(this.injectedStoreContent, this.db));
+  }
+
+  /** Подмножество `site`, нужное порту StoreContent (см. store-content.port.ts). */
+  private toStoreContentSite(site: {
+    themeId?: string | null;
+    publicUrl?: string | null;
+    name?: string | null;
+    currentRevisionId?: string | null;
+    contentModel?: string | null;
+  }): StoreContentSite {
+    return {
+      themeId: site.themeId ?? null,
+      publicUrl: site.publicUrl ?? null,
+      name: site.name ?? null,
+      currentRevisionId: site.currentRevisionId ?? null,
+      contentModel: site.contentModel ?? null,
+    };
+  }
 
   /**
    * Вызов Coolify Worker через RPC.
@@ -394,6 +424,9 @@ export class SitesDomainService {
         domainId: schema.site.domainId,
         branding: schema.site.branding,
         settings: schema.site.settings,
+        // Волна 1 порта контента: какой адаптер StoreContent обслуживает
+        // ревизию этого магазина (см. content/store-content.port.ts).
+        contentModel: schema.site.contentModel,
         // JOIN: theme data
         theme: {
           id: schema.theme.id,
@@ -1640,8 +1673,18 @@ export class SitesDomainService {
   async getRevision(tenantId: string, siteId: string, revisionId: string) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");
+    // Конверт ревизии (id/meta/createdAt/createdBy) — как и раньше, отдельным
+    // SELECT: порт StoreContent несёт только содержимое (data), не эти поля.
+    // Без `data` в проекции: блоб ревизии за этим же revisionId сейчас читает
+    // storeContent.load() (в DocumentAdapter) — второй раз здесь его не тянем.
     const [rev] = await this.db
-      .select()
+      .select({
+        id: schema.siteRevision.id,
+        siteId: schema.siteRevision.siteId,
+        meta: schema.siteRevision.meta,
+        createdAt: schema.siteRevision.createdAt,
+        createdBy: schema.siteRevision.createdBy,
+      })
       .from(schema.siteRevision)
       .where(
         and(
@@ -1650,41 +1693,13 @@ export class SitesDomainService {
         ),
       );
     if (!rev) throw new Error("revision_not_found");
-    // Apply server-side migrations (catalog page → Catalog block, etc.) so
-    // constructor and preview always see the canonical shape regardless of
-    // when the revision was saved. Idempotent. themeId — для активации
-    // theme-specific миграций (e.g. vanilla home seed, spec 084).
-    const unifyFooter = parityOn("FOOTER", siteId);
-    const migratedData = migrateRevisionData(
-      rev.data as Record<string, unknown> | undefined,
-      site.themeId,
-      site.name,
-      { unifyFooter },
-    );
-    let normalizedData: any = migratedData;
-    if (USE_PAGE_RESOLVER && site.themeId) {
-      try {
-        const resolver = getPageResolver(site.themeId);
-        normalizedData = resolver.normalizeRevision(migratedData);
-      } catch (e) {
-        this.logger.warn(`PageResolver.normalizeRevision failed for site ${siteId}: ${e instanceof Error ? e.message : e}`);
-      }
-    }
-    // B17: контент-страницы («О нас»/«Доставка»/«Контакты») досеиваются из
-    // ПАКЕТА ТЕМЫ здесь, а не выдумываются конструктором пустым блоком
-    // «Страница». Записать этот сид обратно в ревизию не даёт
-    // revision-write-filter, поэтому правки темы продолжают доходить.
-    normalizedData = await seedContentPagesFromTheme(
-      normalizedData as Record<string, unknown>,
-      site.themeId,
-      { unifyFooter },
-    );
-    // Resolve relative asset paths → absolute URLs (via site.publicUrl) so
-    // constructor sidebar image previews load directly. Merchant uploads
-    // are already absolute → helper skips them. Single URL contract across
-    // admin / preview / live build.
-    const resolvedData = resolveAssetUrls(normalizedData, site.publicUrl);
-    return { item: { ...rev, data: resolvedData } };
+    // Содержимое ревизии — через порт (DocumentAdapter): migrateRevisionData →
+    // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
+    const loaded = await this.storeContent.load(siteId, {
+      revisionId,
+      site: this.toStoreContentSite(site),
+    });
+    return { item: { ...rev, data: loaded.document } };
   }
 
   /**
@@ -1750,48 +1765,6 @@ export class SitesDomainService {
     }
   }
 
-  /**
-   * B17: убирает из сохраняемой ревизии страницы, которые сервер и так
-   * досеивает при чтении. Подробный разбор — в utils/revision-write-filter.ts.
-   *
-   * Читает ПРЕДЫДУЩУЮ сохранённую ревизию в сыром виде (без migrateRevisionData)
-   * — эталон сида должен считаться от того, что реально лежит в БД, иначе он
-   * вычислялся бы из тех же досеянных данных, которые мы проверяем.
-   */
-  private async stripSeededPages(
-    site: { id: string; themeId?: string | null; publicUrl?: string | null; currentRevisionId?: string | null },
-    data: any,
-  ): Promise<any> {
-    try {
-      let storedPrev: Record<string, unknown> | null = null;
-      if (site.currentRevisionId) {
-        const [prev] = await this.db
-          .select({ data: schema.siteRevision.data })
-          .from(schema.siteRevision)
-          .where(eq(schema.siteRevision.id, site.currentRevisionId));
-        storedPrev = (prev?.data as Record<string, unknown> | undefined) ?? null;
-      }
-      const res = await filterSeededPagesOnWrite(
-        data as Record<string, unknown>,
-        storedPrev,
-        site.themeId ?? null,
-        site.publicUrl ?? null,
-      );
-      if (res.dropped.length || res.unfrozen.length) {
-        this.logger.log(
-          `revision write filter site=${site.id}: не вморожено ${res.dropped.length} [${res.dropped.join(",")}], разморожено ${res.unfrozen.length} [${res.unfrozen.join(",")}]`,
-        );
-      }
-      return res.data;
-    } catch (e) {
-      // Фильтр — оптимизация, а не условие записи. Упал — пишем как прислали.
-      this.logger.warn(
-        `revision write filter failed for site ${site.id}: ${e instanceof Error ? e.message : e}`,
-      );
-      return data;
-    }
-  }
-
   async createRevision(params: {
     tenantId: string;
     siteId: string;
@@ -1810,64 +1783,17 @@ export class SitesDomainService {
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const id = crypto.randomUUID();
-    let dataToPersist = params.data;
-    if (params.filterSeededPages) {
-      dataToPersist = await this.stripSeededPages(site, params.data);
-    }
-    if (params.setCurrent && params.expectedCurrentRevisionId !== undefined) {
-      const expectedCurrentRevisionId = params.expectedCurrentRevisionId;
-      await this.db.transaction(async (tx) => {
-        await tx.insert(schema.siteRevision).values({
-          id,
-          siteId: params.siteId,
-          data: dataToPersist ?? {},
-          meta: params.meta ?? {},
-          createdAt: new Date(),
-          createdBy: params.actorUserId,
-        });
-
-        const expectedPredicate =
-          expectedCurrentRevisionId === null
-            ? isNull(schema.site.currentRevisionId)
-            : eq(schema.site.currentRevisionId, expectedCurrentRevisionId);
-
-        const updated = await tx
-          .update(schema.site)
-          .set({ currentRevisionId: id, updatedAt: new Date() })
-          .where(
-            and(
-              eq(schema.site.id, params.siteId),
-              eq(schema.site.tenantId, params.tenantId),
-              expectedPredicate,
-            ),
-          )
-          .returning({ id: schema.site.id });
-
-        if (updated.length === 0) throw new Error("revision_conflict");
-      });
-      return { revisionId: id };
-    }
-    await this.db.insert(schema.siteRevision).values({
-      id,
-      siteId: params.siteId,
-      data: dataToPersist ?? {},
-      meta: params.meta ?? {},
-      createdAt: new Date(),
-      createdBy: params.actorUserId,
+    const saved = await this.storeContent.save(params.siteId, {
+      document: params.data,
+      tenantId: params.tenantId,
+      meta: params.meta,
+      actorUserId: params.actorUserId,
+      setCurrent: params.setCurrent,
+      expectedVersion: params.expectedCurrentRevisionId,
+      filterSeeded: params.filterSeededPages,
+      site: this.toStoreContentSite(site),
     });
-    if (params.setCurrent) {
-      await this.db
-        .update(schema.site)
-        .set({ currentRevisionId: id, updatedAt: new Date() })
-        .where(
-          and(
-            eq(schema.site.id, params.siteId),
-            eq(schema.site.tenantId, params.tenantId),
-          ),
-        );
-    }
-    return { revisionId: id };
+    return { revisionId: saved.version };
   }
 
   async setCurrentRevision(params: {

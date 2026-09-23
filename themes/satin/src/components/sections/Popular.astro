@@ -11,6 +11,11 @@ import type { CatalogProduct } from "../../data/products";
 // литералов, MANNER.md §7).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): см.
+// пояснение у tileAspectCls ниже — карточка «Популярного» без явного
+// «Вид изображения» рисуется пропорцией верстальщика 430/564. Настройки и
+// цвета не меняются; без признака — прежние классы. Признак ставит sites.
+const designParity = p.__designParity === true;
 
 // Legacy products/moreLabel/moreHref верстальщика.
 const legacyProducts: CatalogProduct[] | undefined = Array.isArray(p.products)
@@ -67,8 +72,23 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // 648:57355, image 429×429; прежние 430/564 — пропорции макета верстальщика,
 // мерчант их не выбирал); portrait → 430/500, wide → 16/9 (перекрытие
 // медиа-дива карточки — и SSR, и гидрированной renderCardHtml).
-const tileAspectCls =
-	p.imageView === "portrait"
+//
+// PARITY_DESIGN: у верстальщика (Satin-theme SatinProductCard.astro @cb548963)
+// карточка САМА несёт aspect-[430/564] — тот же класс уже стоит на нашей
+// SatinProductCard.astro (родной аспект). Квадрат появляется ТОЛЬКО из-за этого
+// оверрайда, который рисуется для ЛЮБОГО imageView, включая отсутствие. Puck
+// бэкает defaults.imageView='square' в пропсы при первой вставке блока —
+// поэтому отличить «мерчант нажал Квадрат» от «дефолт панели» нельзя ни для
+// одного отредактированного сайта, ЗАТО отличим нетронутый сид (сатин-сид
+// PopularProducts-home несёт только {id}, imageView здесь ровно `undefined`,
+// не 'square' — coercePopularProductsProps его не трогает). Под признаком:
+// нетронутый сид (imageView===undefined) не получает оверрайд вовсе и
+// показывает родной аспект карточки 430/564; ЛЮБОЕ явное значение
+// ('square' в т.ч.) — как раньше, оверрайд применяется.
+const noTileAspectOverride = designParity && p.imageView === undefined;
+const tileAspectCls = noTileAspectOverride
+	? ""
+	: p.imageView === "portrait"
 		? " [&_li>article>div:first-child]:aspect-[430/500]"
 		: p.imageView === "wide" || p.imageView === "adaptive"
 			? " [&_li>article>div:first-child]:aspect-[16/9]"

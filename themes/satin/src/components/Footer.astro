@@ -34,6 +34,17 @@ const payments = [
 // var(--satin-surface) #F5F5F5, F:44).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): подвал
+// Satin-theme @cb548963 — верхний ряд десктопа (при выравнивании по умолчанию,
+// «слева») держит только justify-between, без общего gap-10 (см.
+// topRowJustifyCls/topRowGapCls); подпись платформы в чёрной полосе — md:16px
+// (у нас md:14px — решение тестера 15.09, чтобы подпись не была крупнее
+// копирайта рядом; под признаком уступает вёрстке верстальщиков). Остальная
+// геометрия (мобильная раскладка, отступы контейнеров, зазоры колонок) уже
+// совпадает byte-в-byte и не трогается. Настройки (contentAlign, padding,
+// newsletter, bottomStrip) и цвета не меняются; без признака — прежние
+// классы. Признак ставит sites.
+const designParity = p.__designParity === true;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Satin».
 // Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
 // подвал должна идти лого из настроек темы, если загружена, или, если нет, то
@@ -105,6 +116,12 @@ const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlig
 // center = группа по центру; right = к правому краю.
 const topRowJustifyCls =
 	_ca === "center" ? "md:justify-center md:gap-24" : _ca === "right" ? "md:justify-end" : "md:justify-between";
+// PARITY_DESIGN: у верстальщика этот ряд держит только justify-between, без
+// gap-10 (при 2 детях и justify-between зазор и так растягивается до края;
+// gap-10 — наш лишний токен). Трогаем ТОЛЬКО ветку по умолчанию («слева») —
+// у center/right свой явный зазор (md:gap-24 / унаследованный gap-10), их не
+// касаемся.
+const topRowGapCls = designParity && _ca === "left" ? "" : "gap-10";
 // Правая колонка (рассылка+контакты): left = прижата вправо (items-end, текущее);
 // center = по центру; right = вправо.
 const rightColAlignCls =
@@ -219,6 +236,10 @@ const stripText =
 		// перебивает дефолт полосы; ссылку с него тема снимает (stripIsDefault).
 		: poweredByTail || "Разработано на Merfy";
 const stripIsDefault = stripText === "Разработано на Merfy";
+// PARITY_DESIGN: у верстальщика подпись платформы md:16px; у нас md:14px —
+// решение тестера 15.09 (см. комментарий у <p> ниже). Под признаком уступает
+// вёрстке верстальщиков, без признака — прежний размер.
+const stripTextSizeCls = designParity ? "md:text-[16px]" : "md:text-[14px]";
 // Копирайт рисуем, только если мерчант его сам задал (пустая строка —
 // дефолт после 20.09), иначе в подвале оставался бы пустой абзац.
 const showCopyright = copyrightText.trim().length > 0;
@@ -259,7 +280,7 @@ const linkClassSm =
 		<div class={desktopWrapCls} style={footerPadStyle}>
 			<div class="satin-container flex flex-col gap-10">
 				<!-- Top: two columns (logo+menu | newsletter+contacts) -->
-				<div class={`flex items-start gap-10 ${topRowJustifyCls}`}>
+				<div class={["flex items-start", topRowGapCls, topRowJustifyCls].filter(Boolean).join(" ")}>
 					<!-- Left: logo + navigation (40px gap between logo and menu) -->
 					<div class="flex flex-col gap-10">
 						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
@@ -485,7 +506,7 @@ const linkClassSm =
 			{/* 14px на десктопе — как у эталона rose (Footer:376) и flux. Было 16px:
 			    подпись платформы выходила крупнее строки копирайта рядом (12px) и
 			    крупнее, чем в остальных темах. Скриншот тестера 15.09. */}
-			<p class="text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[14px]">{stripIsDefault ? (<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>) : (stripText)}</p>
+			<p class={`text-center font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] ${stripTextSizeCls}`}>{stripIsDefault ? (<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>) : (stripText)}</p>
 		</div>
 	)}
 </footer>

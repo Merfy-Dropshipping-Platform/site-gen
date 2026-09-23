@@ -1,0 +1,286 @@
+import { renderSections } from "../../../scripts/qa/lib/render";
+
+/**
+ * Satin — геометрия как в актуальной вёрстке верстальщиков
+ * (Merfy-Dropshipping-Platform/Satin-theme @cb548963d1c61c9d9bb2e2a87af1b3cdba960689),
+ * под PARITY_DESIGN.
+ *
+ * Владелец 23–24.09: «делать как верстальщики, актуально, в точности», «не
+ * сломай цветовые схемы, ничего не сломай, нужно только стили, базовые».
+ *
+ *  ШАПКА (Header.astro): переход мобильная↔десктопная строка — на md (768px),
+ *    как у верстальщиков (Header.astro:56 «md:hidden», :86 «md:flex»), а не на
+ *    lg (1024px, «как rose»). Тот же порог синхронно двигают: скрытие
+ *    инлайн-меню при menuType=sidebar, сторона/ширина выезда шторки и
+ *    JS-порог поиска (data-design-parity → matchMedia).
+ *
+ *  ПОДВАЛ (Footer.astro): верхний ряд десктопа при выравнивании по умолчанию
+ *    («слева») без лишнего gap-10 (верстальщик держит только justify-between);
+ *    подпись платформы в чёрной полосе — md:16px (у нас md:14px, решение
+ *    тестера 15.09 — под признаком уступает вёрстке верстальщиков).
+ *
+ *  КАРТОЧКИ «Популярного» (Popular.astro): без явного «Вид изображения»
+ *    карточка рисуется родной пропорцией 430/564 (её несёт сама
+ *    SatinProductCard.astro) — сейчас Popular.astro всегда накладывает
+ *    оверрайд aspect-square, даже когда imageView вообще не задан. Puck
+ *    бэкает defaults.imageView='square' в пропсы при вставке блока, поэтому
+ *    отличить «мерчант нажал Квадрат» от «дефолт панели» можно ТОЛЬКО для
+ *    нетронутого сида (imageView===undefined, не 'square') — под признаком
+ *    оверрайд снимается именно для этого случая; любое явное значение
+ *    ('square' в т.ч.) рисуется как раньше.
+ *
+ * Капс верстальщиков НЕ переносим (владелец 13.09 велел его убрать). Без
+ * признака разметка байт в байт прежняя.
+ */
+
+const КАТАЛОГ = { products: [], collections: [], publications: [] };
+const ВКЛ = { __designParity: true };
+
+function отрисовать(
+  jobs: { block: string; props: Record<string, unknown> }[],
+): string[] {
+  return renderSections(
+    "satin",
+    jobs.map((j) => ({ block: j.block, props: j.props, catalog: КАТАЛОГ })),
+  ).map((r) => {
+    if (r.error) throw new Error(`${r.block}: ${r.error}`);
+    return r.html ?? "";
+  });
+}
+
+describe("satin Header: переход мобильная↔десктопная строка на md под PARITY_DESIGN", () => {
+  const БАЗА = { id: "Header-1", colorScheme: "scheme-1" };
+
+  it("с признаком — порог md, без lg", () => {
+    const [html] = отрисовать([
+      { block: "Header", props: { ...БАЗА, ...ВКЛ } },
+    ]);
+    expect(html).toContain(
+      "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden",
+    );
+    expect(html).toContain("hidden w-full md:block");
+    expect(html).not.toContain(
+      "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
+    );
+    expect(html).not.toContain("hidden w-full lg:block");
+    expect(html).toContain('data-design-parity="true"');
+  });
+
+  it("без признака и с явным __designParity:false — разметка байт в байт прежняя (lg)", () => {
+    const [безПризнака, признакВыкл] = отрисовать([
+      { block: "Header", props: БАЗА },
+      { block: "Header", props: { ...БАЗА, __designParity: false } },
+    ]);
+    expect(признакВыкл).toEqual(безПризнака);
+    expect(безПризнака).toContain(
+      "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
+    );
+    expect(безПризнака).toContain("hidden w-full lg:block");
+    expect(безПризнака).not.toContain("md:hidden");
+    expect(безПризнака).not.toContain("md:block");
+    expect(безПризнака).not.toContain('data-design-parity="true"');
+  });
+
+  it("menuType=sidebar: инлайн-меню и выезд шторки следуют тому же порогу", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "Header", props: { ...БАЗА, ...ВКЛ, menuType: "sidebar" } },
+      { block: "Header", props: { ...БАЗА, menuType: "sidebar" } },
+    ]);
+    expect(сПризнаком).toContain("md:!hidden");
+    expect(сПризнаком).not.toContain("lg:!hidden");
+    expect(сПризнаком).toContain("md:left-auto md:w-[360px]");
+    expect(сПризнаком).not.toContain("lg:left-auto");
+    expect(безПризнака).toContain("lg:!hidden");
+    expect(безПризнака).not.toContain("md:!hidden");
+    expect(безПризнака).toContain("lg:left-auto lg:w-[360px]");
+  });
+
+  it("меню-дефолт (dropdown): нижняя шторка мобильного бургера тоже на md", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "Header", props: { ...БАЗА, ...ВКЛ } },
+      { block: "Header", props: БАЗА },
+    ]);
+    expect(сПризнаком).toContain("pb-8 md:hidden [clip-path:inset(0)]");
+    expect(безПризнака).toContain("pb-8 lg:hidden [clip-path:inset(0)]");
+  });
+
+  it("JS-порог поиска несёт оба значения статично, режим решает data-атрибут в рантайме", () => {
+    const [html] = отрисовать([
+      { block: "Header", props: { ...БАЗА, ...ВКЛ } },
+    ]);
+    expect(html).toContain("767.98");
+    expect(html).toContain("1023.98");
+    expect(html).toContain("data-design-parity");
+  });
+
+  it("настройки шапки продолжают менять разметку под признаком: логотип, меню, липкость, отступы", () => {
+    // Базовая (без явного logoPosition) уже приходит «center-absolute» —
+    // это дефолт темы (theme.json blockDefaults), не наша правка; поэтому
+    // «center-absolute» здесь не отдельный вариант, а сама база.
+    const база = { ...БАЗА, ...ВКЛ };
+    const [исходная, ...варианты] = отрисовать([
+      { block: "Header", props: база },
+      { block: "Header", props: { ...база, logoPosition: "top-left" } },
+      { block: "Header", props: { ...база, logoPosition: "top-center" } },
+      { block: "Header", props: { ...база, logoPosition: "center-left" } },
+      { block: "Header", props: { ...база, menuType: "mega-menu" } },
+      { block: "Header", props: { ...база, menuType: "sidebar" } },
+      { block: "Header", props: { ...база, stickiness: "always" } },
+      { block: "Header", props: { ...база, stickiness: "scroll-up" } },
+      { block: "Header", props: { ...база, padding: { top: 32, bottom: 32 } } },
+    ]);
+    for (const v of варианты) expect(v).not.toEqual(исходная);
+  });
+
+  it("капса не добавилось: число uppercase-классов совпадает с/без признака", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "Header", props: { ...БАЗА, ...ВКЛ } },
+      { block: "Header", props: БАЗА },
+    ]);
+    const считатьUppercase = (html: string) =>
+      [...html.matchAll(/class="[^"]*"/g)].filter((m) =>
+        /\buppercase\b/.test(m[0]),
+      ).length;
+    expect(считатьUppercase(сПризнаком)).toBe(считатьUppercase(безПризнака));
+  });
+});
+
+describe("satin Footer: верхний ряд без лишнего gap-10, подпись платформы 16px под PARITY_DESIGN", () => {
+  const БАЗА = {
+    id: "Footer-1",
+    colorScheme: "scheme-1",
+    copyright: "© Магазин",
+  };
+
+  it("с признаком, выравнивание по умолчанию — без gap-10, подпись 16px", () => {
+    const [html] = отрисовать([
+      { block: "Footer", props: { ...БАЗА, ...ВКЛ } },
+    ]);
+    expect(html).not.toContain("flex items-start gap-10 md:justify-between");
+    expect(html).toContain("flex items-start md:justify-between");
+    expect(html).toContain("md:text-[16px]");
+    expect(html).not.toContain("md:text-[14px]");
+  });
+
+  it("без признака и с явным __designParity:false — разметка байт в байт прежняя", () => {
+    const [безПризнака, признакВыкл] = отрисовать([
+      { block: "Footer", props: БАЗА },
+      { block: "Footer", props: { ...БАЗА, __designParity: false } },
+    ]);
+    expect(признакВыкл).toEqual(безПризнака);
+    expect(безПризнака).toContain("flex items-start gap-10 md:justify-between");
+    expect(безПризнака).toContain("md:text-[14px]");
+    expect(безПризнака).not.toContain("md:text-[16px]");
+  });
+
+  it("contentAlign=right — свой зазор не трогаем (настройка продолжает работать)", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "Footer", props: { ...БАЗА, ...ВКЛ, contentAlign: "right" } },
+      { block: "Footer", props: { ...БАЗА, contentAlign: "right" } },
+    ]);
+    expect(сПризнаком).toContain("gap-10");
+    expect(безПризнака).toContain("gap-10");
+    // Подпись платформы не завязана на contentAlign — она всё равно уступает
+    // вёрстке верстальщиков под признаком.
+    expect(сПризнаком).toContain("md:text-[16px]");
+  });
+
+  it("остальные настройки по-прежнему меняют секцию под признаком", () => {
+    const база = { ...БАЗА, ...ВКЛ };
+    const [исходная, ...варианты] = отрисовать([
+      { block: "Footer", props: база },
+      { block: "Footer", props: { ...база, contentAlign: "center" } },
+      { block: "Footer", props: { ...база, padding: { top: 24, bottom: 24 } } },
+      { block: "Footer", props: { ...база, phone: "+7 900 000-00-00" } },
+    ]);
+    for (const v of варианты) expect(v).not.toEqual(исходная);
+  });
+
+  it("капса не добавилось: число uppercase-классов совпадает с/без признака", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "Footer", props: { ...БАЗА, ...ВКЛ } },
+      { block: "Footer", props: БАЗА },
+    ]);
+    const считатьUppercase = (html: string) =>
+      [...html.matchAll(/class="[^"]*"/g)].filter((m) =>
+        /\buppercase\b/.test(m[0]),
+      ).length;
+    expect(считатьUppercase(сПризнаком)).toBe(считатьUppercase(безПризнака));
+  });
+});
+
+describe("satin PopularProducts: карточка без явного «Вид изображения» — родная 430/564 под PARITY_DESIGN", () => {
+  const БАЗА = { id: "PopularProducts-1", colorScheme: "scheme-1" };
+  // Без "[&_" в начале: Astro отдаёт `&` динамического class-атрибута как
+  // сущность `&#38;` (в статичных class="..." строках такого нет) — токен без
+  // амперсанда однозначно ловит именно этот селектор-оверрайд независимо от
+  // его кодировки.
+  const ОВЕРРАЙД = "_li>article>div:first-child]:aspect-square";
+
+  it("нетронутый сид (imageView отсутствует) — оверрайд снят, родная пропорция видна", () => {
+    const [html] = отрисовать([
+      { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ } },
+    ]);
+    expect(html).not.toContain(ОВЕРРАЙД);
+    expect(html).toContain("aspect-[430/564]");
+  });
+
+  it("явный 'square' — оверрайд остаётся даже под признаком (различимый выбор мерчанта)", () => {
+    const [html] = отрисовать([
+      {
+        block: "PopularProducts",
+        props: { ...БАЗА, ...ВКЛ, imageView: "square" },
+      },
+    ]);
+    expect(html).toContain(ОВЕРРАЙД);
+  });
+
+  it("явный 'portrait'/'wide' — как раньше, независимо от признака", () => {
+    const [portrait, wide] = отрисовать([
+      {
+        block: "PopularProducts",
+        props: { ...БАЗА, ...ВКЛ, imageView: "portrait" },
+      },
+      {
+        block: "PopularProducts",
+        props: { ...БАЗА, ...ВКЛ, imageView: "wide" },
+      },
+    ]);
+    expect(portrait).not.toContain(ОВЕРРАЙД);
+    expect(portrait).toContain("aspect-[430/500]");
+    expect(wide).not.toContain(ОВЕРРАЙД);
+    expect(wide).toContain("aspect-[16/9]");
+  });
+
+  it("без признака и с явным __designParity:false — разметка байт в байт прежняя (оверрайд square)", () => {
+    const [безПризнака, признакВыкл] = отрисовать([
+      { block: "PopularProducts", props: БАЗА },
+      { block: "PopularProducts", props: { ...БАЗА, __designParity: false } },
+    ]);
+    expect(признакВыкл).toEqual(безПризнака);
+    expect(безПризнака).toContain(ОВЕРРАЙД);
+  });
+
+  it("без признака явный 'square' тоже не меняется — байт в байт", () => {
+    const [сПризнакомВыкл, безПризнака] = отрисовать([
+      {
+        block: "PopularProducts",
+        props: { ...БАЗА, imageView: "square", __designParity: false },
+      },
+      { block: "PopularProducts", props: { ...БАЗА, imageView: "square" } },
+    ]);
+    expect(сПризнакомВыкл).toEqual(безПризнака);
+  });
+
+  it("капса не добавилось: число uppercase-классов совпадает с/без признака", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ } },
+      { block: "PopularProducts", props: БАЗА },
+    ]);
+    const считатьUppercase = (html: string) =>
+      [...html.matchAll(/class="[^"]*"/g)].filter((m) =>
+        /\buppercase\b/.test(m[0]),
+      ).length;
+    expect(считатьUppercase(сПризнаком)).toBe(считатьUppercase(безПризнака));
+  });
+});

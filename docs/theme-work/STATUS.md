@@ -2113,3 +2113,19 @@ satin не тронут — там контейнер и так БЕЗ ради�
 НЕ запушена. `pre-push.sh` зелёный, `theme-vanilla` manifest 9/9,
 `theme-contract` 418/419 (единственный красный — известный чужой:
 `--product-card-padding`/`cli-validate` против bloom, не по этой задаче).
+
+## 2026-09-23 (PR-19) — три точки расширений на витрине: cart/checkout/account — WIP, не задеплоено
+
+Ветка `feat/storefront-extension-points`, worktree `.wt/sites-points`. Кросс-тематическая
+инфраструктура, не вёрстка одной темы — общий рантайм `packages/theme-base/runtime/extension-points.ts`
++ по одной точке `data-ext-point` в `CartTotals`/`CheckoutTotals`/`AccountLayout` (theme-base) +
+`extensionDiscountCents` в `CheckoutSubmit`. Все пять `themes/<t>/src/pages/account/index.astro`
+получили одинаковую строку монтирования (AccountLayout сегодня нигде не подключён — реальный
+кабинет это legacy-страницы). Подробности, сторожа и как проверять — см. WORKLOG за 2026-09-23
+(«PR-19: три точки расширений на витрине»).
+
+Проверено: `tsc --noEmit -p tsconfig.build.json` чист; `extension-points-contract.spec.ts` +
+`extension-vocabulary.spec.ts` (15/15) в ci.yml; `extension-points.dom.test.ts` (17/17, локально,
+CI пакет `packages/theme-base/__tests__` не гоняет). НЕ проверено: живой шлюз и прод-витрина —
+контракт `GET /store/extensions/storefront` разрабатывается параллельно ядром, включённого
+расширения на момент сессии нет.

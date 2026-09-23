@@ -10095,3 +10095,44 @@ ILIKE, через product-service и gateway, на всех пяти темах,
   обёртки красятся схемой по умолчанию; поле показывало `body`.
 - Правка: полосу над такой секцией красит её тень её же фоном; раскладка та же.
 - `qa:section-gaps`: случай «зазор без своей схемы» — до 10 нарушений, после 0.
+
+## 2026-09-23 — PR-19: три точки расширений на витрине (cart/checkout/account)
+
+Ветка `feat/storefront-extension-points`, worktree `.wt/sites-points`. Кросс-тематическая
+инфраструктура (не про вёрстку одной темы) — общий рантайм + одна точка на все пять тем.
+
+- `packages/theme-base/runtime/extension-points.ts` — общий клиентский рантайм трёх точек:
+  «Корзина», «Оформление заказа», «Личный кабинет». Тянет `GET /store/extensions/storefront`
+  (кэш `sessionStorage` 60 с), рисует `note`/`control`/`fields`/`list`/`copy`/`form` из описания —
+  ни одного доменного слова о конкретном расширении в пакете (гард словаря, см. ниже). Экспорт
+  `mountExtensionPoint(el, { point, storeId, cartId?, authToken? })`; строковая копия
+  `EXTENSION_POINTS_RUNTIME_SOURCE` (конкатенация `.toString()` тех же function-деклараций) —
+  для инъекции через `<script is:inline set:html={…}>` в блоках theme-base (обычный
+  `<script>import…</script>` там даёт 404 на собранной витрине, прецедент —
+  `CHECKOUT_BUTTON_CONTRAST_SOURCE`).
+- Точки монтирования (theme-base блоки, `data-ext-point`): `CartTotals.astro` (под итогами),
+  `CheckoutTotals.astro` (перед строкой итога), `AccountLayout.astro` (в колонке контента).
+  Каждая — через `window.__merfyRoot(blockId)` (Spec 102), с `merfy-root-allow` фолбэком на
+  page-singleton id для случая, когда `id` не приходит на live composed-странице.
+  `CheckoutSubmit` своей точки не несёт — только слушает `checkout:extension-discount-changed`
+  и вычитает `extensionDiscountCents` из итога (`total.ts` — `computeTotalCents` получил 4-й,
+  необязательный, параметр; независим от промокода, скидки складываются).
+- `AccountLayout` (theme-base) сегодня не подключён ни к одной странице (не используется ни в
+  одном `packages/theme-<t>/pages/*.json`) — реальная разметка кабинета сейчас пять
+  byte-identical `themes/<t>/src/pages/account/index.astro`. Во все пять (rose/vanilla/flux/
+  satin/bloom) добавлена ОДНА одинаковая строка монтирования (прямой импорт
+  `mountExtensionPoint` из `packages/theme-base/runtime`, прецедент — `themes/<t>/src/lib/cart.ts`
+  уже импортирует `nt-cart` тем же способом).
+- Гард словаря `src/__tests__/extension-vocabulary.spec.ts` расширен на `packages/theme-base`
+  (`.ts` и `.astro`) и на слово «балл».
+- Тесты: `packages/theme-base/__tests__/extension-points.dom.test.ts` (jsdom, 17 кейсов —
+  локальный набор, CI пакет `packages/theme-base/__tests__` не гоняет никогда, см. заметку в
+  ci.yml) + `src/themes/__tests__/extension-points-contract.spec.ts` (контракт: точки монтирования
+  ровно в трёх блоках, ни одной копии рантайма в портах тем, все пять страниц кабинета несут одну
+  и ту же строку) — заведён в ci.yml рядом с `cart-drawer-contract`/`preview-cart-contract`.
+- Как проверять: `pnpm exec tsc --noEmit -p tsconfig.build.json`; `pnpm exec jest --runInBand
+  src/themes/__tests__/extension-points-contract.spec.ts src/__tests__`; `pnpm exec jest --config
+  packages/theme-base/jest.config.ts packages/theme-base/__tests__/extension-points.dom.test.ts`.
+  Живой шлюз и прод-витрина НЕ проверены (контракт `/store/extensions/storefront` разрабатывается
+  параллельно ядром — на момент этой сессии нет включённого расширения, чтобы прогнать сценарий
+  до конца на реальных данных).

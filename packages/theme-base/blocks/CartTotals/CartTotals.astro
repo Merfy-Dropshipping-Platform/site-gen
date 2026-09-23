@@ -4,6 +4,7 @@
 // Скрывается когда корзина пустая (display:none при items.length===0).
 import type { CartTotalsProps } from './CartTotals.puckConfig';
 import { CartTotalsClasses as C } from './CartTotals.classes';
+import { EXTENSION_POINTS_RUNTIME_SOURCE } from '../../runtime/extension-points';
 
 interface Props extends CartTotalsProps {
   id?: string;
@@ -34,6 +35,9 @@ const schemeClass =
       <span class={C.value} id="cart-page-total" data-cart-total>0&nbsp;₽</span>
     </div>
   </div>
+  {/* PR-19 — точка расширений «Корзина» (под итогами). Пуста, пока нет
+      включённых расширений — mountExtensionPoint ничего не пишет в DOM. */}
+  <div class={C.extPoint} data-ext-point="cart"></div>
 </section>
 
 <script is:inline define:vars={{ blockId: id }}>
@@ -61,5 +65,21 @@ const schemeClass =
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       setTimeout(refresh, 150);
     }
+  })();
+</script>
+
+{/* PR-19 — рантайм точек расширений строкой (см. комментарий в
+    runtime/extension-points.ts: обычный `<script>import…</script>` на
+    собранной витрине даёт 404). */}
+<script is:inline set:html={EXTENSION_POINTS_RUNTIME_SOURCE}></script>
+<script is:inline define:vars={{ blockId: id }}>
+  (function () {
+    var section = window.__merfyRoot(blockId) || document.getElementById('cart-page-totals-section'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
+    if (!section) return;
+    var point = section.querySelector('[data-ext-point="cart"]');
+    if (!point || typeof window.mountExtensionPoint !== 'function') return;
+    var storeId = (window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.storeId)) || '';
+    var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+    window.mountExtensionPoint(point, { point: 'cart', storeId: storeId, cartId: cartId });
   })();
 </script>

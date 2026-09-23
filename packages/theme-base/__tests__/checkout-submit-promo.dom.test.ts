@@ -50,7 +50,7 @@ function runScript(section: HTMLElement) {
     successRedirectUrl: '/checkout/result',
     blockId: 'cs-1',
   };
-  // eslint-disable-next-line no-new-func
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   new Function(
     'buttonText',
     'loadingText',
@@ -216,5 +216,40 @@ describe('CheckoutSubmit total reflects discount', () => {
     );
     // after: 1000 − 200 = 800₽
     expect(norm(btn.textContent)).toContain('800₽');
+  });
+  it('button label shows total minus extension discount after checkout:extension-discount-changed', () => {
+    const section = mountSubmitDom();
+    runScript(section);
+    const btn = section.querySelector(
+      '[data-checkout-submit]',
+    ) as HTMLButtonElement;
+    expect(norm(btn.textContent)).toContain('1 000₽');
+    document.dispatchEvent(
+      new CustomEvent('checkout:extension-discount-changed', {
+        detail: { discountCents: 15000 },
+      }),
+    );
+    // after: 1000 − 150 = 850₽
+    expect(norm(btn.textContent)).toContain('850₽');
+  });
+
+  it('promo discount and extension discount both subtract (independent, additive)', () => {
+    const section = mountSubmitDom();
+    runScript(section);
+    const btn = section.querySelector(
+      '[data-checkout-submit]',
+    ) as HTMLButtonElement;
+    document.dispatchEvent(
+      new CustomEvent('checkout:discount-applied', {
+        detail: { code: 'X', discountCents: 10000 },
+      }),
+    );
+    document.dispatchEvent(
+      new CustomEvent('checkout:extension-discount-changed', {
+        detail: { discountCents: 15000 },
+      }),
+    );
+    // after: 1000 − 100 − 150 = 750₽
+    expect(norm(btn.textContent)).toContain('750₽');
   });
 });

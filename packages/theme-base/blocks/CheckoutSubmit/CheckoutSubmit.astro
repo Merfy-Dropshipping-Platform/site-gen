@@ -58,6 +58,10 @@ const schemeClass = schemeClassOf(colorScheme);
       paymentMethod: 'bank_card',
       submitting: false,
       discountCents: 0,
+      // PR-19 — скидка точки расширений «Оформление заказа» (см.
+      // runtime/extension-points.ts, событие checkout:extension-discount-changed);
+      // независима от промокода discountCents, обе вычитаются из итога.
+      extensionDiscountCents: 0,
     };
 
     function getApiBase() {
@@ -103,9 +107,13 @@ const schemeClass = schemeClassOf(colorScheme);
     function getDiscountCents() {
       return state.discountCents || 0;
     }
+    function getExtensionDiscountCents() {
+      return state.extensionDiscountCents || 0;
+    }
     function getTotalCents() {
-      // Итог со скидкой: max(0, subtotal − discount + delivery).
-      return Math.max(0, getSubtotalCents() - getDiscountCents() + getDeliveryCents());
+      // Итог со скидкой: max(0, subtotal − discount − extensionDiscount + delivery).
+      // Зеркалит computeTotalCents (total.ts) — is:inline не умеет import.
+      return Math.max(0, getSubtotalCents() - getDiscountCents() - getExtensionDiscountCents() + getDeliveryCents());
     }
     function fmtRub(cents) {
       var rub = Math.round(cents / 100);
@@ -161,6 +169,12 @@ const schemeClass = schemeClassOf(colorScheme);
     document.addEventListener('checkout:discount-applied', function (e) {
       // Кнопка «Оформить — {total}» должна показывать сумму со скидкой.
       state.discountCents = (e && e.detail && e.detail.discountCents) || 0;
+      refresh();
+    });
+    // PR-19 — скидка точки расширений «Оформление заказа» (см.
+    // runtime/extension-points.ts). Независима от checkout:discount-applied.
+    document.addEventListener('checkout:extension-discount-changed', function (e) {
+      state.extensionDiscountCents = (e && e.detail && e.detail.discountCents) || 0;
       refresh();
     });
     document.addEventListener('checkout:delivery-changed', function (e) {

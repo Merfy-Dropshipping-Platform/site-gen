@@ -6,6 +6,7 @@
 // Section скрывается когда корзина пуста — как CartTotals.
 import type { CheckoutTotalsProps } from './CheckoutTotals.puckConfig';
 import { CheckoutTotalsClasses as C } from './CheckoutTotals.classes';
+import { EXTENSION_POINTS_RUNTIME_SOURCE } from '../../runtime/extension-points';
 
 interface Props extends CheckoutTotalsProps { id?: string; }
 const { id, deliveryLabel, freeText, totalLabel, showSubtotal, showDiscount, padding } = Astro.props as Props;
@@ -34,6 +35,8 @@ const paddingStyle = padding
       <span>Скидка</span><span data-totals-discount>0&nbsp;₽</span>
     </div>
   )}
+  {/* PR-19 — точка расширений «Оформление заказа», перед строкой итога. */}
+  <div class={C.extPoint} data-ext-point="checkout"></div>
   <div class={C.totalRow} data-totals-row="total">
     <span>{totalLabel}</span><span data-totals-total>0&nbsp;₽</span>
   </div>
@@ -56,6 +59,10 @@ const paddingStyle = padding
 
     var discountCents = 0;
     var deliveryCents = 0;
+    // PR-19 — скидка точки расширений «Оформление заказа» (например,
+    // списание единиц). Независима от промокода (discountCents) — они
+    // складываются в итоге, а не подменяют друг друга.
+    var extensionDiscountCents = 0;
 
     function fmt(cents) {
       if (!cents && cents !== 0) return '0 ₽';
@@ -139,7 +146,7 @@ const paddingStyle = padding
         deliveryEl.textContent = deliveryCents > 0 ? fmt(deliveryCents) : freeText;
       }
 
-      var total = Math.max(0, subtotal - discountCents + deliveryCents);
+      var total = Math.max(0, subtotal - discountCents - extensionDiscountCents + deliveryCents);
       if (totalEl) totalEl.textContent = fmt(total);
     }
 
@@ -150,6 +157,7 @@ const paddingStyle = padding
       if (sig !== lastCartSig) {
         lastCartSig = sig;
         discountCents = 0;
+        extensionDiscountCents = 0;
       }
       refresh();
     });
@@ -161,10 +169,33 @@ const paddingStyle = padding
       deliveryCents = (e && e.detail && e.detail.costCents) || 0;
       refresh();
     });
+    // PR-19 — точка расширений «Оформление заказа» шлёт это событие и сразу
+    // при монтировании (persisted extensionDiscountCents корзины), и после
+    // каждого PUT .../extensions/:id (см. runtime/extension-points.ts).
+    document.addEventListener('checkout:extension-discount-changed', function (e) {
+      extensionDiscountCents = (e && e.detail && e.detail.discountCents) || 0;
+      refresh();
+    });
 
     document.addEventListener('DOMContentLoaded', function () { setTimeout(refresh, 150); });
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       setTimeout(refresh, 150);
     }
+  })();
+</script>
+
+{/* PR-19 — рантайм точек расширений строкой (см. комментарий в
+    runtime/extension-points.ts: обычный `<script>import…</script>` на
+    собранной витрине даёт 404). */}
+<script is:inline set:html={EXTENSION_POINTS_RUNTIME_SOURCE}></script>
+<script is:inline define:vars={{ blockId: id }}>
+  (function () {
+    var section = window.__merfyRoot(blockId) || document.querySelector('[data-checkout-totals]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
+    if (!section) return;
+    var point = section.querySelector('[data-ext-point="checkout"]');
+    if (!point || typeof window.mountExtensionPoint !== 'function') return;
+    var storeId = (window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.storeId)) || '';
+    var cartId = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
+    window.mountExtensionPoint(point, { point: 'checkout', storeId: storeId, cartId: cartId });
   })();
 </script>

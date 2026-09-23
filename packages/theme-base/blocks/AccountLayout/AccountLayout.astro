@@ -1,6 +1,7 @@
 ---
 import type { AccountLayoutProps } from './AccountLayout.puckConfig';
 import { AccountLayoutClasses as C } from './AccountLayout.classes';
+import { EXTENSION_POINTS_RUNTIME_SOURCE } from '../../runtime/extension-points';
 
 interface Props extends AccountLayoutProps {
   id?: string;
@@ -47,7 +48,25 @@ const active = (page: AccountLayoutProps['activePage']): 'true' | undefined =>
 
       <main class={C.content}>
         <slot />
+        {/* PR-19 — точка расширений «Личный кабинет» (под содержимым колонки). */}
+        <div class={C.extPoint} data-ext-point="account"></div>
       </main>
     </div>
   </div>
 </div>
+
+{/* PR-19 — рантайм точек расширений строкой (см. комментарий в
+    runtime/extension-points.ts: обычный `<script>import…</script>` на
+    собранной витрине даёт 404). */}
+<script is:inline set:html={EXTENSION_POINTS_RUNTIME_SOURCE}></script>
+<script is:inline define:vars={{ blockId: id }}>
+  (function () {
+    var root = window.__merfyRoot(blockId);
+    if (!root) return;
+    var point = root.querySelector('[data-ext-point="account"]');
+    if (!point || typeof window.mountExtensionPoint !== 'function') return;
+    var storeId = (window.__MERFY_CONFIG__ && (window.__MERFY_CONFIG__.shopId || window.__MERFY_CONFIG__.storeId)) || '';
+    var authToken = (typeof localStorage !== 'undefined' && localStorage.getItem('merfy_customer_token')) || '';
+    window.mountExtensionPoint(point, { point: 'account', storeId: storeId, authToken: authToken });
+  })();
+</script>

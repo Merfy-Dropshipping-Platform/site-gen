@@ -2673,13 +2673,9 @@
                 ]
               },
               "nextPhotoMode": {
-                "type": "select",
-                "label": "Режим следующего фото",
-                "visibility": "panel",
-                "options": [
-                  "simple=Просто следующее",
-                  "zones=Зоны при наведении"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "quickAdd": {
                 "type": "select",
@@ -5837,13 +5833,9 @@
                 ]
               },
               "nextPhotoMode": {
-                "type": "select",
-                "label": "Режим следующего фото",
-                "visibility": "panel",
-                "options": [
-                  "simple=Просто следующее",
-                  "zones=Зоны при наведении"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "quickAdd": {
                 "type": "select",
@@ -8992,13 +8984,9 @@
                 ]
               },
               "nextPhotoMode": {
-                "type": "select",
-                "label": "Режим следующего фото",
-                "visibility": "panel",
-                "options": [
-                  "simple=Просто следующее",
-                  "zones=Зоны при наведении"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "quickAdd": {
                 "type": "select",
@@ -12137,13 +12125,9 @@
                 ]
               },
               "nextPhotoMode": {
-                "type": "select",
-                "label": "Режим следующего фото",
-                "visibility": "panel",
-                "options": [
-                  "simple=Просто следующее",
-                  "zones=Зоны при наведении"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "quickAdd": {
                 "type": "select",
@@ -15282,13 +15266,9 @@
                 ]
               },
               "nextPhotoMode": {
-                "type": "select",
-                "label": "Режим следующего фото",
-                "visibility": "panel",
-                "options": [
-                  "simple=Просто следующее",
-                  "zones=Зоны при наведении"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "quickAdd": {
                 "type": "select",

@@ -181,6 +181,12 @@ const HERO_HEIGHT_CLS = {
 const heroHeightCls = HERO_HEIGHT_CLS[designParity ? "designers" : "legacy"][heroSize];
 // Одно фото на весь блок. Два фото (50/50) и пустое состояние — прежние, их у
 // верстальщиков нет.
+// Подложка для читаемости текста поверх фото. Как у верстальщиков (владелец
+// 24.09 «базово всё как у верстальщиков»): только на телефоне и их градиентом;
+// на компьютере текст стоит на поле секции, темнее — ползунок «Затемнение».
+const veilCls = designParity
+	? "pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/75 via-black/40 via-40% to-transparent md:hidden"
+	: "pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 to-black/10";
 const singlePhotoCls = designParity
 	? "absolute left-0 top-0 z-0 h-[122%] w-auto max-w-none md:left-1/2 md:h-[111.45%] md:-translate-x-1/2"
 	: "absolute inset-0 z-0 size-full object-cover object-center";
@@ -402,7 +408,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	{
 		Boolean(String(backgroundImage).trim() || backgroundImage2) && (
 			<div
-				class="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 to-black/10"
+				class={veilCls}
 				aria-hidden="true"
 			/>
 		)

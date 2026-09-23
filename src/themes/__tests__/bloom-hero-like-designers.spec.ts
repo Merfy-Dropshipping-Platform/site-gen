@@ -158,9 +158,17 @@ describe("bloom, первый экран: как у верстальщиков �
     // Две половины заливают свои колонки, как раньше.
     expect(классыФото(дваВкл, ФОТО)).toContain("object-cover");
     expect(классыФото(дваВкл, ФОТО2)).toContain("object-cover");
-    // Высоту блока задаёт «Размер» — это и есть единственное отличие.
-    expect(дваВкл.replace(классыБлока(дваВкл), "")).toEqual(
-      дваВыкл.replace(классыБлока(дваВыкл), ""),
+    // Отличаются только высота блока («Размер») и подложка для читаемости:
+    // её затемнение с признаком — как у верстальщиков, только на телефоне.
+    const безПодложки = (html: string) =>
+      html
+        .replace(
+          "from-black/75 via-black/40 via-40% to-transparent md:hidden",
+          "",
+        )
+        .replace("from-black/45 to-black/10", "");
+    expect(безПодложки(дваВкл.replace(классыБлока(дваВкл), ""))).toEqual(
+      безПодложки(дваВыкл.replace(классыБлока(дваВыкл), "")),
     );
     expect(пустоВкл.replace(классыБлока(пустоВкл), "")).toEqual(
       пустоВыкл.replace(классыБлока(пустоВыкл), ""),
@@ -210,5 +218,30 @@ describe("PARITY_DESIGN доходит до секции через общую �
   it("«*» — для всех", () => {
     process.env.PARITY_DESIGN = "*";
     expect(prepareBlockProps("Hero", {}, ctx).__designParity).toBe(true);
+  });
+});
+
+describe("bloom, первый экран: затемнение как у верстальщиков", () => {
+  it("с признаком — их градиент и только на телефоне; без — прежний на весь блок", () => {
+    const [вкл, выкл] = отрисовать([
+      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ },
+      ПОЛНАЯ,
+    ]);
+    expect(вкл).toContain(
+      "bg-gradient-to-t from-black/75 via-black/40 via-40% to-transparent md:hidden",
+    );
+    expect(вкл).not.toContain("from-black/45 to-black/10");
+    expect(выкл).toContain("from-black/45 to-black/10");
+  });
+
+  it("ползунок «Затемнение» по-прежнему работает с признаком", () => {
+    // У bloom «Затемнение» по умолчанию уже задано темой — сравниваем два значения.
+    const [ноль, семьдесят] = отрисовать([
+      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, overlay: 0 },
+      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, overlay: 70 },
+    ]);
+    expect(семьдесят).toContain("opacity:0.7");
+    expect(ноль).not.toContain("opacity:0.7");
+    expect(семьдесят).not.toEqual(ноль);
   });
 });

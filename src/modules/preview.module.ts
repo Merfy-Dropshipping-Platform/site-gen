@@ -6,6 +6,8 @@ import { PublicationsController } from '../controllers/publications.controller';
 import { PageMetaController } from '../controllers/page-meta.controller';
 import { DatabaseModule } from '../db/database.module';
 import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
+import { DocumentAdapter } from '../content/document.adapter';
+import { StoreContentService } from '../content/store-content.service';
 
 /**
  * PreviewModule — wires the HTTP preview endpoint (Phase 0 pilot for
@@ -20,7 +22,7 @@ import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 @Module({
   imports: [DatabaseModule, RabbitMQModule],
   controllers: [PreviewController, StorefrontDataController, PublicationsController, PageMetaController],
-  providers: [PreviewService],
+  providers: [PreviewService, DocumentAdapter, StoreContentService],
   exports: [PreviewService],
 })
 export class PreviewModule {}

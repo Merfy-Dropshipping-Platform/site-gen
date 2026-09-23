@@ -33,10 +33,13 @@
  * замер в Chromium (локальная сцена scripts/qa/lib/stage.ts, 5 тем × 390/900/
  * 1280, и прод-стенды), см. WORKLOG 23.09.
  */
-import { renderSections } from "../../../scripts/qa/lib/render";
-import { BLOCK_ROOT_INLINE } from "../../common/block-root-inline";
-
-type Тема = "bloom" | "satin" | "flux" | "rose" | "vanilla";
+import {
+  type Тема,
+  показать,
+  нажать,
+  поставитьСтенд,
+  снять,
+} from "./lib/catalog-dom";
 
 /**
  * Где кончается телефон (как в вёрстке темы): с этой ширины кнопки нет, шторка
@@ -51,135 +54,12 @@ const ПОРОГ: Record<Тема, "md" | "lg"> = {
 };
 const ТЕМЫ = Object.keys(ПОРОГ) as Тема[];
 
-const тик = () => new Promise((r) => setTimeout(r, 0));
-
-// Рендер секции — отдельный процесс, на кейс уходят секунды: одинаковые пропы
-// рендерим один раз (скрипты всё равно исполняются заново на каждом показе).
+// Рендер секции — отдельный процесс, на кейс уходят секунды (кэш — в стенде).
 jest.setTimeout(60_000);
-const рендеры = new Map<string, string>();
 
-type Слушатель = {
-  цель: EventTarget;
-  тип: string;
-  fn: EventListenerOrEventListenerObject;
-  opts?: unknown;
-};
-const повешенные: Слушатель[] = [];
-const origDoc = document.addEventListener.bind(document);
-const origWin = window.addEventListener.bind(window);
-
-beforeAll(() => {
-  document.addEventListener = ((
-    тип: string,
-    fn: EventListenerOrEventListenerObject,
-    opts?: unknown,
-  ) => {
-    повешенные.push({ цель: document, тип, fn, opts });
-    origDoc(тип, fn, opts as AddEventListenerOptions);
-  }) as typeof document.addEventListener;
-  window.addEventListener = ((
-    тип: string,
-    fn: EventListenerOrEventListenerObject,
-    opts?: unknown,
-  ) => {
-    повешенные.push({ цель: window, тип, fn, opts });
-    origWin(тип, fn, opts as AddEventListenerOptions);
-  }) as typeof window.addEventListener;
-  const fetchMock = jest.fn(async () => {
-    const body = {
-      data: [],
-      items: [],
-      products: [],
-      total: 0,
-      collections: [],
-    };
-    return {
-      ok: true,
-      status: 200,
-      json: async () => body,
-      text: async () => JSON.stringify(body),
-    } as unknown as Response;
-  });
-  (window as unknown as { fetch: unknown }).fetch = fetchMock;
-  (globalThis as unknown as { fetch: unknown }).fetch = fetchMock;
-});
-
-function снять() {
-  for (const s of повешенные.splice(0))
-    s.цель.removeEventListener(s.тип, s.fn, s.opts as EventListenerOptions);
-  for (const k of Object.keys(window)) {
-    if (k.startsWith("__merfy"))
-      delete (window as unknown as Record<string, unknown>)[k];
-  }
-  for (const a of Array.from(document.body.attributes))
-    document.body.removeAttribute(a.name);
-  document.documentElement.style.overflow = "";
-  document.body.innerHTML = "";
-}
+beforeAll(() => поставитьСтенд());
 afterAll(() => снять());
 
-/**
- * Показать секцию «Группа товаров» темы. `новаяСтраница: false` — перерисовка
- * блока в превью конструктора: слушатели, флажки и глобалы остаются.
- */
-async function показать(
-  тема: Тема,
-  props: Record<string, unknown> = {},
-  новаяСтраница = true,
-): Promise<HTMLElement> {
-  if (новаяСтраница) {
-    снять();
-    (0, eval)(BLOCK_ROOT_INLINE.replace(/^<script>|<\/script>$/g, ""));
-  }
-  const ключ = `${тема} ${JSON.stringify(props)}`;
-  if (!рендеры.has(ключ)) {
-    const [r] = renderSections(тема, [
-      {
-        block: "Catalog",
-        props: {
-          id: "Catalog-1",
-          siteId: "site-1",
-          colorScheme: "scheme-1",
-          cards: 4,
-          columns: 2,
-          showFilter: "true",
-          showSort: "true",
-          filterPosition: "top",
-          ...props,
-        },
-      },
-    ]);
-    if (r.error) throw new Error(`${тема}: ${r.error}`);
-    рендеры.set(ключ, r.html ?? "");
-  }
-  const html = рендеры.get(ключ) ?? "";
-  const скрипты = [
-    ...html.matchAll(
-      /<script(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g,
-    ),
-  ].map((m) => m[1]);
-  document.body.innerHTML = html.replace(
-    /<script[^>]*>[\s\S]*?<\/script>/g,
-    "",
-  );
-  for (const код of скрипты) {
-    try {
-      (0, eval)(код);
-    } catch {
-      /* чужие узлы одиночного рендера */
-    }
-  }
-  document.dispatchEvent(new Event("DOMContentLoaded"));
-  for (let i = 0; i < 20; i++) await тик();
-  const корень = document.querySelector<HTMLElement>(
-    '[data-puck-component-id="Catalog-1"]',
-  );
-  if (!корень) throw new Error(`${тема}: нет корня секции`);
-  return корень;
-}
-
-const нажать = (el: Element | null) =>
-  el?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 const шторкаОткрыта = (корень: HTMLElement) =>
   !корень.querySelector("[data-filters-sheet]")?.classList.contains("hidden");
 const замок = () => document.documentElement.style.overflow || "нет";

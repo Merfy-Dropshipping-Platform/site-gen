@@ -295,6 +295,10 @@ export function atRuleApplies(at: string, widthPx: number): boolean {
   // Если однажды контейнерный запрос начнёт править измеряемый узел, это
   // придётся считать честно, а не расширять исключение.
   if (at.startsWith("@container")) return false;
+  // Шаги анимации (`@keyframes pulse { 50% { opacity: .5 } }`) — не правила
+  // стиля: их «селектор» `50%` к узлу не применяется никогда. Разбор кладёт их
+  // в общий список, и замер `opacity` падал бы здесь исключением.
+  if (at.startsWith("@keyframes")) return false;
   if (!at.startsWith("@media")) {
     throw new Error(`неизвестная at-обёртка: ${at}`);
   }

@@ -199,6 +199,10 @@ const isAncestor = (a: HTMLElement, b: HTMLElement): boolean => {
  * или `data-color-option=` (у каждой темы их по два — вариант дропдауна и
  * вариант сайдбара), и выбрасываем `${…}`-вставки. Дальше шаблон прививается в
  * настоящую панель настоящего дерева, чтобы каскад считался в том же контексте.
+ *
+ * vanilla с 23.09 печатает строки «Коллекций» и «Цвета» одним помощником
+ * (choiceButtonHtml / choiceRadioHtml): имя атрибута приходит из описания
+ * фильтра — `${kind.attr}=`. Такие литералы тоже шаблоны строк.
  */
 function hydrationRowTemplates(theme: Theme): string[] {
   const src = readFileSync(
@@ -213,7 +217,8 @@ function hydrationRowTemplates(theme: Theme): string[] {
     "utf-8",
   );
   const out: string[] = [];
-  const re = /`([^`]*(?:data-collection-option=|data-color-option=)[^`]*)`/g;
+  const re =
+    /`([^`]*(?:data-collection-option=|data-color-option=|\$\{kind\.attr\}=)[^`]*)`/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(src))) {
     const html = m[1]

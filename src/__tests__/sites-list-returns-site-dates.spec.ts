@@ -22,6 +22,13 @@ import { resolve } from "node:path";
 
 const ROOT = resolve(__dirname, "..", "..");
 const SERVICE = readFileSync(resolve(ROOT, "src/sites.service.ts"), "utf-8");
+// Волна 1 порта контента: createRevision делегирует запись в
+// content/document.adapter.ts (DocumentAdapter.save) — сам `.set(...)`,
+// который двигает updatedAt магазина, живёт теперь там.
+const DOCUMENT_ADAPTER = readFileSync(
+  resolve(ROOT, "src/content/document.adapter.ts"),
+  "utf-8",
+);
 
 /** Тело выборки метода `list` — того, что уходит в админку. */
 const listSelect = (() => {
@@ -48,8 +55,11 @@ describe("список сайтов отдаёт даты САМОГО мага�
   });
 
   it("дата магазина действительно обновляется при сохранении контента", () => {
-    expect(SERVICE).toMatch(
-      /\.set\(\{ currentRevisionId: id, updatedAt: new Date\(\) \}\)/,
+    // Волна 1: логика переехала из sites.service.ts в
+    // content/document.adapter.ts (DocumentAdapter.save), сама выдача
+    // sites.list — ниже, в описанных выше проверках — не изменилась.
+    expect(DOCUMENT_ADAPTER).toMatch(
+      /\.set\(\{ currentRevisionId: (id|revisionId), updatedAt: new Date\(\) \}\)/,
     );
   });
 });

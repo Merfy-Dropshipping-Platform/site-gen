@@ -182,11 +182,11 @@ describe("проводка: имя магазина доезжает во все
   const read = (file: string) =>
     readFileSync(resolve(__dirname, "..", file), "utf-8");
 
-  it("sites.service передаёт site.name", () => {
-    const src = read("sites.service.ts");
-    const i = src.indexOf("const migratedData = migrateRevisionData(");
+  it("sites.service передаёт site.name (через DocumentAdapter.load, волна 1 порта контента)", () => {
+    const src = read("content/document.adapter.ts");
+    const i = src.indexOf("return migrateRevisionData(");
     expect(i).toBeGreaterThan(-1);
-    expect(src.slice(i, i + 220)).toMatch(/site\.name/);
+    expect(src.slice(i, i + 220)).toMatch(/ctx\.siteName/);
   });
 
   it("preview.controller передаёт site.name", () => {

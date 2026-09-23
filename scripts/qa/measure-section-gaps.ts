@@ -96,28 +96,27 @@ async function openPage(browser: Browser, html: string, width: number) {
 }
 
 /**
- * Цвета столбца пикселей x=4 на отрезке [y0, y1) документа. Снимаем кусками в
- * пределах окна с прокруткой: снимок fullPage растягивает окно на всю страницу,
- * и секции с размерами в vh перестраиваются — строки уезжают. Координаты clip
- * без fullPage отсчитываются от окна (проверено: после прокрутки на 1000 clip
- * y=10 даёт пиксель документа 1010).
+ * Цвета столбца пикселей x=4 на отрезке [y0, y1) документа. Окно НЕ
+ * прокручиваем и не растягиваем: <main> сдвигается вверх transform-ом, и нужные
+ * строки встают в кадр.
+ *  - fullPage-снимок растягивает окно на всю страницу, секции с vh
+ *    перестраиваются, строки уезжают;
+ *  - прокрутка окна зависит от того, прокручивается ли документ: на раннере CI
+ *    он однажды не прокрутился вовсе (документ 900px при секции выше 6600px).
+ * Координаты clip без fullPage — от окна (проверено: после прокрутки на 1000
+ * clip y=10 даёт пиксель документа 1010).
  */
 async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]> {
   const CHUNK = 600;
   const out: string[] = [];
+  const viewH = await pg.evaluate(() => window.innerHeight);
   for (let y = y0; y < y1; ) {
-    // У низа документа окно дальше не едет: кусок не выше, чем осталось места
-    // в окне после ФАКТИЧЕСКОЙ прокрутки (иначе clip вылезает за снимок).
-    const view = await pg.evaluate((top) => {
-      window.scrollTo({ top, behavior: "instant" as ScrollBehavior });
-      return { scrollY: window.scrollY, height: window.innerHeight };
-    }, Math.max(0, y - 100));
-    const top = y - view.scrollY;
-    const h = Math.min(CHUNK, y1 - y, view.height - top);
-    if (h <= 0) {
-      const doc = await pg.evaluate(() => `документ ${document.documentElement.scrollHeight}px, окно ${window.innerHeight}px`);
-      throw new Error(`строка ${y} вне окна после прокрутки на ${view.scrollY} (${doc})`);
-    }
+    const shift = Math.max(0, y - 100);
+    await pg.evaluate((px) => {
+      document.querySelector("main")!.style.transform = `translateY(${-px}px)`;
+    }, shift);
+    const top = y - shift;
+    const h = Math.min(CHUNK, y1 - y, viewH - top);
     const png = PNG.sync.read(await pg.screenshot({ clip: { x: 4, y: top, width: 1, height: h } }));
     for (let row = 0; row < png.height; row++) {
       const i = row * png.width * 4;
@@ -125,6 +124,9 @@ async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]>
     }
     y += h;
   }
+  await pg.evaluate(() => {
+    document.querySelector("main")!.style.transform = "";
+  });
   return out;
 }
 
@@ -339,7 +341,7 @@ async function main() {
   const short = RULES.map((rule) => ({ rule, n: rows.filter(rule.applies).length })).filter((x) => x.n < expected);
   const bad = violations(rows);
   console.log(`проверено клеток: ${rows.filter((r) => RULES.some((rule) => rule.applies(r))).length} (${RULES.length} правила × ${themes.length} тем × ${WIDTHS.length} ширины)`);
-  for (const v of bad) console.log(`✗ [баг ${v.bug}] ${v.theme} ${v.width}px ${v.rule}: ${v.problem}`);
+  for (const v of bad) console.log(`✗ [баг ${v.bug}] ${v.theme} ${v.width}px ${v.case} — ${v.rule}: ${v.problem}`);
   for (const x of short) console.log(`мало клеток у «${x.rule.id}»: ${x.n} < ${expected}`);
   if (short.length || bad.length) process.exit(1);
   console.log("нарушений нет");

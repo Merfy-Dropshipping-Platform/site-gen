@@ -227,14 +227,24 @@ const footerPadStyle =
 	pad && !isCanonPad
 		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
 		: undefined;
+// Footer верстальщиков: низ pt-16 pb-20 (без md:pb-28), зазор блоков gap-16, поле
+// подписки pl-3, кнопка px-2, адрес/контакты gap-1 и mt-6, списки gap-2, правовая
+// строка gap-8. Подпись платформы и две колонки — наши решения, не трогаем.
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
+// цвета не меняются; без признака — прежние классы. Признак ставит sites.
+const designParity = p.__designParity === true;
+const FT = designParity
+	? { pad: "pt-16 pb-20", stack: "gap-16", inputPl: "pl-3", btnPx: "px-2", lines: "gap-1", contactsMt: "mt-6", list: "gap-2", legal: "gap-8" }
+	: { pad: "pt-16 pb-24 md:pb-28", stack: "gap-12", inputPl: "pl-4", btnPx: "px-4", lines: "gap-[3px]", contactsMt: "mt-5", list: "gap-3", legal: "gap-4 pt-2" };
 const footerContainerCls = footerPadStyle
 	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-[300px]"
-	: "mx-auto w-full max-w-[1920px] px-4 pt-16 pb-24 md:px-20 md:pb-28 2xl:px-[300px]";
+	: `mx-auto w-full max-w-[1920px] px-4 ${FT.pad} md:px-20 2xl:px-[300px]`;
 ---
 
 <footer class:list={["w-full bg-[rgb(var(--color-bg,255_255_255))]", footerSchemeClass]} data-puck-component-id={id}>
 	<div class={footerContainerCls} style={footerPadStyle} data-animate>
-		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-12">
+		<div class={`mx-auto flex w-full max-w-[1320px] flex-col ${FT.stack}`}>
 			<!-- Block 1: Newsletter -->
 			{newsletterEnabled && (
 			<section
@@ -267,7 +277,7 @@ const footerContainerCls = footerPadStyle
 					    на тёмном. Роль та же, что у поля промокода «Сводки заказа» (fix b19).
 					    Фолбэки = прежний вид. Сторож: pnpm test:scheme-targets. */}
 					<form
-						class="flex h-10 w-full items-center gap-2 rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-[rgb(var(--color-bg,255_255_255))] pl-4 pr-1 transition-colors focus-within:border-[#E38E9F]"
+						class={`flex h-10 w-full items-center gap-2 rounded-full border border-[rgb(var(--color-input-border,255_212_229))] bg-[rgb(var(--color-bg,255_255_255))] ${FT.inputPl} pr-1 transition-colors focus-within:border-[#E38E9F]`}
 						data-newsletter-form
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="997"
@@ -283,7 +293,7 @@ const footerContainerCls = footerPadStyle
 						/>
 						<button
 							type="submit"
-							class="inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-surface,253_244_246))] px-4 font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-accent,227_142_159))] transition-opacity hover:opacity-80 active:scale-95"
+							class={`inline-flex h-8 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--color-surface,253_244_246))] ${FT.btnPx} font-inter text-[12px] font-light leading-normal text-[rgb(var(--color-accent,227_142_159))] transition-opacity hover:opacity-80 active:scale-95`}
 						>
 							Отправить
 						</button>
@@ -321,7 +331,7 @@ const footerContainerCls = footerPadStyle
 					</a>
 
 					{addressLines.length > 0 && (
-						<address class="mt-8 flex flex-col gap-[3px] not-italic">
+						<address class={`mt-8 flex flex-col ${FT.lines} not-italic`}>
 							<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
 								{addressField?.label ?? "Адрес"}:
 							</span>
@@ -335,7 +345,7 @@ const footerContainerCls = footerPadStyle
 
 					{hasContacts && (
 					<div
-						class="mt-5 flex flex-col gap-[3px]"
+						class={`${FT.contactsMt} flex flex-col ${FT.lines}`}
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="994"
 						data-puck-subsection-field="socialColumn"
@@ -385,7 +395,7 @@ const footerContainerCls = footerPadStyle
 				    и колонки не стояли на одной линии). */}
 				<div class="flex flex-col gap-10 sm:flex-row sm:gap-16 lg:ml-auto lg:pt-0">
 					<ul
-						class="flex flex-col gap-3"
+						class={`flex flex-col ${FT.list}`}
 						role="list"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="996"
@@ -410,7 +420,7 @@ const footerContainerCls = footerPadStyle
 
 					{(infoColTitle || infoLinks.length > 0) && (
 						<ul
-							class="flex flex-col gap-3"
+							class={`flex flex-col ${FT.list}`}
 							role="list"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="995"
@@ -438,7 +448,7 @@ const footerContainerCls = footerPadStyle
 
 			<!-- Block 3: Legal row -->
 			{showCopyright && (
-				<section class="flex w-full flex-col gap-4 pt-2" aria-label="Правовая информация">
+				<section class={`flex w-full flex-col ${FT.legal}`} aria-label="Правовая информация">
 					<div class="h-px w-full bg-[rgb(var(--color-accent,227_142_159)/0.5)]" aria-hidden="true"></div>
 
 					<div class="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">

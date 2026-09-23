@@ -59,7 +59,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				</p>
 			</div>
 			<a
-				href="/catalog" data-continue-shopping
+				href="/catalog" data-continue-shopping data-astro-reload
 				class="inline-flex h-[56px] items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal uppercase leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
 			>
 				Продолжить покупки
@@ -266,8 +266,8 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 <script>
 	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
-	// (коллекция по умолчанию; в разметке запасной адрес /catalog).
+	// (коллекция по умолчанию, адрес ищется по намерению; запасной — /catalog).
 	import { bindContinueShopping } from "../../../../../packages/theme-base/runtime/continue-shopping";
-	void bindContinueShopping();
-	document.addEventListener("astro:page-load", () => void bindContinueShopping());
+	bindContinueShopping();
+	document.addEventListener("astro:page-load", () => bindContinueShopping());
 </script>

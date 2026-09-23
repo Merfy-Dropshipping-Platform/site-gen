@@ -92,6 +92,7 @@ const evToggle = `${eventPrefix}:toggle`;
 				</p>
 				<a
 					href={catalogHref}
+					data-continue-shopping data-astro-reload
 					class="inline-flex h-12 items-center justify-center rounded-[6px] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95"
 				>
 					Продолжить покупки
@@ -160,4 +161,12 @@ const evToggle = `${eventPrefix}:toggle`;
 		if (root && root.dataset.state === "open") close();
 		else open();
 	});
+</script>
+
+<script>
+	// «Продолжить покупки» пустой корзины — на «общую» коллекцию магазина
+	// (коллекция по умолчанию, адрес ищется по намерению; запасной — /catalog).
+	import { bindContinueShopping } from "../runtime/continue-shopping";
+	bindContinueShopping();
+	document.addEventListener("astro:page-load", () => bindContinueShopping());
 </script>

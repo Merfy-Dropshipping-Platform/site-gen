@@ -31,6 +31,13 @@ const navColumn = [
 // (заголовки колонок) не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»): на
+// планшете подвал уже переходит в две колонки (Rose-theme @b719c193
+// Footer.astro), а не с lg, и выравнивание блока контактов сдвигается туда
+// же. Правится только дефолт-ветка «Выравнивания» (contentAlign=left) — у
+// «По центру»/«Справа» своих раскладок у верстальщиков нет, остаются
+// прежними. Признак ставит sites (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Rose Theme».
 // Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
 // подвал должна идти лого из настроек темы, если загружена, или, если нет, то
@@ -90,9 +97,42 @@ const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-[200px]";
 // center = центрированный блок колонок И контент ВНУТРИ блоков по центру (юзер: «когда по
 // центру, и контент блоков был по центру»). right = к правому краю. left (дефолт) = слева/справа.
 const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
-const contactGroupCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "lg:items-end lg:text-right";
-const contactTextCls = _ca === "center" ? "text-center" : _ca === "right" ? "text-right" : "lg:text-right";
-const contactJustifyCls = _ca === "center" ? "justify-center" : _ca === "right" ? "justify-end" : "lg:justify-end";
+const contactGroupCls =
+	_ca === "center"
+		? "items-center text-center"
+		: _ca === "right"
+			? "items-end text-right"
+			: designParity
+				? "md:items-end md:text-right lg:items-end lg:text-right"
+				: "lg:items-end lg:text-right";
+const contactTextCls =
+	_ca === "center"
+		? "text-center"
+		: _ca === "right"
+			? "text-right"
+			: designParity
+				? "md:text-right lg:text-right"
+				: "lg:text-right";
+const contactJustifyCls =
+	_ca === "center"
+		? "justify-center"
+		: _ca === "right"
+			? "justify-end"
+			: designParity
+				? "md:justify-end lg:justify-end"
+				: "lg:justify-end";
+// PARITY_DESIGN, только дефолт-ветка «Выравнивания» (left): подвал уходит в
+// две колонки уже с планшета, а не с lg (Rose-theme @b719c193), и внутри
+// левой группы список навигации/инфо на планшете снова стоит колонкой (между
+// sm и lg), пока рядом появляется колонка контактов.
+const sectionRowCls =
+	designParity && _ca === "left"
+		? "flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between"
+		: `flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls}`;
+const navInfoWrapCls =
+	designParity && _ca === "left"
+		? "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]"
+		: `flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`;
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только
@@ -272,10 +312,10 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 			)}
 
 			<section
-				class={`flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls}`}
+				class={sectionRowCls}
 				aria-label="Навигация по сайту"
 			>
-				<div class={`flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`}>
+				<div class={navInfoWrapCls}>
 					<ul
 						class={`flex flex-col gap-3 ${colInnerCls}`}
 						role="list"

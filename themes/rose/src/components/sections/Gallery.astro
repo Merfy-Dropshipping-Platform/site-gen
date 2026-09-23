@@ -12,6 +12,13 @@ import NtSectionHeading from "../ui/RoseSectionHeading.astro";
 // конструктора (medium/medium/left) → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// отступы, зазоры и md-ступень сетки по актуальной вёрстке Rose-theme
+// @b719c193 (Gallery.astro). Настройки и цвета не меняются; без признака —
+// прежние классы. Признак ставит sites (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
+const sectionPadCls = designParity ? "pb-20 pt-20" : "pb-14 pt-14";
+const wrapGapCls = designParity ? "gap-10" : "gap-8 md:gap-10";
 // Пустое состояние (Figma 1:19335) — ДОСЛОВНЫЙ плейсхолдер: заголовок «Галерея»,
 // БЕЗ подзаголовка (в контракте Gallery подзаголовка нет → дефолт пуст, текст
 // верстальщика «Сравнивайте, находите своё…» убран). Заданный мерчантом heading/
@@ -57,11 +64,32 @@ const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center$
 // плитка слева (пиксель верстальщика); 'right' → зеркало раскладки на lg
 // (узкая колонка слева, большая плитка справа — через swap grid-template + order).
 const mirror = p.imagePosition === "right";
-const galleryGridCls = mirror
-	? "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8"
-	: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8";
+// PARITY_DESIGN: у верстальщиков сетка получает промежуточную md-ступень
+// (узкая колонка 200-260px рядом с большой плиткой) — у нас раньше сразу
+// с grid-cols-1 прыгало на lg. Значения данными (designers/legacy × normal/mirror).
+const GAL_GRID = {
+	designers: {
+		normal: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(200px,260px)] md:items-stretch md:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8",
+		mirror: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] md:items-stretch md:gap-4 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8",
+	},
+	legacy: {
+		normal: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8",
+		mirror: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8",
+	},
+};
+const galleryGridCls = GAL_GRID[designParity ? "designers" : "legacy"][mirror ? "mirror" : "normal"];
 const heroTileOrderCls = mirror ? " lg:order-2" : "";
 const sideColOrderCls = mirror ? " lg:order-1" : "";
+// Большой тайл: min-h-[280px] → aspect-square (+ md:h-full, только у нескольких
+// плиток — solo-плитка у верстальщиков не встречается, её пропорция 16/9 не трогаем).
+const heroBaseCls = designParity ? "aspect-square" : "min-h-[280px]";
+// Боковые тайлы: квадрат на моб/планшете, фикс-пропорция верстальщика — только с lg.
+const sideProductAspectCls = designParity ? "aspect-square lg:aspect-[429/444]" : "aspect-[429/444]";
+const sideCollectionAspectCls = designParity ? "aspect-square lg:aspect-[429/309]" : "aspect-[429/309]";
+// Обёртка боковых тайлов: 2 в ряд на моб/планшете (grid-cols-2), колонка с md.
+const sideWrapCls = designParity
+	? "grid grid-cols-2 gap-2 min-h-0 min-w-0 md:flex md:flex-col md:gap-4 lg:gap-6"
+	: "flex min-h-0 min-w-0 flex-col gap-6";
 
 // Канон items[] (≤3, типы image/product/collection): плитки из пропсов.
 // SSR рендерит канон-плейсхолдеры («Товар» 2 500 ₽ / «Выбери коллекцию»);
@@ -158,7 +186,14 @@ const sideTiles = galleryTiles.slice(1);
 // Одна видимая плитка — одна колонка на всю ширину; высоту задаёт соотношение
 // сторон, потому что брать её от соседней колонки больше не у кого.
 const soloTile = galleryTiles.length === 1;
-const heroSizeCls = soloTile ? "lg:aspect-[16/9]" : "lg:min-h-0 lg:h-full";
+// Соло-плитка у верстальщиков не встречается (у них всегда 3) — её раскладку
+// design parity не трогает, только многоплиточную (md:h-full — большой тайл
+// тянется на всю высоту колонки уже с планшета, не только с lg).
+const heroSizeCls = soloTile
+	? "lg:aspect-[16/9]"
+	: designParity
+		? "md:h-full lg:min-h-0 lg:h-full"
+		: "lg:min-h-0 lg:h-full";
 const gridLayoutCls = soloTile
 	? "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8"
 	: galleryGridCls;
@@ -181,12 +216,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 <section
 	id="gallery"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 ${sectionPadCls} sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]`}
 	aria-labelledby="gallery-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+	<div class={`mx-auto flex w-full max-w-[1320px] flex-col ${wrapGapCls}`}>
 		{!isFieldHidden('heading') && (
 		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="gallery-title" title={sectionTitle} subtitle={sectionSubtitle} />
@@ -201,7 +236,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`gallery-hero-tile group relative block min-h-[280px] w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${heroSizeCls}${heroTileOrderCls}`}
+					class={`gallery-hero-tile group relative block ${heroBaseCls} w-full min-w-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] ${heroSizeCls}${heroTileOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}
@@ -221,7 +256,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex min-h-0 min-w-0 flex-col gap-6${sideColOrderCls}`}>
+				<div class={`${sideWrapCls}${sideColOrderCls}`}>
 					{sideTiles.map((tile, i) =>
 						tile.kind === "collection" ? (
 							<a
@@ -233,7 +268,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-index={i + 1}
 								data-puck-subsection-field="items"
 							>
-								<div class="aspect-[429/309] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]" aria-hidden={tile.url ? undefined : "true"}>
+								<div class={`${sideCollectionAspectCls} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]`} aria-hidden={tile.url ? undefined : "true"}>
 									{tile.url && (
 										<img
 											src={tile.url}
@@ -260,7 +295,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-field="items"
 							>
 								<div
-									class="gallery-bag-media relative aspect-[429/444] w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none"
+									class={`gallery-bag-media relative ${sideProductAspectCls} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none`}
 									aria-hidden={tile.url ? undefined : "true"}
 								>
 									{tile.url && (

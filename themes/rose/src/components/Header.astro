@@ -23,6 +23,13 @@ const defaultNav: NavLink[] = [
 // прежним строкам классов байт-в-байт; новые элементы не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// иконка мобильного бургера крупнее (Rose-theme @b719c193). Отдельный
+// планшетный ярус шапки верстальщиков НЕ переносим — владелец велел его не
+// делать. Без признака — прежний размер. Признак ставит sites
+// (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
+const burgerSizeCls = designParity ? "size-6" : "size-5";
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить текстовый логотип.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 // Рекурсивно сохраняем submenu (до 3 уровней) — иначе вложенные меню теряются.
@@ -188,16 +195,16 @@ const shopId = "";
 						type="button"
 						id="rose-burger-btn"
 						data-burger-toggle
-						class="flex size-5 shrink-0 items-center justify-center transition-opacity hover:opacity-70"
+						class={`flex ${burgerSizeCls} shrink-0 items-center justify-center transition-opacity hover:opacity-70`}
 						aria-label="Меню"
 						aria-expanded="false"
 						aria-controls="rose-burger"
 					>
 						<span class="burger-icon" data-icon="open">
-							<RoseNtIcon name="menu-burger" sizeClass="size-5" />
+							<RoseNtIcon name="menu-burger" sizeClass={burgerSizeCls} />
 						</span>
 						<span class="burger-icon hidden" data-icon="close">
-							<RoseNtIcon name="menu-close" sizeClass="size-5" />
+							<RoseNtIcon name="menu-close" sizeClass={burgerSizeCls} />
 						</span>
 					</button>
 					<a

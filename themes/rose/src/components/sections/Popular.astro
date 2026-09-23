@@ -14,6 +14,13 @@ import RoseProductCard from "../products/RoseProductCard.astro";
 // впрыск коэрсера cards=4/columns=4 → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// отступы и зазоры по актуальной вёрстке Rose-theme @b719c193 (Popular.astro).
+// Настройки и цвета не меняются; без признака — прежние классы. Признак
+// ставит sites (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
+const sectionPadCls = designParity ? "pb-20 pt-20" : "pb-14 pt-14";
+const wrapGapCls = designParity ? "gap-10" : "gap-8 md:gap-10";
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
@@ -104,8 +111,9 @@ const cardAspectRatio =
 			: "1/1";
 // Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
 // по --cols. Гэпы оставляем как у верстальщика.
-const gridCls =
-	"grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
+const gridCls = designParity
+	? "grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5"
+	: "grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart): кнопка
@@ -320,12 +328,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 <section
 	id="popular"
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-14 pt-14 sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]"
+	class={`w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 ${sectionPadCls} sm:px-5 sm:pb-16 sm:pt-16 md:px-10 md:pb-[100px] md:pt-[100px] lg:px-16 lg:pb-[120px] lg:pt-[120px] xl:px-20 xl:pb-[140px] xl:pt-[140px] 2xl:px-[280px]`}
 	aria-labelledby="popular-title"
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
+	<div class={`mx-auto flex w-full max-w-[1320px] flex-col ${wrapGapCls}`}>
 		{!isFieldHidden('heading') && (
 		<div class={headWrapCls} data-animate data-puck-subsection-parent={id} data-puck-subsection-index="100" data-puck-subsection-field="heading">
 			<NtSectionHeading variant="rose" titleId="popular-title" title={sectionTitle} subtitle={sectionSubtitle} />

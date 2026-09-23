@@ -123,8 +123,8 @@ const cardPaddingBottom =
   : '133.33%';
 
 // Card chrome — toggle background/border based on cardBackground.
-const cardBgOn =
-  productCard?.cardBackground === 'true' || productCard?.cardBackground === true;
+// «Контейнер» карточки убран из панели (владелец 23.09) — «С контейнером» больше не включается; прошлое значение из ревизии не читаем.
+const cardBgOn = false;
 // Quick-add button (none / standard / cart).
 const quickAddMode = productCard?.quickAdd ?? 'none';
 const showQuickAdd = quickAddMode === 'standard' || quickAddMode === 'cart';

@@ -285,6 +285,37 @@ describe('{{COLLECTION_*}} — семантика подстановки', () =>
     expect(props.categoryTitle).toBe('Мой текст');
   });
 
+  // Владелец 23.09: «Группа товаров сломалось» — на странице коллекции в
+  // конструкторе сетка показывала «0 ТОВАРОВ» (слаг служебного адреса
+  // `collections/preview`), а после правки в панели — все товары магазина
+  // (проп из ревизии). На витрине коллекцию страницы задаёт адрес.
+  it('товары Catalog — из коллекции страницы, а не из пропа ревизии', () => {
+    const props = applyCollectionContextToProps(
+      'Catalog', { collectionSlug: '' }, { name: 'Bloom', slug: 'bloom' },
+    );
+    expect(props.collectionSlug).toBe('bloom');
+  });
+
+  it('служебный слаг «preview» сетке не отдаётся; чужие блоки слаг не получают', () => {
+    expect(
+      applyCollectionContextToProps('Catalog', { collectionSlug: 'x' }, { slug: 'preview' }).collectionSlug,
+    ).toBe('x');
+    expect(
+      applyCollectionContextToProps('Hero', {}, { name: 'Bloom', slug: 'bloom' }).collectionSlug,
+    ).toBeUndefined();
+  });
+
+  it('полная страница превью ставит сетке слаг коллекции из контекста, не из адреса', () => {
+    const controller = fs.readFileSync(
+      path.resolve(__dirname, '../controllers/preview.controller.ts'),
+      'utf-8',
+    );
+    // Подмена data-collection-slug после рендера берёт gridSlug (контекст), а
+    // не сырой collectionSlug адреса — он у шаблона равен «preview».
+    expect(controller).toMatch(/\$1\$\{String\(gridSlug \?\? ''\)/);
+    expect(controller).not.toMatch(/\$1\$\{collectionSlug\.replace/);
+  });
+
   it('плейсхолдер подставляется и внутри массивов (arrayFields)', () => {
     const props = applyCollectionContextToProps(
       'Hero', { items: [{ label: '{{COLLECTION_NAME}}' }] }, { name: 'Новинки' },

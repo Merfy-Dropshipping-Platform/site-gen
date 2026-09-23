@@ -58,14 +58,12 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
-// Лестница §9 «Заголовок-аккордеон» (база-литерал 18/md:20 = medium, Faq.astro:35):
-// small 15/17, large 22/24. Управляется тем же headingSize.
-const summarySizeCls =
-	headingSize === "small"
-		? "text-[15px] md:text-[17px]"
-		: headingSize === "large"
-			? "text-[22px] md:text-[24px]"
-			: "text-[18px] md:text-[20px]";
+// Заголовок раздела (ряд аккордеона) — база-литерал лестницы §9, 18/md:20
+// (Faq.astro:35). «Размер заголовка» секции его НЕ трогает — владелец 23.09:
+// «должен применяться только к заголовку секции, а не к разделам». Раньше ряд
+// шёл за headingSize (15/17 … 22/24), и satin была единственной темой, где
+// настройка секции меняла разделы (замер браузером: 17 → 24 px).
+const summarySizeCls = "text-[18px] md:text-[20px]";
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
 // Curated-модель (как theme-base PopularProducts/Collections, эталон процесса —

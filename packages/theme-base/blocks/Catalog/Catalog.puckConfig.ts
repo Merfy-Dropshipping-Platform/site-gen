@@ -130,23 +130,15 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
     cards: { type: 'slider', label: 'Карточки', min: 2, max: 24, step: 1 },
     columns: { type: 'slider', label: 'Колонки', min: 1, max: 6, step: 1 },
 
-    // «Содержание» — parity с PopularProducts (Коллекция товаров): user
-    // может задать собственный heading и подзаголовок для каталога. Хранится
-    // в существующих полях categoryTitle/categorySubtitle (раньше hidden,
-    // заполнялось только через theme.json blockDefaults).
-    ['_section_content' as never]: { type: 'section-header', label: 'Содержание' } as any,
-    categoryTitle: {
-      type: 'aiText',
-      label: 'Заголовок',
-      fieldType: 'title',
-      placeholder: 'Ввести текст...',
-    } as any,
-    categorySubtitle: {
-      type: 'aiText',
-      label: 'Текст',
-      fieldType: 'description',
-      placeholder: 'Ввести текст...',
-    } as any,
+    // «Содержание» (Заголовок, Текст) убрано из панели — владелец 23.09:
+    // «группа товаров: содержание удалить (заголовок, текст, содержание)».
+    // Заголовок и текст «Группы товаров» — имя и описание коллекции (на
+    // странице коллекции их подставляет сама страница) либо дефолт темы.
+    // Поля остаются `hidden`: пропы лежат в ревизиях мерчантов, и `hidden`
+    // не даёт панели нарисовать их пустым вводом.
+    ['_section_content' as never]: { type: 'hidden', label: '' } as any,
+    categoryTitle: { type: 'hidden', label: '' } as any,
+    categorySubtitle: { type: 'hidden', label: '' } as any,
 
 ['_section_card' as never]: { type: 'section-header', label: 'Карточка товара' } as any,
     productCard: {
@@ -158,7 +150,8 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
           label: 'Стиль кнопки',
           options: [
             { label: 'Основная', value: 'primary' },
-            { label: 'Второстепенная', value: 'secondary' },
+            // Владелец 23.09: «Дополнительная, а не второстепенная».
+            { label: 'Дополнительная', value: 'secondary' },
             { label: 'Ссылка', value: 'link' },
           ],
         },
@@ -172,17 +165,11 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
             { label: 'Широкий', value: 'wide' },
           ],
         },
-        // Figma 1:34185-34635 — «Контейнер» карточки. С контейнером = контент с
-        // внутр. отступом 12px (фото/кнопка inset, кнопка НЕ во всю ширину);
-        // Без контейнера = флеш к краям (фото full-bleed, кнопка full-width).
-        cardBackground: {
-          type: 'select',
-          label: 'Контейнер',
-          options: [
-            { label: 'Без контейнера', value: 'false' },
-            { label: 'С контейнером', value: 'true' },
-          ],
-        },
+        // «Контейнер» карточки убран — владелец 23.09: «карточка товара в
+        // группе товаров — удалить контейнер настройку». Карточка всегда «Без
+        // контейнера» (флеш к краям), рендеры тем прошлое значение не читают.
+        // `hidden`, потому что проп лежит в ревизиях мерчантов.
+        cardBackground: { type: 'hidden', label: '' } as any,
         nextPhoto: {
           type: 'toggle',
           label: 'Следующее фото при наведении',

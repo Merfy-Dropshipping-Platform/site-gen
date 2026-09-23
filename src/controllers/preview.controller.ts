@@ -396,10 +396,21 @@ export class PreviewController {
             // Без неё превью страницы коллекции показывало ВЕСЬ каталог: имя
             // коллекции подставлялось, а slug оставался пустым, и клиентский
             // фильтр каталога ничего не отбирал.
+            // Слаг — коллекции, которую превью показывает (контекст), а не
+            // сегмента адреса: у шаблона в конструкторе адрес служебный
+            // `collections/preview`, и сетка искала коллекцию «preview» —
+            // «0 ТОВАРОВ» на открытии страницы коллекции (владелец 23.09).
+            // Коллекций в магазине нет — пусто, сетка покажет все товары.
+            const gridSlug =
+              collectionContext?.slug && collectionContext.slug !== 'preview'
+                ? collectionContext.slug
+                : collectionSlug === 'preview'
+                  ? ''
+                  : collectionSlug;
             if (collectionSlug) {
               v2Html = v2Html.replace(
                 /(\bdata-collection-slug=["'])[^"']*(["'])/gi,
-                `$1${collectionSlug.replace(/"/g, '&quot;')}$2`,
+                `$1${String(gridSlug ?? '').replace(/"/g, '&quot;')}$2`,
               );
             }
             // Паритет с блоб-путём: секционный Catalog тоже должен получить

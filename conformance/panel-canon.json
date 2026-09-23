@@ -2613,19 +2613,19 @@
             "min": 1
           },
           "_section_content": {
-            "type": "section-header",
-            "label": "Содержание",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categoryTitle": {
-            "type": "aiText",
-            "label": "Заголовок",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categorySubtitle": {
-            "type": "aiText",
-            "label": "Текст",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "_section_card": {
             "type": "section-header",
@@ -2643,7 +2643,7 @@
                 "visibility": "panel",
                 "options": [
                   "primary=Основная",
-                  "secondary=Второстепенная",
+                  "secondary=Дополнительная",
                   "link=Ссылка"
                 ]
               },
@@ -2659,13 +2659,9 @@
                 ]
               },
               "cardBackground": {
-                "type": "select",
-                "label": "Контейнер",
-                "visibility": "panel",
-                "options": [
-                  "false=Без контейнера",
-                  "true=С контейнером"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "nextPhoto": {
                 "type": "toggle",
@@ -5781,19 +5777,19 @@
             "min": 1
           },
           "_section_content": {
-            "type": "section-header",
-            "label": "Содержание",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categoryTitle": {
-            "type": "aiText",
-            "label": "Заголовок",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categorySubtitle": {
-            "type": "aiText",
-            "label": "Текст",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "_section_card": {
             "type": "section-header",
@@ -5811,7 +5807,7 @@
                 "visibility": "panel",
                 "options": [
                   "primary=Основная",
-                  "secondary=Второстепенная",
+                  "secondary=Дополнительная",
                   "link=Ссылка"
                 ]
               },
@@ -5827,13 +5823,9 @@
                 ]
               },
               "cardBackground": {
-                "type": "select",
-                "label": "Контейнер",
-                "visibility": "panel",
-                "options": [
-                  "false=Без контейнера",
-                  "true=С контейнером"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "nextPhoto": {
                 "type": "toggle",
@@ -8940,19 +8932,19 @@
             "min": 1
           },
           "_section_content": {
-            "type": "section-header",
-            "label": "Содержание",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categoryTitle": {
-            "type": "aiText",
-            "label": "Заголовок",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categorySubtitle": {
-            "type": "aiText",
-            "label": "Текст",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "_section_card": {
             "type": "section-header",
@@ -8970,7 +8962,7 @@
                 "visibility": "panel",
                 "options": [
                   "primary=Основная",
-                  "secondary=Второстепенная",
+                  "secondary=Дополнительная",
                   "link=Ссылка"
                 ]
               },
@@ -8986,13 +8978,9 @@
                 ]
               },
               "cardBackground": {
-                "type": "select",
-                "label": "Контейнер",
-                "visibility": "panel",
-                "options": [
-                  "false=Без контейнера",
-                  "true=С контейнером"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "nextPhoto": {
                 "type": "toggle",
@@ -12089,19 +12077,19 @@
             "min": 1
           },
           "_section_content": {
-            "type": "section-header",
-            "label": "Содержание",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categoryTitle": {
-            "type": "aiText",
-            "label": "Заголовок",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categorySubtitle": {
-            "type": "aiText",
-            "label": "Текст",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "_section_card": {
             "type": "section-header",
@@ -12119,7 +12107,7 @@
                 "visibility": "panel",
                 "options": [
                   "primary=Основная",
-                  "secondary=Второстепенная",
+                  "secondary=Дополнительная",
                   "link=Ссылка"
                 ]
               },
@@ -12135,13 +12123,9 @@
                 ]
               },
               "cardBackground": {
-                "type": "select",
-                "label": "Контейнер",
-                "visibility": "panel",
-                "options": [
-                  "false=Без контейнера",
-                  "true=С контейнером"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "nextPhoto": {
                 "type": "toggle",
@@ -15238,19 +15222,19 @@
             "min": 1
           },
           "_section_content": {
-            "type": "section-header",
-            "label": "Содержание",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categoryTitle": {
-            "type": "aiText",
-            "label": "Заголовок",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "categorySubtitle": {
-            "type": "aiText",
-            "label": "Текст",
-            "visibility": "panel"
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           },
           "_section_card": {
             "type": "section-header",
@@ -15268,7 +15252,7 @@
                 "visibility": "panel",
                 "options": [
                   "primary=Основная",
-                  "secondary=Второстепенная",
+                  "secondary=Дополнительная",
                   "link=Ссылка"
                 ]
               },
@@ -15284,13 +15268,9 @@
                 ]
               },
               "cardBackground": {
-                "type": "select",
-                "label": "Контейнер",
-                "visibility": "panel",
-                "options": [
-                  "false=Без контейнера",
-                  "true=С контейнером"
-                ]
+                "type": "hidden",
+                "label": "",
+                "visibility": "off"
               },
               "nextPhoto": {
                 "type": "toggle",

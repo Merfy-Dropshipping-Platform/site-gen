@@ -68,9 +68,16 @@
 }
 
 .font-comfortaa,
-.font-manrope,
 .font-inter {
   font-family: var(--font-nt-ui);
+}
+
+/* Роль «текст», доставшаяся от rose (корзина размечена ею): шрифт — из
+   «Настроек темы», как у .font-vanilla-arsenal. Было: --font-nt-ui = Manrope
+   из токенов DS — корзина писалась Manrope при тексте темы Arsenal. Владелец
+   23.09: «надо из настроек темы». */
+.font-manrope {
+  font-family: var(--font-body, var(--font-vanilla-arsenal));
 }
 
 .font-logo {
@@ -110,7 +117,10 @@ body {
   margin: 0;
   min-height: 100%;
   overflow-x: clip;
-  font-family: var(--font-nt-ui);
+  /* Текст без своего класса (пункты мобильного меню и т. п.) — шрифтом текста
+     из «Настроек темы». Было --font-nt-ui = Manrope из токенов DS при тексте
+     темы Arsenal. Сторож: store-chrome-font.spec.ts. */
+  font-family: var(--font-body, var(--font-vanilla-arsenal));
   color: var(--vanilla-dark);
   background: var(--vanilla-surface);
 }
@@ -548,7 +558,9 @@ footer[data-vanilla-footer]::after {
   justify-content: center;
   border: 1px solid currentColor;
   padding: 0 18px;
-  font-family: var(--font-nt-ui);
+  /* Шрифт текста из «Настроек темы» (было --font-nt-ui = Manrope из токенов
+     DS: «Продолжить покупки» в корзине — Manrope при тексте темы Arsenal). */
+  font-family: var(--font-body, var(--font-vanilla-arsenal));
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.02em;

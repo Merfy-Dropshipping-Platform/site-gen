@@ -365,7 +365,7 @@ const skeletons = Array.from({ length: skeletonCount });
             style="display:none"
             class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,207_122_139))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
           >Смотреть ещё</button>
-          <span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]" data-nt="catalog-count"></span>
+          <span class="font-inter text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]" data-nt="catalog-count"></span>
         </div>
       </div>
 
@@ -417,7 +417,7 @@ const skeletons = Array.from({ length: skeletonCount });
             >
               Смотреть ещё
             </button>
-            <span class="font-manrope text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]" data-nt="catalog-count"></span>
+            <span class="font-inter text-[14px] font-normal leading-normal text-[rgb(var(--color-muted,153_153_153))] md:text-[16px]" data-nt="catalog-count"></span>
           </div>
         </div>
       </div>
@@ -443,9 +443,10 @@ const skeletons = Array.from({ length: skeletonCount });
       font-size: calc(var(--size-section-heading, 28px) + 8px);
     }
   }
-  /* Подзаголовок bloom: Manrope light, muted-токен. */
+  /* Подзаголовок bloom: шрифт текста из «Настроек темы» (было — Manrope
+     литералом, мимо настроек: у bloom текст темы — Inter), light, muted-токен. */
   .bloom-catalog-subtitle {
-    font-family: "Manrope", sans-serif;
+    font-family: var(--font-body, "Inter", sans-serif);
     font-size: 16px;
     font-weight: 300;
     line-height: 1.366;

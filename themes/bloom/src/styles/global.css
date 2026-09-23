@@ -55,8 +55,17 @@
   font-family: var(--font-body, "Inter", var(--font-family-sans));
 }
 
+/* Роли шрифтов, доставшиеся от rose (корзина, заголовки секций, название
+   магазина в шапке и подвале размечены ими): шрифт — из «Настроек темы», как
+   у rose и flux. Было: .font-manrope — Manrope литералом (у bloom текст темы —
+   Inter), .font-comfortaa не было вовсе — такой текст падал на системный шрифт
+   body. Владелец 23.09: «надо из настроек темы». */
+.font-comfortaa {
+  font-family: var(--font-heading, "Urbanist", var(--font-family-sans));
+}
+
 .font-manrope {
-  font-family: "Manrope", var(--font-family-sans);
+  font-family: var(--font-body, "Inter", var(--font-family-sans));
 }
 
 .font-roboto-flex {

@@ -1,0 +1,26 @@
+---
+/**
+ * Вордмарк «Vanilla» для тёмного футера под PARITY_DESIGN — тот же SVG
+ * верстальщиков, что и в шапке (см. VanilaLogoDesigners.astro), «Vanilla»
+ * двумя «l» вместо нашей «Vanila». Без признака рисуется прежний
+ * VanilaFooterLogo (single-L) — этот файл его не задевает.
+ */
+import { withBase } from "../lib/with-base";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={withBase("/icons/Vanila-designers.svg")}
+	alt=""
+	width="98"
+	height="28"
+	loading="lazy"
+	decoding="async"
+	draggable={false}
+	class:list={["block shrink-0 object-contain object-center", className]}
+/>

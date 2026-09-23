@@ -51,12 +51,18 @@ const headingCls =
 // ⚠️ canon-default puckConfig textSize='medium' ниже литерала — рекомендация
 // следующей фазе: blockDefaults Gallery.textSize='large' в theme.json.
 const textSize = p.textSize ?? p.text?.size;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// отступ абзаца под заголовком по актуальной Vanilla-theme @c65d9e1c
+// (Gallery.astro: mt-3 вместо нашего mt-10) — во всех трёх ветках размера,
+// это геометрия обёртки, не шрифт. Без признака — прежние классы байт-в-байт.
+const designParity = p.__designParity === true;
+const TEXT_MT_CLS = designParity ? "mt-3" : "mt-10";
 const textCls =
 	textSize === "small"
-		? "mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[10px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[11px]"
+		? `${TEXT_MT_CLS} w-full max-w-[680px] font-vanilla-arsenal text-[10px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[11px]`
 		: textSize === "medium"
-			? "mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[12px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[14px]"
-			: "mt-10 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]";
+			? `${TEXT_MT_CLS} w-full max-w-[680px] font-vanilla-arsenal text-[12px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[14px]`
+			: `${TEXT_MT_CLS} w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal italic leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]`;
 
 // Канон imagePosition left/right: 'left' (canon-default) = порядок плиток как
 // есть; 'right' зеркалит первую пару плиток в проп-ветке.

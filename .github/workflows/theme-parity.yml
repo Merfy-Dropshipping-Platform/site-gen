@@ -79,6 +79,13 @@ jobs:
       - name: Боковое меню — правила от лица человека (5 тем × 8 сценариев)
         run: pnpm qa:side-menu
 
+      # Владелец 23.09: отступы между секций и «Отступы» секции («Каталог» на
+      # страницах коллекции и каталога) показывали фон страницы — Схему 1 —
+      # вместо схемы секции. Замер по пикселям снимка: зазор окрашен схемой
+      # нижней секции, сквозь «Отступы» любой секции фон страницы не виден.
+      - name: Отступы и зазоры секций — в цвет своей схемы (5 тем × 2 ширины)
+        run: pnpm qa:section-gaps
+
       - name: Checkout monorepo figma-references (separate repo)
         # The super-repo commits the figma-references folder. In CI we run
         # from inside the sites repo only, so the references aren't present

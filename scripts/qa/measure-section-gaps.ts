@@ -91,14 +91,26 @@ async function openPage(browser: Browser, html: string, width: number) {
   const pg = await ctx.newPage();
   await pg.setContent(html, { waitUntil: "load" });
   await pg.evaluate("globalThis.__name = globalThis.__name || function (f) { return f; };");
-  await pg.waitForTimeout(150);
+  // Секции дорисовываются своим скриптом уже после загрузки: «Каталог» без
+  // товаров сжимается со скелетонов (6898px) до заглушки (364px). Замер,
+  // запомнивший прежнюю высоту, снимал строки, которых уже нет, — в CI это
+  // выглядело как «просвет с 9-го куска». Ждём, пока высота документа не
+  // перестанет меняться (три опроса подряд).
+  await pg.waitForFunction(
+    "(() => { const h = document.documentElement.scrollHeight; const same = window.__lastH === h; window.__stable = same ? (window.__stable || 0) + 1 : 0; window.__lastH = h; return window.__stable >= 3; })()",
+    undefined,
+    { polling: 200, timeout: 15000 },
+  );
   return { ctx, pg };
 }
 
 /**
  * Цвета столбца пикселей x=4 на отрезке [y0, y1) документа. Окно НЕ
- * прокручиваем и не растягиваем: <main> сдвигается вверх transform-ом, и нужные
- * строки встают в кадр.
+ * прокручиваем и не растягиваем: <main> сдвигается вверх (position:relative +
+ * top), и нужные строки встают в кадр. Не transform: сдвиг слоя браузер делает
+ * уже нарисованными плитками, дальше ~4–5 тыс. px от исходного вида они на
+ * медленном раннере CI не успевали дорисоваться — снимок ловил пустоту (фон
+ * страницы) ровно с 9-го/10-го куска.
  *  - fullPage-снимок растягивает окно на всю страницу, секции с vh
  *    перестраиваются, строки уезжают;
  *  - прокрутка окна зависит от того, прокручивается ли документ: на раннере CI
@@ -112,8 +124,12 @@ async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]>
   const viewH = await pg.evaluate(() => window.innerHeight);
   for (let y = y0; y < y1; ) {
     const shift = Math.max(0, y - 100);
-    await pg.evaluate((px) => {
-      document.querySelector("main")!.style.transform = `translateY(${-px}px)`;
+    await pg.evaluate(async (px) => {
+      const main = document.querySelector("main")!;
+      main.style.position = "relative";
+      main.style.top = `${-px}px`;
+      // Два кадра: новая раскладка и её отрисовка до снимка.
+      await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null))));
     }, shift);
     const top = y - shift;
     const h = Math.min(CHUNK, y1 - y, viewH - top);
@@ -125,7 +141,9 @@ async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]>
     y += h;
   }
   await pg.evaluate(() => {
-    document.querySelector("main")!.style.transform = "";
+    const main = document.querySelector("main")!;
+    main.style.position = "";
+    main.style.top = "";
   });
   return out;
 }
@@ -166,7 +184,11 @@ async function scanStrip(
       return { expected: `rgb(${v.split(/[\s,]+/).join(", ")})`, y0, y1 };
     }, target);
     const h = Math.max(0, box.y1 - box.y0);
+    const docH = () => pg.evaluate(() => document.documentElement.scrollHeight);
+    const before = await docH();
     const colors = await columnColors(pg, box.y0, box.y1);
+    const after = await docH();
+    if (after !== before) throw new Error(`раскладка менялась во время замера: ${before} → ${after}px`);
     const wrong = colors.flatMap((c, y) => (c === box.expected ? [] : [{ y, c }]));
     return { expected: box.expected, wrong, h };
   } finally {

@@ -42,3 +42,23 @@ describe("префикс темы не ломает текст с дробью",
     expect(ROOT_URL_RE.source).toContain("\\s");
   });
 });
+
+/**
+ * Префикс ставится ОДИН раз. 23.09: пропсы превью уже несли `/__theme/bloom/…`
+ * (page-blocks `rewriteAssetUrl` с publicUrl `/__theme/bloom`), а composeV2Page
+ * добавлял второй — картинка «О нас» bloom в конструкторе отдавала 404.
+ */
+describe("префикс темы ставится один раз", () => {
+  const prefix = "/__theme/bloom";
+
+  it("уже переписанный адрес остаётся как есть", () => {
+    const once = '<img src="/__theme/bloom/images/about-photo.webp">';
+    expect(rewriteRootUrlsToPrefix(once, prefix)).toBe(once);
+  });
+
+  it("повторный проход ничего не меняет", () => {
+    const once = rewriteRootUrlsToPrefix('<img src="/images/a.webp">', prefix);
+    expect(once).toBe('<img src="/__theme/bloom/images/a.webp">');
+    expect(rewriteRootUrlsToPrefix(once, prefix)).toBe(once);
+  });
+});

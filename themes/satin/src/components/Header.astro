@@ -36,15 +36,11 @@ const HEADER_BP = {
 		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden",
 		desktopWrap: "hidden w-full md:block",
 		sidebarNavHide: "md:!hidden",
-		drawerSidebar: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none",
-		drawerDefault: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 	},
 	legacy: {
 		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
 		desktopWrap: "hidden w-full lg:block",
 		sidebarNavHide: "lg:!hidden",
-		drawerSidebar: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:translate-x-full lg:[&.hidden]:translate-x-full motion-reduce:transition-none",
-		drawerDefault: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 	},
 }[designParity ? "designers" : "legacy"];
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
@@ -405,10 +401,16 @@ const shopId = "";
 			// Нижняя шторка других типов меню (на телефоне) спадает из-под шапки
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
-			// PARITY_DESIGN двигает и эту пару порогов на md — HEADER_BP.drawerSidebar
-			// / HEADER_BP.drawerDefault (иначе шторка не совпадёт с новой десктопной
+			// PARITY_DESIGN двигает и эту пару порогов на md — строки прямо в теге
+			// (гард header-burger-position ищет сторону панели в теге; иначе шторка не совпадёт с новой десктопной
 			// строкой в 768–1023).
-			isSidebar ? HEADER_BP.drawerSidebar : HEADER_BP.drawerDefault,
+			isSidebar
+				? designParity
+					? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
+					: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:translate-x-full lg:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				: designParity
+					? "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none"
+					: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"
 		aria-modal="true"
@@ -609,7 +611,7 @@ const shopId = "";
 	// карточек. «Боковое» меню поля не несёт — тогда, как раньше, панель.
 	// PARITY_DESIGN двигает и этот порог на md (767.98): иначе desktop-строка
 	// на 768–1023 уже видна (HEADER_BP.desktopWrap), а лупа всё равно тянулась
-	// бы в скрытую по CSS шторку (HEADER_BP.drawerDefault прячет её с md) —
+	// бы в скрытую по CSS шторку (шторка по умолчанию прячется с md) —
 	// клик по поиску не открывал бы ничего. Признак читаем с data-header-wrapper,
 	// а не замыканием: скрипт статичен для обоих режимов одной сборки темы.
 	const isDesignParity = () =>

@@ -40,7 +40,6 @@ import {
   pagePropsPreparer,
   applyCollectionContextToProps,
 } from '../themes/page-blocks';
-import { normalizeBlockProps } from '../content/normalize-block-props';
 import { isV2ComplexRoute } from '../themes/v2-routes';
 import { schemeIdFromProp } from '../themes/v2-page-composer';
 import { getSystemPageRoute, getChromeKind, getChromeKindByPageId, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from '../themes/page-registry';

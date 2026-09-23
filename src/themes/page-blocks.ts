@@ -6,7 +6,6 @@ import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
 import { unifyFooterWithHome, unifyHeaderWithHome } from '../utils/revision-migrations';
 import { parityOn } from './parity-switch';
 import { isBodyBlockOnPage } from './page-registry';
-import { normalizeBlockProps } from '../content/normalize-block-props';
 
 /**
  * Extract the rendered block list for a page from a (migrated) site revision.

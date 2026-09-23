@@ -76,7 +76,7 @@ function page(theme: string, tokens: string, main: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${themeCss(theme)}</style>
 <style id="__merfy_tokens_css">${tokens}</style>
-<style>html,body{margin:0;padding:0;background:${POISON}}html{scroll-behavior:auto!important}</style>
+<style>html,body{margin:0;padding:0;background:${POISON}}html{scroll-behavior:auto!important}html,body{overflow:visible!important;height:auto!important}</style>
 </head><body><div data-above-main style="height:8px;background:rgb(9,9,9)"></div><main>${main}</main></body></html>`;
 }
 
@@ -114,7 +114,10 @@ async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]>
     }, Math.max(0, y - 100));
     const top = y - view.scrollY;
     const h = Math.min(CHUNK, y1 - y, view.height - top);
-    if (h <= 0) throw new Error(`строка ${y} вне окна после прокрутки на ${view.scrollY}`);
+    if (h <= 0) {
+      const doc = await pg.evaluate(() => `документ ${document.documentElement.scrollHeight}px, окно ${window.innerHeight}px`);
+      throw new Error(`строка ${y} вне окна после прокрутки на ${view.scrollY} (${doc})`);
+    }
     const png = PNG.sync.read(await pg.screenshot({ clip: { x: 4, y: top, width: 1, height: h } }));
     for (let row = 0; row < png.height; row++) {
       const i = row * png.width * 4;
@@ -214,12 +217,17 @@ async function measurePadding(browser: Browser, theme: string, only?: string): P
   for (const width of WIDTHS) {
     for (const r of rendered) {
       if (!r.html) {
-        rows.push({ theme, width, case: `отступ ${r.block}`, wrongPx: -1, poisonPx: -1, where: "", note: `нет HTML: ${r.error ?? "?"}` });
+        rows.push({ theme, width, case: `отступ ${r.block}`, wrongPx: -1, poisonPx: -1, where: "", note: `секция не отрисовалась: ${r.error ?? "?"}` });
         continue;
       }
       const html = page(theme, tokens, wrap(r.html, scheme));
-      const s = await scanStrip(browser, html, width, { sel: "[data-block-scheme]" });
-      rows.push(summarize(theme, width, `отступ ${r.block}`, s));
+      try {
+        const s = await scanStrip(browser, html, width, { sel: "[data-block-scheme]" });
+        rows.push(summarize(theme, width, `отступ ${r.block}`, s));
+      } catch (e) {
+        // Сбой замера — нарушение с адресом, а не падение всего прогона.
+        rows.push({ theme, width, case: `отступ ${r.block}`, wrongPx: -1, poisonPx: -1, where: "", note: `замер не удался: ${(e as Error).message.split("\n")[0]}` });
+      }
     }
   }
   return rows;
@@ -284,7 +292,7 @@ export const RULES: Rule[] = [
     // владельца ровно в том, что сквозь отступ виден фон страницы (Схема 1).
     applies: (r) => r.case.startsWith("отступ "),
     check: (r) => {
-      if (r.wrongPx < 0) return `секция не отрисовалась: ${r.note ?? "?"}`;
+      if (r.wrongPx < 0) return r.note ?? "секция не измерена";
       return r.poisonPx === 0 ? null : `просвет страницы ${r.poisonPx}px (${r.where})`;
     },
   },

@@ -40,7 +40,7 @@
   },
   "blockDefaults": {
     "PromoBanner": {
-      "size": "thin",
+      "size": "medium",
       "textTransform": "none",
       "colorScheme": "scheme-1"
     },

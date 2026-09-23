@@ -178,17 +178,14 @@ export const CatalogPuckConfig: BlockPuckConfig<CatalogProps> = {
             { label: 'Выкл', value: 'false' },
           ],
         },
-        // 098: simple = просто второе фото при hover; zones = Avito-style
-        // hover-zones (1/3 image сегменты показывают images[1..3])
-        nextPhotoMode: {
-          type: 'select',
-          label: 'Режим следующего фото',
-          options: [
-            { label: 'Просто следующее', value: 'simple' },
-            { label: 'Зоны при наведении', value: 'zones' },
-          ],
-          visibleWhen: { field: 'productCard.nextPhoto', equals: 'true' },
-        } as any,
+        // Как ведёт себя «Следующее фото», решает ТЕМА, а не мерчант. Владелец
+        // 23.09: bloom и vanilla листают фото, как на Авито, остальные темы
+        // показывают второе фото. Выбора режима нет в макете (Figma 1:34017), и
+        // конструктор его ни разу не показал: условие показа было записано
+        // путём `productCard.nextPhoto`, а панель ищет соседнее поле по имени.
+        // Значение в ревизиях — подставленный дефолт, порты его не читают.
+        // `hidden`, потому что проп лежит в ревизиях мерчантов.
+        nextPhotoMode: { type: 'hidden', label: '' } as any,
         quickAdd: {
           type: 'select',
           label: 'Быстрое добавление',

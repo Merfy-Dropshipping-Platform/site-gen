@@ -2,7 +2,9 @@
  * @jest-environment jsdom
  *
  * «Каталог товаров» → «Следующее фото при наведении»: наведение на карточку
- * показывает второе фото товара, уход — возвращает первое.
+ * показывает второе фото товара, уход — возвращает первое. Так ведут себя
+ * rose, satin и flux; bloom и vanilla листают все фото по положению курсора
+ * (владелец 23.09) — это сторожит `catalog-next-photo-by-theme.spec.ts`.
  *
  * Панель показывает эту настройку во всех пяти темах, а vanilla её не читала
  * вовсе: аудит 22.09 — ноль упоминаний в порте против 8–14 у остальных, то есть
@@ -16,7 +18,7 @@
  */
 import { renderSections } from "../../../scripts/qa/lib/render";
 
-const ТЕМЫ = ["rose", "bloom", "satin", "vanilla", "flux"] as const;
+const ТЕМЫ = ["rose", "satin", "flux"] as const;
 const ФОТО_1 = "https://minio.merfy.ru/product-images/one.jpg";
 const ФОТО_2 = "https://minio.merfy.ru/product-images/two.jpg";
 

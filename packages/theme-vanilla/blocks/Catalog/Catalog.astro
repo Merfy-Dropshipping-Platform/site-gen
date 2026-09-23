@@ -161,13 +161,14 @@ const cardAspectClass =
 // «Следующее фото при наведении» (productCard.nextPhoto). Панель показывает эту
 // настройку во всех пяти темах, а vanilla её не читала вовсе — переключатель
 // ничего не делал (аудит 22.09: 0 упоминаний в порте против 8–14 у остальных).
-// Поведение — как у rose: у картинки карточки data-img-primary/secondary, при
-// наведении src меняется на images[1], при уходе возвращается.
 const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
-// «Режим следующего фото» (productCard.nextPhotoMode): simple — второе фото при
-// наведении, zones — как в Авито (X курсора выбирает фото). Раньше порт режим
-// не читал, и «Зоны» в панели были мёртвы (владелец 23.09).
-const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple";
+// Как именно листается фото — черта ТЕМЫ, не настройка. Владелец 23.09: bloom
+// и vanilla листают, как на Авито (курсор по ширине фото перебирает ВСЕ фото
+// товара), остальные темы показывают второе фото. Так же устроена карточка в
+// вёрстке vanilla (VanillaProductCard: зоны по ширине фото). Выбора режима в
+// панели нет, поэтому `productCard.nextPhotoMode` из ревизии не читается: там
+// лежит подставленный конструктором дефолт, а не выбор мерчанта.
+const nextPhotoMode = "zones";
 
 // «Быстрое добавление»: 'none' (или отсутствие пропа) = канон вёрстки vanilla —
 // кнопки в карточке нет. Любое другое значение показывает кнопку.
@@ -486,7 +487,7 @@ const rowStockOptions: RadioOption[] = [
 	   обе вместе прятали ОБА варианта — каталог был пустой. */
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass, nextPhotoOn, nextPhotoMode }}>
+<script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass, nextPhotoOn }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
 	// перенесены телами 1:1 (без import/типов), данные frontmatter — через define:vars.
@@ -712,44 +713,37 @@ const rowStockOptions: RadioOption[] = [
 		}
 		bindQuickAdd();
 
-		// «Следующее фото при наведении»: делегат на документ (грид перерисовывается
-		// целиком), один раз на страницу. Как у rose: наведение → images[1], уход →
-		// images[0]. Без настройки у картинок нет data-img-secondary — ничего не делает.
+		// «Следующее фото при наведении» — листание, как на Авито: ширина фото
+		// делится на столько равных полос, сколько у товара фото; курсор в полосе
+		// N — фото N (три фото: левая треть — первое, середина — второе, правая
+		// треть — третье), уход — снова первое. Ширину берём у видимой рамки (<a>
+		// с overflow-hidden), а не у самой картинки: при наведении она увеличена
+		// на 5% и её края обрезаны. Делегат на документ (грид перерисовывается
+		// целиком), один раз на страницу.
 		function bindNextPhoto() {
 			if (!nextPhotoOn) return;
 			if (document.body.getAttribute("data-vn-next-photo") === "1") return;
 			document.body.setAttribute("data-vn-next-photo", "1");
-			// «Зоны при наведении» — как в Авито: положение курсора по X выбирает
-			// 1-е…4-е фото. Код тот же, что у bloom/satin/flux/rose (владелец 23.09:
-			// «в некоторых темах работает по-разному»).
-			if (nextPhotoMode === "zones") {
-				document.addEventListener("mousemove", (event) => {
-					const img = event.target.closest("img[data-img-primary]");
-					if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
-					const rect = img.getBoundingClientRect();
-					const keys = ["data-img-primary", "data-img-2", "data-img-3", "data-img-4"];
-					const available = keys.filter((k) => img.getAttribute(k));
-					if (available.length < 2) return;
-					const xRel = (event.clientX - rect.left) / rect.width;
-					let idx = Math.floor(xRel * available.length);
-					if (idx < 0) idx = 0;
-					if (idx > available.length - 1) idx = available.length - 1;
-					const next = img.getAttribute(available[idx]);
-					if (next && img.getAttribute("src") !== next) img.setAttribute("src", next);
-				});
-				document.addEventListener("mouseout", (event) => {
-					const img = event.target.closest("img[data-img-primary]");
-					if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
-					const prim = img.getAttribute("data-img-primary");
-					if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
-				});
-				return;
-			}
-			document.addEventListener("mouseover", (event) => {
-				const img = event.target.closest("img[data-img-secondary]");
+			const cardPhotos = (img) => {
+				const photos = [img.getAttribute("data-img-primary")];
+				for (let n = 2; img.hasAttribute("data-img-" + n); n++) photos.push(img.getAttribute("data-img-" + n));
+				return photos.filter(Boolean);
+			};
+			// Остальные фото грузим при первом наведении, чтобы листание не ждало сеть.
+			const preloaded = new WeakSet();
+			document.addEventListener("mousemove", (event) => {
+				const img = event.target.closest("img[data-img-primary]");
 				if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
-				const sec = img.getAttribute("data-img-secondary");
-				if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
+				const photos = cardPhotos(img);
+				if (photos.length < 2) return;
+				if (!preloaded.has(img)) {
+					preloaded.add(img);
+					photos.slice(1).forEach((src) => { new Image().src = src; });
+				}
+				const frame = img.parentElement.getBoundingClientRect();
+				const share = (event.clientX - frame.left) / frame.width;
+				const n = Math.min(photos.length - 1, Math.max(0, Math.floor(share * photos.length)));
+				if (img.getAttribute("src") !== photos[n]) img.setAttribute("src", photos[n]);
 			});
 			document.addEventListener("mouseout", (event) => {
 				const img = event.target.closest("img[data-img-primary]");
@@ -765,19 +759,14 @@ const rowStockOptions: RadioOption[] = [
 			const href = escapeHtml(productHref(p));
 			const name = escapeHtml(p.name);
 			const rawImage = productImageRaw(p);
-			// Второе фото для «Следующего фото при наведении» — images[1]; атрибут
-			// secondary ставится только если оно есть, иначе смена — no-op.
-			const rawImage2 =
-				(nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
-			// Режиму «зоны» нужны дополнительные фото: курсор делит картинку по X
-			// на столько частей, сколько снимков есть (как у bloom).
+			// Листанию нужны ВСЕ остальные фото товара — data-img-2, data-img-3, …
+			// без потолка: сколько фото, столько полос по ширине картинки.
 			const zoneImgs =
 				nextPhotoOn && Array.isArray(p.images)
-					? p.images.slice(1, 4).filter((src) => typeof src === "string" && src)
+					? p.images.slice(1).filter((src) => typeof src === "string" && src)
 					: [];
 			const imgDataAttrs =
 				' data-img-primary="' + escapeHtml(rawImage) + '"' +
-				(rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "") +
 				zoneImgs.map((src, i) => ' data-img-' + (i + 2) + '="' + escapeHtml(src) + '"').join("");
 			const media = rawImage
 				? `<img src="${escapeHtml(rawImage)}"${imgDataAttrs} alt="${name}" width="429" height="429" loading="eager" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`

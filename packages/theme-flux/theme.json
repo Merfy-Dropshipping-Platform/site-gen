@@ -118,8 +118,7 @@
         "buttonStyle": "primary",
         "cardBackground": "true",
         "cardStyle": "square",
-        "quickAdd": "cart",
-        "nextPhotoMode": "simple"
+        "quickAdd": "cart"
       },
       "filterPosition": "side",
       "showSort": "true",

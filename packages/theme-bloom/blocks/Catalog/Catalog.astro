@@ -159,13 +159,14 @@ const quickAddMode = productCard?.quickAdd ?? "none";
 const showQuickAdd = quickAddMode === "standard" || quickAddMode === "cart";
 const quickAddText = quickAddMode === "cart" ? "В КОРЗИНУ" : "БЫСТРЫЙ ПРОСМОТР";
 
-// (5) Следующее фото при наведении (hover-swap на images[1]).
+// (5) Следующее фото при наведении: листание всех фото товара курсором.
 const nextPhotoOn = productCard?.nextPhoto === "true" || productCard?.nextPhoto === true;
-// Режим показа второго фото (настройка «Режим следующего фото»):
-// simple — при наведении подменяем на второе фото; zones — Avito-стиль,
-// сегменты по X показывают 2-е/3-е/4-е фото. Раньше порт эту настройку
-// не читал вовсе (в theme-base читается), и контрол в панели был мёртв.
-const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple";
+// Как именно листается фото — черта ТЕМЫ, не настройка. Владелец 23.09: bloom
+// и vanilla листают, как на Авито (курсор по ширине фото перебирает ВСЕ фото
+// товара), остальные темы показывают второе фото. Выбора режима в панели нет,
+// поэтому `productCard.nextPhotoMode` из ревизии не читается: там лежит
+// подставленный конструктором дефолт, а не выбор мерчанта.
+const nextPhotoMode = "zones";
 
 // (8) «Контейнер» карточки (productCard.cardBackground, Figma 1:34185-34635).
 //     true  → контент карточки в подложке-контейнере: внутр. отступ 12px со всех
@@ -525,7 +526,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddMode, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn, nextPhotoMode }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddMode, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → на проде остаётся сырой путь Catalog.astro?astro&type=script
   // → HTTP 404 → вся клиентская логика мертва. is:inline компилится всегда.
@@ -706,19 +707,14 @@ const skeletons = Array.from({ length: skeletonCount });
     const href = escapeHtml(productHref(p));
     const name = escapeHtml(p.name);
     const rawImage = productImageRaw(p);
-    // Второе фото (настройка «Следующее фото при наведении») — images[1].
-    const rawImage2 =
-      (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
-    // Режиму «зоны» нужны ДОПОЛНИТЕЛЬНЫЕ фото: курсор делит картинку по X на
-    // столько частей, сколько снимков есть. Без data-img-2/3/4 доступное фото
-    // всегда одно, и режим включался, но визуально ничего не делал.
+    // Листанию нужны ВСЕ остальные фото товара — data-img-2, data-img-3, … без
+    // потолка: сколько фото, столько полос по ширине картинки.
     const zoneImgs =
       nextPhotoOn && Array.isArray(p.images)
-        ? p.images.slice(1, 4).filter((src) => typeof src === "string" && src)
+        ? p.images.slice(1).filter((src) => typeof src === "string" && src)
         : [];
     const imgDataAttrs =
       ' data-img-primary="' + escapeHtml(rawImage) + '"' +
-      (rawImage2 ? ' data-img-secondary="' + escapeHtml(rawImage2) + '"' : "") +
       zoneImgs.map((src, i) => ' data-img-' + (i + 2) + '="' + escapeHtml(src) + '"').join("");
     const media = rawImage
       ? `<img src="${escapeHtml(rawImage)}"${imgDataAttrs} alt="${name}" width="600" height="600" loading="eager" class="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"${CARD_IMG_ONERROR_ATTR} />`
@@ -1369,38 +1365,31 @@ const skeletons = Array.from({ length: skeletonCount });
     });
 
     if (!nextPhotoOn) return;
-    // Режим — СВОЕЙ секции (define:vars). Раньше брался с первого элемента
-    // страницы с data-next-photo-mode: секция выше по странице могла включить
-    // каталогу чужой режим.
-    if (nextPhotoMode === "zones") {
-      // Зоны: положение курсора по X внутри картинки выбирает фото 1..4.
-      document.addEventListener("mousemove", (event) => {
-        const img = event.target.closest("img[data-img-primary]");
-        if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
-        const rect = img.getBoundingClientRect();
-        const keys = ["data-img-primary", "data-img-2", "data-img-3", "data-img-4"];
-        const available = keys.filter((k) => img.getAttribute(k));
-        if (available.length < 2) return;
-        const xRel = (event.clientX - rect.left) / rect.width;
-        let idx = Math.floor(xRel * available.length);
-        if (idx < 0) idx = 0;
-        if (idx > available.length - 1) idx = available.length - 1;
-        const next = img.getAttribute(available[idx]);
-        if (next && img.getAttribute("src") !== next) img.setAttribute("src", next);
-      });
-      document.addEventListener("mouseout", (event) => {
-        const img = event.target.closest("img[data-img-primary]");
-        if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
-        const prim = img.getAttribute("data-img-primary");
-        if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
-      });
-      return;
-    }
-    document.addEventListener("mouseover", (event) => {
-      const img = event.target.closest("img[data-img-secondary]");
+    // Как на Авито: ширина фото делится на столько равных полос, сколько у
+    // товара фото; курсор в полосе N — фото N (три фото: левая треть —
+    // первое, середина — второе, правая треть — третье). Ширину берём у
+    // видимой рамки (<a> с overflow-hidden), а не у самой картинки: при
+    // наведении она увеличена на 5% и её края обрезаны.
+    const cardPhotos = (img) => {
+      const photos = [img.getAttribute("data-img-primary")];
+      for (let n = 2; img.hasAttribute("data-img-" + n); n++) photos.push(img.getAttribute("data-img-" + n));
+      return photos.filter(Boolean);
+    };
+    // Остальные фото грузим при первом наведении, чтобы листание не ждало сеть.
+    const preloaded = new WeakSet();
+    document.addEventListener("mousemove", (event) => {
+      const img = event.target.closest("img[data-img-primary]");
       if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
-      const sec = img.getAttribute("data-img-secondary");
-      if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
+      const photos = cardPhotos(img);
+      if (photos.length < 2) return;
+      if (!preloaded.has(img)) {
+        preloaded.add(img);
+        photos.slice(1).forEach((src) => { new Image().src = src; });
+      }
+      const frame = img.parentElement.getBoundingClientRect();
+      const share = (event.clientX - frame.left) / frame.width;
+      const n = Math.min(photos.length - 1, Math.max(0, Math.floor(share * photos.length)));
+      if (img.getAttribute("src") !== photos[n]) img.setAttribute("src", photos[n]);
     });
     document.addEventListener("mouseout", (event) => {
       const img = event.target.closest("img[data-img-primary]");

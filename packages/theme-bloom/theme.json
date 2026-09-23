@@ -145,8 +145,7 @@
       },
       "productCard": {
         "cardStyle": "auto",
-        "quickAdd": "none",
-        "nextPhotoMode": "simple"
+        "quickAdd": "none"
       }
     },
     "Footer": {

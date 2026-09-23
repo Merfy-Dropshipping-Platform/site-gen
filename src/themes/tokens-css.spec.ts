@@ -171,13 +171,19 @@ describe('buildTokensCss merchant precedence', () => {
 });
 
 /**
- * Spec 2026-07-06 — «общий отступ темы» = настоящий margin МЕЖДУ секциями,
- * развязанный от per-section padding. Слайдер темы пишет `sectionGap` →
- * токен `--section-gap`; owl-правило `main > * + *` даёт зазор между прямыми
- * детьми <main> (секциями), НЕ трогая header/footer (вне <main>) и НЕ трогая
- * props.padding блоков. Дефолт 0px — нулевая визуальная регрессия.
+ * Spec 2026-07-06 — «общий отступ темы» = зазор МЕЖДУ секциями, развязанный от
+ * per-section padding. Слайдер темы пишет `sectionGap` → токен `--section-gap`;
+ * правило даёт зазор между прямыми детьми <main> (секциями), НЕ трогая
+ * header/footer (вне <main>) и НЕ трогая props.padding блоков. Дефолт 0px —
+ * нулевая визуальная регрессия.
+ *
+ * Владелец 23.09: «отступы между секций берут на себя фон цветовой схемы 1 в
+ * независимости какая выбрана у секций». Зазор был полем снаружи секций, в нём
+ * просвечивал фон страницы. Теперь у секции со своей схемой он внутри обёртки
+ * верхним отступом и окрашен её схемой. Цвет пикселей сторожит браузерный
+ * замер `pnpm qa:section-gaps`; здесь — форма правила.
  */
-describe('section gap — margin между секциями', () => {
+describe('section gap — зазор между секциями', () => {
   it('merchant sectionGap → --section-gap токен', () => {
     const css = buildTokensCss({ sectionGap: 40 }, 'rose');
     expect(css).toContain('--section-gap: 40px');
@@ -193,15 +199,36 @@ describe('section gap — margin между секциями', () => {
     expect(css).toContain('--section-gap: 0px');
   });
 
-  it('всегда инжектит owl-правило margin между детьми <main> (live+preview)', () => {
-    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
-    expect(css).toContain('main > * + *{margin-top:var(--section-gap, 0px)}');
+  const NOT_SECTION = ':not(style,script,template,link,noscript,header)';
+  const MARGIN_RULE = `main>${NOT_SECTION}~${NOT_SECTION}{margin-top:var(--section-gap, 0px)}`;
+  const INSIDE_RULE = `main>${NOT_SECTION}~[data-block-scheme]{margin-top:0;padding-top:var(--section-gap, 0px);`;
+
+  it('секция без своей схемы получает зазор полем, как раньше (live+preview)', () => {
+    expect(buildTokensCss({ sectionGap: 40 }, 'rose')).toContain(MARGIN_RULE);
   });
 
-  it('owl-правило есть даже без темы и при нулевом зазоре', () => {
-    expect(buildTokensCss({}, null)).toContain(
-      'main > * + *{margin-top:var(--section-gap, 0px)}',
+  it('секция со своей схемой получает зазор внутри обёртки, окрашенный её фоном', () => {
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    const rule = css.slice(css.indexOf(INSIDE_RULE));
+    expect(rule.startsWith(INSIDE_RULE)).toBe(true);
+    // Красится только полоса высотой в зазор — фоном схемы секции.
+    expect(rule.slice(0, rule.indexOf('}'))).toContain(
+      'background:linear-gradient(rgb(var(--color-bg)),rgb(var(--color-bg))) top/100% var(--section-gap, 0px) no-repeat',
     );
+  });
+
+  it('зазор только между секциями: служебные узлы <main> секциями не считаются', () => {
+    // Порты кладут <style>/<script> прямо в <main>; прежнее `main > * + *`
+    // давало зазор первой секции, если перед ней стоял <style>.
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    expect(css).not.toContain('main > * + *');
+    expect(css).toContain(`main>${NOT_SECTION}~`);
+  });
+
+  it('правила есть даже без темы и при нулевом зазоре', () => {
+    const css = buildTokensCss({}, null);
+    expect(css).toContain(MARGIN_RULE);
+    expect(css).toContain(INSIDE_RULE);
   });
 });
 

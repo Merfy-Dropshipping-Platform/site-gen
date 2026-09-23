@@ -1890,6 +1890,10 @@ jobs:
       - run: pnpm exec jest --runInBand src/themes/__tests__/block-artifact-resolver.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-contract.spec.ts
       - run: pnpm exec jest --runInBand src/themes/__tests__/preview-cart-contract.spec.ts
+      # PR-19 — три точки расширений на витрине (cart/checkout/account):
+      # контракт монтирования (theme-base блоки + legacy кабинет пяти тем) и
+      # гард словаря (theme-base не называет расширения по домену).
+      - run: pnpm exec jest --runInBand src/themes/__tests__/extension-points-contract.spec.ts src/__tests__/extension-vocabulary.spec.ts
       - run: pnpm conformance:satin
       - run: pnpm check:css-layers
       - run: pnpm validate:page-seeds

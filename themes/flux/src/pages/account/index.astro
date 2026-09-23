@@ -24,6 +24,12 @@ const apiUrl = "https://gateway.merfy.ru/api";
     </nav>
 
     <button type="button" class="account-text-link" id="btn-logout">Выйти из аккаунта</button>
+
+    {/* PR-19 — точка расширений «Личный кабинет» (модуль расширения
+        магазина). AccountLayout (theme-base) сегодня ни к одной странице не
+        подключён — разметку кабинета несёт эта страница, поэтому во всех
+        пяти темах здесь стоит ОДНА И ТА ЖЕ строка монтирования. */}
+    <div id="account-extensions" data-ext-point="account"></div>
   </div>
 
   <script>
@@ -57,5 +63,24 @@ const apiUrl = "https://gateway.merfy.ru/api";
 
     initAccountPage();
     document.addEventListener('astro:page-load', initAccountPage);
+  </script>
+
+  <script>
+    // PR-19 — точка расширений «Личный кабинет» (см. runtime/extension-points.ts,
+    // тот же mountExtensionPoint, что у theme-base блоков; themes/<t> напрямую
+    // импортирует theme-base по прецеденту checkout.astro/cart.astro).
+    import { mountExtensionPoint } from '../../../../../packages/theme-base/runtime/extension-points';
+    import { getToken } from '../../lib/auth';
+
+    function mountAccountExtensions(): void {
+      const el = document.getElementById('account-extensions');
+      if (!el) return;
+      const w = window as unknown as { __MERFY_CONFIG__?: { shopId?: string; storeId?: string } };
+      const storeId = (w.__MERFY_CONFIG__ && (w.__MERFY_CONFIG__.shopId || w.__MERFY_CONFIG__.storeId)) || '';
+      void mountExtensionPoint(el, { point: 'account', storeId, authToken: getToken() || '' });
+    }
+
+    mountAccountExtensions();
+    document.addEventListener('astro:page-load', mountAccountExtensions);
   </script>
 </Layout>

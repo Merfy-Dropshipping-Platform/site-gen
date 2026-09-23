@@ -13,4 +13,7 @@ export const AccountLayoutClasses = {
   navLink: 'px-3 py-2 rounded-[var(--radius-card)] [font-family:var(--font-body)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-text))] no-underline data-[active=true]:text-[rgb(var(--color-primary))] data-[active=true]:bg-[rgb(var(--color-bg))]',
   logoutBtn: 'mt-2 px-3 py-2 rounded-[var(--radius-card)] [font-family:var(--font-body)] text-[length:var(--size-nav-link)] text-[rgb(var(--color-error))] bg-transparent border-0 cursor-pointer text-left',
   content: 'bg-[rgb(var(--color-surface))] rounded-[var(--radius-card)] p-6',
+  // PR-19 — точка расширений «Личный кабинет» (под содержимым колонки).
+  // `empty:hidden` — без включённых расширений нет ни отступа, ни рамки.
+  extPoint: 'empty:hidden mt-[var(--spacing-section-y)] flex flex-col gap-6',
 } as const;

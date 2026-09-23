@@ -146,8 +146,9 @@ export class DocumentAdapter implements StoreContent {
       ? await this.stripSeededPages(siteId, params.site, params.document)
       : params.document;
 
-    if (params.setCurrent && params.expectedVersion !== undefined) {
-      await this.saveWithCas(siteId, id, dataToPersist, params);
+    const expectedVersion = params.expectedVersion;
+    if (params.setCurrent && expectedVersion !== undefined) {
+      await this.saveWithCas(siteId, id, dataToPersist, expectedVersion, params);
       return { version: id };
     }
 
@@ -255,10 +256,10 @@ export class DocumentAdapter implements StoreContent {
     siteId: string,
     id: string,
     data: Record<string, unknown>,
+    expectedCurrentRevisionId: string | null,
     params: SaveParams,
   ): Promise<void> {
     const tenantId = params.tenantId;
-    const expectedCurrentRevisionId = params.expectedVersion as string | null;
     await this.db.transaction(async (tx) => {
       await tx.insert(schema.siteRevision).values({
         id,

@@ -13,7 +13,13 @@
  * Откат пункта — выключить переменную в Coolify и перезапустить sites;
  * откат кода и пересборка образа не нужны.
  */
-export type ParityItem = "TOKENS" | "LOGO" | "CHROME" | "FOOTER" | "HOT";
+export type ParityItem =
+  | "TOKENS"
+  | "LOGO"
+  | "CHROME"
+  | "FOOTER"
+  | "HOT"
+  | "DESIGN";
 
 export function parityOn(
   item: ParityItem,

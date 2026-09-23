@@ -36,6 +36,7 @@ import {
   adaptLegacyProps,
   prepareBlockProps,
   themeBlocksFor,
+  designParityFlag,
   extractPageBlocks,
   pagePropsPreparer,
   applyCollectionContextToProps,
@@ -868,6 +869,9 @@ export class PreviewController {
           ? applyCollectionContextToProps(body.blockType, adaptedProps, collectionCtx)
           : adaptedProps),
         siteId,
+        // Признак PARITY_DESIGN — и когда PARITY_HOT выключен: иначе после
+        // правки секция рисовалась бы по старым стилям до перезагрузки.
+        ...designParityFlag(siteId),
       };
       // Выбор товара через верхнее меню превью бьёт настройку блока — ровно как
       // на целой странице (`productIdOverride ?? defaultProductIdFromRevision`).

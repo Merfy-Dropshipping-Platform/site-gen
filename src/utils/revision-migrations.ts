@@ -411,7 +411,8 @@ function migrateCartPage(
  */
 function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   const existing = pagesData['page-catalog'] as PageData | undefined;
-  const ts = Date.now();
+  // b45-fix: детерминированный id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json (`Catalog-1`).
   // New default seed (082+): explicit cards/columns/filter/sort props so the
   // legacy [Header, PopularProducts, Footer] migration produces a Catalog
   // widget with the canonical 12 cards × 3 columns side-filter layout. Legacy
@@ -420,7 +421,7 @@ function migrateCatalogPage(pagesData: Record<string, unknown>): Record<string, 
   const catalogBlock: Block = {
     type: 'Catalog',
     props: {
-      id: `Catalog-${ts}`,
+      id: 'Catalog-1',
       collectionSlug: undefined,
       cards: 12,
       columns: 3,
@@ -497,14 +498,17 @@ function migrateCollectionPage(pagesData: Record<string, unknown>): Record<strin
   const homeContent: Block[] = Array.isArray(home?.content) ? (home!.content as Block[]) : [];
   const headerBlock = homeContent.find((b) => b?.type === 'Header');
   const footerBlock = homeContent.find((b) => b?.type === 'Footer');
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json (`Header-collection`,
+  // `Catalog-collection`, `Footer-collection`); `Hero-collection` — тем же
+  // приёмом для блока без аналога в theme.json.
 
   const collectionContent: Block[] = [
-    headerBlock ?? { type: 'Header', props: { id: `Header-collection-${ts}` } },
+    headerBlock ?? { type: 'Header', props: { id: 'Header-collection' } },
     {
       type: 'Hero',
       props: {
-        id: `Hero-collection-${ts}`,
+        id: 'Hero-collection',
         variant: 'split',
         heading: { text: '{{COLLECTION_NAME}}', size: 'large' },
         subtitle: { content: '{{COLLECTION_DESCRIPTION}}', size: 'medium' },
@@ -515,7 +519,7 @@ function migrateCollectionPage(pagesData: Record<string, unknown>): Record<strin
     {
       type: 'Catalog',
       props: {
-        id: `Catalog-collection-${ts}`,
+        id: 'Catalog-collection',
         // collectionSlug omitted → live page auto-scopes from Astro.params.slug
         cards: 24,
         columns: 3,
@@ -526,7 +530,7 @@ function migrateCollectionPage(pagesData: Record<string, unknown>): Record<strin
         padding: { top: 40, bottom: 80 },
       } as Record<string, unknown>,
     },
-    footerBlock ?? { type: 'Footer', props: { id: `Footer-collection-${ts}` } },
+    footerBlock ?? { type: 'Footer', props: { id: 'Footer-collection' } },
   ];
 
   return {
@@ -630,11 +634,14 @@ function migrateContentPages(pagesData: Record<string, unknown>): Record<string,
  */
 function migrateProductPage(pagesData: Record<string, unknown>): Record<string, unknown> {
   const existing = pagesData['page-product'] as PageData | undefined;
-  const ts = Date.now();
+  // b45-fix: детерминированные id (не Date.now()) — см. коммент у
+  // getHomeChrome. Совпадает с сидом theme.json (`Product-1`,
+  // `PopularProducts-product`); `Newsletter-product` — тем же приёмом для
+  // блока без аналога в theme.json.
   const productBlock: Block = {
     type: 'Product',
     props: {
-      id: `Product-${ts}`,
+      id: 'Product-1',
       productId: '',
       layout: 'two-columns',
       photoPosition: 'left',
@@ -646,7 +653,7 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
   const popularBlock: Block = {
     type: 'PopularProducts',
     props: {
-      id: `PopularProducts-${ts + 1}`,
+      id: 'PopularProducts-product',
       heading: 'Похожие товары',
       cards: 4,
       columns: 4,
@@ -657,7 +664,7 @@ function migrateProductPage(pagesData: Record<string, unknown>): Record<string, 
   const newsletterBlock: Block = {
     type: 'Newsletter',
     props: {
-      id: `Newsletter-${ts + 2}`,
+      id: 'Newsletter-product',
       colorScheme: 'scheme-2',
       padding: { top: 40, bottom: 40 },
     } as Record<string, unknown>,

@@ -158,6 +158,11 @@ export const site = pgTable("site", {
   // take precedence over packages/theme-<name>/tokens.json during the build.
   // Shape: W3C Design Tokens (partial — only overridden keys).
   customTokens: jsonb("custom_tokens"),
+  // Волна 1 порта контента (src/content/): какой адаптер StoreContent читает
+  // и пишет ревизию этого магазина. Сегодня единственное значение —
+  // 'document' (DocumentAdapter, путь конструктора без изменений). 'delta'
+  // зарезервировано под модель слоёв (merfy-mcp/docs/plans/2026-09-21-deltas-and-port.md §5).
+  contentModel: text("content_model").notNull().default("document"),
 });
 
 export const siteDomain = pgTable("site_domain", {

@@ -1000,11 +1000,24 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
   // внутри него. Разбор и замеры — у ACCOUNT_SURFACE_CSS.
   const accountSurfaceRule = ACCOUNT_SURFACE_CSS;
 
-  // Порт origin/main (спека 2026-07-06 + «оживление слайдеров типографики»):
-  // зазор МЕЖДУ секциями = margin-top прямых детей <main> кроме первого
-  // (owl `* + *`); header/footer вне <main>, props.padding блоков не трогается.
-  // Дефолт 0px = нулевая регрессия.
-  const sectionGapRule = 'main > * + *{margin-top:var(--section-gap, 0px)}';
+  // «Страница → Отступы: между секций» (--section-gap, спека 2026-07-06).
+  // Зазор стоит только МЕЖДУ секциями: секция — прямой ребёнок <main>, кроме
+  // служебных узлов (порты кладут <style>/<script> прямо в <main>, страница
+  // «Заказ оформлен» — шапку чекаута <header>); `~` отсекает первую секцию.
+  // Шапка и подвал магазина вне <main>, props.padding блоков не трогается.
+  //
+  // Раньше зазор был полем (margin) снаружи секций, и в нём просвечивал фон
+  // страницы — Схема 1, какая бы схема ни стояла у секций (владелец 23.09). У
+  // секции со своей схемой (обёртка [data-block-scheme] от v2-page-composer)
+  // зазор уходит внутрь обёртки верхним отступом, и эта полоса красится фоном
+  // её схемы. Красится только сама полоса: секции с прозрачными краями
+  // выглядят как раньше. Секция без своей схемы стоит на фоне страницы — ей
+  // зазор полем, как было. Дефолт 0px — нулевая регрессия.
+  const NOT_SECTION = ':not(style,script,template,link,noscript,header)';
+  const sectionGapRule =
+    `main>${NOT_SECTION}~${NOT_SECTION}{margin-top:var(--section-gap, 0px)}` +
+    `main>${NOT_SECTION}~[data-block-scheme]{margin-top:0;padding-top:var(--section-gap, 0px);` +
+    'background:linear-gradient(rgb(var(--color-bg)),rgb(var(--color-bg))) top/100% var(--section-gap, 0px) no-repeat}';
 
   // «Жирность/Шрифт заголовка-текста» — порты хардкодят font-family/weight по
   // Figma (в т.ч. `!font-normal` = !important в @layer utilities). Инжектим

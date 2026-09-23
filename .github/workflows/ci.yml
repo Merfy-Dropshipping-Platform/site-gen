@@ -127,6 +127,16 @@ jobs:
           src/generator/__tests__/root-url-rewrite-counter.spec.ts
           src/themes/__tests__/preview-asset-single-prefix.spec.ts
 
+      # Точечная перерисовка секции (любая правка в панели конструктора) даёт то
+      # же, что целая страница превью: общая подготовка пропсов, картинки темы из
+      # копии темы, id магазина в шапке. Без артефактов тем, секунды.
+      - name: Тесты точечной перерисовки превью
+        run: >-
+          pnpm exec jest --runInBand
+          src/__tests__/preview-block-like-page.spec.ts
+          src/__tests__/preview-block-hidden-items.spec.ts
+          src/themes/__tests__/asset-resolver-relativize.spec.ts
+
       # Контракт тем: схема манифеста, реестр токенов, резолвер страниц,
       # конформанс-движок. Джоба satin гоняла отсюда только conformance-*
       # (9 сьютов из 40). 39 сьютов, 418 проверок, ~3 c.

@@ -242,10 +242,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
     (`bg-[rgb(var(--color-bg,58_69_48))]` ниже) за схемой уже едет. Замер
     матрицы (схемы-зонды 1 → 4): текст #fff → #fff против 17,0,0 → 0,17,0 у
     полосы. Фолбэк 255_255_255 = прежний вид.
-    Сторож: pnpm test:scheme-targets. */}
+    Сторож: pnpm test:scheme-targets.
+    Фон схемы — тоже здесь, на секции, которая несёт «Отступы» (paddingStyle):
+    иначе полоса отступа прозрачная и в ней виден фон страницы — Схема 1
+    (владелец 23.09). Сторож: pnpm qa:section-gaps. */}
 <section
 	id="gallery"
-	class="w-full text-[rgb(var(--color-text,255_255_255))]"
+	class="w-full bg-[rgb(var(--color-bg,58_69_48))] text-[rgb(var(--color-text,255_255_255))]"
 	aria-labelledby="gallery-title"
 	data-vanilla-gallery
 	data-vanilla-stack

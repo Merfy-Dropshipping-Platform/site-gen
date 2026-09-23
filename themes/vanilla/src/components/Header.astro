@@ -3,7 +3,6 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
 import { VANILLA_ICON_SVGS } from "./icons/vanilla-icon-svgs";
 import VanilaLogo from "../icons/VanilaLogo.astro";
-import VanilaLogoDesigners from "../icons/VanilaLogoDesigners.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import { SITE_TITLE } from "../consts";
@@ -76,20 +75,11 @@ const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgMobileCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px] object-contain";
 const logoImgDesktopCls = "h-[var(--size-logo-width,28px)] w-auto max-w-[160px] object-contain";
 
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// встроенный вордмарк — ширина и сам рисунок по актуальной Vanilla-theme
-// @c65d9e1c. У них «Vanilla» двумя «l» (другой набор путей, не только
-// размер) — рисует отдельный компонент VanilaLogoDesigners, выбор по
-// признаку. Загруженный МЕРЧАНТОМ логотип (logoImgMobileCls/DesktopCls выше)
-// не трогаем — это чужая настройка «Логотип», не вордмарк темы.
-// Без признака — прежние классы и прежний VanilaLogo байт-в-байт.
-const designParity = p.__designParity === true;
-const VANILA_LOGO_MOBILE_CLS = designParity
-	? "h-[var(--size-logo-width,24px)] w-auto max-w-[85px]"
-	: "h-[var(--size-logo-width,24px)] w-auto max-w-[76px]";
-const VANILA_LOGO_DESKTOP_CLS = designParity
-	? "h-[var(--size-logo-width,28px)] w-[98px]"
-	: "h-[var(--size-logo-width,28px)] w-auto max-w-[89px]";
+// Встроенный вордмарк НЕ сводим с верстальщиками: у них другой рисунок
+// («Vanilla» двумя «l» против нашего «Vanila») — это текст логотипа, а не
+// стиль; решение за владельцем. Классы — прежние.
+const VANILA_LOGO_MOBILE_CLS = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px]";
+const VANILA_LOGO_DESKTOP_CLS = "h-[var(--size-logo-width,28px)] w-auto max-w-[89px]";
 
 // Канон logoPosition: 'center-absolute' (canon-default из blockDefaults vanilla) И
 // отсутствие / неизвестное значение → ЛИТЕРАЛ верстальщика (лого центр абсолютом,
@@ -261,7 +251,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				</span>
 			</button>
 			<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_MOBILE_CLS} /> : <VanilaLogo class={VANILA_LOGO_MOBILE_CLS} />}
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogo class={VANILA_LOGO_MOBILE_CLS} />}
 			</a>
 			<div class="flex items-center gap-3">
 				<button
@@ -318,7 +308,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 					<>
 						<div class="flex w-full items-center justify-between">
 							<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
 							</a>
 							<div class="flex items-center gap-5">
 								<button
@@ -414,7 +404,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							</div>
 							<div class="flex items-center justify-center">
 								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
-									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
 								</a>
 							</div>
 							<div class="flex items-center justify-end gap-5">
@@ -508,7 +498,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						class:list={[desktopLogoCls, logoLeft && "flex-1"]}
 						aria-label={siteTitle}
 					>
-						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
 					</a>
 
 					<nav

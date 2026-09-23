@@ -108,7 +108,11 @@ const stockOptions: RadioOption[] = [
 
 	<div class="flex flex-col gap-3 py-3">
 		<p class={CATALOG_FILTER_TITLE}>Стоимость</p>
-		<div class={CATALOG_PRICE_WRAP}>
+		{/* data-nt="catalog-price" — по нему скрипт каталога (bindPrice) меняет
+		    «0 / 5 990» на поля ввода. У боковой панели метки не было: при виде
+		    фильтра «Сбоку» цену нельзя было ввести (владелец 23.09: «фильтрам и
+		    сортировке…»; замер превью — полей ввода 0, у остальных тем 2). */}
+		<div class={CATALOG_PRICE_WRAP} data-nt="catalog-price">
 			<div class={CATALOG_PRICE_ROW}>
 				<span>от</span>
 				<div class={CATALOG_PRICE_VALUE}>

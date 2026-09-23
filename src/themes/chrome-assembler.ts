@@ -51,7 +51,21 @@ export interface AssembleChromeInput {
   renderBlock: RenderBlockFn;
   /** Режим рендера (assetPrefix/stub). Прокидывается в renderBlock. */
   isPreview: boolean;
+  /**
+   * Подготовка пропсов «как на странице» (page-blocks `pagePropsPreparer`).
+   * Передана → шапка и подвал рисуются ровно так же, как на главной. Не
+   * передана → сырые пропсы ревизии: прежнее поведение, пока выключатель
+   * PARITY_CHROME выключен.
+   */
+  prepareProps?: PrepareBlockPropsFn;
 }
+
+export type PrepareBlockPropsFn = (
+  blockType: string,
+  props: Record<string, unknown>,
+) => Record<string, unknown>;
+
+const asIs: PrepareBlockPropsFn = (_blockType, props) => props;
 
 // ── Self-contained копии (источник: v2-live-pages.ts) ───────────────────────
 
@@ -222,8 +236,9 @@ export async function assembleChrome(
   }
 
   // chrome === 'full'
-  const headerProps = findBlockProps(pagesData['home'], 'Header') ?? {};
-  const footerProps = findBlockProps(pagesData['home'], 'Footer') ?? {};
+  const prepare = input.prepareProps ?? asIs;
+  const headerProps = prepare('Header', findBlockProps(pagesData['home'], 'Header') ?? {});
+  const footerProps = prepare('Footer', findBlockProps(pagesData['home'], 'Footer') ?? {});
   const [headerHtml, footerHtml] = await Promise.all([
     renderChromeBlock(renderBlock, 'Header', headerProps, theme, isPreview),
     renderChromeBlock(renderBlock, 'Footer', footerProps, theme, isPreview),

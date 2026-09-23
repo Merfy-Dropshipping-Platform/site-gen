@@ -85,7 +85,7 @@ export interface HeaderSearchOptions {
 	messageClass?: string;
 	/** Сообщение целиком, если теме мало одного класса. */
 	renderMessage?: (state: "loading" | "empty" | "error", ctx: HeaderSearchRenderContext) => string;
-	/** С какой длины запроса искать. По умолчанию 2 — как у каталога gateway. */
+	/** С какой длины запроса искать. По умолчанию 1 — сервер ищет и с одной буквы. */
 	minChars?: number;
 	/** Пауза после ввода, мс. */
 	debounceMs?: number;
@@ -460,7 +460,7 @@ export function initHeaderSearch(options: HeaderSearchOptions): void {
 	const cache = new Map<string, SearchAnswer>();
 
 	const opts = () => global.options;
-	const minChars = () => Math.max(1, opts().minChars ?? 2);
+	const minChars = () => Math.max(1, opts().minChars ?? 1);
 	const debounceMs = () => Math.max(0, opts().debounceMs ?? 250);
 
 	const runtimeOf = (scope: Element): ScopeRuntime => {

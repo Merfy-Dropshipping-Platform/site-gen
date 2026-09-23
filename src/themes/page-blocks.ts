@@ -1,5 +1,5 @@
 import type { Logger } from '@nestjs/common';
-import { getThemeManifest } from './theme-manifest-loader';
+import { getThemeManifest, type ThemeManifest } from './theme-manifest-loader';
 import { applyPageBinding } from '../render/page-transclude';
 import { getPageResolver } from './page-resolver-instance';
 import { normalizeSlideshowProps } from '../generator/legacy-prop-normalizer';
@@ -109,8 +109,7 @@ export async function extractPageBlocks(
   }
   if (!Array.isArray(parsed)) return null;
 
-  const manifest = themeId ? getThemeManifest(themeId) : null;
-  const themeBlocks = manifest?.blocks ?? {};
+  const themeBlocks = themeBlocksFor(themeId);
 
   // Страница коллекции: подставляем {{COLLECTION_*}} плейсхолдеры в строковых
   // props (зеркало substituteVars из generatePuckCollectionsSlugPage на live).
@@ -159,27 +158,7 @@ export async function extractPageBlocks(
     // нечего (полосы нет), но убирать узел нельзя: состав панелей — канон.
     .filter((b) => isBodyBlockOnPage(page, b.type))
     .map((b) => {
-      const props = adaptLegacyProps(
-        (b.props ?? {}) as Record<string, unknown>,
-        publicUrl,
-        b.type,
-      );
-      // Theme-level block defaults fill gaps merchant hasn't overridden.
-      // Currently: `variant` picks which base layout to render (Hero
-      // overlay vs centered, PopularProducts with-subtitle vs plain).
-      const themeCfg = themeBlocks[b.type];
-      if (themeCfg && !('override' in themeCfg)) {
-        const v = (themeCfg as { variant?: string }).variant;
-        if (v && !props.variant) {
-          props.variant = v;
-        }
-      }
-      // siteId — серверный контекст-проп для ВСЕХ блоков (как в POST
-      // /preview/block, который инжектит его безусловно). Раньше тут был
-      // allowlist типов (Catalog/Product/Video/PopularProducts) — блоки вне
-      // списка (Publications и будущие) не получали siteId, их SSR-фетч
-      // storefront-данных молча не запускался и рендерились demo-карточки.
-      props.siteId = siteId;
+      const props = prepareBlockProps(b.type, b.props, { publicUrl, siteId, themeBlocks });
       // Product block: when the constructor navigates from a Catalog card
       // click, productId is provided as a query override and takes priority
       // over Puck props.
@@ -302,6 +281,80 @@ function substituteCollectionVars(
     return out;
   }
   return value;
+}
+
+type ThemeBlocks = NonNullable<ThemeManifest['blocks']>;
+
+export interface BlockPropsContext {
+  /** Адрес сайта для относительных путей картинок (null — не переписывать). */
+  publicUrl: string | null;
+  siteId: string;
+  /** `blocks` манифеста темы (см. {@link themeBlocksFor}). */
+  themeBlocks: ThemeBlocks;
+}
+
+/**
+ * Пропсы блока в том виде, в каком их рисует страница: легаси-формы приведены
+ * к контракту тем, дефолтный вариант темы подставлен, серверный siteId задан.
+ *
+ * ОДНА точка для тела страницы ({@link extractPageBlocks}) и для хрома
+ * (`assembleChrome`). Пока хром рисовал подвал главной СЫРЫМИ пропсами, подвал на
+ * внутренних страницах витрины расходился с тем же подвалом на главной: без
+ * `coerceFooterProps` у заголовка рассылки нет размера, и тема брала «средний»
+ * вместо «малого» (замер 23.09: flux, bloom, rose — на шаг крупнее главной и
+ * конструктора).
+ */
+export function prepareBlockProps(
+  type: string,
+  rawProps: Record<string, unknown> | undefined,
+  ctx: BlockPropsContext,
+): Record<string, unknown> {
+  const props = adaptLegacyProps(rawProps ?? {}, ctx.publicUrl, type);
+  applyThemeVariantDefault(props, ctx.themeBlocks[type]);
+  // siteId — серверный контекст-проп для ВСЕХ блоков (как в POST
+  // /preview/block, который инжектит его безусловно). Раньше тут был
+  // allowlist типов (Catalog/Product/Video/PopularProducts) — блоки вне
+  // списка (Publications и будущие) не получали siteId, их SSR-фетч
+  // storefront-данных молча не запускался и рендерились demo-карточки.
+  props.siteId = ctx.siteId;
+  return props;
+}
+
+/**
+ * Дефолт темы заполняет то, что мерчант не задал. Сейчас это только `variant`
+ * (какую базовую раскладку рисовать: Hero overlay/centered, PopularProducts
+ * с подзаголовком или без). Блок с `override` темы вариантов не несёт.
+ */
+function applyThemeVariantDefault(
+  props: Record<string, unknown>,
+  themeCfg: ThemeBlocks[string] | undefined,
+): void {
+  if (!themeCfg || 'override' in themeCfg) return;
+  const variant = (themeCfg as { variant?: string }).variant;
+  if (variant && !props.variant) props.variant = variant;
+}
+
+/** `blocks` манифеста темы; нет темы или манифеста — пусто. */
+export function themeBlocksFor(themeId: string | null): ThemeBlocks {
+  const manifest = themeId ? getThemeManifest(themeId) : null;
+  return manifest?.blocks ?? {};
+}
+
+/**
+ * Готовит пропсы «как страница» для заданного сайта и темы — в форме,
+ * которую принимает `assembleChrome({ prepareProps })`.
+ */
+export function pagePropsPreparer(ctx: {
+  publicUrl: string | null;
+  siteId: string;
+  themeId: string | null;
+}): (type: string, props: Record<string, unknown>) => Record<string, unknown> {
+  const context: BlockPropsContext = {
+    publicUrl: ctx.publicUrl,
+    siteId: ctx.siteId,
+    themeBlocks: themeBlocksFor(ctx.themeId),
+  };
+  return (type, props) => prepareBlockProps(type, props, context);
 }
 
 /**

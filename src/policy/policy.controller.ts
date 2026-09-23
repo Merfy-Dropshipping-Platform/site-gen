@@ -4,6 +4,8 @@
  * Обрабатывает паттерны сообщений:
  * - sites.policy.get -- получить все политики сайта
  * - sites.policy.update -- создать или обновить политику
+ * - sites.policy.setExtensionBlock -- дописать/убрать блок расширения
+ *   (privacy, tos) во всех сайтах арендатора; вызывается сервисом `extensions`
  * - sites.contacts.get -- получить контакты сайта
  * - sites.contacts.update -- создать или обновить контакты
  */
@@ -63,6 +65,37 @@ export class PolicyController {
       return { success: true, data: policy };
     } catch (e: any) {
       this.logger.error("policy.update failed", e);
+      return { success: false, message: e?.message ?? "internal_error" };
+    }
+  }
+
+  /**
+   * Дописать/заменить/убрать блок расширения в политиках всех сайтов
+   * арендатора. blocks === null -- убрать блок (выключение расширения).
+   */
+  @MessagePattern("sites.policy.setExtensionBlock")
+  async setExtensionBlock(@Payload() data: any) {
+    try {
+      this.logger.log(
+        `policy.setExtensionBlock request: ${JSON.stringify(data)}`,
+      );
+      const { tenantId, extensionId, blocks } = data ?? {};
+
+      if (!tenantId || !extensionId) {
+        return {
+          success: false,
+          message: "tenantId and extensionId are required",
+        };
+      }
+
+      const result = await this.policyService.setExtensionBlocks(
+        tenantId,
+        extensionId,
+        blocks ?? null,
+      );
+      return { success: true, data: result };
+    } catch (e: any) {
+      this.logger.error("policy.setExtensionBlock failed", e);
       return { success: false, message: e?.message ?? "internal_error" };
     }
   }

@@ -131,8 +131,9 @@ const heroHeightMdCls = {
 // пропорция дословно; «Средний»/«Маленький» — та же пропорция ниже в 0,8 и 0,6
 // раза (aspect — множитель к высотной стороне отношения, min-h — прямое
 // умножение; лестница 460/368/276 повторяет соотношение 0,8/0,6, как у
-// heroHeightMdCls выше). Применяется ТОЛЬКО к заполненной секции — пустое
-// состояние (isEmpty) design parity не трогает.
+// heroHeightMdCls выше). Пустое состояние (isEmpty) под признаком берёт ту же
+// высоту: у нового магазина первый экран именно такой, и на нём владелец сверяет
+// тему с верстальщиками (замер 24.09: 320 px вместо 752 на телефоне).
 const HERO_HEIGHT_DESIGNERS_CLS = {
 	large: "min-h-[calc(100svh-92px)] sm:min-h-[calc(100svh-92px)] md:min-h-[calc(100svh-104px)] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]",
 	medium: "min-h-[calc((100svh-92px)*0.8)] sm:min-h-[calc((100svh-92px)*0.8)] md:min-h-[calc((100svh-104px)*0.8)] lg:min-h-[368px] aspect-[10/12] sm:aspect-[4/4] md:aspect-[4/2.4] lg:aspect-[16/7.2] xl:aspect-[2/0.8] 2xl:aspect-[21/7.2]",
@@ -333,7 +334,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				aria-hidden="true"
 			></div>
 			<div
-				class={`relative w-full ${heroHeightCls}`}
+				class={`relative w-full ${designParity ? HERO_HEIGHT_DESIGNERS_CLS : heroHeightCls}`}
 			>
 				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
 					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой

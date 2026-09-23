@@ -8,10 +8,8 @@ import { renderSections } from "../../../scripts/qa/lib/render";
  * «не сломай цветовые схемы, ничего не сломай, нужно только стили, базовые».
  *
  * Разбор владельца (см. бриф .worktrees/DESIGN-BRIEF.md):
- *   Header/Footer — встроенный вордмарк «Vanila» (одна «l») отстал от
- *     верстальщиков: у них «Vanilla» (две «l») — ДРУГОЙ рисунок (7 путей
- *     вместо 6, diff путей это подтвердил), не только размер/viewBox. Ширина
- *     мобилы 76→85, десктопа 89→98 (Header.astro и Footer.astro:329).
+ *   Встроенный вордмарк НЕ трогаем: у верстальщиков другой текст логотипа
+ *     («Vanilla» двумя «l») — решение владельца.
  *   Collections/Popular — шапка секции: обёртка 760→1320px (их
  *     .vanilla-section-head), подзаголовок не переносится с lg (их
  *     .vanilla-section-subtitle) — геометрия обёртки, не шрифт.
@@ -31,23 +29,6 @@ const ВКЛ = { __designParity: true };
 type Секция = { block: string; props: Record<string, unknown> };
 
 const СЕКЦИИ: Секция[] = [
-  { block: "Header", props: { id: "Header-1", colorScheme: "scheme-1" } },
-  {
-    block: "Header",
-    props: {
-      id: "Header-2",
-      colorScheme: "scheme-1",
-      logoPosition: "top-left",
-    },
-  },
-  {
-    block: "Header",
-    props: {
-      id: "Header-3",
-      colorScheme: "scheme-1",
-      logoPosition: "top-center",
-    },
-  },
   {
     block: "Footer",
     props: {
@@ -103,19 +84,12 @@ function отрисовать(jobs: Секция[]): string[] {
 }
 
 const ОЖИДАНИЯ: Record<string, { есть: string[]; нет: string[] }> = {
-  Header: {
-    есть: ["max-w-[85px]", "w-[98px]", "Vanila-designers.svg"],
-    нет: ["max-w-[76px]", "max-w-[89px]"],
-  },
   Footer: {
     есть: [
-      "h-7 w-[98px]",
       "flex flex-wrap items-center justify-center gap-1 md:justify-end",
       "flex min-h-11 min-w-11 items-center justify-center transition-opacity hover:opacity-70",
-      "Vanila-designers.svg",
     ],
     нет: [
-      "h-7 w-[89px]",
       "flex flex-wrap items-center justify-center gap-3 md:justify-end",
       "flex size-5 items-center justify-center transition-opacity hover:opacity-70",
     ],
@@ -173,11 +147,5 @@ describe("vanilla: шапка, подвал и секции как у верст
         (html.match(/\buppercase\b/g) ?? []).length;
       expect(считать(вкл[i])).toBe(считать(выкл[i]));
     });
-  });
-
-  it("Header/Footer: без признака рисуется прежний вордмарк (одна «l»), не -designers.svg", () => {
-    for (const i of [0, 1, 2, 3]) {
-      expect(выкл[i]).not.toContain("Vanila-designers.svg");
-    }
   });
 });

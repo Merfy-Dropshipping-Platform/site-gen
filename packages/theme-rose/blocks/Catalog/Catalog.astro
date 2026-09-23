@@ -207,8 +207,12 @@ const skeletonCount = pageSize;
 const skeletons = Array.from({ length: skeletonCount });
 ---
 
+{/* Фон схемы — на той же секции, что несёт «Отступы» (paddingStyle ниже):
+    без него полоса отступа прозрачная, и в ней виден фон страницы — Схема 1,
+    какая бы схема ни стояла у «Каталога» (владелец 23.09). Сторож:
+    pnpm qa:section-gaps. */}
 <section
-  class={schemeClass}
+  class:list={[schemeClass, "bg-[rgb(var(--color-bg,255_255_255))]"]}
   data-block="catalog"
   data-catalog-page
   data-puck-component-id={id}

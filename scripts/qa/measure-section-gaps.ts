@@ -140,7 +140,11 @@ async function scanStrip(
   browser: Browser,
   html: string,
   width: number,
-  /** Участок: вся обёртка `sel` или полоса от низа `above` до верха секции внутри `sel`. */
+  /**
+   * Участок: вся обёртка `sel` или полоса от низа `above` до верха содержимого
+   * `sel`: у обёртки схемы — её первый видимый ребёнок (секции ставят
+   * <style>/<script> первыми), у секции без обёртки — она сама.
+   */
   target: { sel: string; above?: string },
 ): Promise<{ expected: string; wrong: Array<{ y: number; c: string }>; h: number }> {
   const { ctx, pg } = await openPage(browser, html, width);
@@ -156,7 +160,9 @@ async function scanStrip(
       // и тот же и когда он полем снаружи, и когда отступом внутри обёртки.
       // Крайние строки не берём — на самой границе сглаживание.
       const y0 = Math.ceil((above ? abs(document.querySelector(above)!).bottom : abs(el).top) + 1);
-      const y1 = Math.floor((above ? abs(el.firstElementChild ?? el).top : abs(el).bottom) - 1);
+      const visible = Array.from(el.children).find((c) => c.getBoundingClientRect().height > 0);
+      const content = el.hasAttribute("data-block-scheme") ? (visible ?? el) : el;
+      const y1 = Math.floor((above ? abs(content).top : abs(el).bottom) - 1);
       return { expected: `rgb(${v.split(/[\s,]+/).join(", ")})`, y0, y1 };
     }, target);
     const h = Math.max(0, box.y1 - box.y0);
@@ -242,18 +248,27 @@ async function measureGap(browser: Browser, theme: string): Promise<Row[]> {
   const lower = contrastScheme(tokens);
   const cfg = await loadRuntimePuckConfig(theme);
   const props = (type: string) => ({ ...panelDefaults(cfg, type), id: `${type}-1` });
-  const [a, b] = renderSections(theme, [
+  const [a, b, a0, b0] = renderSections(theme, [
     { block: "MainText", props: { ...props("MainText"), colorScheme: "scheme-1" } },
     { block: "MultiColumns", props: { ...props("MultiColumns"), colorScheme: `scheme-${lower}` } },
+    // Без своей схемы — без обёртки: так стоят «Товар» и «Популярные» на странице товара.
+    { block: "MainText", props: { ...props("MainText"), colorScheme: undefined } },
+    { block: "MultiColumns", props: { ...props("MultiColumns"), colorScheme: undefined } },
   ]);
-  if (!a.html || !b.html) throw new Error(`${theme}: рендер секций зазора не дал HTML`);
+  if (!a.html || !b.html || !a0.html || !b0.html) throw new Error(`${theme}: рендер секций зазора не дал HTML`);
   // Порты кладут <style>/<script> прямо в <main> — первый ребёнок бывает не секцией.
   const main = `<style></style>${wrap(a.html, "1")}<script></script>${wrap(b.html, lower)}`;
+  const mainBare = `<style></style>${a0.html}<script></script>${b0.html}`;
   const rows: Row[] = [];
   for (const width of WIDTHS) {
     const html = page(theme, tokens, main);
     const gap = await scanStrip(browser, html, width, { sel: `[data-block-scheme="${lower}"]`, above: `[data-block-scheme="1"]` });
     rows.push(summarize(theme, width, "зазор между секциями", gap, `высота зазора ${gap.h}px`));
+    const bare = await scanStrip(browser, page(theme, tokens, mainBare), width, {
+      sel: 'main > [data-puck-component-id^="MultiColumns"]',
+      above: 'main > [data-puck-component-id^="MainText"]',
+    });
+    rows.push(summarize(theme, width, "зазор без своей схемы", bare, `высота зазора ${bare.h}px`));
     // Над первой секцией зазора нет. Меряем от опорного блока перед <main>, а не
     // от верха <main>: поле первой секции схлопывается сквозь <main>, и разница
     // с его верхом всегда ноль (так проверка была слепой).
@@ -276,7 +291,7 @@ export const RULES: Rule[] = [
     id: "зазор-в-цвет-нижней-секции",
     bug: "1",
     title: "зазор между секциями окрашен схемой нижней секции, фон страницы не просвечивает",
-    applies: (r) => r.case === "зазор между секциями",
+    applies: (r) => r.case === "зазор между секциями" || r.case === "зазор без своей схемы",
     check: (r) => (r.wrongPx === 0 ? null : `чужой цвет ${r.wrongPx}px из ${GAP} (${r.where}), просвет страницы ${r.poisonPx}px`),
   },
   {

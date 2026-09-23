@@ -200,11 +200,18 @@ describe('section gap — зазор между секциями', () => {
   });
 
   const NOT_SECTION = ':not(style,script,template,link,noscript,header)';
-  const MARGIN_RULE = `main>${NOT_SECTION}~${NOT_SECTION}{margin-top:var(--section-gap, 0px)}`;
-  const INSIDE_RULE = `main>${NOT_SECTION}~[data-block-scheme]{margin-top:0;padding-top:var(--section-gap, 0px);`;
+  const MARGIN_RULE = `main>${NOT_SECTION}~${NOT_SECTION}{margin-top:var(--section-gap, 0px);`;
+  const INSIDE_RULE = `main>${NOT_SECTION}~[data-block-scheme]{margin-top:0;box-shadow:none;padding-top:var(--section-gap, 0px);`;
 
-  it('секция без своей схемы получает зазор полем, как раньше (live+preview)', () => {
-    expect(buildTokensCss({ sectionGap: 40 }, 'rose')).toContain(MARGIN_RULE);
+  it('секция без своей схемы: зазор полем, полосу красит её тень её фоном', () => {
+    // bloom/flux: фон страницы — жёсткий белый body, а секция без обёртки — в
+    // схеме по умолчанию; без тени в поле была белая полоса между секциями.
+    const css = buildTokensCss({ sectionGap: 40 }, 'rose');
+    const rule = css.slice(css.indexOf(MARGIN_RULE));
+    expect(rule.startsWith(MARGIN_RULE)).toBe(true);
+    expect(rule.slice(0, rule.indexOf('}'))).toContain(
+      'box-shadow:0 calc(-1 * var(--section-gap, 0px)) 0 rgb(var(--color-bg))',
+    );
   });
 
   it('секция со своей схемой получает зазор внутри обёртки, окрашенный её фоном', () => {

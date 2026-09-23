@@ -314,7 +314,12 @@ export async function rewriteAbsoluteUrls(
 // `/` валидного ассета всегда ведёт к букве/`_`/цифре, никогда к `*` или `>`
 // (`"/>` / ` />` — self-closing SVG/HTML; иначе `<path .../>` превращался в
 // `<path .../__theme/<тема>/>` и ломал инлайн-иконки в превью).
-export const ROOT_URL_RE = /(["'(,\s])\/(?![/*>\s])/g;
+// И никогда к УЖЕ переписанному `/__theme/<тема>/…`: пропсы превью получают
+// префикс ещё до рендера (page-blocks `rewriteAssetUrl` с publicUrl
+// `/__theme/<тема>`), и проход composeV2Page давал второй —
+// `/__theme/bloom/__theme/bloom/images/about-photo.webp` → 404 (картинка «О нас»
+// bloom в конструкторе, 23.09). Так же уже поступает `rewriteHtmlAssets`.
+export const ROOT_URL_RE = /(["'(,\s])\/(?![/*>\s]|__theme\/)/g;
 
 /** Переписать корневые URL HTML-фрагмента под префикс, тела <script> verbatim. */
 export function rewriteRootUrlsToPrefix(html: string, prefix: string): string {

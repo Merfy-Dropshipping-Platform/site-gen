@@ -20,6 +20,11 @@ import { renderBlock } from "../../../scripts/qa/lib/render";
  * `CartBody` остался на старом пути. Одна фича, два пути, починен был один.
  *
  * У vanilla подписи не было в разметке вовсе — добавлена.
+ *
+ * 23.09 (пункт 26, владелец: «цвет не надо словами писать, если там круг —
+ * то круг»): общий хелпер теперь `variantHtml` / `variantParts` — те же
+ * опции, но цвет рисуется кружком. `variantLabel` отдаёт только текст, и
+ * возврат на него молча вернул бы цвета словами — поэтому требуем новые.
  */
 
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
@@ -39,13 +44,19 @@ describe("строка корзины: подпись варианта", () => {
 
   it.each(THEMES)("%s: подпись считает общий хелпер", (t) => {
     if (!built(t)) return;
-    expect({ t, зовёт: /variantLabel\(|variantPairs\(/.test(html(t)) }).toEqual({ t, зовёт: true });
+    expect({ t, зовёт: /variantHtml\(|variantParts\(/.test(html(t)) }).toEqual({
+      t,
+      зовёт: true,
+    });
   });
 
   it.each(THEMES)("%s: склейки только по color+size не осталось", (t) => {
     if (!built(t)) return;
     // Ровно та строка, из-за которой подпись была пустой.
-    const склейка = /\[line\.variant\?\.color,\s*line\.variant\?\.size\]\.filter\(Boolean\)\.join/.test(html(t));
+    const склейка =
+      /\[line\.variant\?\.color,\s*line\.variant\?\.size\]\.filter\(Boolean\)\.join/.test(
+        html(t),
+      );
     expect({ t, склейка }).toEqual({ t, склейка: false });
   });
 
@@ -59,8 +70,14 @@ describe("строка корзины: подпись варианта", () => {
         resolve(SITES_ROOT, "themes", t, "src/pages/cart.astro"),
         "utf-8",
       );
-      expect({ t, зовёт: /variantLabel\(line\.variant\)/.test(src) }).toEqual({ t, зовёт: true });
-      expect({ t, склейка: /\[line\.variant\?\.color,/.test(src) }).toEqual({ t, склейка: false });
+      expect({ t, зовёт: /variantHtml\(line\.variant\)/.test(src) }).toEqual({
+        t,
+        зовёт: true,
+      });
+      expect({ t, склейка: /\[line\.variant\?\.color,/.test(src) }).toEqual({
+        t,
+        склейка: false,
+      });
     },
   );
 
@@ -72,7 +89,10 @@ describe("строка корзины: подпись варианта", () => {
         resolve(SITES_ROOT, "themes", t, "src/pages/cart.astro"),
         "utf-8",
       );
-      expect({ t, своиСтроки: /lines\s*\.map\(|data-line-id/.test(src) }).toEqual({
+      expect({
+        t,
+        своиСтроки: /lines\s*\.map\(|data-line-id/.test(src),
+      }).toEqual({
         t,
         своиСтроки: false,
       });

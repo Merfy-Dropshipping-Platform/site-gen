@@ -48,6 +48,8 @@ export type Scenario = {
   width: number;
   height: number;
   stickiness: "none" | "always" | "scroll-up";
+  /** Тип меню; по умолчанию «Боковое». */
+  menuType?: "sidebar" | "dropdown" | "mega-menu";
   /** Дёрнуть размер окна до открытия (адресная строка телефона, смена ширины в конструкторе). */
   resizeBeforeOpen?: boolean;
   /** Прокрутить страницу перед открытием. */
@@ -63,14 +65,19 @@ export const SCENARIOS: Scenario[] = [
   { id: "десктоп+ресайз", width: 1440, height: 900, stickiness: "none", resizeBeforeOpen: true },
   { id: "десктоп+always", width: 1440, height: 900, stickiness: "always", scrollBeforeOpen: 300 },
   { id: "десктоп+scroll-up", width: 1440, height: 900, stickiness: "scroll-up", scrollBeforeOpen: 300 },
+  // Другие типы меню на телефоне: нижняя шторка под шапкой.
+  { id: "телефон/выпадающее", width: 375, height: 812, stickiness: "none", menuType: "dropdown" },
+  { id: "телефон/расширенное", width: 375, height: 812, stickiness: "none", menuType: "mega-menu" },
 ];
+
+const isSidebarSc = (sc: Scenario) => (sc.menuType ?? "sidebar") === "sidebar";
 
 function headerHtml(theme: string, sc: Scenario): string {
   return renderBlock(theme, "Header", {
     id: "Header-1",
     colorScheme: "scheme-1",
     menuColorScheme: "scheme-3",
-    menuType: "sidebar",
+    menuType: sc.menuType ?? "sidebar",
     logoPosition: "center-left",
     stickiness: sc.stickiness,
     siteTitle: "МАГАЗИН",
@@ -113,6 +120,74 @@ function serve(html: string): Promise<{ base: string; server: Server }> {
       done({ base: `http://127.0.0.1:${port}`, server });
     });
   });
+}
+
+/**
+ * Запись кадров: на каждый requestAnimationFrame — левый край панели (null, если
+ * панель не отрисована). Левый край двигает и translate, поэтому по нему видно
+ * выезд. 700 мс хватает на любую разумную анимацию.
+ */
+async function startFrames(page: Page, sel: string): Promise<void> {
+  await page.evaluate((s) => {
+    const d = document.querySelector(s) as HTMLElement;
+    const w = window as any;
+    w.__frames = [];
+    const t0 = performance.now();
+    const tick = () => {
+      const cs = getComputedStyle(d);
+      const shown = cs.display !== "none";
+      const r = d.getBoundingClientRect();
+      // Видимая высота с учётом clip-path: inset(top right bottom left).
+      let visH = r.height;
+      const m = /^inset\(([^)]*)\)/.exec(cs.clipPath || "");
+      if (m) {
+        const parts = m[1].trim().split(/\s+/);
+        const px = (v: string) => (v.endsWith("%") ? (parseFloat(v) / 100) * r.height : parseFloat(v) || 0);
+        const top = px(parts[0] ?? "0");
+        const bottom = px(parts[2] ?? parts[0] ?? "0");
+        visH = Math.max(0, r.height - top - bottom);
+      }
+      w.__frames.push([Math.round(performance.now() - t0), shown ? Math.round(r.left * 10) / 10 : null, shown ? Math.round(visH) : null]);
+      if (performance.now() - t0 < 700) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, sel);
+}
+
+function summarizeOpen(frames: Array<[number, number | null, (number | null)?]>) {
+  const shown = frames.filter((f) => f[1] !== null).map((f) => [f[0], f[1] as number] as [number, number]);
+  if (!shown.length) return { steps: 0, backwards: 0, settledMs: null, flash: false };
+  const final = shown[shown.length - 1][1];
+  const first = shown[0][1];
+  // Мигание: панель отрисовалась, пропала и отрисовалась снова.
+  const firstShownIdx = frames.findIndex((f) => f[1] !== null);
+  const flash = frames.slice(firstShownIdx).some((f) => f[1] === null);
+  const between = new Set(shown.map((f) => f[1]).filter((x) => x !== final && x !== first));
+  let backwards = 0;
+  for (let i = 1; i < shown.length; i++) {
+    const dir = Math.sign(final - first);
+    if (dir && Math.sign(shown[i][1] - shown[i - 1][1]) === -dir) backwards++;
+  }
+  const settled = shown.find((f) => f[1] === final);
+  return { steps: between.size, backwards, settledMs: settled ? settled[0] : null, flash };
+}
+
+function summarizeClose(frames: Array<[number, number | null, (number | null)?]>) {
+  const shown = frames.filter((f) => f[1] !== null).map((f) => [f[0], f[1] as number] as [number, number]);
+  const goneIdx = frames.findIndex((f) => f[1] === null);
+  const flash = goneIdx >= 0 && frames.slice(goneIdx).some((f) => f[1] !== null);
+  if (!shown.length) return { steps: 0, backwards: 0, goneMs: goneIdx >= 0 ? frames[goneIdx][0] : null, flash, hiddenBeforeOut: true };
+  const start = shown[0][1];
+  const last = shown[shown.length - 1][1];
+  const between = new Set(shown.map((f) => f[1]).filter((x) => x !== start));
+  let backwards = 0;
+  for (let i = 1; i < shown.length; i++) {
+    const dir = Math.sign(last - start);
+    if (dir && Math.sign(shown[i][1] - shown[i - 1][1]) === -dir) backwards++;
+  }
+  // Панель исчезла, не уехав: последний отрисованный кадр ещё на месте.
+  const hiddenBeforeOut = Math.abs(last - start) < 2;
+  return { steps: between.size, backwards, goneMs: goneIdx >= 0 ? frames[goneIdx][0] : null, flash, hiddenBeforeOut };
 }
 
 /** Центр ВИДИМОГО элемента, который первым подходит под селектор. */
@@ -158,6 +233,24 @@ export type Measure = {
     navigated: string | null;
     arrowsOnPlainItems: number;
   };
+  /**
+   * Анимация (документ «баги пунктов меню», баг 1): положение панели по кадрам
+   * после нажатия. `steps` — сколько РАЗНЫХ промежуточных положений между краем
+   * и местом, `backwards` — откаты назад (дёрганье), `settledMs` — когда встала,
+   * `flash` — панель пропала и появилась снова (мигание).
+   */
+  anim: {
+    /** С какой стороны экрана стоит иконка, которой открыли меню. */
+    iconSide: "left" | "right" | null;
+    /** Откуда панель выехала: слева (x рос к месту) или справа (x убывал). */
+    fromSide: "left" | "right" | null;
+    /** Нижняя шторка: сколько разных видимых высот прошла при открытии/закрытии. */
+    reveal: { open: number; close: number };
+    open: { steps: number; backwards: number; settledMs: number | null; flash: boolean };
+    close: { steps: number; backwards: number; goneMs: number | null; flash: boolean; hiddenBeforeOut: boolean };
+    /** Сдвиг содержимого страницы при открытии, px (полоса прокрутки и т.п.). */
+    pageShift: number;
+  };
   notes: string[];
 };
 
@@ -189,6 +282,14 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
     headerTop: { before: null, open: null, afterWheel: null },
     scroll: { panelBefore: 0, panelAfter: 0, pageBefore: 0, pageAfter: 0, panelScrollable: false },
     arrow: { found: false, menuOpenAfter: false, subOpenAfter: false, navigated: null, arrowsOnPlainItems: 0 },
+    anim: {
+      iconSide: null,
+      fromSide: null,
+      reveal: { open: 0, close: 0 },
+      open: { steps: 0, backwards: 0, settledMs: null, flash: false },
+      close: { steps: 0, backwards: 0, goneMs: null, flash: false, hiddenBeforeOut: false },
+      pageShift: 0,
+    },
     notes,
   };
   try {
@@ -220,8 +321,20 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
       notes.push("видимой кнопки меню нет");
       return blank;
     }
+    const pageLeftBefore = await page.evaluate(() => document.querySelector("[data-filler]")?.getBoundingClientRect().left ?? 0);
+    await startFrames(page, drawerSel);
     await page.mouse.click(toggle.x, toggle.y);
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(800);
+    const openFrames = await page.evaluate(() => (window as any).__frames as Array<[number, number | null, number | null]>);
+    blank.anim.iconSide = toggle.x < sc.width / 2 ? "left" : "right";
+    {
+      const xs = openFrames.filter((f) => f[1] !== null).map((f) => f[1] as number);
+      if (xs.length > 1 && xs[0] !== xs[xs.length - 1]) blank.anim.fromSide = xs[0] < xs[xs.length - 1] ? "left" : "right";
+      blank.anim.reveal.open = new Set(openFrames.filter((f) => f[2] !== null).map((f) => f[2])).size;
+    }
+    blank.anim.pageShift = Math.round(
+      ((await page.evaluate(() => document.querySelector("[data-filler]")?.getBoundingClientRect().left ?? 0)) - pageLeftBefore) * 10,
+    ) / 10;
     blank.headerTop.open = await headerTop();
 
     const m = await page.evaluate((sel) => {
@@ -389,6 +502,27 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
       blank.arrow.subOpenAfter = res.sub;
       blank.arrow.navigated = res.nav;
     }
+    Object.assign(blank.anim.open, summarizeOpen(openFrames));
+
+    // Закрытие: крестик в шапке панели, запись кадров.
+    await page.evaluate((sel) => {
+      (document.querySelector(sel) as HTMLElement).scrollTop = 0;
+    }, drawerSel);
+    const close = isSidebarSc(sc)
+      ? await visibleCenter(page, `${drawerSel} [data-burger-close]`)
+      : await visibleCenter(page, "[data-burger-toggle]:not([data-burger-close])");
+    if (close && !blank.arrow.navigated) {
+      await page.mouse.move(close.x, close.y);
+      await page.waitForTimeout(150);
+      await startFrames(page, drawerSel);
+      await page.mouse.click(close.x, close.y);
+      await page.waitForTimeout(800);
+      const closeFrames = await page.evaluate(() => (window as any).__frames as Array<[number, number | null, number | null]>);
+      Object.assign(blank.anim.close, summarizeClose(closeFrames));
+      blank.anim.reveal.close = new Set(closeFrames.filter((f) => f[2] !== null).map((f) => f[2])).size;
+    } else {
+      notes.push("крестика в панели не видно — закрытие не записано");
+    }
     return blank;
   } finally {
     await ctx.close();
@@ -400,6 +534,12 @@ async function measureOne(browser: Browser, theme: string, sc: Scenario): Promis
  * ПРАВИЛА — дословно то, что ждёт тестировщик (документ «баги бокового меню»).
  * Каждое возвращает null (выполнено) или текст нарушения.
  */
+/** Правило только для «Бокового» меню: у нижней шторки другая раскладка. */
+const sidebarOnly =
+  (check: (m: Measure, sc: Scenario) => string | null) =>
+  (m: Measure, sc: Scenario): string | null =>
+    isSidebarSc(sc) ? check(m, sc) : null;
+
 export const RULES: Array<{ id: string; bug: string; title: string; check: (m: Measure, sc: Scenario) => string | null }> = [
   {
     id: "открывается",
@@ -411,24 +551,24 @@ export const RULES: Array<{ id: string; bug: string; title: string; check: (m: M
     id: "во-весь-экран",
     bug: "1",
     title: "на телефоне панель занимает экран целиком",
-    check: (m, sc) => {
+    check: sidebarOnly((m, sc) => {
       if (!m.rect || sc.width >= 768) return null;
       const r = m.rect;
       const ok = Math.abs(r.x) <= 1 && Math.abs(r.y) <= 1 && Math.abs(r.w - m.viewport.w) <= 1 && Math.abs(r.h - m.viewport.h) <= 1;
       return ok ? null : `панель ${r.x},${r.y} ${r.w}×${r.h} при окне ${m.viewport.w}×${m.viewport.h}`;
-    },
+    }),
   },
   {
     id: "от-верха",
     bug: "5",
     title: "панель открывается от верха экрана, а не под верхним меню",
-    check: (m) => (!m.rect ? null : m.rect.y === 0 && Math.abs(m.rect.y + m.rect.h - m.viewport.h) <= 1 ? null : `верх панели ${m.rect.y}px, низ ${m.rect.y + m.rect.h} при окне ${m.viewport.h}`),
+    check: sidebarOnly((m) => (!m.rect ? null : m.rect.y === 0 && Math.abs(m.rect.y + m.rect.h - m.viewport.h) <= 1 ? null : `верх панели ${m.rect.y}px, низ ${m.rect.y + m.rect.h} при окне ${m.viewport.h}`)),
   },
   {
     id: "одна-шапка",
     bug: "1, 3",
     title: "одна шапка: поверх панели ничего не лежит, на телефоне шапка страницы не видна",
-    check: (m, sc) => {
+    check: sidebarOnly((m, sc) => {
       if (!m.opened) return null;
       if (m.coveredShare > 0) return `панель накрыта чужим на ${Math.round(m.coveredShare * 100)}% точек`;
       if (sc.width < 768) {
@@ -437,17 +577,17 @@ export const RULES: Array<{ id: string; bug: string; title: string; check: (m: M
         if (n > 0) return `видно шапку страницы: меню/крестик ${o.burgerOrClose}, корзина ${o.cart}, сердце ${o.wishlist}, лого ${o.logo}`;
       }
       return null;
-    },
+    }),
   },
   {
     id: "только-корзина",
     bug: "4",
     title: "в шапке панели крестик и корзина, без избранного",
-    check: (m) => {
+    check: sidebarOnly((m) => {
       if (!m.opened) return null;
       const p = m.inPanel;
       return p.wishlist === 0 && p.cart === 1 ? null : `в панели: корзина ${p.cart}, избранное ${p.wishlist}`;
-    },
+    }),
   },
   {
     id: "скролл",
@@ -489,10 +629,68 @@ export const RULES: Array<{ id: string; bug: string; title: string; check: (m: M
     },
   },
   {
+    id: "плавно-выезжает",
+    bug: "м1",
+    title: "панель плавно выезжает: промежуточные положения, без откатов и мигания",
+    check: sidebarOnly((m) => {
+      if (!m.opened) return null;
+      const a = m.anim.open;
+      if (a.flash) return "панель мигнула при открытии";
+      if (a.steps < 4) return `появилась рывком: промежуточных положений ${a.steps}`;
+      if (a.backwards > 0) return `дёргается: откатов назад ${a.backwards}`;
+      if (a.settledMs === null || a.settledMs > 600) return `не встала на место за 600 мс (${a.settledMs ?? "—"})`;
+      return null;
+    }),
+  },
+  {
+    id: "плавно-уходит",
+    bug: "м1",
+    title: "панель плавно уходит: уезжает к краю и только потом пропадает",
+    check: sidebarOnly((m) => {
+      if (!m.opened || m.arrow.navigated) return null;
+      const a = m.anim.close;
+      if (a.goneMs === null) return "панель не закрылась за 700 мс";
+      if (a.flash) return "панель мигнула при закрытии";
+      if (a.hiddenBeforeOut || a.steps < 4) return `пропала рывком: промежуточных положений ${a.steps}`;
+      if (a.backwards > 0) return `дёргается: откатов назад ${a.backwards}`;
+      return null;
+    }),
+  },
+  {
+    id: "страница-не-дёргается",
+    bug: "м1",
+    title: "содержимое страницы не сдвигается, когда панель открывается",
+    check: (m) => (!m.opened || Math.abs(m.anim.pageShift) < 0.5 ? null : `страница сдвинулась на ${m.anim.pageShift}px`),
+  },
+  {
+    id: "со-стороны-иконки",
+    bug: "п1",
+    title: "боковая панель выезжает с той стороны, где стоит иконка меню",
+    check: sidebarOnly((m) => {
+      if (!m.opened) return null;
+      const a = m.anim;
+      if (!a.fromSide) return "направление выезда не определить — панель не двигалась";
+      return a.fromSide === a.iconSide ? null : `иконка ${a.iconSide === "left" ? "слева" : "справа"}, а панель выехала ${a.fromSide === "left" ? "слева" : "справа"}`;
+    }),
+  },
+  {
+    id: "шторка-спадает",
+    bug: "п2",
+    title: "у других типов меню шторка на телефоне плавно спадает из-под шапки и так же уходит",
+    check: (m, sc) => {
+      if (isSidebarSc(sc) || !m.opened) return null;
+      const r = m.anim.reveal;
+      if (m.anim.open.flash || m.anim.close.flash) return "шторка мигнула";
+      if (r.open < 4) return `открылась рывком: видимых высот ${r.open}`;
+      if (r.close < 4) return `закрылась рывком: видимых высот ${r.close}`;
+      return null;
+    },
+  },
+  {
     id: "стрелки-только-у-вложенных",
     bug: "6",
     title: "стрелка только у пунктов с подпунктами",
-    check: (m) => (!m.opened || m.arrow.arrowsOnPlainItems === 0 ? null : `стрелок у пунктов без вложенных: ${m.arrow.arrowsOnPlainItems}`),
+    check: sidebarOnly((m) => (!m.opened || m.arrow.arrowsOnPlainItems === 0 ? null : `стрелок у пунктов без вложенных: ${m.arrow.arrowsOnPlainItems}`)),
   },
 ];
 

@@ -22,6 +22,10 @@
  */
 
 import { createCartAddedModal } from "./cart-added-modal";
+// Тот же разбор «название → цвет», что рисует образцы на странице товара
+// (ProductVariants.astro). Модуль без зависимостей.
+import { resolveVariantColor } from "../blocks/Product/variantColor";
+import type { VariantSwatchShape } from "./variant-display";
 
 export interface NtCartLineVariant {
 	color?: string;
@@ -37,6 +41,13 @@ export interface NtCartLineVariant {
 	options?: Record<string, string>;
 	/** combinationId реальной комбинации — уходит в backend cart → order_items. */
 	variantCombinationId?: string;
+	/**
+	 * Цвет образца опции: «Цвет» → «#9CA3AF». Заполняет сверка с каталогом
+	 * (`labelNtLinesFromCatalog`): цвет мерчанта из платформы, иначе цвет по
+	 * названию. Рисовать ли его образцом и какой формы, решает страница товара
+	 * сайта (см. `variantParts`).
+	 */
+	swatches?: Record<string, string>;
 }
 
 /**
@@ -82,6 +93,119 @@ export function variantPairs(
 	push("Цвет", variant.color);
 	push("Размер", variant.size);
 	return pairs;
+}
+
+/**
+ * Форма образца на странице товара ЭТОГО сайта («Вариации» секции «Товар»).
+ * Сборка витрины и превью кладут её глобалом на каждую страницу
+ * (`runtime/variant-display.ts`). Нет глобала — форма по умолчанию секции,
+ * круг.
+ */
+const pageSwatchShape = (): VariantSwatchShape => {
+	const raw = typeof window === "undefined" ? undefined : (window as { __MERFY_VARIANT_SWATCH__?: unknown }).__MERFY_VARIANT_SWATCH__;
+	return raw === "square" || raw === "none" ? raw : "circle";
+};
+
+/** Скругление образца по форме: как у чипа страницы товара (`rounded-full` / `rounded-none`). */
+const SWATCH_RADIUS: Record<Exclude<VariantSwatchShape, "none">, string> = {
+	circle: "9999px",
+	square: "0",
+};
+/**
+ * В `style` уходит только цвет в строгой форме. Подсказка мерчанта (swatchHex)
+ * приходит из данных, и проверка «начинается с rgb(» пропустила бы
+ * «rgb(0,0,0);background:url(…)».
+ */
+const SAFE_COLOR_RE = /^(?:#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\))$/i;
+
+const safeSwatchColor = (raw: unknown): string | null => {
+	const v = typeof raw === "string" ? raw.trim() : "";
+	return v && SAFE_COLOR_RE.test(v) ? v : null;
+};
+
+export const escapeCartHtml = (raw: string): string =>
+	raw
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+
+/**
+ * Опция варианта в строке корзины. `swatch` — CSS-цвет, если опцию надо
+ * нарисовать образцом формы `shape`; null — словом.
+ */
+export interface NtVariantPart {
+	name: string;
+	value: string;
+	swatch: string | null;
+	shape: Exclude<VariantSwatchShape, "none">;
+}
+
+/**
+ * Пары варианта — так, как их показывает страница товара этого сайта.
+ * Владелец, 23.09: «если там кружок — то кружок, если квадратик — то
+ * квадратик… как карточка товара». Правило страницы (ProductVariants): при
+ * «Вариациях» круг/квадрат опция, у которой есть цвет, — образец этой формы,
+ * остальное словом; при «Нет» всё словами. Цвет — из `variant.swatches` (цвет
+ * мерчанта после сверки с каталогом), иначе по названию тем же разбором.
+ */
+export function variantParts(
+	variant: NtCartLineVariant | undefined,
+	shape: VariantSwatchShape = pageSwatchShape(),
+): NtVariantPart[] {
+	const form = shape === "square" ? "square" : "circle";
+	return variantPairs(variant).map(({ name, value }) => {
+		const color =
+			shape === "none"
+				? null
+				: (safeSwatchColor(variant?.swatches?.[name]) ?? safeSwatchColor(resolveVariantColor(value)));
+		return { name, value, swatch: color, shape: form };
+	});
+}
+
+/**
+ * Образец цвета для строки корзины — кружок или квадратик, как на странице
+ * товара. Стили инлайном: ядро рисует его во всех темах, а Tailwind каждой
+ * темы этот файл не сканирует. Название — в подсказке и для чтения с экрана,
+ * глазами видно цвет.
+ */
+export function variantSwatchHtml(
+	color: string,
+	label: string,
+	shape: Exclude<VariantSwatchShape, "none"> = "circle",
+): string {
+	const c = safeSwatchColor(color);
+	const text = escapeCartHtml(label);
+	if (!c) return text;
+	return (
+		`<span data-cart-variant-swatch="${shape}" role="img" aria-label="${text}" title="${text}"` +
+		` style="display:inline-block;width:1em;height:1em;border-radius:${SWATCH_RADIUS[shape]};` +
+		`background:${c};box-shadow:inset 0 0 0 1px rgb(0 0 0 / 0.15);vertical-align:-0.15em"></span>`
+	);
+}
+
+/**
+ * Подпись варианта строки корзины — готовой БЕЗОПАСНОЙ разметкой, одна на
+ * дровер, страницу корзины и окно «Товар добавлен» во всех темах. Текст
+ * экранирован, цвет — кружок. `names: true` — «Оттенок: Sugar Plum» (flux),
+ * иначе значения через запятую, как `variantLabel`.
+ */
+export function variantHtml(
+	variant: NtCartLineVariant | undefined,
+	opts: { names?: boolean } = {},
+): string {
+	const parts = variantParts(variant);
+	return parts
+		.map((part, i) => {
+			const value = part.swatch ? variantSwatchHtml(part.swatch, part.value, part.shape) : escapeCartHtml(part.value);
+			const piece = opts.names ? `${escapeCartHtml(part.name)}: ${value}` : value;
+			if (i === 0) return piece;
+			// Запятая — между словами. Рядом с кружком она висит: «M, ●».
+			const sep = opts.names || part.swatch || parts[i - 1].swatch ? " " : ", ";
+			return sep + piece;
+		})
+		.join("");
 }
 
 /** Разбор `data-variant-options` (JSON от страницы товара) в опции позиции. */
@@ -161,6 +285,9 @@ const parsePrice = (raw: string): number => {
 
 const formatPrice = (value: number): string => `${value.toLocaleString("ru-RU")} ₽`;
 
+/** Каталог, который сборка кладёт каждой витрине (build.service, themes-v2). */
+const DEFAULT_CATALOG_URL = "/data/products.json";
+
 const safeParse = (raw: string | null): NtCartLine[] => {
 	if (!raw) return [];
 	try {
@@ -187,8 +314,10 @@ export interface NtCatalogProduct {
 	 * не в product.images[0] (= первый вариант) и не в combination. */
 	variantGroups?: Array<{
 		name?: string;
-		options?: Array<{ value?: string; images?: string[] }>;
+		options?: Array<{ value?: string; images?: string[]; swatchHex?: string | null }>;
 	}>;
+	/** Образцы группы-цвета от платформы: `[{ value: "Серый", color: "#9CA3AF" }]`. */
+	variantSwatches?: Array<{ value?: string; color?: string | null }>;
 	variantCombinations?: Array<{
 		id: string;
 		price?: number;
@@ -218,6 +347,125 @@ export function variantImageFromNtCatalog(
 		}
 	}
 	return null;
+}
+
+/** Опции комбинации без пустых ключей/значений; пусто → undefined. */
+const cleanOptions = (raw: unknown): Record<string, string> | undefined => {
+	if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+	const out: Record<string, string> = {};
+	for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+		const k = String(key).trim();
+		const v = typeof value === "string" ? value.trim() : "";
+		if (k && v) out[k] = v;
+	}
+	return Object.keys(out).length > 0 ? out : undefined;
+};
+
+/** Цвета образцов опций товара (см. `NtCartLineVariant.swatches`). */
+function catalogSwatches(
+	product: NtCatalogProduct,
+	options: Record<string, string> | undefined,
+): Record<string, string> | undefined {
+	if (!options) return undefined;
+	const groups = Array.isArray(product.variantGroups) ? product.variantGroups : [];
+	const platform = Array.isArray(product.variantSwatches) ? product.variantSwatches : [];
+	const out: Record<string, string> = {};
+	for (const [name, value] of Object.entries(options)) {
+		const group = groups.find((g) => String(g?.name ?? "").trim() === name);
+		const option = (Array.isArray(group?.options) ? group!.options! : []).find(
+			(o) => String(o?.value ?? "").trim() === value,
+		);
+		const fromPlatform = platform.find((sw) => String(sw?.value ?? "").trim() === value);
+		const hint = safeSwatchColor(option?.swatchHex) ?? safeSwatchColor(fromPlatform?.color);
+		// Цвет мерчанта, иначе по названию — как у образцов страницы товара (она
+		// не смотрит на имя группы). Рисовать ли образцом, решает форма страницы.
+		const color = safeSwatchColor(resolveVariantColor(value, hint));
+		if (color) out[name] = color;
+	}
+	return Object.keys(out).length > 0 ? out : undefined;
+}
+
+const sameRecord = (a?: Record<string, string>, b?: Record<string, string>): boolean =>
+	JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/** Те же пары «группа → значение» без учёта порядка ключей. */
+const sameEntries = (a?: Record<string, string>, b?: Record<string, string>): boolean => {
+	if (!a || !b) return !a && !b;
+	const ka = Object.keys(a);
+	return ka.length === Object.keys(b).length && ka.every((k) => b[k] === a[k]);
+};
+
+/**
+ * Опции в порядке групп товара — так их видит покупатель на странице товара.
+ * Порядок ключей в самой комбинации задаёт сервис товаров, и он другой:
+ * у худи на витрине тестировщика «Размер, Цвет» при показе «Цвет, Размер».
+ */
+function orderByGroups(
+	options: Record<string, string>,
+	groups: NtCatalogProduct["variantGroups"],
+): Record<string, string> {
+	const names = (Array.isArray(groups) ? groups : []).map((g) => String(g?.name ?? "").trim());
+	const rank = (k: string) => {
+		const i = names.indexOf(k);
+		return i === -1 ? names.length : i;
+	};
+	const keys = Object.keys(options);
+	const sorted = keys.slice().sort((a, b) => rank(a) - rank(b) || keys.indexOf(a) - keys.indexOf(b));
+	const out: Record<string, string> = {};
+	for (const k of sorted) out[k] = options[k];
+	return out;
+}
+
+/**
+ * Подпись варианта строки — ИЗ КОМБИНАЦИИ, которая уйдёт в заказ.
+ *
+ * Пункт 26 тестера (22.09, повтор 23.09: «ничего не поменялось»). Замер на
+ * живом сайте владельца: страница товара показывала выделенным Sugar Plum, а
+ * в корзину клала комбинацию Berry Glaze и без названия — строка выходила
+ * пустой. Мест, которые кладут товар в корзину, больше десятка (страница
+ * товара, карточки каталога, «Популярное», поиск), и половина из них пишет
+ * только номер комбинации. Чинить каждое — значит ждать, когда забудет
+ * следующее. Поэтому подпись выводится здесь, одна на все темы: если
+ * комбинация есть в каталоге, её опции и есть подпись (и цвета образцов).
+ *
+ * Строк не выкидывает и цен не трогает: это делает `reconcileNtLines` при
+ * загрузке страницы. Каталог `products.json` запекается при публикации, а
+ * страница товара досвечивает данные из живого API. Если номер комбинации в
+ * каталоге не найден, строка остаётся как есть.
+ * Экспортируется для юнит-теста.
+ */
+export function labelNtLinesFromCatalog(
+	lines: NtCartLine[],
+	products: NtCatalogProduct[],
+): { lines: NtCartLine[]; changed: boolean } {
+	if (!Array.isArray(lines) || lines.length === 0) return { lines: lines || [], changed: false };
+	if (!Array.isArray(products) || products.length === 0) return { lines, changed: false };
+	const byId = new Map<string, NtCatalogProduct>();
+	for (const p of products) if (p && p.id != null) byId.set(String(p.id), p);
+	let changed = false;
+	const next = lines.map((line) => {
+		const p = byId.get(String(line.productId));
+		if (!p || !line.variant) return line;
+		const vcId = line.variant.variantCombinationId;
+		const combos = Array.isArray(p.variantCombinations) ? p.variantCombinations : [];
+		const combo = vcId ? combos.find((c) => String(c.id) === String(vcId)) : undefined;
+		const current = cleanOptions(line.variant.options);
+		const fromCombo = cleanOptions(combo?.options);
+		// Разошлись с комбинацией или названий нет — берём комбинацию. Порядок
+		// всегда по группам товара, как на экране.
+		const base = fromCombo && !sameEntries(fromCombo, current) ? fromCombo : (current ?? fromCombo);
+		const options = base ? orderByGroups(base, p.variantGroups) : undefined;
+		const swatches = catalogSwatches(p, options);
+		if (sameRecord(options, line.variant.options) && sameRecord(swatches, line.variant.swatches)) return line;
+		changed = true;
+		const variant: NtCartLineVariant = { ...line.variant };
+		if (options) variant.options = options;
+		else delete variant.options;
+		if (swatches) variant.swatches = swatches;
+		else delete variant.swatches;
+		return { ...line, variant };
+	});
+	return { lines: next, changed };
 }
 
 /**
@@ -297,7 +545,9 @@ export function reconcileNtLines(
 		}
 		next.push(nl);
 	}
-	return { lines: next, changed, dropped };
+	// Подпись варианта — из найденной комбинации (см. labelNtLinesFromCatalog).
+	const labelled = labelNtLinesFromCatalog(next, products);
+	return { lines: labelled.lines, changed: changed || labelled.changed, dropped };
 }
 
 export const createNtCart = (opts: NtCartCreateOptions) => {
@@ -368,6 +618,21 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		if (result.changed) saveCart(result.lines);
 	};
 
+	/**
+	 * Подписать варианты строк по каталогу (labelNtLinesFromCatalog) — без
+	 * выкидывания и без цен, поэтому безопасно у ЛЮБОЙ темы, в том числе без
+	 * `catalogUrl` (flux): каталог по умолчанию — тот же `/data/products.json`,
+	 * который сборка кладёт каждой витрине. Корзину перечитываем ПОСЛЕ загрузки
+	 * каталога: за это время покупатель мог изменить количество.
+	 */
+	const labelCart = async (): Promise<void> => {
+		if (typeof window === "undefined") return;
+		if (!getCart().some((line) => line.variant?.variantCombinationId || line.variant?.options)) return;
+		const products = await loadCatalog(catalogUrl || DEFAULT_CATALOG_URL);
+		const result = labelNtLinesFromCatalog(getCart(), products);
+		if (result.changed) saveCart(result.lines);
+	};
+
 	const addToCart = (options: NtAddToCartOptions) => {
 		const lines = getCart();
 		const id = makeLineId(options.productId, options.variant);
@@ -396,6 +661,9 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			});
 		}
 		saveCart(lines);
+		// Подпись варианта — сразу, а не с перезагрузкой страницы: кнопка могла
+		// не передать название (только номер комбинации).
+		void labelCart();
 	};
 
 	const updateQuantity = (id: string, quantity: number) => {
@@ -583,6 +851,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 						price: addBtn.dataset.price ?? "0",
 						image: addBtn.dataset.image ?? "",
 						volume: addBtn.dataset.volume || undefined,
+						variantHtml: variantHtml(line?.variant ?? variant) || undefined,
 						lineTotal: line ? line.price * line.quantity : undefined,
 						oldLineTotal:
 							line && typeof line.oldPrice === "number"
@@ -650,13 +919,16 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 			syncProductCards();
 			// Само-лечение при client-side навигации (VT не перезапускает init-модуль).
 			if (catalogUrl) void reconcileCart(catalogUrl);
+			else void labelCart();
 		});
 
 		renderBadges();
 		renderDrawer();
 		syncProductCards();
 		// Само-лечение цен/наличия из каталога → корзина всегда актуальна (= оформлению).
+		// Без catalogUrl — только подпись вариантов (строки и цены не трогаем).
 		if (catalogUrl) void reconcileCart(catalogUrl);
+		else void labelCart();
 	};
 
 	return {
@@ -674,69 +946,10 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 	};
 };
 
-/** Комбинация вариантов товара — минимум, нужный для выбора по умолчанию. */
-export interface NtVariantCombinationLike {
-	options?: Record<string, string> | null;
-	available?: boolean;
-}
-
-/** Группа вариантов в ПОРЯДКЕ ПОКАЗА (как видит покупатель). */
-export interface NtVariantGroupLike {
-	name?: string;
-	options?: Array<{ value?: string } | string> | null;
-	values?: Array<{ value?: string } | string> | null;
-}
-
-/**
- * Комбинация, которую кладёт «быстрое добавление» с карточки.
- *
- * ЖАЛОБА ТЕСТЕРА 22.09 (пункт 27): «Из трёх оттенков кнопка „В корзину“ на
- * карточке кладёт Cold Brew, выбора не предлагает. Ожидаемо: взять первый».
- *
- * ЗАМЕР НА ЖИВОЙ ВИТРИНЕ. Порядок ПОКАЗА товара «Бесшовный топ»:
- * Размер — XXS, XS, S; Цвет — Performance Pink, Cherry Purple, Haze Pink.
- * А `variantCombinations[0]` = `{Цвет: Haze Pink, Размер: XS}` — ПОСЛЕДНИЙ
- * цвет и средний размер. Прежний выбор («первая доступная комбинация») брал
- * именно её: покупатель видит один оттенок, в корзину падает другой.
- *
- * Правило: берём комбинацию, у которой КАЖДАЯ опция равна ПЕРВОМУ значению
- * своей группы в порядке показа. Нет такой (или групп нет) — прежний путь:
- * первая доступная, затем просто первая. То есть поведение меняется ровно
- * там, где порядки расходились.
- */
-export function pickDefaultCombination<T extends NtVariantCombinationLike>(
-	combinations: T[] | null | undefined,
-	groups?: NtVariantGroupLike[] | null,
-): T | null {
-	const list = Array.isArray(combinations) ? combinations.filter(Boolean) : [];
-	if (list.length === 0) return null;
-
-	const первыеЗначения = new Map<string, string>();
-	for (const g of Array.isArray(groups) ? groups : []) {
-		const имя = typeof g?.name === "string" ? g.name.trim() : "";
-		const значения = (g?.options ?? g?.values ?? []) as Array<{ value?: string } | string>;
-		const первое = значения
-			.map((o) => (typeof o === "string" ? o : o?.value))
-			.find((v): v is string => typeof v === "string" && v.trim() !== "");
-		if (имя && первое) первыеЗначения.set(имя, первое.trim());
-	}
-
-	if (первыеЗначения.size > 0) {
-		const подходит = (c: T): boolean => {
-			const opts = (c.options ?? {}) as Record<string, string>;
-			for (const [имя, значение] of первыеЗначения) {
-				if ((opts[имя] ?? "").trim() !== значение) return false;
-			}
-			return true;
-		};
-		const доступная = list.find((c) => подходит(c) && c.available !== false);
-		if (доступная) return доступная;
-		const любая = list.find(подходит);
-		if (любая) return любая;
-	}
-
-	return list.find((c) => c.available !== false) ?? list[0] ?? null;
-}
+// Выбор комбинации по умолчанию вынесен в модуль без зависимостей — его
+// импортирует и серверный блок «Товар» (см. шапку variant-default.ts).
+export { pickDefaultCombination } from "./variant-default";
+export type { NtVariantCombinationLike, NtVariantGroupLike } from "./variant-default";
 
 /**
  * То же правило выбора, но строкой — для `is:inline` скриптов.

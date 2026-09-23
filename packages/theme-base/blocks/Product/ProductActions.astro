@@ -45,6 +45,13 @@ interface Props {
   image?: string;
   /** Default variant combination id → backend cart → order_items. */
   variantCombinationId?: string;
+  /**
+   * Названия опций варианта по умолчанию (JSON: {"Оттенок":"Sugar Plum"}).
+   * Делегат корзины кладёт их в строку — по ним страница и сайдбар подписывают
+   * вариант. Без них товар, добавленный без клика по варианту, приходил в
+   * корзину безымянным.
+   */
+  variantOptions?: string;
 }
 
 const {
@@ -59,6 +66,7 @@ const {
   oldPrice,
   image = '',
   variantCombinationId = '',
+  variantOptions = '',
 } = Astro.props as Props;
 
 const isTall = size === 'tall';
@@ -86,6 +94,7 @@ const oldPriceAttr =
     data-image={image}
     data-quantity="1"
     data-variant-combination-id={variantCombinationId || undefined}
+    data-variant-options={variantOptions || undefined}
     class:list={[baseCls, heightCls, textCls]}
     style="background:rgb(var(--color-button-bg, var(--color-text))); color:rgb(var(--color-button-text, var(--color-bg))); border-color:rgb(var(--color-button-border, var(--color-text)));"
     onmouseover="this.style.background='rgb(var(--color-button-bg-hover))'; this.style.color='rgb(var(--color-button-text-hover))';"

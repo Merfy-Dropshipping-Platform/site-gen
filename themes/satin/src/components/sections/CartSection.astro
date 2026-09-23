@@ -108,7 +108,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantLabel } from "../../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, updateQuantity, removeFromCart, variantHtml } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -140,7 +140,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// Подпись варианта — общим хелпером: произвольные группы («Оттенок», «Объём»)
 					// лежат в variant.options и при склейке color+size терялись — два разных
 					// варианта давали неразличимые строки (баг тестера).
-					const variant = variantLabel(line.variant);
+					const variant = variantHtml(line.variant);
 				const borderClass = index === arr.length - 1 ? "" : "border-b border-[rgb(var(--color-muted,153_153_153)/0.3)] pb-6";
 				// Старая (зачёркнутая) цена — жалоба владельца 17.09 «не отображается цена
 				// без скидки» и пункт тестера 18.09 про секцию Корзина. Эталон

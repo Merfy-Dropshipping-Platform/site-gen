@@ -91,7 +91,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, formatCartPrice, variantPairs } from "../../lib/cart";
+	import { getCart, formatCartPrice, variantParts, variantSwatchHtml, escapeCartHtml } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 	import { withBase } from "../../lib/with-base";
 
@@ -150,7 +150,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				// «Размер:», и опция «Оттенок: Sugar Plum» печаталась как
 				// «Цвет: Sugar Plum», а третья опция не печаталась вовсе (замер
 				// 22.09 на стенде flux). Так же, как уже делает CartSection.
-				const пары = variantPairs(line.variant);
+				const пары = variantParts(line.variant);
 				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
 				const oldPrice = hasSale ? formatCartPrice(line.oldPrice as number) : "";
 				const discountPercent = hasSale
@@ -161,7 +161,14 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 					: "";
 				const varInfo = пары.length
 					? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${пары
-							.map((pair, idx) => `<span class="${idx ? "ml-1" : ""}">${pair.name}:</span><span>${pair.value}</span>`)
+							.map(
+								(pair, idx) =>
+									`<span class="${idx ? "ml-1" : ""}">${escapeCartHtml(pair.name)}:</span>` +
+									// Цвет — образцом формы страницы товара (владелец 23.09).
+									(pair.swatch
+										? variantSwatchHtml(pair.swatch, pair.value, pair.shape)
+										: `<span>${escapeCartHtml(pair.value)}</span>`),
+							)
 							.join("")}</div>`
 					: "";
 				return `

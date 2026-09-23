@@ -31,6 +31,17 @@ const product = (i) => ({
 });
 
 const PRODUCTS = [1, 2, 3, 4].map(product);
+
+// Товар с вариантами для проверок «страница товара → корзина»: подкладывается
+// переменной окружения MERFY_QA_STUB_PRODUCT (JSON). Встаёт первым, остальные
+// товары остаются — секции, которым нужен список, его получают как раньше.
+if (process.env.MERFY_QA_STUB_PRODUCT) {
+  try {
+    PRODUCTS.unshift(JSON.parse(process.env.MERFY_QA_STUB_PRODUCT));
+  } catch {
+    /* битый JSON — остаёмся на стандартных товарах */
+  }
+}
 const original = globalThis.fetch;
 
 globalThis.fetch = async (input, init) => {

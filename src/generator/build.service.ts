@@ -17,6 +17,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
 import { resolveAssetUrls } from "../themes/asset-resolver";
+import { variantSwatchShapeFromRevision } from "../../packages/theme-base/runtime/variant-display";
 import { PRODUCT_UNIFIED_THEMES } from "../themes/page-registry";
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from "../common/block-root-inline";
 // Shared cart-drawer globals resolver — same export the preview controller
@@ -1289,9 +1290,16 @@ export async function runBuildPipeline(
       // читает checkout.astro. Блок один на все темы, поэтому префикс берём из
       // инжектнутого глобала window.__MERFY_THEME__ (зеркало __MERFY_SITE_ID__).
       // Инжектим во ВСЕ HTML (товар может стоять секцией на любой странице).
+      // Там же — форма образца варианта со страницы товара («Вариации» секции
+      // «Товар»): корзина на любой странице рисует цвет той же формой, что и
+      // страница товара — кружок, квадратик или словом (владелец 23.09).
       try {
-        const themeGlobals = await injectGlobalsIntoDist(ctx.distDir, { __MERFY_THEME__: bareTheme });
-        logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}" into ${themeGlobals} HTML files for site ${params.siteId}`);
+        const variantSwatch = variantSwatchShapeFromRevision(ctx.revisionData);
+        const themeGlobals = await injectGlobalsIntoDist(ctx.distDir, {
+          __MERFY_THEME__: bareTheme,
+          ...(variantSwatch ? { __MERFY_VARIANT_SWATCH__: variantSwatch } : {}),
+        });
+        logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}", __MERFY_VARIANT_SWATCH__="${variantSwatch ?? "-"}" into ${themeGlobals} HTML files for site ${params.siteId}`);
       } catch (thErr) {
         logger.warn(`[themes-v2] theme global inject failed: ${(thErr as Error)?.message ?? thErr}`);
       }
@@ -1634,7 +1642,7 @@ export async function runBuildPipeline(
       const { parityOn } = await import("../themes/parity-switch");
       const { siteTokensCss } = await import("../themes/tokens-css");
       const v2TokensCss = parityOn("TOKENS", params.siteId)
-        ? siteTokensCss(v2ThemeSettings ?? {}, ctx.revisionData, bareTheme)
+        ? siteTokensCss(v2ThemeSettings ?? {}, ctx.revisionData, bareTheme, { logoRule: parityOn("LOGO", params.siteId) })
         : buildTokensCss(
             v2ThemeSettings && typeof v2ThemeSettings === "object"
               ? { ...(v2ThemeSettings as Record<string, unknown>), cartDrawerScheme: v2CartDrawerScheme }

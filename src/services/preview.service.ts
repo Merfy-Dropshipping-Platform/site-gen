@@ -647,7 +647,7 @@ export class PreviewService {
       assetPrefix: `/__theme/${PreviewService.bareThemeKey(input.themeId)}`,
       titleOverride: input.titleOverride,
       tokensCss: parityOn('TOKENS', input.siteId)
-        ? siteTokensCss(input.themeSettings ?? {}, input.revisionData, PreviewService.bareThemeKey(input.themeId))
+        ? siteTokensCss(input.themeSettings ?? {}, input.revisionData, PreviewService.bareThemeKey(input.themeId), { logoRule: parityOn('LOGO', input.siteId) })
         : previewTokensCssWithFonts(input.themeSettings ?? {}, PreviewService.bareThemeKey(input.themeId)),
     });
     if (composed === null) return null;

@@ -1,0 +1,1831 @@
+{
+  "item": {
+    "createdAt": "<DATE>",
+    "data": {
+      "currentPageId": "home",
+      "lockVersion": 1,
+      "manifestVersion": "2.0",
+      "pages": [
+        {
+          "id": "home",
+          "isCustom": false,
+          "locale": null,
+          "name": "Главная страница",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-about",
+          "isCustom": false,
+          "locale": null,
+          "name": "О нас",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/about",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-delivery",
+          "isCustom": false,
+          "locale": null,
+          "name": "Доставка",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/delivery",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-contacts",
+          "isCustom": false,
+          "locale": null,
+          "name": "Контакты",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/contacts",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-catalog",
+          "isCustom": false,
+          "locale": null,
+          "name": "Коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/catalog",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-collection",
+          "isCustom": false,
+          "locale": null,
+          "name": "Страница коллекции",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/collections/preview",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-cart",
+          "isCustom": false,
+          "locale": null,
+          "name": "Корзина",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/cart",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-product",
+          "isCustom": false,
+          "locale": null,
+          "name": "Товар",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/product",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout",
+          "isCustom": false,
+          "locale": null,
+          "name": "Оформление заказа",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-checkout-result",
+          "isCustom": false,
+          "locale": null,
+          "name": "Спасибо за заказ",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/checkout-result",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-profile",
+          "isCustom": false,
+          "locale": null,
+          "name": "Профиль",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/profile",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-wishlist",
+          "isCustom": false,
+          "locale": null,
+          "name": "Избранное",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/wishlist",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-orders",
+          "isCustom": false,
+          "locale": null,
+          "name": "Заказы",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/account/orders",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        },
+        {
+          "id": "page-login",
+          "isCustom": false,
+          "locale": null,
+          "name": "Вход",
+          "permissions": null,
+          "role": "system",
+          "schedule": null,
+          "seo": null,
+          "slug": "/login",
+          "source": "theme",
+          "targeting": null,
+          "variant": null
+        }
+      ],
+      "pagesData": {
+        "checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-1",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+                  "enabled": "true",
+                  "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+                  "placeholder": "E-mail"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Контакты"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "home": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-1",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-1",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "backgroundImages": {
+                  "url1": "/images/hero-photo.webp"
+                },
+                "colorScheme": "scheme-3",
+                "cta": {
+                  "href": "/catalog",
+                  "text": "Начать ритуал"
+                },
+                "heading": {
+                  "text": "Искусство заботы о себе"
+                },
+                "id": "Hero-1",
+                "image": {
+                  "alt": "Bloom hero",
+                  "url": "/main-image.png"
+                },
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "primaryButton": {
+                  "link": {
+                    "href": "/catalog"
+                  },
+                  "text": "Начать ритуал"
+                },
+                "subtitle": "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам",
+                "text": {
+                  "content": "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам"
+                },
+                "title": "Искусство заботы о себе",
+                "variant": "split"
+              },
+              "type": "Hero"
+            },
+            {
+              "props": {
+                "cards": 3,
+                "collection": "",
+                "colorScheme": "scheme-3",
+                "dataSource": "auto",
+                "heading": {
+                  "size": "small",
+                  "text": "СЕЙЧАС В ТРЕНДЕ"
+                },
+                "id": "PopularProducts-1",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "productCard": {
+                  "buttonStyle": "primary",
+                  "cardStyle": "portrait",
+                  "columns": 3,
+                  "nextPhoto": "false",
+                  "quickAdd": "false"
+                },
+                "text": {
+                  "content": "Откройте для себя наши самые любимые средства",
+                  "size": "small"
+                }
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "align": "center",
+                "colorScheme": "scheme-2",
+                "heading": {
+                  "size": "medium",
+                  "text": "ФИЛОСОФИЯ ВАШЕЙ КРАСОТЫ"
+                },
+                "id": "MainText-1",
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "text": {
+                  "text": "Мы верим, что красота — это ритуал заботы. Каждое наше средство создано на основе натуральных ингредиентов, чтобы подчеркнуть вашу природную красоту и вернуть коже здоровое сияние."
+                }
+              },
+              "type": "MainText"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "columnsCount": 3,
+                "displayMode": "products",
+                "heading": {
+                  "size": "small",
+                  "text": "НАШИ КОЛЛЕКЦИИ"
+                },
+                "id": "Gallery-1",
+                "imageView": "square",
+                "items": [
+                  {
+                    "alt": "Изображение",
+                    "id": "item-1",
+                    "type": "image",
+                    "url": "https://minio.merfy.ru/product-images/5065b5f2-813a-482f-955f-79d59961781d.webp"
+                  },
+                  {
+                    "alt": "Изображение",
+                    "id": "item-2",
+                    "type": "image",
+                    "url": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp"
+                  },
+                  {
+                    "alt": "Изображение",
+                    "id": "item-3",
+                    "type": "image",
+                    "url": "https://minio.merfy.ru/product-images/c35a2f11-cc45-4e3c-9c1a-6fec10024a30.webp"
+                  }
+                ],
+                "padding": {
+                  "bottom": 120,
+                  "top": 120
+                },
+                "text": {
+                  "content": "Стиль для каждой ситуации - найдите свой в каталоге.",
+                  "size": "small"
+                }
+              },
+              "type": "Gallery"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "displayColumns": 3,
+                "id": "MultiColumns-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "MultiColumns"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-1",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+                  "enabled": "true",
+                  "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+                  "placeholder": "E-mail"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Контакты"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Bloom"
+            }
+          },
+          "zones": {}
+        },
+        "page-about": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-about",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-about",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "align": "center",
+                "colorScheme": "scheme-3",
+                "cta": {
+                  "href": "/skin-care",
+                  "text": "К продукции",
+                  "variant": "primary"
+                },
+                "heading": {
+                  "size": "small",
+                  "text": "История о том, как расцветать каждый день:"
+                },
+                "id": "MainText-about-intro",
+                "padding": {
+                  "bottom": 80,
+                  "top": 64
+                },
+                "text": {
+                  "content": "Bloom родился из простого вопроса: может ли косметика быть одновременно эффективной, безопасной и этичной? Мы ответили «да» — и создали бренд, где каждый ингредиент выверен, а каждая упаковка продумана до мелочей. Мы производим средства на собственной «зеленой» фабрике, используем возобновляемую энергию, биоразлагаемые материалы для упаковки и сотрудничаем только с поставщиками, разделяющими наши ценности. В нашей формуле нет парабенов, силиконов, минеральных масел и жестокости. Выбирая Bloom, вы выбираете уход, который заботится и о вас, и о будущем.",
+                  "size": "small"
+                }
+              },
+              "type": "MainText"
+            },
+            {
+              "props": {
+                "button": {
+                  "href": "/skin-care",
+                  "text": "К продукции"
+                },
+                "colorScheme": "scheme-2",
+                "heading": {
+                  "text": "Суть красоты. Bloom"
+                },
+                "id": "ImageWithText-about-essence",
+                "image": {
+                  "alt": "Bloom — суть красоты",
+                  "url": "/images/about-photo.webp"
+                },
+                "imagePosition": "right",
+                "padding": {
+                  "bottom": 120,
+                  "top": 80
+                },
+                "size": "large",
+                "text": {
+                  "content": "Bloom — это независимый российский бренд косметики, созданный вокруг идеи функционального минимализма. Мы верим, что лучший уход — это тот, в котором нет ничего лишнего. Каждый продукт решает конкретную задачу: увлажнить, восстановить, защитить. Мы не используем воду в основах там, где можно обойтись без нее, не добавляем отдушки ради запаха и не переплачиваем за «громкие» имена в составе. Только проверенные формулы, стабильные эмульсии и текстуры, которые хочется наносить снова и снова."
+                },
+                "width": "large"
+              },
+              "type": "ImageWithText"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "container": "false",
+                "heading": {
+                  "size": "medium",
+                  "text": "Помощь и забота: ответы на волнующие вопросы"
+                },
+                "id": "CollapsibleSection-about-faq",
+                "items": [
+                  {
+                    "content": "Да, мы гордимся тем, что вся продукция разрабатывается и производится на собственном производственном комплексе в Московской области. Мы не используем аутсорсинг — это позволяет нам полностью контролировать качество на каждом этапе.",
+                    "heading": "Где и как производится ваша косметика? Есть ли у вас своя лаборатория?",
+                    "id": "faq-1"
+                  },
+                  {
+                    "content": "Да, мы заботимся о вашем комфорте. Вы можете вернуть или обменять неподошедший товар в течение 14 дней с момента получения заказа, согласно законодательству о дистанционной торговле.",
+                    "heading": "Можно ли возвращать косметику, если она не подошла по составу или запаху?",
+                    "id": "faq-2"
+                  },
+                  {
+                    "content": "Мы работаем в парадигме безопасной и осознанной косметики. Вся продукция соответствует требованиям ТР ТС 009/2011 «О безопасности парфюмерно-косметической продукции».",
+                    "heading": "Какие стандарты и сертификаты имеет ваша продукция?",
+                    "id": "faq-3"
+                  }
+                ],
+                "padding": {
+                  "bottom": 120,
+                  "top": 80
+                }
+              },
+              "type": "CollapsibleSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-about",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "О нас"
+            }
+          },
+          "zones": {}
+        },
+        "page-cart": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-cart",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-cart",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "CartBody-1",
+                "padding": {
+                  "bottom": 24,
+                  "top": 80
+                }
+              },
+              "type": "CartBody"
+            },
+            {
+              "props": {
+                "id": "CartSummary-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 0
+                }
+              },
+              "type": "CartSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-cart",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Корзина"
+            }
+          },
+          "zones": {}
+        },
+        "page-catalog": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-catalog",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-catalog",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "columns": 3,
+                "filters": {
+                  "enabled": "true"
+                },
+                "heading": {
+                  "size": "large",
+                  "text": "Каталог"
+                },
+                "id": "Catalog-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "pagination": {
+                  "enabled": "true",
+                  "pageSize": 12
+                },
+                "sort": {
+                  "enabled": "true"
+                }
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-catalog",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Каталог"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "id": "CheckoutForm-1"
+              },
+              "type": "CheckoutForm"
+            },
+            {
+              "props": {
+                "id": "CheckoutSummary-1"
+              },
+              "type": "CheckoutSummary"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-1",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+                  "enabled": "true",
+                  "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+                  "placeholder": "E-mail"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Контакты"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Оформление заказа"
+            }
+          },
+          "zones": {}
+        },
+        "page-checkout-result": {
+          "content": [
+            {
+              "props": {
+                "id": "CheckoutHeader-1"
+              },
+              "type": "CheckoutHeader"
+            },
+            {
+              "props": {
+                "accentColor": "",
+                "banner": {
+                  "align": "center",
+                  "enabled": false,
+                  "placement": "order",
+                  "src": "",
+                  "width": 580
+                },
+                "bodyFont": "",
+                "bodyWeight": "",
+                "buttonColor": "",
+                "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+                "confirmedTitle": "Ваш заказ подтверждён",
+                "detailsTitle": "Детали заказа",
+                "errorColor": "",
+                "greetingTemplate": "Спасибо за заказ, {name}!",
+                "headingFont": "",
+                "headingWeight": "",
+                "helpText": "Нужна помощь? Обратитесь к нам",
+                "id": "OrderConfirmation-1",
+                "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+                "orderBg": "",
+                "padding": {
+                  "bottom": 0,
+                  "top": 0
+                },
+                "returnButtonHref": "/",
+                "returnButtonText": "Вернуться к магазину",
+                "summaryBg": ""
+              },
+              "type": "OrderConfirmation"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Спасибо за заказ"
+            }
+          },
+          "zones": {}
+        },
+        "page-collection": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-collection",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-collection",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "columns": 3,
+                "filters": {
+                  "enabled": "true"
+                },
+                "heading": {
+                  "size": "large",
+                  "text": "{{COLLECTION_NAME}}"
+                },
+                "id": "Catalog-collection",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "pagination": {
+                  "enabled": "true",
+                  "pageSize": 12
+                },
+                "sort": {
+                  "enabled": "true"
+                }
+              },
+              "type": "Catalog"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-collection",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "{{COLLECTION_NAME}}"
+            }
+          },
+          "zones": {}
+        },
+        "page-contacts": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-contacts",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-contacts",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "ContactForm-1"
+              },
+              "type": "ContactForm"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-contacts",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Контакты"
+            }
+          },
+          "zones": {}
+        },
+        "page-delivery": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-delivery",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-delivery",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-1",
+                "content": "<p>Мы доставляем заказы по всей России. Стоимость и сроки доставки рассчитываются при оформлении заказа — в зависимости от выбранного способа и адреса. Заказы отправляем в течение 1–2 рабочих дней после оплаты.</p>",
+                "heading": "Доставка",
+                "headingSize": "large",
+                "id": "Page-delivery",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "Page"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-delivery",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Доставка"
+            }
+          },
+          "zones": {}
+        },
+        "page-login": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-login",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-login",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "LoginSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "LoginSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-login",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+                  "enabled": "true",
+                  "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+                  "placeholder": "E-mail"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Контакты"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Вход"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-orders": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-orders",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-orders",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "OrdersSection-1"
+              },
+              "type": "OrdersSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-orders",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+                  "enabled": "true",
+                  "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+                  "placeholder": "E-mail"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Контакты"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Мои заказы"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-product": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-product",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-product",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "id": "Product-1",
+                "variants": {
+                  "displayStyle": "button",
+                  "shape": "none"
+                }
+              },
+              "type": "Product"
+            },
+            {
+              "props": {
+                "heading": {
+                  "size": "small",
+                  "text": "Вам также может понравиться"
+                },
+                "id": "PopularProducts-product"
+              },
+              "type": "PopularProducts"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-product",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Товар"
+            }
+          },
+          "zones": {}
+        },
+        "page-profile": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-profile",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-profile",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "AccountSection-1"
+              },
+              "type": "AccountSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "copyright": {
+                  "poweredBy": "Powered by Merfy",
+                  "showYear": "true"
+                },
+                "copyrightColorScheme": "scheme-1",
+                "id": "Footer-profile",
+                "informationColumn": {
+                  "links": [],
+                  "title": "Информация"
+                },
+                "navigationColumn": {
+                  "links": [
+                    {
+                      "href": "/catalog",
+                      "label": "Каталог"
+                    },
+                    {
+                      "href": "/about",
+                      "label": "О нас"
+                    },
+                    {
+                      "href": "/contacts",
+                      "label": "Контакты"
+                    }
+                  ],
+                  "title": "Навигация"
+                },
+                "newsletter": {
+                  "description": "Подпишитесь на рассылку и узнавайте первыми о новых коллекциях и акциях.",
+                  "enabled": "true",
+                  "heading": "БУДЬТЕ В КУРСЕ НОВИНОК",
+                  "placeholder": "E-mail"
+                },
+                "padding": {
+                  "bottom": 40,
+                  "top": 80
+                },
+                "siteTitle": "Витрина",
+                "socialColumn": {
+                  "socialLinks": [],
+                  "title": "Контакты"
+                }
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "meta": {
+                "title": "Основные данные"
+              }
+            }
+          },
+          "zones": {}
+        },
+        "page-wishlist": {
+          "content": [
+            {
+              "props": {
+                "colorScheme": "scheme-2",
+                "id": "PromoBanner-wishlist",
+                "link": {
+                  "href": "/delivery",
+                  "text": "Перейти"
+                },
+                "text": "Скидка 10% на общую сумму заказа от 9 000₽"
+              },
+              "type": "PromoBanner"
+            },
+            {
+              "props": {
+                "actionButtons": {
+                  "showCart": "true",
+                  "showProfile": "true",
+                  "showSearch": "true"
+                },
+                "colorScheme": "scheme-3",
+                "id": "Header-wishlist",
+                "logo": "",
+                "logoPosition": "top-center",
+                "menuColorScheme": "scheme-3",
+                "menuType": "dropdown",
+                "navigationLinks": [
+                  {
+                    "href": "/catalog",
+                    "label": "Каталог"
+                  },
+                  {
+                    "href": "/about",
+                    "label": "О нас"
+                  },
+                  {
+                    "href": "/delivery",
+                    "label": "Доставка"
+                  },
+                  {
+                    "href": "/contacts",
+                    "label": "Контакты"
+                  }
+                ],
+                "padding": {
+                  "bottom": 16,
+                  "top": 16
+                },
+                "siteTitle": "Bloom",
+                "stickiness": "scroll-up"
+              },
+              "type": "Header"
+            },
+            {
+              "props": {
+                "colorScheme": 2,
+                "id": "WishlistSection-1",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                }
+              },
+              "type": "WishlistSection"
+            },
+            {
+              "props": {
+                "colorScheme": "scheme-3",
+                "id": "Footer-wishlist",
+                "padding": {
+                  "bottom": 80,
+                  "top": 80
+                },
+                "siteTitle": "Витрина"
+              },
+              "type": "Footer"
+            }
+          ],
+          "root": {
+            "props": {
+              "title": "Избранное"
+            }
+          },
+          "zones": {}
+        }
+      },
+      "siteOverrides": {
+        "blocks": {},
+        "pages": {}
+      },
+      "themeId": "bloom",
+      "themeSettings": {}
+    },
+    "id": "<REVISION_ID>",
+    "siteId": "<SITE_ID>"
+  }
+}

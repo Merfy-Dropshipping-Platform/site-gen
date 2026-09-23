@@ -97,7 +97,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 </section>
 
 <script>
-	import { getCart, getCartTotal, formatCartPrice, variantLabel } from "../../lib/cart";
+	import { getCart, getCartTotal, formatCartPrice, variantHtml } from "../../lib/cart";
 	import { cartLineThumbPictureHtml } from "../../lib/cart-thumb-html";
 
 	const emptyBlock = document.querySelector<HTMLElement>("[data-cart-page-empty]");
@@ -137,7 +137,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 
 				// Подпись варианта: без неё два разных варианта одного товара давали
 				// неразличимые строки (баг тестера про «Cold Brew»).
-				const variantUnderPrice = variantLabel(line.variant);
+				const variantUnderPrice = variantHtml(line.variant);
 
 				return `
 					<li class="flex flex-col gap-4 border-b border-[var(--vanilla-line)] py-6 first:pt-0 last:border-b-0 md:flex-row md:items-center md:justify-between md:gap-8" data-line-id="${line.id}">

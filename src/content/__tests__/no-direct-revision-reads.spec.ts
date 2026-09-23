@@ -52,14 +52,14 @@ const ALLOWANCES: Allowance[] = [
   {
     path: 'sites.service.ts',
     literalData: 2,
-    bareSelect: 1,
+    bareSelect: 0,
     reason:
       'literalData×2: update() решает, нужен ли пересев темы, по themeSettings ' +
       'ПРЕДЫДУЩЕЙ ревизии (до вызова порта, не относится к load/save) — и ' +
       'resetContentPages() (админ-сброс контент-страниц на сиды темы, отдельная ' +
-      'операция вне объёма волны 1). bareSelect×1: конверт ревизии в getRevision() ' +
-      '(id/meta/createdAt/createdBy) — data сразу перезаписывается loaded.document ' +
-      'из порта и не читается как контент.',
+      'операция вне объёма волны 1). getRevision() читает конверт ревизии ' +
+      '(id/siteId/meta/createdAt/createdBy) ПРОЕКЦИЕЙ без data — содержимое ' +
+      'отдельно приходит из storeContent.load(), блоб не читается дважды.',
   },
   {
     path: 'generator/build.service.ts',

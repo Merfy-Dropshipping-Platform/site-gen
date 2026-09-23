@@ -161,8 +161,11 @@ export class DocumentAdapter implements StoreContent {
   // -- load helpers ----------------------------------------------------
 
   private async fetchRevision(revisionId: string, siteId: string) {
+    // Только data — конверт (meta/createdAt/createdBy) отдельным SELECT
+    // читают вызывающие (SitesDomainService.getRevision, build.service.ts
+    // stageMerge), которым он нужен; порту эти поля не нужны вовсе.
     const [rev] = await this.db
-      .select()
+      .select({ data: schema.siteRevision.data })
       .from(schema.siteRevision)
       .where(
         and(

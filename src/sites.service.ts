@@ -1675,8 +1675,16 @@ export class SitesDomainService {
     if (!site) throw new Error("site_not_found");
     // Конверт ревизии (id/meta/createdAt/createdBy) — как и раньше, отдельным
     // SELECT: порт StoreContent несёт только содержимое (data), не эти поля.
+    // Без `data` в проекции: блоб ревизии за этим же revisionId сейчас читает
+    // storeContent.load() (в DocumentAdapter) — второй раз здесь его не тянем.
     const [rev] = await this.db
-      .select()
+      .select({
+        id: schema.siteRevision.id,
+        siteId: schema.siteRevision.siteId,
+        meta: schema.siteRevision.meta,
+        createdAt: schema.siteRevision.createdAt,
+        createdBy: schema.siteRevision.createdBy,
+      })
       .from(schema.siteRevision)
       .where(
         and(

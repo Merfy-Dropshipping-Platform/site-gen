@@ -71,8 +71,17 @@ function contrastScheme(tokens: string): string {
 const wrap = (html: string, scheme: string) =>
   `<div class="color-scheme-${scheme}" data-block-scheme="${scheme}">${html}</div>`;
 
+/**
+ * Сети у страницы замера нет: скрипты секций (каталог, популярные, галерея)
+ * тянут товары и, не получив их, перестраивают секцию — «Каталог» сжимается со
+ * скелетонов до заглушки. В CI отказ запроса приходил с задержкой, и секция
+ * сжималась посреди замера. Отказываем сразу — секции мгновенно приходят в то
+ * же итоговое состояние «данных нет».
+ */
+const NO_NETWORK = `<script>window.fetch=function(){return Promise.reject(new TypeError("замер: сети нет"))};</script>`;
+
 function page(theme: string, tokens: string, main: string): string {
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8">
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8">${NO_NETWORK}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${themeCss(theme)}</style>
 <style id="__merfy_tokens_css">${tokens}</style>
@@ -95,11 +104,11 @@ async function openPage(browser: Browser, html: string, width: number) {
   // товаров сжимается со скелетонов (6898px) до заглушки (364px). Замер,
   // запомнивший прежнюю высоту, снимал строки, которых уже нет, — в CI это
   // выглядело как «просвет с 9-го куска». Ждём, пока высота документа не
-  // перестанет меняться (три опроса подряд).
+  // перестанет меняться (пять опросов подряд).
   await pg.waitForFunction(
-    "(() => { const h = document.documentElement.scrollHeight; const same = window.__lastH === h; window.__stable = same ? (window.__stable || 0) + 1 : 0; window.__lastH = h; return window.__stable >= 3; })()",
+    "(() => { const h = document.documentElement.scrollHeight; const same = window.__lastH === h; window.__stable = same ? (window.__stable || 0) + 1 : 0; window.__lastH = h; return window.__stable >= 5; })()",
     undefined,
-    { polling: 200, timeout: 15000 },
+    { polling: 200, timeout: 20000 },
   );
   return { ctx, pg };
 }

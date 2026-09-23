@@ -193,6 +193,10 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
+// цвета не меняются; без признака — прежние классы. Признак ставит sites.
+const designParity = p.__designParity === true;
 ---
 
 <section
@@ -250,7 +254,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex w-full min-h-0 min-w-0 flex-col gap-5${sideOrderCls}`}>
+				<div class={`flex w-full min-h-0 min-w-0 flex-col ${designParity ? "gap-4" : "gap-5"}${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}

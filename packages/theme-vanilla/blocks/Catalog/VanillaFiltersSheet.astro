@@ -1,0 +1,157 @@
+---
+/**
+ * «Фильтры и сортировка» на телефоне (< lg) — порт VanillaFiltersSheet из
+ * вёрстки (Vanilla-theme, 17.09): кнопка открывает шторку под шапкой, внизу
+ * «Показать» / «Закрыть». Владелец 23.09: «адаптив мобилы взять с вёрстки».
+ *
+ * В шторке — сайдбар (Сортировать / Наличие / Стоимость), как в вёрстке
+ * vanilla. Это СВОЙ экземпляр сайдбара: у нас две раскладки на выбор мерчанта,
+ * и сайдбар раскладки «Сбоку» на телефоне скрыт общим catalog-layout.css.
+ * Поэтому на десктопе шторка не «встаёт на место», а прячется целиком
+ * (lg:hidden!), а её радио названы vanilla-sheet-*, чтобы не слиться в одну
+ * группу с радио сайдбара «Сбоку».
+ *
+ * На обёртке нет ни цвета текста, ни шрифта: на десктопе она display:contents,
+ * и строка их унаследовала бы. Классы этого файла попадают в CSS живой витрины
+ * через `@source` в themes/vanilla/src/styles/global.css — классы из
+ * packages/theme-vanilla/blocks живая сборка иначе не сканирует.
+ *
+ * Скрипт шторки общий для пяти тем (контракт lib/filters-sheet.ts вёрстки):
+ * текст одинаков во всех портах — сторожит no-second-implementation.spec.ts.
+ */
+interface Props {
+  /** Id блока — для aria-controls: секций каталога на странице может быть две. */
+  blockId: string;
+  /** Нет ни фильтров, ни сортировки — кнопку и шторку не рисуем. */
+  enabled: boolean;
+}
+const { blockId, enabled } = Astro.props as Props;
+const sheetId = `filters-sheet-${blockId}`;
+---
+
+{enabled ? (
+  <>
+    <button
+      type="button"
+      data-filters-open
+      aria-controls={sheetId}
+      aria-expanded="false"
+      class="flex w-fit items-center gap-2 text-[rgb(var(--color-text,0_0_0))] lg:hidden"
+    >
+      <svg class="size-6 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11.9996H9.98243M6.44649 11.9996H5M6.44649 11.9996C6.44649 11.539 6.63271 11.0973 6.9642 10.7717C7.29568 10.446 7.74527 10.263 8.21405 10.263C8.68284 10.263 9.13243 10.446 9.46391 10.7717C9.7954 11.0973 9.98162 11.539 9.98162 11.9996C9.98162 12.4602 9.7954 12.9019 9.46391 13.2275C9.13243 13.5532 8.68284 13.7362 8.21405 13.7362C7.74527 13.7362 7.29568 13.5532 6.9642 13.2275C6.63271 12.9019 6.44649 12.4602 6.44649 11.9996ZM20 17.2626H15.3395M15.3395 17.2626C15.3395 17.7233 15.1528 18.1655 14.8212 18.4913C14.4897 18.817 14.04 19 13.5711 19C13.1023 19 12.6527 18.8162 12.3212 18.4906C11.9897 18.1649 11.8035 17.7232 11.8035 17.2626M15.3395 17.2626C15.3395 16.802 15.1528 16.3606 14.8212 16.0348C14.4897 15.7091 14.04 15.5261 13.5711 15.5261C13.1023 15.5261 12.6527 15.709 12.3212 16.0347C11.9897 16.3604 11.8035 16.8021 11.8035 17.2626M11.8035 17.2626H5M20 6.73656H17.4824M13.9465 6.73656H5M13.9465 6.73656C13.9465 6.27599 14.1327 5.83429 14.4642 5.50863C14.7957 5.18296 15.2453 5 15.7141 5C15.9462 5 16.176 5.04492 16.3905 5.13219C16.6049 5.21946 16.7998 5.34737 16.9639 5.50863C17.128 5.66988 17.2582 5.86132 17.3471 6.07201C17.4359 6.28269 17.4816 6.50851 17.4816 6.73656C17.4816 6.96461 17.4359 7.19042 17.3471 7.40111C17.2582 7.6118 17.128 7.80323 16.9639 7.96449C16.7998 8.12574 16.6049 8.25366 16.3905 8.34093C16.176 8.4282 15.9462 8.47311 15.7141 8.47311C15.2453 8.47311 14.7957 8.29016 14.4642 7.96449C14.1327 7.63882 13.9465 7.19712 13.9465 6.73656Z" stroke="currentColor" stroke-miterlimit="10" stroke-linecap="round" /></svg>
+      <span class="font-vanilla-arsenal text-[14px] font-normal uppercase leading-none">Фильтры и сортировка</span>
+    </button>
+
+    <div
+      id={sheetId}
+      class="fixed inset-x-0 bottom-0 z-[55] hidden w-full flex-col gap-6 overflow-y-auto overscroll-contain bg-[rgb(var(--color-bg,255_255_255))] px-4 pb-8 pt-4 lg:hidden!"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Фильтры и сортировка"
+      aria-hidden="true"
+      data-filters-sheet
+    >
+      <div class="flex items-center justify-between text-[rgb(var(--color-text,0_0_0))] lg:hidden">
+        <p class="font-vanilla-arsenal text-base font-normal uppercase leading-none">Фильтры и сортировка</p>
+        <button
+          type="button"
+          data-filters-close
+          class="flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-70"
+          aria-label="Закрыть"
+        >
+          <svg class="size-4 shrink-0" viewBox="0 0 13.2 13.2" fill="none" aria-hidden="true"><path d="M0.6 0.6L12.6 12.6M0.6 12.6L12.6 0.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      </div>
+
+      <slot />
+
+      <div class="mt-auto flex items-center gap-3 pt-2 lg:hidden">
+        <button
+          type="button"
+          data-filters-apply
+          class="inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button,0px)] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none bg-[rgb(var(--color-button-bg,58_69_48))] text-[rgb(var(--color-button-text,255_255_255))] transition-colors hover:bg-[rgb(var(--color-button-bg-hover,var(--color-button-bg,58_69_48)))] hover:text-[rgb(var(--color-button-text-hover,var(--color-button-text,255_255_255)))]"
+        >Показать</button>
+        <button
+          type="button"
+          data-filters-close
+          class="inline-flex h-12 flex-1 items-center justify-center rounded-[var(--radius-button,0px)] border border-[rgb(var(--color-text,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none text-[rgb(var(--color-text,58_69_48))] transition-opacity hover:opacity-70"
+        >Закрыть</button>
+      </div>
+    </div>
+
+    <script is:inline>
+      /* Шторка «Фильтры и сортировка» — одна на все темы (контракт
+         lib/filters-sheet.ts вёрстки). [data-filters-open] открывает шторку
+         своего блока, [data-filters-close] и [data-filters-apply] закрывают,
+         Esc закрывает. Фильтры применяются сразу, «Показать» только закрывает.
+         Шторка встаёт под шапку, прокрутку запирает на <html>: у bloom/vanilla
+         html{overflow-x:clip}, и замок на body окно не держит. На десктопе
+         шторки нет — открытая закрывается сама.
+         Текст одинаков во всех портах — сторожит no-second-implementation.spec.ts. */
+      (function () {
+        var w = window;
+        var state = w.__merfyFiltersSheet;
+        // Блок перерисован в конструкторе при открытой шторке: старая шторка
+        // ушла из документа, замок прокрутки надо снять.
+        if (state && state.open && !state.open.isConnected) state.close();
+        if (state) return;
+        var headerBottom = function () {
+          // merfy-root-allow: шапка — соседний блок страницы, шторка встаёт под неё
+          var header = document.querySelector('[data-nt$="-header"]');
+          var bottom = header ? header.getBoundingClientRect().bottom : 0;
+          return Math.max(0, Math.round(bottom));
+        };
+        state = w.__merfyFiltersSheet = {
+          open: null,
+          set: function (sheet, on) {
+            if (!sheet) return;
+            sheet.classList.toggle("hidden", !on);
+            sheet.setAttribute("aria-hidden", on ? "false" : "true");
+            var root = sheet.closest("[data-puck-component-id]") || sheet.parentElement;
+            root.querySelectorAll("[data-filters-open]").forEach(function (btn) {
+              btn.setAttribute("aria-expanded", on ? "true" : "false");
+            });
+            document.documentElement.style.overflow = on ? "hidden" : "";
+            if (on) sheet.style.top = headerBottom() + "px";
+            state.open = on ? sheet : null;
+          },
+          close: function () {
+            if (state.open) state.set(state.open, false);
+          },
+        };
+        document.addEventListener("click", function (event) {
+          var target = event.target instanceof Element ? event.target : null;
+          if (!target) return;
+          var opener = target.closest("[data-filters-open]");
+          if (opener) {
+            var root = opener.closest("[data-puck-component-id]") || opener.parentElement;
+            var sheet = root && root.querySelector("[data-filters-sheet]");
+            if (!sheet) return;
+            event.preventDefault();
+            state.set(sheet, sheet.classList.contains("hidden"));
+            return;
+          }
+          var closer = target.closest("[data-filters-close], [data-filters-apply]");
+          if (!closer) return;
+          event.preventDefault();
+          state.set(closer.closest("[data-filters-sheet]"), false);
+        });
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && state.open) state.close();
+        });
+        window.addEventListener("resize", function () {
+          if (!state.open) return;
+          // На десктопе шторки нет: обёртка встаёт в поток (contents) или скрыта (none).
+          var shown = getComputedStyle(state.open).display;
+          if (shown === "contents" || shown === "none") state.close();
+          else state.open.style.top = headerBottom() + "px";
+        });
+        document.addEventListener("astro:page-load", function () {
+          state.close();
+        });
+      })();
+    </script>
+  </>
+) : (
+  <slot />
+)}

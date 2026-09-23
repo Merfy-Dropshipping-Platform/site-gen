@@ -27,9 +27,24 @@ interface RadioOption {
 
 interface Props {
 	class?: string;
+	/**
+	 * Приставка имён и id радио. У шторки «Фильтры и сортировка» на телефоне
+	 * свой экземпляр сайдбара: с теми же именами его радио слились бы в одну
+	 * группу с радио раскладки «Сбоку», а подписи кликали бы чужие поля.
+	 */
+	namePrefix?: string;
+	/** Показывать «Сортировать» (настройка секции «Сортировка»). */
+	showSort?: boolean;
+	/** Показывать фильтры: коллекции, наличие, стоимость (настройка «Фильтры»). */
+	showFilters?: boolean;
 }
 
-const { class: className = "" } = Astro.props;
+const {
+	class: className = "",
+	namePrefix = "vanilla",
+	showSort = true,
+	showFilters = true,
+} = Astro.props;
 
 const sortOptions: RadioOption[] = [
 	{ value: "new", label: "По новизне", checked: true },
@@ -51,23 +66,26 @@ const stockOptions: RadioOption[] = [
 	{/* Фильтр по коллекциям: скрыт на demo-сборке, гидрация (Catalog.astro)
 	    показывает его при наличии коллекций магазина и уважает ?collection= из
 	    ссылок тайлов Collections/Gallery. Манера = radio-секции сайдбара ниже. */}
+	{showFilters && (
 	<div class="flex flex-col gap-3 py-3" data-nt="catalog-collections-filter" style="display:none;">
 		<p class={CATALOG_FILTER_TITLE}>Коллекции</p>
 		<div data-collections-options class="flex flex-col gap-3"></div>
 	</div>
+	)}
 
+	{showSort && (
 	<div class="flex flex-col gap-3 py-3">
 		<p class={CATALOG_FILTER_TITLE}>Сортировать</p>
 		<div class="flex flex-col gap-3">
 			{
 				sortOptions.map((option) => {
-					const id = `vanilla-sort-${option.value}`;
+					const id = `${namePrefix}-sort-${option.value}`;
 					return (
 						<label for={id} class="group flex cursor-pointer items-center gap-2">
 							<input
 								id={id}
 								type="radio"
-								name="vanilla-sort"
+								name={`${namePrefix}-sort`}
 								value={option.value}
 								checked={option.checked}
 								class="peer sr-only"
@@ -80,19 +98,22 @@ const stockOptions: RadioOption[] = [
 			}
 		</div>
 	</div>
+	)}
 
+	{showFilters && (
+	<>
 	<div class="flex flex-col gap-3 py-3">
 		<p class={CATALOG_FILTER_TITLE}>Наличие</p>
 		<div class="flex flex-col gap-3">
 			{
 				stockOptions.map((option) => {
-					const id = `vanilla-stock-${option.value}`;
+					const id = `${namePrefix}-stock-${option.value}`;
 					return (
 						<label for={id} class="group flex cursor-pointer items-center gap-2">
 							<input
 								id={id}
 								type="radio"
-								name="vanilla-stock"
+								name={`${namePrefix}-stock`}
 								value={option.value}
 								checked={option.checked}
 								class="peer sr-only"
@@ -129,4 +150,6 @@ const stockOptions: RadioOption[] = [
 			</div>
 		</div>
 	</div>
+	</>
+	)}
 </aside>

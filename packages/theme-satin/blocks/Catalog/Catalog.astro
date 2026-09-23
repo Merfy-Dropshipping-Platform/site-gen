@@ -25,6 +25,7 @@ import { inlineFormat } from "./rich-text";
 import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
 import NtIcon from "./SatinNtIcon.astro";
+import SatinFiltersSheet from "./SatinFiltersSheet.astro";
 
 
 // Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
@@ -258,6 +259,7 @@ const skeletons = Array.from({ length: skeletonCount });
 
       {/* Раскладка top: фильтры/сортировка строкой над гридом (родной вид satin). */}
       <div class="flex flex-col gap-6" data-catalog-variant="top">
+        <SatinFiltersSheet blockId={id} enabled={filterVisible || sortVisible}>
         <div class="relative z-40 flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
           <div class="flex flex-wrap items-start gap-3">
             {filterVisible && (
@@ -329,6 +331,7 @@ const skeletons = Array.from({ length: skeletonCount });
             </details>
           )}
         </div>
+        </SatinFiltersSheet>
 
         <ul
           class="grid auto-rows-fr grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3"

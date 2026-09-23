@@ -25,6 +25,7 @@ import FluxProductCard from "./FluxProductCard.astro";
 import NtFilterSidebar from "./NtFilterSidebar.astro";
 import NtFilterPanel from "./NtFilterPanel.astro";
 import FluxNtIcon from "./FluxNtIcon.astro";
+import FluxFiltersSheet from "./FluxFiltersSheet.astro";
 
 
 // Совместимый с theme-base/blocks/Catalog/Catalog.puckConfig props-минимум.
@@ -291,6 +292,7 @@ const skeletons = Array.from({ length: skeletonCount });
 
       {/* Раскладка top — фильтры строкой над гридом (родной вид flux) */}
       <div class="flex flex-col gap-6" data-catalog-variant="top">
+        <FluxFiltersSheet blockId={id} enabled={filterVisible || sortVisible}>
         <div class="relative z-30 flex flex-wrap items-center justify-between gap-3" data-nt="catalog-filters">
           <div class="flex flex-wrap items-start gap-3">
             {filterVisible && (
@@ -357,6 +359,7 @@ const skeletons = Array.from({ length: skeletonCount });
             </details>
           )}
         </div>
+        </FluxFiltersSheet>
 
         <ul
           class="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"

@@ -224,3 +224,57 @@ describe("выбор варианта в портах каталога не ра
     }
   });
 });
+
+/**
+ * Шторка «Фильтры и сортировка» на телефоне — одна на все темы (владелец 23.09:
+ * «адаптив мобилы взять с вёрстки»; в вёрстке это lib/filters-sheet.ts, один
+ * файл на пять тем). Порт-блок не может импортировать общий модуль (см. выше),
+ * поэтому скрипт шторки лежит в компоненте каждой темы — и здесь сторожится,
+ * что текст ОДИН: починили замок прокрутки в одной теме — чиним во всех.
+ */
+describe("скрипт шторки фильтров в портах не расходится", () => {
+  const ШТОРКИ = [
+    ["bloom", "Bloom"],
+    ["satin", "Satin"],
+    ["flux", "Flux"],
+    ["rose", "Rose"],
+    ["vanilla", "Vanilla"],
+  ].map(([t, N]) => ({
+    шторка: `packages/theme-${t}/blocks/Catalog/${N}FiltersSheet.astro`,
+    каталог: `packages/theme-${t}/blocks/Catalog/Catalog.astro`,
+    имя: `${N}FiltersSheet`,
+  }));
+
+  const скрипт = (rel: string): string => {
+    const src = readFileSync(resolve(SITES_ROOT, rel), "utf-8");
+    const i = src.indexOf("<script is:inline>");
+    expect({ файл: rel, найдено: i > -1 }).toEqual({
+      файл: rel,
+      найдено: true,
+    });
+    return src
+      .slice(i, src.indexOf("</script>", i))
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  it("у всех пяти тем один и тот же текст скрипта", () => {
+    const эталон = скрипт(ШТОРКИ[0].шторка);
+    for (const { шторка } of ШТОРКИ.slice(1)) {
+      expect({ шторка, совпадает: скрипт(шторка) === эталон }).toEqual({
+        шторка,
+        совпадает: true,
+      });
+    }
+  });
+
+  it("каталог каждой темы оборачивает фильтры своей шторкой", () => {
+    for (const { каталог, имя } of ШТОРКИ) {
+      const src = код(каталог);
+      expect({ каталог, обёртка: src.includes(`<${имя} `) }).toEqual({
+        каталог,
+        обёртка: true,
+      });
+    }
+  });
+});

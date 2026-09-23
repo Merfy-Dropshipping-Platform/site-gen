@@ -26,6 +26,7 @@
 // (баг-репорт тестера 2026-09-13, K4). Рендерим через XSS-safe inlineFormat.
 import { inlineFormat } from "./rich-text";
 import VanillaCatalogFilterSidebar from "./VanillaCatalogFilterSidebar.astro";
+import VanillaFiltersSheet from "./VanillaFiltersSheet.astro";
 import {
 	CATALOG_PRICE_ROW,
 	CATALOG_PRICE_VALUE,
@@ -346,7 +347,18 @@ const rowStockOptions: RadioOption[] = [
 
 			{/* ── Раскладка «top»: фильтры/сортировка строкой над гридом ── */}
 			<div class="flex flex-col gap-10" data-catalog-variant="top">
-				<div class="relative z-30 flex flex-wrap items-center justify-between gap-x-6 gap-y-4" data-nt="catalog-filters">
+				{/* Телефон и планшет (< lg), как в вёрстке vanilla: кнопка «Фильтры и
+				    сортировка» и шторка с сайдбаром. Строку сверху там прячет общий
+				    catalog-filters.css по data-filters-sheet-below="lg". */}
+				<VanillaFiltersSheet blockId={id} enabled={filterVisible || sortVisible}>
+					<VanillaCatalogFilterSidebar
+						class="w-full"
+						namePrefix="vanilla-sheet"
+						showSort={sortVisible}
+						showFilters={filterVisible}
+					/>
+				</VanillaFiltersSheet>
+				<div class="relative z-30 flex flex-wrap items-center justify-between gap-x-6 gap-y-4" data-nt="catalog-filters" data-filters-sheet-below="lg">
 					<div class="flex flex-wrap items-center gap-x-6 gap-y-4">
 						{filterVisible && (
 							<>
@@ -1024,14 +1036,14 @@ const rowStockOptions: RadioOption[] = [
 			renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
 		}
 
-		// ─────────── Наличие (top: name=vanilla-top-stock; side: name=vanilla-stock) ───────────
+		// ─────────── Наличие (top: vanilla-top-stock; side: vanilla-stock; шторка: vanilla-sheet-stock) ───────────
 		function syncStockUi() {
-			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-stock"], input[name="vanilla-stock"]'))) {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-stock"], input[name="vanilla-stock"], input[name="vanilla-sheet-stock"]'))) {
 				input.checked = input.value === filters.stock;
 			}
 		}
 		function bindStock() {
-			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-stock"], input[name="vanilla-stock"]'))) {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-stock"], input[name="vanilla-stock"], input[name="vanilla-sheet-stock"]'))) {
 				if (input.getAttribute("data-cf-stock") === "1") continue;
 				input.setAttribute("data-cf-stock", "1");
 				input.addEventListener("change", () => {
@@ -1044,10 +1056,10 @@ const rowStockOptions: RadioOption[] = [
 			}
 		}
 
-		// ─────────── Сортировка (top: name=vanilla-top-sort; side: name=vanilla-sort) ───────────
+		// ─────────── Сортировка (top: vanilla-top-sort; side: vanilla-sort; шторка: vanilla-sheet-sort) ───────────
 		const SORT_LABELS = { popularity: "По популярности", new: "По новизне", "price-desc": "По убыванию цены", "price-asc": "По возрастанию цены" };
 		function syncSortUi() {
-			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"], input[name="vanilla-sheet-sort"]'))) {
 				input.checked = input.value === filters.sort;
 			}
 			// лейбл триггера дропдауна top
@@ -1056,7 +1068,7 @@ const rowStockOptions: RadioOption[] = [
 			if (summarySpan) summarySpan.textContent = SORT_LABELS[filters.sort] ?? "По популярности";
 		}
 		function bindSort() {
-			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"]'))) {
+			for (const input of Array.from(document.querySelectorAll('input[name="vanilla-top-sort"], input[name="vanilla-sort"], input[name="vanilla-sheet-sort"]'))) {
 				if (input.getAttribute("data-cf-sort") === "1") continue;
 				input.setAttribute("data-cf-sort", "1");
 				input.addEventListener("change", () => {

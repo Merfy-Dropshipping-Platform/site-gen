@@ -1617,6 +1617,13 @@ jobs:
       # подложенном ответе витринного API, а наведение — настоящим событием.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/catalog-next-photo-hover.spec.ts
+      # «Фильтры и сортировка» на телефоне — шторка по вёрстке пяти тем
+      # (владелец 23.09: «адаптив мобилы взять с вёрстки»; 18.09 то же просили
+      # «из rose», сделали одну тему). Одна кнопка, в шторке фильтры и
+      # сортировка, открыть / «Закрыть» / «Показать» / Esc, замок прокрутки на
+      # <html>, перерисовка в конструкторе снимает замок, брейкпоинт темы.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filters-sheet.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

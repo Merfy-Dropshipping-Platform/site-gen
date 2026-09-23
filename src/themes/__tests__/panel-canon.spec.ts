@@ -17,7 +17,8 @@
  *   • набор полей, их порядок, тип, подпись;
  *   • видимость: 'panel' (контрол в панели секции), 'subpanel'
  *     (hiddenInMainPanel — перенесён в подпанель дерева), 'off'
- *     (type: 'hidden' — контрола нет нигде);
+ *     (type: 'hidden' — контрола нет нигде), 'never' (условие показа, которое
+ *     панель не может выполнить, — такого поля не бывает, см. проверку ниже);
  *   • опции select/radio — «убрали одну опцию» это тоже изменение состава;
  *   • потолок списка (`max`) — им конструктор запрещает добавить лишний элемент;
  *   • вложенные поля элементов списка (arrayFields) и объектов (objectFields).
@@ -67,7 +68,7 @@ const HOW_TO_FIX = [
 type FieldCanon = {
   type: string | null;
   label: string;
-  visibility: "panel" | "subpanel" | "off";
+  visibility: "panel" | "subpanel" | "off" | "never";
   options?: string[];
   max?: number;
   min?: number;
@@ -90,6 +91,8 @@ const VISIBILITY_RU: Record<string, string> = {
   panel: "контрол в панели секции",
   subpanel: "контрол в подпанели дерева (hiddenInMainPanel)",
   off: "контрола нет нигде (type: hidden)",
+  never:
+    "контрола нет: условие показа ссылается на поле, которого рядом нет (visibleWhen)",
 };
 
 function describe1(f: FieldCanon): string {
@@ -311,6 +314,36 @@ describe("панели, не сверенные с макетом Figma", () => 
       }
     },
   );
+});
+
+/** Пути полей с видимостью 'never' — вглубь объектов и элементов списков. */
+function спрятаныНавсегда(
+  prefix: string,
+  fields: Record<string, FieldCanon> | undefined,
+): string[] {
+  return Object.entries(fields ?? {}).flatMap(([name, f]) => [
+    ...(f.visibility === "never" ? [`${prefix}${name}`] : []),
+    ...спрятаныНавсегда(`${prefix}${name} › `, f.objectFields),
+    ...спрятаныНавсегда(`${prefix}${name} › `, f.itemFields),
+  ]);
+}
+
+/**
+ * Поле с условием показа, которое панель выполнить не может, для мерчанта не
+ * существует — а в каноне и в коде тем выглядит живым. 23.09 так прятался
+ * «Режим следующего фото» (`visibleWhen: { field: 'productCard.nextPhoto' }`):
+ * порты его слушались, сторожа были зелёными, тестер переключателя не видел, и
+ * листания в bloom/vanilla у него не было. Условие в objectFields называет
+ * СОСЕДНЕЕ поле по имени — так его читает ObjectField.tsx конструктора.
+ */
+describe.each(THEMES)("условия показа выполнимы — %s", (theme) => {
+  it("ни одно поле не спрятано навсегда условием показа", () => {
+    if (!distReady) return;
+    const спрятаны = Object.entries(actual[theme] ?? {}).flatMap(
+      ([block, def]) => спрятаныНавсегда(`${block} › `, def.fields),
+    );
+    expect(спрятаны).toEqual([]);
+  });
 });
 
 describe.each(THEMES)("канон — %s", (theme) => {

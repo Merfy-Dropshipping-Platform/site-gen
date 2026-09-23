@@ -57,9 +57,19 @@ export const CANON_THEMES = ["rose", "bloom", "satin", "flux", "vanilla"];
  *                (NamedFocusedPanel / FocusedItemPanel). То есть это НЕ
  *                «скрыть», а «перенести в подпанель».
  *   'panel'    — обычный контрол основной панели секции.
+ *   'never'    — поле внутри объекта (objectFields) с условием показа
+ *                `visibleWhen`, которое панель выполнить не может. ObjectField.tsx
+ *                ищет СОСЕДНЕЕ поле по имени: `objectValue[cond.field]`. Путь
+ *                вроде `productCard.nextPhoto` там не находится никогда, и поле
+ *                не показывается ни при каком значении. Так «Режим следующего
+ *                фото» до 23.09 числился здесь «в панели», а мерчант и тестер
+ *                его ни разу не видели. На верхнем уровне и в элементах списков
+ *                конструктор условия не проверяет вовсе — там поле видно всегда.
  */
-function visibilityOf(field) {
+function visibilityOf(field, objectSiblings) {
   if (field?.type === "hidden") return "off";
+  const cond = field?.visibleWhen;
+  if (objectSiblings && cond && !(cond.field in objectSiblings)) return "never";
   if (field?.hiddenInMainPanel === true) return "subpanel";
   return "panel";
 }
@@ -72,12 +82,15 @@ function optionsOf(field) {
   );
 }
 
-/** Описание одного контрола. undefined-ключи не попадают в JSON. */
-function describeField(field) {
+/**
+ * Описание одного контрола. undefined-ключи не попадают в JSON.
+ * `objectSiblings` — соседние поля, если контрол лежит внутри объекта.
+ */
+function describeField(field, objectSiblings) {
   const out = {
     type: field?.type ?? null,
     label: field?.label ?? "",
-    visibility: visibilityOf(field),
+    visibility: visibilityOf(field, objectSiblings),
   };
   const options = optionsOf(field);
   if (options) out.options = options;
@@ -94,7 +107,7 @@ function describeField(field) {
   if (field?.objectFields && typeof field.objectFields === "object") {
     out.objectFields = {};
     for (const [name, sub] of Object.entries(field.objectFields)) {
-      out.objectFields[name] = describeField(sub);
+      out.objectFields[name] = describeField(sub, field.objectFields);
     }
   }
   return out;

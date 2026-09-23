@@ -4,8 +4,9 @@
  * Секция рендерится настоящим рендером темы (scripts/qa/lib/render), её
  * скрипты исполняются в jsdom (в CI браузера нет), витринное API магазина
  * подменено данными теста: коллекции (/api/store/collections), цвета (группа
- * «Цвет» в /api/store/filters), товаров нет. Каждый запрос за товарами
- * копится в `запросыТоваров` — по нему видно, что каталог попросил у сервера.
+ * «Цвет» в /api/store/filters), товары (/api/store/products; по умолчанию их
+ * нет). Каждый запрос за товарами копится в `запросыТоваров` — по нему видно,
+ * что каталог попросил у сервера.
  *
  * Вынесено из catalog-filters-sheet.spec.ts 23.09, когда тот же стенд
  * понадобился гардам «Коллекций» и «Цвета» в шторке и шрифта фильтров:
@@ -25,6 +26,8 @@ export interface Магазин {
   коллекции?: Array<{ id: string; title: string; slug: string }>;
   /** Значения группы «Цвет» у товаров магазина. */
   цвета?: string[];
+  /** Товары в форме /api/store/products (title, slug, basePrice, images…). */
+  товары?: Array<Record<string, unknown>>;
 }
 
 /** Адреса запросов за товарами (раскодированные) — с последнего `показать`. */
@@ -65,7 +68,8 @@ async function витрина(input: RequestInfo | URL): Promise<Response> {
     });
   if (адрес.includes("/api/store/products")) {
     запросыТоваров.push(decodeURIComponent(адрес));
-    return ответ({ products: [], total: 0 });
+    const товары = магазин.товары ?? [];
+    return ответ({ products: товары, total: товары.length });
   }
   return ответ({
     data: [],

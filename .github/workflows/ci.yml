@@ -1648,12 +1648,21 @@ jobs:
       # выбирается один — сервер фильтрует по одному значению группы.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filters-sheet-choices.spec.ts
-      # Шрифт фильтров — из «Настроек темы» (владелец 23.09: «надо нормально
-      # сделать как в настройках темы сделано»): каждая надпись строки,
-      # панели, шторки и кнопки пишется --font-body / --weight-body в CSS
-      # витрины. Было: Manrope от rose у bloom/satin/flux, шрифт макета в шторках.
+      # Шрифт «Группы товаров» — из «Настроек темы» (владелец 23.09: «надо
+      # нормально сделать как в настройках темы сделано», «надо из настроек
+      # темы»): каждая надпись секции — шрифтом текста, заголовок — шрифтом
+      # заголовков, у фильтров ещё и жирностью текста, в CSS витрины. Было:
+      # Manrope от rose у фильтров bloom/satin/flux, шрифт макета в шторках,
+      # у bloom подзаголовок и счётчик «N товаров» — Manrope литералом.
       - if: false
-        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filters-font.spec.ts
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-font.spec.ts
+      # Шапка, корзина и подвал — надписи шрифтами из «Настроек темы» (текста
+      # или заголовков). Найдено 23.09 при проверке каталога: у bloom название
+      # магазина и пустая корзина — системный шрифт и Manrope (классы ролей rose
+      # без ролей в CSS bloom), у vanilla корзина и пункты мобильного меню —
+      # Manrope (--font-nt-ui из токенов DS). Исключение — подпись платформы.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/store-chrome-font.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

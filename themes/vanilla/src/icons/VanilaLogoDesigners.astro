@@ -1,0 +1,32 @@
+---
+/**
+ * Вордмарк «Vanilla» под PARITY_DESIGN (шапка) — актуальный SVG верстальщиков
+ * (Vanilla-theme src/icons/Vanila.svg @c65d9e1c776cc5f2a80cd2525c1fcb18a38fad9e,
+ * 98×28, #FFFFFF). Владелец 23-24.09: «как у верстальщиков, в точности».
+ *
+ * У нас рисунок отставал: одна «l» вместо двух («Vanila» вместо «Vanilla») —
+ * не только размер/viewBox, diff путей показал ДОБАВЛЕННУЮ букву (7 путей у
+ * них против 6 у нас, седьмой — сдвинутая копия «l» + смещённая «a»). Поэтому
+ * рисунок несёт отдельный компонент, а не проп на VanilaLogo. Без признака
+ * рисуется прежний VanilaLogo (см. Header.astro) — этот файл не задет.
+ */
+import { withBase } from "../lib/with-base";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<img
+	src={withBase("/icons/Vanila-designers.svg")}
+	alt=""
+	width="98"
+	height="28"
+	loading="eager"
+	decoding="async"
+	draggable={false}
+	aria-hidden="true"
+	class:list={["block shrink-0 object-contain object-center", className]}
+/>

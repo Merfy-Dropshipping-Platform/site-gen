@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
 import VanilaFooterLogo from "../icons/VanilaFooterLogo.astro";
+import VanilaFooterLogoDesigners from "../icons/VanilaFooterLogoDesigners.astro";
 import SocialTelegramWhite from "../icons/SocialTelegramWhite.astro";
 import SocialVkWhite from "../icons/SocialVkWhite.astro";
 import SocialTiktokWhite from "../icons/SocialTiktokWhite.astro";
@@ -257,10 +258,13 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 
 // PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
 // вордмарк и соцсети подвала по актуальной вёрстке Vanilla-theme @c65d9e1c.
-// Вордмарк не трогаем (другой текст логотипа — решение владельца). Соцсети — только зазор и
+// Вордмарк — рисунок другой (у них «Vanilla» двумя «l», у нас «Vanila» одной,
+// не только размер — diff путей это подтвердил), поэтому под флагом рисуется
+// отдельный компонент VanilaFooterLogoDesigners. Соцсети — только зазор и
 // область клика (иконка та же). Настройки и цвета не меняются; без признака —
 // прежние классы и прежний VanilaFooterLogo байт-в-байт. Признак ставит sites.
 const designParity = p.__designParity === true;
+const FOOTER_LOGO_CLS = designParity ? "h-7 w-[98px]" : "h-7 w-[89px]";
 const SOCIAL_ROW_CLS = designParity
 	? "flex flex-wrap items-center justify-center gap-1 md:justify-end"
 	: "flex flex-wrap items-center justify-center gap-3 md:justify-end";
@@ -339,7 +343,7 @@ const SOCIAL_LINK_CLS = designParity
 			>
 				<div class="flex flex-col gap-8 max-sm:items-center">
 					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label={logoAriaLabel}>
-						<VanilaFooterLogo class="h-7 w-[89px]" />
+						{designParity ? <VanilaFooterLogoDesigners class={FOOTER_LOGO_CLS} /> : <VanilaFooterLogo class={FOOTER_LOGO_CLS} />}
 					</a>
 					<ul
 						class="flex flex-col gap-2"

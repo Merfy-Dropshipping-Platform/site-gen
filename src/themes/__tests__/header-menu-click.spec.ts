@@ -154,6 +154,23 @@ describe.each(THEMES)("меню шапки раскрывается нажати
       });
     });
 
+    it("нажатие мимо закрывает, даже когда превью глушит всплытие click", () => {
+      // Перехватчик превью при захвате делает stopPropagation на своих
+      // подсекциях — «click» до обработчика меню не доходит.
+      const глушитель = (e: Event) => e.stopPropagation();
+      нажать(кнопка("Каталог"));
+      document.addEventListener("click", глушитель, true);
+      try {
+        document.body.dispatchEvent(
+          new MouseEvent("pointerdown", { bubbles: true }),
+        );
+        нажать(document.body);
+      } finally {
+        document.removeEventListener("click", глушитель, true);
+      }
+      expect(открыты()).toEqual([]);
+    });
+
     it("панель показывается по той же обёртке, что хранит data-open", () => {
       const панели = [
         ...document.querySelectorAll<HTMLElement>(

@@ -111,6 +111,14 @@ export const NAV_SUBMENU_TOGGLE_SOURCE = `
     setMenuOpen(group, open);
   });
 
+  // Мимо меню — закрыть уже на нажатии кнопки мыши и при захвате: превью
+  // конструктора глушит всплытие «click» у своих подсекций, и до обработчика
+  // выше такое нажатие не доходит — меню оставалось открытым.
+  document.addEventListener('pointerdown', function (e) {
+    var target = e.target;
+    if (target && target.closest && !target.closest('[data-nav-menu]')) closeMenus(null);
+  }, true);
+
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeMenus(null);
   });

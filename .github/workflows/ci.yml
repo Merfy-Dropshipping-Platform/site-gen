@@ -1684,6 +1684,11 @@ jobs:
       # 23.09): bloom — /skin-care, vanilla — /catalog/textile (заглушки вёрстки).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-continue-shopping.spec.ts
+      # Выдвижная корзина открывается нажатием прямо в svg-иконку корзины (общая
+      # SchemeCartDrawer и vanilla). Обработчик отбрасывал не-HTMLElement цели;
+      # у rose обход в теме потерялся — иконка не открывала корзину (прод 23.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-svg-click.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

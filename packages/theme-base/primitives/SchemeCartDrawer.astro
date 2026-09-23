@@ -138,7 +138,8 @@ const evToggle = `${eventPrefix}:toggle`;
 
 	document.addEventListener("click", (event) => {
 		const target = event.target;
-		if (!(target instanceof HTMLElement)) return;
+		// Element, не HTMLElement: иконка корзины — <svg>, нажатие приходится в него.
+		if (!(target instanceof Element)) return;
 		if (target.closest("[data-cart-close]")) {
 			event.preventDefault();
 			close();

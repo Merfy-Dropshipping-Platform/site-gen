@@ -1663,6 +1663,12 @@ jobs:
       # Manrope (--font-nt-ui из токенов DS). Исключение — подпись платформы.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/store-chrome-font.spec.ts
+      # «Шрифт текста» и «Жирность текста» из «Настроек темы» доходят до карточек
+      # товара в «Группе товаров» и «Коллекции товаров» пяти тем (владелец
+      # 23.09: «как везде — такая же секция, по таким же правилам»). Перекрытие
+      # tokens-css берёт надписи карточки по метке [data-nt$="-product-card"].
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/product-card-typography.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

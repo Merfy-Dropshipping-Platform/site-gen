@@ -28,10 +28,13 @@ import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss, siteTokensCss } from '../themes/tokens-css';
 import { parityOn } from '../themes/parity-switch';
+import { relativizeOwnSiteAssetUrls } from '../themes/asset-resolver';
 import { injectTokensCssIntoHtml } from '../themes/tokens-inject';
 import { resolveCartDrawerSchemeId } from '../themes/cart-drawer-contract';
 import {
   adaptLegacyProps,
+  prepareBlockProps,
+  themeBlocksFor,
   extractPageBlocks,
   pagePropsPreparer,
   applyCollectionContextToProps,
@@ -61,6 +64,11 @@ import {
 import { createRenderContext, type RenderContext } from '../render/create-render-context';
 import { applyPageBinding } from '../render/page-transclude';
 import { fetchPublications } from '../generator/data-fetcher';
+
+/** `const shopId = ""` в инлайнах секций → id магазина (превью; на витрине — patchShopIdInDist). */
+function withPreviewShopId(html: string, siteId: string): string {
+  return html.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
+}
 
 /**
  * Body for POST /api/sites/:id/preview/block — single-block hot-render
@@ -809,11 +817,33 @@ export class PreviewController {
         body.collectionContext && typeof body.collectionContext === 'object'
           ? (body.collectionContext as PreviewCollectionContext)
           : undefined;
-      const adaptedProps = adaptLegacyProps(
-        (body.props ?? {}) as Record<string, unknown>,
-        null,
-        body.blockType,
-      );
+      const loaded = await this.loadRevisionData(siteId);
+      if (body.themeId && loaded?.themeId && body.themeId !== loaded.themeId) {
+        this.logger.warn(
+          `[preview-block] ignoring body.themeId=${body.themeId} site.themeId=${loaded.themeId} site=${siteId}`,
+        );
+      }
+      if (!loaded?.themeId) {
+        res
+          .status(500)
+          .type('text/html')
+          .send('<!-- render error: site has no themeId -->');
+        return;
+      }
+      // PARITY_HOT: секция готовится ТОЙ ЖЕ функцией, что на целой странице
+      // (page-blocks `prepareBlockProps`: легаси-формы, вариант темы, siteId), а
+      // картинки темы идут из копии темы, как у страницы. Замер 23.09: точечная
+      // перерисовка расходилась с полной страницей в адресе картинки «О нас»
+      // bloom (витрина вместо копии темы) и в id магазина шапки (см. ниже).
+      const hotLikePage = parityOn('HOT', siteId);
+      const rawProps = body.props ?? {};
+      const adaptedProps = hotLikePage
+        ? prepareBlockProps(body.blockType, relativizeOwnSiteAssetUrls(rawProps, loaded.publicUrl), {
+            publicUrl: null,
+            siteId,
+            themeBlocks: themeBlocksFor(loaded.themeId),
+          })
+        : adaptLegacyProps(rawProps, null, body.blockType);
       const propsWithContext: Record<string, unknown> = {
         ...(collectionCtx
           ? applyCollectionContextToProps(body.blockType, adaptedProps, collectionCtx)
@@ -833,19 +863,6 @@ export class PreviewController {
           : null;
       if (previewProductId && /^product$/i.test(body.blockType)) {
         propsWithContext.productId = previewProductId;
-      }
-      const loaded = await this.loadRevisionData(siteId);
-      if (body.themeId && loaded?.themeId && body.themeId !== loaded.themeId) {
-        this.logger.warn(
-          `[preview-block] ignoring body.themeId=${body.themeId} site.themeId=${loaded.themeId} site=${siteId}`,
-        );
-      }
-      if (!loaded?.themeId) {
-        res
-          .status(500)
-          .type('text/html')
-          .send('<!-- render error: site has no themeId -->');
-        return;
       }
       // Блоки ХРОМА: точечный рендер обязан обогатить пропсы ревизией ровно
       // так же, как это делает первичный рендер страницы (assembleChrome).
@@ -917,6 +934,9 @@ export class PreviewController {
         isPreview: true,
         merfy: ctx,
       });
+      // Встроенный скрипт шапки несёт id магазина — целая страница проставляет
+      // его в injectPreviewGlobals, точечная перерисовка оставляла пустым.
+      if (hotLikePage) html = withPreviewShopId(html, siteId);
       // Фаза 2: для v2-тем переписываем корневые URL блока под /__theme/<тема>,
       // чтобы hot-replaced секция тянула ассеты темы (как composeV2Page при
       // первичном рендере). На legacy-темах (нет theme-sections) — no-op.
@@ -1045,6 +1065,13 @@ export class PreviewController {
       site.name ?? null,
       { unifyFooter: parityOn('FOOTER', siteId) },
     );
+    // PARITY_HOT: превью берёт картинки темы из копии темы (/__theme/<тема>),
+    // а не с витрины — сохранённые конструктором страницы несут адрес витрины,
+    // а у неопубликованного магазина там 404. Только блоки страниц: настройки
+    // темы (стили) не трогаем.
+    if (parityOn('HOT', siteId) && migrated.pagesData) {
+      migrated.pagesData = relativizeOwnSiteAssetUrls(migrated.pagesData, site.publicUrl);
+    }
     // Подтягиваем данные футера (контакты/политики/произвольные поля/касса) из
     // БД в Footer-блоки — чтобы превью конструктора показывало тот же футер, что
     // live (parity). На live это делает injectFooterData в build-пайплайне.
@@ -1172,7 +1199,7 @@ export class PreviewController {
     collectionContext?: PreviewCollectionContext | undefined,
     variantSwatch?: VariantSwatchShape | null,
   ): string {
-    let html = htmlIn.replace(/const shopId = "";/g, `const shopId = "${siteId}";`);
+    let html = withPreviewShopId(htmlIn, siteId);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
     // блочного скрипта, чтобы любая секция (в т.ч. 2+ одинаковых) находила свой
     // корень, а не «первую». Зеркалит live-инжект build.service.injectBlockRootHelper.

@@ -67,6 +67,12 @@ export interface HeaderSearchRenderContext {
 	total: number;
 	formatPrice: (value: number) => string;
 	escapeHtml: (value: unknown) => string;
+	/**
+	 * Подсветка совпадения с текущим запросом — только для текстового узла
+	 * названия. Атрибуты (alt, aria-label, title, data-*) остаются на
+	 * escapeHtml, иначе разметка <mark> сломает значение атрибута.
+	 */
+	highlight: (text: string) => string;
 }
 
 export interface HeaderSearchOptions {
@@ -135,6 +141,169 @@ export function escapeHtml(value: unknown): string {
 export function formatPrice(value: number): string {
 	if (!Number.isFinite(value)) return "";
 	return value.toLocaleString("ru-RU") + " ₽";
+}
+
+/**
+ * Подсветка совпадения запроса в названии товара — конвейер маленьких чистых
+ * функций: нормализовать → найти отрезки совпадений по каждому слову запроса
+ * → склеить пересечения → отрисовать экранированный HTML с <mark> на
+ * найденных отрезках.
+ *
+ * Нормализация — как на сервере (product.searchStorefront): нижний регистр,
+ * ё→е, небуквенное и нечисловое — пробел. Отличие от серверной
+ * normalizeSearchText: там пробелы схлопываются и обрезаются (важны только
+ * сами слова), а здесь длина строки не должна меняться — иначе индекс
+ * совпадения уедет от текста, который реально показываем.
+ */
+
+/** Буква или цифра — «словесный» символ и на сервере, и здесь. */
+const WORD_CHAR = /[\p{L}\p{N}]/u;
+
+function isWordChar(ch: string): boolean {
+	return WORD_CHAR.test(ch);
+}
+
+/**
+ * Нижний регистр ОДНОГО code unit. У некоторых символов ('İ' → "i" + точка
+ * сверху) toLowerCase даёт больше одного code unit — целой строкой это молча
+ * удлинило бы её и увело индексы совпадения от исходного текста. Берём только
+ * первый code unit результата — длина входа и выхода всегда совпадает 1:1.
+ */
+function toLowerSingleUnit(ch: string): string {
+	return ch.toLowerCase().charAt(0);
+}
+
+/** Один символ → нижний регистр, ё→е, небуквенное → пробел. Длина не меняется. */
+function normalizeChar(ch: string): string {
+	const lower = toLowerSingleUnit(ch);
+	if (lower === "ё") return "е";
+	if (isWordChar(lower)) return lower;
+	return " ";
+}
+
+/** Посимвольная нормализация без изменения длины строки. */
+function normalizeForMatch(value: string): string {
+	const chars = value.split("");
+	const normalizedChars = chars.map(normalizeChar);
+	return normalizedChars.join("");
+}
+
+/** Слова запроса — тем же нормализатором, что и текст; пустые отбрасываются. */
+function searchWords(query: string): string[] {
+	const normalized = normalizeForMatch(query);
+	const parts = normalized.split(/\s+/);
+	return parts.filter(Boolean);
+}
+
+interface MatchRange {
+	start: number;
+	end: number;
+}
+
+/** Правило коротких слов — одна функция-предикат, а не ветвление по месту. */
+function isShortWord(word: string): boolean {
+	return word.length <= 2;
+}
+
+function isAtWordStart(text: string, at: number): boolean {
+	return at === 0 || text[at - 1] === " ";
+}
+
+/** Слово из 1–2 букв — только в начале слова; от 3 букв — где угодно. */
+function isAllowedMatch(word: string, text: string, at: number): boolean {
+	if (!isShortWord(word)) return true;
+	return isAtWordStart(text, at);
+}
+
+/** Все разрешённые вхождения одного слова в уже нормализованном тексте. */
+function findWordRanges(normalizedText: string, word: string): MatchRange[] {
+	if (!word) return [];
+	const ranges: MatchRange[] = [];
+	let from = 0;
+	while (from <= normalizedText.length - word.length) {
+		const at = normalizedText.indexOf(word, from);
+		if (at < 0) break;
+		if (isAllowedMatch(word, normalizedText, at)) {
+			ranges.push({ start: at, end: at + word.length });
+		}
+		from = at + 1;
+	}
+	return ranges;
+}
+
+function findRangesForWords(normalizedText: string, words: string[]): MatchRange[] {
+	const rangesPerWord = words.map((word) => findWordRanges(normalizedText, word));
+	return rangesPerWord.flat();
+}
+
+function byStart(a: MatchRange, b: MatchRange): number {
+	return a.start - b.start;
+}
+
+function overlaps(a: MatchRange, b: MatchRange): boolean {
+	return b.start <= a.end;
+}
+
+function extend(a: MatchRange, b: MatchRange): MatchRange {
+	return { start: a.start, end: Math.max(a.end, b.end) };
+}
+
+/** Пересекающиеся и смежные отрезки — в один: иначе получились бы вложенные <mark>. */
+function mergeRanges(ranges: MatchRange[]): MatchRange[] {
+	const sorted = [...ranges].sort(byStart);
+	const merged: MatchRange[] = [];
+	for (const range of sorted) {
+		const last = merged[merged.length - 1];
+		if (last && overlaps(last, range)) {
+			merged[merged.length - 1] = extend(last, range);
+			continue;
+		}
+		merged.push(range);
+	}
+	return merged;
+}
+
+const MARK_OPEN =
+	'<mark data-search-mark style="background:none;color:inherit;font-weight:700">';
+const MARK_CLOSE = "</mark>";
+
+/** Кусок raw-текста ДО отрезка — просто экранированный, без разметки. */
+function plainBefore(raw: string, range: MatchRange, cursor: number): string {
+	return escapeHtml(raw.slice(cursor, range.start));
+}
+
+/** Сам отрезок — экранированный текст внутри <mark>, регистр берём из raw-текста. */
+function markRange(raw: string, range: MatchRange): string {
+	return MARK_OPEN + escapeHtml(raw.slice(range.start, range.end)) + MARK_CLOSE;
+}
+
+function renderRanges(raw: string, ranges: MatchRange[]): string {
+	let out = "";
+	let cursor = 0;
+	for (const range of ranges) {
+		out += plainBefore(raw, range, cursor);
+		out += markRange(raw, range);
+		cursor = range.end;
+	}
+	return out + escapeHtml(raw.slice(cursor));
+}
+
+function renderHighlighted(raw: string, ranges: MatchRange[]): string {
+	if (ranges.length === 0) return escapeHtml(raw);
+	return renderRanges(raw, ranges);
+}
+
+/**
+ * Подсветка запроса в тексте (название товара выдачи поиска). Только для
+ * текстового узла — атрибуты (alt, aria-label, title, data-*) остаются на
+ * escapeHtml, иначе разметка <mark> сломает значение атрибута.
+ */
+export function highlightMatch(text: string, query: string): string {
+	const normalizedText = normalizeForMatch(text);
+	const words = searchWords(query);
+	const ranges = findRangesForWords(normalizedText, words);
+	const merged = mergeRanges(ranges);
+	return renderHighlighted(text, merged);
 }
 
 /**
@@ -316,6 +485,7 @@ export function initHeaderSearch(options: HeaderSearchOptions): void {
 		total,
 		formatPrice,
 		escapeHtml,
+		highlight: (text: string) => highlightMatch(text, query),
 	});
 
 	const messageHtml = (

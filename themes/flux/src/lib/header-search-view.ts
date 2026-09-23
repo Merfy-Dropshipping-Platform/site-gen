@@ -39,7 +39,7 @@ function row(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
 		`<a href="${ctx.escapeHtml(hit.href)}" class="flex h-12 min-w-0 items-center gap-3 outline-none transition-opacity hover:opacity-70 focus-visible:opacity-70">` +
 		`<span class="size-12 shrink-0 overflow-hidden bg-[rgb(var(--color-surface,245_245_245))]">${thumb(hit, ctx)}</span>` +
 		`<span class="flex min-w-0 flex-col gap-0.5 font-roboto-flex font-light">` +
-		`<span class="truncate text-[14px] uppercase leading-4 text-[rgb(var(--color-text,0_0_0))]">${ctx.escapeHtml(hit.title)}</span>` +
+		`<span class="truncate text-[14px] uppercase leading-4 text-[rgb(var(--color-text,0_0_0))]">${ctx.highlight(hit.title)}</span>` +
 		`<span class="flex items-center gap-1">` +
 		`<span class="text-[14px] leading-4 text-[rgb(var(--color-text,0_0_0))]">${ctx.escapeHtml(ctx.formatPrice(hit.price))}</span>` +
 		oldPrice +

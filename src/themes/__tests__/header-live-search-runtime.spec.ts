@@ -17,6 +17,7 @@
  */
 import {
   buildSearchUrl,
+  highlightMatch,
   initHeaderSearch,
   mapSearchProduct,
   resolveSearchEndpoint,
@@ -24,6 +25,9 @@ import {
 } from "../../../packages/theme-base/runtime/header-search";
 
 const STORE = "6c107f35-63ff-4a5f-a6f0-70ba6f9939b0";
+const MARK_OPEN =
+  '<mark data-search-mark style="background:none;color:inherit;font-weight:700">';
+const MARK_CLOSE = "</mark>";
 
 const product = (over: Record<string, unknown> = {}) => ({
   id: "p-1",
@@ -121,6 +125,79 @@ describe("mapSearchProduct — цена и ссылка как у карточк
   it("мусор вместо товара отбрасывается", () => {
     expect(mapSearchProduct(null)).toBeNull();
     expect(mapSearchProduct({ title: "без id" })).toBeNull();
+  });
+});
+
+describe("highlightMatch — подсветка совпадения с запросом", () => {
+  it("подсвечивает совпадение независимо от регистра", () => {
+    expect(highlightMatch("Кроссовки Trail", "кроссовки")).toBe(
+      `${MARK_OPEN}Кроссовки${MARK_CLOSE} Trail`,
+    );
+  });
+
+  it("ё и е — одна буква, подсветка работает в обе стороны", () => {
+    expect(highlightMatch("Ремень «Плетёный»", "плетеный")).toBe(
+      `Ремень «${MARK_OPEN}Плетёный${MARK_CLOSE}»`,
+    );
+    expect(highlightMatch("Плетеный ремень", "плетёный")).toBe(
+      `${MARK_OPEN}Плетеный${MARK_CLOSE} ремень`,
+    );
+  });
+
+  it("слово из 1–2 букв подсвечивается только в начале слова", () => {
+    expect(highlightMatch("Кроссовки Runner", "кр")).toBe(
+      `${MARK_OPEN}Кр${MARK_CLOSE}оссовки Runner`,
+    );
+    // «ра» есть внутри «красный» (со второй буквы), но не в начале слова — подсветки нет.
+    const html = highlightMatch("Ботинки красный", "ра");
+    expect(html).toBe("Ботинки красный");
+    expect(html).not.toContain("<mark");
+  });
+
+  it("слово от 3 букв подсвечивается в любом месте слова", () => {
+    expect(highlightMatch("Кашпо «Терракота»", "рак")).toBe(
+      `Кашпо «Тер${MARK_OPEN}рак${MARK_CLOSE}ота»`,
+    );
+  });
+
+  it("пересекающиеся совпадения склеиваются в один <mark>", () => {
+    // «крос» (0–4) и «ссовки» (3–9) перекрываются — должен остаться один
+    // <mark> на всё слово, а не два вложенных или задвоенных фрагмента.
+    const html = highlightMatch("Кроссовки", "крос ссовки");
+    expect(html).toBe(`${MARK_OPEN}Кроссовки${MARK_CLOSE}`);
+    expect(html.match(/<mark/g)).toHaveLength(1);
+  });
+
+  it("несколько разных слов запроса подсвечиваются каждое отдельно", () => {
+    const html = highlightMatch("Кроссовки Trail красные", "trail красные");
+    expect(html.match(/<mark/g)).toHaveLength(2);
+    expect(html).toContain(`${MARK_OPEN}Trail${MARK_CLOSE}`);
+    expect(html).toContain(`${MARK_OPEN}красные${MARK_CLOSE}`);
+  });
+
+  it("название экранируется — тег не проходит в разметку как есть", () => {
+    const html = highlightMatch(
+      "<script>alert(1)</script> Кроссовки",
+      "кроссовки",
+    );
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain(`${MARK_OPEN}Кроссовки${MARK_CLOSE}`);
+  });
+
+  it("пустой запрос — просто экранированный текст, без <mark>", () => {
+    expect(highlightMatch("Кроссовки Trail", "")).toBe("Кроссовки Trail");
+    expect(highlightMatch("<b>Кроссовки</b>", "")).toBe(
+      "&lt;b&gt;Кроссовки&lt;/b&gt;",
+    );
+  });
+
+  it("буква, чья нижняя форма занимает два code unit ('İ'), не сдвигает подсветку", () => {
+    // 'İ'.toLowerCase() === 'i̇' (два code unit: i + точка сверху) — нормализация
+    // целой строкой удлинила бы её и увела индекс совпадения от текста дальше по строке.
+    expect(highlightMatch("İstanbul Sneakers", "sneakers")).toBe(
+      `İstanbul ${MARK_OPEN}Sneakers${MARK_CLOSE}`,
+    );
   });
 });
 
@@ -378,6 +455,23 @@ describe("initHeaderSearch — поведение области поиска", 
     await flush();
     expect(calls).toHaveLength(0);
     expect(scope().dataset.searchState).toBe("idle");
+  });
+
+  it("ctx.highlight в рендере темы подсвечивает совпадение с текущим запросом", async () => {
+    initHeaderSearch({
+      render: (hits, ctx) =>
+        hits
+          .map((h) => `<a data-search-hit>${ctx.highlight(h.title)}</a>`)
+          .join(""),
+    });
+    type("trail");
+    jest.advanceTimersByTime(300);
+    answer(calls[0], [product({ title: "Кроссовки Trail" })]);
+    await flush();
+    // Через innerHTML jsdom нормализует сериализацию атрибута без значения
+    // (`data-search-mark=""`) — сравниваем не сырую строку, а сам узел DOM.
+    const mark = results().querySelector("mark[data-search-mark]");
+    expect(mark?.textContent).toBe("Trail");
   });
 });
 

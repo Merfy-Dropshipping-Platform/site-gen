@@ -78,6 +78,32 @@
   }
 }
 
+/* Тот же контейнер, вёрстка верстальщиков АКТУАЛЬНАЯ (flux-theme@be32556d,
+   src/styles/global.css:30 .flux-container): контент 1320px на экранах ≥1480
+   (max-width 1480, поля 1rem/2.5rem/5rem — не 1rem/5rem/20rem, как у
+   `.flux-container` выше). Владелец 23-24.09: «делать как верстальщики,
+   актуально, в точности», «только стили, базовые». Включается признаком
+   PARITY_DESIGN (page-blocks `designParityFlag`) — секции переключают имя
+   класса на этот, `.flux-container` выше остаётся прежним и НЕ трогается. */
+@layer base {
+  .flux-container-designers {
+    width: 100%;
+    max-width: 1480px;
+    margin-inline: auto;
+    padding-inline: 1rem; /* px-4 */
+  }
+  @media (width >= 48rem) {
+    .flux-container-designers {
+      padding-inline: 2.5rem; /* md:px-10 */
+    }
+  }
+  @media (width >= 64rem) {
+    .flux-container-designers {
+      padding-inline: 5rem; /* lg:px-20 */
+    }
+  }
+}
+
 /* Заголовки — переключаемый токен (picker → --font-heading); дефолт Roboto Flex по Figma.
    .font-comfortaa используют все заголовки + DS NtSectionHeading (хардкодит этот класс). */
 .font-comfortaa {

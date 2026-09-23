@@ -120,6 +120,17 @@ const paddingStyle = p.padding
 
 const titleId = id && !hideTitle ? `${id}-title` : undefined;
 
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
+// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
+// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
+const sectionCls = designParity
+	? "w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 md:px-10 md:py-16 lg:px-20"
+	: "w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 md:px-20 md:py-16 2xl:px-80";
+const newsletterContainerCls = designParity ? "mx-auto w-full max-w-[1480px]" : "mx-auto w-full max-w-[1920px]";
+
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -139,12 +150,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 ---
 
 <section
-	class="w-full bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 md:px-20 md:py-16 2xl:px-80"
+	class={sectionCls}
 	aria-labelledby={titleId}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class="mx-auto w-full max-w-[1920px]">
+	<div class={newsletterContainerCls}>
 		<div class={`flex w-full max-w-[652px] flex-col gap-6 ${posCls} ${alignCls}`}>
 			{
 				!hideTitle && (

@@ -1588,6 +1588,13 @@ jobs:
       # не переносится; без выключателя разметка байт в байт прежняя.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-sections-like-designers.spec.ts
+      # flux под PARITY_DESIGN — контейнер (главная/Header/Footer/FluxNavItem
+      # mega-menu) 1480+поля и первый экран (Hero, «Большой») как в актуальной
+      # вёрстке верстальщиков (flux-theme@be32556d). Подвал: py-12 md:py-[80px],
+      # gap-10 md:gap-[80px] в ветке значения по умолчанию «Отступов». Без
+      # выключателя разметка байт в байт прежняя.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/flux-like-designers.spec.ts
       # Заголовок, рассыпанный по буквам, собирается обратно на чтении. Панель
       # до 22.09 спредила СТРОКУ заголовка ради размера и превращала её в
       # объект с числовыми ключами; панель починена, но испорченные ревизии

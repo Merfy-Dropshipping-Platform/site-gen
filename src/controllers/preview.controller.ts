@@ -50,8 +50,7 @@ import {
   checkoutBlockIdentity,
   enrichChromeBlockProps,
 } from '../themes/chrome-assembler';
-import { DocumentAdapter } from '../content/document.adapter';
-import { StoreContentService } from '../content/store-content.service';
+import { StoreContentService, resolveStoreContent } from '../content/store-content.service';
 import type { StoreContent } from '../content/store-content.port';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
@@ -207,13 +206,10 @@ export class PreviewController {
 
   private storeContentInstance?: StoreContent;
 
-  /** Ленивый фолбэк: вне DI (тесты) строит DocumentAdapter сам. */
+  /** Ленивый фолбэк: вне DI (тесты) строит DocumentAdapter сам (фабрика —
+   * content/store-content.service.ts, общая с SitesDomainService). */
   private get storeContent(): StoreContent {
-    if (!this.storeContentInstance) {
-      this.storeContentInstance =
-        this.injectedStoreContent ?? new StoreContentService(new DocumentAdapter(this.db));
-    }
-    return this.storeContentInstance;
+    return (this.storeContentInstance ??= resolveStoreContent(this.injectedStoreContent, this.db));
   }
 
   @Get()

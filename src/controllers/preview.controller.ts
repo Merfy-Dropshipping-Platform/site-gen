@@ -33,6 +33,7 @@ import { resolveCartDrawerSchemeId } from '../themes/cart-drawer-contract';
 import {
   adaptLegacyProps,
   extractPageBlocks,
+  pagePropsPreparer,
   applyCollectionContextToProps,
 } from '../themes/page-blocks';
 import { isV2ComplexRoute } from '../themes/v2-routes';
@@ -487,6 +488,13 @@ export class PreviewController {
             chrome: 'full',
             renderBlock: (input) => this.preview.renderBlock({ ...input, merfy }),
             isPreview: true,
+            // Пункт 3а: пропсы шапки и подвала — как на главной. publicUrl=null:
+            // корневые адреса хрома этот путь переписывает под /__theme/<тема>
+            // ПОСЛЕ рендера (rewriteRootUrlsToPrefix ниже); переписать их ещё и в
+            // пропсах = двойной префикс и битые картинки.
+            prepareProps: parityOn('CHROME', siteId)
+              ? pagePropsPreparer({ publicUrl: null, siteId, themeId: loaded.themeId ?? null })
+              : undefined,
           });
           // Переписываем корневые URL хрома (/icons/x.svg, /scripts/*, …) под
           // /__theme/<тема> — как preview/block (rewriteRootUrlsToPrefix) и

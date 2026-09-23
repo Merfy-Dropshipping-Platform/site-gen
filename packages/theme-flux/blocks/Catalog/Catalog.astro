@@ -1689,8 +1689,18 @@ const skeletons = Array.from({ length: skeletonCount });
         el.style.boxShadow = on ? "0 0 0 2px rgb(var(--color-text,0 0 0))" : "";
       }
     });
+  }
 
+  // «Следующее фото при наведении» — своя привязка и свой флажок «один раз на
+  // страницу», который ставится, только когда наведение привязано. Под общим
+  // флажком карточки (data-cf-card) оно не работало в конструкторе: флажок
+  // ставился при первом показе с выключенным переключателем, а включение
+  // перерисовывает блок без перезагрузки — и привязывать было уже нечему
+  // (тестер, 23.09).
+  function bindNextPhoto() {
     if (!nextPhotoOn) return;
+    if (document.body.getAttribute("data-cf-next-photo") === "1") return;
+    document.body.setAttribute("data-cf-next-photo", "1");
     document.addEventListener("mouseover", (event) => {
       const img = event.target.closest("img[data-img-secondary]");
       if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
@@ -1878,6 +1888,7 @@ const skeletons = Array.from({ length: skeletonCount });
       bindLoadMore();
       bindFilterDropdowns();
       bindCardInteractions();
+      bindNextPhoto();
       syncStockUi();
       syncSortUi();
       await renderCatalog(false);

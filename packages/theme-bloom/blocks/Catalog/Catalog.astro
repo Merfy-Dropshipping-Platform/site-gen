@@ -1363,8 +1363,18 @@ const skeletons = Array.from({ length: skeletonCount });
       btn.textContent = "✓ ДОБАВЛЕНО";
       setTimeout(() => { btn.textContent = orig; }, 1500);
     });
+  }
 
+  // «Следующее фото при наведении» — своя привязка и свой флажок «один раз на
+  // страницу», который ставится, только когда наведение привязано. Под общим
+  // флажком карточки (data-cf-card) оно не работало в конструкторе: флажок
+  // ставился при первом показе с выключенным переключателем, а включение
+  // перерисовывает блок без перезагрузки — и привязывать было уже нечему
+  // (тестер, 23.09).
+  function bindNextPhoto() {
     if (!nextPhotoOn) return;
+    if (document.body.getAttribute("data-cf-next-photo") === "1") return;
+    document.body.setAttribute("data-cf-next-photo", "1");
     // Как на Авито: ширина фото делится на столько равных полос, сколько у
     // товара фото; курсор в полосе N — фото N (три фото: левая треть —
     // первое, середина — второе, правая треть — третье). Ширину берём у
@@ -1561,6 +1571,7 @@ const skeletons = Array.from({ length: skeletonCount });
       bindLoadMore();
       bindFilterDropdowns();
       bindCardInteractions();
+      bindNextPhoto();
       syncStockUi();
       syncSortUi();
       await renderCatalog(false);

@@ -9,7 +9,7 @@
  *   save = createRevision: опц. filterSeededPagesOnWrite → insert (+ CAS по
  *          expectedVersion в транзакции, если запрошен) → { version }
  *
- * `site`-метаданные (тема/publicUrl/tenantId/…) приходят ПАРАМЕТРОМ, а не
+ * `site`-метаданные (тема/publicUrl/…) приходят ПАРАМЕТРОМ, а не
  * отдельным `SELECT` по `schema.site` — так адаптер остаётся мокаемым теми
  * же тестами, что сегодня мокают `SitesDomainService.get()` напрямую
  * (golden.spec.ts, site-create-theme.characterization.spec.ts,
@@ -153,7 +153,7 @@ export class DocumentAdapter implements StoreContent {
 
     await this.insertRevision(id, siteId, dataToPersist, params.meta, params.actorUserId);
     if (params.setCurrent) {
-      await this.setCurrentUnconditional(siteId, params.site, id);
+      await this.setCurrentUnconditional(siteId, params.tenantId, id);
     }
     return { version: id };
   }
@@ -239,11 +239,9 @@ export class DocumentAdapter implements StoreContent {
 
   private async setCurrentUnconditional(
     siteId: string,
-    site: StoreContentSite,
+    tenantId: string,
     revisionId: string,
   ): Promise<void> {
-    const tenantId = site.tenantId;
-    if (!tenantId) throw new Error('site_tenant_missing');
     await this.db
       .update(schema.site)
       .set({ currentRevisionId: revisionId, updatedAt: new Date() })
@@ -256,8 +254,7 @@ export class DocumentAdapter implements StoreContent {
     data: Record<string, unknown>,
     params: SaveParams,
   ): Promise<void> {
-    const tenantId = params.site.tenantId;
-    if (!tenantId) throw new Error('site_tenant_missing');
+    const tenantId = params.tenantId;
     const expectedCurrentRevisionId = params.expectedVersion as string | null;
     await this.db.transaction(async (tx) => {
       await tx.insert(schema.siteRevision).values({

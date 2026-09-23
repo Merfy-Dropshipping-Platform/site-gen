@@ -25,7 +25,6 @@ export interface StoreContentSite {
   themeId: string | null;
   publicUrl: string | null;
   name?: string | null;
-  tenantId?: string | null;
   currentRevisionId?: string | null;
   /** `site.content_model`; `undefined`/`null` у старых строк — считается 'document'. */
   contentModel?: string | null;
@@ -47,6 +46,14 @@ export interface LoadResult {
 
 export interface SaveParams {
   document: Record<string, unknown>;
+  /**
+   * Тенант, которому принадлежит запись — как параметр (не поле `site`):
+   * оригинальный `createRevision` фильтрует CAS-предикат ИМЕННО по нему
+   * (`params.tenantId`), а не по `site.tenantId` из `SitesDomainService.get()` —
+   * граница безопасности задаётся вызывающим кодом, а не производной от
+   * уже прочитанной строки. Совпадает по смыслу с сегодняшним `params.tenantId`.
+   */
+  tenantId: string;
   /**
    * CAS: id ревизии, которую вызывающий код читал последней.
    * `undefined` — без CAS (простой insert). `null` — ожидаем, что текущей

@@ -34,6 +34,7 @@ export interface ConformanceFixture {
   content: StoreContent;
   siteId: string;
   site: StoreContentSite;
+  tenantId: string;
   /** Текущая ревизия магазина СЕЙЧАС (после всех save() в этом тесте). */
   currentRevisionId: () => string | null;
   /** Сколько строк ревизий реально лежит в хранилище СЕЙЧАС. */
@@ -103,6 +104,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
       setCurrent: true,
       expectedVersion: first.version,
       site: fx.site,
+      tenantId: fx.tenantId,
     });
 
     const beforeSeed = fx.readStoredRevision(fx.currentRevisionId()!) ?? {};
@@ -125,6 +127,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
       setCurrent: true,
       expectedVersion: loaded.version,
       site: fx.site,
+      tenantId: fx.tenantId,
     });
     const stored = fx.readStoredRevision(saved.version) ?? {};
     const storedPages = (stored as { pagesData?: Record<string, unknown> }).pagesData ?? {};
@@ -166,6 +169,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
         setCurrent: true,
         expectedVersion: 'revision-id-that-was-never-current',
         site: fx.site,
+        tenantId: fx.tenantId,
       }),
     ).rejects.toThrow('revision_conflict');
 
@@ -183,6 +187,7 @@ export function runStoreContentConformance(makeAdapter: MakeAdapter): void {
       setCurrent: true,
       expectedVersion: original.version,
       site: fx.site,
+      tenantId: fx.tenantId,
     });
     expect(fx.currentRevisionId()).toBe(second.version);
     expect(second.version).not.toBe(original.version);

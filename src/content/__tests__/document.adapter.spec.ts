@@ -158,7 +158,6 @@ async function makeAdapter(seed: ConformanceSeed): Promise<ConformanceFixture> {
     themeId: seed.themeId,
     publicUrl: seed.publicUrl ?? null,
     name: seed.siteName ?? 'Витрина',
-    tenantId,
     contentModel: 'document',
     get currentRevisionId() {
       return site.currentRevisionId;
@@ -169,6 +168,7 @@ async function makeAdapter(seed: ConformanceSeed): Promise<ConformanceFixture> {
     content,
     siteId,
     site: siteContext,
+    tenantId,
     currentRevisionId: () => site.currentRevisionId,
     countStoredRevisions: store.countStoredRevisions,
     readStoredRevision: store.readStoredRevision,
@@ -209,7 +209,8 @@ describe('DocumentAdapter — специфичные проверки адапт
     const result = await adapter.save(siteId, {
       document: { pages: [] },
       filterSeeded: false,
-      site: { themeId: 'rose', publicUrl: null, tenantId: site.tenantId, currentRevisionId: site.currentRevisionId },
+      tenantId: site.tenantId,
+      site: { themeId: 'rose', publicUrl: null, currentRevisionId: site.currentRevisionId },
     });
 
     expect(store.countStoredRevisions()).toBe(2);

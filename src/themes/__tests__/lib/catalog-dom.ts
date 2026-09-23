@@ -30,8 +30,7 @@ export interface Магазин {
     /** «Общая» коллекция магазина (product: ensureDefaultCollection). */
     isDefault?: boolean;
   }>;
-  /** Содержимое `/data/collections.json` сайта; нет — файла нет (404). */
-  файлКоллекций?: unknown;
+
   /** Значения группы «Цвет» у товаров магазина. */
   цвета?: string[];
   /** Товары в форме /api/store/products (title, slug, basePrice, images…). */
@@ -40,6 +39,8 @@ export interface Магазин {
 
 /** Адреса запросов за товарами (раскодированные) — с последнего `показать`. */
 export const запросыТоваров: string[] = [];
+/** Запросы коллекций витрины — с последнего `показать`. */
+export const запросыКоллекций: string[] = [];
 
 let магазин: Магазин = {};
 const рендеры = new Map<string, string>();
@@ -63,21 +64,12 @@ function ответ(body: unknown): Response {
   } as unknown as Response;
 }
 
-const нет404 = {
-  ok: false,
-  status: 404,
-  json: async () => null,
-  text: async () => "",
-} as unknown as Response;
-
 async function витрина(input: RequestInfo | URL): Promise<Response> {
   const адрес = String(input);
-  if (адрес.includes("/data/collections.json"))
-    return магазин.файлКоллекций === undefined
-      ? нет404
-      : ответ(магазин.файлКоллекций);
-  if (адрес.includes("/api/store/collections"))
+  if (адрес.includes("/api/store/collections")) {
+    запросыКоллекций.push(адрес);
     return ответ({ collections: магазин.коллекции ?? [] });
+  }
   if (адрес.includes("/api/store/filters"))
     return ответ({
       success: true,
@@ -136,6 +128,11 @@ export function снять(): void {
     if (k.startsWith("__merfy"))
       delete (window as unknown as Record<string, unknown>)[k];
   }
+  // флажки «уже подключено» модулей витрины живут и на document
+  for (const k of Object.keys(document)) {
+    if (k.startsWith("__merfy"))
+      delete (document as unknown as Record<string, unknown>)[k];
+  }
   for (const a of Array.from(document.body.attributes))
     document.body.removeAttribute(a.name);
   document.documentElement.style.overflow = "";
@@ -188,6 +185,7 @@ export async function показатьБлок(
     снять();
     магазин = м;
     запросыТоваров.length = 0;
+    запросыКоллекций.length = 0;
     (0, eval)(BLOCK_ROOT_INLINE.replace(/^<script>|<\/script>$/g, ""));
   }
   // Рендер секции — отдельный процесс, на показ уходят секунды: одинаковые

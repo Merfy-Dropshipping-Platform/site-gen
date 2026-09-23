@@ -157,11 +157,33 @@ const subtitleCls =
 // (aspect 1920/925 на десктопе) — подняты значения и добавлены брейкпоинты; medium/
 // small заметно ниже. Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
-const heroHeightCls = {
-	large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[620px] xl:min-h-[680px] 2xl:min-h-[720px]",
-	medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[500px] xl:min-h-[540px]",
-	small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[380px] xl:min-h-[400px]",
-}[heroSize];
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): геометрия
+// по актуальной вёрстке Bloom-theme @5aae2ad6 (правка 8058391 от 14.06, «adaptive
+// hero per Figma»). Блок — пропорция по ширине экрана, одно фото вписано по высоте
+// (лицо целиком), а не заливает блок: раньше на широком окне фото было в 2,3 раза
+// крупнее и видны были только глаза и нос. «Размер» работает поверх: «Большой» =
+// пропорция верстальщиков, «Средний» и «Маленький» — та же пропорция ниже в 0,8 и
+// 0,6 раза, как соотносились прежние высоты 620 / 500 / 380. Без признака — прежняя
+// лестница высот и заливка. Признак ставит sites (page-blocks `designParityFlag`).
+const designParity = p.__designParity === true;
+const HERO_HEIGHT_CLS = {
+	designers: {
+		large: "min-h-[560px] aspect-[375/716] sm:aspect-[768/968] md:aspect-[1280/968] xl:aspect-[1920/925]",
+		medium: "min-h-[448px] aspect-[375/573] sm:aspect-[768/774] md:aspect-[1280/774] xl:aspect-[1920/740]",
+		small: "min-h-[336px] aspect-[375/430] sm:aspect-[768/581] md:aspect-[1280/581] xl:aspect-[1920/555]",
+	},
+	legacy: {
+		large: "min-h-[min(80svh,620px)] sm:min-h-[600px] md:min-h-[620px] xl:min-h-[680px] 2xl:min-h-[720px]",
+		medium: "min-h-[min(62svh,500px)] sm:min-h-[480px] md:min-h-[500px] xl:min-h-[540px]",
+		small: "min-h-[min(46svh,380px)] sm:min-h-[360px] md:min-h-[380px] xl:min-h-[400px]",
+	},
+};
+const heroHeightCls = HERO_HEIGHT_CLS[designParity ? "designers" : "legacy"][heroSize];
+// Одно фото на весь блок. Два фото (50/50) и пустое состояние — прежние, их у
+// верстальщиков нет.
+const singlePhotoCls = designParity
+	? "absolute left-0 top-0 z-0 h-[122%] w-auto max-w-none md:left-1/2 md:h-[111.45%] md:-translate-x-1/2"
+	: "absolute inset-0 z-0 size-full object-cover object-center";
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
 // тексте; кнопки встают рядом в ряд с зазором gap-3 (манера §3).
@@ -355,7 +377,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				alt=""
 				loading="eager"
 				fetchpriority="high"
-				class="absolute inset-0 z-0 size-full object-cover object-center"
+				class={singlePhotoCls}
 			/>
 		) : null
 	}

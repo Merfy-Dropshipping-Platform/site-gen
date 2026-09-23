@@ -50,6 +50,10 @@ const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 const heading = headingProvided
 	? (typeof p.heading === "string" ? p.heading : p.heading.text)
 	: (isEmptyState ? "Расскажи о своем бренде" : "");
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
+// цвета не меняются; без признака — прежние классы. Признак ставит sites.
+const designParity = p.__designParity === true;
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -76,7 +80,9 @@ const textCls =
 		? "w-full max-w-[1320px] font-urbanist text-[17px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]"
 		: textSize === "medium"
 			? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]"
-			: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]";
+			: designParity
+				? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[24px]"
+				: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]";
 
 // Канон position — позиция контент-колонки; alignment — выравнивание внутри.
 // canon-default обоих = 'center' = литерал верстальщика (всё по центру,
@@ -120,10 +126,11 @@ const btnHref =
 // отсутствие = белый pill верстальщика дословно (МАННЕРА §3: CTA на розовом
 // полотне; button-2 токены, rounded-full ≡ var(--radius-button,100px) пиксельно).
 // outlined = бордер цвета заливки на прозрачном фоне.
+const btnPadCls = designParity ? "px-4" : "px-6";
 const btnCls =
 	p.buttonStyle === "outlined"
-		? "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
-		: "inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95";
+		? `inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent ${btnPadCls} font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-90 active:scale-95`
+		: `inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] ${btnPadCls} font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -150,7 +157,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
-	<div class={`${posCls} flex w-full max-w-[1320px] flex-col ${itemsCls} gap-10 ${textAlignCls}`}>
+	<div class={`${posCls} flex w-full max-w-[1320px] flex-col ${itemsCls} gap-10${designParity ? " md:gap-16" : ""} ${textAlignCls}`}>
 		{
 			heading && !isFieldHidden('heading') && (
 				<h2

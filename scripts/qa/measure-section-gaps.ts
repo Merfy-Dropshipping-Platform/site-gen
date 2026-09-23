@@ -71,8 +71,17 @@ function contrastScheme(tokens: string): string {
 const wrap = (html: string, scheme: string) =>
   `<div class="color-scheme-${scheme}" data-block-scheme="${scheme}">${html}</div>`;
 
+/**
+ * Сети у страницы замера нет: скрипты секций (каталог, популярные, галерея)
+ * тянут товары и, не получив их, перестраивают секцию — «Каталог» сжимается со
+ * скелетонов до заглушки. В CI отказ запроса приходил с задержкой, и секция
+ * сжималась посреди замера. Отказываем сразу — секции мгновенно приходят в то
+ * же итоговое состояние «данных нет».
+ */
+const NO_NETWORK = `<script>window.fetch=function(){return Promise.reject(new TypeError("замер: сети нет"))};</script>`;
+
 function page(theme: string, tokens: string, main: string): string {
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8">
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8">${NO_NETWORK}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${themeCss(theme)}</style>
 <style id="__merfy_tokens_css">${tokens}</style>
@@ -91,14 +100,26 @@ async function openPage(browser: Browser, html: string, width: number) {
   const pg = await ctx.newPage();
   await pg.setContent(html, { waitUntil: "load" });
   await pg.evaluate("globalThis.__name = globalThis.__name || function (f) { return f; };");
-  await pg.waitForTimeout(150);
+  // Секции дорисовываются своим скриптом уже после загрузки: «Каталог» без
+  // товаров сжимается со скелетонов (6898px) до заглушки (364px). Замер,
+  // запомнивший прежнюю высоту, снимал строки, которых уже нет, — в CI это
+  // выглядело как «просвет с 9-го куска». Ждём, пока высота документа не
+  // перестанет меняться (пять опросов подряд).
+  await pg.waitForFunction(
+    "(() => { const h = document.documentElement.scrollHeight; const same = window.__lastH === h; window.__stable = same ? (window.__stable || 0) + 1 : 0; window.__lastH = h; return window.__stable >= 5; })()",
+    undefined,
+    { polling: 200, timeout: 20000 },
+  );
   return { ctx, pg };
 }
 
 /**
  * Цвета столбца пикселей x=4 на отрезке [y0, y1) документа. Окно НЕ
- * прокручиваем и не растягиваем: <main> сдвигается вверх transform-ом, и нужные
- * строки встают в кадр.
+ * прокручиваем и не растягиваем: <main> сдвигается вверх (position:relative +
+ * top), и нужные строки встают в кадр. Не transform: сдвиг слоя браузер делает
+ * уже нарисованными плитками, дальше ~4–5 тыс. px от исходного вида они на
+ * медленном раннере CI не успевали дорисоваться — снимок ловил пустоту (фон
+ * страницы) ровно с 9-го/10-го куска.
  *  - fullPage-снимок растягивает окно на всю страницу, секции с vh
  *    перестраиваются, строки уезжают;
  *  - прокрутка окна зависит от того, прокручивается ли документ: на раннере CI
@@ -112,8 +133,12 @@ async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]>
   const viewH = await pg.evaluate(() => window.innerHeight);
   for (let y = y0; y < y1; ) {
     const shift = Math.max(0, y - 100);
-    await pg.evaluate((px) => {
-      document.querySelector("main")!.style.transform = `translateY(${-px}px)`;
+    await pg.evaluate(async (px) => {
+      const main = document.querySelector("main")!;
+      main.style.position = "relative";
+      main.style.top = `${-px}px`;
+      // Два кадра: новая раскладка и её отрисовка до снимка.
+      await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null))));
     }, shift);
     const top = y - shift;
     const h = Math.min(CHUNK, y1 - y, viewH - top);
@@ -125,7 +150,9 @@ async function columnColors(pg: Page, y0: number, y1: number): Promise<string[]>
     y += h;
   }
   await pg.evaluate(() => {
-    document.querySelector("main")!.style.transform = "";
+    const main = document.querySelector("main")!;
+    main.style.position = "";
+    main.style.top = "";
   });
   return out;
 }
@@ -140,7 +167,11 @@ async function scanStrip(
   browser: Browser,
   html: string,
   width: number,
-  /** Участок: вся обёртка `sel` или полоса от низа `above` до верха секции внутри `sel`. */
+  /**
+   * Участок: вся обёртка `sel` или полоса от низа `above` до верха содержимого
+   * `sel`: у обёртки схемы — её первый видимый ребёнок (секции ставят
+   * <style>/<script> первыми), у секции без обёртки — она сама.
+   */
   target: { sel: string; above?: string },
 ): Promise<{ expected: string; wrong: Array<{ y: number; c: string }>; h: number }> {
   const { ctx, pg } = await openPage(browser, html, width);
@@ -156,11 +187,17 @@ async function scanStrip(
       // и тот же и когда он полем снаружи, и когда отступом внутри обёртки.
       // Крайние строки не берём — на самой границе сглаживание.
       const y0 = Math.ceil((above ? abs(document.querySelector(above)!).bottom : abs(el).top) + 1);
-      const y1 = Math.floor((above ? abs(el.firstElementChild ?? el).top : abs(el).bottom) - 1);
+      const visible = Array.from(el.children).find((c) => c.getBoundingClientRect().height > 0);
+      const content = el.hasAttribute("data-block-scheme") ? (visible ?? el) : el;
+      const y1 = Math.floor((above ? abs(content).top : abs(el).bottom) - 1);
       return { expected: `rgb(${v.split(/[\s,]+/).join(", ")})`, y0, y1 };
     }, target);
     const h = Math.max(0, box.y1 - box.y0);
+    const docH = () => pg.evaluate(() => document.documentElement.scrollHeight);
+    const before = await docH();
     const colors = await columnColors(pg, box.y0, box.y1);
+    const after = await docH();
+    if (after !== before) throw new Error(`раскладка менялась во время замера: ${before} → ${after}px`);
     const wrong = colors.flatMap((c, y) => (c === box.expected ? [] : [{ y, c }]));
     return { expected: box.expected, wrong, h };
   } finally {
@@ -242,18 +279,27 @@ async function measureGap(browser: Browser, theme: string): Promise<Row[]> {
   const lower = contrastScheme(tokens);
   const cfg = await loadRuntimePuckConfig(theme);
   const props = (type: string) => ({ ...panelDefaults(cfg, type), id: `${type}-1` });
-  const [a, b] = renderSections(theme, [
+  const [a, b, a0, b0] = renderSections(theme, [
     { block: "MainText", props: { ...props("MainText"), colorScheme: "scheme-1" } },
     { block: "MultiColumns", props: { ...props("MultiColumns"), colorScheme: `scheme-${lower}` } },
+    // Без своей схемы — без обёртки: так стоят «Товар» и «Популярные» на странице товара.
+    { block: "MainText", props: { ...props("MainText"), colorScheme: undefined } },
+    { block: "MultiColumns", props: { ...props("MultiColumns"), colorScheme: undefined } },
   ]);
-  if (!a.html || !b.html) throw new Error(`${theme}: рендер секций зазора не дал HTML`);
+  if (!a.html || !b.html || !a0.html || !b0.html) throw new Error(`${theme}: рендер секций зазора не дал HTML`);
   // Порты кладут <style>/<script> прямо в <main> — первый ребёнок бывает не секцией.
   const main = `<style></style>${wrap(a.html, "1")}<script></script>${wrap(b.html, lower)}`;
+  const mainBare = `<style></style>${a0.html}<script></script>${b0.html}`;
   const rows: Row[] = [];
   for (const width of WIDTHS) {
     const html = page(theme, tokens, main);
     const gap = await scanStrip(browser, html, width, { sel: `[data-block-scheme="${lower}"]`, above: `[data-block-scheme="1"]` });
     rows.push(summarize(theme, width, "зазор между секциями", gap, `высота зазора ${gap.h}px`));
+    const bare = await scanStrip(browser, page(theme, tokens, mainBare), width, {
+      sel: 'main > [data-puck-component-id^="MultiColumns"]',
+      above: 'main > [data-puck-component-id^="MainText"]',
+    });
+    rows.push(summarize(theme, width, "зазор без своей схемы", bare, `высота зазора ${bare.h}px`));
     // Над первой секцией зазора нет. Меряем от опорного блока перед <main>, а не
     // от верха <main>: поле первой секции схлопывается сквозь <main>, и разница
     // с его верхом всегда ноль (так проверка была слепой).
@@ -276,7 +322,7 @@ export const RULES: Rule[] = [
     id: "зазор-в-цвет-нижней-секции",
     bug: "1",
     title: "зазор между секциями окрашен схемой нижней секции, фон страницы не просвечивает",
-    applies: (r) => r.case === "зазор между секциями",
+    applies: (r) => r.case === "зазор между секциями" || r.case === "зазор без своей схемы",
     check: (r) => (r.wrongPx === 0 ? null : `чужой цвет ${r.wrongPx}px из ${GAP} (${r.where}), просвет страницы ${r.poisonPx}px`),
   },
   {

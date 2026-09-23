@@ -114,15 +114,25 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 // Канон displayColumns 1-4: canon-default 3 и отсутствие = литерал верстальщика
 // (md:grid-cols-2 xl:grid-cols-3 байт-в-байт); иное значение — мобильная
 // лестница 1 → md:2 фиксирована, xl — через CSS-var.
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
+// цвета не меняются; без признака — прежние классы. Признак ставит sites.
+const designParity = p.__designParity === true;
 const displayColumnsRaw = Number(p.displayColumns);
 const displayColumns =
 	Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
 		? Math.round(displayColumnsRaw)
 		: 3;
+// Benefits: сетка gap-4, карточка gap-8 между иконкой и текстом и gap-3 внутри
+// текста, min-h только с md, строки leading-normal. Разметка карточки плоская,
+// поэтому 8 = gap-3 + mb-5 у медиа.
+const MC = designParity
+	? { gridGap: "gap-4", cardMinH: "md:min-h-[252px]", cardGap: "gap-3", mediaMb: " mb-5", leading: "leading-normal" }
+	: { gridGap: "gap-10", cardMinH: "min-h-[252px]", cardGap: "gap-6", mediaMb: "", leading: "leading-none" };
 const gridCls =
 	displayColumns === 3
-		? "grid w-full grid-cols-1 justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-3"
-		: "grid w-full grid-cols-1 justify-items-center gap-10 md:grid-cols-2 xl:grid-cols-[repeat(var(--cols),minmax(0,1fr))]";
+		? `grid w-full grid-cols-1 justify-items-center ${MC.gridGap} md:grid-cols-2 xl:grid-cols-3`
+		: `grid w-full grid-cols-1 justify-items-center ${MC.gridGap} md:grid-cols-2 xl:grid-cols-[repeat(var(--cols),minmax(0,1fr))]`;
 const gridStyle = displayColumns === 3 ? undefined : `--cols:${displayColumns}`;
 
 // Канон width (s/m/l/full): отсутствие/large = 1320 (литерал верстальщика),
@@ -245,7 +255,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			{
 				columns.map((c, index) => (
 					<li
-						class={`group flex min-h-[252px] w-full max-w-[429px] flex-col ${textAlignCls} gap-6${cardSurfaceCls} transition-transform duration-300 ease-out hover:-translate-y-1`}
+						class={`group flex ${MC.cardMinH} w-full max-w-[429px] flex-col ${textAlignCls} ${MC.cardGap}${cardSurfaceCls} transition-transform duration-300 ease-out hover:-translate-y-1`}
 						data-animate
 						data-animate-delay={`${index * 0.08}s`}
 						data-puck-subsection-parent={id}
@@ -254,7 +264,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					>
 						{c.image ? (
 							<div
-								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,255_255_255))]${aspectCls}`}
+								class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,255_255_255))]${aspectCls}${MC.mediaMb}`}
 							>
 								<img
 									src={c.image}
@@ -267,20 +277,20 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						) : (
 							c.isPlaceholder && (
 								<div
-									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,255_255_255))]${aspectCls}`}
+									class={`${itemImageCls(c.imageSize)} overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,255_255_255))]${aspectCls}${MC.mediaMb}`}
 									aria-hidden="true"
 								/>
 							)
 						)}
 						{c.heading && (
 							<h3
-								class={`font-urbanist ${itemHeadingCls(c.headingSize)} font-light leading-none text-[rgb(var(--color-heading,0_0_0))]`}
+								class={`font-urbanist ${itemHeadingCls(c.headingSize)} font-light ${MC.leading} text-[rgb(var(--color-heading,0_0_0))]`}
 								set:html={inlineFormat(c.heading)}
 							/>
 						)}
 						{c.text && (
 							<p
-								class={`font-inter ${itemTextCls(c.textSize)} font-light leading-none text-[rgb(var(--color-muted,153_153_153))]`}
+								class={`font-inter ${itemTextCls(c.textSize)} font-light ${MC.leading} text-[rgb(var(--color-muted,153_153_153))]`}
 								set:html={inlineFormat(c.text)}
 							/>
 						)}

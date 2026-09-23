@@ -1634,6 +1634,12 @@ jobs:
       # <html>, перерисовка в конструкторе снимает замок, брейкпоинт темы.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filters-sheet.spec.ts
+      # «Цвет» в боковой панели фильтров (и в шторке, и «Сбоку»): кольцо
+      # невыбранного цвета серое, выбранного — цветом текста, в CSS ВИТРИНЫ
+      # (dist/theme-css). Кнопки рисует скрипт порта, его классы кольца живая
+      # сборка не видит — прод-замер 23.09: невыбранные обведены цветом текста.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filter-color-rings.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

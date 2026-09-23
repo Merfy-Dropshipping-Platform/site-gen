@@ -242,4 +242,26 @@
   [data-filters-sheet] [data-nt="radio-field"] > input:checked ~ span:last-child {
     color: rgb(var(--color-text, 0 0 0));
   }
+
+  /* «Цвет» в боковой панели (и в шторке, и в раскладке «Сбоку»): кнопки цвета
+   * рисует скрипт каталога порта, и классы кольца оттуда в CSS живой витрины
+   * не попадают (замер 23.09, витрина bloom: нет `border-[…--color-muted…]` и
+   * `after:opacity-100`) — невыбранный цвет обводился цветом текста, а не
+   * серым, как на макете. Кольцо и точка — по данным кнопки
+   * (`data-color-option` + `aria-pressed`), в цветах схемы, как у радио DS. */
+  [data-nt="filter-sidebar"] [data-color-option] > span[aria-hidden="true"] {
+    border-color: rgb(var(--color-muted, 153 153 153));
+  }
+
+  [data-nt="filter-sidebar"] [data-color-option] > span[aria-hidden="true"]::after {
+    background-color: rgb(var(--color-text, 0 0 0));
+  }
+
+  [data-nt="filter-sidebar"] [data-color-option][aria-pressed="true"] > span[aria-hidden="true"] {
+    border-color: rgb(var(--color-text, 0 0 0));
+  }
+
+  [data-nt="filter-sidebar"] [data-color-option][aria-pressed="true"] > span[aria-hidden="true"]::after {
+    opacity: 1;
+  }
 }

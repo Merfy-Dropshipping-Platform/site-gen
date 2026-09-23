@@ -3,7 +3,8 @@ import * as path from 'path';
 import { Logger } from '@nestjs/common';
 import { PreviewService } from '../services/preview.service';
 import { composeV2Page, schemeIdFromProp } from './v2-page-composer';
-import { extractPageBlocks } from './page-blocks';
+import { extractPageBlocks, pagePropsPreparer } from './page-blocks';
+import { parityOn } from './parity-switch';
 import { isV2ComplexRoute } from './v2-routes';
 import { getContentPages, getChromeKind, PRODUCT_UNIFIED_THEMES, CART_UNIFIED_THEMES, ACCOUNT_SECTION_THEMES, LOGIN_SECTION_THEMES } from './page-registry';
 import {
@@ -554,6 +555,12 @@ export async function applyChromeToDist(
     // общий getRenderer() (как контентные страницы live-цикла).
     renderBlock: (input) => getRenderer().renderBlock({ ...input, merfy: merfyFromBuild(ctx, theme) }),
     isPreview: false,
+    // Пункт 3а сближения: шапка и подвал внутренних страниц — с теми же
+    // пропсами, что на главной (composeContentPagesIntoDist зовёт extractPageBlocks
+    // с ctx.publicUrl и ctx.siteId). Выключатель выкл. → сырые пропсы, как раньше.
+    prepareProps: parityOn('CHROME', ctx.siteId)
+      ? pagePropsPreparer({ publicUrl: ctx.publicUrl, siteId: ctx.siteId, themeId: theme })
+      : undefined,
   });
   if (!chrome.headerHtml) {
     logger.warn(

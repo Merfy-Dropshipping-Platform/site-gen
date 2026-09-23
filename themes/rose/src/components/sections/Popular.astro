@@ -383,9 +383,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/* Пустое состояние (коллекция не выбрана): плейсхолдер-карточка
 				   Figma 1:19335 — куртка-заглушка (object-contain), «Товар»,
 				   «2 500 ₽». Без data-product-id / data-add-to-cart — это не
-				   реальный товар (add-to-cart недоступен, как в theme-base DEMO). */
+				   реальный товар (add-to-cart недоступен, как в theme-base DEMO).
+				   data-nt — метка карточки товара: на неё завязаны «Карточки товара» и
+				   шрифт/жирность текста из «Настроек темы» (tokens-css), как у настоящей. */
 				<li>
-					<article class="flex w-full flex-col gap-5" aria-label={card.name}>
+					<article class="flex w-full flex-col gap-5" data-nt="rose-product-card" aria-label={card.name}>
 						<div class="relative block w-full overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,251_251_251))]" style={`aspect-ratio:${cardAspectRatio}`}>
 							<img
 								src={card.image}

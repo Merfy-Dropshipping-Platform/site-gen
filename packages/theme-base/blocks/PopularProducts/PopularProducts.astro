@@ -442,6 +442,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
         <div
           class={C.card}
           aria-label="Товар"
+          data-nt="base-product-card"
           data-product-index={i}
         >
           <div class={C.cardMedia} aria-hidden="true">
@@ -625,7 +626,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
       // <article> снаружи + <a> wrap image+title+price (navigation) + кнопка
       // CTA снаружи <a> чтобы клик по ней не триггерил переход на /product.
       return (
-        '<article data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '">' +
+        '<article data-nt="base-product-card" data-product-id="' + escAttr(p.id) + '" data-product-handle="' + escAttr(handle) + '" class="' + cardClass + '" aria-label="' + escAttr(title) + '">' +
           '<a href="' + escAttr(href) + '" style="text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:12px;">' +
             '<div class="' + cardMediaClass + '" aria-hidden="true">' + mediaInner + pipsHtml + '</div>' +
             '<div class="flex flex-col gap-1 items-start w-full">' +

@@ -1013,17 +1013,28 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
   // КРИТИЧНО — обёртка `@layer utilities`: для !important порядок слоёв обратный,
   // и безслойное правило проигрывает слою. В том же слое решает специфичность:
   // наш (0,1,2) > (0,1,0) у `.\!font-normal`.
+  // Текст, до которого доходят «Шрифт текста» и «Жирность текста». Кроме
+  // абзацев, пунктов, кнопок и подписей — все надписи карточки товара: название,
+  // цена и плашки там <a>, <span>, <div>, и до 23.09 выбор мерчанта не менял
+  // карточки ни в одной секции («Коллекция товаров», «Группа товаров» и др.).
+  // Владелец: «надо сделать как везде — такая же секция, по таким же правилам».
+  // Карточку во всём магазине узнаём по той же метке, что и её схему
+  // (`[data-nt$="-product-card"]`, см. productCardSchemeRule); заголовки внутри
+  // карточки — роль заголовка, их правило текста не трогает.
+  const bodyTextSelectors =
+    'main p[class],main li[class],main button[class],main label[class],' +
+    'main [data-nt$="-product-card"] [class]:not(h1,h2,h3,h4,h5,h6)';
   const weightHeadingRule = headingWeightSet
     ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-weight:var(--weight-heading) !important}'
     : '';
   const weightBodyRule = bodyWeightSet
-    ? 'main p[class],main li[class],main button[class],main label[class]{font-weight:var(--weight-body) !important}'
+    ? `${bodyTextSelectors}{font-weight:var(--weight-body) !important}`
     : '';
   const fontHeadingRule = headingFontSet
     ? 'main h1[class],main h2[class],main h3[class],main h4[class],main h5[class],main h6[class],footer h1[class],footer h2[class],footer h3[class],footer h4[class],footer h5[class],footer h6[class]{font-family:var(--font-heading) !important}'
     : '';
   const fontBodyRule = bodyFontSet
-    ? 'main p[class],main li[class],main button[class],main label[class]{font-family:var(--font-body) !important}'
+    ? `${bodyTextSelectors}{font-family:var(--font-body) !important}`
     : '';
   const typographyOverrides = [
     weightHeadingRule,

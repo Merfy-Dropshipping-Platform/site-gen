@@ -71,6 +71,8 @@ import { ThemePuckConfigModule } from "./modules/theme-puck-config.module";
 import { ThemePresetModule } from "./modules/theme-preset/theme-preset.module";
 import { BlocksController } from "./controllers/blocks.controller";
 import { PagesModule } from "./pages/pages.module";
+import { DocumentAdapter } from "./content/document.adapter";
+import { StoreContentService } from "./content/store-content.service";
 
 @Module({
   imports: [
@@ -112,6 +114,8 @@ import { PagesModule } from "./pages/pages.module";
   ],
   providers: [
     SitesDomainService,
+    DocumentAdapter,
+    StoreContentService,
     ThemesService,
     SiteGeneratorService,
     CoolifyProvider,

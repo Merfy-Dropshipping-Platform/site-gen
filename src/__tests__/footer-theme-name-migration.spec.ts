@@ -189,11 +189,11 @@ describe("проводка: имя магазина доезжает во все
     expect(src.slice(i, i + 220)).toMatch(/ctx\.siteName/);
   });
 
-  it("preview.controller передаёт site.name", () => {
+  it("preview.controller передаёт site.name (через storeContent.load, волна 1 порта контента)", () => {
     const src = read("controllers/preview.controller.ts");
-    const i = src.indexOf("const migrated = migrateRevisionData(");
+    const i = src.indexOf("loaded = await this.storeContent.load(");
     expect(i).toBeGreaterThan(-1);
-    expect(src.slice(i, i + 220)).toMatch(/site\.name/);
+    expect(src.slice(i, i + 220)).toMatch(/name:\s*site\.name/);
     // И само поле обязано быть в выборке, иначе там будет undefined.
     expect(src).toMatch(/name:\s*schema\.site\.name/);
   });

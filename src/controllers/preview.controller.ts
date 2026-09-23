@@ -6,6 +6,7 @@ import {
   HttpCode,
   Inject,
   Logger,
+  Optional,
   Param,
   Post,
   Query,
@@ -49,7 +50,9 @@ import {
   checkoutBlockIdentity,
   enrichChromeBlockProps,
 } from '../themes/chrome-assembler';
-import { migrateRevisionData } from '../utils/revision-migrations';
+import { DocumentAdapter } from '../content/document.adapter';
+import { StoreContentService } from '../content/store-content.service';
+import type { StoreContent } from '../content/store-content.port';
 import { rewriteRootUrlsToPrefix } from '../generator/theme-build.service';
 import { BLOCK_ROOT_INLINE, BLOCK_ROOT_MARKER } from '../common/block-root-inline';
 import { injectPreviewAccountGlobal } from '../common/preview-account-inline';
@@ -191,7 +194,27 @@ export class PreviewController {
     private readonly billingClient: ClientProxy,
     @Inject(PRODUCT_RMQ_SERVICE)
     private readonly productClient: ClientProxy,
+    // Волна 1 порта контента (src/content/): одна дверь load/save для
+    // ревизии. Optional — как в SitesDomainService — чтобы существующие
+    // тесты (preview-page-routing/preview-block-controller/…), которые
+    // собирают PreviewController через Test.createTestingModule без
+    // StoreContentService в providers, не нужно было переписывать; без
+    // DI-инъекции геттер storeContent ниже сам строит DocumentAdapter на
+    // этом же this.db.
+    @Optional()
+    private readonly injectedStoreContent?: StoreContentService,
   ) {}
+
+  private storeContentInstance?: StoreContent;
+
+  /** Ленивый фолбэк: вне DI (тесты) строит DocumentAdapter сам. */
+  private get storeContent(): StoreContent {
+    if (!this.storeContentInstance) {
+      this.storeContentInstance =
+        this.injectedStoreContent ?? new StoreContentService(new DocumentAdapter(this.db));
+    }
+    return this.storeContentInstance;
+  }
 
   @Get()
   async getPreview(
@@ -1053,24 +1076,36 @@ export class PreviewController {
       .where(eq(schema.site.id, siteId));
     if (!site?.currentRevisionId) return null;
 
-    const [rev] = await this.db
-      .select({ data: schema.siteRevision.data })
-      .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.id, site.currentRevisionId));
-    if (!rev?.data) return null;
-
-    const migrated = migrateRevisionData(
-      rev.data as Record<string, unknown>,
-      site.themeId ?? null,
-      site.name ?? null,
-      { unifyFooter: parityOn('FOOTER', siteId) },
-    );
+    // Содержимое ревизии — через порт (DocumentAdapter): migrateRevisionData →
+    // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
+    // Тот же путь, что у конструктора (SitesDomainService.getRevision) —
+    // замер до/после (merfy-mcp/docs/proofs/p2-wave1-content-port.txt) не
+    // нашёл различий на extractPageBlocks(home/about/catalog/product) ни на
+    // одной из пяти тем, свежих и с недосеянными контент-страницами.
+    let loaded: { document: Record<string, unknown>; version: string };
+    try {
+      loaded = await this.storeContent.load(siteId, {
+        revisionId: site.currentRevisionId,
+        site: {
+          themeId: site.themeId ?? null,
+          publicUrl: site.publicUrl ?? null,
+          name: site.name ?? null,
+        },
+      });
+    } catch {
+      // Ревизия пропала между чтением site.currentRevisionId и загрузкой —
+      // то же поведение, что раньше давал `if (!rev?.data) return null`.
+      return null;
+    }
     // PARITY_HOT: превью берёт картинки темы из копии темы (/__theme/<тема>),
     // а не с витрины — сохранённые конструктором страницы несут адрес витрины,
     // а у неопубликованного магазина там 404. Только блоки страниц: настройки
     // темы (стили) не трогаем.
-    if (parityOn('HOT', siteId) && migrated.pagesData) {
-      migrated.pagesData = relativizeOwnSiteAssetUrls(migrated.pagesData, site.publicUrl);
+    if (parityOn('HOT', siteId) && loaded.document.pagesData) {
+      loaded.document.pagesData = relativizeOwnSiteAssetUrls(
+        loaded.document.pagesData,
+        site.publicUrl,
+      );
     }
     // Подтягиваем данные футера (контакты/политики/произвольные поля/касса) из
     // БД в Footer-блоки — чтобы превью конструктора показывало тот же футер, что
@@ -1078,16 +1113,16 @@ export class PreviewController {
     const footerFp = await applyFooterData(
       { db: this.db, schema, billingClient: this.billingClient },
       siteId,
-      migrated,
+      loaded.document,
       this.logger,
       site.themeId ?? null,
     );
     return {
-      data: migrated,
+      data: loaded.document,
       publicUrl: site.publicUrl ?? null,
       themeId: site.themeId ?? null,
       tenantId: site.tenantId ?? null,
-      revisionId: site.currentRevisionId,
+      revisionId: loaded.version,
       footerFp,
     };
   }

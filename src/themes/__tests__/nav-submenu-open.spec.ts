@@ -19,7 +19,10 @@ import { execFileSync } from "node:child_process";
  * (`data-nav-group` / `data-nav-sub-toggle` / `data-nav-sub`), обработчик один
  * на все темы — `packages/theme-base/runtime/nav-submenu-toggle.ts`.
  *
- * Замер после правки:
+ * 24.09 владелец поменял десктоп: «не по ховеру, а по клику» — меню шапки
+ * тоже раскрывается нажатием (тот же обработчик), см. header-menu-click.spec.ts.
+ *
+ * Замер после правки (21.09):
  *   наведение (1440): все пять — подменю скрыто → видно;
  *   нажатие  (375):  все пять — скрыто → видно.
  *
@@ -72,7 +75,7 @@ function drawerMarkup(html: string, theme: string): string {
   return script > 0 ? tail.slice(0, script) : tail;
 }
 
-describe("вложенное меню: наведение на десктопе, нажатие в шторке", () => {
+describe("вложенное меню: нажатие на десктопе и в шторке", () => {
   it.each(THEMES)("%s: вложенные пункты вообще доезжают до шапки", (theme) => {
     const html = renderHeader(theme);
     // vanilla теряла их в маппинге пропов — до шапки не доходило ничего.
@@ -82,30 +85,39 @@ describe("вложенное меню: наведение на десктопе,
     });
   });
 
-  it.each(THEMES)("%s: на десктопе подменю раскрывается наведением", (theme) => {
-    const html = renderHeader(theme);
-    // Чистый CSS: на витрине шапки нет острова, JS-обработчика не будет.
-    expect({ theme, поНаведению: /group-hover\/d1/.test(html) }).toEqual({
-      theme,
-      поНаведению: true,
-    });
-  });
+  it.each(THEMES)(
+    "%s: на десктопе подменю раскрывается нажатием, не наведением",
+    (theme) => {
+      const html = renderHeader(theme);
+      // Владелец 24.09: «не по ховеру, а по клику». Поведение нажатия — в
+      // header-menu-click.spec.ts; здесь — что наведения в разметке не осталось.
+      expect({
+        theme,
+        поНаведению: /group-hover\/(d1|d2|mega)/.test(html),
+        кнопка: html.includes("data-nav-menu-toggle"),
+      }).toEqual({ theme, поНаведению: false, кнопка: true });
+    },
+  );
 
-  it.each(THEMES)("%s: в шторке есть кнопка раскрытия и скрытый список", (theme) => {
-    const drawer = drawerMarkup(renderHeader(theme), theme);
-    expect({ theme, шторкаНайдена: drawer.length > 0 }).toEqual({
-      theme,
-      шторкаНайдена: true,
-    });
-    expect({
-      theme,
-      обёртка: drawer.includes("data-nav-group"),
-      кнопка: drawer.includes("data-nav-sub-toggle"),
-      скрытыйСписок: /data-nav-sub(?!-toggle)[^>]*\shidden|hidden[^>]*\sdata-nav-sub(?!-toggle)/.test(
-        drawer,
-      ),
-    }).toEqual({ theme, обёртка: true, кнопка: true, скрытыйСписок: true });
-  });
+  it.each(THEMES)(
+    "%s: в шторке есть кнопка раскрытия и скрытый список",
+    (theme) => {
+      const drawer = drawerMarkup(renderHeader(theme), theme);
+      expect({ theme, шторкаНайдена: drawer.length > 0 }).toEqual({
+        theme,
+        шторкаНайдена: true,
+      });
+      expect({
+        theme,
+        обёртка: drawer.includes("data-nav-group"),
+        кнопка: drawer.includes("data-nav-sub-toggle"),
+        скрытыйСписок:
+          /data-nav-sub(?!-toggle)[^>]*\shidden|hidden[^>]*\sdata-nav-sub(?!-toggle)/.test(
+            drawer,
+          ),
+      }).toEqual({ theme, обёртка: true, кнопка: true, скрытыйСписок: true });
+    },
+  );
 
   it.each(THEMES)("%s: обработчик раскрытия вставлен в шапку", (theme) => {
     expect({
@@ -126,13 +138,20 @@ describe("вложенное меню: наведение на десктопе,
     };
     const out = execFileSync(
       "node",
-      [RENDERER, theme, JSON.stringify([{ block: "Header", props, live: true }])],
+      [
+        RENDERER,
+        theme,
+        JSON.stringify([{ block: "Header", props, live: true }]),
+      ],
       { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
     );
     const [res] = JSON.parse(out) as Array<{ html?: string; error?: string }>;
     if (res.error) throw new Error(`${theme}: ${res.error}`);
     const drawer = drawerMarkup(res.html ?? "", theme);
-    expect({ theme, лишняяКнопка: drawer.includes("data-nav-sub-toggle") }).toEqual({
+    expect({
+      theme,
+      лишняяКнопка: drawer.includes("data-nav-sub-toggle"),
+    }).toEqual({
       theme,
       лишняяКнопка: false,
     });

@@ -1,5 +1,7 @@
 /**
- * Вложенные пункты меню в шторке раскрываются НАЖАТИЕМ.
+ * Меню раскрывается НАЖАТИЕМ: вложенные пункты в шторке и меню шапки на
+ * компьютере (второе — владелец 24.09: «не по ховеру, а по клику»; раньше
+ * там было CSS-наведение по пункту 25 ниже).
  *
  * Пункт 25 документа владельца «баги шапки и меню»: «На десктопе подменю
  * раскрывается по наведению курсора. На телефоне — по нажатию».
@@ -73,5 +75,44 @@ export const NAV_SUBMENU_TOGGLE_SOURCE = `
   } else {
     openActive();
   }
+
+  // Меню шапки на компьютере («Выпадающее», «Расширенное», третий уровень)
+  // тоже раскрывается НАЖАТИЕМ, не наведением (владелец 24.09). Разметка:
+  //   [data-nav-menu]        — обёртка пункта вместе с его панелью;
+  //   [data-nav-menu-toggle] — кнопка пункта, прямой потомок обёртки;
+  //   [data-open]            — ставится на обёртку, панель видна по нему (CSS).
+  // Открыт один путь: нажатие закрывает всё, кроме нажатого пункта и его
+  // родителей; нажатие мимо открытого меню и Esc закрывают всё.
+  var setMenuOpen = function (group, open) {
+    if (open) group.setAttribute('data-open', '');
+    else group.removeAttribute('data-open');
+    var btn = group.querySelector(':scope > [data-nav-menu-toggle]');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  var closeMenus = function (keep) {
+    var open = document.querySelectorAll('[data-nav-menu][data-open]');
+    for (var i = 0; i < open.length; i++) {
+      if (!keep || !open[i].contains(keep)) setMenuOpen(open[i], false);
+    }
+  };
+
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target || !target.closest) return;
+    var btn = target.closest('[data-nav-menu-toggle]');
+    var group = btn ? btn.closest('[data-nav-menu]') : null;
+    if (!group) {
+      if (!target.closest('[data-nav-menu][data-open]')) closeMenus(null);
+      return;
+    }
+    e.preventDefault();
+    var open = !group.hasAttribute('data-open');
+    closeMenus(group);
+    setMenuOpen(group, open);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeMenus(null);
+  });
 })();
 `;

@@ -184,11 +184,18 @@ const RULES = [
     },
   },
   {
-    id: "наведение-на-десктопе",
-    заголовок: "подменю раскрывается наведением (чистый CSS, без JS)",
+    // Владелец 24.09: «не по ховеру, а по клику» (раньше здесь было правило
+    // «раскрывается наведением» по пункту 25 прежнего документа).
+    id: "нажатие-на-десктопе",
+    заголовок: "меню шапки раскрывается нажатием, не наведением",
     menuTypes: ["dropdown", "mega-menu"],
     check(root, _drawer, html) {
-      return /group-hover\/(d1|mega)/.test(html) ? null : "нет CSS-раскрытия по наведению";
+      if (/group-hover\/(d1|d2|mega)/.test(html)) return "осталось раскрытие по наведению";
+      if (!root.querySelector("[data-nav-menu] [data-nav-menu-toggle]")) return "у пункта с подменю нет кнопки раскрытия";
+      if (!/group-data-\[open\]\/(d1|mega)/.test(html)) return "панель не показывается по data-open";
+      return html.includes("data-nav-menu-toggle") && html.includes("__merfyNavSubmenuToggle")
+        ? null
+        : "в шапку не вставлен обработчик нажатия";
     },
   },
   {

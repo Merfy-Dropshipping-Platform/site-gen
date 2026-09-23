@@ -84,12 +84,16 @@ function render(theme: string, logoPosition: string): HTMLElement {
   return parse(res.html ?? "");
 }
 
-/** Плашка «Расширенного» меню — блок, который показывается по group-hover/mega. */
+/** Плашка «Расширенного» меню — блок, который показывается по data-open пункта (нажатием). */
 function megaSheet(root: HTMLElement): HTMLElement | null {
   return (
     root
       .querySelectorAll("div")
-      .find((el) => (el.getAttribute("class") ?? "").includes("group-hover/mega:visible")) ?? null
+      .find((el) =>
+        (el.getAttribute("class") ?? "").includes(
+          "group-data-[open]/mega:visible",
+        ),
+      ) ?? null
   );
 }
 

@@ -2,6 +2,10 @@
 /**
  * Пункт десктоп-навигации. Контракт как у rose NavItem: те же menuType
  * (dropdown / mega-menu / sidebar) и recursive submenu. Внешний вид — satin.
+ * Раскрытие — НАЖАТИЕМ (владелец 24.09: «не по ховеру, а по клику»): пункт с
+ * подменю — кнопка `data-nav-menu-toggle` в обёртке `data-nav-menu`, панель
+ * видна по `data-open` обёртки. Обработчик общий на пять тем —
+ * packages/theme-base/runtime/nav-submenu-toggle.ts.
  */
 interface NavLink {
 	label: string;
@@ -42,18 +46,19 @@ const popupItemCls =
 		{link.label}
 	</a>
 ) : isMega ? (
-	<div class="group/mega flex items-center">
-		<a
-			href={link.href}
-			aria-current={active ? "page" : undefined}
-			class:list={["relative inline-flex items-center gap-1 pb-1", linkClass, activeUnderline]}
+	<div data-nav-menu class="group/mega flex items-center">
+		<button
+			type="button"
+			data-nav-menu-toggle
+			aria-expanded="false"
+			class:list={["cursor-pointer relative inline-flex items-center gap-1 pb-1", linkClass, activeUnderline]}
 		>
 			{link.label}
 			<svg class="h-2 w-2 shrink-0 opacity-70" viewBox="0 0 8 8" fill="none" aria-hidden="true">
 				<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
-		</a>
-		<div class="invisible absolute left-0 right-0 top-full z-50 -mt-1 pt-4 opacity-0 transition-opacity duration-150 group-hover/mega:visible group-hover/mega:opacity-100">
+		</button>
+		<div class="invisible absolute left-0 right-0 top-full z-50 -mt-1 pt-4 opacity-0 transition-opacity duration-150 group-data-[open]/mega:visible group-data-[open]/mega:opacity-100">
 			<div class="border-t border-[rgb(var(--color-text,0_0_0)/13%)] bg-[rgb(var(--color-surface,245_245_245))]">
 				<div class="satin-pad mx-auto grid w-full max-w-[1920px] grid-cols-2 gap-x-8 gap-y-6 p-4 md:grid-cols-3 lg:grid-cols-4">
 					{subs.map((cat) => {
@@ -90,35 +95,40 @@ const popupItemCls =
 		</div>
 	</div>
 ) : (
-	<div class="group/d1 relative flex items-center">
-		<a
-			href={link.href}
-			aria-current={active ? "page" : undefined}
-			class:list={["relative inline-flex items-center gap-1 pb-1", linkClass, activeUnderline]}
+	<div data-nav-menu class="group/d1 relative flex items-center">
+		<button
+			type="button"
+			data-nav-menu-toggle
+			aria-expanded="false"
+			class:list={["cursor-pointer relative inline-flex items-center gap-1 pb-1", linkClass, activeUnderline]}
 		>
 			{link.label}
 			<svg class="h-2 w-2 shrink-0 opacity-70" viewBox="0 0 8 8" fill="none" aria-hidden="true">
 				<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
-		</a>
-		<div class="invisible absolute left-0 top-full z-50 -mt-1 min-w-[220px] pt-3 opacity-0 transition-opacity duration-150 group-hover/d1:visible group-hover/d1:opacity-100">
+		</button>
+		<div class="invisible absolute left-0 top-full z-50 -mt-1 min-w-[220px] pt-3 opacity-0 transition-opacity duration-150 group-data-[open]/d1:visible group-data-[open]/d1:opacity-100">
 			<ul class={popupCardCls}>
 				{subs.map((c2) => {
 					const kids2: NavLink[] = Array.isArray(c2.submenu)
 						? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
 						: [];
 					return (
-						<li class="group/d2 relative">
-							<a href={c2.href} class={popupItemCls}>
-								<span>{c2.label}</span>
-								{kids2.length > 0 && (
+						<li data-nav-menu={kids2.length > 0 ? "" : undefined} class="group/d2 relative">
+							{kids2.length > 0 ? (
+								<button type="button" data-nav-menu-toggle aria-expanded="false" class={`${popupItemCls} w-full cursor-pointer text-left`}>
+									<span>{c2.label}</span>
 									<svg class="h-3 w-3 shrink-0 opacity-60" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 										<path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 									</svg>
-								)}
-							</a>
+								</button>
+							) : (
+								<a href={c2.href} class={popupItemCls}>
+									<span>{c2.label}</span>
+								</a>
+							)}
 							{kids2.length > 0 && (
-								<div class="invisible absolute left-full top-0 z-50 -ml-1 min-w-[200px] pl-2 opacity-0 transition-opacity duration-150 group-hover/d2:visible group-hover/d2:opacity-100">
+								<div class="invisible absolute left-full top-0 z-50 -ml-1 min-w-[200px] pl-2 opacity-0 transition-opacity duration-150 group-data-[open]/d2:visible group-data-[open]/d2:opacity-100">
 									<ul class={popupCardCls}>
 										{kids2.map((k) => (
 											<li>

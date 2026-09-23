@@ -9,8 +9,10 @@
  * Отсюда и пункт 25 документа владельца: на vanilla вложенное меню «не
  * раскрывается по наведению», потому что раскрывать нечего.
  *
- * Раскрытие — чистый CSS :hover (group-hover), как у остальных четырёх тем: в
- * шапке нет React-острова, JS-обработчика на живой витрине не будет.
+ * Раскрытие — НАЖАТИЕМ (владелец 24.09: «не по ховеру, а по клику»): пункт с
+ * подменю — кнопка `data-nav-menu-toggle` в обёртке `data-nav-menu`, панель
+ * видна по `data-open` обёртки. Обработчик общий на пять тем —
+ * packages/theme-base/runtime/nav-submenu-toggle.ts.
  *
  * menuType:
  *   - dropdown  — поп-ап под триггером, третий уровень каскадом справа;
@@ -59,18 +61,19 @@ const popupItemCls =
 	</a>
 ) : isMega ? (
 	/* ── РАСШИРЕННОЕ: лист во всю ширину ── */
-	<div class="group/mega flex items-center">
-		<a
-			href={link.href}
-			aria-current={active ? "page" : undefined}
-			class:list={["inline-flex items-center gap-1", linkClass, underlineCls]}
+	<div data-nav-menu class="group/mega flex items-center">
+		<button
+			type="button"
+			data-nav-menu-toggle
+			aria-expanded="false"
+			class:list={["cursor-pointer inline-flex items-center gap-1", linkClass, underlineCls]}
 		>
 			{link.label}
 			<svg class="h-2 w-2 shrink-0 opacity-70" viewBox="0 0 8 8" fill="none" aria-hidden="true">
 				<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
-		</a>
-		<div class="invisible absolute left-0 right-0 top-full z-50 -mt-1 pt-4 opacity-0 transition-opacity duration-150 group-hover/mega:visible group-hover/mega:opacity-100">
+		</button>
+		<div class="invisible absolute left-0 right-0 top-full z-50 -mt-1 pt-4 opacity-0 transition-opacity duration-150 group-data-[open]/mega:visible group-data-[open]/mega:opacity-100">
 			<div class="border-t border-[rgb(var(--color-text,0_0_0)/0.1)] bg-[rgb(var(--color-bg,255_255_255))] shadow-[0_12px_32px_rgba(0,0,0,0.08)]">
 				<div class="mx-auto grid w-full max-w-[1320px] grid-cols-2 gap-x-8 gap-y-6 px-4 py-8 sm:px-5 md:grid-cols-3 md:px-10 lg:grid-cols-4 lg:px-16 xl:px-20">
 					{subs.map((cat) => {
@@ -108,35 +111,40 @@ const popupItemCls =
 	</div>
 ) : (
 	/* ── ВЫПАДАЮЩЕЕ: поп-ап под триггером, третий уровень каскадом справа ── */
-	<div class="group/d1 relative flex items-center">
-		<a
-			href={link.href}
-			aria-current={active ? "page" : undefined}
-			class:list={["inline-flex items-center gap-1", linkClass, underlineCls]}
+	<div data-nav-menu class="group/d1 relative flex items-center">
+		<button
+			type="button"
+			data-nav-menu-toggle
+			aria-expanded="false"
+			class:list={["cursor-pointer inline-flex items-center gap-1", linkClass, underlineCls]}
 		>
 			{link.label}
 			<svg class="h-2 w-2 shrink-0 opacity-70" viewBox="0 0 8 8" fill="none" aria-hidden="true">
 				<path d="M1 2.5 4 5.5 7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
 			</svg>
-		</a>
-		<div class="invisible absolute left-0 top-full z-50 -mt-1 min-w-[220px] pt-3 opacity-0 transition-opacity duration-150 group-hover/d1:visible group-hover/d1:opacity-100">
+		</button>
+		<div class="invisible absolute left-0 top-full z-50 -mt-1 min-w-[220px] pt-3 opacity-0 transition-opacity duration-150 group-data-[open]/d1:visible group-data-[open]/d1:opacity-100">
 			<ul class={popupCardCls}>
 				{subs.map((c2) => {
 					const kids2: NavLink[] = Array.isArray(c2.submenu)
 						? c2.submenu.filter((s) => s && typeof s.label === "string" && s.label.trim() !== "")
 						: [];
 					return (
-						<li class="group/d2 relative">
-							<a href={c2.href} class={popupItemCls}>
-								<span>{c2.label}</span>
-								{kids2.length > 0 && (
+						<li data-nav-menu={kids2.length > 0 ? "" : undefined} class="group/d2 relative">
+							{kids2.length > 0 ? (
+								<button type="button" data-nav-menu-toggle aria-expanded="false" class={`${popupItemCls} w-full cursor-pointer text-left`}>
+									<span>{c2.label}</span>
 									<svg class="h-3 w-3 shrink-0 opacity-60" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 										<path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 									</svg>
-								)}
-							</a>
+								</button>
+							) : (
+								<a href={c2.href} class={popupItemCls}>
+									<span>{c2.label}</span>
+								</a>
+							)}
 							{kids2.length > 0 && (
-								<div class="invisible absolute left-full top-0 z-50 -ml-1 min-w-[200px] pl-2 opacity-0 transition-opacity duration-150 group-hover/d2:visible group-hover/d2:opacity-100">
+								<div class="invisible absolute left-full top-0 z-50 -ml-1 min-w-[200px] pl-2 opacity-0 transition-opacity duration-150 group-data-[open]/d2:visible group-data-[open]/d2:opacity-100">
 									<ul class={popupCardCls}>
 										{kids2.map((k) => (
 											<li>

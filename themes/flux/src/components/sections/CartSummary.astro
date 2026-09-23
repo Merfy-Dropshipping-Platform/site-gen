@@ -35,6 +35,16 @@ const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
 	: undefined;
 const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
+
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
+// md:px-20/2xl:px-80. Без признака — байт в байт прежняя строка. Признак
+// ставит sites (page-blocks designParityFlag).
+const designParity = (Astro.props as any).__designParity === true;
+const cartContainerCls = designParity
+	? "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20"
+	: "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80";
 ---
 
 <section
@@ -48,7 +58,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 	]}
 	style={padStyle}
 >
-	<div class="mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80">
+	<div class={cartContainerCls}>
 		<div class="flex w-full max-w-[343px] flex-col gap-6 pt-1">
 			<div class="flex flex-col gap-4">
 				<p class="max-w-[269px] font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-muted,204_204_204))]">

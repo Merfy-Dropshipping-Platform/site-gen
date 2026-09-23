@@ -106,9 +106,24 @@ const pad = p.padding && typeof p.padding === "object" ? p.padding : undefined;
 const padStyle = pad
 	? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
 	: undefined;
-const containerCls = padStyle
-	? "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:gap-10 md:px-20 2xl:px-80"
-	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-20 md:py-16 2xl:px-80";
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
+// md:px-20/2xl:px-80. gap-8/md:gap-10 и py-10 md:py-16 не трогаем. Без признака
+// — байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
+const CONTAINER_CLS = {
+	designers: {
+		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:gap-10 md:px-10 lg:px-20",
+		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-10 md:py-16 lg:px-20",
+	},
+	legacy: {
+		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:gap-10 md:px-20 2xl:px-80",
+		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:gap-10 md:px-20 md:py-16 2xl:px-80",
+	},
+};
+const containerCls =
+	CONTAINER_CLS[designParity ? "designers" : "legacy"][padStyle ? "custom" : "default"];
 
 // Классы полей — стиль flux (Footer newsletter / Header search): Roboto Flex 16 light,
 // h-12, rounded-8, border surface-токен, bg-white, placeholder #999999, фокус #FA5109.

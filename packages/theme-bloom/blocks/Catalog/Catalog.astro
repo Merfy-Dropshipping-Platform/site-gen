@@ -179,8 +179,8 @@ const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple
 //     едет с инсетнутым фото → ~8px от края фото в обоих состояниях (по Figma).
 //     Применяется И в SSG (BloomProductCard через prop), И в client renderCardHtml
 //     (define:vars cardContainerOn) — parity. Цвета/радиусы — токенами bloom.
-const cardContainerOn =
-  productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+// «Контейнер» карточки убран из панели (владелец 23.09) — «С контейнером» больше не включается; прошлое значение из ревизии не читаем.
+const cardContainerOn = false;
 
 // (7) Отдельной схемы ВНУТРЕННЕГО контейнера каталога больше нет: тестировщик
 //     14.09 (санкционировано владельцем) — «цветовая схема одна для всей
@@ -525,7 +525,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 </style>
 
-<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddMode, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn }}>
+<script is:inline define:vars={{ siteId, pageSize, cardAspectClass, cardContainerOn, showQuickAdd, quickAddMode, quickAddText, btnStyle, btnBg, btnFg, btnBorder, nextPhotoOn, nextPhotoMode }}>
   // is:inline (НЕ module-script): module client-<script> блока НЕ компилится в
   // live build → на проде остаётся сырой путь Catalog.astro?astro&type=script
   // → HTTP 404 → вся клиентская логика мертва. is:inline компилится всегда.
@@ -1369,10 +1369,10 @@ const skeletons = Array.from({ length: skeletonCount });
     });
 
     if (!nextPhotoOn) return;
-    const photoMode =
-      (document.querySelector("[data-next-photo-mode]") || {}).getAttribute?.("data-next-photo-mode") ||
-      "simple";
-    if (photoMode === "zones") {
+    // Режим — СВОЕЙ секции (define:vars). Раньше брался с первого элемента
+    // страницы с data-next-photo-mode: секция выше по странице могла включить
+    // каталогу чужой режим.
+    if (nextPhotoMode === "zones") {
       // Зоны: положение курсора по X внутри картинки выбирает фото 1..4.
       document.addEventListener("mousemove", (event) => {
         const img = event.target.closest("img[data-img-primary]");

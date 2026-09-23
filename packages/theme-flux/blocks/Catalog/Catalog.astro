@@ -187,13 +187,12 @@ const nextPhotoMode = productCard?.nextPhotoMode === "zones" ? "zones" : "simple
 // Явное 'false' обязано ГАСИТЬ плашку (inline transparent — иначе глобальный
 // фоллбэк fbfbfb делал настройку мёртвой; ловля theme-registry 2026-08-09),
 // явное 'true' — включать, НЕ ЗАДАНО — канон темы (var действует).
+// «Контейнер» убран из панели (владелец 23.09): «С контейнером» больше не
+// включается — заданное значение (любое) гасит плашку, как явное 'false';
+// не задано — канон темы, как и раньше.
 const cardBgProp = productCard?.cardBackground;
-const cardContainerState =
-  cardBgProp === "true" || cardBgProp === true
-    ? "on"
-    : cardBgProp === "false" || cardBgProp === false
-      ? "off"
-      : "auto";
+const cardContainerState: "on" | "off" | "auto" =
+  cardBgProp === undefined || cardBgProp === null || cardBgProp === "" ? "auto" : "off";
 const cardContainerOn = cardContainerState === "on";
 
 // (7) Отдельной схемы ВНУТРЕННЕГО контейнера каталога больше нет: тестировщик

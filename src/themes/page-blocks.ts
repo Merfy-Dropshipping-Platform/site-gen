@@ -232,7 +232,9 @@ export async function extractPageBlocks(
 export function applyCollectionContextToProps(
   blockType: string,
   props: Record<string, unknown>,
-  ctx: { name?: string; description?: string; image?: string } | undefined,
+  ctx:
+    | { name?: string; description?: string; image?: string; slug?: string }
+    | undefined,
 ): Record<string, unknown> {
   const out = substituteCollectionVars(props, ctx) as Record<string, unknown>;
   // Catalog на странице коллекции: заголовок/подзаголовок из самой коллекции
@@ -252,6 +254,13 @@ export function applyCollectionContextToProps(
     const collName = ctx?.name && ctx.name.trim() ? ctx.name : 'Каталог';
     if (!String(ctText).trim()) out.categoryTitle = collName;
     if (!String(csText).trim()) out.categorySubtitle = ctx?.description ?? '';
+    // Товары «Группы товаров» на странице коллекции — из ЭТОЙ коллекции, как
+    // на витрине: там адрес `collections/<slug>` перебивает проп секции
+    // (`collectionSlug={slug}` в generatePuckCollectionsSlugPage). Превью
+    // брало имя и описание из контекста, а сетке оставляло проп из ревизии:
+    // после любой правки в панели на странице «Bloom» были все 6 товаров
+    // магазина (замер 23.09 на сайте владельца, satin, путь конструктора).
+    if (ctx?.slug && ctx.slug !== 'preview') out.collectionSlug = ctx.slug;
   }
   return out;
 }

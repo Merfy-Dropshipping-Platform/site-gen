@@ -126,8 +126,8 @@ const showCartBtn = quickAddMode !== "none";
 // кнопка НЕ во всю ширину); false (ДЕФОЛТ) → флеш к краям (фото full-bleed,
 // кнопка full-width). Единственная разница состояний — padding 12px (он же
 // делает кнопку w-full inset). Нормализуем рядом с quickAddMode (тот же паттерн).
-const cardContainerOn =
-  productCard?.cardBackground === "true" || productCard?.cardBackground === true;
+// «Контейнер» карточки убран из панели (владелец 23.09) — «С контейнером» больше не включается; прошлое значение из ревизии не читаем.
+const cardContainerOn = false;
 
 // §9 Контракта секции: настройки карточки работают во ВСЕХ путях рендера —
 // SSR-карточка (SatinProductCard), SSR-плейсхолдер и клиентская гидрация

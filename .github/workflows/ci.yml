@@ -1669,6 +1669,11 @@ jobs:
       # tokens-css берёт надписи карточки по метке [data-nt$="-product-card"].
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/product-card-typography.spec.ts
+      # «Продолжить покупки» пустой корзины ведёт на «общую» коллекцию магазина
+      # (коллекция по умолчанию, в т.ч. переименованная), пять тем. Было (прод
+      # 23.09): bloom — /skin-care, vanilla — /catalog/textile (заглушки вёрстки).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-continue-shopping.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

@@ -23,7 +23,15 @@ export const ТЕМЫ: Тема[] = ["bloom", "satin", "flux", "rose", "vanilla"
 
 /** Что витринное API отдаёт про магазин. Без полей — пустой магазин. */
 export interface Магазин {
-  коллекции?: Array<{ id: string; title: string; slug: string }>;
+  коллекции?: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    /** «Общая» коллекция магазина (product: ensureDefaultCollection). */
+    isDefault?: boolean;
+  }>;
+  /** Содержимое `/data/collections.json` сайта; нет — файла нет (404). */
+  файлКоллекций?: unknown;
   /** Значения группы «Цвет» у товаров магазина. */
   цвета?: string[];
   /** Товары в форме /api/store/products (title, slug, basePrice, images…). */
@@ -55,8 +63,19 @@ function ответ(body: unknown): Response {
   } as unknown as Response;
 }
 
+const нет404 = {
+  ok: false,
+  status: 404,
+  json: async () => null,
+  text: async () => "",
+} as unknown as Response;
+
 async function витрина(input: RequestInfo | URL): Promise<Response> {
   const адрес = String(input);
+  if (адрес.includes("/data/collections.json"))
+    return магазин.файлКоллекций === undefined
+      ? нет404
+      : ответ(магазин.файлКоллекций);
   if (адрес.includes("/api/store/collections"))
     return ответ({ collections: магазин.коллекции ?? [] });
   if (адрес.includes("/api/store/filters"))
@@ -133,8 +152,34 @@ export async function дождаться(): Promise<void> {
  * Показать секцию «Группа товаров» темы. `новаяСтраница: false` — перерисовка
  * блока в превью конструктора: слушатели, флажки и глобалы остаются.
  */
-export async function показать(
+export function показать(
   тема: Тема,
+  props: Record<string, unknown> = {},
+  новаяСтраница = true,
+  м: Магазин = {},
+): Promise<HTMLElement> {
+  return показатьБлок(
+    тема,
+    "Catalog",
+    {
+      siteId: "site-1",
+      colorScheme: "scheme-1",
+      cards: 4,
+      columns: 2,
+      showFilter: "true",
+      showSort: "true",
+      filterPosition: "top",
+      ...props,
+    },
+    новаяСтраница,
+    м,
+  );
+}
+
+/** Показать любой блок темы (id `<Блок>-1`) с его скриптами. */
+export async function показатьБлок(
+  тема: Тема,
+  блок: string,
   props: Record<string, unknown> = {},
   новаяСтраница = true,
   м: Магазин = {},
@@ -147,23 +192,10 @@ export async function показать(
   }
   // Рендер секции — отдельный процесс, на показ уходят секунды: одинаковые
   // пропы рендерим один раз (скрипты всё равно исполняются заново).
-  const ключ = `${тема} ${JSON.stringify(props)}`;
+  const ключ = `${тема} ${блок} ${JSON.stringify(props)}`;
   if (!рендеры.has(ключ)) {
     const [r] = renderSections(тема, [
-      {
-        block: "Catalog",
-        props: {
-          id: "Catalog-1",
-          siteId: "site-1",
-          colorScheme: "scheme-1",
-          cards: 4,
-          columns: 2,
-          showFilter: "true",
-          showSort: "true",
-          filterPosition: "top",
-          ...props,
-        },
-      },
+      { block: блок, props: { id: `${блок}-1`, ...props } },
     ]);
     if (r.error) throw new Error(`${тема}: ${r.error}`);
     рендеры.set(ключ, r.html ?? "");
@@ -190,7 +222,7 @@ export async function показать(
   document.dispatchEvent(new Event("DOMContentLoaded"));
   await дождаться();
   const корень = document.querySelector<HTMLElement>(
-    '[data-puck-component-id="Catalog-1"]',
+    `[data-puck-component-id="${блок}-1"]`,
   );
   if (!корень) throw new Error(`${тема}: нет корня секции`);
   return корень;

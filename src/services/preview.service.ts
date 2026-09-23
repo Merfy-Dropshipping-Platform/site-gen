@@ -1236,6 +1236,9 @@ function scrollSelfTo(el, mode) {
  *  - Forms are blocked (preventDefault) because the iframe runs inside the
  *    editor, not a live storefront — submitting would either 404 or trigger
  *    real orders. An empty `formId` falls back to the form's index.
+ *  - Exception: `form[role="search"]` (header search) sends `navigate`
+ *    instead — the query has nowhere to 404 or charge a card, and the
+ *    merchant expects the same "Найти" behaviour as on the live storefront.
  */
 
 // ВНИМАНИЕ: это ШАБЛОННАЯ строка — одиночный `\\d` в ней схлопывается в `d`
@@ -2380,9 +2383,32 @@ const PREVIEW_NAV_AGENT_INLINE = `
     }
   }, true);
 
+  // Форма поиска шапки (form[role="search"]) в превью не блокируется, как
+  // остальные формы, — «Найти» ведёт в каталог с запросом, ровно как на
+  // живой витрине.
+  function isSearchForm(form) {
+    return !!form && form.getAttribute('role') === 'search';
+  }
+
+  function searchFormQuery(form) {
+    var field = form.querySelector('[name="q"]');
+    return field ? field.value : '';
+  }
+
+  function searchFormPath(form) {
+    var action = form.getAttribute('action') || '/catalog';
+    var query = searchFormQuery(form);
+    if (!query) return action;
+    return action + '?' + new URLSearchParams({ q: query }).toString();
+  }
+
   document.addEventListener('submit', function (e) {
     e.preventDefault();
     var form = e.target;
+    if (isSearchForm(form)) {
+      post({ type: 'navigate', path: searchFormPath(form) });
+      return;
+    }
     var id = (form && (form.id || form.getAttribute('name'))) || '';
     post({ type: 'form-submit-blocked', formId: id });
   }, true);

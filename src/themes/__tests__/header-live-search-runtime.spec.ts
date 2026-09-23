@@ -330,13 +330,22 @@ describe("initHeaderSearch — поведение области поиска", 
     delete (window as any).fetch;
   });
 
-  it("один символ — запроса нет, меню на месте", async () => {
-    type("н");
+  it("пустая строка — запроса нет, меню на месте", async () => {
+    type("");
     jest.advanceTimersByTime(1000);
     await flush();
     expect(calls).toHaveLength(0);
     expect(results().hidden).toBe(true);
     expect(nav().hidden).toBe(false);
+  });
+
+  it("один символ — запрос уходит сразу, минимум длины не 2", async () => {
+    type("н");
+    jest.advanceTimersByTime(300);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe(
+      `https://gateway.merfy.ru/api/store/products/search?store_id=${STORE}&q=%D0%BD&limit=4`,
+    );
   });
 
   it("запрос уходит после паузы, с магазином и лимитом области; ответ рисует тема", async () => {

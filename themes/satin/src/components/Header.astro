@@ -114,7 +114,11 @@ const desktopRowCls = [
 	"satin-pad mx-auto w-full max-w-[1920px] items-center",
 	singleRowCentered ? "grid grid-cols-[1fr_auto_1fr]" : "flex",
 	singleRowCentered ? HEADER_BP.centerRowFlow : "",
-	headerPad ? "" : "min-h-16",
+	// Минимальная высота ряда — всегда: «Отступы» панели добавляются СВЕРХУ неё.
+	// Раньше заданный отступ снимал min-h-16, и засеянные темой 0/0 сжимали
+	// шапку до 55 (тестер 24.09: «после выбора темы сбрасываются Отступы у
+	// Header» — меню прилипало к верху). Теперь 0/0 = стандартная шапка (65).
+	"min-h-16",
 	logoLeft ? "gap-8" : "justify-between",
 ]
 	.filter(Boolean)

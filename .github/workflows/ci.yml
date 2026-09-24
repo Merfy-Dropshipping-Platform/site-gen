@@ -1618,6 +1618,10 @@ jobs:
       # «Промежуточный итог» пропадал при пустой корзине).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-ignores-page-sections.spec.ts
+      # satin: пустое «Изображение» слушает все настройки, шапка с отступами не
+      # сжимается (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/satin-empty-hero-and-header-padding.spec.ts
       # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
       # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
       - if: false

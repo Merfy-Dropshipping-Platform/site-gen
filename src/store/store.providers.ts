@@ -21,6 +21,7 @@ import { CreateStoreCommand } from "./commands/create-store.command";
 import { DrizzleStoreRegistry, STORE_REGISTRY } from "./store-registry";
 import { DbThemeCatalog, THEME_CATALOG } from "./theme-catalog";
 import { StoreCommandsController } from "./store-commands.controller";
+import { SetThemeCommand } from "./theme-switch/set-theme.command";
 
 export const STORE_PROVIDERS: Provider[] = [
   { provide: LIFECYCLE_REPOSITORY, useClass: DrizzleLifecycleRepository },
@@ -31,6 +32,7 @@ export const STORE_PROVIDERS: Provider[] = [
   StoreLifecycleReconciler,
   StoreLifecycleScheduler,
   CreateStoreCommand,
+  SetThemeCommand,
 ];
 
 export const STORE_CONTROLLERS: Type<unknown>[] = [StoreCommandsController];

@@ -1291,6 +1291,37 @@ export class SitesDomainService {
   }
 
   /**
+   * Выбор темы магазином — строка `site` после команды `SetTheme` (этап 3,
+   * кусок 3.3): `themeId` и дата выбора темы (`themeAppliedAt`, см. `update()`).
+   * Ревизию команда пишет сама через порт StoreContent и ДО этого вызова —
+   * чтобы при сбое записи магазин не остался с новой темой и старым содержимым.
+   */
+  async recordThemeChoice(params: {
+    tenantId: string;
+    siteId: string;
+    themeId: string;
+    actorUserId?: string;
+  }): Promise<boolean> {
+    const now = new Date();
+    const [row] = await this.db
+      .update(schema.site)
+      .set({
+        themeId: params.themeId,
+        themeAppliedAt: now,
+        updatedAt: now,
+        ...(params.actorUserId ? { updatedBy: params.actorUserId } : {}),
+      })
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      )
+      .returning({ id: schema.site.id });
+    return Boolean(row);
+  }
+
+  /**
    * Debounced republish после сохранения branding. Сбрасывает предыдущий таймер
    * по siteId — серия быстрых сохранений (4 фавикона по одному) коалесцируется в
    * одну пересборку live. Best-effort и неблокирующе, как theme-switch republish;

@@ -13,6 +13,7 @@
 import { Controller, Inject, Logger } from "@nestjs/common";
 import { MessagePattern, Payload } from "@nestjs/microservices";
 import { CreateStoreCommand } from "./commands/create-store.command";
+import { SetThemeCommand } from "./theme-switch/set-theme.command";
 import { toRpcResponse, type CommandResult } from "./commands/command-result";
 import {
   LIFECYCLE_REPOSITORY,
@@ -31,6 +32,8 @@ export class StoreCommandsController {
   constructor(
     @Inject(CreateStoreCommand)
     private readonly createStoreCommand: Pick<CreateStoreCommand, "execute">,
+    @Inject(SetThemeCommand)
+    private readonly setThemeCommand: Pick<SetThemeCommand, "execute">,
     @Inject(LIFECYCLE_REPOSITORY)
     private readonly lifecycle: Pick<LifecycleRepository, "read">,
   ) {}
@@ -40,6 +43,11 @@ export class StoreCommandsController {
     return this.run("create_store", () =>
       this.createStoreCommand.execute(data),
     );
+  }
+
+  @MessagePattern("sites.cmd.set_theme")
+  async setTheme(@Payload() data: unknown) {
+    return this.run("set_theme", () => this.setThemeCommand.execute(data));
   }
 
   @MessagePattern("sites.query.store_status")

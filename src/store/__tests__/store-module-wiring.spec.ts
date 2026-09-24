@@ -12,6 +12,11 @@ import { StoreLifecycleScheduler } from "../lifecycle/store-lifecycle.scheduler"
 import { CreateStoreCommand } from "../commands/create-store.command";
 import { StoreCommandsController } from "../store-commands.controller";
 import {
+  SetThemeCommand,
+  type ThemeSwitchSites,
+} from "../theme-switch/set-theme.command";
+import type { StoreProvisioning } from "../lifecycle/lifecycle.steps";
+import {
   BILLING_RMQ_SERVICE,
   PG_CONNECTION,
   USER_RMQ_SERVICE,
@@ -44,6 +49,7 @@ describe("провода Nest: STORE_PROVIDERS + входы на команде"
       StoreLifecycleReconciler,
       StoreLifecycleScheduler,
       CreateStoreCommand,
+      SetThemeCommand,
       StoreCommandsController,
       UserListenerController,
       SiteProvisioningScheduler,
@@ -52,3 +58,15 @@ describe("провода Nest: STORE_PROVIDERS + входы на команде"
     }
   });
 });
+
+/**
+ * Команды и шаги получают `SitesDomainService` через узкие интерфейсы.
+ * Проверка компилятором: сервис им соответствует (иначе этот файл не
+ * соберётся ts-jest и набор упадёт).
+ */
+export const sitesSatisfiesThemeSwitch = (
+  s: SitesDomainService,
+): ThemeSwitchSites => s;
+export const sitesSatisfiesProvisioning = (
+  s: SitesDomainService,
+): StoreProvisioning => s;

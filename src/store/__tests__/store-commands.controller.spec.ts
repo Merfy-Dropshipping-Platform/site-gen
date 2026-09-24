@@ -13,12 +13,14 @@ import { makeSiteRow } from "./support/in-memory-lifecycle";
 
 function makeController() {
   const createStore = { execute: jest.fn() };
+  const setTheme = { execute: jest.fn() };
   const lifecycle = { read: jest.fn() };
   const controller = new StoreCommandsController(
     createStore as any,
+    setTheme as any,
     lifecycle as any,
   );
-  return { controller, createStore, lifecycle };
+  return { controller, createStore, setTheme, lifecycle };
 }
 
 describe("sites.cmd.create_store", () => {
@@ -62,6 +64,38 @@ describe("sites.cmd.create_store", () => {
       success: false,
       code: "internal_error",
       message: "db down",
+    });
+  });
+});
+
+describe("sites.cmd.set_theme", () => {
+  it("эффект с отчётом — в data; отказ — code с деталями", async () => {
+    const { controller, setTheme } = makeController();
+    setTheme.execute.mockResolvedValueOnce({
+      ok: true,
+      effect: { changed: true, toThemeId: "flux", report: { lost: [] } },
+    });
+    expect(
+      await controller.setTheme({
+        tenantId: "t1",
+        siteId: "s1",
+        themeId: "flux",
+      }),
+    ).toEqual({
+      success: true,
+      data: { changed: true, toThemeId: "flux", report: { lost: [] } },
+    });
+
+    setTheme.execute.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "unknown_theme", themeId: "x", available: ["rose"] },
+    });
+    expect(await controller.setTheme({})).toEqual({
+      success: false,
+      code: "unknown_theme",
+      message: "unknown_theme",
+      themeId: "x",
+      available: ["rose"],
     });
   });
 });

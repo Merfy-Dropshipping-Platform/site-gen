@@ -197,34 +197,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
 // цвета не меняются; без признака — прежние классы. Признак ставит sites.
 const designParity = p.__designParity === true;
-
-// «Галерея» как у верстальщиков (Bloom-theme @5aae2ad6 Gallery.astro): половины
-// пополам, большая плитка — квадрат, и высоту секции задаёт он. Поэтому секция
-// растёт вместе с шириной экрана, а пропорции не плывут. Без признака боковая
-// колонка 429px держит высоту 798px при любой ширине: на 1536 большая плитка
-// вытягивалась до 491×798, секция стояла на 1124 (владелец 24.09: «разъезжается»).
-// Две плитки — их вёрстка дословно. Три — правая пара делит высоту квадрата: колонка
-// не распирает строку (h-0 + min-h-full). Одна — как было.
-const sideFillsHero = designParity && sideTiles.length > 1;
-const GALLERY_LAYOUT = designParity
-	? {
-			grid: soloTile ? "lg:grid-cols-1" : "lg:grid-cols-2",
-			align: sideFillsHero ? "lg:items-stretch" : "lg:items-start",
-			hero: soloTile ? "aspect-[16/9]" : "aspect-square",
-			side: sideFillsHero ? " lg:h-0 lg:min-h-full" : "",
-			tile: sideFillsHero ? "group flex min-h-0 flex-col lg:flex-1" : "group block",
-			media: sideFillsHero ? "aspect-[652/594] lg:aspect-auto lg:min-h-0 lg:flex-1" : "aspect-[652/594]",
-			caption: "mt-4",
-		}
-	: {
-			grid: gridLayoutCls,
-			align: "lg:items-stretch",
-			hero: heroSizeCls,
-			side: "",
-			tile: "group block",
-			media: "aspect-[652/594]",
-			caption: "mt-5",
-		};
 ---
 
 <section
@@ -258,11 +230,11 @@ const GALLERY_LAYOUT = designParity
 			></h2>
 		))}
 
-		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4 ${GALLERY_LAYOUT.align} ${GALLERY_LAYOUT.grid}`} data-animate data-animate-delay="0.1s">
+		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4 lg:items-stretch ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
 			{heroTile && (
 				<a
 					href={heroTile.href}
-					class={`group relative block ${GALLERY_LAYOUT.hero} w-full min-w-0 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
+					class={`group relative block ${heroSizeCls} w-full min-w-0 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]${heroOrderCls}`}
 					aria-label={heroTile.alt || heroTile.label || "Перейти в каталог"}
 					data-gallery-product={heroTile.kind === "product" ? (heroTile.ref ?? undefined) : undefined}
 					data-gallery-collection={heroTile.kind === "collection" ? (heroTile.ref ?? undefined) : undefined}
@@ -282,11 +254,11 @@ const GALLERY_LAYOUT = designParity
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex w-full min-h-0 min-w-0 flex-col ${designParity ? "gap-4" : "gap-5"}${GALLERY_LAYOUT.side}${sideOrderCls}`}>
+				<div class={`flex w-full min-h-0 min-w-0 flex-col ${designParity ? "gap-4" : "gap-5"}${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}
-							class={GALLERY_LAYOUT.tile}
+							class="group block"
 							aria-label={tile.label || tile.alt || "Изображение"}
 							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
 							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
@@ -294,7 +266,7 @@ const GALLERY_LAYOUT = designParity
 							data-puck-subsection-index={i + 1}
 							data-puck-subsection-field="items"
 						>
-							<div class={`relative ${GALLERY_LAYOUT.media} w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]`}>
+							<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
 								{tile.url && (
 									<img
 										src={tile.url}
@@ -305,7 +277,7 @@ const GALLERY_LAYOUT = designParity
 								)}
 							</div>
 							{(tile.label || tile.price) && (
-								<div class={`${GALLERY_LAYOUT.caption} flex flex-col gap-1`}>
+								<div class="mt-5 flex flex-col gap-1">
 									{tile.label && (
 										<span
 											class={

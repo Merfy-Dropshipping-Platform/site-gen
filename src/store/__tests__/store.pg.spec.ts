@@ -22,6 +22,7 @@ import { SitesDomainService } from "../../sites.service";
 import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
 import { CreateStoreCommand } from "../commands/create-store.command";
 import { DrizzleStoreRegistry } from "../store-registry";
+import { DbThemeCatalog } from "../theme-catalog";
 import { THEMES, catalogOf } from "./support/create-store-harness";
 
 const url = process.env.SITES_TEST_DATABASE_URL;
@@ -303,6 +304,45 @@ suite("сага рождения на настоящем Postgres", () => {
         lifecycleNextAt: null,
         coolifyAppUuid: "central-proxy",
       });
+    });
+  });
+
+  describe("каталог тем на настоящем Postgres (миграция 0019)", () => {
+    it("пять тем витрины с «подходит для»; default и чужая своя тема скрыты", async () => {
+      await db.delete(schema.theme);
+      const row = (
+        id: string,
+        extra: Partial<typeof schema.theme.$inferInsert> = {},
+      ) => ({
+        id,
+        name: id,
+        slug: id,
+        templateId: `${id}-1.0`,
+        isActive: true,
+        ...extra,
+      });
+      await db
+        .insert(schema.theme)
+        .values([
+          row("rose", { fitsFor: ["Одежда"], previewDesktop: "/img/rose.png" }),
+          row("default"),
+          row("flux", { ownerTenantId: "other-tenant" }),
+          row("satin", { isActive: false }),
+        ]);
+
+      const catalog = new DbThemeCatalog(db);
+      const list = await catalog.list("pg-t1");
+
+      expect(list.map((t) => t.id)).toEqual(["rose"]);
+      expect(list[0]).toMatchObject({
+        fitsFor: ["Одежда"],
+        previewDesktop: "/img/rose.png",
+        ownerTenantId: null,
+        baseThemeId: null,
+      });
+      expect(
+        (await catalog.list("other-tenant")).map((t) => t.id).sort(),
+      ).toEqual(["flux", "rose"]);
     });
   });
 

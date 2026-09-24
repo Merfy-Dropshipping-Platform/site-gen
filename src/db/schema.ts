@@ -75,6 +75,13 @@ export const theme = pgTable("theme", {
   presetVersion: integer("preset_version").default(1).notNull(),
   createdAt: timestamp("created_at").$defaultFn(() => new Date()),
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
+  // Этап 3, кусок 3.4 (каталог тем, И5). Владелец темы: NULL — тема
+  // платформы, иначе tenantId мерчанта (своя тема — позже, вместе с MCP).
+  ownerTenantId: text("owner_tenant_id"),
+  // Основа своей темы: NULL — тема сама себе основа (пакет packages/theme-<id>).
+  baseThemeId: text("base_theme_id"),
+  // «Подходит для» (Merfy Docs): список строк для каталога кабинета и агента.
+  fitsFor: jsonb("fits_for").$type<string[]>(),
 });
 
 export const site = pgTable("site", {

@@ -25,6 +25,13 @@ function themeRow(id: string, extra: Record<string, unknown> = {}) {
     author: "merfy",
     price: 0,
     isActive: true,
+    templateId: `${id}-1.0`,
+    viewCount: 0,
+    createdAt: null,
+    updatedAt: null,
+    fitsFor: [`для ${id}`],
+    ownerTenantId: null,
+    baseThemeId: null,
     ...extra,
   };
 }
@@ -99,5 +106,58 @@ describe("DbThemeCatalog", () => {
     const catalog = new DbThemeCatalog(db as any);
     expect(catalog.defaultThemeId).toBe(DEFAULT_THEME_ID);
     expect(await catalog.find(catalog.defaultThemeId)).not.toBeNull();
+  });
+});
+
+describe("DbThemeCatalog: этап 3.4 — «подходит для», владелец и основа", () => {
+  it("элемент каталога несёт «подходит для» и превью", async () => {
+    const { db } = dbWith([
+      themeRow("rose", {
+        fitsFor: ["Одежда", "Аксессуары"],
+        previewDesktop: "/img/online_shop_page/Rose_shop_page.png",
+        previewMobile: "/img/online_shop_page/Rose_shop_page_mobile.png",
+      }),
+    ]);
+    const [rose] = await new DbThemeCatalog(db as any).list();
+    expect(rose).toMatchObject({
+      id: "rose",
+      fitsFor: ["Одежда", "Аксессуары"],
+      previewDesktop: "/img/online_shop_page/Rose_shop_page.png",
+      previewMobile: "/img/online_shop_page/Rose_shop_page_mobile.png",
+      ownerTenantId: null,
+      baseThemeId: null,
+      templateId: "rose-1.0",
+    });
+  });
+
+  it("«подходит для» не задано — пустой список, а не null", async () => {
+    const { db } = dbWith([themeRow("rose", { fitsFor: null })]);
+    const [rose] = await new DbThemeCatalog(db as any).list();
+    expect(rose.fitsFor).toEqual([]);
+  });
+
+  it("тема другого тенанта не видна; своя и платформенные — видны", async () => {
+    const rows = [
+      themeRow("rose"),
+      themeRow("flux", { ownerTenantId: "t-other" }),
+      themeRow("satin", { ownerTenantId: "t1" }),
+    ];
+    const catalog = new DbThemeCatalog(dbWith(rows).db as any);
+    expect((await catalog.list("t1")).map((t) => t.id)).toEqual([
+      "rose",
+      "satin",
+    ]);
+    expect((await catalog.list()).map((t) => t.id)).toEqual(["rose"]);
+    expect(await catalog.find("flux", "t1")).toBeNull();
+  });
+
+  it("своя тема на основе (base_theme_id) пока не пригодна: витрина рендерит только темы с собственным пакетом", async () => {
+    const rows = [
+      themeRow("rose"),
+      themeRow("my-rose", { ownerTenantId: "t1", baseThemeId: "rose" }),
+    ];
+    const catalog = new DbThemeCatalog(dbWith(rows).db as any);
+    expect((await catalog.list("t1")).map((t) => t.id)).toEqual(["rose"]);
+    expect(await catalog.find("my-rose", "t1")).toBeNull();
   });
 });

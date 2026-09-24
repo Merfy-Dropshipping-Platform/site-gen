@@ -27,6 +27,8 @@ import { BillingClient } from "../../billing/billing.client";
 import { SitesEventsService } from "../../events/events.service";
 import { UserListenerController } from "../../user/user.listener";
 import { SiteProvisioningScheduler } from "../../scheduler/site-provisioning.scheduler";
+import { ThemesService } from "../../themes.service";
+import { ThemesMicroserviceController } from "../../themes.microservice.controller";
 
 const EXTERNAL = [
   { provide: PG_CONNECTION, useValue: {} },
@@ -39,10 +41,19 @@ const EXTERNAL = [
 ];
 
 describe("провода Nest: STORE_PROVIDERS + входы на команде", () => {
-  it("контейнер собирает доводчик, команду, RPC-вход, регистрацию и cron", async () => {
+  it("контейнер собирает доводчик, команды, RPC-вход, регистрацию, cron и каталог тем", async () => {
     const moduleRef = await Test.createTestingModule({
-      controllers: [...STORE_CONTROLLERS, UserListenerController],
-      providers: [...EXTERNAL, ...STORE_PROVIDERS, SiteProvisioningScheduler],
+      controllers: [
+        ...STORE_CONTROLLERS,
+        UserListenerController,
+        ThemesMicroserviceController,
+      ],
+      providers: [
+        ...EXTERNAL,
+        ...STORE_PROVIDERS,
+        SiteProvisioningScheduler,
+        ThemesService,
+      ],
     }).compile();
 
     for (const token of [
@@ -53,6 +64,8 @@ describe("провода Nest: STORE_PROVIDERS + входы на команде"
       StoreCommandsController,
       UserListenerController,
       SiteProvisioningScheduler,
+      ThemesService,
+      ThemesMicroserviceController,
     ]) {
       expect(moduleRef.get(token)).toBeInstanceOf(token);
     }

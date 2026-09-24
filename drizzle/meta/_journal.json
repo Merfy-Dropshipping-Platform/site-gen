@@ -134,6 +134,13 @@
       "when": 1790222400000,
       "tag": "0018_site_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790226000000,
+      "tag": "0019_theme_catalog",
+      "breakpoints": true
     }
   ]
 }

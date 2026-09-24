@@ -3,13 +3,20 @@
   "presetVersion": 2,
   "name": "Satin",
   "slug": "satin",
-  "description": "Монохромная b/w тема с Kelly Slab, плоскими радиусами.",
+  "description": "Утончённая тема с акцентом на текстуру и детали",
+  "previewDesktop": "/img/online_shop_page/Satin_shop_page.png",
+  "previewMobile": "/img/online_shop_page/Satin_shop_page_mobile.png",
   "templateId": "satin-1.0",
   "price": 0,
   "tags": [
     "monochrome",
     "editorial",
     "bold"
+  ],
+  "fitsFor": [
+    "Аксессуары",
+    "Украшения",
+    "Премиум-товары"
   ],
   "author": "merfy",
   "isActive": true,

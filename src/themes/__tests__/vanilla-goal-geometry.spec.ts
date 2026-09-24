@@ -14,8 +14,8 @@ import { renderSections } from "../../../scripts/qa/lib/render";
  * Что сделано (по полосам главной верстальщиков):
  *   Header — один ряд h-20 (меню, логотип, значки прибиты к первому ряду),
  *     значки 44×44 с рисунком 20px;
- *   Slideshow — подзаголовок вплотную к заголовку, полоса «← 1 2 3 →» gap-4,
- *     область нажатия 44×44;
+ *   Slideshow — подзаголовок вплотную к заголовку, полоса номеров «1 2 3» gap-4,
+ *     область нажатия 44×44 (стрелки убраны 24.09 по просьбе тестера);
  *   MainText — заголовок 16, абзац 14/1.5 в колонке 680, кнопка h-10 px-3 14,
  *     до кнопки 40, полоса lg:py-20 (только при незаданных размерах);
  *   ImageWithText — абзац mt-3; на lg колонка текста 352 и фото 652 по краям
@@ -67,11 +67,12 @@ const СЛУЧАИ: Случай[] = [
     есть: [
       " -mt-4",
       "flex h-16 items-center justify-center gap-4 ",
-      "flex min-h-11 min-w-11 items-center justify-center text-white hover:opacity-90",
       "flex min-h-11 min-w-11 items-center justify-center p-1 font-normal uppercase",
       "flex items-center gap-4",
     ],
-    нет: ["gap-10 md:gap-12", "md:gap-14"],
+    // Стрелок «← →» в полосе больше нет: тестер 24.09 «убери на всех темах
+    // стрелки справа и слева». Номера слайдов остаются.
+    нет: ["gap-10 md:gap-12", "md:gap-14", "flex min-h-11 min-w-11 items-center justify-center text-white hover:opacity-90"],
   },
   {
     имя: "MainText без размеров: промо-полоса верстальщиков",

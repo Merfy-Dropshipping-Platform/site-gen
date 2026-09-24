@@ -21,7 +21,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import {
   COOLIFY_RMQ_SERVICE,
   PG_CONNECTION,
@@ -722,7 +722,15 @@ export class SitesDomainService {
     tenantId: string,
     companyName?: string,
     skipCoolify?: boolean,
-  ): Promise<{ publicUrl: string | undefined }> {
+  ): Promise<{
+    publicUrl: string | undefined;
+    /**
+     * Что не получилось в ЭТОМ вызове: домен (REG.RU через domain-сервис) и/или
+     * проект Coolify. Раньше это уходило только в лог; сага рождения (этап 3)
+     * кладёт причину в `lifecycle_error`. Старые вызывающие поле игнорируют.
+     */
+    failures?: Partial<Record<"domain" | "project", string>>;
+  }> {
     const existingRows = await this.db
       .select({
         domainId: schema.site.domainId,
@@ -745,6 +753,7 @@ export class SitesDomainService {
     if (existing.domainId && existing.coolifyProjectUuid) {
       return { publicUrl: existing.publicUrl ?? undefined };
     }
+    const failures: Partial<Record<"domain" | "project", string>> = {};
 
     let domainId: string | undefined = existing.domainId ?? undefined;
     let publicUrl: string | undefined = existing.publicUrl ?? undefined;
@@ -780,8 +789,10 @@ export class SitesDomainService {
         );
       } else if (domainSettled.status === "rejected") {
         const reason = domainSettled.reason;
+        failures.domain =
+          reason instanceof Error ? reason.message : String(reason);
         this.logger.warn(
-          `finishProvisioning: Domain Service failed for site ${siteId}: ${reason instanceof Error ? reason.message : reason}`,
+          `finishProvisioning: Domain Service failed for site ${siteId}: ${failures.domain}`,
         );
       }
     }
@@ -794,8 +805,10 @@ export class SitesDomainService {
         );
       } else if (projectSettled.status === "rejected") {
         const reason = projectSettled.reason;
+        failures.project =
+          reason instanceof Error ? reason.message : String(reason);
         this.logger.warn(
-          `finishProvisioning: Coolify project failed for site ${siteId}: ${reason instanceof Error ? reason.message : reason}`,
+          `finishProvisioning: Coolify project failed for site ${siteId}: ${failures.project}`,
         );
       }
     }
@@ -857,7 +870,119 @@ export class SitesDomainService {
       });
     }
 
-    return { publicUrl };
+    return { publicUrl, failures };
+  }
+
+  /**
+   * Маршрут хостинга магазина — шаг `route` саги рождения (этап 3, кусок 3.1).
+   *
+   * То же, что reaper делал для старых магазинов (`migrateOrphanedSites`, шаг
+   * 3): роутер центрального прокси или per-site app. Идемпотентно: app уже
+   * записан — ничего не делает. Запись условная (`coolify_app_uuid IS NULL`) —
+   * не перетирает app, который успела записать параллельная публикация.
+   * Провал не бросает — возвращает причину, её сага кладёт в `lifecycle_error`.
+   */
+  async ensureSiteHosting(
+    siteId: string,
+  ): Promise<{ coolifyAppUuid: string | null; error?: string }> {
+    const [site] = await this.db
+      .select({
+        coolifyAppUuid: schema.site.coolifyAppUuid,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+        publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+    if (!site) return { coolifyAppUuid: null, error: "site_not_found" };
+    if (site.coolifyAppUuid) return { coolifyAppUuid: site.coolifyAppUuid };
+
+    const slug =
+      site.storageSlug ||
+      (site.publicUrl
+        ? this.storage.extractSubdomainSlug(site.publicUrl)
+        : null);
+    const hosting = await this.resolveSiteHosting({
+      siteId,
+      slug,
+      projectUuid: site.coolifyProjectUuid,
+    });
+    if (!hosting.coolifyAppUuid) return hosting;
+
+    await this.db
+      .update(schema.site)
+      .set({ coolifyAppUuid: hosting.coolifyAppUuid, updatedAt: new Date() })
+      .where(
+        and(eq(schema.site.id, siteId), isNull(schema.site.coolifyAppUuid)),
+      );
+    return hosting;
+  }
+
+  /**
+   * Роутер центрального прокси (SITES_USE_CENTRAL_PROXY) или per-site static
+   * app в проекте тенанта. Общий код reaper и саги; в строку не пишет —
+   * возвращает app для записи или причину провала.
+   */
+  private async resolveSiteHosting(params: {
+    siteId: string;
+    slug: string | null | undefined;
+    projectUuid: string | null | undefined;
+  }): Promise<{ coolifyAppUuid: string | null; error?: string }> {
+    const { siteId, slug, projectUuid } = params;
+    if (!slug) return { coolifyAppUuid: null, error: "no storage slug yet" };
+    if (this.deployments.centralProxyEnabled) {
+      // Phase 3: central proxy — Traefik dynamic-роутер вместо per-site
+      // контейнера. Sentinel закрывает сайт от повторного провижна.
+      try {
+        await this.deployments.ensureCentralRouter(slug);
+        this.logger.log(
+          `Site ${siteId}: central proxy router ensured for ${buildSiteHost(slug)} (no per-site app)`,
+        );
+        return { coolifyAppUuid: CENTRAL_PROXY_APP_SENTINEL };
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e);
+        this.logger.warn(
+          `Site ${siteId}: central proxy router ensure error: ${error}`,
+        );
+        return { coolifyAppUuid: null, error };
+      }
+    }
+    if (!projectUuid)
+      return { coolifyAppUuid: null, error: "no coolify project yet" };
+    try {
+      this.logger.log(
+        `Site ${siteId}: creating Coolify app for ${buildSiteHost(slug)}`,
+      );
+      const coolifyResult = await this.callCoolify<{
+        success: boolean;
+        appUuid?: string;
+        url?: string;
+        message?: string;
+      }>("coolify.create_static_site_app", {
+        projectUuid,
+        name: `site-${slug}`,
+        subdomain: buildSiteHost(slug),
+        sitePath: `sites/${slug}`,
+      });
+      if (coolifyResult.success && coolifyResult.appUuid) {
+        this.logger.log(
+          `Site ${siteId}: created Coolify app ${coolifyResult.appUuid}`,
+        );
+        return { coolifyAppUuid: coolifyResult.appUuid };
+      }
+      this.logger.warn(
+        `Site ${siteId}: Coolify app creation failed: ${coolifyResult.message}`,
+      );
+      return {
+        coolifyAppUuid: null,
+        error: coolifyResult.message || "coolify_app_create_failed",
+      };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`Site ${siteId}: Coolify app creation error: ${error}`);
+      return { coolifyAppUuid: null, error };
+    }
   }
 
   /**
@@ -1705,8 +1830,11 @@ export class SitesDomainService {
   /**
    * Build initial revision data using PageResolver. Replaces getDefaultContent
    * legacy seed path. Gated by USE_PAGE_RESOLVER ENV flag.
+   *
+   * Публичный с этапа 3: канон темы берут шаг `seed` саги рождения и команда
+   * `SetTheme` (src/store/) — тот же источник, что у `reserve()`/`update()`.
    */
-  private async buildInitialRevision(themeId: string): Promise<any> {
+  async buildInitialRevision(themeId: string): Promise<any> {
     if (!USE_PAGE_RESOLVER) {
       return this.getDefaultContent(themeId);
     }
@@ -2388,11 +2516,15 @@ export class SitesDomainService {
         sql`${schema.tenantProject.coolifyProjectUuid} LIKE 'mock-project-%'`,
       );
 
-    // Сбрасываем mock coolifyProjectUuid в сайтах
+    // Сбрасываем mock coolifyProjectUuid в сайтах. Только у старых магазинов
+    // (lifecycle IS NULL): строки саги рождения ведёт доводчик (этап 3, И7), и
+    // готовый магазин с обнулённым проектом он бы уже не подобрал.
     await this.db
       .update(schema.site)
       .set({ coolifyProjectUuid: null, updatedAt: new Date() })
-      .where(sql`${schema.site.coolifyProjectUuid} LIKE 'mock-project-%'`);
+      .where(
+        sql`${schema.site.coolifyProjectUuid} LIKE 'mock-project-%' AND ${schema.site.lifecycle} IS NULL`,
+      );
 
     this.logger.log("Cleared all mock cache data");
   }
@@ -2417,6 +2549,9 @@ export class SitesDomainService {
     // domainId — authoritative marker: publicUrl/storageSlug derive from the
     // domain record, so `domainId IS NULL` covers all not-yet-provisioned cases
     // (including sites reserved by the async signup flow).
+    // Только старые магазины (`lifecycle IS NULL`): магазины, рождённые командой
+    // CreateStore, ведёт доводчик саги (src/store/lifecycle/) — reaper и
+    // доводчик не делят строки (этап 3, И7).
     const orphanedSites = await this.db
       .select({
         id: schema.site.id,
@@ -2429,7 +2564,7 @@ export class SitesDomainService {
       })
       .from(schema.site)
       .where(
-        sql`${schema.site.deletedAt} IS NULL AND ${schema.site.coolifyAppUuid} IS DISTINCT FROM ${CENTRAL_PROXY_APP_SENTINEL} AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
+        sql`${schema.site.deletedAt} IS NULL AND ${schema.site.lifecycle} IS NULL AND ${schema.site.coolifyAppUuid} IS DISTINCT FROM ${CENTRAL_PROXY_APP_SENTINEL} AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
       );
 
     this.logger.log(
@@ -2485,55 +2620,17 @@ export class SitesDomainService {
         const finalPublicUrl = site.publicUrl || updates.publicUrl;
         const slug = site.storageSlug || updates.storageSlug
           || (finalPublicUrl ? this.storage.extractSubdomainSlug(finalPublicUrl) : null);
-        if (!currentCoolifyAppUuid && slug && this.deployments.centralProxyEnabled) {
-          // Phase 3: central proxy — Traefik dynamic-роутер вместо per-site
-          // контейнера. Sentinel закрывает сайт от повторного провижна.
-          try {
-            await this.deployments.ensureCentralRouter(slug);
-            updates.coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
-            this.logger.log(
-              `Site ${site.id}: central proxy router ensured for ${buildSiteHost(slug)} (no per-site app)`,
-            );
-          } catch (e) {
-            this.logger.warn(
-              `Site ${site.id}: central proxy router ensure error: ${e instanceof Error ? e.message : e}`,
-            );
-          }
-        } else if (!currentCoolifyAppUuid && slug && projectUuid) {
-          try {
-            const sitePath = `sites/${slug}`;
-
-            this.logger.log(
-              `Site ${site.id}: creating Coolify app for ${buildSiteHost(slug)}`,
-            );
-
-            const coolifyResult = await this.callCoolify<{
-              success: boolean;
-              appUuid?: string;
-              url?: string;
-              message?: string;
-            }>("coolify.create_static_site_app", {
-              projectUuid,
-              name: `site-${slug}`,
-              subdomain: buildSiteHost(slug),
-              sitePath,
-            });
-
-            if (coolifyResult.success && coolifyResult.appUuid) {
-              updates.coolifyAppUuid = coolifyResult.appUuid;
-              this.logger.log(
-                `Site ${site.id}: created Coolify app ${coolifyResult.appUuid}`,
-              );
-            } else {
-              this.logger.warn(
-                `Site ${site.id}: Coolify app creation failed: ${coolifyResult.message}`,
-              );
-            }
-          } catch (e) {
-            this.logger.warn(
-              `Site ${site.id}: Coolify app creation error: ${e instanceof Error ? e.message : e}`,
-            );
-          }
+        if (!currentCoolifyAppUuid) {
+          // Общий с шагом `route` саги рождения код (этап 3): роутер
+          // центрального прокси или per-site app. Провал — без app, reaper
+          // повторит на следующем тике, как и раньше.
+          const hosting = await this.resolveSiteHosting({
+            siteId: site.id,
+            slug,
+            projectUuid,
+          });
+          if (hosting.coolifyAppUuid)
+            updates.coolifyAppUuid = hosting.coolifyAppUuid;
         }
 
         // 4. Обновляем сайт

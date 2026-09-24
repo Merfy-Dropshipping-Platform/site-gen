@@ -163,6 +163,22 @@ export const site = pgTable("site", {
   // 'document' (DocumentAdapter, путь конструктора без изменений). 'delta'
   // зарезервировано под модель слоёв (merfy-mcp/docs/plans/2026-09-21-deltas-and-port.md §5).
   contentModel: text("content_model").notNull().default("document"),
+  // Этап 3 (merfy-mcp/docs/plans/2026-09-24-stage3-store-commands-saga.md, И3):
+  // состояние рождения магазина — сага reserved → seeded → provisioned → ready
+  // (+ failed). Заполняется ТОЛЬКО у магазинов, рождённых командой CreateStore;
+  // у старых — NULL, без backfill: их по-прежнему ведут старые cron
+  // (site-provisioning.scheduler), а доводчик саги (src/store/lifecycle/)
+  // берёт только непустые. Не путать со `status` — это про публикацию.
+  lifecycle: text("lifecycle").$type<
+    "reserved" | "seeded" | "provisioned" | "ready" | "failed"
+  >(),
+  // Причина последнего провала шага саги ("provision: REG.RU timeout").
+  lifecycleError: text("lifecycle_error"),
+  // Провалов подряд; сбрасывается при успехе шага.
+  lifecycleAttempts: integer("lifecycle_attempts"),
+  // Не раньше этого времени доводчик берёт строку: пауза повтора или аренда
+  // идущего прохода. NULL — строку можно брать сразу.
+  lifecycleNextAt: timestamp("lifecycle_next_at", { withTimezone: true }),
 });
 
 export const siteDomain = pgTable("site_domain", {

@@ -73,6 +73,7 @@ import { BlocksController } from "./controllers/blocks.controller";
 import { PagesModule } from "./pages/pages.module";
 import { DocumentAdapter } from "./content/document.adapter";
 import { StoreContentService } from "./content/store-content.service";
+import { STORE_PROVIDERS } from "./store/store.providers";
 
 @Module({
   imports: [
@@ -136,6 +137,8 @@ import { StoreContentService } from "./content/store-content.service";
     FragmentPatcher,
     PublicationsService,
     HealthMonitorService,
+    // Этап 3: сага рождения магазина и её доводчик (src/store/).
+    ...STORE_PROVIDERS,
   ],
 })
 export class AppModule {}

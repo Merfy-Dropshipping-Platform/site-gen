@@ -35,5 +35,6 @@ import { bloom } from "./bloom";
 import { flux } from "./flux";
 import { satin } from "./satin";
 import { vanilla } from "./vanilla";
+import { rose } from "./rose";
 
-export const MIRRORS: Record<string, Mirror> = { bloom, flux, satin, vanilla };
+export const MIRRORS: Record<string, Mirror> = { bloom, flux, satin, vanilla, rose };

@@ -20,6 +20,7 @@ import {
   ORGANIZATION_DIRECTORY,
   type OrganizationDirectory,
 } from "../../user/organization-directory.client";
+import { hasStorefrontPackage } from "../theme-catalog";
 import type { LifecycleRow } from "./lifecycle.repository";
 import type { LifecycleStepRunner } from "./store-lifecycle.reconciler";
 
@@ -56,7 +57,13 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
 
   async seed(row: LifecycleRow): Promise<void> {
     if (row.currentRevisionId) return;
-    const themeId = row.themeId ?? "";
+    // Без пакета темы `buildInitialRevision` молча отдал бы легаси-сид rose —
+    // магазин родился бы не на той теме. Команда пускает только темы каталога,
+    // так что это провал данных: пусть будет виден в `lifecycle_error`.
+    const themeId = row.themeId;
+    if (!themeId || !hasStorefrontPackage(themeId)) {
+      throw new Error(`theme "${themeId ?? ""}" has no storefront package`);
+    }
     const document = await this.sites.buildInitialRevision(themeId);
     if (!document) throw new Error(`no starter content for theme "${themeId}"`);
     try {

@@ -105,6 +105,20 @@ describe("шаг seed: стартовая ревизия выбранной те
   });
 });
 
+describe("шаг seed: тема без пакета витрины — провал, а не молчаливый rose", () => {
+  it.each([
+    ["темы нет в строке", { themeId: null }],
+    ["у темы нет пакета витрины", { themeId: "ghost-theme" }],
+  ])("%s — шаг бросает с причиной, ревизия не пишется", async (_t, partial) => {
+    const { steps, saves, sites } = makeDeps();
+    await expect(steps.seed(row(partial as any))).rejects.toThrow(
+      /storefront package/,
+    );
+    expect(saves).toHaveLength(0);
+    expect(sites.buildInitialRevision).not.toHaveBeenCalled();
+  });
+});
+
 describe("шаг provision: домен REG.RU + проект Coolify, имя компании решает sites", () => {
   it("имя компании — из справочника организаций (user-сервис)", async () => {
     const { steps, sites, organizations } = makeDeps();

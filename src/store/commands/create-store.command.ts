@@ -181,7 +181,10 @@ export class CreateStoreCommand {
     });
   }
 
-  /** Дождаться фоновых проходов, запущенных командой (тесты, остановка сервиса). */
+  /**
+   * Дождаться фоновых проходов, запущенных командой (тесты). Хук остановки
+   * сервиса их не ждёт: брошенный проход подберёт тик доводчика после аренды.
+   */
   async settle(): Promise<void> {
     while (this.background.size) await Promise.allSettled([...this.background]);
   }

@@ -192,7 +192,7 @@ export class SetThemeCommand {
     });
   }
 
-  /** Дождаться фоновых переизданий, запущенных командой (тесты, остановка сервиса). */
+  /** Дождаться фоновых переизданий, запущенных командой (тесты). */
   async settle(): Promise<void> {
     while (this.background.size) await Promise.allSettled([...this.background]);
   }

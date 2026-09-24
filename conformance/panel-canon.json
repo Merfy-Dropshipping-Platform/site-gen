@@ -1210,6 +1210,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -4390,6 +4395,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -7548,6 +7558,11 @@
             "visibility": "off"
           },
           "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -10722,6 +10737,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -13880,6 +13900,11 @@
             "visibility": "off"
           },
           "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"

@@ -57,13 +57,39 @@ const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--
 // приоритетнее СКРЫТОГО top-level textSize. У flux/bloom в defaultProps лежит
 // textSize:'medium', и при обратном порядке он глушил выбор мерчанта наглухо.
 const textSize = p.text?.size ?? p.textSize;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// геометрия CTA по актуальной вёрстке flux-theme@be32556d
+// (sections/Puk.astro): абзац max-w-[1320px] 16px leading-normal, группа
+// [заголовок+текст] gap-2 по ширине содержимого (не w-full), группа ↔ кнопка
+// gap-10, кнопка px-6. Карта
+// «верстальщики / прежнее»: меняется ТОЛЬКО ветка значения по умолчанию
+// «Размера текста» (medium/не задан) — small/large мерчанта прежние. Без
+// признака — прежние строки байт в байт. Признак ставит sites
+// (page-blocks designParityFlag).
+const DESIGN_KEY = p.__designParity === true ? "designers" : "legacy";
+const MAIN_TEXT_GEOMETRY = {
+	designers: {
+		textDefault: "text-[16px]",
+		textBox: "max-w-[1320px] font-roboto-flex font-light leading-normal",
+		column: "flex w-full max-w-[1320px] flex-col gap-10",
+		group: "flex flex-col gap-2",
+		btnPad: "px-6",
+	},
+	legacy: {
+		textDefault: "text-[16px] md:text-[19px]",
+		textBox: "max-w-[780px] font-roboto-flex font-light leading-relaxed",
+		column: "flex w-full max-w-[780px] flex-col gap-6 md:gap-8",
+		group: "flex w-full flex-col gap-2 md:gap-4",
+		btnPad: "px-4",
+	},
+}[DESIGN_KEY];
 const textSizeCls =
 	textSize === "small"
 		? "text-[14px] md:text-[16px]"
 		: textSize === "large"
 			? "text-[19px] md:text-[23px]"
-			: "text-[16px] md:text-[19px]"; // medium (canon-default) + absent
-const textCls = `max-w-[780px] font-roboto-flex font-light leading-relaxed text-[rgb(var(--color-text,0_0_0))] ${textSizeCls}`;
+			: MAIN_TEXT_GEOMETRY.textDefault; // medium (canon-default) + absent
+const textCls = `${MAIN_TEXT_GEOMETRY.textBox} text-[rgb(var(--color-text,0_0_0))] ${textSizeCls}`;
 
 // Канон «Позиция» (Figma 1230-42143, паритет rose) — управляет И размещением
 // контент-колонки (posCls: mr/mx/ml-auto), И выравниванием контента внутри
@@ -103,8 +129,7 @@ const btnHref =
 // h-14 rounded-6 px-4 roboto-flex 16 uppercase leading-none, hover:opacity-90; в
 // схемах flux чёрная кнопка = кнопка-2, MANNER §7). outlined = бордер/текст цвета
 // заливки на прозрачном. active:scale в манере flux НЕ используется (§3).
-const btnBase =
-	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-4 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90";
+const btnBase = `inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] ${MAIN_TEXT_GEOMETRY.btnPad} font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90`;
 const btnCls =
 	p.buttonStyle === "outlined"
 		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
@@ -161,8 +186,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    двигает колонку (лево/центр/право), alignCls выравнивает контент внутри.
 		    Ритм неравномерный — внутренняя группа [заголовок+текст] gap-2 md:gap-4,
 		    группа↔кнопка gap-6 md:gap-8 (манера flux, эталон Puk). */}
-		<div class={`flex w-full max-w-[780px] flex-col gap-6 md:gap-8 ${posCls} ${alignCls}`}>
-			<div class="flex w-full flex-col gap-2 md:gap-4">
+		<div class={`${MAIN_TEXT_GEOMETRY.column} ${posCls} ${alignCls}`}>
+			<div class={MAIN_TEXT_GEOMETRY.group}>
 				{
 					heading && !isFieldHidden('heading') && (
 						<h2

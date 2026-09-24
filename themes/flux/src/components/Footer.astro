@@ -233,6 +233,31 @@ const FOOTER_CONTAINER_CLS = {
 };
 const footerContainerCls =
 	FOOTER_CONTAINER_CLS[designParity ? "designers" : "legacy"][footerPadStyle ? "custom" : "default"];
+// PARITY_DESIGN — размеры элементов подвала по той же вёрстке
+// (Footer.astro@be32556d): поле рассылки h-14 шириной до 429px, текст в нём 16,
+// кнопка-стрелка 44×44; иконки соцсетей в кнопках 44×44 через gap-2; полоса
+// подписи высотой 64px, кегль 14 → md:16. Цвета не трогаются. Карта
+// «верстальщики / прежнее», без признака — прежние строки байт в байт.
+const FOOTER_GEOMETRY = {
+	designers: {
+		form: "flex h-14 w-full max-w-[429px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4",
+		input: "min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[#999999] outline-none",
+		submit: "flex size-11 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80",
+		socialRow: "flex items-center gap-2",
+		socialLink: "flex size-11 items-center justify-center transition-opacity hover:opacity-70",
+		strip: "flex h-[64px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))]",
+		stripText: "px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]",
+	},
+	legacy: {
+		form: "flex h-14 w-full max-w-[652px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4 md:h-16",
+		input: "min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[#999999] outline-none md:text-[20px]",
+		submit: "flex size-8 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80",
+		socialRow: "flex items-center gap-4",
+		socialLink: "flex size-6 items-center justify-center transition-opacity hover:opacity-70",
+		strip: "flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))] md:h-[100px]",
+		stripText: "px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]",
+	},
+}[designParity ? "designers" : "legacy"];
 
 // Паритет с Rose (rose Footer.astro, 8 коммитов 80f57884/a39fcb8a/79b14bb9/97d31708/
 // 107c3ea2/c60f6206/b71bd733): поле «Выравнивание» уже показывается в сайдбаре (общий
@@ -301,7 +326,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 			    промокода «Сводки заказа» (fix b19). Фолбэк 255_255_255 = прежний вид.
 			    Сторож: pnpm test:scheme-targets. */}
 			<form
-				class="flex h-14 w-full max-w-[652px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4 md:h-16"
+				class={FOOTER_GEOMETRY.form}
 				data-newsletter-form
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="997"
@@ -313,12 +338,12 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 					required
 					placeholder={nlPlaceholder}
 					aria-label="Email"
-					class="min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[#999999] outline-none md:text-[20px]"
+					class={FOOTER_GEOMETRY.input}
 				/>
 				<button
 					type="submit"
 					aria-label="Подписаться"
-					class="flex size-8 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80"
+					class={FOOTER_GEOMETRY.submit}
 				>
 					{/* arrow-right.svg viewBox 17.4×10.2. NtIcon <img class="size-8"> +
 					    preserveAspectRatio="none" растягивает шеврон в квадрат — «сломанная»
@@ -416,14 +441,14 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 					</div>
 					)}
 					{socials.length > 0 && (
-					<div class="flex items-center gap-4">
+					<div class={FOOTER_GEOMETRY.socialRow}>
 						{socials.map((s: any) => (
 							<a
 								href={s.href}
 								target="_blank"
 								rel="noopener noreferrer"
 								aria-label={s.platform}
-								class="flex size-6 items-center justify-center transition-opacity hover:opacity-70"
+								class={FOOTER_GEOMETRY.socialLink}
 							>
 								<FluxNtIcon name={s.icon} sizeClass="size-6" />
 							</a>
@@ -452,13 +477,13 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 	    появлялась белая полоса. */}
 	{bottomStripVisible && (
 		<div
-			class="flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))] md:h-[100px]"
+			class={FOOTER_GEOMETRY.strip}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"
 		>
 			<p
-				class="px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]"
+				class={FOOTER_GEOMETRY.stripText}
 				data-puck-subsection-parent={id}
 				data-puck-subsection-index="993"
 				data-puck-subsection-field="copyright"

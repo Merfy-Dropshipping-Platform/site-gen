@@ -100,7 +100,26 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
 // с md (768px) и выше grid-template-columns задаёт <style> по --cols (слайдер
 // «Колонки» перебивает md:grid-cols-4).
-const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls;
+// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
+// геометрия по актуальной вёрстке flux-theme@be32556d. Карта «верстальщики /
+// прежнее»; без признака — прежние строки байт в байт.
+//   • карточка (components/ProductCard.astro): текстовый блок ↔ кнопка gap-6,
+//     кнопка h-12 px-4 font-light, кегль 14 → md:16. Правила висят на СЕТКЕ
+//     (arbitrary-варианты), а не на карточке: живая гидрация
+//     (renderCardHtml) перезаписывает innerHTML сетки, класс сетки остаётся;
+//   • заголовок по центру (sections/Popular.astro: text-center);
+//   • «Смотреть ещё» — кегль 16 на всех ширинах.
+const DESIGN_KEY = p.__designParity === true ? "designers" : "legacy";
+const GRID_EXTRA_CLS = {
+	designers:
+		" [&_[data-nt=flux-product-card]>div:last-child]:gap-6 [&_[data-add-to-cart]]:h-12 [&_[data-add-to-cart]]:px-4 [&_[data-add-to-cart]]:font-light md:[&_[data-add-to-cart]]:text-[16px]",
+	legacy: "",
+}[DESIGN_KEY];
+const HEAD_WRAP_CLS = {
+	designers: "flex flex-col gap-2 text-center",
+	legacy: "flex flex-col gap-2",
+}[DESIGN_KEY];
+const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls + GRID_EXTRA_CLS;
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС
@@ -220,8 +239,12 @@ const viewAllHref =
 // 1195-42536): link = текстовая ссылка с подчёркиванием, secondary = контурная
 // (бордер в тонах кнопки-2), primary/отсутствие = чёрная CTA манеры (заливка
 // кнопки-2). Манера flux: font-roboto-flex, rounded-button (6px), токены кнопки-2.
-const viewAllBase =
-	"inline-flex h-12 items-center justify-center font-roboto-flex text-[14px] font-normal leading-normal transition-opacity md:text-[16px]";
+const viewAllBase = {
+	designers:
+		"inline-flex h-12 items-center justify-center font-roboto-flex text-[16px] font-normal leading-normal transition-opacity",
+	legacy:
+		"inline-flex h-12 items-center justify-center font-roboto-flex text-[14px] font-normal leading-normal transition-opacity md:text-[16px]",
+}[DESIGN_KEY];
 const viewAllCls =
 	p.buttonStyle === "link"
 		? `${viewAllBase} px-0 text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 hover:opacity-70`
@@ -355,7 +378,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	<div class={containerCls} style={paddingStyle}>
 		{!isFieldHidden('heading') && (
 		<div
-			class="flex flex-col gap-2"
+			class={HEAD_WRAP_CLS}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"

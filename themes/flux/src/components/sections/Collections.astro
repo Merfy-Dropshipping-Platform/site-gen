@@ -95,7 +95,16 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
 // с md (768px) grid-template-columns задаёт <style> по --cols (слайдер «Колонки»
 // перебивает md:grid-cols-4).
-const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4";
+// PARITY_DESIGN: сетка актуальной вёрстки flux-theme@be32556d
+// (sections/Collections.astro: `grid grid-cols-1 gap-4 sm:grid-cols-3`) — на
+// телефоне плитка во всю ширину, с sm три в ряд; с md по-прежнему решает
+// «Колонки» (--cols ниже). Без признака — прежняя строка байт в байт.
+// Признак объявлен ниже (designParity), здесь читается напрямую из пропса.
+const GRID_CLS = {
+	designers: "grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-4",
+	legacy: "grid grid-cols-2 gap-4 md:grid-cols-4",
+};
+const gridCls = GRID_CLS[p.__designParity === true ? "designers" : "legacy"];
 const gridStyle = `--cols:${colsN}`;
 
 // Канон collections[] (≤10): плитки коллекций из пропса при непустом массиве.

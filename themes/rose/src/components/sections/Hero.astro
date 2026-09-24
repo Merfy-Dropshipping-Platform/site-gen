@@ -266,6 +266,54 @@ const heroContentWrapCls = designParity
 // затемнение обязано включаться везде, иначе на мобиле оно не читалось бы.
 const heroOverlayVisibleCls = designParity ? "block" : "hidden md:block";
 
+// ПУСТОЕ СОСТОЯНИЕ (заглушка до своих фото и текста) слушает те же настройки,
+// что заполненное: «Затемнение», «Позиция», «Выравнивание», «Размер заголовка»,
+// «Размер текста», «Кнопка дополнительная». Раньше заглушка стояла по центру
+// жёсткими классами при любых значениях (тестер 24.09: «Изображение по всем
+// настройкам сломалась, не принимает изменения»). Классы — те же, что у
+// заполненной ветки выше; текст заглушки лежит поверх фото на всех ширинах,
+// поэтому берётся «оверлейный» вариант правил (как под PARITY_DESIGN).
+// Без своего значения — то, что показывает панель: «Выравнивание» по центру
+// (theme.json), размеры «Большой» (прежние кегли заглушки байт-в-байт),
+// «Позиция» по центру — у свежей секции панель пишет скрытый contentPosition
+// 'center' (Hero.puckConfig defaults), заглушка стояла там же.
+const EMPTY_EDGE_PAD = "pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
+const EMPTY_V_CLS: Record<string, string> = {
+	top: `justify-start ${EMPTY_EDGE_PAD}`,
+	middle: "justify-center py-10 sm:py-12 md:py-16",
+	bottom: `justify-end ${EMPTY_EDGE_PAD}`,
+};
+const emptyVCls = EMPTY_V_CLS[vPos || "middle"];
+const EMPTY_HEADING_SIZE_CLS: Record<string, string> = {
+	small: "!text-[14px] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]",
+	medium: "!text-[17px] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]",
+	large: "text-[20px] sm:text-[28px] md:text-[36px] lg:text-[length:var(--size-hero-heading,40px)]",
+};
+const EMPTY_TEXT_SIZE_CLS: Record<string, string> = {
+	small: "text-[10px] sm:text-[11px] md:text-[13px] lg:text-[14px]",
+	medium: "text-[12px] sm:text-[14px] md:text-[15px] lg:text-[17px]",
+	large: "text-[14px] sm:text-[16px] md:text-[18px] lg:text-[20px]",
+};
+const emptyHeadingCls = `font-comfortaa font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] ${EMPTY_HEADING_SIZE_CLS[headingSize] ?? EMPTY_HEADING_SIZE_CLS.large}`;
+const emptyTextCls = `max-w-xl px-1 font-manrope font-normal leading-none text-[rgb(var(--color-text,255_255_255))] ${EMPTY_TEXT_SIZE_CLS[textSize] ?? EMPTY_TEXT_SIZE_CLS.large}`;
+// Внешний слой ставит блок по «Позиции»; блок (заголовок + текст + кнопки)
+// одной колонкой, чтобы «Выравнивание» двигало и кнопки, а не только текст.
+const emptyOuterCls = `absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${emptyVCls} gap-6 px-4 ${textAlignCls} sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]`;
+const emptyWrapCls = boxed
+	? `flex flex-col ${alignItemsCls} gap-6${boxedCls}`
+	: `flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-6 md:max-w-[640px]`;
+const emptyCopyCls = `flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4 md:max-w-[640px]`;
+// Кнопочный ряд — то же правило, что buttonsCls (две кнопки равной ширины),
+// без анимации появления: у заглушки её не было.
+const emptyButtonsCls = secondaryText
+	? "inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3 sm:gap-4"
+	: `flex w-full flex-col ${alignItemsCls} justify-center`;
+// Кнопка заглушки = «Большая» кнопка заполненной ветки; вторая — её контурная
+// пара того же цвета схемы (правило secondaryCtaCls).
+const EMPTY_CTA_BASE = "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded px-3 py-2.5 font-manrope text-[14px] font-normal leading-none transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
+const emptyPrimaryCls = `${EMPTY_CTA_BASE} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`;
+const emptySecondaryCls = `${EMPTY_CTA_BASE} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`;
+
 // Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
 // прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
 const ctaBaseCls = `inline-flex w-auto items-center justify-center rounded font-manrope font-normal leading-none transition-opacity hover:opacity-90 sm:rounded-[var(--radius-button,6px)] ${ctaSizeCls}`;
@@ -344,23 +392,29 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				class="pointer-events-none absolute inset-0 z-[1] bg-linear-to-t from-black/45 to-black/10"
 				aria-hidden="true"
 			></div>
+			{/* «Затемнение» — тот же слой, что у заполненной ветки; текст заглушки
+			    поверх фото на всех ширинах, поэтому слой виден везде. */}
+			{
+				overlayN > 0 && (
+					<div
+						class="pointer-events-none absolute inset-0 z-[1] block bg-black"
+						style={`opacity:${overlayN / 100}`}
+						aria-hidden="true"
+					/>
+				)
+			}
 			<div
 				class={`relative w-full ${designParity ? HERO_HEIGHT_DESIGNERS_CLS : heroHeightCls}`}
 			>
-				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px]">
-					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой
-					    рисуется этой веткой, и плашка до неё не доходила: мерчант щёлкал
-					    переключателем и не видел ничего (баг тестера 22.09, satin; замер
-					    прода — разметка байт-в-байт). bloom и vanilla пустую секцию
-					    рисуют обычной веткой, поэтому у них работало — расхождение 3 к 2.
-					    Выключенный контейнер = `contents`: обёртка исчезает из раскладки
-					    целиком, прежний вид сохраняется байт-в-байт. */}
-					<div class:list={[boxed ? `flex flex-col items-center gap-6${boxedCls}` : "contents"]}>
-					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center sm:gap-3 md:gap-4 md:max-w-[640px]">
+				<div class={emptyOuterCls}>
+					{/* «Контейнер» работает и на ПУСТОЙ секции (баг тестера 22.09, satin):
+					    включённый — плашка boxedCls вокруг заголовка, текста и кнопок. */}
+					<div class={emptyWrapCls}>
+					<div class={emptyCopyCls}>
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-comfortaa text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:text-[28px] md:text-[36px] lg:text-[length:var(--size-hero-heading,40px)]"
+								class={emptyHeadingCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -370,7 +424,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{!isFieldHidden('text') && (
 							<p
-								class="max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]"
+								class={emptyTextCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
@@ -380,16 +434,29 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 					</div>
 					{!isFieldHidden('buttons') && (
-					<div class="flex w-full flex-col items-center justify-center">
+					<div class={emptyButtonsCls}>
 						<a
 							href={ctaLink}
-							class="inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
+							class={emptyPrimaryCls}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
 						>
 							{PH_BUTTON}
 						</a>
+						{
+							secondaryText && (
+								<a
+									href={secondaryLink}
+									class={emptySecondaryCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="103"
+									data-puck-subsection-field="secondaryButton"
+								>
+									{secondaryText}
+								</a>
+							)
+						}
 					</div>
 					)}
 					</div>

@@ -294,6 +294,31 @@ const hItemsCls = posRaw && hPos === "center" ? "mx-auto" : hPos === "right" ? "
 const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : p.alignment === "center" ? "items-center" : "";
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : p.alignment === "center" ? "text-center" : "";
 const buttonsJustifyCls = p.alignment === "right" ? "justify-end" : p.alignment === "center" ? "justify-center" : "justify-start";
+// Пустое состояние (заглушка до своих фото и текста) слушает «Позицию» и
+// «Выравнивание» так же, как заполненное. Раньше заглушка стояла по центру при
+// любом значении, а панель по умолчанию показывает «По центру слева» (тестер
+// 24.09: «Изображение — не работают эти две фичи»). Без своего значения —
+// то, что показывает панель: слева по горизонтали, середина по вертикали.
+const emptyPosH = posRaw ? hPos : "left";
+const emptyAlign = ["left", "center", "right"].includes(p.alignment) ? p.alignment : emptyPosH;
+const EMPTY_V: Record<string, string> = { top: "justify-start md:py-12", middle: "justify-center", bottom: "justify-end md:py-12", "": "justify-center" };
+const EMPTY_H: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
+const EMPTY_TEXT: Record<string, string> = { left: "text-left", center: "text-center", right: "text-right" };
+const emptyOuterCls = `absolute inset-0 z-10 flex w-full flex-col ${EMPTY_V[vPos]} ${EMPTY_H[emptyPosH]} gap-6 px-4 ${EMPTY_TEXT[emptyAlign]} sm:px-5 md:px-10`;
+const emptyInnerCls = `flex w-full max-w-[540px] flex-col ${EMPTY_H[emptyAlign]} gap-4 ${EMPTY_TEXT[emptyAlign]} md:max-w-[640px]`;
+const emptyBoxCls = `flex flex-col ${EMPTY_H[emptyAlign]} gap-6`;
+// Без «Контейнера» заголовок, текст и кнопка — одна колонка шириной с текст,
+// чтобы «Выравнивание» двигало и кнопку, а не только текст.
+// Размеры заголовка и текста заглушки — та же лестница, что у заполненного
+// экрана (headingCls/subtitleCls), без цвета: поверх фото цвет задаёт
+// hero-over-photo. Без своего значения — «Большой», как было.
+const EMPTY_HEADING_SIZE: Record<string, string> = { small: "text-[18px] md:text-[22px]", medium: "text-[22px] md:text-[27px]", large: "text-[26px] md:text-[32px]" };
+const EMPTY_TEXT_SIZE: Record<string, string> = { small: "text-[11px]", medium: "text-[14px]", large: "text-[16px]" };
+const emptyHeadingCls = `font-logo ${EMPTY_HEADING_SIZE[headingSize] ?? EMPTY_HEADING_SIZE.large} font-normal leading-[1.08] hero-over-photo-heading`;
+const emptyTextCls = `font-manrope ${EMPTY_TEXT_SIZE[textSize] ?? EMPTY_TEXT_SIZE.large} font-light tracking-[0.04em] hero-over-photo-text`;
+const EMPTY_ROW_JUSTIFY: Record<string, string> = { left: "justify-start", center: "justify-center", right: "justify-end" };
+const emptyButtonsRowCls = `flex flex-row flex-wrap items-center gap-3 ${EMPTY_ROW_JUSTIFY[emptyAlign]}`;
+const emptyWrapCls = `flex w-full max-w-[540px] flex-col ${EMPTY_H[emptyAlign]} gap-6 md:max-w-[640px]`;
 const textColCls =
 	`satin-bleed-left order-2 flex ${vJustifyCls} py-12 pr-4 md:order-1 ${heroHeightCls} ${vPadCls} md:pr-0`;
 const blockCls =
@@ -412,7 +437,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						/>
 					)
 				}
-				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 text-center sm:px-5 md:px-10">
+				<div class={emptyOuterCls}>
 					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой
 					    рисуется этой веткой, и плашка до неё не доходила: мерчант щёлкал
 					    переключателем и не видел ничего (баг тестера 22.09; замер прода —
@@ -420,12 +445,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					    веткой, поэтому у них работало — расхождение 3 к 2. Выключенный
 					    контейнер = `contents`: обёртка исчезает из раскладки целиком,
 					    прежний вид сохраняется байт-в-байт. */}
-					<div class:list={[boxed ? `flex flex-col items-center gap-6${boxedCls}` : "contents"]}>
-					<div class="flex w-full max-w-[540px] flex-col items-center gap-4 text-center md:max-w-[640px]">
+					<div class:list={[boxed ? `${emptyBoxCls}${boxedCls}` : emptyWrapCls]}>
+					<div class={emptyInnerCls}>
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-logo text-[26px] font-normal leading-[1.08] hero-over-photo-heading md:text-[32px]"
+								class={emptyHeadingCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -435,7 +460,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{!isFieldHidden('text') && (
 							<p
-								class="font-manrope text-[16px] font-light tracking-[0.04em] hero-over-photo-text"
+								class={emptyTextCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
@@ -455,6 +480,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					   значит получить светлое на светлом. Заголовок и текст поверх фото
 					   остаются на hero-over-photo — они намеренно белые. Фолбэки =
 					   прежний вид. Сторож: pnpm test:scheme-targets. */
+					<div class={emptyButtonsRowCls}>
 					<a
 						href={ctaLink}
 						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,17_17_17))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
@@ -464,6 +490,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					>
 						{PH_BUTTON}
 					</a>
+					{secondaryText && (
+						<a
+							href={secondaryLink}
+							class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,255_255_255))] bg-transparent px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-bg,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="103"
+							data-puck-subsection-field="secondaryButton"
+						>
+							{secondaryText}
+						</a>
+					)}
+					</div>
 					)}
 					</div>
 				</div>

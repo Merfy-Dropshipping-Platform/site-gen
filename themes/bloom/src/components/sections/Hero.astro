@@ -255,7 +255,12 @@ const buttonsJustifyCls =
 	p.alignment === "center" ? "justify-center" : p.alignment === "right" ? "justify-end" : "justify-start";
 // Верхний отступ контейнера нужен только при верхней/средней позиции (низ — литерал).
 const needsTopPad = vPos === "top" || vPos === "middle";
-const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 2xl:px-[300px]${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
+// На мониторах шире 1920 текст стоит в той же колонке 1320 по центру, что и
+// остальные секции (верстальщики: max-w-[1920px] → max-w-[1320px] mx-auto).
+// Без признака боковое поле фиксированное 300px, и на 2560 текст уезжал к
+// левому краю (x=300 против 620 у колонки). До 1920 поле то же — 300px.
+const heroSidePadCls = designParity ? "2xl:px-[max(300px,calc(50%_-_660px))]" : "2xl:px-[300px]";
+const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 pb-8 md:px-20 md:pb-12 xl:pb-20 ${heroSidePadCls}${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
 
 // Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
 // заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
@@ -309,7 +314,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<div
 				class={`relative w-full ${heroHeightCls}`}
 			>
-				<div class="absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 2xl:px-[300px]">
+				<div class={`absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 ${heroSidePadCls}`}>
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center">
 						{!isFieldHidden('heading') && (
 							<h1

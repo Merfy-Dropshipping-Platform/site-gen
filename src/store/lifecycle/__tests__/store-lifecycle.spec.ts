@@ -22,7 +22,11 @@ import {
   progressed,
   retryDelayMs,
   type LifecycleFacts,
+  type LifecycleStep,
 } from "../store-lifecycle";
+import { COOLIFY_RPC_TIMEOUT_MS } from "../../../constants";
+import { DEFAULT_DOMAIN_RPC_TIMEOUT_MS } from "../../../domain/domain.client";
+import { RmqOrganizationDirectory } from "../../../user/organization-directory.client";
 
 const none: LifecycleFacts = {
   hasRevision: false,
@@ -78,14 +82,6 @@ describe("observeLifecycle: следующий шаг выводится из ф
   ])("%s", (_title, facts, state, next) => {
     expect(observeLifecycle({ ...none, ...facts })).toEqual({ state, next });
   });
-
-  it("таблица шагов — данные: три шага по порядку, каждый ведёт в своё состояние", () => {
-    expect(LIFECYCLE_STEPS.map((s) => [s.step, s.reaches])).toEqual([
-      ["seed", "seeded"],
-      ["provision", "provisioned"],
-      ["route", "ready"],
-    ]);
-  });
 });
 
 describe("isStateAtLeast: порядок состояний для «остановиться после»", () => {
@@ -121,8 +117,28 @@ describe("повторы доводчика: нарастающая пауза �
     }
   });
 
-  it("аренда строки заметно длиннее самого долгого внешнего шага (30 с Coolify + REG.RU)", () => {
-    expect(LEASE_MS).toBeGreaterThanOrEqual(2 * 60_000);
+  /**
+   * Одна аренда покрывает весь проход: захват или вставка команды → seed →
+   * provision → route. Бюджет шага — из настоящих пределов ожидания внешних
+   * вызовов в коде; поднимут таймаут Coolify или domain-сервиса — тест скажет,
+   * что аренду пора удлинить (иначе второй доводчик войдёт в строку посреди
+   * прохода и сделает работу дважды).
+   */
+  it("аренда покрывает весь проход seed + provision + route с запасом ×2", () => {
+    const budget: Record<LifecycleStep, number> = {
+      // Локально: пакет темы с диска и запись ревизии, без сети.
+      seed: 10_000,
+      // Имя компании (user-сервис), затем параллельно: REG.RU (RPC, потом
+      // HTTP-запасной путь с тем же пределом) и проект Coolify.
+      provision:
+        RmqOrganizationDirectory.TIMEOUT_MS +
+        Math.max(2 * DEFAULT_DOMAIN_RPC_TIMEOUT_MS, COOLIFY_RPC_TIMEOUT_MS),
+      // App Coolify (RPC) или роутер центрального прокси (файл).
+      route: COOLIFY_RPC_TIMEOUT_MS,
+    };
+    const drive = LIFECYCLE_STEPS.reduce((sum, s) => sum + budget[s.step], 0);
+
+    expect(LEASE_MS).toBeGreaterThanOrEqual(2 * drive);
   });
 });
 

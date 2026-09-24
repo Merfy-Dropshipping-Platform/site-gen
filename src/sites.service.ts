@@ -24,6 +24,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import {
   COOLIFY_RMQ_SERVICE,
+  COOLIFY_RPC_TIMEOUT_MS,
   PG_CONNECTION,
   CENTRAL_PROXY_APP_SENTINEL,
 } from "./constants";
@@ -332,7 +333,7 @@ export class SitesDomainService {
   private async callCoolify<T = any>(pattern: string, data: any): Promise<T> {
     const result = await firstValueFrom(
       this.coolifyClient.send(pattern, data).pipe(
-        timeout(30000),
+        timeout(COOLIFY_RPC_TIMEOUT_MS),
         catchError((err) =>
           of({ success: false, message: err?.message || "rpc_timeout" }),
         ),

@@ -601,6 +601,91 @@ suite("сага рождения на настоящем Postgres", () => {
         .where(eq(schema.siteDomainHistory.siteId, own("prov")));
       expect(history.map((h) => h.domainId)).toEqual([row.domainId]);
     });
+
+    it("чужая запись между чтением и записью — revision_conflict настоящим CAS; тема и ревизия остаются чужими", async () => {
+      const dep = {} as any;
+      const sites = new SitesDomainService(
+        db,
+        dep,
+        dep,
+        { emit: () => undefined } as any,
+        dep,
+        dep,
+        dep,
+        dep,
+        dep,
+      );
+      const canon = await sites.buildInitialRevision("rose");
+      await insertSite({
+        id: own("cas"),
+        themeId: "rose",
+        currentRevisionId: own("cas-rev-0"),
+      });
+      await db.insert(schema.siteRevision).values({
+        id: own("cas-rev-0"),
+        siteId: own("cas"),
+        data: canon,
+        meta: {},
+      });
+      const content = new DocumentAdapter(db);
+      const constructorTab = new DocumentAdapter(drizzle(pool, { schema }));
+      let competitorRevision: string | null = null;
+      // Пока команда считает новый документ, конструктор успевает сохранить
+      // свою правку поверх той же ревизии — тем же CAS, что автосейв.
+      const racing = {
+        load: async (siteId: string, opts: any) => {
+          const loaded = await content.load(siteId, opts);
+          const saved = await constructorTab.save(siteId, {
+            document: { ...loaded.document, savedBy: "constructor" },
+            tenantId: own("t1"),
+            setCurrent: true,
+            expectedVersion: loaded.version,
+            site: opts.site,
+          });
+          competitorRevision = saved.version;
+          return loaded;
+        },
+        save: (siteId: string, params: any) => content.save(siteId, params),
+      };
+      const command = new SetThemeCommand(
+        sites,
+        racing,
+        {
+          defaultThemeId: "rose",
+          list: async () => [],
+          find: async (id: string) => ({ id }) as any,
+        },
+        { emit: () => undefined } as any,
+      );
+
+      const result = await command.execute({
+        tenantId: own("t1"),
+        siteId: own("cas"),
+        themeId: "flux",
+      });
+
+      expect(result).toEqual({
+        ok: false,
+        error: { code: "revision_conflict" },
+      });
+      const [site] = await db
+        .select()
+        .from(schema.site)
+        .where(eq(schema.site.id, own("cas")));
+      expect(site).toMatchObject({
+        themeId: "rose",
+        currentRevisionId: competitorRevision,
+        themeAppliedAt: null,
+      });
+      // Проигравшая ревизия откатилась вместе с транзакцией CAS: сирот нет.
+      const revisions = await db
+        .select({ id: schema.siteRevision.id })
+        .from(schema.siteRevision)
+        .where(eq(schema.siteRevision.siteId, own("cas")));
+      expect(revisions.map((r) => r.id).sort()).toEqual(
+        [own("cas-rev-0"), competitorRevision!].sort(),
+      );
+    });
   });
 
   describe("старые cron и строки саги", () => {

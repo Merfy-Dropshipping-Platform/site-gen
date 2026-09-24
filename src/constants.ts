@@ -14,3 +14,10 @@ export const USER_RMQ_SERVICE = "USER_RMQ_SERVICE";
  * шлёт `appUuid` в Coolify, должен исключать это значение.
  */
 export const CENTRAL_PROXY_APP_SENTINEL = "central-proxy";
+
+/**
+ * Предел ожидания ответа Coolify worker на RPC (`SitesDomainService.callCoolify`).
+ * Этап 3: из него же считается бюджет прохода саги рождения (аренда строки
+ * обязана покрывать проект и маршрут хостинга, см. store-lifecycle.spec.ts).
+ */
+export const COOLIFY_RPC_TIMEOUT_MS = 30_000;

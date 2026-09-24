@@ -1,4 +1,5 @@
 ---
+import { ROSE_PROMO_TEXT_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 // ОЖИВЛЕНИЕ: канон-схема PromoBanner (theme-base PromoBanner.puckConfig).
 // Поля канона: text, link {text, href}, size (small/medium/large), textTransform
 // (none/uppercase), padding {top,bottom}; legacy linkText/linkUrl.
@@ -26,6 +27,12 @@ const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 	large: { mh: "min-h-12", text: "text-[16px]" },
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): «Размер
+// текста» не задан → кегль верстальщиков clamp(10px, 2vw + 5px, 16px): на
+// телефоне строка ужимается и помещается целиком, с ~560px — прежние 16px.
+// Высота полосы та же. Признак ставит sites (page-blocks designParityFlag).
+const designParity = p.__designParity === true;
+const textSizeCls = designersWhenUnset(designParity, p.size, ROSE_PROMO_TEXT_DESIGNERS) || sz.text;
 const upper = p.textTransform === "uppercase";
 // Канон «Отступы» {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
 // Slideshow/rose T11). «Размер» задаёт минимальную высоту полосы, «Отступы» добавляют
@@ -40,7 +47,7 @@ const paddingStyle = p.padding
 const barCls = hasText
 	? `flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-bg,0_0_0))] px-4 text-[rgb(var(--color-text,255_255_255))] md:px-20 xl:px-[300px] 2xl:px-[680px]`
 	: `flex ${sz.mh} w-full items-center justify-center overflow-hidden bg-[rgb(var(--color-surface,245_245_245))] px-4 text-[rgb(var(--color-text,0_0_0))] md:px-20 xl:px-[300px] 2xl:px-[680px]`;
-const pCls = `max-w-full text-center font-manrope ${sz.text} font-light leading-normal${upper ? " uppercase" : ""}`;
+const pCls = `max-w-full text-center font-manrope ${textSizeCls} font-light leading-normal${upper ? " uppercase" : ""}`;
 
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт

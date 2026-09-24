@@ -5,6 +5,7 @@
 // и классы 1:1, кроме `uppercase` — его тема и так снимала правилом
 // #collections-title,#popular-title,#gallery-title{text-transform:none}.
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
+import { ROSE_COLLECTIONS_CARD_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
 // T13: полная канон-схема (headingSize/subtitleSize/titleAlignment/columns/imageView/
@@ -39,22 +40,26 @@ const sectionSubtitle = p.subtitle ?? "";
 // бесслойный (CSS Cascade 5), т.е. ID-правило молча проигрывало и «Размер
 // заголовка» не действовал (ловля theme-registry 2026-08-06, движок-пруф).
 // Переменные остаются для мобильного медиа-правила в <style> ниже.
+// PARITY_DESIGN: «Размер заголовка»/«Размер подзаголовка» не заданы → кегли
+// верстальщиков на телефоне и планшете (lib/design-parity.ts).
+const HEADING_SIZE_CLS: Record<string, string> = {
+	small: " [&_h2]:!text-[17px] [--size-section-heading:17px] [--size-section-heading-m:12px]",
+	large: " [&_h2]:!text-[24px] [--size-section-heading:24px] [--size-section-heading-m:17px]",
+};
 const headingSizeCls =
-	p.headingSize === "small"
-		? " [&_h2]:!text-[17px] [--size-section-heading:17px] [--size-section-heading-m:12px]"
-		: p.headingSize === "large"
-			? " [&_h2]:!text-[24px] [--size-section-heading:24px] [--size-section-heading-m:17px]"
-			: "";
+	HEADING_SIZE_CLS[p.headingSize] ??
+	designersWhenUnset(designParity, p.headingSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}`);
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
 // Desktop — утилита [&_p]:!text-[ (работает на десктопе); мобиле — через
 // --size-section-text-m (её читает #collections-title ~ p в <style> ниже),
 // иначе ID-правило держало 12px и слайдер на мобиле игнорировался.
+const SUBTITLE_SIZE_CLS: Record<string, string> = {
+	medium: " [&_p]:!text-[19px] [--size-section-text-m:19px]",
+	large: " [&_p]:!text-[23px] [--size-section-text-m:23px]",
+};
 const subtitleSizeCls =
-	p.subtitleSize === "medium"
-		? " [&_p]:!text-[19px] [--size-section-text-m:19px]"
-		: p.subtitleSize === "large"
-			? " [&_p]:!text-[23px] [--size-section-text-m:23px]"
-			: "";
+	SUBTITLE_SIZE_CLS[p.subtitleSize] ??
+	designersWhenUnset(designParity, p.subtitleSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.text}`);
 // Канон titleAlignment: 'center'/отсутствие = строка верстальщика байт-в-байт.
 const headWrapBase = `flex w-full justify-center md:justify-center${headingSizeCls}${subtitleSizeCls}`;
 const headWrapCls =
@@ -91,7 +96,9 @@ const gridGap = designParity
 const gridColsCls = cols
 	? "md:grid-cols-[repeat(var(--cols),minmax(0,1fr))]"
 	: "md:grid-cols-3";
-const gridCls = `${gridGap} ${gridColsCls}${tileAspectCls}`;
+// PARITY_DESIGN: карточка на планшете — зазор 12 и подпись 14, как у верстальщиков.
+const cardParityCls = designParity ? ` ${ROSE_COLLECTIONS_CARD_DESIGNERS}` : "";
+const gridCls = `${gridGap} ${gridColsCls}${tileAspectCls}${cardParityCls}`;
 const gridStyle = cols ? `--cols:${cols}` : undefined;
 
 // Канон collections[] (≤10): карточки из пропса при непустом массиве (название/

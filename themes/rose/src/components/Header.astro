@@ -4,6 +4,7 @@ import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import { SITE_TITLE } from "../consts";
 import { ROSE_RAIL_INNER, ROSE_RAIL_OUTER, ROSE_RAIL_PAD_MOBILE } from "../lib/container";
+import { ROSE_HEADER_ACTION_BTN_DESIGNERS, ROSE_HEADER_MOBILE_ROW_DESIGNERS, ROSE_HEADER_SEARCH_BOX_DESIGNERS } from "../lib/design-parity";
 
 interface NavLink {
 	label: string;
@@ -30,6 +31,17 @@ const id = p.id;
 // (page-blocks designParityFlag).
 const designParity = p.__designParity === true;
 const burgerSizeCls = designParity ? "size-6" : "size-5";
+// Мобильная строка на планшете (768–1023) — высотой планшетного ряда
+// верстальщиков, 56px (py-4 + иконка 24). Раскладка строки прежняя: сам
+// планшетный ярус не переносим (решение владельца выше), только высота.
+const mobileRowParityCls = designParity ? ` ${ROSE_HEADER_MOBILE_ROW_DESIGNERS}` : "";
+// Кнопки-иконки десктопной строки (поиск, избранное, корзина, профиль, бургер
+// «Бокового» меню) — 40px, как у верстальщиков (у нас 32): строка шапки
+// становится 88px вместо 80. Сами иконки прежние, 24px.
+const actionBtnSizeCls = designParity ? ROSE_HEADER_ACTION_BTN_DESIGNERS : "size-8";
+// Панель поиска: кнопка «Найти» в 4px от правого края коробки, как у
+// верстальщиков (pr-1); у нас было 8 (p-2).
+const searchBoxPadCls = designParity ? ROSE_HEADER_SEARCH_BOX_DESIGNERS : "p-2";
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить текстовый логотип.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 // Рекурсивно сохраняем submenu (до 3 уровней) — иначе вложенные меню теряются.
@@ -190,7 +202,7 @@ const shopId = "";
 		<header class="relative w-full overflow-visible" data-nt="rose-header">
 			<div>
 				<!-- Mobile -->
-				<div class={`relative z-[60] flex h-11 items-center justify-between ${ROSE_RAIL_PAD_MOBILE} lg:hidden`}>
+				<div class={`relative z-[60] flex h-11 items-center justify-between ${ROSE_RAIL_PAD_MOBILE} lg:hidden${mobileRowParityCls}`}>
 					<button
 						type="button"
 						id="rose-burger-btn"
@@ -271,7 +283,7 @@ const shopId = "";
 											<button
 												type="button"
 												data-action="toggle-search"
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Поиск"
 												aria-expanded="false"
 												aria-controls="rose-search-panel"
@@ -280,7 +292,7 @@ const shopId = "";
 											</button>
 											<a
 												href="/wishlist"
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Избранное"
 											>
 												<RoseNtIcon name="favourite" sizeClass="size-6" />
@@ -293,7 +305,7 @@ const shopId = "";
 											<button
 												type="button"
 												data-cart-open
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Корзина"
 											>
 												<RoseNtIcon name="cart" sizeClass="size-6" />
@@ -306,13 +318,13 @@ const shopId = "";
 											<a
 												href="/login"
 												data-auth-link
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Аккаунт"
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
 												{isSidebar && (
-													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+													<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
 														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
 														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
 													</button>
@@ -354,7 +366,7 @@ const shopId = "";
 								<button
 												type="button"
 												data-action="toggle-search"
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Поиск"
 												aria-expanded="false"
 												aria-controls="rose-search-panel"
@@ -363,7 +375,7 @@ const shopId = "";
 											</button>
 											<a
 												href="/wishlist"
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Избранное"
 											>
 												<RoseNtIcon name="favourite" sizeClass="size-6" />
@@ -376,7 +388,7 @@ const shopId = "";
 											<button
 												type="button"
 												data-cart-open
-												class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Корзина"
 											>
 												<RoseNtIcon name="cart" sizeClass="size-6" />
@@ -389,13 +401,13 @@ const shopId = "";
 											<a
 												href="/login"
 												data-auth-link
-												class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+												class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 												aria-label="Аккаунт"
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
 												{isSidebar && (
-													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+													<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
 														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
 														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
 													</button>
@@ -443,7 +455,7 @@ const shopId = "";
 								<button
 									type="button"
 									data-action="toggle-search"
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Поиск"
 									aria-expanded="false"
 									aria-controls="rose-search-panel"
@@ -452,7 +464,7 @@ const shopId = "";
 								</button>
 								<a
 									href="/wishlist"
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Избранное"
 								>
 									<RoseNtIcon name="favourite" sizeClass="size-6" />
@@ -465,7 +477,7 @@ const shopId = "";
 								<button
 									type="button"
 									data-cart-open
-									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`relative flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Корзина"
 								>
 									<RoseNtIcon name="cart" sizeClass="size-6" />
@@ -477,13 +489,13 @@ const shopId = "";
 								</button>
 								<a
 									href="/login" data-auth-link
-									class="flex size-8 items-center justify-center transition-opacity hover:opacity-80"
+									class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`}
 									aria-label="Аккаунт"
 								>
 									<RoseNtIcon name="user" sizeClass="size-6" />
 								</a>
 												{isSidebar && (
-													<button type="button" data-burger-toggle class="flex size-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+													<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
 														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
 														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
 													</button>
@@ -513,7 +525,7 @@ const shopId = "";
 						data-header-search
 						data-search-layout="panel"
 						data-search-limit="4"
-						class="pointer-events-auto mx-auto flex w-full max-w-[1320px] flex-col rounded-[var(--radius-input,4px)] border border-[#E5E5E5] bg-[rgb(var(--color-bg,255_255_255))] p-2 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+						class={`pointer-events-auto mx-auto flex w-full max-w-[1320px] flex-col rounded-[var(--radius-input,4px)] border border-[#E5E5E5] bg-[rgb(var(--color-bg,255_255_255))] ${searchBoxPadCls} shadow-[0_8px_24px_rgba(0,0,0,0.08)]`}
 					>
 						<form
 							role="search"

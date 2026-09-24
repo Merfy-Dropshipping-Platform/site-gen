@@ -2,6 +2,7 @@
 import { inlineFormat } from "../lib/rich-text";
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { ROSE_FOOTER_DESIGNERS, designersWhenUnset } from "../lib/design-parity";
 import { schemeIdOf } from "../lib/color-scheme";
 import { SITE_TITLE } from "../consts";
 import {
@@ -78,8 +79,14 @@ const newsletterText =
 	typeof p.text?.content === "string" && p.text.content.trim()
 		? p.text.content
 		: "Получайте информацию от нашего бренда";
-const newsletterHeadingSizeStyle = roseFooterHeadingStyle(p.heading?.size);
-const newsletterTextSizeCls = roseFooterTextClass(p.text?.size);
+// PARITY_DESIGN: размер заголовка/текста рассылки не задан → как у
+// верстальщиков: заголовок clamp(14px, 2.2vw, 20px) (на планшете ~17px вместо
+// 20), текст на телефоне 12px. Выбранный мерчантом размер — прежний.
+const newsletterHeadingSizeStyle =
+	designersWhenUnset(designParity, p.heading?.size, ROSE_FOOTER_DESIGNERS.headingStyle) ||
+	roseFooterHeadingStyle(p.heading?.size);
+const newsletterTextSizeCls =
+	designersWhenUnset(designParity, p.text?.size, ROSE_FOOTER_DESIGNERS.text) || roseFooterTextClass(p.text?.size);
 // item 1 — выравнивание блока рассылки, ОДНО значение на десктоп И адаптив. Классы
 // ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left (раньше был захардкожен text-left + @media center).
 const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
@@ -129,6 +136,10 @@ const sectionRowCls =
 	designParity && _ca === "left"
 		? "flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between"
 		: `flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls}`;
+// PARITY_DESIGN: на телефоне ссылки навигации и контактов 14px (у верстальщиков
+// правило в @layer utilities; наше такое же в <style> без слоя не действует).
+const navSectionParityCls = designParity ? ` ${ROSE_FOOTER_DESIGNERS.link}` : "";
+const newsletterParityCls = designParity ? ` ${ROSE_FOOTER_DESIGNERS.newsletter}` : "";
 const navInfoWrapCls =
 	designParity && _ca === "left"
 		? "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]"
@@ -256,7 +267,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 	<div class={footerContainerCls} style={footerPadStyle}>
 		<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-20">
 			{newsletterEnabled && (
-			<section class={`flex w-full flex-col gap-5 ${nlSectionAlignCls}`} aria-labelledby="newsletter-heading">
+			<section class={`flex w-full flex-col gap-5 ${nlSectionAlignCls}${newsletterParityCls}`} aria-labelledby="newsletter-heading">
 				<div class={`flex max-w-[1320px] flex-col gap-2 ${nlCopyAlignCls}`}>
 					<h2
 						id="newsletter-heading"
@@ -312,7 +323,7 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 			)}
 
 			<section
-				class={sectionRowCls}
+				class={`${sectionRowCls}${navSectionParityCls}`}
 				aria-label="Навигация по сайту"
 			>
 				<div class={navInfoWrapCls}>

@@ -2,6 +2,7 @@
 import { SITE_TITLE } from "../../consts";
 import RosePicture from "../img/RosePicture.astro";
 import { inlineFormat } from "../../lib/rich-text";
+import { ROSE_HERO_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
@@ -101,14 +102,16 @@ const headingCls =
 		? "hero-animate-1 !text-[14px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
 		: headingSize === "medium"
 			? "hero-animate-1 !text-[17px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
-			: "hero-animate-1 !text-[20px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
+			: designersWhenUnset(designParity, headingSize, ROSE_HERO_DESIGNERS.heading) ||
+				"hero-animate-1 !text-[20px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
 const textSize = p.text?.size;
 const subtitleCls =
 	textSize === "small"
 		? "hero-animate-2 max-w-xl px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[11px] md:text-[13px] lg:text-[14px]"
 		: textSize === "medium"
 			? "hero-animate-2 max-w-xl px-1 font-manrope text-[12px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[14px] md:text-[15px] lg:text-[17px]"
-			: "hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]";
+			: designersWhenUnset(designParity, textSize, ROSE_HERO_DESIGNERS.text) ||
+				"hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]";
 // «Размер» → высота секции (вьюпорт). large (дефолт rose blockDefaults) = прежняя
 // лестница верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64× (вьюпорт-доля и
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.
@@ -162,11 +165,16 @@ const panelPadCls = {
 	medium: "p-5 md:p-8",
 	small: "p-4 md:p-6",
 }[heroSize];
-const ctaSizeCls = {
+const ctaSizeLegacyCls = {
 	large: "h-10 min-h-10 min-w-[120px] px-3 py-2.5 text-[14px] sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]",
 	medium: "h-10 min-h-10 min-w-[110px] px-3 py-2.5 text-[13px] sm:h-[46px] sm:min-h-[46px] sm:min-w-[140px] sm:px-5 sm:py-[9px] sm:text-[14px] md:text-[15px]",
 	small: "h-9 min-h-9 min-w-[100px] px-2.5 py-2 text-[12px] sm:h-10 sm:min-h-10 sm:min-w-[120px] sm:px-4 sm:py-2 sm:text-[13px] md:text-[14px]",
 }[heroSize];
+// PARITY_DESIGN: «Размер» не задан → кнопка верстальщиков (на планшете 40px/14,
+// с lg — 52px/16). Выставленный «Размер» — прежняя лестница.
+const ctaSizeCls = designersWhenUnset(designParity, p.size, ROSE_HERO_DESIGNERS.cta) || ctaSizeLegacyCls;
+// Зазор заголовок–текст верстальщиков (под признаком; настройки у него нет).
+const heroCopyGapCls = designParity ? ROSE_HERO_DESIGNERS.copyGap : "gap-2 sm:gap-3 md:gap-4";
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
 const secondaryText =
@@ -224,10 +232,13 @@ const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "just
 // pt-28/pb-10 (112/40) центрирует контент в перекошенном боксе → он уезжает вниз
 // на ~36px = «ниже центра». Верх/низ оставляем asymmetric (верх отодвигает контент
 // от края, низ держит нижний отступ). Одинаково mobile+desktop.
+// PARITY_DESIGN: «Позиция» не задана → нижний отступ контента на телефоне 80px,
+// как у верстальщиков (у нас было 40 — кнопка стояла ниже).
 const vPadCls =
 	vPos === "middle"
 		? "py-10 sm:py-12 md:py-16"
-		: "pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
+		: designersWhenUnset(designParity, posRaw || undefined, ROSE_HERO_DESIGNERS.contentPad) ||
+			"pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 // md-only верт.паддинг для десктоп-оверлея (на мобиле блок-подложка имеет свой py-10).
 const vPadMdCls = vPos === "middle" ? "md:py-16" : "md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center";
@@ -450,7 +461,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		class={heroContentWrapCls}
 	>
 			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
-				<div class={`flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
+				<div class={designParity ? `flex flex-col ${alignItemsCls} ${heroCopyGapCls} ${textAlignCls}` : `flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
 					{!isFieldHidden('heading') && (
 						<h1
 							id="hero-title"

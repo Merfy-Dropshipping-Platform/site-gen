@@ -167,6 +167,21 @@ jobs:
         working-directory: packages/theme-vanilla
         run: pnpm exec jest --config jest.config.ts --runInBand
 
+      # Настройки оформления заказа (админка → Заказы): регистрация, адрес,
+      # имя/фамилия. Тесты лежат в packages/theme-base/__tests__, которую CI не
+      # видел, — поэтому слияние #34 (28.08) молча вырезало эту логику из
+      # чекаута, и месяц она не работала на витринах.
+      - name: Тесты настроек чекаута магазина
+        working-directory: packages/theme-base
+        run: >-
+          pnpm exec jest --config jest.config.ts --runInBand
+          __tests__/checkout-contact-config.dom.test.ts
+          __tests__/checkout-delivery-config.dom.test.ts
+          __tests__/checkout-delivery-method-digital.dom.test.ts
+          __tests__/checkout-submit-config.dom.test.ts
+          __tests__/checkout-submit-auth-gate.dom.test.ts
+          __tests__/checkout-submit-full-address.dom.test.ts
+
   satin-structural-conformance:
     needs: satin-build
     runs-on: ubuntu-latest

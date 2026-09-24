@@ -70,6 +70,36 @@ const schemeClass = schemeClassOf(colorScheme);
     function getShopId() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.shopId) || '';
     }
+    // Настройки чекаута инжектятся в __MERFY_CONFIG__.checkout ПОСЛЕ блоков
+    // (producer в checkout.astro диспатчит checkout:config-ready). Читаем лениво
+    // при КАЖДОМ вызове — дефолты при отсутствии = текущее поведение (нулевая
+    // регрессия). «Выключено ли поле» определяется этим конфигом, НЕ пустым инпутом.
+    function getCheckoutConfig() {
+      return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
+    }
+    function getContactMethod() {
+      return getCheckoutConfig().contactMethod === 'email' ? 'email' : 'email-phone';
+    }
+    function getCustomerNameMode() {
+      var m = getCheckoutConfig().customerNameMode;
+      return (m === 'surname' || m === 'name') ? m : 'name-surname';
+    }
+    function getAddressRequired() {
+      // Дефолт true — физ-адрес обязателен; только явный false его выключает.
+      return getCheckoutConfig().addressRequired !== false;
+    }
+    // Блок 1 «Обязательная регистрация»: магазин требует вход покупателя перед
+    // оплатой. Дефолт false = fail-open (гость у магазинов без флага не ломается).
+    function getRequireCustomerAuth() {
+      return getCheckoutConfig().requireCustomerAuth === true;
+    }
+    // Bearer-токен покупателя (rose lib/auth: raw-строка под 'merfy_customer_token';
+    // persistentAtom кодирует null как '' → пусто/нет ключа = гость).
+    function getAuthToken() {
+      try {
+        return (typeof localStorage !== 'undefined' && localStorage.getItem('merfy_customer_token')) || '';
+      } catch (e) { return ''; }
+    }
     function getCartId() {
       return (typeof localStorage !== 'undefined' && localStorage.getItem('merfy:cartId')) || '';
     }
@@ -127,22 +157,87 @@ const schemeClass = schemeClassOf(colorScheme);
       var f = document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: cross-block, секция CheckoutDeliveryForm, page-singleton checkout
       return f ? (f.getAttribute('data-selected-city-fias-id') || '') : '';
     }
+    // Адрес доставки. Форма по макету (Figma 1:19998) держит одно поле «Полный
+    // адрес», а разобранные улицу/дом/кв. кладёт в data-addr-* при выборе
+    // подсказки DaData. Раздельные поля street/building/apartment прежней
+    // вёрстки — запасной источник; последний — весь «Полный адрес» как улица.
+    function getAddressParts() {
+      var f = document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: cross-block, секция CheckoutDeliveryForm, page-singleton checkout
+      function parsed(part) { return f ? (f.getAttribute('data-addr-' + part) || '') : ''; }
+      return {
+        street: parsed('street') || getField('street') || getField('address'),
+        building: parsed('building') || getField('building'),
+        apartment: parsed('apartment') || getField('apartment'),
+        full: getField('address'),
+      };
+    }
+    // Отображаемое имя из ВИДИМЫХ полей согласно customerNameMode:
+    //   name-surname → «Имя Фамилия», surname → «Фамилия», name → «Имя».
+    // name-surname сохраняет legacy-fallback на поле fullName (нулевая регрессия).
+    function buildCustomerName(mode) {
+      // fullName-fallback во ВСЕ режимы: CheckoutDeliveryForm рендерит ЛИБО split-поля
+      // (firstName/lastName), ЛИБО одно поле fullName (splitFirstLast:false). При
+      // fullName-раскладке split-полей нет → без fallback surname/name вернули бы ''
+      // и серверный энфорс имени (H3) ложно реджектил бы валидный заказ.
+      var fn = getField('firstName');
+      var ln = getField('lastName');
+      var full = getField('fullName');
+      if (mode === 'surname') return ln || full;
+      if (mode === 'name') return fn || full;
+      return full || (fn + ' ' + ln).trim();
+    }
 
     function canSubmit() {
       if (state.submitting) return false;
       var items = getCartItems();
       if (items.length === 0) return false;
       if (!getShopId()) return false;
-      if (!getField('email') || !getField('phone')) return false;
-      if (!getField('city') || !getField('street')) return false;
-      if (!state.deliveryMethod) return false;
-      // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
-      // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
-      // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
-      if (state.deliveryMethod.type === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
-      // Курьер/до двери (cdek_door): «Дом» обязателен — иначе CDEK получит адрес
-      // без номера дома (doorAddress = только улица) → реджект/недоставка после оплаты.
-      if (state.deliveryMethod.type === 'cdek_door' && !getField('building')) return false;
+
+      // Блок 1 backstop: на магазине с requireCustomerAuth гость (нет токена) не
+      // может оформить — кнопка disabled. Основной барьер — Gate A на загрузке
+      // /checkout + серверный 403; это дублирующий клиентский гейт (напр. токен
+      // потерян посреди сессии). Fail-open: без флага условие не срабатывает.
+      if (getRequireCustomerAuth() && !getAuthToken()) return false;
+
+      // Контакт: email обязателен всегда; телефон — только когда режим не 'email'.
+      if (!getField('email')) return false;
+      if (getContactMethod() !== 'email' && !getField('phone')) return false;
+
+      // Имя: требуем заполненности ВИДИМЫХ полей согласно customerNameMode.
+      // CheckoutDeliveryForm рендерит ЛИБО split-поля (firstName+lastName), ЛИБО одно
+      // поле fullName (splitFirstLast:false) — при fullName-раскладке split-полей нет,
+      // getField вернёт ''. Зеркалим fullName-fallback из buildCustomerName: имя
+      // заполнено, если есть соответствующее режиму split-поле ЛИБО непустой fullName.
+      var nameMode = getCustomerNameMode();
+      if (nameMode === 'surname') {
+        if (!getField('lastName') && !getField('fullName')) return false;
+      } else if (nameMode === 'name') {
+        if (!getField('firstName') && !getField('fullName')) return false;
+      } else {
+        if (!getField('fullName') && !(getField('firstName') && getField('lastName'))) return false;
+      }
+
+      // Адрес + способ доставки требуются только для физических товаров
+      // (addressRequired). Для цифровых (addressRequired=false) секцию доставки
+      // нейтрализует CheckoutDeliveryMethod (синтетический {type:'none'}), поэтому
+      // гейт пропускает этот случай без выбора метода.
+      if (getAddressRequired()) {
+        if (!state.deliveryMethod) return false;
+        var dt = state.deliveryMethod.type;
+        // Самовывоз (self_pickup) и CDEK-ПВЗ (cdek_pickup) адрес-независимы — город/улица
+        // не нужны (зеркало серверного «не-курьер»: адрес требуют только курьерские типы).
+        var isPickup = (dt === 'self_pickup' || dt === 'cdek_pickup');
+        var addr = getAddressParts();
+        if (!isPickup && (!getField('city') || !addr.street)) return false;
+        // CDEK самовывоз (ПВЗ/постамат) требует выбранного пункта — иначе СДЭК
+        // отклонит отправление уже ПОСЛЕ оплаты (нет delivery_point). Тип именно
+        // 'cdek_pickup' (как в CheckoutDeliveryMethod), не 'cdek_pvz'.
+        if (dt === 'cdek_pickup' && !state.deliveryMethod.pickupPointCode) return false;
+        // Курьер/до двери (cdek_door): «Дом» обязателен — иначе CDEK получит адрес
+        // без номера дома (doorAddress = только улица) → реджект/недоставка после оплаты.
+        if (dt === 'cdek_door' && !addr.building) return false;
+      }
+
       if (!state.paymentMethod) return false;
       return true;
     }
@@ -162,10 +257,20 @@ const schemeClass = schemeClassOf(colorScheme);
       button.textContent = state.submitting ? loadingText : label;
       var inIframe = window.parent && window.parent !== window;
       button.disabled = inIframe ? false : !canSubmit();
+      // Подсказка «войдите» — когда кнопку блокирует ИМЕННО требование входа
+      // (магазин с requireCustomerAuth, у гостя нет токена). Пишем только этот
+      // кейс, чтобы не затирать реальную ошибку сабмита (гость до неё не доходит —
+      // Gate A/B разворачивают на /login). Вход — по ссылке ИЛИ коду из письма.
+      if (!state.submitting && getRequireCustomerAuth() && !getAuthToken()) {
+        showError('Войдите в аккаунт по ссылке или коду из письма, чтобы оформить заказ.');
+      }
     }
 
     document.addEventListener('cart:updated', refresh);
     document.addEventListener('checkout:address-changed', refresh);
+    // Настройки чекаута прилетают ПОСЛЕ init — пере-оцениваем гейт по событию.
+    // (getContactMethod/getCustomerNameMode/getAddressRequired читают конфиг лениво.)
+    document.addEventListener('checkout:config-ready', refresh);
     document.addEventListener('checkout:discount-applied', function (e) {
       // Кнопка «Оформить — {total}» должна показывать сумму со скидкой.
       state.discountCents = (e && e.detail && e.detail.discountCents) || 0;
@@ -217,6 +322,14 @@ const schemeClass = schemeClassOf(colorScheme);
 
     button.addEventListener('click', async function (e) {
       e.preventDefault();
+      // Gate B (backstop): гость на магазине с requireCustomerAuth → на вход.
+      // Первой строкой, ДО canSubmit. Достижимо, когда кнопка была активна (был
+      // токен) и токен потерян посреди сессии; в стабильном состоянии кнопку
+      // гасит canSubmit + Gate A на загрузке. Fail-open: без флага не срабатывает.
+      if (getRequireCustomerAuth() && !getAuthToken()) {
+        location.href = '/login?redirect=' + encodeURIComponent('/checkout');
+        return;
+      }
       if (!canSubmit()) return;
       clearError();
       state.submitting = true;
@@ -224,6 +337,10 @@ const schemeClass = schemeClassOf(colorScheme);
 
       try {
         var apiBase = getApiBase();
+        // Bearer покупателя (если вошёл) — прикрепляем к checkout и create-payment.
+        // Gateway soft-резолвит Bearer→customerId и привязывает заказ к клиенту;
+        // customerId в теле НЕ шлём (untrusted). Гость (пусто) → заголовок опущен.
+        var authToken = getAuthToken();
         var cartId = (window.cartStore && window.cartStore.syncToServer) ? await window.cartStore.syncToServer() : getCartId();
         if (!cartId) throw new Error('Корзина пуста. Добавьте товары.');
 
@@ -253,51 +370,64 @@ const schemeClass = schemeClassOf(colorScheme);
           paymentToken = await window.__checkoutTokenizeCard();
         }
 
-        var firstName = getField('firstName');
-        var lastName = getField('lastName');
-        var fullName = getField('fullName') || (firstName + ' ' + lastName).trim();
+        var nameMode = getCustomerNameMode();
+        var contactMethod = getContactMethod();
+        var addressRequired = getAddressRequired();
+        // Отображаемое имя из видимых полей (по customerNameMode).
+        var customerName = buildCustomerName(nameMode);
+        // Видимые компоненты имени для metadata — скрытые режимом остаются пустыми.
+        var firstName = nameMode === 'surname' ? '' : getField('firstName');
+        var lastName = nameMode === 'name' ? '' : getField('lastName');
         var email = getField('email');
         var phone = getField('phone');
 
-        // 1. PATCH cart с customer info (backend ищет на самой записи cart)
+        // 1. PATCH cart с customer info (backend ищет на самой записи cart).
+        //    Телефон отправляем только когда режим контакта не 'email' — иначе
+        //    ключ опускаем совсем (не шлём пустую строку).
+        var customerBody = { email: email, name: customerName };
+        if (contactMethod !== 'email') customerBody.phone = phone;
         await fetch(apiBase + '/orders/cart/' + cartId + '/customer', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ email: email, phone: phone, name: fullName }),
+          body: JSON.stringify(customerBody),
         });
 
-        // 2. PATCH cart с address. CheckoutDeliveryForm теперь держит ОТДЕЛЬНЫЕ
-        // поля street/building/apartment (улица / дом / квартира) — backend DTO
-        // (ShippingAddressDto) ждёт их раздельно. Читаем поля напрямую; НИКАКОГО
-        // позиционного split(',') — он раскладывал ручной ввод неверно
-        // («Москва, г Реутов, ул Новая, д 19» → street='Москва', building='г
-        // Реутов», apartment='ул Новая'), что и ломало адрес получателя.
-        var addrStreet = getField('street');
-        var addrBuilding = getField('building');
-        var addrApartment = getField('apartment');
-        // Полная строка адреса (для метаданных / отображения), как в React
-        // DeliverySection: «улица, д. дом, кв. квартира». В PATCH /address её НЕ
-        // шлём (RPC order.cart.setAddress её игнорирует; door-адрес СДЭК orders
-        // собирает из street/building/apartment).
+        // 2. PATCH cart с address. Backend DTO (ShippingAddressDto) ждёт
+        // street/building/apartment раздельно — берём их из getAddressParts()
+        // (разбор подсказки DaData либо раздельные поля). НИКАКОГО позиционного
+        // split(',') — он раскладывал ручной ввод неверно («Москва, г Реутов,
+        // ул Новая, д 19» → street='Москва', building='г Реутов»…).
+        var addrParts = getAddressParts();
+        var addrStreet = addrParts.street;
+        var addrBuilding = addrParts.building;
+        var addrApartment = addrParts.apartment;
+        // Полная строка адреса (для метаданных / отображения): то, что покупатель
+        // видит в поле «Полный адрес», иначе «улица, д. дом, кв. квартира». В PATCH
+        // /address её НЕ шлём (RPC order.cart.setAddress её игнорирует; door-адрес
+        // СДЭК orders собирает из street/building/apartment).
         var addrFullParts = [];
         if (addrStreet) addrFullParts.push(addrStreet);
         if (addrBuilding) addrFullParts.push('д. ' + addrBuilding);
         if (addrApartment) addrFullParts.push('кв. ' + addrApartment);
-        var addrFull = addrFullParts.join(', ');
-        await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            country: getField('country') || 'Россия',
-            city: getField('city'),
-            street: addrStreet,
-            building: addrBuilding,
-            apartment: addrApartment,
-            postalCode: getField('postalCode'),
-          }),
-        });
+        var addrFull = addrParts.full || addrFullParts.join(', ');
+        // Физ-адрес шлём только для физических товаров. Для цифровых
+        // (addressRequired=false) PATCH /address НЕ вызываем (адрес не собирается).
+        if (addressRequired) {
+          await fetch(apiBase + '/orders/cart/' + cartId + '/address', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              country: getField('country') || 'Россия',
+              city: getField('city'),
+              street: addrStreet,
+              building: addrBuilding,
+              apartment: addrApartment,
+              postalCode: getField('postalCode'),
+            }),
+          });
+        }
 
         // 2.5 — CDEK самовывоз (ПВЗ/постамат): пробрасываем код точки на заказ
         // через /delivery/select. Это ЕДИНСТВЕННЫЙ путь, по которому
@@ -305,7 +435,7 @@ const schemeClass = schemeClassOf(colorScheme);
         // metadata.deliveryMethod при checkout код точки НЕ переносит. Падение
         // НЕ глотаем — иначе СДЭК отклонит отправление уже после оплаты.
         var dm = state.deliveryMethod;
-        if (dm && dm.type === 'cdek_pickup') {
+        if (addressRequired && dm && dm.type === 'cdek_pickup') {
           var selectBody = {
             type: dm.type,
             deliveryCostCents: dm.costCents || 0,
@@ -335,29 +465,38 @@ const schemeClass = schemeClassOf(colorScheme);
           }
         }
 
-        // 3. POST checkout (теперь cart содержит customerEmail/Phone)
-        var checkoutBody = {
-          metadata: {
-            paymentMethod: state.paymentMethod,
-            deliveryAddress: {
-              country: getField('country') || 'Россия',
-              city: getField('city'),
-              fullAddress: addrFull,
-              postalCode: getField('postalCode'),
-              fiasId: getFiasId(),
-              firstName: firstName,
-              lastName: lastName,
-              fullName: fullName,
-            },
-            deliveryMethod: state.deliveryMethod,
-            contactEmail: email,
-            contactPhone: phone,
-            customerName: fullName,
-          },
+        // 3. POST checkout (теперь cart содержит customerEmail/Phone).
+        //    Цифровые товары (addressRequired=false): deliveryMethod —
+        //    синтетический «без доставки»; deliveryAddress не собираем;
+        //    contactPhone опускаем если пусто.
+        var metadata = {
+          paymentMethod: state.paymentMethod,
+          deliveryMethod: addressRequired ? state.deliveryMethod : { type: 'none', costCents: 0 },
+          contactEmail: email,
+          customerName: customerName,
         };
+        // contactPhone в метаданные заказа — только когда режим контакта не 'email'
+        // (консистентно с PATCH /customer). Иначе телефон, введённый вручную до
+        // прихода конфига в email-only магазине, утёк бы в заказ.
+        if (contactMethod !== 'email' && phone) metadata.contactPhone = phone;
+        if (addressRequired) {
+          metadata.deliveryAddress = {
+            country: getField('country') || 'Россия',
+            city: getField('city'),
+            fullAddress: addrFull,
+            postalCode: getField('postalCode'),
+            fiasId: getFiasId(),
+            firstName: firstName,
+            lastName: lastName,
+            fullName: customerName,
+          };
+        }
+        var checkoutBody = { metadata: metadata };
+        var checkoutHeaders = { 'Content-Type': 'application/json' };
+        if (authToken) checkoutHeaders['Authorization'] = 'Bearer ' + authToken;
         var checkoutRes = await fetch(apiBase + '/orders/cart/' + cartId + '/checkout', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: checkoutHeaders,
           credentials: 'include',
           body: JSON.stringify(checkoutBody),
         });
@@ -367,6 +506,14 @@ const schemeClass = schemeClassOf(colorScheme);
         if (checkoutRes.status === 404) {
           try { localStorage.removeItem('merfy:cartId'); } catch (e) {}
           throw new Error('Корзина устарела. Вернитесь в каталог и добавьте товары заново.');
+        }
+        // 403 = серверный гейт requireCustomerAuth (code='customer_auth_required'):
+        // гость проскочил клиентские Gate A/B, но orders требует вход. Разворачиваем
+        // на /login (НЕ списываем — оплата ещё не создана). Проверяем статус, а не
+        // тело — устойчиво к любой форме ответа.
+        if (checkoutRes.status === 403) {
+          location.href = '/login?redirect=' + encodeURIComponent('/checkout');
+          return;
         }
         var orderId = checkoutJson && checkoutJson.data && (checkoutJson.data.orderId || checkoutJson.data.id);
         if (!checkoutRes.ok || !orderId) {
@@ -379,9 +526,11 @@ const schemeClass = schemeClassOf(colorScheme);
         };
         if (paymentToken) paymentBody.paymentToken = paymentToken;
 
+        var paymentHeaders = { 'Content-Type': 'application/json' };
+        if (authToken) paymentHeaders['Authorization'] = 'Bearer ' + authToken;
         var paymentRes = await fetch(apiBase + '/orders/' + orderId + '/create-payment', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: paymentHeaders,
           credentials: 'include',
           body: JSON.stringify(paymentBody),
         });

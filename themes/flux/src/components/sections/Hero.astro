@@ -364,6 +364,45 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
+// ПУСТАЯ секция (заглушка до своих фото и текста) слушает панель так же, как
+// заполненная. Тестер 24.09: «Изображение по всем настройкам сломалась, не
+// принимает изменения» — заглушка стояла по центру с фиксированными кеглями,
+// а Затемнение/Позиция/Выравнивание/Размеры/вторая кнопка до неё не доходили.
+// Позиция и Выравнивание — ТЕ ЖЕ классы, что выше у заполненной ветки
+// (hItemsCls/vJustifyCls/alignItemsCls/textAlignCls/buttonsCls); без своего
+// значения — как показывает панель: «По центру слева» (blockDefaults темы),
+// выравнивание слева, затемнение 0. Кегли — ступени headingCls/subtitleCls
+// выше (без своего значения — «Большой»); цвет заглушки свой (белый поверх
+// фото), поэтому здесь только размер.
+const EMPTY_HEADING_SIZE: Record<string, string> = {
+	small: "text-[14px] md:text-[17px] lg:text-[length:var(--merchant-hero-heading,17px)]",
+	medium: "text-[17px] md:text-[20px] lg:text-[length:var(--merchant-hero-heading,20px)]",
+	large: "text-[20px] md:text-[24px] lg:text-[length:var(--merchant-hero-heading,24px)]",
+};
+const EMPTY_TEXT_SIZE: Record<string, string> = {
+	small: "text-[10px] md:text-[11px]",
+	medium: "text-[11px] md:text-[12px]",
+	large: "text-[12px] md:text-[14px]",
+};
+const emptyHeadingSizeCls = EMPTY_HEADING_SIZE[headingSize] ?? EMPTY_HEADING_SIZE.large;
+const emptyTextSizeCls = EMPTY_TEXT_SIZE[textSize] ?? EMPTY_TEXT_SIZE.large;
+// Кнопки заглушки — её же рамка (h-14, радиус 6px). Вторая — противоположная
+// заливка той же рамки, как пара у заполненной ветки; при двух кнопках обе
+// тянутся в свою колонку buttonsCls (w-auto), одна — по содержимому (w-fit).
+const EMPTY_BTN_FRAME = "inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-4 font-roboto-flex text-[16px] font-normal leading-none";
+const EMPTY_BTN_FILL: Record<string, string> = {
+	solid: "bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90",
+	outlined: "border border-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-bg,0_0_0))] transition-colors hover:bg-black/5",
+};
+const emptyBtnWidthCls = secondaryText ? "w-auto" : "w-fit";
+const emptyPrimaryBtnCls = `${EMPTY_BTN_FRAME} ${emptyBtnWidthCls} ${EMPTY_BTN_FILL.solid}`;
+const emptySecondaryBtnCls = `${EMPTY_BTN_FRAME} ${emptyBtnWidthCls} ${EMPTY_BTN_FILL.outlined}`;
+const emptyOuterCls = `absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 py-8 md:px-20 md:py-10 2xl:px-80`;
+// Заголовок, текст и кнопки — одна колонка (как contentCls заполненной ветки),
+// чтобы «Выравнивание» двигало и кнопку, а не только текст.
+const emptyBlockCls = `flex flex-col ${alignItemsCls} gap-6 md:gap-10${boxedCls}`;
+const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${textAlignCls}`;
 ---
 
 {
@@ -371,7 +410,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		/* Пустое состояние (Figma 1:19335, тип «Изображение», контракт картиночных
 		   секций): фон секции = дизайн-ассет /placeholders/landscape-image.png
 		   (картинка показывается ВСЕГДА, НЕ пустой surface и НЕ мок верстальщика) +
-		   лёгкий тёмный overlay для читаемости + overlay-лейбл «Изображение» +
+		   «Затемнение» из панели (по умолчанию 0) + overlay-лейбл «Изображение» +
 		   хелпер-текст + кнопка «Кнопка». Без дефолт-контента верстальщика (SITE_TITLE
 		   / «Там, где классика…» / «В каталог» / «О нас»). Манера flux: Roboto Flex
 		   uppercase-заголовок и Roboto Flex-хелпер белым на фото (как обычный Hero на
@@ -389,22 +428,26 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				loading="eager"
 				class="absolute inset-0 z-0 size-full object-cover object-center"
 			/>
-			<div class="pointer-events-none absolute inset-0 z-[1] bg-black/30" aria-hidden="true" />
+			{/* Затемнение — тот же слой, что у заполненной ветки, и только при
+			    значении больше 0 (панель по умолчанию показывает 0). */}
+			{
+				overlayN > 0 && (
+					<div
+						class="pointer-events-none absolute inset-0 z-[2] bg-black"
+						style={`opacity:${overlayN / 100}`}
+					/>
+				)
+			}
 			<div class={`relative w-full ${heroHeightCls}`}>
-				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 py-8 text-center md:gap-10 md:px-20 md:py-10 2xl:px-80">
-					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой
-					    рисуется этой веткой, и плашка до неё не доходила: мерчант щёлкал
-					    переключателем и не видел ничего (баг тестера 22.09, satin; замер
-					    прода — разметка байт-в-байт). bloom и vanilla пустую секцию
-					    рисуют обычной веткой, поэтому у них работало — расхождение 3 к 2.
-					    Выключенный контейнер = `contents`: обёртка исчезает из раскладки
-					    целиком, прежний вид сохраняется байт-в-байт. */}
-					<div class:list={[boxed ? `flex flex-col items-center gap-6 md:gap-10${boxedCls}` : "contents"]}>
-					<div class="flex max-w-[432px] flex-col items-center gap-2 text-center">
+				<div class={emptyOuterCls}>
+					{/* «Контейнер» работает и на ПУСТОЙ секции (баг тестера 22.09, satin):
+					    включённый — плашка boxedCls на колонке заголовка, текста и кнопок. */}
+					<div class={emptyBlockCls}>
+					<div class={emptyTextColCls}>
 						{!isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-roboto-flex text-[20px] font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
+								class={`font-roboto-flex ${emptyHeadingSizeCls} font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))]`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -414,7 +457,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 						{!isFieldHidden('text') && (
 							<p
-								class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
+								class={`font-roboto-flex ${emptyTextSizeCls} font-light leading-normal text-[rgb(var(--color-text,255_255_255))]`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
@@ -424,7 +467,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)}
 					</div>
 					{!isFieldHidden('buttons') && (
-					<div class="flex flex-wrap justify-center gap-3">
+					<div class={buttonsCls}>
 						{/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
 						    isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] +
 						    токен текста). Было `bg-black` + `text-white`: Tailwind 4 печатает
@@ -436,13 +479,26 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						    вид. Сторож: pnpm test:scheme-targets. */}
 						<a
 							href={ctaLink}
-							class="inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+							class={emptyPrimaryBtnCls}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
 						>
 							{PH_BUTTON}
 						</a>
+						{
+							secondaryText && (
+								<a
+									href={secondaryLink}
+									class={emptySecondaryBtnCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="103"
+									data-puck-subsection-field="secondaryButton"
+								>
+									{secondaryText}
+								</a>
+							)
+						}
 					</div>
 					)}
 					</div>

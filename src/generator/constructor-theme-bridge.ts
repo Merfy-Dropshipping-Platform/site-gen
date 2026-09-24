@@ -175,6 +175,15 @@ const WEIGHTS_BY_NAME: Record<string, number[]> = Object.fromEntries(
     .map((f) => [f.name, f.weights as number[]]),
 );
 
+// Семейства с осью оптического размера (opsz): без неё Google отдаёт шрифт,
+// нарисованный под один размер, и буквы шире задуманных. Витрина flux
+// подключала Roboto Flex дважды — тема с осью (как у верстальщиков), настройки
+// без неё — и вторая ссылка перебивала первую: текст переносился раньше, секции
+// выходили выше (владелец 24.09: «шире, секции растягиваются»).
+const OPSZ_RANGE_BY_NAME: Record<string, string> = {
+  "Roboto Flex": "8..144",
+};
+
 /**
  * Собрать корректный Google Fonts css2 href для семейств по ИМЕНАМ. Для каждого
  * шрифта — реальные веса из WEIGHTS_BY_NAME (иначе `family=Name` без wght, тоже
@@ -187,10 +196,11 @@ export function googleFontsHref(names: string[]): string {
   const params = uniq
     .map((name) => {
       const fam = name.replace(/ /g, "+");
-      const weights = WEIGHTS_BY_NAME[name];
-      return weights && weights.length
-        ? `family=${fam}:wght@${[...weights].sort((a, b) => a - b).join(";")}`
-        : `family=${fam}`;
+      const weights = [...(WEIGHTS_BY_NAME[name] ?? [])].sort((a, b) => a - b);
+      const opsz = OPSZ_RANGE_BY_NAME[name];
+      if (!weights.length) return `family=${fam}`;
+      if (opsz) return `family=${fam}:opsz,wght@${weights.map((w) => `${opsz},${w}`).join(";")}`;
+      return `family=${fam}:wght@${weights.join(";")}`;
     })
     .join("&");
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;

@@ -306,41 +306,8 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<>
-						{/* Стрелки — инлайн-SVG chevron (path = public/icons/arrow-slide-*.svg),
-						    stroke=currentColor → наследует цвет от родителя (чёрный глиф на
-						    белом круге, контраст на фото). */}
-						<button
-							type="button"
-							data-slide-prev
-							aria-label="Предыдущий слайд"
-							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90"
-						>
-							<svg class="size-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M15 7l-6 5 6 5"
-									stroke="currentColor"
-									stroke-width="1.2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
-						</button>
-						<button
-							type="button"
-							data-slide-next
-							aria-label="Следующий слайд"
-							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90"
-						>
-							<svg class="size-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-								<path
-									d="M9 7l6 5-6 5"
-									stroke="currentColor"
-									stroke-width="1.2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								/>
-							</svg>
-						</button>
+						{/* Стрелок «назад/вперёд» по бокам нет (тестер 24.09: «убери на всех темах
+						    стрелки справа и слева»): листают автоинтервал и нумерация. */}
 						{pagination !== "none" && (
 							<div class={`absolute bottom-5 ${navEdgeCls} z-20 flex items-center gap-2`}>
 								{pagination === "dots" &&
@@ -449,18 +416,6 @@ const paddingStyle = p.padding
 						show(idx + 1);
 					}, interval);
 			}
-			root.querySelectorAll("[data-slide-prev]").forEach(function (b) {
-				b.addEventListener("click", function () {
-					show(idx - 1);
-					restart();
-				});
-			});
-			root.querySelectorAll("[data-slide-next]").forEach(function (b) {
-				b.addEventListener("click", function () {
-					show(idx + 1);
-					restart();
-				});
-			});
 			dots.forEach(function (d, i) {
 				d.addEventListener("click", function () {
 					show(i);

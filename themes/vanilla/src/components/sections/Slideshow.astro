@@ -6,13 +6,13 @@ import { inlineFormat } from "../../lib/rich-text";
 // Hero верстальщика: тёмное полотно bg rgb(var(--color-bg,20_37_15)),
 // viewport min-h 520/620/790 со слоями фонов (transition-opacity 500ms) +
 // оверлей bg-black/25, копи-блок max-w-[min(100%,52rem)] gap-5 (вертикаль —
-// items-center), контролы-бар h-16 «← цифры →» на rgb(var(--color-accent,
+// items-center), контролы-бар h-16 с нумерацией на rgb(var(--color-accent,
 // 38_49_28)). Механика смены слайдов = bindVanillaHeroCarousel верстальщика
 // (ОДИН копи-блок на все слайды, тексты подменяет скрипт по data-slides-json)
 // — поэтому per-slide поля раскладки (heading.size/text.size/position/
 // alignment/container) берутся с ПЕРВОГО слайда: DOM-блок копий единственный.
-// Скрипту — ТОЛЬКО data-атрибуты; autoplay-таймера у верстальщика нет —
-// добавлен в канон-скрипте ниже по data-autoplay/data-interval.
+// Скрипту — ТОЛЬКО data-атрибуты; автолистание по data-autoplay/data-interval
+// живёт в самом bindVanillaHeroCarousel.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -205,7 +205,9 @@ const overlayN = Number.isFinite(overlayRaw)
 // отсутствие = цифры контролов героя дословно; dots/lines — носители
 // bg-current (скрипт верстальщика переключает text-white/text-white/45 —
 // цвет точки следует за ним); counter — «N / всего», виден только активный
-// (<style> ниже); none — бар только со стрелками.
+// (<style> ниже); none — бара нет вовсе. Стрелок «← →» в баре больше нет
+// (тестер 24.09: «убери на всех темах стрелки справа и слева»): листают
+// автоинтервал, свайп и нумерация.
 const pagination =
 	p.pagination === "dots" ||
 	p.pagination === "counter" ||
@@ -216,8 +218,8 @@ const pagination =
 // PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
 // первый экран Vanilla-theme @c65d9e1c (sections/Hero.astro) — заголовок и
 // подзаголовок слайда стоят плотно (их обёртка gap-[4px] внутри gap-5 → у
-// нас подзаголовок поднят на 16px), полоса «← 1 2 3 →» — gap-4, у стрелок и
-// цифр область нажатия 44×44 (min-h-11 min-w-11). Цифры — только ветка
+// нас подзаголовок поднят на 16px), полоса цифр — gap-4, у цифр область
+// нажатия 44×44 (min-h-11 min-w-11). Цифры — только ветка
 // «Нумерация = цифры» (по умолчанию); точки/линии/счётчик как прежде.
 // Без признака — прежние классы байт-в-байт.
 const designParity = p.__designParity === true;
@@ -226,11 +228,10 @@ const CONTROLS = designParity
 	? {
 			bar: "gap-4",
 			barTail: "",
-			arrow: "flex min-h-11 min-w-11 items-center justify-center text-white hover:opacity-90",
 			bullets: "gap-4",
 			number: "flex min-h-11 min-w-11 items-center justify-center p-1",
 		}
-	: { bar: "gap-10", barTail: " md:gap-14", arrow: "text-white hover:opacity-90", bullets: "gap-10 md:gap-12", number: "min-w-[1ch] p-1" };
+	: { bar: "gap-10", barTail: " md:gap-14", bullets: "gap-10 md:gap-12", number: "min-w-[1ch] p-1" };
 const bulletCls = (i: number) =>
 	pagination === "dots"
 		? `h-2 w-2 rounded-full bg-current transition-opacity hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
@@ -368,55 +369,37 @@ const paddingStyle = p.padding
 			</div>
 
 			{
-				slides.length > 1 && (
+				slides.length > 1 && pagination !== "none" && (
 					<div
 						class={`flex h-16 items-center justify-center ${CONTROLS.bar} bg-[rgb(var(--color-accent,38_49_28))] font-vanilla-arsenal text-base leading-none${CONTROLS.barTail}`}
 						role="toolbar"
 						aria-label="Переключение слайдов"
 						data-hero-controls
 					>
-						<button
-							type="button"
-							data-hero-prev
-							class={CONTROLS.arrow}
-							aria-label="Предыдущий слайд"
-						>
-							←
-						</button>
-						{pagination !== "none" && (
-							<div class={`flex items-center ${CONTROLS.bullets}`} data-pagination={pagination}>
-								{slides.map((_, i) => (
-									<button
-										type="button"
-										data-hero-bullet
-										data-hero-index={String(i)}
-										class={bulletCls(i)}
-										aria-current={i === 0 ? "true" : undefined}
-										aria-label={`Слайд ${i + 1}`}
-									>
-										{pagination === "dots" || pagination === "lines" ? null : pagination === "counter" ? (
-											// Слэш в <span> (НЕ голый « / ») — иначе preview-rewriter
-											// (ROOT_URL_RE: пробел+/) впишет « /__theme/<тема>/ » в текст.
-											<Fragment>
-												{i + 1}
-												<span class="mx-1" aria-hidden="true">/</span>
-												{slides.length}
-											</Fragment>
-										) : (
-											i + 1
-										)}
-									</button>
-								))}
-							</div>
-						)}
-						<button
-							type="button"
-							data-hero-next
-							class={CONTROLS.arrow}
-							aria-label="Следующий слайд"
-						>
-							→
-						</button>
+						<div class={`flex items-center ${CONTROLS.bullets}`} data-pagination={pagination}>
+							{slides.map((_, i) => (
+								<button
+									type="button"
+									data-hero-bullet
+									data-hero-index={String(i)}
+									class={bulletCls(i)}
+									aria-current={i === 0 ? "true" : undefined}
+									aria-label={`Слайд ${i + 1}`}
+								>
+									{pagination === "dots" || pagination === "lines" ? null : pagination === "counter" ? (
+										// Слэш в <span> (НЕ голый « / ») — иначе preview-rewriter
+										// (ROOT_URL_RE: пробел+/) впишет « /__theme/<тема>/ » в текст.
+										<Fragment>
+											{i + 1}
+											<span class="mx-1" aria-hidden="true">/</span>
+											{slides.length}
+										</Fragment>
+									) : (
+										i + 1
+									)}
+								</button>
+							))}
+						</div>
 					</div>
 				)
 			}
@@ -456,38 +439,14 @@ const paddingStyle = p.padding
 <script>
 	import { bindVanillaHeroCarousel } from "../../scripts/vanillaHeroCarousel";
 
-	// Карусель = bindVanillaHeroCarousel верстальщика (стрелки/цифры/swipe +
-	// fade копий vanilla-hero-copy-fade; идемпотентность внутри —
-	// data-vanillaHeroBound). Autoplay-таймера у верстальщика нет — добавляем
-	// по data-autoplay/data-interval: тик «нажимает» data-hero-next (вся
-	// логика смены остаётся в одном месте), ручное переключение сбрасывает
-	// отсчёт, reduce-motion отключает автолистание (манера §6). Своя
-	// идемпотентность — data-vanilla-autoplay-bound.
-	const bindAutoplay = (root: HTMLElement) => {
-		if (root.dataset.vanillaAutoplayBound === "true") return;
-		root.dataset.vanillaAutoplayBound = "true";
-		if (root.dataset.autoplay !== "true") return;
-		const next = root.querySelector<HTMLElement>("[data-hero-next]");
-		if (!next) return;
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-		const interval = Number.parseInt(root.dataset.interval || "5000", 10) || 5000;
-		let timer: ReturnType<typeof setInterval> | undefined;
-		const restart = () => {
-			if (timer) clearInterval(timer);
-			timer = setInterval(() => next.click(), interval);
-		};
-		root.addEventListener("click", (e) => {
-			const t = e.target as HTMLElement | null;
-			if (t && t.closest("[data-hero-prev],[data-hero-next],[data-hero-bullet]")) restart();
-		});
-		root.addEventListener("touchend", () => restart(), { passive: true });
-		restart();
-	};
-
+	// Карусель = bindVanillaHeroCarousel верстальщика (цифры/swipe + fade копий
+	// vanilla-hero-copy-fade + автолистание по data-autoplay/data-interval;
+	// идемпотентность внутри — data-vanillaHeroBound). Прежний отдельный таймер
+	// «нажимал» стрелку data-hero-next; стрелок больше нет (тестер 24.09: «убери
+	// на всех темах стрелки справа и слева»), а таймер карусели листал и без него.
 	const boot = () =>
 		document.querySelectorAll<HTMLElement>("[data-vanilla-slideshow]").forEach((el) => {
 			bindVanillaHeroCarousel(el);
-			bindAutoplay(el);
 		});
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", boot, { once: true });

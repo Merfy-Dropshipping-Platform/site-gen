@@ -205,6 +205,7 @@ jobs:
           src/scheduler/site-provisioning.missing-store.spec.ts
           src/scheduler/site-provisioning.can-create.spec.ts
           src/modules/theme-preset/theme-catalog-seed.spec.ts
+          src/pages
 
   satin-structural-conformance:
     needs: satin-build

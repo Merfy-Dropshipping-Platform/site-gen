@@ -3,7 +3,9 @@
   "presetVersion": 1,
   "name": "Rose",
   "slug": "rose",
-  "description": "Элегантная тема с розовыми акцентами и коллажной главной.",
+  "description": "Минималистичная тема, где товар занимает центральное место",
+  "previewDesktop": "/img/online_shop_page/Rose_shop_page.png",
+  "previewMobile": "/img/online_shop_page/Rose_shop_page_mobile.png",
   "templateId": "rose-1.0",
   "price": 0,
   "tags": [
@@ -11,6 +13,11 @@
     "beauty",
     "pink",
     "elegant"
+  ],
+  "fitsFor": [
+    "Одежда",
+    "Аксессуары",
+    "Товары широкой категории"
   ],
   "badge": "popular",
   "author": "merfy",

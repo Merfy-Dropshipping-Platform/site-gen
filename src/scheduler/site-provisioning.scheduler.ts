@@ -3,13 +3,21 @@
  *
  * Периодически проверяет активных пользователей без сайтов и создаёт им дефолтный сайт.
  * Запускается каждые 5 минут.
+ *
+ * Этап 3 (merfy-mcp/docs/plans/2026-09-24-stage3-store-commands-saga.md):
+ * магазин создаёт та же команда `CreateStore` (источник `missing-store`,
+ * `ifNoStores`), что регистрация и кабинет. Лимит, заморозку и «биллинг не
+ * ответил → не создавать» решает команда — один раз; прежний собственный гейт
+ * cron (`canCreateSite` по сырому ответу биллинга) переехал в её правила.
+ * reaper (`migrateOrphanedSites`) по-прежнему довыполняет только старые
+ * магазины (`lifecycle IS NULL`); новые ведёт доводчик саги.
  */
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { ClientProxy } from "@nestjs/microservices";
-import { BILLING_RMQ_SERVICE, USER_RMQ_SERVICE } from "../constants";
+import { USER_RMQ_SERVICE } from "../constants";
 import { SitesDomainService } from "../sites.service";
-import { isStorefrontSuspended } from "../billing/billing.client";
+import { CreateStoreCommand } from "../store/commands/create-store.command";
 
 interface UserWithoutSite {
   userId: string;
@@ -17,14 +25,8 @@ interface UserWithoutSite {
   accountId: string;
 }
 
-interface EntitlementsResponse {
-  success: boolean;
-  frozen?: boolean;
-  // Carried on the wire by billing.get_entitlements; used via isStorefrontSuspended.
-  storefrontSuspended?: boolean;
-  status?: string;
-  shopsLimit?: number | null;
-}
+/** Имя магазина, который cron заводит пользователю без магазина. */
+export const MISSING_STORE_NAME = "Мой магазин";
 
 @Injectable()
 export class SiteProvisioningScheduler implements OnModuleInit {
@@ -34,9 +36,10 @@ export class SiteProvisioningScheduler implements OnModuleInit {
   private migrationDone = false;
 
   constructor(
-    @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
     @Inject(USER_RMQ_SERVICE) private readonly userClient: ClientProxy,
     private readonly sites: SitesDomainService,
+    @Inject(CreateStoreCommand)
+    private readonly createStore: Pick<CreateStoreCommand, "execute">,
   ) {}
 
   async onModuleInit() {
@@ -187,76 +190,36 @@ export class SiteProvisioningScheduler implements OnModuleInit {
   }
 
   private async provisionSiteForUser(user: UserWithoutSite): Promise<void> {
-    const { userId, tenantId, accountId } = user;
+    const { userId, tenantId } = user;
 
     try {
-      // Проверяем что у пользователя реально нет сайтов
-      const existingSites = await this.sites.list(tenantId, 1);
-      if (existingSites.items.length > 0) {
-        this.logger.debug(
-          `User ${userId} (tenant ${tenantId}) already has ${existingSites.items.length} site(s), skip`,
-        );
-        return;
-      }
-
-      // Проверяем биллинг
-      const entitlements = await this.getEntitlements(accountId);
-      this.logger.debug(
-        `User ${userId} entitlements: frozen=${entitlements.frozen}, shopsLimit=${entitlements.shopsLimit}, success=${entitlements.success}`,
-      );
-
-      if (!this.canCreateSite(entitlements)) {
-        this.logger.debug(
-          `User ${userId} cannot create site: suspended (frozen/canceled) or no quota`,
-        );
-        return;
-      }
-
-      // Создаём сайт
-      this.logger.log(
-        `Provisioning site for user ${userId}, tenant ${tenantId}`,
-      );
-      const result = await this.sites.create({
+      const result = await this.createStore.execute({
         tenantId,
         actorUserId: userId,
-        name: "Мой магазин",
+        name: MISSING_STORE_NAME,
+        ifNoStores: true,
+        wait: false,
+        source: "missing-store",
       });
-
-      this.logger.log(`Site provisioned: ${result.id} for tenant ${tenantId}`);
+      if (!result.ok) {
+        this.logger.debug(
+          `User ${userId} (tenant ${tenantId}) site not created: ${result.error.code}`,
+        );
+        return;
+      }
+      if (!result.effect.created) {
+        this.logger.debug(
+          `User ${userId} (tenant ${tenantId}) already has ${result.effect.storeCount} site(s), skip`,
+        );
+        return;
+      }
+      this.logger.log(
+        `Site reserved: ${result.effect.store?.id} for tenant ${tenantId}, provisioning by the store lifecycle`,
+      );
     } catch (e) {
       this.logger.warn(
         `Failed to provision site for user ${userId}: ${e instanceof Error ? e.message : e}`,
       );
     }
-  }
-
-  private async getEntitlements(
-    accountId: string,
-  ): Promise<EntitlementsResponse> {
-    try {
-      return await this.rpc<EntitlementsResponse>(
-        this.billingClient,
-        "billing.get_entitlements",
-        { accountId },
-      );
-    } catch (e) {
-      this.logger.warn(
-        `Failed to get entitlements for ${accountId}: ${e instanceof Error ? e.message : e}`,
-      );
-      return { success: false };
-    }
-  }
-
-  private canCreateSite(entitlements: EntitlementsResponse): boolean {
-    // success guard MUST stay first: unknown billing ({success:false}) is
-    // refused before the suspend check (which would read undefined -> allow).
-    if (!entitlements.success) return false;
-    // Suspended storefront ({frozen, canceled}) — do not auto-provision. Keys
-    // on the same signal as checkSiteAvailability/reconcile, not raw `frozen`
-    // (which is false for a terminal `canceled`).
-    if (isStorefrontSuspended(entitlements)) return false;
-
-    const limit = entitlements.shopsLimit;
-    return limit === null || limit === undefined || limit > 0;
   }
 }

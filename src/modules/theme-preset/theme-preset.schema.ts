@@ -34,6 +34,11 @@ export const ThemePresetSchema = z.object({
   price: z.number().int().min(0).default(0),
   /** Search/filter tags. */
   tags: z.array(z.string()).default([]),
+  /**
+   * «Подходит для» (Merfy Docs, «Выбор темы для магазина») — каталог тем
+   * кабинета и агента (этап 3, кусок 3.4). Пишется в `theme.fits_for`.
+   */
+  fitsFor: z.array(z.string()).default([]),
   /** Optional marketing badge ("new", "popular"). */
   badge: z.string().optional(),
   /**

@@ -182,6 +182,31 @@ jobs:
           __tests__/checkout-submit-auth-gate.dom.test.ts
           __tests__/checkout-submit-full-address.dom.test.ts
 
+      # Этап 3 «Магазин одной командой» (src/store/): сага рождения и её
+      # доводчик, команды CreateStore/SetTheme, каталог тем, перевод регистрации
+      # и cron «без магазина» на команду. src/__tests__/ целиком CI не гоняет —
+      # поэтому файлы перечислены явно. store.pg.spec.ts идёт на сервисном
+      # Postgres этой джобы, в отдельной эфемерной базе sites_stage3_test: тест
+      # сам её создаёт и накатывает миграции, а к базе без «test» в имени не
+      # подключается вовсе (support/test-database.ts). Без
+      # SITES_TEST_DATABASE_URL набор пропускается с предупреждением.
+      - name: Этап 3 — команды магазина, сага рождения, каталог тем
+        env:
+          SITES_TEST_DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/sites_stage3_test
+        run: >-
+          pnpm exec jest --runInBand
+          src/store
+          src/__tests__/provisioning-saga-bridge.spec.ts
+          src/__tests__/record-theme-choice.spec.ts
+          src/__tests__/themes-list-catalog.spec.ts
+          src/__tests__/site-create-theme.characterization.spec.ts
+          src/billing
+          src/user
+          src/scheduler/site-provisioning.missing-store.spec.ts
+          src/scheduler/site-provisioning.can-create.spec.ts
+          src/modules/theme-preset/theme-catalog-seed.spec.ts
+          src/pages
+
   satin-structural-conformance:
     needs: satin-build
     runs-on: ubuntu-latest

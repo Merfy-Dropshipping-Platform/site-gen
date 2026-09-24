@@ -3,12 +3,18 @@
  *
  * Подписывается на события от user service для асинхронной обработки.
  * - user.registered: создает дефолтный сайт для нового пользователя
+ *
+ * Этап 3 (merfy-mcp/docs/plans/2026-09-24-stage3-store-commands-saga.md, И1/И2):
+ * магазин при регистрации создаёт та же команда `CreateStore`, что кабинет и
+ * cron «пользователи без магазина». Листенер сам ничего не решает: лимит
+ * тарифа и «у тенанта уже есть магазин» (`ifNoStores`) проверяет команда один
+ * раз под блокировкой тенанта; домен и проект Coolify доводит сага. Раньше
+ * листенер отдельно спрашивал биллинг и список магазинов, а `reserve()`
+ * проверял лимит второй раз.
  */
 import { Controller, Inject, Logger } from "@nestjs/common";
 import { Ctx, EventPattern, Payload, RmqContext } from "@nestjs/microservices";
-import { ClientProxy } from "@nestjs/microservices";
-import { BILLING_RMQ_SERVICE } from "../constants";
-import { SitesDomainService } from "../sites.service";
+import { CreateStoreCommand } from "../store/commands/create-store.command";
 
 interface UserRegisteredPayload {
   userId: string;
@@ -16,24 +22,16 @@ interface UserRegisteredPayload {
   accountId: string;
 }
 
-interface BillingEntitlementsResponse {
-  shopsLimit?: number | null;
-  [key: string]: any;
-}
-
-interface SitesListResponse {
-  success?: boolean;
-  items?: any[];
-  [key: string]: any;
-}
+/** Имя магазина, который получает новый пользователь. */
+export const REGISTRATION_STORE_NAME = "Мой сайт";
 
 @Controller()
 export class UserListenerController {
   private readonly logger = new Logger(UserListenerController.name);
 
   constructor(
-    @Inject(BILLING_RMQ_SERVICE) private readonly billingClient: ClientProxy,
-    private readonly sites: SitesDomainService,
+    @Inject(CreateStoreCommand)
+    private readonly createStore: Pick<CreateStoreCommand, "execute">,
   ) {}
 
   @EventPattern("user.registered")
@@ -41,77 +39,32 @@ export class UserListenerController {
     @Payload() payload: UserRegisteredPayload,
     @Ctx() _ctx: RmqContext,
   ) {
-    try {
-      const { userId, tenantId, accountId } = payload;
+    const { userId, tenantId } = payload ?? ({} as UserRegisteredPayload);
+    if (!userId || !tenantId) {
+      this.logger.warn("user.registered event missing userId or tenantId");
+      return;
+    }
 
-      if (!userId || !tenantId) {
-        this.logger.warn("user.registered event missing userId or tenantId");
+    try {
+      const result = await this.createStore.execute({
+        tenantId,
+        actorUserId: userId,
+        name: REGISTRATION_STORE_NAME,
+        ifNoStores: true,
+        wait: false,
+        source: "registration",
+      });
+      if (!result.ok) {
+        this.logger.log(
+          `Skipping site creation for tenantId=${tenantId}: ${result.error.code}`,
+        );
         return;
       }
-
       this.logger.log(
-        `Received user.registered event for userId=${userId}, tenantId=${tenantId}`,
+        result.effect.created
+          ? `Default site reserved: siteId=${result.effect.store?.id} tenantId=${tenantId}, provisioning by the store lifecycle`
+          : `Skipping site creation for tenantId=${tenantId}: ${result.effect.reason}`,
       );
-
-      // Check billing entitlements - does plan allow creating sites?
-      const entitlements: BillingEntitlementsResponse = await new Promise(
-        (resolve, reject) => {
-          const sub = this.billingClient
-            .send<BillingEntitlementsResponse>("billing.get_entitlements", {
-              accountId,
-            })
-            .subscribe({
-              next: (v) => resolve(v),
-              error: (e) => {
-                this.logger.warn(
-                  `Failed to get entitlements for ${accountId}: ${e}`,
-                );
-                resolve({ shopsLimit: null }); // Continue without entitlements check
-              },
-              complete: () => sub.unsubscribe(),
-            });
-        },
-      );
-
-      // Check if user already has sites
-      let listResult: SitesListResponse;
-      try {
-        listResult = await this.sites.list(tenantId, 1, undefined);
-      } catch (e) {
-        this.logger.warn(`Failed to list sites for ${tenantId}: ${e}`);
-        listResult = { success: true, items: [] };
-      }
-
-      const existingSitesCount = Array.isArray(listResult?.items)
-        ? listResult.items.length
-        : 0;
-      const shopsLimit = entitlements?.shopsLimit ?? null;
-      const canCreate = shopsLimit === null || existingSitesCount < shopsLimit;
-
-      if (existingSitesCount === 0 && canCreate) {
-        this.logger.log(`Reserving default site for tenantId=${tenantId}`);
-
-        // Reserve the site row synchronously (~50-100ms) so user-service can
-        // create the team row from the `sites.site.created` event immediately.
-        // External provisioning (REG.RU subdomain, Coolify) happens in the
-        // background via `sites.site.provision_requested` → finishProvisioning.
-        const { id: siteId } = await this.sites.reserve({
-          tenantId,
-          actorUserId: userId,
-          name: "Мой сайт",
-          slug: undefined,
-        });
-
-        this.sites.triggerAsyncProvisioning(siteId, tenantId);
-
-        this.logger.log(
-          `Default site reserved: siteId=${siteId} tenantId=${tenantId}, provisioning in background`,
-        );
-      } else {
-        this.logger.log(
-          `Skipping site creation for tenantId=${tenantId}: existingSites=${existingSitesCount}, limit=${shopsLimit}, canCreate=${canCreate}`,
-        );
-      }
     } catch (error) {
       this.logger.error(
         `Failed to process user.registered event: ${

@@ -3,7 +3,9 @@
   "presetVersion": 1,
   "name": "Bloom",
   "slug": "bloom",
-  "description": "Пастельная тема с розовыми акцентами и пилюльными кнопками.",
+  "description": "Энергичная тема с акцентом на визуал и детали товара",
+  "previewDesktop": "/img/online_shop_page/Bloom_shop_page.png",
+  "previewMobile": "/img/online_shop_page/Bloom_shop_page_mobile.png",
   "templateId": "bloom-1.0",
   "price": 0,
   "tags": [
@@ -11,6 +13,12 @@
     "pink",
     "playful",
     "rounded"
+  ],
+  "fitsFor": [
+    "Косметика",
+    "Уход за кожей",
+    "Парфюмерия",
+    "Beauty-боксы"
   ],
   "badge": "new",
   "author": "merfy",

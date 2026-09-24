@@ -22,8 +22,8 @@ describe('SiteProvisioningScheduler local startup guard', () => {
     };
     const scheduler = new SiteProvisioningScheduler(
       {} as never,
-      {} as never,
       sites as never,
+      {} as never,
     );
 
     await scheduler.onModuleInit();
@@ -42,8 +42,8 @@ describe('SiteProvisioningScheduler local startup guard', () => {
     };
     const scheduler = new SiteProvisioningScheduler(
       {} as never,
-      {} as never,
       sites as never,
+      {} as never,
     );
 
     await scheduler.onModuleInit();

@@ -23,6 +23,7 @@ import { PG_CONNECTION } from "../constants";
 import * as schema from "../db/schema";
 import { getPageResolver } from "../themes/page-resolver-instance";
 import { getThemeManifest } from "../themes/theme-manifest-loader";
+import { emptyPageBlock } from "./page-section";
 
 /**
  * Извлекает тело («Описание») контент-страницы из её Puck-дерева: props.content
@@ -139,16 +140,7 @@ export class PagesService {
           homeHeader
             ? { ...homeHeader, props: { ...homeHeader.props, id: `Header-${newId}` } }
             : { type: "Header", props: { id: `Header-${newId}` } },
-          {
-            type: "Page",
-            props: {
-              id: `Page-${newId}`,
-              pageId: "",
-              headingSize: "medium",
-              colorScheme: "scheme-1",
-              padding: { top: 80, bottom: 80 },
-            },
-          },
+          emptyPageBlock(newId),
           homeFooter
             ? { ...homeFooter, props: { ...homeFooter.props, id: `Footer-${newId}` } }
             : { type: "Footer", props: { id: `Footer-${newId}` } },
@@ -358,18 +350,11 @@ export class PagesService {
             : "";
       // Форма блока Page зеркалит createPage (+ heading/content тела). Строим
       // лениво — нужен только на D4-путях создания секции.
-      const buildPageBlock = () => ({
-        type: "Page",
-        props: {
-          id: `Page-${params.pageId}`,
-          pageId: "",
+      const buildPageBlock = () =>
+        emptyPageBlock(params.pageId, {
           heading: headingFromName,
           content: params.content ?? "",
-          headingSize: "medium",
-          colorScheme: "scheme-1",
-          padding: { top: 80, bottom: 80 },
-        },
-      });
+        });
 
       if (blocks) {
         const pageIdx = blocks.findIndex((b: any) => b?.type === "Page");

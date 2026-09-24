@@ -3,7 +3,9 @@
   "presetVersion": 3,
   "name": "Flux",
   "slug": "flux",
-  "description": "Техно-тема с оранжевым акцентом и Roboto Flex. Подходит для электроники и гаджетов.",
+  "description": "Динамичная тема с чёткой навигацией и акцентом на визуал",
+  "previewDesktop": "/img/online_shop_page/Flux_shop_page.png",
+  "previewMobile": "/img/online_shop_page/Flux_shop_page_mobile.png",
   "templateId": "flux-1.0",
   "price": 0,
   "tags": [
@@ -11,6 +13,11 @@
     "electronics",
     "orange",
     "modern"
+  ],
+  "fitsFor": [
+    "Электроника",
+    "Гаджеты",
+    "Аксессуары для техники"
   ],
   "author": "merfy",
   "isActive": true,

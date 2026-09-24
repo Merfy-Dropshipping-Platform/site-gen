@@ -75,6 +75,13 @@ export const theme = pgTable("theme", {
   presetVersion: integer("preset_version").default(1).notNull(),
   createdAt: timestamp("created_at").$defaultFn(() => new Date()),
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
+  // Этап 3, кусок 3.4 (каталог тем, И5). Владелец темы: NULL — тема
+  // платформы, иначе tenantId мерчанта (своя тема — позже, вместе с MCP).
+  ownerTenantId: text("owner_tenant_id"),
+  // Основа своей темы: NULL — тема сама себе основа (пакет packages/theme-<id>).
+  baseThemeId: text("base_theme_id"),
+  // «Подходит для» (Merfy Docs): список строк для каталога кабинета и агента.
+  fitsFor: jsonb("fits_for").$type<string[]>(),
 });
 
 export const site = pgTable("site", {
@@ -163,6 +170,22 @@ export const site = pgTable("site", {
   // 'document' (DocumentAdapter, путь конструктора без изменений). 'delta'
   // зарезервировано под модель слоёв (merfy-mcp/docs/plans/2026-09-21-deltas-and-port.md §5).
   contentModel: text("content_model").notNull().default("document"),
+  // Этап 3 (merfy-mcp/docs/plans/2026-09-24-stage3-store-commands-saga.md, И3):
+  // состояние рождения магазина — сага reserved → seeded → provisioned → ready
+  // (+ failed). Заполняется ТОЛЬКО у магазинов, рождённых командой CreateStore;
+  // у старых — NULL, без backfill: их по-прежнему ведут старые cron
+  // (site-provisioning.scheduler), а доводчик саги (src/store/lifecycle/)
+  // берёт только непустые. Не путать со `status` — это про публикацию.
+  lifecycle: text("lifecycle").$type<
+    "reserved" | "seeded" | "provisioned" | "ready" | "failed"
+  >(),
+  // Причина последнего провала шага саги ("provision: REG.RU timeout").
+  lifecycleError: text("lifecycle_error"),
+  // Провалов подряд; сбрасывается при успехе шага.
+  lifecycleAttempts: integer("lifecycle_attempts"),
+  // Не раньше этого времени доводчик берёт строку: пауза повтора или аренда
+  // идущего прохода. NULL — строку можно брать сразу.
+  lifecycleNextAt: timestamp("lifecycle_next_at", { withTimezone: true }),
 });
 
 export const siteDomain = pgTable("site_domain", {

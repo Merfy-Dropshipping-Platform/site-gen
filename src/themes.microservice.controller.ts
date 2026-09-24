@@ -2,7 +2,7 @@
  * RMQ‑контроллер для работы с темами.
  *
  * Обрабатывает паттерны сообщений:
- * - themes.list: получить список активных тем
+ * - themes.list: каталог тем (этап 3: пять тем витрины, «подходит для», превью)
  * - themes.get: получить тему по ID
  * - themes.get_by_slug: получить тему по slug
  */
@@ -20,10 +20,13 @@ export class ThemesMicroserviceController {
   async listThemes(@Payload() data: any) {
     try {
       this.logger.log(`themes.list request: ${JSON.stringify(data)}`);
-      const { isActive } = data ?? {};
-      const result = await this.themesService.list({
-        isActive: isActive !== false,
-      });
+      const { isActive, tenantId } = data ?? {};
+      // Каталог тем (этап 3, кусок 3.4): пять тем витрины с «подходит для» и
+      // превью, `default` скрыт. Явный `isActive: false` — все строки таблицы.
+      const result =
+        isActive === false
+          ? await this.themesService.listAllRows()
+          : await this.themesService.list({ tenantId });
       return { success: true, ...result };
     } catch (e: any) {
       this.logger.error("themes.list failed", e);

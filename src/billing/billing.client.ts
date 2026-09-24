@@ -43,6 +43,89 @@ export function isStorefrontSuspended(
   return e.storefrontSuspended ?? (e.frozen || e.status === "canceled");
 }
 
+/** Права тарифа и признак «биллинг ответил по существу». */
+export interface EntitlementsReading {
+  entitlements: BillingEntitlements;
+  known: boolean;
+}
+
+export type SiteCreationRefusal =
+  | "billing_unavailable"
+  | "account_frozen"
+  | "shops_limit_reached";
+
+export type SiteCreationDecision =
+  | { allowed: true; limit: number }
+  | {
+      allowed: false;
+      limit: number;
+      reason: SiteCreationRefusal;
+      /** Детали отказа для ответа клиенту (для лимита — `limit/current`, как в 402 шлюза). */
+      details: Record<string, unknown>;
+    };
+
+export interface SiteCreationOptions {
+  /** Биллинг ответил по существу (`readEntitlements().known`). */
+  billingKnown?: boolean;
+  /** Отказать, если биллинг НЕ ответил (cron «пользователи без магазина»). */
+  refuseWhenBillingUnknown?: boolean;
+}
+
+interface SiteCreationRule {
+  reason: SiteCreationRefusal;
+  refuses: (
+    e: BillingEntitlements,
+    currentSiteCount: number,
+    opts: SiteCreationOptions,
+  ) => boolean;
+  details?: (
+    e: BillingEntitlements,
+    currentSiteCount: number,
+  ) => Record<string, unknown>;
+}
+
+/**
+ * Правила создания магазина — данными, по порядку: первое сработавшее
+ * отказывает. Порядок несущий: неизвестный биллинг проверяется ДО заморозки
+ * (иначе пустые права читались бы как «не заморожен»), заморозка — до лимита.
+ * Заморозка = витрина приостановлена ({frozen, canceled}), как у
+ * `checkSiteAvailability` и reconcile.
+ */
+const SITE_CREATION_RULES: readonly SiteCreationRule[] = [
+  {
+    reason: "billing_unavailable",
+    refuses: (_e, _n, o) =>
+      Boolean(o.refuseWhenBillingUnknown && o.billingKnown === false),
+  },
+  { reason: "account_frozen", refuses: (e) => isStorefrontSuspended(e) },
+  {
+    reason: "shops_limit_reached",
+    refuses: (e, n) => n >= e.shopsLimit,
+    details: (e, n) => ({ limit: e.shopsLimit, current: n }),
+  },
+];
+
+/**
+ * Можно ли тенанту создать ещё один магазин. Одна функция для старого пути
+ * (`canCreateSite` → `reserve()`) и команды `CreateStore` (этап 3, И2).
+ */
+export function decideSiteCreation(
+  e: BillingEntitlements,
+  currentSiteCount: number,
+  opts: SiteCreationOptions = {},
+): SiteCreationDecision {
+  const rule = SITE_CREATION_RULES.find((r) =>
+    r.refuses(e, currentSiteCount, opts),
+  );
+  if (!rule) return { allowed: true, limit: e.shopsLimit };
+  return {
+    allowed: false,
+    limit: e.shopsLimit,
+    reason: rule.reason,
+    details: rule.details?.(e, currentSiteCount) ?? {},
+  };
+}
+
 @Injectable()
 export class BillingClient {
   private readonly logger = new Logger(BillingClient.name);
@@ -98,43 +181,56 @@ export class BillingClient {
    * @returns Entitlements с лимитами и статусом
    */
   async getEntitlements(tenantId: string): Promise<BillingEntitlements> {
+    return (await this.readEntitlements(tenantId)).entitlements;
+  }
+
+  /**
+   * То же, что `getEntitlements`, плюс признак `known`: биллинг ответил по
+   * существу. `known: false` — аккаунта нет, RPC упал или ответил
+   * `success: false`; права тогда — по умолчанию (как всегда отдавал
+   * `getEntitlements`). Этап 3: команда `CreateStore` решает по этому признаку,
+   * создавать ли магазин из cron «пользователи без магазина».
+   */
+  async readEntitlements(tenantId: string): Promise<EntitlementsReading> {
     const accountId = await this.resolveAccountId(tenantId);
     if (!accountId) {
       this.logger.warn(
         `getEntitlements: no billing account for tenant ${tenantId}, falling back to defaults`,
       );
-      return this.getDefaultEntitlements();
+      return { entitlements: this.getDefaultEntitlements(), known: false };
     }
 
     try {
       const result = await firstValueFrom(
-        this.billingClient
-          .send("billing.get_entitlements", { accountId })
-          .pipe(
-            timeout(5000),
-            catchError((err) => {
-              this.logger.warn(
-                `Failed to get entitlements for account ${accountId} (tenant ${tenantId}): ${err.message}`,
-              );
-              // Возвращаем дефолтные значения при ошибке (graceful degradation)
-              return of(this.getDefaultEntitlements());
-            }),
-          ),
+        this.billingClient.send("billing.get_entitlements", { accountId }).pipe(
+          timeout(5000),
+          catchError((err) => {
+            this.logger.warn(
+              `Failed to get entitlements for account ${accountId} (tenant ${tenantId}): ${err.message}`,
+            );
+            // Дефолтные значения при ошибке (graceful degradation) — ниже.
+            return of(null);
+          }),
+        ),
       );
+      const answer = result ?? this.getDefaultEntitlements();
 
       return {
-        shopsLimit: result?.shopsLimit ?? 1,
-        staffLimit: result?.staffLimit ?? 1,
-        frozen: result?.frozen ?? false,
-        storefrontSuspended: result?.storefrontSuspended,
-        planName: result?.planName,
-        status: result?.status,
+        entitlements: {
+          shopsLimit: answer?.shopsLimit ?? 1,
+          staffLimit: answer?.staffLimit ?? 1,
+          frozen: answer?.frozen ?? false,
+          storefrontSuspended: answer?.storefrontSuspended,
+          planName: answer?.planName,
+          status: answer?.status,
+        },
+        known: result != null && result.success !== false,
       };
     } catch (e) {
       this.logger.error(
         `getEntitlements error for tenant ${tenantId} (account ${accountId}): ${e instanceof Error ? e.message : e}`,
       );
-      return this.getDefaultEntitlements();
+      return { entitlements: this.getDefaultEntitlements(), known: false };
     }
   }
 
@@ -149,32 +245,12 @@ export class BillingClient {
     tenantId: string,
     currentSiteCount: number,
   ): Promise<{ allowed: boolean; limit: number; reason?: string }> {
-    const entitlements = await this.getEntitlements(tenantId);
-
-    // Block create when the storefront is suspended ({frozen, canceled}), not
-    // just on raw `frozen` — a terminal `canceled` has frozen=false and would
-    // otherwise be allowed to create a new site. `account_frozen` reason reused
-    // (its consumer only distinguishes it from the quota case).
-    if (isStorefrontSuspended(entitlements)) {
-      return {
-        allowed: false,
-        limit: entitlements.shopsLimit,
-        reason: "account_frozen",
-      };
-    }
-
-    if (currentSiteCount >= entitlements.shopsLimit) {
-      return {
-        allowed: false,
-        limit: entitlements.shopsLimit,
-        reason: "shops_limit_reached",
-      };
-    }
-
-    return {
-      allowed: true,
-      limit: entitlements.shopsLimit,
-    };
+    const decision = decideSiteCreation(
+      await this.getEntitlements(tenantId),
+      currentSiteCount,
+    );
+    if (decision.allowed) return { allowed: true, limit: decision.limit };
+    return { allowed: false, limit: decision.limit, reason: decision.reason };
   }
 
   /**

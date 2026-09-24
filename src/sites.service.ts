@@ -21,9 +21,10 @@ import * as fs from "fs";
 import * as path from "path";
 import * as fsp from "fs/promises";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import {
   COOLIFY_RMQ_SERVICE,
+  COOLIFY_RPC_TIMEOUT_MS,
   PG_CONNECTION,
   CENTRAL_PROXY_APP_SENTINEL,
 } from "./constants";
@@ -248,6 +249,13 @@ export function carryOverMenuLinks(
   return changed ? { ...next, pagesData: nextPages } : nextData;
 }
 
+/** Что нужно, чтобы поставить маршрут хостинга магазина. */
+interface HostingTarget {
+  siteId: string;
+  slug: string | null | undefined;
+  projectUuid: string | null | undefined;
+}
+
 @Injectable()
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
@@ -325,7 +333,7 @@ export class SitesDomainService {
   private async callCoolify<T = any>(pattern: string, data: any): Promise<T> {
     const result = await firstValueFrom(
       this.coolifyClient.send(pattern, data).pipe(
-        timeout(30000),
+        timeout(COOLIFY_RPC_TIMEOUT_MS),
         catchError((err) =>
           of({ success: false, message: err?.message || "rpc_timeout" }),
         ),
@@ -722,7 +730,15 @@ export class SitesDomainService {
     tenantId: string,
     companyName?: string,
     skipCoolify?: boolean,
-  ): Promise<{ publicUrl: string | undefined }> {
+  ): Promise<{
+    publicUrl: string | undefined;
+    /**
+     * Что не получилось в ЭТОМ вызове: домен (REG.RU через domain-сервис) и/или
+     * проект Coolify. Раньше это уходило только в лог; сага рождения (этап 3)
+     * кладёт причину в `lifecycle_error`. Старые вызывающие поле игнорируют.
+     */
+    failures?: Partial<Record<"domain" | "project", string>>;
+  }> {
     const existingRows = await this.db
       .select({
         domainId: schema.site.domainId,
@@ -745,6 +761,7 @@ export class SitesDomainService {
     if (existing.domainId && existing.coolifyProjectUuid) {
       return { publicUrl: existing.publicUrl ?? undefined };
     }
+    const failures: Partial<Record<"domain" | "project", string>> = {};
 
     let domainId: string | undefined = existing.domainId ?? undefined;
     let publicUrl: string | undefined = existing.publicUrl ?? undefined;
@@ -780,8 +797,10 @@ export class SitesDomainService {
         );
       } else if (domainSettled.status === "rejected") {
         const reason = domainSettled.reason;
+        failures.domain =
+          reason instanceof Error ? reason.message : String(reason);
         this.logger.warn(
-          `finishProvisioning: Domain Service failed for site ${siteId}: ${reason instanceof Error ? reason.message : reason}`,
+          `finishProvisioning: Domain Service failed for site ${siteId}: ${failures.domain}`,
         );
       }
     }
@@ -794,8 +813,10 @@ export class SitesDomainService {
         );
       } else if (projectSettled.status === "rejected") {
         const reason = projectSettled.reason;
+        failures.project =
+          reason instanceof Error ? reason.message : String(reason);
         this.logger.warn(
-          `finishProvisioning: Coolify project failed for site ${siteId}: ${reason instanceof Error ? reason.message : reason}`,
+          `finishProvisioning: Coolify project failed for site ${siteId}: ${failures.project}`,
         );
       }
     }
@@ -804,21 +825,32 @@ export class SitesDomainService {
       `finishProvisioning: parallel provisioning for site ${siteId} took ${Date.now() - provisioningStartedAt}ms (domain=${needsDomain}, project=${needsProject})`,
     );
 
-    // UPDATE site with resolved fields (partial updates ok — reaper will retry missing bits)
-    await this.db
-      .update(schema.site)
-      .set({
-        domainId,
-        publicUrl,
-        storageSlug,
-        coolifyProjectUuid,
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.site.id, siteId));
+    // Условная запись (этап 3, М1): поле пишется, только если его ещё никто
+    // не записал. Два провижинера на одной строке (истекла аренда доводчика,
+    // событие + reaper) — побеждает первый; второй свою находку не пишет,
+    // оставляет в логе (его поддомен — сирота в domain-сервисе) и дальше
+    // работает со значениями победителя. Частичная запись по-прежнему ок —
+    // недостающее доделает следующий проход.
+    const lost = await this.writeProvisioningIfEmpty(siteId, {
+      domain: this.obtained(needsDomain, domainSettled)
+        ? { domainId, publicUrl, storageSlug }
+        : null,
+      project: this.obtained(needsProject, projectSettled)
+        ? { coolifyProjectUuid }
+        : null,
+    });
+    if (lost.length) {
+      this.logger.warn(
+        `finishProvisioning: site ${siteId} проиграл гонку за ${lost.join(", ")} — поле уже записал другой провижинер; своё не записано (domainId=${domainId}, coolifyProjectUuid=${coolifyProjectUuid})`,
+      );
+      ({ domainId, publicUrl, storageSlug, coolifyProjectUuid } =
+        await this.readProvisioning(siteId));
+    }
 
     // Record initial domain in history — SELECT-before-INSERT guard
-    // (no unique constraint on siteDomainHistory(siteId, domainId))
-    if (domainId && publicUrl) {
+    // (no unique constraint on siteDomainHistory(siteId, domainId)). Проиграл
+    // домен — историю пишет победитель, второй не дублирует.
+    if (domainId && publicUrl && !lost.includes("domain")) {
       const subdomainName = publicUrl
         .replace(/^https?:\/\//, "")
         .replace(/\/$/, "");
@@ -857,8 +889,190 @@ export class SitesDomainService {
       });
     }
 
-    return { publicUrl };
+    return { publicUrl, failures };
   }
+
+  /** Вызов провижининга был нужен и вернул значение. */
+  private obtained(
+    needed: boolean,
+    settled: PromiseSettledResult<unknown>,
+  ): boolean {
+    return needed && settled.status === "fulfilled" && Boolean(settled.value);
+  }
+
+  /**
+   * Пишет группы полей провижининга, только если их поле-признак ещё пусто
+   * (`domain_id` / `coolify_project_uuid`). Возвращает группы, где запись
+   * опоздала: поле уже записал кто-то другой.
+   */
+  private async writeProvisioningIfEmpty(
+    siteId: string,
+    parts: {
+      domain: {
+        domainId?: string;
+        publicUrl?: string;
+        storageSlug?: string;
+      } | null;
+      project: { coolifyProjectUuid?: string } | null;
+    },
+  ): Promise<Array<"domain" | "project">> {
+    const groups = [
+      { name: "domain", guard: schema.site.domainId, values: parts.domain },
+      {
+        name: "project",
+        guard: schema.site.coolifyProjectUuid,
+        values: parts.project,
+      },
+    ] as const;
+    const lost: Array<"domain" | "project"> = [];
+    for (const group of groups) {
+      if (!group.values) continue;
+      const written = await this.db
+        .update(schema.site)
+        .set({ ...group.values, updatedAt: new Date() })
+        .where(and(eq(schema.site.id, siteId), isNull(group.guard)))
+        .returning({ id: schema.site.id });
+      if (!written.length) lost.push(group.name);
+    }
+    return lost;
+  }
+
+  /** Поля провижининга строки как есть — после проигранной гонки. */
+  private async readProvisioning(siteId: string): Promise<{
+    domainId?: string;
+    publicUrl?: string;
+    storageSlug?: string;
+    coolifyProjectUuid?: string;
+  }> {
+    const [row] = await this.db
+      .select({
+        domainId: schema.site.domainId,
+        publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+    return {
+      domainId: row?.domainId ?? undefined,
+      publicUrl: row?.publicUrl ?? undefined,
+      storageSlug: row?.storageSlug ?? undefined,
+      coolifyProjectUuid: row?.coolifyProjectUuid ?? undefined,
+    };
+  }
+
+  /**
+   * Маршрут хостинга магазина — шаг `route` саги рождения (этап 3, кусок 3.1).
+   *
+   * То же, что reaper делал для старых магазинов (`migrateOrphanedSites`, шаг
+   * 3): роутер центрального прокси или per-site app. Идемпотентно: app уже
+   * записан — ничего не делает. Запись условная (`coolify_app_uuid IS NULL`) —
+   * не перетирает app, который успела записать параллельная публикация.
+   * Провал не бросает — возвращает причину, её сага кладёт в `lifecycle_error`.
+   */
+  async ensureSiteHosting(
+    siteId: string,
+  ): Promise<{ coolifyAppUuid: string | null; error?: string }> {
+    const [site] = await this.db
+      .select({
+        coolifyAppUuid: schema.site.coolifyAppUuid,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+        publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+    if (!site) return { coolifyAppUuid: null, error: "site_not_found" };
+    if (site.coolifyAppUuid) return { coolifyAppUuid: site.coolifyAppUuid };
+
+    const slug =
+      site.storageSlug ||
+      (site.publicUrl
+        ? this.storage.extractSubdomainSlug(site.publicUrl)
+        : null);
+    const hosting = await this.resolveSiteHosting({
+      siteId,
+      slug,
+      projectUuid: site.coolifyProjectUuid,
+    });
+    if (!hosting.coolifyAppUuid) return hosting;
+
+    await this.db
+      .update(schema.site)
+      .set({ coolifyAppUuid: hosting.coolifyAppUuid, updatedAt: new Date() })
+      .where(
+        and(eq(schema.site.id, siteId), isNull(schema.site.coolifyAppUuid)),
+      );
+    return hosting;
+  }
+
+  /**
+   * Роутер центрального прокси (SITES_USE_CENTRAL_PROXY) или per-site static
+   * app в проекте тенанта. Общий код reaper и саги; в строку не пишет —
+   * возвращает app для записи или причину провала. Режимы — таблица
+   * `hostingModes`, провал любого — одной веткой ниже.
+   */
+  private async resolveSiteHosting(params: HostingTarget): Promise<{
+    coolifyAppUuid: string | null;
+    error?: string;
+  }> {
+    if (!params.slug)
+      return { coolifyAppUuid: null, error: "no storage slug yet" };
+    const mode = this.deployments.centralProxyEnabled
+      ? "centralProxy"
+      : "perSite";
+    try {
+      const coolifyAppUuid = await this.hostingModes[mode]({
+        ...params,
+        slug: params.slug,
+      });
+      this.logger.log(
+        `Site ${params.siteId}: hosting (${mode}) ready for ${buildSiteHost(params.slug)} — app ${coolifyAppUuid}`,
+      );
+      return { coolifyAppUuid };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      this.logger.warn(
+        `Site ${params.siteId}: hosting (${mode}) error: ${error}`,
+      );
+      return { coolifyAppUuid: null, error };
+    }
+  }
+
+  /**
+   * Как магазин получает маршрут хостинга. Возвращает `coolifyAppUuid` или
+   * бросает с причиной.
+   *   centralProxy — Phase 3: Traefik dynamic-роутер на общий прокси вместо
+   *                  per-site контейнера; sentinel закрывает сайт от повтора;
+   *   perSite      — static site app в проекте тенанта в Coolify.
+   */
+  private readonly hostingModes: Record<
+    "centralProxy" | "perSite",
+    (target: HostingTarget & { slug: string }) => Promise<string>
+  > = {
+    centralProxy: async ({ slug }) => {
+      await this.deployments.ensureCentralRouter(slug);
+      return CENTRAL_PROXY_APP_SENTINEL;
+    },
+    perSite: async ({ slug, projectUuid }) => {
+      if (!projectUuid) throw new Error("no coolify project yet");
+      const created = await this.callCoolify<{
+        success: boolean;
+        appUuid?: string;
+        message?: string;
+      }>("coolify.create_static_site_app", {
+        projectUuid,
+        name: `site-${slug}`,
+        subdomain: buildSiteHost(slug),
+        sitePath: `sites/${slug}`,
+      });
+      if (!created.success || !created.appUuid)
+        throw new Error(created.message || "coolify_app_create_failed");
+      return created.appUuid;
+    },
+  };
 
   /**
    * Backward-compat facade: synchronously creates AND provisions a site.
@@ -1162,6 +1376,37 @@ export class SitesDomainService {
         siteId: params.siteId,
         patch: params.patch ?? {},
       });
+    return Boolean(row);
+  }
+
+  /**
+   * Выбор темы магазином — строка `site` после команды `SetTheme` (этап 3,
+   * кусок 3.3): `themeId` и дата выбора темы (`themeAppliedAt`, см. `update()`).
+   * Ревизию команда пишет сама через порт StoreContent и ДО этого вызова —
+   * чтобы при сбое записи магазин не остался с новой темой и старым содержимым.
+   */
+  async recordThemeChoice(params: {
+    tenantId: string;
+    siteId: string;
+    themeId: string;
+    actorUserId?: string;
+  }): Promise<boolean> {
+    const now = new Date();
+    const [row] = await this.db
+      .update(schema.site)
+      .set({
+        themeId: params.themeId,
+        themeAppliedAt: now,
+        updatedAt: now,
+        ...(params.actorUserId ? { updatedBy: params.actorUserId } : {}),
+      })
+      .where(
+        and(
+          eq(schema.site.id, params.siteId),
+          eq(schema.site.tenantId, params.tenantId),
+        ),
+      )
+      .returning({ id: schema.site.id });
     return Boolean(row);
   }
 
@@ -1705,8 +1950,11 @@ export class SitesDomainService {
   /**
    * Build initial revision data using PageResolver. Replaces getDefaultContent
    * legacy seed path. Gated by USE_PAGE_RESOLVER ENV flag.
+   *
+   * Публичный с этапа 3: канон темы берут шаг `seed` саги рождения и команда
+   * `SetTheme` (src/store/) — тот же источник, что у `reserve()`/`update()`.
    */
-  private async buildInitialRevision(themeId: string): Promise<any> {
+  async buildInitialRevision(themeId: string): Promise<any> {
     if (!USE_PAGE_RESOLVER) {
       return this.getDefaultContent(themeId);
     }
@@ -2388,11 +2636,15 @@ export class SitesDomainService {
         sql`${schema.tenantProject.coolifyProjectUuid} LIKE 'mock-project-%'`,
       );
 
-    // Сбрасываем mock coolifyProjectUuid в сайтах
+    // Сбрасываем mock coolifyProjectUuid в сайтах. Только у старых магазинов
+    // (lifecycle IS NULL): строки саги рождения ведёт доводчик (этап 3, И7), и
+    // готовый магазин с обнулённым проектом он бы уже не подобрал.
     await this.db
       .update(schema.site)
       .set({ coolifyProjectUuid: null, updatedAt: new Date() })
-      .where(sql`${schema.site.coolifyProjectUuid} LIKE 'mock-project-%'`);
+      .where(
+        sql`${schema.site.coolifyProjectUuid} LIKE 'mock-project-%' AND ${schema.site.lifecycle} IS NULL`,
+      );
 
     this.logger.log("Cleared all mock cache data");
   }
@@ -2417,6 +2669,9 @@ export class SitesDomainService {
     // domainId — authoritative marker: publicUrl/storageSlug derive from the
     // domain record, so `domainId IS NULL` covers all not-yet-provisioned cases
     // (including sites reserved by the async signup flow).
+    // Только старые магазины (`lifecycle IS NULL`): магазины, рождённые командой
+    // CreateStore, ведёт доводчик саги (src/store/lifecycle/) — reaper и
+    // доводчик не делят строки (этап 3, И7).
     const orphanedSites = await this.db
       .select({
         id: schema.site.id,
@@ -2429,7 +2684,7 @@ export class SitesDomainService {
       })
       .from(schema.site)
       .where(
-        sql`${schema.site.deletedAt} IS NULL AND ${schema.site.coolifyAppUuid} IS DISTINCT FROM ${CENTRAL_PROXY_APP_SENTINEL} AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
+        sql`${schema.site.deletedAt} IS NULL AND ${schema.site.lifecycle} IS NULL AND ${schema.site.coolifyAppUuid} IS DISTINCT FROM ${CENTRAL_PROXY_APP_SENTINEL} AND (${schema.site.domainId} IS NULL OR ${schema.site.coolifyProjectUuid} IS NULL OR ${schema.site.coolifyAppUuid} IS NULL)`,
       );
 
     this.logger.log(
@@ -2485,55 +2740,17 @@ export class SitesDomainService {
         const finalPublicUrl = site.publicUrl || updates.publicUrl;
         const slug = site.storageSlug || updates.storageSlug
           || (finalPublicUrl ? this.storage.extractSubdomainSlug(finalPublicUrl) : null);
-        if (!currentCoolifyAppUuid && slug && this.deployments.centralProxyEnabled) {
-          // Phase 3: central proxy — Traefik dynamic-роутер вместо per-site
-          // контейнера. Sentinel закрывает сайт от повторного провижна.
-          try {
-            await this.deployments.ensureCentralRouter(slug);
-            updates.coolifyAppUuid = CENTRAL_PROXY_APP_SENTINEL;
-            this.logger.log(
-              `Site ${site.id}: central proxy router ensured for ${buildSiteHost(slug)} (no per-site app)`,
-            );
-          } catch (e) {
-            this.logger.warn(
-              `Site ${site.id}: central proxy router ensure error: ${e instanceof Error ? e.message : e}`,
-            );
-          }
-        } else if (!currentCoolifyAppUuid && slug && projectUuid) {
-          try {
-            const sitePath = `sites/${slug}`;
-
-            this.logger.log(
-              `Site ${site.id}: creating Coolify app for ${buildSiteHost(slug)}`,
-            );
-
-            const coolifyResult = await this.callCoolify<{
-              success: boolean;
-              appUuid?: string;
-              url?: string;
-              message?: string;
-            }>("coolify.create_static_site_app", {
-              projectUuid,
-              name: `site-${slug}`,
-              subdomain: buildSiteHost(slug),
-              sitePath,
-            });
-
-            if (coolifyResult.success && coolifyResult.appUuid) {
-              updates.coolifyAppUuid = coolifyResult.appUuid;
-              this.logger.log(
-                `Site ${site.id}: created Coolify app ${coolifyResult.appUuid}`,
-              );
-            } else {
-              this.logger.warn(
-                `Site ${site.id}: Coolify app creation failed: ${coolifyResult.message}`,
-              );
-            }
-          } catch (e) {
-            this.logger.warn(
-              `Site ${site.id}: Coolify app creation error: ${e instanceof Error ? e.message : e}`,
-            );
-          }
+        if (!currentCoolifyAppUuid) {
+          // Общий с шагом `route` саги рождения код (этап 3): роутер
+          // центрального прокси или per-site app. Провал — без app, reaper
+          // повторит на следующем тике, как и раньше.
+          const hosting = await this.resolveSiteHosting({
+            siteId: site.id,
+            slug,
+            projectUuid,
+          });
+          if (hosting.coolifyAppUuid)
+            updates.coolifyAppUuid = hosting.coolifyAppUuid;
         }
 
         // 4. Обновляем сайт

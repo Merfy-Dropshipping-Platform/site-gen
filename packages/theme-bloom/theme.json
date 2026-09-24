@@ -76,7 +76,7 @@
       "alignment": "left",
       "size": "large",
       "colorScheme": "scheme-1",
-      "overlay": 40,
+      "overlay": 0,
       "heading": {
         "text": "Изображение"
       },

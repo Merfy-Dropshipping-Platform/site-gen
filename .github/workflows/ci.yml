@@ -1597,6 +1597,11 @@ jobs:
       # разметка байт в байт прежняя.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-hero-like-designers.spec.ts
+      # «Затемнение» первого экрана bloom по умолчанию 0, как у верстальщиков
+      # (владелец 24.09: серый слой 40% во всю ширину). Своё значение мерчанта
+      # остаётся.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/bloom-hero-overlay-default.spec.ts
       # Секции bloom под PARITY_DESIGN — отступы, зазоры и высота строк как в
       # актуальной вёрстке верстальщиков: «Основной текст», «Мультиколонны»,
       # «Галерея», «Подвал» (владелец 23.09 «пройтись по всем секциям»). Капс

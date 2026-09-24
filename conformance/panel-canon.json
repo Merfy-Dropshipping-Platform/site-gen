@@ -1830,10 +1830,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -4990,10 +5010,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -8141,10 +8181,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -11282,10 +11342,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -14423,10 +14503,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },

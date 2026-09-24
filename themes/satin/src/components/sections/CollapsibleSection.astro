@@ -63,7 +63,25 @@ const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-
 // «должен применяться только к заголовку секции, а не к разделам». Раньше ряд
 // шёл за headingSize (15/17 … 22/24), и satin была единственной темой, где
 // настройка секции меняла разделы (замер браузером: 17 → 24 px).
-const summarySizeCls = "text-[18px] md:text-[20px]";
+//
+// «Раздел» ▸ «Размер заголовка» / «Размер текста» (тестер 24.09) — свои у
+// каждого пункта. medium и отсутствие значения = прежний вид байт-в-байт
+// (18/md:20 и .satin-copy 16px); small ≈0.85×, large ≈1.2× (шаг лестниц рядов
+// MultiRows). Размер текста — с «!»: .satin-copy стоит вне слоёв и перебивает
+// обычную утилиту (см. PARITY_DESIGN в MultiRows.astro). Ряд-плейсхолдер пустого
+// состояния размеров не несёт и остаётся на medium.
+const ITEM_HEADING_SIZE: Record<string, string> = {
+	small: "text-[15px] md:text-[17px]",
+	medium: "text-[18px] md:text-[20px]",
+	large: "text-[22px] md:text-[24px]",
+};
+const ITEM_TEXT_SIZE: Record<string, string> = {
+	small: " !text-[14px]",
+	medium: "",
+	large: " !text-[19px]",
+};
+const sizeOf = <T,>(map: Record<string, T>, v: unknown): T =>
+	map[typeof v === "string" && Object.hasOwn(map, v) ? v : "medium"];
 
 // Канон sections[] 1-10 {heading, content} (+ pupa items[] {title, content}).
 // Curated-модель (как theme-base PopularProducts/Collections, эталон процесса —
@@ -98,6 +116,8 @@ const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
 		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
 	content: typeof s.content === "string" ? s.content : "",
+	headingCls: sizeOf(ITEM_HEADING_SIZE, s.headingSize),
+	textCls: sizeOf(ITEM_TEXT_SIZE, s.textSize),
 }));
 
 // Канон containerEnabled (toggle; legacy container.enabled) — surface-подложка
@@ -194,12 +214,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						   сохранена для вида. */
 						<div class={`flex w-full flex-col gap-3 ${itemBoxCls}`}>
 							<div
-								class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+								class={`flex w-full items-center justify-between gap-4 font-logo ${s.headingCls} font-normal leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
 							>
 								<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 								<NtIcon name="plus" sizeClass="size-8" class="shrink-0" />
 							</div>
-							<div class="satin-copy max-w-[1100px]">{s.content}</div>
+							<div class={`satin-copy max-w-[1100px]${s.textCls}`}>{s.content}</div>
 						</div>
 					) : (
 						<details
@@ -212,7 +232,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						>
 							<summary class="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
 								<div
-									class={`flex w-full items-center justify-between gap-4 font-logo ${summarySizeCls} font-normal leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
+									class={`flex w-full items-center justify-between gap-4 font-logo ${s.headingCls} font-normal leading-[1.2] text-[rgb(var(--color-heading,0_0_0))]`}
 								>
 									<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 									<NtIcon name="plus" sizeClass="size-8" class="shrink-0 group-open:hidden" />
@@ -220,7 +240,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								</div>
 							</summary>
 							<div class="overflow-hidden" data-faq-answer>
-								<div class="satin-copy mt-3 max-w-[1100px]" set:html={inlineFormat(s.content)} />
+								<div class={`satin-copy mt-3 max-w-[1100px]${s.textCls}`} set:html={inlineFormat(s.content)} />
 							</div>
 						</details>
 					),

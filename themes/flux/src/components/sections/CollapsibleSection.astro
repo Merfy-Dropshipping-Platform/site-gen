@@ -73,10 +73,28 @@ const merchantSections =
 			: null;
 const isPlaceholder = !merchantSections;
 const rawSections = merchantSections ?? PLACEHOLDER_SECTIONS;
+// «Раздел» ▸ «Размер заголовка» / «Размер текста» (тестер 24.09) — свои у
+// каждого пункта. medium и отсутствие значения = прежний вид темы байт-в-байт;
+// small ≈0.85×, large ≈1.2× (шаг лестниц рядов MultiRows). Ряд-плейсхолдер
+// пустого состояния размеров не несёт и остаётся на medium.
+const ITEM_HEADING_SIZE: Record<string, { base: string; md: string }> = {
+	small: { base: "text-[14px]", md: "md:text-[16px]" },
+	medium: { base: "text-[16px]", md: "md:text-[19px]" },
+	large: { base: "text-[19px]", md: "md:text-[23px]" },
+};
+const ITEM_TEXT_SIZE: Record<string, string> = {
+	small: "text-[14px]",
+	medium: "text-[16px]",
+	large: "text-[19px]",
+};
+const sizeOf = <T,>(map: Record<string, T>, v: unknown): T =>
+	map[typeof v === "string" && Object.hasOwn(map, v) ? v : "medium"];
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
 		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
 	content: typeof s.content === "string" ? s.content : "",
+	headingCls: sizeOf(ITEM_HEADING_SIZE, s.headingSize),
+	textCls: sizeOf(ITEM_TEXT_SIZE, s.textSize),
 }));
 
 // Канон containerEnabled (toggle; legacy container.enabled) — per-element:
@@ -184,7 +202,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								   реального ответа нет, помощь видна сразу (паттерн пустого
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] md:text-[19px]">
+									<div class={`flex w-full items-center justify-between gap-4 font-roboto-flex ${s.headingCls.base} font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] ${s.headingCls.md}`}>
 										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<svg
 											class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))]"
@@ -195,14 +213,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 											<path d="M11.7899 10.3255C11.9111 10.1838 11.9118 9.9751 11.7916 9.83248L8.31861 5.71147C8.15213 5.51393 7.84787 5.51393 7.68139 5.71147L4.20838 9.83248C4.08819 9.9751 4.08892 10.1838 4.21011 10.3255C4.36289 10.5043 4.63951 10.5033 4.79103 10.3235L7.68139 6.89386C7.84787 6.69632 8.15213 6.69632 8.31861 6.89386L11.209 10.3235C11.3605 10.5033 11.6371 10.5043 11.7899 10.3255Z" />
 										</svg>
 									</div>
-									<p class="font-roboto-flex text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]">
+									<p class={`font-roboto-flex ${s.textCls} font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]`}>
 										{s.content}
 									</p>
 								</div>
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-roboto-flex text-[16px] font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 md:text-[19px]">
+										<div class={`flex w-full items-center justify-between gap-4 font-roboto-flex ${s.headingCls.base} font-normal leading-snug text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-70 ${s.headingCls.md}`}>
 											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<svg
 												class="size-5 shrink-0 rotate-180 text-[rgb(var(--color-heading,0_0_0))] transition-[transform,color] duration-300 group-open:rotate-0 group-open:text-[#FA5109]"
@@ -215,7 +233,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										</div>
 									</summary>
 									<div
-										class="pb-5 font-roboto-flex text-[16px] font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]"
+										class={`pb-5 font-roboto-flex ${s.textCls} font-light leading-[1.6] text-[rgb(var(--color-text,0_0_0))]`}
 										set:html={inlineFormat(s.content)}
 									/>
 								</details>

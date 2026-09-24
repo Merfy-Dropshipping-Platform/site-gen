@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (bloom): новая канон-секция ImageWithText в манере bloom (см.
 // themes/bloom/MANNER.md). Секции нет у верстальщика — композиция из манеры:
 // сетка секций §2 (поля px-4 md:px-20 2xl:px-[300px], вертикаль 80/120),
@@ -8,6 +9,14 @@ import { inlineFormat } from "../../lib/rich-text";
 // packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Field-order 24.09 (тестер: «слетели дрэг-н-дропы»): порядок заголовка/
+// текста/кнопки из перетаскивания в конструкторе (props.fieldOrder). Обе
+// раскладки (наложение и без) держат `gap-6` на карточке — CSS gap не
+// добавляет отступ ни перед первым, ни после последнего элементом, поэтому
+// перестановке отдельный зазорный код не нужен. Нет fieldOrder → порядок
+// реестра, isDefaultOrder держит разметку БЕЗ ЕДИНОГО изменения байта.
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 // Своя colorScheme на корне секции: при hot-render одиночного блока в превью
 // обёртки композитора НЕТ, и секция берёт :root — соседние секции «перекрашиваются»
 // от правки чужой настройки. На live обёртка даёт ту же схему, дубль безвреден
@@ -343,7 +352,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${seamCardCls}${containerSchemeCls}`
 			}
 		>
-			{!isFieldHidden('heading') && (
+			{isDefaultOrder && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls + headingAlignCls + italicCls}
@@ -353,7 +362,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					set:html={inlineFormat(heading)}
 				></h2>
 			)}
-			{!isFieldHidden('text') && (
+			{isDefaultOrder && !isFieldHidden('text') && (
 				<div
 					class={textCls + italicCls + headingAlignCls}
 					data-puck-subsection-parent={id}
@@ -363,7 +372,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 			{
-				btnText && (
+				isDefaultOrder && btnText && (
 					<div class={(inlineCta ? "mt-2" : "mt-auto") + ctaAlignCls}>
 						{!isFieldHidden('button') && (
 						<a
@@ -379,6 +388,53 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				)
 			}
+			{/* Field-order: те же три узла, тот же gap-6 карточки, порядок вставки
+			   из fieldOrder. Кнопка теряет mt-2 (зазор ОТ ТЕКСТА — заменён на gap
+			   карточки), mt-auto (прижать к низу, ctaPosition) остаётся. */}
+			{!isDefaultOrder && fieldOrder.map((field) => {
+				// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона Astro
+				// читает как открывающий тег и рвёт разметку молча.
+				const nodes = {
+					heading: !isFieldHidden('heading') && (
+						<h2
+							id={titleId}
+							class={headingCls + headingAlignCls + italicCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="heading"
+							set:html={inlineFormat(heading)}
+						></h2>
+					),
+					text: !isFieldHidden('text') && (
+						<div
+							class={textCls + italicCls + headingAlignCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="text"
+							set:html={inlineFormat(text)}
+						/>
+					),
+					// mt-2 (зазор ОТ ТЕКСТА) снят — его заменяет gap-6 карточки; mt-auto
+					// (прижать к низу, ctaPosition) и ctaAlignCls (выравнивание кнопки)
+					// остаются — это отдельные от перестановки настройки.
+					button: btnText && (
+						<div class={(inlineCta ? "" : "mt-auto") + ctaAlignCls}>
+							{!isFieldHidden('button') && (
+							<a
+								href={btnHref}
+								class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="button"
+							>
+								{btnText}
+							</a>
+							)}
+						</div>
+					),
+				};
+				return nodes[field];
+			})}
 		</div>
 	</div>
 </section>

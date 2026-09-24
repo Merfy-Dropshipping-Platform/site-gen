@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (satin): канон-секция ImageWithText — адаптация ImageBanner.astro (см.
 // themes/satin/MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ —
 // ImageBanner.astro не тронут (его использует index.astro:28). Схема полей =
@@ -10,6 +11,14 @@ import { inlineFormat } from "../../lib/rich-text";
 // текст, кнопка).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+// Field-order 24.09: порядок заголовка/текста/кнопки из перетаскивания в
+// конструкторе (props.fieldOrder). Колонка держит `gap-5` с явным
+// `items-*` (colAlignCls ниже) — она не растягивает детей, значит зазор
+// между переставленными полями даёт тот же gap без отдельного кода. Нет
+// fieldOrder → порядок реестра, isDefaultOrder держит разметку БЕЗ ЕДИНОГО
+// изменения байта.
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
 function contentSet(keys: string | string[], raw: unknown): boolean {
 	const ks = Array.isArray(keys) ? keys : [keys];
@@ -277,7 +286,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				   те же, что у левой панели конструктора (100 изображение, 101
 				   заголовок, 102 текст, 103 кнопка): нажатие в превью открывает
 				   тот же подпункт, а не соседний. */}
-				{!isFieldHidden('heading') && (
+				{isDefaultOrder && !isFieldHidden('heading') && (
 					<h2
 						class={headingCls + italicCls}
 						data-puck-subsection-parent={id}
@@ -286,7 +295,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						set:html={inlineFormat(heading)}
 					/>
 				)}
-				{text && !isFieldHidden('text') && (
+				{isDefaultOrder && text && !isFieldHidden('text') && (
 					<p
 						class={textCls + italicCls}
 						data-puck-subsection-parent={id}
@@ -296,7 +305,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					/>
 				)}
 				{
-					btnText && !isFieldHidden('button') && (
+					isDefaultOrder && btnText && !isFieldHidden('button') && (
 						<a
 							href={btnHref}
 							class={btnCls + (bottomPinned ? " mt-auto" : "")}
@@ -308,6 +317,46 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</a>
 					)
 				}
+				{/* Field-order: колонка держит явный `items-*` (colAlignCls) — дети
+				   размером по контенту, не растягиваются, значит переставленный
+				   узел не нужно ничем оборачивать; gap-5 родителя даёт тот же
+				   зазор любой паре. */}
+				{!isDefaultOrder && fieldOrder.map((field) => {
+					// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона
+					// Astro читает как открывающий тег и рвёт разметку молча.
+					const nodes = {
+						heading: !isFieldHidden('heading') && (
+							<h2
+								class={headingCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="heading"
+								set:html={inlineFormat(heading)}
+							/>
+						),
+						text: text && !isFieldHidden('text') && (
+							<p
+								class={textCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="text"
+								set:html={inlineFormat(text)}
+							/>
+						),
+						button: btnText && !isFieldHidden('button') && (
+							<a
+								href={btnHref}
+								class={btnCls + (bottomPinned ? " mt-auto" : "")}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="button"
+							>
+								{btnText}
+							</a>
+						),
+					};
+					return nodes[field];
+				})}
 			</div>
 		</div>
 	</div>

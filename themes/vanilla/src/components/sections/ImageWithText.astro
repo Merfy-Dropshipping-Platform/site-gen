@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (vanilla): канон-секция ImageWithText — адаптация care-бэнда
 // sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
 // MANNER.md §10). Тело верстальщика перенесено КОПИЕЙ — Gallery.astro НЕ
@@ -16,6 +17,13 @@ import { inlineFormat } from "../../lib/rich-text";
 //     PopularProducts (collectionRef) / Collections (hasManualCollections).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+
+// Field-order 24.09 (тестер: «слетели дрэг-н-дропы»): порядок заголовка/
+// текста/кнопки из перетаскивания в конструкторе. Колонка ниже держит зазор
+// МАРЖИНОМ на каждом поле (TEXT_MT_CLS/ctaMtCls), а не `gap` — переставленный
+// набор рисуется отдельным путём (ниже, у самой разметки).
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 
 // ──────────────────────────────────────────────────────────────────────────
 // Гейт пустого состояния (Figma 1:19335 — empty-state ЗАМЕНЯЕТ мок верстальщика).
@@ -85,12 +93,15 @@ const TEXT_MT_CLS = designParity ? "mt-3" : "mt-5";
 const LAYOUT = designLayout
 	? { justify: "lg:items-start lg:justify-between", textCol: "lg:w-[352px] lg:shrink-0", media: "lg:w-[652px] lg:shrink-0" }
 	: { justify: "lg:justify-center", textCol: "lg:min-w-0 lg:shrink lg:grow-0", media: "lg:min-w-0 lg:max-w-none lg:shrink lg:grow-0" };
-const textCls =
+// Field-order: тело класса БЕЗ отступа-от-соседа — нужно custom-порядку
+// (там отступ не «text-специфичный», а позиционный, см. ниже у разметки).
+const textClsBody =
 	textSize === "small"
-		? `${TEXT_MT_CLS} flex w-full flex-col gap-4 font-vanilla-arsenal text-[10px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`
+		? `flex w-full flex-col gap-4 font-vanilla-arsenal text-[10px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`
 		: textSize === "medium"
-			? `${TEXT_MT_CLS} flex w-full flex-col gap-4 font-vanilla-arsenal text-[12px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`
-			: `${TEXT_MT_CLS} flex w-full flex-col gap-4 font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`;
+			? `flex w-full flex-col gap-4 font-vanilla-arsenal text-[12px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`
+			: `flex w-full flex-col gap-4 font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))]`;
+const textCls = `${TEXT_MT_CLS} ${textClsBody}`;
 
 // Канон textStyle: blockDefaults-литерал 'italic' = курсив верстальщика —
 // снимается только явным 'normal'.
@@ -203,7 +214,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   (в бандле ноль вхождений «basis») — на них опираться нельзя. */}
 		<div class={`flex w-full flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""} ${LAYOUT.textCol}`}>
 		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}`}>
-			{
+			{isDefaultOrder && (
 				heading && !isFieldHidden('heading') && (
 					<h2
 						id={titleId}
@@ -215,8 +226,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<Fragment set:html={inlineFormat(heading)} />
 					</h2>
 				)
-			}
-			{!isFieldHidden('text') && (
+			)}
+			{isDefaultOrder && !isFieldHidden('text') && (
 				<div
 					class={textCls + italicCls + alignCls}
 					data-puck-subsection-parent={id}
@@ -226,7 +237,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 			{
-				btnText && !isFieldHidden('button') && (
+				isDefaultOrder && btnText && !isFieldHidden('button') && (
 					<a
 						href={btnHref}
 						class={`${ctaMtCls} ${selfCls} ${btnCls}`}
@@ -238,6 +249,50 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</a>
 				)
 			}
+			{/* Field-order: колонка держит зазор МАРЖИНОМ на поле (не `gap`), поэтому
+			   отступ считаем ПОЗИЦИОННО — GAP_AT[i] воспроизводит тот же отступ,
+			   что сейчас стоит между heading→text (TEXT_MT_CLS) и text→button
+			   (ctaMtCls), первому месту отступ не даём. */}
+			{!isDefaultOrder && fieldOrder.map((field, i) => {
+				const GAP_AT = ["", TEXT_MT_CLS, ctaMtCls];
+				const gapCls = GAP_AT[i];
+				// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона Astro
+				// читает как открывающий тег и рвёт разметку молча.
+				const nodes = {
+					heading: heading && !isFieldHidden('heading') && (
+						<h2
+							id={titleId}
+							class={`${gapCls} ${headingCls}${alignCls}${italicCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="100"
+							data-puck-subsection-field="heading"
+						>
+							<Fragment set:html={inlineFormat(heading)} />
+						</h2>
+					),
+					text: !isFieldHidden('text') && (
+						<div
+							class={`${gapCls} ${textClsBody}${italicCls}${alignCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="text"
+							set:html={inlineFormat(text)}
+						/>
+					),
+					button: btnText && !isFieldHidden('button') && (
+						<a
+							href={btnHref}
+							class={`${gapCls} ${selfCls} ${btnCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="button"
+						>
+							{btnText}
+						</a>
+					),
+				};
+				return nodes[field];
+			})}
 		</div>
 		</div>
 		{!isFieldHidden('image') && (

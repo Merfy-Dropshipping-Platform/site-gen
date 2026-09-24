@@ -36,11 +36,19 @@ const HEADER_BP = {
 		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden",
 		desktopWrap: "hidden w-full md:block",
 		sidebarNavHide: "md:!hidden",
+		// Строка «логотип по центру» — грид [1fr auto 1fr]. Логотип стоит в
+		// разметке ПЕРВЫМ с col-start-2, меню за ним с col-start-1: обычная
+		// раскладка грида не возвращается назад по строке и уводит меню и иконки
+		// во ВТОРУЮ строку (замер 1470: логотип y=51, меню y=80, шапка вдвое
+		// выше). У верстальщика всё в одной строке — dense ставит меню и иконки
+		// в свободные ячейки первой.
+		centerRowFlow: "grid-flow-dense",
 	},
 	legacy: {
 		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
 		desktopWrap: "hidden w-full lg:block",
 		sidebarNavHide: "lg:!hidden",
+		centerRowFlow: "",
 	},
 }[designParity ? "designers" : "legacy"];
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
@@ -105,6 +113,7 @@ const singleRowCentered = logoPosition === "center-absolute";
 const desktopRowCls = [
 	"satin-pad mx-auto w-full max-w-[1920px] items-center",
 	singleRowCentered ? "grid grid-cols-[1fr_auto_1fr]" : "flex",
+	singleRowCentered ? HEADER_BP.centerRowFlow : "",
 	headerPad ? "" : "min-h-16",
 	logoLeft ? "gap-8" : "justify-between",
 ]

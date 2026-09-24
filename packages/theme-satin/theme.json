@@ -62,10 +62,6 @@
         "quickAdd": "true",
         "buttonText": "В корзину"
       },
-      "padding": {
-        "top": 80,
-        "bottom": 80
-      },
       "viewAll": {
         "show": true,
         "text": "Смотреть ещё",

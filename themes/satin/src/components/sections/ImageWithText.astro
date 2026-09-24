@@ -135,6 +135,12 @@ const mdHeightCls =
 
 // Канон width (s/m/l/full): full/отсутствие = литерал-полотно max-w-[1920px];
 // лестница контейнеров манеры: large 1320, medium 1080, small 780.
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): у
+// верстальщика (Satin-theme @cb548963, ImageBanner.astro:29) фото и текст
+// стоят встык — половины по 50%, без зазора. Под признаком так рисуется только
+// «Ширина» не задана; заданная мерчантом — с зазором 40, как решили 15.09.
+const designParity = p.__designParity === true;
+const pairGapCls = designParity && p.width === undefined ? "" : " md:gap-x-10";
 const widthCls =
 	p.width === "small"
 		? "max-w-[780px]"
@@ -227,7 +233,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	   `--spacing-grid-col-gap` в packages/theme-satin/theme.json и md:gap-10 в
 	   satin/MultiRows.astro. Только по колонкам (gap-x): на 375px пара стоит в
 	   стопку, вертикальный стык — часть полосы satin, его не трогаем. */}
-	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2 md:gap-x-10`}>
+	<div class={`mx-auto grid w-full ${widthCls} grid-cols-1 md:grid-cols-2${pairGapCls}`}>
 		{!isFieldHidden('image') && (
 		<div
 			class:list={[

@@ -41,6 +41,7 @@ import { getPageResolver } from "./themes/page-resolver-instance";
 import { getThemeManifest } from "./themes/theme-manifest-loader";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import { isStoreVersion } from "./content/revision-kinds";
+import { rewriteCurrent } from "./content/rewrite-current";
 import type {
   StoreContent,
   StoreContentSite,
@@ -1827,33 +1828,52 @@ export class SitesDomainService {
     };
   }
 
+  /**
+   * Откат (этап 2, И6): новая ревизия — копия содержимого выбранной версии —
+   * через порт с базой = текущая и пометкой `restoredFrom`. Раньше —
+   * безусловная перестановка указателя на старую строку без CAS: автосейв,
+   * успевший между чтением и откатом, пропадал молча. Теперь откат
+   * сливается поверх него (то же место — побеждает откат, он последний),
+   * правки в других местах остаются.
+   */
   async setCurrentRevision(params: {
     tenantId: string;
     siteId: string;
     revisionId: string;
+    actorUserId?: string;
+    /** CAS отката (этап 2.5 подаст из истории); по умолчанию — текущая на момент вызова. */
+    expectedCurrentRevisionId?: string | null;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const [rev] = await this.db
-      .select({ id: schema.siteRevision.id })
-      .from(schema.siteRevision)
-      .where(
-        and(
-          eq(schema.siteRevision.id, params.revisionId),
-          eq(schema.siteRevision.siteId, params.siteId),
-        ),
-      );
-    if (!rev) throw new Error("revision_not_found");
-    await this.db
-      .update(schema.site)
-      .set({ currentRevisionId: params.revisionId, updatedAt: new Date() })
-      .where(
-        and(
-          eq(schema.site.id, params.siteId),
-          eq(schema.site.tenantId, params.tenantId),
-        ),
-      );
-    return { success: true } as const;
+    const storeSite = this.toStoreContentSite(site);
+    // Копия ревизии как она лежит (без шагов чтения и фильтра досеянного):
+    // восстановленная версия читается ровно как выбранная.
+    const target = await this.storeContent.load(params.siteId, {
+      revisionId: params.revisionId,
+      site: storeSite,
+      asStored: true,
+    });
+    const saved = await this.storeContent.save(params.siteId, {
+      document: target.document,
+      base:
+        params.expectedCurrentRevisionId ?? storeSite.currentRevisionId ?? null,
+      tenantId: params.tenantId,
+      setCurrent: true,
+      actor: "merchant",
+      source: "rollback",
+      mergePolicy: "last-writer-wins",
+      meta: { restoredFrom: params.revisionId },
+      actorUserId: params.actorUserId,
+      site: storeSite,
+    });
+    return {
+      success: true,
+      revisionId: saved.version,
+      restoredFrom: params.revisionId,
+      merged: saved.effect?.merged ?? false,
+      overwritten: saved.effect?.overwritten ?? [],
+    } as const;
   }
 
   async freezeTenant(tenantId: string) {
@@ -2950,11 +2970,23 @@ export class SitesDomainService {
 
   /** Сбросить контентные страницы текущей ревизии на сиды темы (Фаза 2 слайсинга). */
   async resetContentPages(siteId: string): Promise<{ reset: string[] }> {
+    // Этап 2 (И1): новая ревизия через порт с базой = текущая, а не UPDATE
+    // строки на месте; спор с чужой правкой — пересчитать от свежей ревизии.
+    return rewriteCurrent(() => this.resetContentPagesOnce(siteId));
+  }
+
+  private async resetContentPagesOnce(
+    siteId: string,
+  ): Promise<{ reset: string[] }> {
     const [site] = await this.db
       .select({
         id: schema.site.id,
+        tenantId: schema.site.tenantId,
         themeId: schema.site.themeId,
         currentRevisionId: schema.site.currentRevisionId,
+        publicUrl: schema.site.publicUrl,
+        name: schema.site.name,
+        contentModel: schema.site.contentModel,
       })
       .from(schema.site)
       .where(eq(schema.site.id, siteId));
@@ -3005,10 +3037,17 @@ export class SitesDomainService {
         /* нет сида у темы — страницу не трогаем */
       }
     }
-    await this.db
-      .update(schema.siteRevision)
-      .set({ data: { ...data, pagesData } })
-      .where(eq(schema.siteRevision.id, revision.id));
+    await this.storeContent.save(siteId, {
+      document: { ...data, pagesData },
+      base: revision.id,
+      tenantId: site.tenantId,
+      setCurrent: true,
+      actor: "system",
+      source: "ops",
+      mergePolicy: "reject-conflicts",
+      meta: { operation: "reset-content-pages" },
+      site: this.toStoreContentSite(site),
+    });
     return { reset };
   }
 

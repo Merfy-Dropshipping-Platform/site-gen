@@ -20,21 +20,21 @@
  * Исключение — запись с базой: при неудачном CAS свежий указатель читается
  * здесь (`readPointer`), иначе повтор слил бы поверх устаревшего знания.
  */
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, eq, isNull } from 'drizzle-orm';
-import { PG_CONNECTION } from '../constants';
-import * as schema from '../db/schema';
-import { migrateRevisionData } from '../utils/revision-migrations';
-import { getPageResolver } from '../themes/page-resolver-instance';
-import { seedContentPagesFromTheme } from '../themes/content-page-seed';
-import { resolveAssetUrls } from '../themes/asset-resolver';
-import { filterSeededPagesOnWrite } from '../utils/revision-write-filter';
-import { parityOn } from '../themes/parity-switch';
-import { makeDocumentNormalizer } from './document-normalizer';
-import { saveOnBase, writeLabels } from './save-on-base';
-import type { RevisionStore } from './save-on-base';
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { randomUUID } from "crypto";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { and, eq, isNull } from "drizzle-orm";
+import { PG_CONNECTION } from "../constants";
+import * as schema from "../db/schema";
+import { migrateRevisionData } from "../utils/revision-migrations";
+import { getPageResolver } from "../themes/page-resolver-instance";
+import { seedContentPagesFromTheme } from "../themes/content-page-seed";
+import { resolveAssetUrls } from "../themes/asset-resolver";
+import { filterSeededPagesOnWrite } from "../utils/revision-write-filter";
+import { parityOn } from "../themes/parity-switch";
+import { makeDocumentNormalizer } from "./document-normalizer";
+import { saveOnBase, writeLabels } from "./save-on-base";
+import type { RevisionStore } from "./save-on-base";
 import type {
   LoadOptions,
   LoadResult,
@@ -42,11 +42,11 @@ import type {
   SaveResult,
   StoreContent,
   StoreContentSite,
-} from './store-content.port';
+} from "./store-content.port";
 
 // Тот же флаг, что в sites.service.ts/preview.controller.ts — поведение шага
 // normalize не меняется, просто у него теперь собственная копия условия.
-const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false';
+const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== "false";
 
 type StepContext = {
   siteId: string;
@@ -75,7 +75,7 @@ type LoadStep = {
 function migrateStep(data: Record<string, unknown>, ctx: StepContext) {
   return migrateRevisionData(data, ctx.themeId, ctx.siteName, {
     unifyFooter: ctx.unifyFooter,
-  }) as Record<string, unknown>;
+  });
 }
 
 /**
@@ -86,10 +86,9 @@ function migrateStep(data: Record<string, unknown>, ctx: StepContext) {
 function normalizeStep(data: Record<string, unknown>, ctx: StepContext) {
   if (!USE_PAGE_RESOLVER || !ctx.themeId) return data;
   try {
-    return getPageResolver(ctx.themeId).normalizeRevision(data) as unknown as Record<
-      string,
-      unknown
-    >;
+    return getPageResolver(ctx.themeId).normalizeRevision(
+      data,
+    ) as unknown as Record<string, unknown>;
   } catch (e) {
     ctx.logger.warn(
       `PageResolver.normalizeRevision failed for site ${ctx.siteId}: ${e instanceof Error ? e.message : e}`,
@@ -113,10 +112,10 @@ function resolveStep(data: Record<string, unknown>, ctx: StepContext) {
  * правки соседних.
  */
 const LOAD_STEPS: LoadStep[] = [
-  { name: 'migrate', apply: migrateStep },
-  { name: 'normalize', apply: normalizeStep },
-  { name: 'seed', apply: seedStep },
-  { name: 'resolve', apply: resolveStep },
+  { name: "migrate", apply: migrateStep },
+  { name: "normalize", apply: normalizeStep },
+  { name: "seed", apply: seedStep },
+  { name: "resolve", apply: resolveStep },
 ];
 
 async function runLoadSteps(
@@ -130,14 +129,18 @@ async function runLoadSteps(
   return data;
 }
 
-function stepContextFor(siteId: string, site: StoreContentSite, logger: Logger): StepContext {
+function stepContextFor(
+  siteId: string,
+  site: StoreContentSite,
+  logger: Logger,
+): StepContext {
   return {
     siteId,
     themeId: site.themeId,
     publicUrl: site.publicUrl,
     siteName: site.name ?? null,
     logger,
-    unifyFooter: parityOn('FOOTER', siteId),
+    unifyFooter: parityOn("FOOTER", siteId),
   };
 }
 
@@ -154,10 +157,17 @@ export class DocumentAdapter implements StoreContent {
   ) {}
 
   async load(siteId: string, opts: LoadOptions): Promise<LoadResult> {
-    const revisionId = opts.revisionId ?? opts.site.currentRevisionId ?? undefined;
-    if (!revisionId) throw new Error('revision_not_found');
+    const revisionId =
+      opts.revisionId ?? opts.site.currentRevisionId ?? undefined;
+    if (!revisionId) throw new Error("revision_not_found");
     const rev = await this.fetchRevision(revisionId, siteId);
-    if (!rev) throw new Error('revision_not_found');
+    if (!rev) throw new Error("revision_not_found");
+    if (opts.asStored) {
+      return {
+        document: (rev.data ?? {}) as Record<string, unknown>,
+        version: revisionId,
+      };
+    }
     const document = await runLoadSteps(
       rev.data as Record<string, unknown> | undefined,
       stepContextFor(siteId, opts.site, this.logger),
@@ -173,8 +183,11 @@ export class DocumentAdapter implements StoreContent {
   }
 
   /** Старые пути (создание магазина, смена темы, CAS по expectedVersion) — без изменений. */
-  private async saveWithoutBase(siteId: string, params: SaveParams): Promise<SaveResult> {
-    if (!params.document) throw new Error('document_required');
+  private async saveWithoutBase(
+    siteId: string,
+    params: SaveParams,
+  ): Promise<SaveResult> {
+    if (!params.document) throw new Error("document_required");
     const id = randomUUID();
     const dataToPersist = params.filterSeeded
       ? await this.stripSeededPages(siteId, params.site, params.document)
@@ -191,11 +204,17 @@ export class DocumentAdapter implements StoreContent {
         expected: expectedVersion,
         createdBy: params.actorUserId,
       });
-      if (!ok) throw new Error('revision_conflict');
+      if (!ok) throw new Error("revision_conflict");
       return { version: id };
     }
 
-    await this.insertRevision(id, siteId, dataToPersist, meta, params.actorUserId);
+    await this.insertRevision(
+      id,
+      siteId,
+      dataToPersist,
+      meta,
+      params.actorUserId,
+    );
     if (params.setCurrent) {
       await this.setCurrentUnconditional(siteId, params.tenantId, id);
     }
@@ -215,7 +234,9 @@ export class DocumentAdapter implements StoreContent {
   private get revisionStore(): RevisionStore {
     return {
       fetchData: async (revisionId, siteId) =>
-        (await this.fetchRevision(revisionId, siteId))?.data as Record<string, unknown> | undefined,
+        (await this.fetchRevision(revisionId, siteId))?.data as
+          | Record<string, unknown>
+          | undefined,
       readPointer: (siteId, tenantId) => this.readPointer(siteId, tenantId),
       commit: (write) => this.commit(write),
       normalizer: (siteId, params, storedCurrent) => {
@@ -231,17 +252,24 @@ export class DocumentAdapter implements StoreContent {
     };
   }
 
-  private async readPointer(siteId: string, tenantId: string): Promise<string | null> {
+  private async readPointer(
+    siteId: string,
+    tenantId: string,
+  ): Promise<string | null> {
     const [row] = await this.db
       .select({ currentRevisionId: schema.site.currentRevisionId })
       .from(schema.site)
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
-    if (!row) throw new Error('site_not_found');
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      );
+    if (!row) throw new Error("site_not_found");
     return row.currentRevisionId ?? null;
   }
 
   /** Вставка ревизий + CAS указателя одной транзакцией; CAS не прошёл — откат и `false`. */
-  private async commit(write: Parameters<RevisionStore['commit']>[0]): Promise<boolean> {
+  private async commit(
+    write: Parameters<RevisionStore["commit"]>[0],
+  ): Promise<boolean> {
     const expectedPredicate =
       write.expected === null
         ? isNull(schema.site.currentRevisionId)
@@ -310,7 +338,9 @@ export class DocumentAdapter implements StoreContent {
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     try {
-      const storedPrev = await this.fetchStoredPrev(site.currentRevisionId ?? null);
+      const storedPrev = await this.fetchStoredPrev(
+        site.currentRevisionId ?? null,
+      );
       const res = await filterSeededPagesOnWrite(
         data,
         storedPrev,
@@ -319,7 +349,7 @@ export class DocumentAdapter implements StoreContent {
       );
       if (res.dropped.length || res.unfrozen.length) {
         this.logger.log(
-          `revision write filter site=${siteId}: не вморожено ${res.dropped.length} [${res.dropped.join(',')}], разморожено ${res.unfrozen.length} [${res.unfrozen.join(',')}]`,
+          `revision write filter site=${siteId}: не вморожено ${res.dropped.length} [${res.dropped.join(",")}], разморожено ${res.unfrozen.length} [${res.unfrozen.join(",")}]`,
         );
       }
       return res.data;
@@ -368,6 +398,8 @@ export class DocumentAdapter implements StoreContent {
     await this.db
       .update(schema.site)
       .set({ currentRevisionId: revisionId, updatedAt: new Date() })
-      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
+      .where(
+        and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)),
+      );
   }
 }

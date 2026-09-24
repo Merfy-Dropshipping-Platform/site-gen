@@ -695,7 +695,9 @@ export class BulkOperationsService {
             latestRevision: schema.siteRevision.createdAt,
           })
           .from(schema.siteRevision)
-          .where(and(inArray(schema.siteRevision.siteId, ids), isStoreVersion()));
+          .where(
+            and(inArray(schema.siteRevision.siteId, ids), isStoreVersion()),
+          );
       }
 
       if (params.includeDeployments) {

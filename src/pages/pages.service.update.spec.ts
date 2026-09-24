@@ -3,10 +3,11 @@ import { PagesService } from "./pages.service";
 
 /**
  * Юнит-тесты PagesService.updatePage (Phase 3 — per-page SEO). Ручной db-мок:
- * select site → select revision → update. updatePage резолвера НЕ вызывает.
+ * select site → select revision; запись — через порт StoreContent (этап 2).
+ * updatePage резолвера НЕ вызывает.
  */
 function makeDb(siteRow: any, revRow: any) {
-  const captured: { data?: any } = {};
+  const captured: { data?: any; params?: any } = {};
   const selectResults = [siteRow ? [siteRow] : [], revRow ? [revRow] : []];
   let i = 0;
   const db: any = {
@@ -15,14 +16,19 @@ function makeDb(siteRow: any, revRow: any) {
         where: () => Promise.resolve(selectResults[i++] ?? []),
       }),
     }),
-    update: () => ({
-      set: (u: any) => {
-        captured.data = u.data;
-        return { where: () => Promise.resolve() };
-      },
+  };
+  // Этап 2 (И1): запись — новая ревизия через порт StoreContent, а не
+  // update().set() строки на месте (у мок-БД больше нет update). Заглушка
+  // порта ловит записанный документ.
+  const storeContent: any = {
+    load: jest.fn(),
+    save: jest.fn(async (_siteId: string, params: any) => {
+      captured.data = params.document;
+      captured.params = params;
+      return { version: "r2" };
     }),
   };
-  return { db, captured };
+  return { db, captured, storeContent };
 }
 
 const site = {
@@ -39,11 +45,11 @@ const revWith = (pages: any[]) => ({
 
 describe("PagesService.updatePage", () => {
   it("deep-merge seo по ключам + patch name + lockVersion+1", async () => {
-    const { db, captured } = makeDb(
+    const { db, captured, storeContent } = makeDb(
       site,
       revWith([{ id: "pg", name: "Old", seo: { title: "t", description: "keep" } }]),
     );
-    const svc = new PagesService(db);
+    const svc = new PagesService(db, storeContent);
 
     const res: any = await svc.updatePage({
       tenantId: "t1",
@@ -58,26 +64,34 @@ describe("PagesService.updatePage", () => {
     expect(res.page.name).toBe("New name");
     expect(captured.data.lockVersion).toBe(4);
     expect(captured.data.pages[0].seo).toEqual({ title: "new", description: "keep" });
+    // Новая ревизия от прочитанной (база r1), с метками кто/откуда.
+    expect(captured.params).toMatchObject({
+      base: "r1",
+      setCurrent: true,
+      actor: "merchant",
+      source: "admin-pages",
+      mergePolicy: "reject-conflicts",
+    });
   });
 
   it("seo при отсутствии существующего seo просто кладётся", async () => {
-    const { db, captured } = makeDb(site, revWith([{ id: "pg", name: "P", seo: null }]));
-    const svc = new PagesService(db);
+    const { db, captured, storeContent } = makeDb(site, revWith([{ id: "pg", name: "P", seo: null }]));
+    const svc = new PagesService(db, storeContent);
     await svc.updatePage({ tenantId: "t1", siteId: "s1", pageId: "pg", seo: { title: "X", keywords: "k" } });
     expect(captured.data.pages[0].seo).toEqual({ title: "X", keywords: "k" });
   });
 
   it("страница не найдена → NotFoundException(page_not_found)", async () => {
-    const { db } = makeDb(site, revWith([{ id: "other" }]));
-    const svc = new PagesService(db);
+    const { db, storeContent } = makeDb(site, revWith([{ id: "other" }]));
+    const svc = new PagesService(db, storeContent);
     await expect(
       svc.updatePage({ tenantId: "t1", siteId: "s1", pageId: "pg", seo: { title: "x" } }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it("сайт не найден (чужой tenant) → NotFoundException(site_not_found)", async () => {
-    const { db } = makeDb(null, null);
-    const svc = new PagesService(db);
+    const { db, storeContent } = makeDb(null, null);
+    const svc = new PagesService(db, storeContent);
     await expect(
       svc.updatePage({ tenantId: "t1", siteId: "s1", pageId: "pg", seo: {} }),
     ).rejects.toBeInstanceOf(NotFoundException);
@@ -102,8 +116,8 @@ describe("PagesService.updatePage", () => {
         lockVersion: 3,
       },
     };
-    const { db, captured } = makeDb(site, rev);
-    const svc = new PagesService(db);
+    const { db, captured, storeContent } = makeDb(site, rev);
+    const svc = new PagesService(db, storeContent);
 
     await svc.updatePage({
       tenantId: "t1",
@@ -141,8 +155,8 @@ describe("PagesService.updatePage", () => {
         lockVersion: 3,
       },
     };
-    const { db, captured } = makeDb(site, rev);
-    const svc = new PagesService(db);
+    const { db, captured, storeContent } = makeDb(site, rev);
+    const svc = new PagesService(db, storeContent);
 
     await svc.updatePage({
       tenantId: "t1",
@@ -170,8 +184,8 @@ describe("PagesService.updatePage", () => {
         lockVersion: 3,
       },
     };
-    const { db, captured } = makeDb(site, rev);
-    const svc = new PagesService(db);
+    const { db, captured, storeContent } = makeDb(site, rev);
+    const svc = new PagesService(db, storeContent);
 
     await svc.updatePage({
       tenantId: "t1",
@@ -208,8 +222,8 @@ describe("PagesService.updatePage", () => {
         lockVersion: 1,
       },
     };
-    const { db, captured } = makeDb(site, rev);
-    const svc = new PagesService(db);
+    const { db, captured, storeContent } = makeDb(site, rev);
+    const svc = new PagesService(db, storeContent);
 
     await svc.updatePage({
       tenantId: "t1",

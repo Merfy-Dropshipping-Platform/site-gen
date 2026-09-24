@@ -335,16 +335,25 @@ export class SitesMicroserviceController {
   @MessagePattern("sites.revisions.set_current")
   async setCurrentRevision(@Payload() data: any) {
     try {
-      const { tenantId, siteId, revisionId } = data ?? {};
+      const {
+        tenantId,
+        siteId,
+        revisionId,
+        actorUserId,
+        expectedCurrentRevisionId,
+      } = data ?? {};
       if (!tenantId || !siteId || !revisionId)
         return {
           success: false,
           message: "tenantId, siteId and revisionId required",
         };
+      // Этап 2 (И6): откат — новая ревизия-копия с CAS, ответ несёт её id.
       const res = await this.service.setCurrentRevision({
         tenantId,
         siteId,
         revisionId,
+        actorUserId,
+        expectedCurrentRevisionId,
       });
       return res;
     } catch (e: any) {

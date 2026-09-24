@@ -69,7 +69,15 @@ export function makeFakeRevisionDb(
   const hooks: { beforeCas?: () => void } = {};
   let clock = 0;
 
+  /**
+   * Как настоящая БД (jsonb сериализуется): наружу — копии строк. Иначе тест,
+   * меняющий свой документ после записи, правил бы «сохранённую» ревизию.
+   */
   function selectRevisions(cond: unknown): FakeRevision[] {
+    return findRevisions(cond).map((row) => structuredClone(row));
+  }
+
+  function findRevisions(cond: unknown): FakeRevision[] {
     const { sql, params } = queryOf(cond);
     if (sql.includes('"site_revision"."id" =')) {
       const row = revisions.get(params[0] as string);
@@ -133,8 +141,8 @@ export function makeFakeRevisionDb(
   ) {
     clock += 1;
     const row: FakeRevision = {
-      ...value,
-      meta: value.meta ?? {},
+      ...structuredClone(value),
+      meta: structuredClone(value.meta ?? {}),
       createdAt: new Date(Date.UTC(2026, 8, 24, 0, 0, clock)),
     };
     if (Array.isArray(target)) target.push(row);
@@ -152,7 +160,7 @@ export function makeFakeRevisionDb(
           const { params } = queryOf(cond);
           inPlaceUpdates.push({ id: params[0], data: patch.data });
           const row = revisions.get(params[0] as string);
-          if (row) Object.assign(row, patch);
+          if (row) Object.assign(row, structuredClone(patch));
           return rowsResult([]);
         },
       }),

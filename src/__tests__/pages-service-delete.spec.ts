@@ -8,9 +8,9 @@
  * theme manifest (via the resolver), NOT from the raw/normalized `role`.
  *
  * The Drizzle `db` is hand-mocked: `deletePage` issues two reads
- * (`select().from(site)`, `select().from(siteRevision)`) and one write
- * (`update().set().where()`). The mock routes reads by table identity and
- * captures the write payload for assertions.
+ * (`select().from(site)`, `select().from(siteRevision)`) and one write —
+ * через порт StoreContent (этап 2). The mock routes reads by table identity;
+ * the port stub captures the write payload for assertions.
  */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PagesService } from '../pages/pages.service';
@@ -21,14 +21,13 @@ type RevData = Record<string, any>;
 /**
  * Minimal Drizzle stub. Supports:
  *   db.select().from(<table>).where(...)  → resolves to row array
- *   db.update(<table>).set(<data>).where(...) → records data into capture box
  */
 function makeDb(opts: {
   site: any | null;
   rev: any | null;
   captured: { data?: RevData };
 }) {
-  const { site, rev, captured } = opts;
+  const { site, rev } = opts;
   return {
     select() {
       return {
@@ -46,20 +45,22 @@ function makeDb(opts: {
         },
       };
     },
-    update(_table: any) {
-      return {
-        // deletePage calls `.set({ data: newRevData })` — unwrap the Drizzle
-        // column wrapper so assertions read the revision payload directly.
-        set(cols: { data: RevData }) {
-          captured.data = cols.data;
-          return {
-            where() {
-              return Promise.resolve(undefined);
-            },
-          };
-        },
-      };
-    },
+  } as any;
+}
+
+/**
+ * Этап 2 (И1): запись страницы — новая ревизия через порт StoreContent, а не
+ * `update().set()` строки на месте (у мок-БД больше нет `update` — возврат к
+ * правке на месте уронит тест). Заглушка порта ловит записанный документ.
+ */
+function portInto(captured: { data?: RevData; params?: any }) {
+  return {
+    load: jest.fn(),
+    save: jest.fn(async (_siteId: string, params: any) => {
+      captured.data = params.document;
+      captured.params = params;
+      return { version: 'rev-2' };
+    }),
   } as any;
 }
 
@@ -96,7 +97,7 @@ describe('PagesService.deletePage — system-page guard', () => {
     };
     const captured: { data?: RevData } = {};
     const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev: makeRev(legacyData), captured });
-    const service = new PagesService(db);
+    const service = new PagesService(db, portInto(captured));
 
     await expect(
       service.deletePage({ tenantId: TENANT_ID, siteId: SITE_ID, pageId: 'home' }),
@@ -119,7 +120,7 @@ describe('PagesService.deletePage — system-page guard', () => {
     };
     const captured: { data?: RevData } = {};
     const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev: makeRev(legacyData), captured });
-    const service = new PagesService(db);
+    const service = new PagesService(db, portInto(captured));
 
     const res = await service.deletePage({
       tenantId: TENANT_ID,
@@ -149,7 +150,7 @@ describe('PagesService.deletePage — system-page guard', () => {
     };
     const captured: { data?: RevData } = {};
     const db = makeDb({ site: makeSite({ themeId: 'rose' }), rev: makeRev(data), captured });
-    const service = new PagesService(db);
+    const service = new PagesService(db, portInto(captured));
 
     const res = await service.deletePage({
       tenantId: TENANT_ID,
@@ -168,7 +169,7 @@ describe('PagesService.deletePage — system-page guard', () => {
     };
     const captured: { data?: RevData } = {};
     const db = makeDb({ site: makeSite(), rev: makeRev(data), captured });
-    const service = new PagesService(db);
+    const service = new PagesService(db, portInto(captured));
 
     await expect(
       service.deletePage({ tenantId: TENANT_ID, siteId: SITE_ID, pageId: 'does-not-exist' }),

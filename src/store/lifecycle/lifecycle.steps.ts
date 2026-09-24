@@ -21,6 +21,7 @@ import {
   type OrganizationDirectory,
 } from "../../user/organization-directory.client";
 import { hasStorefrontPackage } from "../theme-catalog";
+import { errorMessage } from "../shared/error-message";
 import type { LifecycleRow } from "./lifecycle.repository";
 import type { LifecycleStepRunner } from "./store-lifecycle.reconciler";
 
@@ -40,10 +41,6 @@ export interface StoreProvisioning {
   ensureSiteHosting(
     siteId: string,
   ): Promise<{ coolifyAppUuid: string | null; error?: string }>;
-}
-
-function messageOf(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
 }
 
 @Injectable()
@@ -85,7 +82,7 @@ export class StoreLifecycleSteps implements LifecycleStepRunner {
       });
     } catch (e) {
       // Кто-то уже засеял магазин (второй проход, гонка) — требование выполнено.
-      if (messageOf(e) === "revision_conflict") return;
+      if (errorMessage(e) === "revision_conflict") return;
       throw e;
     }
   }

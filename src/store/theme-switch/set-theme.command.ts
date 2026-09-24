@@ -37,6 +37,8 @@ import {
 } from "../theme-catalog";
 import { presentCanonLikePort } from "./canon-reference";
 import { planThemeSwitch, type ThemeSwitchReport } from "./theme-switch.plan";
+import { BackgroundWork, within } from "../shared/background-work";
+import { errorMessage } from "../shared/error-message";
 
 export const SetThemeInputSchema = z.object({
   tenantId: z.string().trim().min(1),
@@ -98,10 +100,6 @@ export interface ThemeSwitchSites {
   }): Promise<{ url?: string | null; buildId?: string | null }>;
 }
 
-function messageOf(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
-
 function storeContentSite(site: SiteRow): StoreContentSite {
   return {
     themeId: site.themeId,
@@ -115,7 +113,10 @@ function storeContentSite(site: SiteRow): StoreContentSite {
 @Injectable()
 export class SetThemeCommand {
   private readonly logger = new Logger(SetThemeCommand.name);
-  private readonly background = new Set<Promise<unknown>>();
+  private readonly background = new BackgroundWork(
+    this.logger,
+    "theme-switch republish",
+  );
 
   constructor(
     @Inject(SitesDomainService) private readonly sites: ThemeSwitchSites,
@@ -193,8 +194,8 @@ export class SetThemeCommand {
   }
 
   /** Дождаться фоновых переизданий, запущенных командой (тесты). */
-  async settle(): Promise<void> {
-    while (this.background.size) await Promise.allSettled([...this.background]);
+  settle(): Promise<void> {
+    return this.background.settle();
   }
 
   /** Канон прежней темы в виде порта; нет пакета темы — не с чем сравнивать. */
@@ -233,7 +234,7 @@ export class SetThemeCommand {
       });
       return saved.version;
     } catch (e) {
-      if (messageOf(e) === "revision_conflict") return null;
+      if (errorMessage(e) === "revision_conflict") return null;
       throw e;
     }
   }
@@ -258,7 +259,7 @@ export class SetThemeCommand {
         }),
         (e: unknown): RepublishStatus => ({
           status: "failed",
-          error: messageOf(e),
+          error: errorMessage(e),
         }),
       )
       .then((status) => {
@@ -267,21 +268,13 @@ export class SetThemeCommand {
         );
         return status;
       });
-    this.track(run);
-    if (!input.wait) return { status: "started" };
-    return Promise.race([
-      run,
-      delay(input.waitTimeoutMs).then(
-        (): RepublishStatus => ({ status: "started" }),
-      ),
-    ]);
-  }
-
-  private track(work: Promise<unknown>): void {
-    this.background.add(work);
-    void work.finally(() => this.background.delete(work));
+    const tracked = this.background.start(run);
+    if (!input.wait) return STARTED;
+    return (await within(tracked, input.waitTimeoutMs, STARTED)) ?? STARTED;
   }
 }
+
+const STARTED: RepublishStatus = { status: "started" };
 
 function unchanged(site: SiteRow, themeId: string): SetThemeEffect {
   return {
@@ -294,11 +287,4 @@ function unchanged(site: SiteRow, themeId: string): SetThemeEffect {
     report: null,
     republish: { status: "not_needed", reason: "same_theme" },
   };
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    if (typeof timer.unref === "function") timer.unref();
-  });
 }

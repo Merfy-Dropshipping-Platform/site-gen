@@ -11,6 +11,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom, of, timeout, catchError } from "rxjs";
 import { USER_RMQ_SERVICE } from "../constants";
+import { errorMessage } from "../store/shared/error-message";
 
 export interface OrganizationDirectory {
   /** Имя организации (тенанта) или `null`, если user-сервис его не дал. */
@@ -40,7 +41,7 @@ export class RmqOrganizationDirectory implements OrganizationDirectory {
           timeout(RmqOrganizationDirectory.TIMEOUT_MS),
           catchError((err: unknown) => {
             this.logger.warn(
-              `user.get_organization_info failed for ${tenantId}: ${err instanceof Error ? err.message : err}`,
+              `user.get_organization_info failed for ${tenantId}: ${errorMessage(err)}`,
             );
             return of(null);
           }),

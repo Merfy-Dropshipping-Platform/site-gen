@@ -37,6 +37,7 @@ import {
 } from "../lifecycle/lifecycle.repository";
 import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
 import { LEASE_MS } from "../lifecycle/store-lifecycle";
+import { BackgroundWork, within } from "../shared/background-work";
 import {
   STORE_REGISTRY,
   type StoreRegistry,
@@ -112,7 +113,10 @@ const SLUG_ATTEMPTS = 1_000;
 @Injectable()
 export class CreateStoreCommand {
   private readonly logger = new Logger(CreateStoreCommand.name);
-  private readonly background = new Set<Promise<unknown>>();
+  private readonly background = new BackgroundWork(
+    this.logger,
+    "store lifecycle background advance failed",
+  );
 
   constructor(
     @Inject(STORE_REGISTRY) private readonly registry: StoreRegistry,
@@ -186,8 +190,8 @@ export class CreateStoreCommand {
    * Дождаться фоновых проходов, запущенных командой (тесты). Хук остановки
    * сервиса их не ждёт: брошенный проход подберёт тик доводчика после аренды.
    */
-  async settle(): Promise<void> {
-    while (this.background.size) await Promise.allSettled([...this.background]);
+  settle(): Promise<void> {
+    return this.background.settle();
   }
 
   private async reserve(
@@ -260,30 +264,11 @@ export class CreateStoreCommand {
       });
       const row = await this.lifecycle.read(siteId);
       if (seeded.leaseKept)
-        void this.inBackground(this.reconciler.driveHeld(siteId));
+        void this.background.start(this.reconciler.driveHeld(siteId));
       return row;
     }
-    const drive = this.inBackground(this.reconciler.driveHeld(siteId));
-    await Promise.race([drive, delay(input.waitTimeoutMs)]);
+    const drive = this.background.start(this.reconciler.driveHeld(siteId));
+    await within(drive, input.waitTimeoutMs, undefined);
     return this.lifecycle.read(siteId);
   }
-
-  private inBackground<T>(work: Promise<T>): Promise<T | undefined> {
-    const tracked = work.catch((e: unknown) => {
-      this.logger.error(
-        `store lifecycle background advance failed: ${e instanceof Error ? e.message : e}`,
-      );
-      return undefined;
-    });
-    this.background.add(tracked);
-    void tracked.finally(() => this.background.delete(tracked));
-    return tracked;
-  }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    if (typeof timer.unref === "function") timer.unref();
-  });
 }

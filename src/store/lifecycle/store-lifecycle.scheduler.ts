@@ -15,6 +15,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { StoreLifecycleReconciler } from "./store-lifecycle.reconciler";
+import { errorMessage } from "../shared/error-message";
 
 export const LIFECYCLE_TICK_LIMIT = 20;
 
@@ -34,9 +35,7 @@ export class StoreLifecycleScheduler {
       if (processed > 0)
         this.logger.log(`store lifecycle tick: advanced ${processed} store(s)`);
     } catch (e) {
-      this.logger.error(
-        `store lifecycle tick failed: ${e instanceof Error ? e.message : e}`,
-      );
+      this.logger.error(`store lifecycle tick failed: ${errorMessage(e)}`);
     } finally {
       this.running = false;
     }

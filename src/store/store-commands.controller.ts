@@ -20,6 +20,7 @@ import {
   type LifecycleRepository,
 } from "./lifecycle/lifecycle.repository";
 import { toStoreView } from "./store-view";
+import { errorMessage } from "./shared/error-message";
 
 function failure(code: string, message = code) {
   return { success: false, code, message };
@@ -72,7 +73,7 @@ export class StoreCommandsController {
     try {
       return toRpcResponse(await work());
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = errorMessage(e);
       this.logger.error(`sites.cmd.${name} failed: ${message}`);
       return failure("internal_error", message);
     }

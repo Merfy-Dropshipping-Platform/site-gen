@@ -43,7 +43,7 @@ type PageData = { content?: Block[]; root?: unknown; zones?: unknown };
  * копируется на остальные страницы автоматически, поэтому оно не является
  * свидетельством того, что мерчант эту страницу открывал.
  */
-const CHROME_TYPES = new Set(['PromoBanner', 'Header', 'CheckoutHeader', 'Footer']);
+export const CHROME_TYPES = new Set(['PromoBanner', 'Header', 'CheckoutHeader', 'Footer']);
 
 /**
  * Контент-страницы: их тело сидирует КЛИЕНТ (constructor `seedContentPages`,

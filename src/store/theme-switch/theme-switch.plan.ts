@@ -24,6 +24,11 @@
  *     написано (`lostDetection: 'seed-compare'`).
  */
 
+// Служебные блоки-обёртки (шапка, подвал, промо-баннер): общие для всех
+// страниц, правкой страницы не считаются — тот же набор, что у фильтра записи B17.
+import { CHROME_TYPES } from "../../utils/revision-write-filter";
+import { emptyPageBlock } from "../../pages/page-section";
+
 type Json = Record<string, any>;
 
 export interface ThemeSwitchInput {
@@ -75,14 +80,6 @@ export interface ThemeSwitchPlan {
   document: Json;
   report: ThemeSwitchReport;
 }
-
-/** Служебные блоки-обёртки: общие для всех страниц, правкой страницы не считаются. */
-const CHROME_TYPES = new Set([
-  "PromoBanner",
-  "Header",
-  "CheckoutHeader",
-  "Footer",
-]);
 
 /** Зарезервированные поля метаданных страницы (`RevisionPage`). */
 const RESERVED_PAGE_FIELDS = [
@@ -247,18 +244,7 @@ function fullPageData(
   }
   const content = [
     chromeFromCanonHome(canon, "Header", pageId),
-    {
-      type: "Page",
-      props: {
-        id: `Page-${pageId}`,
-        pageId: "",
-        heading: title,
-        content: legacyText(data),
-        headingSize: "medium",
-        colorScheme: "scheme-1",
-        padding: { top: 80, bottom: 80 },
-      },
-    },
+    emptyPageBlock(pageId, { heading: title, content: legacyText(data) }),
     chromeFromCanonHome(canon, "Footer", pageId),
   ];
   return {

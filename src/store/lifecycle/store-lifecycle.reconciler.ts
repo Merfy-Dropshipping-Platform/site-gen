@@ -35,6 +35,7 @@ import {
   type LifecycleRepository,
   type LifecycleRow,
 } from "./lifecycle.repository";
+import { errorMessage } from "../shared/error-message";
 
 /** Шаги саги. Каждый обязан быть идемпотентным: повтор после сбоя безопасен. */
 export interface LifecycleStepRunner {
@@ -71,10 +72,6 @@ export function factsOf(row: LifecycleRow): LifecycleFacts {
     hasProject: Boolean(row.coolifyProjectUuid),
     hasHosting: Boolean(row.coolifyAppUuid),
   };
-}
-
-function reasonOf(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
 }
 
 /** Магазин готов или дошёл до состояния, после которого просили остановиться. */
@@ -198,7 +195,7 @@ export class StoreLifecycleReconciler {
       await this.steps[step](row);
       return null;
     } catch (e) {
-      return reasonOf(e);
+      return errorMessage(e);
     }
   }
 

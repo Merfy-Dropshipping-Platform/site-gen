@@ -284,3 +284,130 @@ describe("satin PopularProducts: карточка без явного «Вид �
     expect(считатьUppercase(сПризнаком)).toBe(считатьUppercase(безПризнака));
   });
 });
+
+/**
+ * Цель «как у верстальщиков» (24.09, scripts/qa/designer-goal.ts satin):
+ * шапка в одну строку, полоса объявления, ряды, основной текст, «Изображение
+ * с текстом». С признаком — классы верстальщиков ТОЛЬКО для незаданных
+ * настроек; без признака — байт в байт; капс не растёт.
+ */
+const считатьКапс = (html: string) =>
+  [...html.matchAll(/class="[^"]*"/g)].filter((m) => /\buppercase\b/.test(m[0])).length;
+
+function байтВБайтИКапс(block: string, база: Record<string, unknown>) {
+  const [безПризнака, признакВыкл, сПризнаком] = отрисовать([
+    { block, props: база },
+    { block, props: { ...база, __designParity: false } },
+    { block, props: { ...база, ...ВКЛ } },
+  ]);
+  expect(признакВыкл).toEqual(безПризнака);
+  expect(считатьКапс(сПризнаком)).toBe(считатьКапс(безПризнака));
+  return { безПризнака, сПризнаком };
+}
+
+describe("satin Header: «логотип по центру» — меню и иконки в той же строке под PARITY_DESIGN", () => {
+  const БАЗА = { id: "Header-1", colorScheme: "scheme-1", logoPosition: "center-absolute" };
+
+  it("с признаком строка грида плотная (grid-flow-dense), без — прежняя", () => {
+    const { безПризнака, сПризнаком } = байтВБайтИКапс("Header", БАЗА);
+    expect(сПризнаком).toContain("grid grid-cols-[1fr_auto_1fr] grid-flow-dense");
+    expect(безПризнака).not.toContain("grid-flow-dense");
+  });
+
+  it("другие положения логотипа не трогаем", () => {
+    const [html] = отрисовать([
+      { block: "Header", props: { ...БАЗА, ...ВКЛ, logoPosition: "top-left" } },
+    ]);
+    expect(html).not.toContain("grid-flow-dense");
+  });
+});
+
+describe("satin PromoBanner: полоса верстальщика py-2, 11/md:14 — только без «Размера»", () => {
+  const БАЗА = { id: "PromoBanner-1", text: "Скидка 10%", link: { text: "Перейти", href: "/catalog" } };
+
+  it("с признаком и без size — полоса верстальщика; без признака — min-h-12 / 16px", () => {
+    const { безПризнака, сПризнаком } = байтВБайтИКапс("PromoBanner", БАЗА);
+    expect(сПризнаком).toContain("flex py-2 w-full");
+    expect(сПризнаком).toContain("text-[11px] md:text-[14px]");
+    expect(безПризнака).toContain("flex min-h-12 w-full");
+    expect(безПризнака).not.toContain("md:text-[14px]");
+  });
+
+  it("выбранный мерчантом размер работает как раньше и под признаком", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "PromoBanner", props: { ...БАЗА, ...ВКЛ, size: "large" } },
+      { block: "PromoBanner", props: { ...БАЗА, size: "large" } },
+    ]);
+    expect(сПризнаком).toEqual(безПризнака);
+    expect(сПризнаком).toContain("min-h-12");
+  });
+});
+
+describe("satin MultiRows: ряды верстальщика 1:1 с зазором 40, текст 16 — только без «Ширины»", () => {
+  const РЯДЫ = [
+    { id: "r1", title: "Женская", description: "Текст", button: { text: "Для женщин", link: "/catalog" } },
+    { id: "r2", title: "Мужская", description: "Текст", button: { text: "Для мужчин", link: "/catalog" } },
+  ];
+  const БАЗА = { id: "MultiRows-1", rows: РЯДЫ };
+
+  it("с признаком — геометрия верстальщика; без — прежняя (доли, впритык, md:p-8, md:20px)", () => {
+    const { безПризнака, сПризнаком } = байтВБайтИКапс("MultiRows", БАЗА);
+    expect(сПризнаком).toContain("grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10");
+    expect(сПризнаком).toContain("flex flex-col gap-12 md:gap-20");
+    expect(сПризнаком).not.toContain("md:p-8");
+    expect(сПризнаком).not.toContain("md:text-[20px]");
+    expect(безПризнака).toContain("md:grid-cols-[3fr_2fr]");
+    expect(безПризнака).toContain("md:p-8");
+    expect(безПризнака).toContain("md:text-[20px]");
+  });
+
+  it("заданные «Ширина» и «Размер текста» работают как раньше под признаком", () => {
+    const [ширина, текст] = отрисовать([
+      { block: "MultiRows", props: { ...БАЗА, ...ВКЛ, width: "small" } },
+      { block: "MultiRows", props: { ...БАЗА, ...ВКЛ, rows: РЯДЫ.map((r) => ({ ...r, textSize: "medium" })) } },
+    ]);
+    expect(ширина).toContain("md:grid-cols-[2fr_3fr]");
+    expect(ширина).toContain("md:p-8");
+    expect(текст).toContain("md:text-[20px]");
+  });
+});
+
+describe("satin MainText: текст 16 и блок влево во всю ширину — только без «Позиции»/«Размера текста»", () => {
+  const БАЗА = { id: "MainText-1", heading: { text: "Заголовок" }, text: { content: "Текст" } };
+
+  it("с признаком — как у верстальщика; без — прежний центр и md:20px", () => {
+    const { безПризнака, сПризнаком } = байтВБайтИКапс("MainText", БАЗА);
+    expect(сПризнаком).toContain("flex w-full flex-col gap-4 items-start text-left");
+    expect(сПризнаком).not.toContain("md:text-[20px]");
+    expect(безПризнака).toContain("mx-auto items-center text-center");
+    expect(безПризнака).toContain("md:text-[20px]");
+  });
+
+  it("выбранные позиция и размер работают как раньше под признаком", () => {
+    const [центр, лево, средний] = отрисовать([
+      { block: "MainText", props: { ...БАЗА, ...ВКЛ, position: "center" } },
+      { block: "MainText", props: { ...БАЗА, ...ВКЛ, position: "left" } },
+      { block: "MainText", props: { ...БАЗА, ...ВКЛ, textSize: "medium" } },
+    ]);
+    expect(центр).toContain("mx-auto items-center text-center");
+    expect(лево).toContain("max-w-[600px] mr-auto items-start text-left");
+    expect(средний).toContain("md:text-[20px]");
+  });
+});
+
+describe("satin ImageWithText: фото и текст встык — только без «Ширины»", () => {
+  const БАЗА = { id: "ImageWithText-1", heading: { text: "Заголовок" }, image: { url: "https://example.com/a.webp" } };
+
+  it("с признаком — без зазора; без признака — md:gap-x-10", () => {
+    const { безПризнака, сПризнаком } = байтВБайтИКапс("ImageWithText", БАЗА);
+    expect(сПризнаком).not.toContain("md:gap-x-10");
+    expect(безПризнака).toContain("md:grid-cols-2 md:gap-x-10");
+  });
+
+  it("заданная ширина держит зазор и под признаком", () => {
+    const [html] = отрисовать([
+      { block: "ImageWithText", props: { ...БАЗА, ...ВКЛ, width: "large" } },
+    ]);
+    expect(html).toContain("md:gap-x-10");
+  });
+});

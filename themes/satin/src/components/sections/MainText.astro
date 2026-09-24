@@ -56,12 +56,21 @@ const text =
 // приоритетнее СКРЫТОГО top-level textSize. У flux/bloom в defaultProps лежит
 // textSize:'medium', и при обратном порядке он глушил выбор мерчанта наглухо.
 const textSize = p.text?.size ?? p.textSize;
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): у
+// верстальщика (Satin-theme @cb548963, TextBlock.astro:13-16) текст
+// `.satin-copy md:text-[20px]`, но .satin-copy (16px, вне слоёв) перебивает
+// утилиту — на экране 16px на любой ширине; блок во всю ширину контейнера,
+// выровнен влево. Под признаком так рисуются только НЕ заданные «Размер текста»
+// и «Позиция»; выбранные мерчантом значения — как раньше.
+const designParity = p.__designParity === true;
+const TEXT_CLS: Record<string, string> = {
+	small: "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
+	large: "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]",
+	medium: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]",
+	designers: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]",
+};
 const textCls =
-	textSize === "small"
-		? "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
-		: textSize === "large"
-			? "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
-			: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+	TEXT_CLS[textSize === "small" || textSize === "large" ? textSize : textSize === undefined && designParity ? "designers" : "medium"];
 
 // Канон position/alignment: canon-default обоих = 'center' (его пишет коэрсер)
 // И отсутствие = ЛИТЕРАЛ верстальщика — всё СЛЕВА во всю ширину satin-container
@@ -69,19 +78,20 @@ const textCls =
 // Двигают только отличные значения: position left/right сужает колонку до
 // текстовой ширины манеры max-w-[600px] (CollectionRows.astro:65) и прижимает
 // auto-margin'ом; alignment right выравнивает содержимое вправо.
-const position = p.position === "left" || p.position === "right" ? p.position : "center";
-const posCls =
-	position === "left"
-		? " max-w-[600px] mr-auto"
-		: position === "right"
-			? " max-w-[600px] ml-auto"
-			: " mx-auto";
-const alignCls =
-	position === "left"
-		? " items-start text-left"
-		: position === "right"
-			? " items-end text-right"
-			: " items-center text-center";
+const position =
+	p.position === "left" || p.position === "right" || p.position === "center"
+		? p.position
+		: designParity
+			? "designers"
+			: "center";
+const POSITION_CLS: Record<string, { pos: string; align: string }> = {
+	left: { pos: " max-w-[600px] mr-auto", align: " items-start text-left" },
+	right: { pos: " max-w-[600px] ml-auto", align: " items-end text-right" },
+	center: { pos: " mx-auto", align: " items-center text-center" },
+	designers: { pos: "", align: " items-start text-left" },
+};
+const posCls = POSITION_CLS[position].pos;
+const alignCls = POSITION_CLS[position].align;
 
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";

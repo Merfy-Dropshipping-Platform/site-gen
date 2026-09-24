@@ -150,12 +150,20 @@ const rowHeadingCls = (s: string | undefined) =>
 		: s === "large"
 			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
+//
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): у
+// верстальщика абзац ряда `.satin-copy md:text-[20px]`, но его .satin-copy
+// (16px, вне слоёв) перебивает утилиту — на экране 16px на любой ширине. Под
+// признаком так рисуется только «размер текста не задан»; выбранный — как раньше.
+const designParity = p.__designParity === true;
+const ROW_TEXT_CLS: Record<string, string> = {
+	small: "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
+	large: "max-w-[600px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]",
+	medium: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]",
+	designers: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]",
+};
 const rowTextCls = (s: string | undefined) =>
-	s === "small"
-		? "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]"
-		: s === "large"
-			? "max-w-[600px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]"
-			: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[20px]";
+	ROW_TEXT_CLS[s === "small" || s === "large" ? s : s === undefined && designParity ? "designers" : "medium"];
 
 // «Высота» секции и «Размер» ряда — две ЖИВЫЕ настройки, и ни одна из них не
 // угадывается по данным. Ряд со своим размером всегда главнее; секция задаёт
@@ -261,6 +269,26 @@ const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; text
 // расходился (pnpm test:panel-defaults, MultiRows.width).
 const rowSplitKey: "small" | "medium" | "large" =
 	p.width === "small" ? "small" : p.width === "medium" ? "medium" : "large";
+
+// PARITY_DESIGN: геометрия рядов верстальщика (Satin-theme @cb548963,
+// CollectionRows.astro:50-62) — ряд `md:grid-cols-2 md:gap-10` (фото и текст
+// поровну, зазор 40), ряды через `gap-12 md:gap-20`, текст без своих полей.
+// Под признаком — только когда «Ширина» не задана; заданная мерчантом ширина
+// ведёт себя как раньше (доли 2:3/1:1/3:2 и ряды впритык, решение 17.09).
+const ROWS_GEOMETRY = {
+	designers: {
+		rows: "flex flex-col gap-12 md:gap-20",
+		row: "grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10",
+		split: "",
+		text: "flex flex-col gap-5",
+	},
+	legacy: {
+		rows: "flex flex-col gap-8",
+		row: "grid grid-cols-1 items-stretch gap-8 md:gap-0",
+		split: undefined,
+		text: "flex flex-col gap-5 md:p-8",
+	},
+}[designParity && p.width === undefined ? "designers" : "legacy"];
 
 // Канон alignment текст-колонки: left/отсутствие = ЛИТЕРАЛ (без классов —
 // контент слева, CollectionRows.astro:62); center/right двигают содержимое.
@@ -375,13 +403,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    как остальные темы — media-text-pair.spec.ts). На мобильном (одна
 		    колонка) зазор оставлен, иначе ряды сливаются в кашу
 		    (multirows-row-gap.spec.ts). */}
-		<div class="flex flex-col gap-8">
+		<div class={ROWS_GEOMETRY.rows}>
 			{
 				rows.map((row, i) => (
 					<div
 						class:list={[
-							"grid grid-cols-1 items-stretch gap-8 md:gap-0",
-							ROW_SPLIT[rowSplitKey][row.right ? "textFirst" : "mediaFirst"],
+							ROWS_GEOMETRY.row,
+							ROWS_GEOMETRY.split ?? ROW_SPLIT[rowSplitKey][row.right ? "textFirst" : "mediaFirst"],
 							rowBoxCls,
 						]}
 						data-puck-subsection-parent={hasRealRows ? id : undefined}
@@ -423,7 +451,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								))}
 						</div>
-						<div class:list={[`flex flex-col gap-5 md:p-8${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
+						<div class:list={[`${ROWS_GEOMETRY.text}${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
 							{row.heading && <h3 class={row.headingCls} set:html={inlineFormat(row.heading)} />}
 							{row.paragraphs.length > 0 && (
 								<div class="flex flex-col gap-3">

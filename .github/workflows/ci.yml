@@ -1611,6 +1611,13 @@ jobs:
       # гидрация кладёт фото коллекции (тестер 24.09: фото коллекции не вставало).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/gallery-collection-tile-hydrates.spec.ts
+      # Подсказка в поле рассылки следует схеме (тестер 24.09): без вшитых цветов.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/newsletter-placeholder-follows-scheme.spec.ts
+      # Шторка корзины не прячет секции страницы корзины (тестер 24.09:
+      # «Промежуточный итог» пропадал при пустой корзине).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-ignores-page-sections.spec.ts
       # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
       # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
       - if: false

@@ -27,7 +27,6 @@ export class FakeClock {
 }
 
 export type StoredSite = LifecycleRow & {
-  deletedAt: Date | null;
   createdAt: Date;
   updatedAt?: Date;
   themeAppliedAt?: Date | null;

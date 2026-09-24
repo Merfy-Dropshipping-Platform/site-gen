@@ -19,6 +19,10 @@ import { eq } from "drizzle-orm";
 import * as schema from "../../db/schema";
 import { DrizzleLifecycleRepository } from "../lifecycle/lifecycle.repository";
 import { SitesDomainService } from "../../sites.service";
+import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
+import { CreateStoreCommand } from "../commands/create-store.command";
+import { DrizzleStoreRegistry } from "../store-registry";
+import { THEMES, catalogOf } from "./support/create-store-harness";
 
 const url = process.env.SITES_TEST_DATABASE_URL;
 const suite = url ? describe : describe.skip;
@@ -181,6 +185,124 @@ suite("сага рождения на настоящем Postgres", () => {
         nextAt: "clear",
       });
       expect((await repo.read("rec-1"))!.lifecycleNextAt).toBeNull();
+    });
+  });
+
+  describe("CreateStore на настоящем Postgres (блокировка тенанта + доводчик)", () => {
+    /** Шаги саги пишут факты прямо в строку — как настоящие, без внешних служб. */
+    const steps = {
+      seed: async (row: { id: string }) => {
+        await db
+          .update(schema.site)
+          .set({ currentRevisionId: `rev-${row.id}` })
+          .where(eq(schema.site.id, row.id));
+      },
+      provision: async (row: { id: string }) => {
+        await db
+          .update(schema.site)
+          .set({
+            domainId: `dom-${row.id}`,
+            coolifyProjectUuid: "proj-pg",
+            publicUrl: `https://${row.id.slice(0, 8)}.merfy.ru`,
+            storageSlug: row.id.slice(0, 8),
+          })
+          .where(eq(schema.site.id, row.id));
+      },
+      route: async (row: { id: string }) => {
+        await db
+          .update(schema.site)
+          .set({ coolifyAppUuid: "central-proxy" })
+          .where(eq(schema.site.id, row.id));
+      },
+    };
+
+    /** Отдельная команда на своём drizzle — как две реплики сервиса. */
+    function makeCommand(shopsLimit: number) {
+      const own = drizzle(pool, { schema });
+      const repo = new DrizzleLifecycleRepository(own);
+      const reconciler = new StoreLifecycleReconciler(repo, steps);
+      const billing = {
+        readEntitlements: async () => ({
+          entitlements: { shopsLimit, staffLimit: 1, frozen: false },
+          known: true,
+        }),
+      };
+      return new CreateStoreCommand(
+        new DrizzleStoreRegistry(own),
+        catalogOf(THEMES),
+        billing as any,
+        reconciler,
+        repo,
+        { emit: () => undefined } as any,
+      );
+    }
+
+    const tenantRows = async (tenantId: string) =>
+      db.select().from(schema.site).where(eq(schema.site.tenantId, tenantId));
+
+    it("две одновременные команды у лимита 1 — одна создала, вторая shops_limit_reached", async () => {
+      const [a, b] = await Promise.all([
+        makeCommand(1).execute({
+          tenantId: "pg-lim",
+          actorUserId: "u1",
+          name: "Первый",
+          wait: true,
+        }),
+        makeCommand(1).execute({
+          tenantId: "pg-lim",
+          actorUserId: "u2",
+          name: "Второй",
+          wait: true,
+        }),
+      ]);
+
+      const outcomes = [a, b]
+        .map((r) => (r.ok ? "created" : r.error.code))
+        .sort();
+      expect(outcomes).toEqual(["created", "shops_limit_reached"]);
+      expect(await tenantRows("pg-lim")).toHaveLength(1);
+    });
+
+    it("регистрация и cron одновременно для нового тенанта — магазин ровно один", async () => {
+      await Promise.all([
+        makeCommand(5).execute({
+          tenantId: "pg-new",
+          actorUserId: "u1",
+          name: "Мой сайт",
+          ifNoStores: true,
+          source: "registration",
+        }),
+        makeCommand(5).execute({
+          tenantId: "pg-new",
+          actorUserId: "u1",
+          name: "Мой магазин",
+          ifNoStores: true,
+          source: "missing-store",
+        }),
+      ]);
+      expect(await tenantRows("pg-new")).toHaveLength(1);
+    });
+
+    it("магазин рождается в саге: тема из команды, слаг транслитом, доведён до ready", async () => {
+      const result = await makeCommand(5).execute({
+        tenantId: "pg-saga",
+        actorUserId: "u1",
+        name: "Мой Магазин",
+        themeId: "satin",
+        wait: true,
+      });
+
+      expect(result.ok && result.effect.ready).toBe(true);
+      const [row] = await tenantRows("pg-saga");
+      expect(row).toMatchObject({
+        themeId: "satin",
+        slug: "moy-magazin",
+        status: "draft",
+        lifecycle: "ready",
+        lifecycleAttempts: 0,
+        lifecycleNextAt: null,
+        coolifyAppUuid: "central-proxy",
+      });
     });
   });
 

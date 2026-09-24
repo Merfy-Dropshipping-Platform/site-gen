@@ -42,6 +42,7 @@ export interface LifecycleRow {
   lifecycleError: string | null;
   lifecycleAttempts: number | null;
   lifecycleNextAt: Date | null;
+  deletedAt: Date | null;
 }
 
 export interface LifecycleRepository {
@@ -79,6 +80,7 @@ const ROW = {
   lifecycleError: schema.site.lifecycleError,
   lifecycleAttempts: schema.site.lifecycleAttempts,
   lifecycleNextAt: schema.site.lifecycleNextAt,
+  deletedAt: schema.site.deletedAt,
 };
 
 /** Строка рождается командой и ещё не готова — общая часть захвата и выборки. */

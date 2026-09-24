@@ -3,7 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 // НОВАЯ канон-секция Slideshow (Фаза B, рецепт bloom Slideshow): полотно слайда =
 // about-герой верстальщика (about.astro:37-57) — фото full-bleed на подложке
 // #111111 + штатный градиент bg-gradient-to-b from-black/30 to-black/45 +
-// центрированный белый контент (кикер → заголовок Kelly Slab → белый контур-CTA).
+// центрированный белый контент (заголовок Kelly Slab → текст → белый контур-CTA).
 // Схема полей — packages/theme-base/blocks/Slideshow/Slideshow.puckConfig.ts.
 // Параметры скрипту — ТОЛЬКО data-атрибуты (define:vars компилятор секций не
 // умеет); идемпотентность — data-slideshow-hydrated; реинициализация —
@@ -94,10 +94,19 @@ const slideTextCls = (s: string | undefined) =>
 // чёрный слой ПОВЕРХ штатного градиента about-полотна. Читаем s.overlay с fallback
 // на section-level p.overlay (backward-compat). Хелпер ВЫШЕ маппинга slides.
 const slideOverlayN = (s: any) => Math.max(0, Math.min(100, Number(s.overlay ?? p.overlay) || 0));
+// Подпись кнопки слайда. Поле панели «Кнопка» (button.text) — хозяин: есть
+// оно в слайде — пустое значение СКРЫВАЕТ кнопку (подсказка панели «Оставьте
+// пустой, чтобы скрыть»). Легаси ctaText читается, только когда поля панели в
+// слайде нет вовсе. Раньше пустое поле проваливалось в ctaText, который сид
+// кладёт в каждый слайд («Кнопка»), и очищенная кнопка оставалась на экране
+// (тестер 24.09). Нормализатор слайдов (normalizeSlideshowProps) уже держит
+// то же правило: текущее поле побеждает и пустым.
+const trimmedText = (v: unknown): string | undefined =>
+	typeof v === "string" && v.trim() ? v : undefined;
+const slideCtaText = (s: any): string | undefined =>
+	typeof s.button?.text === "string" ? trimmedText(s.button.text) : trimmedText(s.ctaText);
 const slides = rawSlides.slice(0, 5).map((s: any, i: number) => {
-	const ctaText =
-		(typeof s.button?.text === "string" && s.button.text.trim() ? s.button.text : undefined) ??
-		(typeof s.ctaText === "string" && s.ctaText.trim() ? s.ctaText : undefined);
+	const ctaText = slideCtaText(s);
 	return {
 		// §11 Контракта секции: видимое поле панели «Изображение» (image) приоритетнее
 		// скрытого legacy «Изображение (старое)» (imageUrl). Раньше legacy читался
@@ -322,7 +331,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								aria-hidden="true"
 							/>
 						)}
-						{/* Контент about-полотна: вертикальный центр, кикер → заголовок → CTA
+						{/* Контент about-полотна: вертикальный центр, заголовок → текст → CTA
 						    (gap-8 / gap-2.5 — литерал about.astro:48-49). */}
 						{/* pb-14/md:pb-16 — резерв под полосу нумерации (`absolute bottom-5`),
 						    литерал rose Slideshow. Без резерва прижатый к низу контент
@@ -332,15 +341,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<div class={`absolute inset-0 z-10 flex px-4 pb-14 md:pb-16 ${s.posCls}`}>
 							<div class={`flex flex-col gap-8 text-white ${s.alignCls}${s.boxed ? " rounded-[var(--radius-card,0px)] bg-black/45 p-6" : ""}`}>
 								<div class={`flex flex-col gap-2.5 ${s.alignCls}`}>
-									{s.subtitle && !isFieldHidden('text') && (
-										<p
-											class={s.textCls}
-											data-puck-subsection-parent={id}
-											data-puck-subsection-index="101"
-											data-puck-subsection-field="text"
-											set:html={inlineFormat(s.subtitle)}
-										/>
-									)}
+									{/* Заголовок, потом текст — как в панели слайда и в остальных
+									    темах (тестер 24.09: «текст над заголовком»). */}
 									{s.heading && !isFieldHidden('heading') && (
 										<h2
 											class={s.headingCls}
@@ -348,6 +350,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 											data-puck-subsection-index="100"
 											data-puck-subsection-field="heading"
 											set:html={inlineFormat(s.heading)}
+										/>
+									)}
+									{s.subtitle && !isFieldHidden('text') && (
+										<p
+											class={s.textCls}
+											data-puck-subsection-parent={id}
+											data-puck-subsection-index="101"
+											data-puck-subsection-field="text"
+											set:html={inlineFormat(s.subtitle)}
 										/>
 									)}
 								</div>

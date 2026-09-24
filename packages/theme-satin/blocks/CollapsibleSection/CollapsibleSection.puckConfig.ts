@@ -5,6 +5,10 @@ const CollapsibleItemSchema = z.object({
   id: z.string(),
   heading: z.string(),
   content: z.string(),
+  // «Размер заголовка» / «Размер текста» пункта (тестер 24.09). Необязательны:
+  // старые ревизии без них рисуются прежним видом темы (= medium).
+  headingSize: z.enum(['small', 'medium', 'large']).optional(),
+  textSize: z.enum(['small', 'medium', 'large']).optional(),
 });
 
 export const CollapsibleSectionSchema = z.object({
@@ -89,12 +93,37 @@ export const CollapsibleSectionPuckConfig: BlockPuckConfig<CollapsibleSectionPro
         // пункт «Раздела» сверяется с rose, а не с константой.
         ['_contentSection' as never]: { type: 'section-header', label: 'Содержание' } as any,
         heading: { type: 'aiText', label: 'Заголовок', fieldType: 'title', placeholder: 'Ввести текст...' } as any,
+        // Тестер 24.09: «добавить редактирование размера заголовка и текста
+        // раздела». Контрол, подписи и имена полей — как у ряда MultiRows и
+        // колонки MultiColumns (headingSize / textSize сразу под своим текстом).
+        headingSize: {
+          type: 'select',
+          label: 'Размер заголовка',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
         content: { type: 'aiText', label: 'Текст', fieldType: 'description', placeholder: 'Ввести текст...' } as any,
+        textSize: {
+          type: 'select',
+          label: 'Размер текста',
+          options: [
+            { label: 'Маленький', value: 'small' },
+            { label: 'Средний', value: 'medium' },
+            { label: 'Большой', value: 'large' },
+          ],
+        },
       },
       defaultItemProps: {
         id: '',
         heading: 'Новый пункт',
         content: 'Содержимое пункта',
+        // Список не пустой («Выберите...»): 'medium' в каждой теме рисует ровно
+        // то же, что пункт без значения, — новый пункт выглядит как раньше.
+        headingSize: 'medium',
+        textSize: 'medium',
       },
       max: 10,
     } as any,

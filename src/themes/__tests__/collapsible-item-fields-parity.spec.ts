@@ -63,11 +63,15 @@ describe("«Раздел» — подписи и контролы пункта �
   const itemFields = (theme: string) =>
     canon[theme]?.CollapsibleSection?.fields?.sections?.itemFields;
 
-  it("эталон rose несёт divider «Содержание» + Заголовок + Текст", () => {
+  it("эталон rose несёт divider «Содержание» + Заголовок + размер + Текст + размер", () => {
+    // Размеры пункта — тестер 24.09: «добавить редактирование размера
+    // заголовка и текста раздела».
     expect(shape(itemFields(REFERENCE))).toEqual([
       "_contentSection|section-header|Содержание",
       "heading|aiText|Заголовок",
+      "headingSize|select|Размер заголовка",
       "content|aiText|Текст",
+      "textSize|select|Размер текста",
     ]);
   });
 

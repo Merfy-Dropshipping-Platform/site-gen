@@ -23,6 +23,12 @@ export type Mirror = {
   assetBase: string;
   catalog: { products: unknown[]; collections: unknown[]; publications: unknown[] };
   sections: MirrorSection[];
+  /**
+   * Клетки, которые не закрыть без нарушения правил (у нас по канону больше
+   * элементов, другое поле панели и т.п.). Клетка остаётся красной — решает
+   * владелец; причина здесь, чтобы отчёт её не терял.
+   */
+  known?: { section: string; reason: string }[];
 };
 
 import { bloom } from "./bloom";

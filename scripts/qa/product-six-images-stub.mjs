@@ -13,6 +13,8 @@
  * Подключается аргументом узла:
  *   node --import <этот файл> render-theme-sections.mjs <тема> '<jobs>'
  */
+import { readFileSync } from "node:fs";
+
 const IMAGES = [1, 2, 3, 4, 5, 6].map((i) => `/p1-${i}.png`);
 
 const product = (i) => ({
@@ -42,21 +44,50 @@ if (process.env.MERFY_QA_STUB_PRODUCT) {
     /* битый JSON — остаёмся на стандартных товарах */
   }
 }
+/**
+ * Каталог зеркала верстальщиков (scripts/qa/designer-goal.ts). Задание с
+ * признаком `__designParity` и непустым `catalog.products` рисуется ТЕМ ЖЕ
+ * содержимым, что демо верстальщиков: столько же товаров, те же названия и
+ * цены. Иначе секции bloom/flux/vanilla, которые ходят за товарами HTTP-
+ * запросом, получали четыре «Товар N» — и разница в числе карточек выглядела
+ * как разница в вёрстке. Остальные задания стаб обслуживает как раньше.
+ */
+function mirrorCatalog() {
+  try {
+    const raw = process.argv.find((a, i) => i >= 2 && (a.startsWith("[") || a.startsWith("@")));
+    if (!raw) return null;
+    const text = raw.startsWith("@") ? readFileSync(raw.slice(1), "utf-8") : raw;
+    const jobs = JSON.parse(text);
+    const job = jobs.find(
+      (j) => j?.props?.__designParity === true && Array.isArray(j?.catalog?.products) && j.catalog.products.length > 0,
+    );
+    return job ? job.catalog : null;
+  } catch {
+    return null;
+  }
+}
+const MIRROR = mirrorCatalog();
+
 const original = globalThis.fetch;
+
+const STANDARD = {
+  product: PRODUCTS[0],
+  products: PRODUCTS,
+  collections: [
+    { id: "col-1", name: "Хиты", slug: "hity", image: IMAGES[0], images: [], productIds: PRODUCTS.map((p) => p.id) },
+  ],
+  publications: [],
+};
+const PAYLOAD = MIRROR
+  ? { product: MIRROR.products[0], collections: [], publications: [], ...MIRROR }
+  : STANDARD;
 
 globalThis.fetch = async (input, init) => {
   if (String(input).includes("storefront-data")) {
-    return new Response(
-      JSON.stringify({
-        product: PRODUCTS[0],
-        products: PRODUCTS,
-        collections: [
-          { id: "col-1", name: "Хиты", slug: "hity", image: IMAGES[0], images: [], productIds: PRODUCTS.map((p) => p.id) },
-        ],
-        publications: [],
-      }),
-      { status: 200, headers: { "content-type": "application/json" } },
-    );
+    return new Response(JSON.stringify(PAYLOAD), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
   }
   return original(input, init);
 };

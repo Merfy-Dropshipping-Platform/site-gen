@@ -38,6 +38,16 @@ const ПОЛНАЯ = {
   backgroundImages: { url1: ФОТО },
 };
 const КАК_У_ВЕРСТАЛЬЩИКОВ = { __designParity: true };
+/** Текстовый блок первого экрана: [у верстальщиков, прежнее]. */
+const ТЕКСТ_ВЕРСТАЛЬЩИКОВ: [string, string][] = [
+  ["text-[14px] font-normal leading-normal hero-over-photo-heading md:text-[20px]", "text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]"],
+  ["text-[12px] font-light leading-normal hero-over-photo-text md:text-[16px]", "text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]"],
+  [" pb-20 md:px-20", " pb-8 md:px-20"],
+  ["max-w-[330px] md:max-w-[410px] md:py-10 md:pr-10 flex-col items-start gap-8", "max-w-[330px] flex-col items-start gap-4"],
+  ["h-10 md:h-12", "h-12"],
+  ["px-3 md:px-4", "px-4"],
+  ["text-[14px] md:text-[16px]", "text-[16px]"],
+];
 
 function отрисовать(props: Record<string, unknown>[]): string[] {
   return renderSections(
@@ -158,10 +168,14 @@ describe("bloom, первый экран: как у верстальщиков �
     // Две половины заливают свои колонки, как раньше.
     expect(классыФото(дваВкл, ФОТО)).toContain("object-cover");
     expect(классыФото(дваВкл, ФОТО2)).toContain("object-cover");
-    // Отличаются только высота блока («Размер») и подложка для читаемости:
-    // её затемнение с признаком — как у верстальщиков, только на телефоне.
+    // Отличаются только высота блока («Размер»), подложка для читаемости (её
+    // затемнение с признаком — как у верстальщиков, только на телефоне) и
+    // текстовый блок (кегли, колонка 330 → md 410, кнопка 40 → md 48 — 24.09,
+    // bloom-goal-like-designers.spec.ts). Раскладка двух фото — прежняя.
+    const безТекстаВерстальщиков = (html: string) =>
+      ТЕКСТ_ВЕРСТАЛЬЩИКОВ.reduce((h, [их, наше]) => h.split(их).join(наше), html);
     const безПодложки = (html: string) =>
-      html
+      безТекстаВерстальщиков(html)
         .replace(
           "from-black/75 via-black/40 via-40% to-transparent md:hidden",
           "",
@@ -171,7 +185,8 @@ describe("bloom, первый экран: как у верстальщиков �
     expect(безПодложки(дваВкл.replace(классыБлока(дваВкл), ""))).toEqual(
       безПодложки(дваВыкл.replace(классыБлока(дваВыкл), "")),
     );
-    const безКолонки = (html: string) => html.replace("2xl:px-[max(300px,calc(50%_-_660px))]", "2xl:px-[300px]");
+    const безКолонки = (html: string) =>
+      безТекстаВерстальщиков(html).replace("2xl:px-[max(300px,calc(50%_-_660px))]", "2xl:px-[300px]");
     expect(безКолонки(пустоВкл.replace(классыБлока(пустоВкл), ""))).toEqual(
       пустоВыкл.replace(классыБлока(пустоВыкл), ""),
     );

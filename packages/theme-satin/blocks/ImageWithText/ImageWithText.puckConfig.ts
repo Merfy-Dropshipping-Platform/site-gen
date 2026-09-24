@@ -43,6 +43,11 @@ export const ImageWithTextSchema = z.object({
    * 1:18992 demands Bitter Italic + Arsenal Italic).
    */
   textStyle: z.enum(['normal', 'italic']).optional(),
+  /**
+   * Field-order 24.09 — порядок drag-n-drop заголовка/текста/кнопки (канон
+   * packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts).
+   */
+  fieldOrder: z.array(z.string()).optional(),
   // Pupa parity.
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
@@ -147,6 +152,9 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     ctaPosition: { type: 'hidden', label: '' },
     textStyle: { type: 'hidden', label: '' },
     containerColorScheme: { type: 'hidden', label: '' },
+    // Field-order 24.09: включает ручку drag-n-drop заголовка/текста/кнопки в
+    // дереве конструктора. Значение пишет конструктор — `defaults` не задаём.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   // defaults — МАНЕРА satin (НЕ канон-дефолты): материалы-заголовок, портретный
   // Figma 1:19335 — плейсхолдер пустого состояния (картинка пустая → landscape-плейсхолдер).

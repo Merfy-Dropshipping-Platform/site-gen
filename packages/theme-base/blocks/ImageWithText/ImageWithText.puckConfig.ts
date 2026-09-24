@@ -48,6 +48,15 @@ export const ImageWithTextSchema = z.object({
    * 1:18992 demands Bitter Italic + Arsenal Italic).
    */
   textStyle: z.enum(['normal', 'italic']).optional(),
+  /**
+   * Field-order 24.09 — порядок drag-n-drop заголовка/текста/кнопки в
+   * текстовой колонке (тестер: «слетели дрэг-н-дропы»). Пишет конструктор
+   * (PR constructor #38): имена панели `image`/`heading`/`text`/`button`.
+   * Порт читает через `orderTextFields` (packages/theme-base/lib/field-order.ts).
+   * Поле объявлено скрытым (не в `fields` как видимый контрол) — без него
+   * конструктор не показывает ручку перетаскивания вовсе.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   // Pupa parity.
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
@@ -156,6 +165,11 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     ctaPosition: { type: 'hidden', label: '' },
     textStyle: { type: 'hidden', label: '' },
     containerColorScheme: { type: 'hidden', label: '' },
+    // Field-order 24.09: скрытое поле включает ручку drag-n-drop заголовка/
+    // текста/кнопки в дереве конструктора (без него ручки нет). Значение
+    // пишет сам конструктор — `defaults` НЕ задаём (см. ImageWithText.astro
+    // порта: без пропа порядок = реестру, нынешний вид секции).
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     image: { url: '', alt: '' },

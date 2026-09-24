@@ -12,15 +12,27 @@
  */
 import { Controller, Inject, Logger } from "@nestjs/common";
 import { MessagePattern, Payload } from "@nestjs/microservices";
+import { z } from "zod";
 import { CreateStoreCommand } from "./commands/create-store.command";
 import { SetThemeCommand } from "./theme-switch/set-theme.command";
-import { toRpcResponse, type CommandResult } from "./commands/command-result";
+import {
+  ok,
+  refused,
+  toRpcResponse,
+  type CommandResult,
+} from "./commands/command-result";
 import {
   LIFECYCLE_REPOSITORY,
   type LifecycleRepository,
 } from "./lifecycle/lifecycle.repository";
-import { toStoreView } from "./store-view";
+import { toStoreView, type StoreView } from "./store-view";
+import { issuesOf } from "./shared/input-issues";
 import { errorMessage } from "./shared/error-message";
+
+export const StoreStatusInputSchema = z.object({
+  tenantId: z.string().trim().min(1),
+  siteId: z.string().trim().min(1),
+});
 
 function failure(code: string, message = code) {
   return { success: false, code, message };
@@ -36,7 +48,7 @@ export class StoreCommandsController {
     @Inject(SetThemeCommand)
     private readonly setThemeCommand: Pick<SetThemeCommand, "execute">,
     @Inject(LIFECYCLE_REPOSITORY)
-    private readonly lifecycle: Pick<LifecycleRepository, "read">,
+    private readonly lifecycle: Pick<LifecycleRepository, "readOwned">,
   ) {}
 
   @MessagePattern("sites.cmd.create_store")
@@ -53,17 +65,19 @@ export class StoreCommandsController {
 
   @MessagePattern("sites.query.store_status")
   async storeStatus(@Payload() data: unknown) {
-    const { tenantId, siteId } = (data ?? {}) as {
-      tenantId?: string;
-      siteId?: string;
-    };
-    if (!tenantId || !siteId)
-      return failure("invalid_input", "tenantId and siteId are required");
-    const row = await this.lifecycle.read(siteId);
-    // Граница тенанта: чужой магазин неотличим от несуществующего.
-    if (!row || row.tenantId !== tenantId || row.deletedAt)
-      return failure("site_not_found");
-    return { success: true, data: toStoreView(row) };
+    return this.run("store_status", () => this.findStore(data));
+  }
+
+  private async findStore(data: unknown): Promise<CommandResult<StoreView>> {
+    const parsed = StoreStatusInputSchema.safeParse(data);
+    if (!parsed.success)
+      return refused("invalid_input", { issues: issuesOf(parsed.error) });
+    const row = await this.lifecycle.readOwned(
+      parsed.data.tenantId,
+      parsed.data.siteId,
+    );
+    // Чужой магазин неотличим от несуществующего: граница тенанта — в запросе.
+    return row ? ok(toStoreView(row)) : refused("site_not_found");
   }
 
   private async run<E>(

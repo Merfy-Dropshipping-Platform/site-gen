@@ -14,7 +14,7 @@ import { makeSiteRow } from "./support/in-memory-lifecycle";
 function makeController() {
   const createStore = { execute: jest.fn() };
   const setTheme = { execute: jest.fn() };
-  const lifecycle = { read: jest.fn() };
+  const lifecycle = { readOwned: jest.fn() };
   const controller = new StoreCommandsController(
     createStore as any,
     setTheme as any,
@@ -101,9 +101,9 @@ describe("sites.cmd.set_theme", () => {
 });
 
 describe("sites.query.store_status", () => {
-  it("вид магазина с состоянием рождения", async () => {
+  it("вид магазина с состоянием рождения; тенант уходит в сам запрос", async () => {
     const { controller, lifecycle } = makeController();
-    lifecycle.read.mockResolvedValue(
+    lifecycle.readOwned.mockResolvedValue(
       makeSiteRow({
         id: "s1",
         tenantId: "t1",
@@ -117,6 +117,7 @@ describe("sites.query.store_status", () => {
 
     const res = await controller.storeStatus({ tenantId: "t1", siteId: "s1" });
 
+    expect(lifecycle.readOwned).toHaveBeenCalledWith("t1", "s1");
     expect(res).toMatchObject({
       success: true,
       data: {
@@ -132,19 +133,9 @@ describe("sites.query.store_status", () => {
     });
   });
 
-  it("чужой тенант или нет магазина — site_not_found (граница тенанта)", async () => {
+  it("запрос по (тенант, магазин) ничего не нашёл — site_not_found", async () => {
     const { controller, lifecycle } = makeController();
-    lifecycle.read.mockResolvedValue(
-      makeSiteRow({ id: "s1", tenantId: "other" }),
-    );
-    expect(
-      await controller.storeStatus({ tenantId: "t1", siteId: "s1" }),
-    ).toEqual({
-      success: false,
-      code: "site_not_found",
-      message: "site_not_found",
-    });
-    lifecycle.read.mockResolvedValue(null);
+    lifecycle.readOwned.mockResolvedValue(null);
     expect(
       await controller.storeStatus({ tenantId: "t1", siteId: "s1" }),
     ).toEqual({
@@ -154,21 +145,18 @@ describe("sites.query.store_status", () => {
     });
   });
 
-  it("без tenantId/siteId — invalid_input", async () => {
-    const { controller } = makeController();
-    expect(await controller.storeStatus({ siteId: "s1" })).toMatchObject({
+  it.each([
+    ["без tenantId", { siteId: "s1" }],
+    ["без siteId", { tenantId: "t1" }],
+    ["пустые строки", { tenantId: " ", siteId: "" }],
+    ["не объект", "s1"],
+  ])("%s — invalid_input по схеме, в базу не ходит", async (_t, input) => {
+    const { controller, lifecycle } = makeController();
+    expect(await controller.storeStatus(input)).toMatchObject({
       success: false,
       code: "invalid_input",
+      issues: expect.any(Array),
     });
-  });
-
-  it("удалённый магазин — site_not_found", async () => {
-    const { controller, lifecycle } = makeController();
-    lifecycle.read.mockResolvedValue(
-      makeSiteRow({ id: "s1", tenantId: "t1", deletedAt: new Date() }),
-    );
-    expect(
-      await controller.storeStatus({ tenantId: "t1", siteId: "s1" }),
-    ).toMatchObject({ success: false, code: "site_not_found" });
+    expect(lifecycle.readOwned).not.toHaveBeenCalled();
   });
 });

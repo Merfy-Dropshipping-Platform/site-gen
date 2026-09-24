@@ -38,6 +38,7 @@ import {
 import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
 import { LEASE_MS } from "../lifecycle/store-lifecycle";
 import { BackgroundWork, within } from "../shared/background-work";
+import { issuesOf } from "../shared/input-issues";
 import {
   STORE_REGISTRY,
   type StoreRegistry,
@@ -135,9 +136,7 @@ export class CreateStoreCommand {
     const parsed = CreateStoreInputSchema.safeParse(raw);
     if (!parsed.success) {
       return refused("invalid_input", {
-        issues: parsed.error.issues.map(
-          (i) => `${i.path.join(".")}: ${i.message}`,
-        ),
+        issues: issuesOf(parsed.error),
       });
     }
     const input = parsed.data;

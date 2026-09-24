@@ -183,6 +183,22 @@ suite("сага рождения на настоящем Postgres", () => {
       expect(await repo.claim(own("retry-later"), 60_000)).toBeNull();
     });
 
+    it("readOwned: граница тенанта и удалённые — в самом запросе", async () => {
+      await insertSite({ id: own("mine"), lifecycle: "seeded" });
+      await insertSite({
+        id: own("deleted"),
+        lifecycle: "seeded",
+        deletedAt: new Date(),
+      });
+      const repo = new DrizzleLifecycleRepository(db);
+
+      expect((await repo.readOwned(own("t1"), own("mine")))?.id).toBe(
+        own("mine"),
+      );
+      expect(await repo.readOwned(own("other"), own("mine"))).toBeNull();
+      expect(await repo.readOwned(own("t1"), own("deleted"))).toBeNull();
+    });
+
     it("запись исхода: пауза повтора по часам базы, «keep» не трогает аренду, «clear» снимает", async () => {
       await insertSite({
         id: own("rec-1"),

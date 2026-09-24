@@ -39,6 +39,7 @@ import { presentCanonLikePort } from "./canon-reference";
 import { planThemeSwitch, type ThemeSwitchReport } from "./theme-switch.plan";
 import { BackgroundWork, within } from "../shared/background-work";
 import { errorMessage } from "../shared/error-message";
+import { issuesOf } from "../shared/input-issues";
 
 export const SetThemeInputSchema = z.object({
   tenantId: z.string().trim().min(1),
@@ -130,9 +131,7 @@ export class SetThemeCommand {
     const parsed = SetThemeInputSchema.safeParse(raw);
     if (!parsed.success) {
       return refused("invalid_input", {
-        issues: parsed.error.issues.map(
-          (i) => `${i.path.join(".")}: ${i.message}`,
-        ),
+        issues: issuesOf(parsed.error),
       });
     }
     const input = parsed.data;

@@ -27,6 +27,7 @@ export class FakeClock {
 }
 
 export type StoredSite = LifecycleRow & {
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt?: Date;
   themeAppliedAt?: Date | null;
@@ -95,6 +96,15 @@ export class InMemoryLifecycleRepository implements LifecycleRepository {
   async read(siteId: string): Promise<LifecycleRow | null> {
     const row = this.rows.get(siteId);
     return row ? { ...row } : null;
+  }
+
+  async readOwned(
+    tenantId: string,
+    siteId: string,
+  ): Promise<LifecycleRow | null> {
+    const row = this.rows.get(siteId);
+    const owned = row && row.tenantId === tenantId && row.deletedAt === null;
+    return owned ? { ...row } : null;
   }
 
   async record(siteId: string, record: LifecycleRecord): Promise<void> {
@@ -173,6 +183,17 @@ if (isOwnTestFile())
         repo.claim("s1", 1000),
       ]);
       expect([a, b].filter(Boolean)).toHaveLength(1);
+    });
+
+    it("readOwned: только строка этого тенанта и не удалённая", async () => {
+      const repo = new InMemoryLifecycleRepository();
+      repo.put(makeSiteRow({ id: "s1", tenantId: "t1" }));
+      repo.put(
+        makeSiteRow({ id: "gone", tenantId: "t1", deletedAt: new Date(0) }),
+      );
+      expect((await repo.readOwned("t1", "s1"))?.id).toBe("s1");
+      expect(await repo.readOwned("other", "s1")).toBeNull();
+      expect(await repo.readOwned("t1", "gone")).toBeNull();
     });
 
     it("строку без состояния (старый магазин) не захватывает", async () => {

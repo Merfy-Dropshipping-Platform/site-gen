@@ -18,7 +18,7 @@
  */
 import { Inject, Injectable } from "@nestjs/common";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { PG_CONNECTION } from "../../constants";
 import * as schema from "../../db/schema";
 import type { LifecycleRecord, LifecycleState } from "./store-lifecycle";
@@ -42,7 +42,6 @@ export interface LifecycleRow {
   lifecycleError: string | null;
   lifecycleAttempts: number | null;
   lifecycleNextAt: Date | null;
-  deletedAt: Date | null;
 }
 
 export interface LifecycleRepository {
@@ -54,6 +53,11 @@ export interface LifecycleRepository {
    */
   claim(siteId: string, leaseMs: number): Promise<LifecycleRow | null>;
   read(siteId: string): Promise<LifecycleRow | null>;
+  /**
+   * Строка магазина этого тенанта, не удалённая, — для запроса состояния
+   * снаружи (`sites.query.store_status`). Граница тенанта — в самом запросе.
+   */
+  readOwned(tenantId: string, siteId: string): Promise<LifecycleRow | null>;
   record(siteId: string, record: LifecycleRecord): Promise<void>;
   /** id строк, которые пора двигать (старые — первыми). */
   listDue(limit: number): Promise<string[]>;
@@ -80,7 +84,6 @@ const ROW = {
   lifecycleError: schema.site.lifecycleError,
   lifecycleAttempts: schema.site.lifecycleAttempts,
   lifecycleNextAt: schema.site.lifecycleNextAt,
-  deletedAt: schema.site.deletedAt,
 };
 
 /** Строка рождается командой и ещё не готова — общая часть захвата и выборки. */
@@ -119,6 +122,24 @@ export class DrizzleLifecycleRepository implements LifecycleRepository {
       .select(ROW)
       .from(schema.site)
       .where(eq(schema.site.id, siteId))
+      .limit(1);
+    return (rows[0] as LifecycleRow | undefined) ?? null;
+  }
+
+  async readOwned(
+    tenantId: string,
+    siteId: string,
+  ): Promise<LifecycleRow | null> {
+    const rows = await this.db
+      .select(ROW)
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, siteId),
+          eq(schema.site.tenantId, tenantId),
+          isNull(schema.site.deletedAt),
+        ),
+      )
       .limit(1);
     return (rows[0] as LifecycleRow | undefined) ?? null;
   }

@@ -202,9 +202,20 @@ const heroHeightCls = HERO_HEIGHT_CLS[designParity ? "designers" : "legacy"][her
 const veilCls = designParity
 	? "pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/75 via-black/40 via-40% to-transparent md:hidden"
 	: "pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 to-black/10";
-const singlePhotoCls = designParity
-	? "absolute left-0 top-0 z-0 h-[122%] w-auto max-w-none md:left-1/2 md:h-[111.45%] md:-translate-x-1/2"
-	: "absolute inset-0 z-0 size-full object-cover object-center";
+// Фото «по высоте» — приём верстальщиков под ИХ фото: вырезанная модель на
+// белом, поля по бокам сливаются с белым. Своё фото мерчанта так оставляло
+// по бокам полосы фона секции (тестер 24.09: «при одном фото — чёрные полосы»),
+// поэтому оно заполняет блок, как раньше; высота блока — верстальщиков в обоих
+// случаях.
+const THEME_HERO_PHOTOS = ["/images/hero-photo.webp"];
+const isThemeHeroPhoto = THEME_HERO_PHOTOS.some((path) =>
+	String(backgroundImage).split("?")[0].endsWith(path),
+);
+const SINGLE_PHOTO_CLS = {
+	fitHeight: "absolute left-0 top-0 z-0 h-[122%] w-auto max-w-none md:left-1/2 md:h-[111.45%] md:-translate-x-1/2",
+	cover: "absolute inset-0 z-0 size-full object-cover object-center",
+};
+const singlePhotoCls = SINGLE_PHOTO_CLS[designParity && isThemeHeroPhoto ? "fitHeight" : "cover"];
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом
 // тексте; кнопки встают рядом в ряд с зазором gap-3 (манера §3).

@@ -1001,9 +1001,11 @@ describe("finishProvisioning(): довыполнение провижининг�
       }),
       update: (tbl: any) => ({
         set: (setValues: any) => ({
-          where: async (_c: any) => {
+          // Этап 3, М1: запись условная и читает `.returning()` — сколько
+          // строк она реально обновила.
+          where: (_c: any) => {
             if (tbl === schema.site) siteUpdates.push(setValues);
-            return [];
+            return withReturning([{ id: "site-1" }]);
           },
         }),
       }),
@@ -1067,9 +1069,16 @@ describe("finishProvisioning(): довыполнение провижининг�
       domainId: "dom-1",
       coolifyProjectUuid: "proj-uuid-1",
     });
+    // ИЗМЕНЕНО ОСОЗНАННО (этап 3, М1). БЫЛО: один безусловный UPDATE со
+    // всеми полями провижининга. СТАЛО: два условных — домен пишется, только
+    // если domain_id ещё пуст, проект — если пуст coolify_project_uuid; второй
+    // провижинер на той же строке не перетирает первого.
+    expect(siteUpdates).toHaveLength(2);
     expect(siteUpdates[0]).toMatchObject({
       domainId: "dom-1",
-      coolifyProjectUuid: "proj-uuid-1",
+      publicUrl: "https://shop1.merfy.ru",
+      storageSlug: "shop1",
     });
+    expect(siteUpdates[1]).toMatchObject({ coolifyProjectUuid: "proj-uuid-1" });
   });
 });

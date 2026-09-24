@@ -817,21 +817,32 @@ export class SitesDomainService {
       `finishProvisioning: parallel provisioning for site ${siteId} took ${Date.now() - provisioningStartedAt}ms (domain=${needsDomain}, project=${needsProject})`,
     );
 
-    // UPDATE site with resolved fields (partial updates ok — reaper will retry missing bits)
-    await this.db
-      .update(schema.site)
-      .set({
-        domainId,
-        publicUrl,
-        storageSlug,
-        coolifyProjectUuid,
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.site.id, siteId));
+    // Условная запись (этап 3, М1): поле пишется, только если его ещё никто
+    // не записал. Два провижинера на одной строке (истекла аренда доводчика,
+    // событие + reaper) — побеждает первый; второй свою находку не пишет,
+    // оставляет в логе (его поддомен — сирота в domain-сервисе) и дальше
+    // работает со значениями победителя. Частичная запись по-прежнему ок —
+    // недостающее доделает следующий проход.
+    const lost = await this.writeProvisioningIfEmpty(siteId, {
+      domain: this.obtained(needsDomain, domainSettled)
+        ? { domainId, publicUrl, storageSlug }
+        : null,
+      project: this.obtained(needsProject, projectSettled)
+        ? { coolifyProjectUuid }
+        : null,
+    });
+    if (lost.length) {
+      this.logger.warn(
+        `finishProvisioning: site ${siteId} проиграл гонку за ${lost.join(", ")} — поле уже записал другой провижинер; своё не записано (domainId=${domainId}, coolifyProjectUuid=${coolifyProjectUuid})`,
+      );
+      ({ domainId, publicUrl, storageSlug, coolifyProjectUuid } =
+        await this.readProvisioning(siteId));
+    }
 
     // Record initial domain in history — SELECT-before-INSERT guard
-    // (no unique constraint on siteDomainHistory(siteId, domainId))
-    if (domainId && publicUrl) {
+    // (no unique constraint on siteDomainHistory(siteId, domainId)). Проиграл
+    // домен — историю пишет победитель, второй не дублирует.
+    if (domainId && publicUrl && !lost.includes("domain")) {
       const subdomainName = publicUrl
         .replace(/^https?:\/\//, "")
         .replace(/\/$/, "");
@@ -871,6 +882,76 @@ export class SitesDomainService {
     }
 
     return { publicUrl, failures };
+  }
+
+  /** Вызов провижининга был нужен и вернул значение. */
+  private obtained(
+    needed: boolean,
+    settled: PromiseSettledResult<unknown>,
+  ): boolean {
+    return needed && settled.status === "fulfilled" && Boolean(settled.value);
+  }
+
+  /**
+   * Пишет группы полей провижининга, только если их поле-признак ещё пусто
+   * (`domain_id` / `coolify_project_uuid`). Возвращает группы, где запись
+   * опоздала: поле уже записал кто-то другой.
+   */
+  private async writeProvisioningIfEmpty(
+    siteId: string,
+    parts: {
+      domain: {
+        domainId?: string;
+        publicUrl?: string;
+        storageSlug?: string;
+      } | null;
+      project: { coolifyProjectUuid?: string } | null;
+    },
+  ): Promise<Array<"domain" | "project">> {
+    const groups = [
+      { name: "domain", guard: schema.site.domainId, values: parts.domain },
+      {
+        name: "project",
+        guard: schema.site.coolifyProjectUuid,
+        values: parts.project,
+      },
+    ] as const;
+    const lost: Array<"domain" | "project"> = [];
+    for (const group of groups) {
+      if (!group.values) continue;
+      const written = await this.db
+        .update(schema.site)
+        .set({ ...group.values, updatedAt: new Date() })
+        .where(and(eq(schema.site.id, siteId), isNull(group.guard)))
+        .returning({ id: schema.site.id });
+      if (!written.length) lost.push(group.name);
+    }
+    return lost;
+  }
+
+  /** Поля провижининга строки как есть — после проигранной гонки. */
+  private async readProvisioning(siteId: string): Promise<{
+    domainId?: string;
+    publicUrl?: string;
+    storageSlug?: string;
+    coolifyProjectUuid?: string;
+  }> {
+    const [row] = await this.db
+      .select({
+        domainId: schema.site.domainId,
+        publicUrl: schema.site.publicUrl,
+        storageSlug: schema.site.storageSlug,
+        coolifyProjectUuid: schema.site.coolifyProjectUuid,
+      })
+      .from(schema.site)
+      .where(eq(schema.site.id, siteId))
+      .limit(1);
+    return {
+      domainId: row?.domainId ?? undefined,
+      publicUrl: row?.publicUrl ?? undefined,
+      storageSlug: row?.storageSlug ?? undefined,
+      coolifyProjectUuid: row?.coolifyProjectUuid ?? undefined,
+    };
   }
 
   /**

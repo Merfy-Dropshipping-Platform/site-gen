@@ -209,30 +209,58 @@ describe("старые cron не трогают строки саги (И7)", ()
 });
 
 describe("finishProvisioning: что именно не получилось — в ответе", () => {
+  /** Строка сайта в «базе» заглушки: select её отдаёт, условный update — меняет. */
+  const EMPTY_SITE = {
+    domainId: null as string | null,
+    publicUrl: null as string | null,
+    storageSlug: null as string | null,
+    coolifyProjectUuid: null as string | null,
+  };
+
   function makeProvisioningService(opts: {
     domainFails?: boolean;
     projectFails?: boolean;
+    /** Кто-то другой уже записал эти поля между нашим чтением и записью. */
+    writtenMeanwhile?: Partial<typeof EMPTY_SITE>;
   }) {
+    const row = { ...EMPTY_SITE };
+    let reads = 0;
+    const writes: Array<{ set: any; where: string }> = [];
+    const history: any[] = [];
     const db: any = {
       select: () => ({
         from: (tbl: unknown) => ({
-          where: () =>
-            thenableRows(
-              tbl === schema.site
-                ? [
-                    {
-                      domainId: null,
-                      publicUrl: null,
-                      storageSlug: null,
-                      coolifyProjectUuid: null,
-                    },
-                  ]
-                : [],
-            ),
+          where: () => {
+            if (tbl !== schema.site) return thenableRows([]);
+            reads += 1;
+            // Первое чтение — до гонки; дальше конкурент уже записал своё.
+            if (reads === 2) Object.assign(row, opts.writtenMeanwhile ?? {});
+            return thenableRows([{ ...row }]);
+          },
         }),
       }),
-      update: () => ({ set: () => ({ where: async () => [] }) }),
-      insert: () => ({ values: async () => undefined }),
+      update: () => ({
+        set: (set: any) => ({
+          where: (cond: unknown) => {
+            const where = render(cond);
+            writes.push({ set, where });
+            const guard = /"domain_id" is null/i.test(where)
+              ? "domainId"
+              : "coolifyProjectUuid";
+            if (reads === 1) Object.assign(row, opts.writtenMeanwhile ?? {});
+            const free = row[guard as keyof typeof row] === null;
+            if (free) Object.assign(row, set);
+            const p: any = Promise.resolve([]);
+            p.returning = async () => (free ? [{ id: "s1" }] : []);
+            return p;
+          },
+        }),
+      }),
+      insert: (tbl: unknown) => ({
+        values: async (v: any) => {
+          if (tbl === schema.siteDomainHistory) history.push(v);
+        },
+      }),
     };
     const domainClient = {
       generateSubdomain: jest.fn(async () => {
@@ -263,7 +291,10 @@ describe("finishProvisioning: что именно не получилось — 
         if (opts.projectFails) throw new Error("coolify_project_create_failed");
         return "proj-1";
       });
-    return service;
+    const warn = jest.spyOn((service as any).logger, "warn");
+    return Object.assign(service, {
+      probe: { writes, history, row, events, warn },
+    });
   }
 
   it("всё получилось — провалов нет", async () => {
@@ -280,6 +311,51 @@ describe("finishProvisioning: что именно не получилось — 
       domainFails: true,
     }).finishProvisioning("s1", "t1", "Org");
     expect(result.failures).toEqual({ domain: "REG.RU timeout" });
+  });
+
+  it("М1: домен и проект пишутся условно — только если их ещё никто не записал", async () => {
+    const service = makeProvisioningService({});
+
+    await service.finishProvisioning("s1", "t1", "Org");
+
+    expect(service.probe.writes.map((w) => Object.keys(w.set).sort())).toEqual([
+      ["domainId", "publicUrl", "storageSlug", "updatedAt"],
+      ["coolifyProjectUuid", "updatedAt"],
+    ]);
+    expect(service.probe.writes[0].where).toMatch(
+      /"site"\."domain_id" is null/i,
+    );
+    expect(service.probe.writes[1].where).toMatch(
+      /"site"\."coolify_project_uuid" is null/i,
+    );
+  });
+
+  it("М1: опоздал с доменом — свой не пишет, в лог — кто проиграл, наружу — домен победителя", async () => {
+    const service = makeProvisioningService({
+      writtenMeanwhile: {
+        domainId: "dom-winner",
+        publicUrl: "https://winner.merfy.ru",
+        storageSlug: "winner",
+      },
+    });
+
+    const result = await service.finishProvisioning("s1", "t1", "Org");
+
+    expect(service.probe.row).toMatchObject({
+      domainId: "dom-winner",
+      publicUrl: "https://winner.merfy.ru",
+      coolifyProjectUuid: "proj-1",
+    });
+    expect(result.publicUrl).toBe("https://winner.merfy.ru");
+    expect(service.probe.warn).toHaveBeenCalledWith(
+      expect.stringMatching(/s1.*проиграл.*domain.*dom-1/),
+    );
+    // Историю домена пишет победитель — второй не дублирует.
+    expect(service.probe.history).toEqual([]);
+    expect(service.probe.events.emit).toHaveBeenCalledWith(
+      "sites.site.provisioned",
+      expect.objectContaining({ domainId: "dom-winner" }),
+    );
   });
 
   it("Coolify упал — failures.project с причиной", async () => {

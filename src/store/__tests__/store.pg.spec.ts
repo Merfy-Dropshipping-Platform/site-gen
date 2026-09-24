@@ -68,6 +68,9 @@ async function removeOwnRows() {
     .delete(schema.siteRevision)
     .where(like(schema.siteRevision.siteId, `${P}%`));
   await db
+    .delete(schema.siteDomainHistory)
+    .where(like(schema.siteDomainHistory.siteId, `${P}%`));
+  await db
     .delete(schema.site)
     .where(
       or(like(schema.site.id, `${P}%`), like(schema.site.tenantId, `${P}%`)),
@@ -522,6 +525,65 @@ suite("сага рождения на настоящем Postgres", () => {
       expect(result.effect.report!.normalized).toEqual([
         { pageId: "p-blog", from: "legacy" },
       ]);
+    });
+  });
+
+  describe("finishProvisioning на настоящем Postgres (М1)", () => {
+    it("два провижинера на одной строке: домен пишет первый, второй его не перетирает и отдаёт домен победителя", async () => {
+      await insertSite({ id: own("prov"), lifecycle: "seeded" });
+      // Барьер: оба вызова прочитали пустую строку и сходили в REG.RU, прежде
+      // чем кто-то пишет, — ровно то, что бывает при истёкшей аренде.
+      let arrived = 0;
+      let release!: () => void;
+      const bothThere = new Promise<void>((r) => (release = r));
+      const provisioner = () => {
+        const domainClient = {
+          generateSubdomain: jest.fn(async () => {
+            const n = (arrived += 1);
+            if (n === 2) release();
+            await bothThere;
+            return { id: `dom-${n}`, name: `shop${n}.merfy.ru` };
+          }),
+        };
+        const storage = {
+          getSitePublicUrlBySubdomain: (sub: string) => `https://${sub}`,
+          extractSubdomainSlug: (sub: string) => sub.split(".")[0],
+        };
+        const dep = {} as any;
+        const service = new SitesDomainService(
+          drizzle(pool, { schema }),
+          dep,
+          dep,
+          { emit: () => undefined } as any,
+          dep,
+          storage as any,
+          domainClient as any,
+          dep,
+          dep,
+        );
+        jest
+          .spyOn(service, "getOrCreateTenantProject")
+          .mockResolvedValue("proj-pg" as any);
+        return service;
+      };
+
+      const [a, b] = await Promise.all([
+        provisioner().finishProvisioning(own("prov"), own("t1")),
+        provisioner().finishProvisioning(own("prov"), own("t1")),
+      ]);
+
+      const [row] = await db
+        .select()
+        .from(schema.site)
+        .where(eq(schema.site.id, own("prov")));
+      expect(["dom-1", "dom-2"]).toContain(row.domainId);
+      expect(a.publicUrl).toBe(row.publicUrl);
+      expect(b.publicUrl).toBe(row.publicUrl);
+      const history = await db
+        .select()
+        .from(schema.siteDomainHistory)
+        .where(eq(schema.siteDomainHistory.siteId, own("prov")));
+      expect(history.map((h) => h.domainId)).toEqual([row.domainId]);
     });
   });
 

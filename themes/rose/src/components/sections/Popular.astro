@@ -6,6 +6,7 @@
 // #collections-title,#popular-title,#gallery-title{text-transform:none}.
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
 import RoseProductCard from "../products/RoseProductCard.astro";
+import { ROSE_POPULAR_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 
 // ОЖИВЛЕНИЕ: конструкторная схема PopularProducts (heading/subtitle union). Тело + данные verbatim.
 // T13: полная канон-схема (cards/columns/headingSize/textSize/imageView/nextPhotoOnHover/
@@ -65,21 +66,17 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // top-level (живой селект панели) приоритетнее legacy nested — порт cc64b373
 // с origin/main (worktree отставал: nested-first глушил панель при legacy-данных).
 const headingSize = p.headingSize ?? p.heading?.size;
+// PARITY_DESIGN: размер не задан → кегли верстальщиков на телефоне/планшете.
+const HEADING_SIZE_CLS: Record<string, string> = { medium: " [&_h2]:!text-[24px]", large: " [&_h2]:!text-[29px]" };
 const headingSizeCls =
-	headingSize === "medium"
-		? " [&_h2]:!text-[24px]"
-		: headingSize === "large"
-			? " [&_h2]:!text-[29px]"
-			: "";
+	HEADING_SIZE_CLS[headingSize] ??
+	designersWhenUnset(designParity, headingSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}`);
 // Канон textSize (top-level приоритетнее legacy text.size): 'small' (canon-default)
 // и отсутствие = 16px верстальщика; medium → 19px, large → 23px.
 const textSize = p.textSize ?? p.text?.size;
+const TEXT_SIZE_CLS: Record<string, string> = { medium: " [&_p]:!text-[19px]", large: " [&_p]:!text-[23px]" };
 const textSizeCls =
-	textSize === "medium"
-		? " [&_p]:!text-[19px]"
-		: textSize === "large"
-			? " [&_p]:!text-[23px]"
-			: "";
+	TEXT_SIZE_CLS[textSize] ?? designersWhenUnset(designParity, textSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.text}`);
 const headWrapCls = `flex w-full justify-center${headingSizeCls}${textSizeCls}`;
 
 // Колонки 1-6 (дефолт 4). Применяются с md (768px) и выше через CSS-переменную
@@ -103,17 +100,25 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // существовал; а на самом <a> висел inline `aspect-ratio:318/444`, который
 // бьёт любой класс независимо от селектора. Настройка «Вид изображения»
 // молча не применялась ни в одном из трёх значений.
+// PARITY_DESIGN: «Вид изображения» не задан → портрет верстальщиков по ширинам
+// (168/220 → 203/250 → 318/444) через переменную --rose-card-ar на сетке.
+// Выбранный мерчантом вид (в том числе «Квадрат») — прежний.
+const CARD_ASPECT: Record<string, string> = { portrait: "430/500", wide: "16/9", adaptive: "16/9" };
 const cardAspectRatio =
-	p.imageView === "portrait"
-		? "430/500"
-		: p.imageView === "wide" || p.imageView === "adaptive"
-			? "16/9"
-			: "1/1";
+	CARD_ASPECT[p.imageView] ??
+	(designersWhenUnset(designParity, p.imageView, ROSE_POPULAR_DESIGNERS.aspectRatio) || "1/1");
+const cardParityCls = designersWhenUnset(designParity, p.imageView, ` ${ROSE_POPULAR_DESIGNERS.aspectVar}`);
 // Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
 // по --cols. Гэпы оставляем как у верстальщика.
-const gridCls = designParity
+// Зазор фото–подпись и цена на телефоне/планшете — как у карточки верстальщиков.
+const cardTextParityCls = designParity ? ` ${ROSE_POPULAR_DESIGNERS.card}` : "";
+const gridBaseCls = designParity
 	? "grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5"
 	: "grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
+// «Колонки» под признак не берём: живая нормализация (page-blocks
+// coercePopularProductsProps) всегда дописывает columns=4, и «не задано» здесь
+// не отличить от выбора мерчанта. У верстальщиков до 1280 — 3 колонки.
+const gridCls = `${gridBaseCls}${cardParityCls}${cardTextParityCls}`;
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart): кнопка

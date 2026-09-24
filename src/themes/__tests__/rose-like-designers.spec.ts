@@ -1,4 +1,5 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
+import { ROSE_FOOTER_DESIGNERS } from "../../../themes/rose/src/lib/design-parity";
 
 /**
  * rose — геометрия «как у верстальщиков» под PARITY_DESIGN.
@@ -275,8 +276,18 @@ describe("rose: Footer — дефолт-ветка «Выравнивания» 
   });
 
   it("center/right — у верстальщиков своей раскладки нет, признак их не трогает", () => {
-    expect(вклЦентр).toEqual(выклЦентр);
-    expect(вклСправа).toEqual(выклСправа);
+    // Раскладка center/right прежняя; признак меняет только кегли (заголовок
+    // рассылки, ссылки на телефоне — rose-goal-sizes.spec.ts), их и вычитаем.
+    const безКеглей = (html: string) =>
+      html
+        .replace(/&#38;/g, "&")
+        .replace(` ${ROSE_FOOTER_DESIGNERS.link}`, "")
+        .replace(` ${ROSE_FOOTER_DESIGNERS.newsletter}`, "")
+        .replace(/style="--size-section-heading:[^"]*"/, 'style="…"');
+    expect(безКеглей(вклЦентр)).toEqual(безКеглей(выклЦентр));
+    expect(безКеглей(вклСправа)).toEqual(безКеглей(выклСправа));
+    expect(вклЦентр).not.toContain("md:flex-row md:items-start md:justify-between");
+    expect(вклСправа).not.toContain("md:flex-row md:items-start md:justify-between");
   });
 
   it("капс верстальщиков не перенесён", () => {

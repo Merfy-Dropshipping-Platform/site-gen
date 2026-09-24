@@ -36,6 +36,7 @@ import {
   type LifecycleRow,
 } from "../lifecycle/lifecycle.repository";
 import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
+import { LEASE_MS } from "../lifecycle/store-lifecycle";
 import {
   STORE_REGISTRY,
   type StoreRegistry,
@@ -224,6 +225,7 @@ export class CreateStoreCommand {
       slug,
       themeId,
       actorUserId: input.actorUserId,
+      leaseMs: LEASE_MS,
     });
     return { kind: "created", id, slug };
   }
@@ -241,21 +243,27 @@ export class CreateStoreCommand {
   }
 
   /**
-   * Сид — синхронно; дальше либо ждём `ready` не дольше таймаута, либо
-   * отпускаем фоном. Потерянный фоновый проход не страшен: строку подберёт
-   * тик доводчика. Возвращает снимок строки для ответа.
+   * Строка вставлена уже в аренде у команды, поэтому команда ведёт её сама,
+   * без захвата (`driveHeld`), и тик в это время её не берёт (В3). Сид —
+   * синхронно; дальше либо ждём `ready` не дольше таймаута, либо доводим фоном
+   * под той же арендой. Потерянный фоновый проход не страшен: аренда истечёт, и
+   * строку подберёт тик. Возвращает снимок строки для ответа.
    */
   private async bringUp(
     siteId: string,
     input: CreateStoreInput,
   ): Promise<LifecycleRow | null> {
     if (!input.wait) {
-      await this.reconciler.advance(siteId, { stopAfter: "seeded" });
-      const seeded = await this.lifecycle.read(siteId);
-      void this.inBackground(this.reconciler.advance(siteId));
-      return seeded;
+      const seeded = await this.reconciler.driveHeld(siteId, {
+        stopAfter: "seeded",
+        keepLease: true,
+      });
+      const row = await this.lifecycle.read(siteId);
+      if (seeded.leaseKept)
+        void this.inBackground(this.reconciler.driveHeld(siteId));
+      return row;
     }
-    const drive = this.inBackground(this.reconciler.advance(siteId));
+    const drive = this.inBackground(this.reconciler.driveHeld(siteId));
     await Promise.race([drive, delay(input.waitTimeoutMs)]);
     return this.lifecycle.read(siteId);
   }

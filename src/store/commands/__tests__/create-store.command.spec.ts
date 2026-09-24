@@ -24,6 +24,8 @@ import {
   deferred,
   makeSiteRow,
 } from "../../__tests__/support/in-memory-lifecycle";
+import { LEASE_MS } from "../../lifecycle/store-lifecycle";
+import type { StoreRegistryTx } from "../../store-registry";
 
 const setup = makeCreateStoreHarness;
 
@@ -192,6 +194,77 @@ describe("CreateStore: эффект в ответе и состояние рож
       slug: "shyolk",
       publicUrl: null,
     });
+  });
+});
+
+describe("CreateStore: тик доводчика не перехватывает новую строку (В3)", () => {
+  /**
+   * Тик доводчика «успевает» ровно между коммитом вставки и сидом команды:
+   * после `withTenantLock` конкурент берёт всё созревшее, как настоящий тик.
+   * Раньше строка вставлялась с пустым `lifecycle_next_at` — тик её захватывал,
+   * `advance` команды получал `claimed: false`, и ответ `created: true` уходил
+   * без ревизии.
+   */
+  function withCompetingTick(h: ReturnType<typeof setup>) {
+    const competing: unknown[] = [];
+    const lockAndInsert = h.registry.withTenantLock.bind(h.registry);
+    h.registry.withTenantLock = async <T>(
+      tenantId: string,
+      work: (tx: StoreRegistryTx) => Promise<T>,
+    ): Promise<T> => {
+      const reservation = await lockAndInsert(tenantId, work);
+      for (const id of await h.repo.listDue(10)) {
+        competing.push(await h.repo.claim(id, LEASE_MS));
+      }
+      return reservation;
+    };
+    return competing;
+  }
+
+  it("wait:false — строка вставлена арендованной: тик её не берёт, ответ уже с ревизией", async () => {
+    const h = setup();
+    const competing = withCompetingTick(h);
+
+    const result = await h.command.execute({ ...base, themeId: "rose" });
+
+    expect(competing).toEqual([]);
+    expect(h.saves).toHaveLength(1);
+    expect(result.ok && result.effect.store!.lifecycle.state).toBe("seeded");
+    await h.command.settle();
+    expect([...h.repo.rows.values()][0].lifecycle).toBe("ready");
+  });
+
+  it("wait:true — то же: тик не вмешивается, команда доводит до ready сама", async () => {
+    const h = setup();
+    const competing = withCompetingTick(h);
+
+    const result = await h.command.execute({
+      ...base,
+      themeId: "rose",
+      wait: true,
+    });
+
+    expect(competing).toEqual([]);
+    expect(result.ok && result.effect.ready).toBe(true);
+    expect(h.saves).toHaveLength(1);
+  });
+
+  it("пока команда не ответила, аренда вставки у неё; после ответа wait:false доводит тот же проход", async () => {
+    const h = setup();
+    const gate = deferred();
+    h.provisionGate.current = gate.promise;
+
+    const result = await h.command.execute({ ...base, themeId: "rose" });
+    const row = h.repo.rows.get(result.ok ? result.effect.store!.id : "")!;
+
+    // Команда ответила на «seeded» и продолжает фоном — аренда всё ещё её.
+    expect(row.lifecycle).toBe("seeded");
+    expect(row.lifecycleNextAt!.getTime()).toBeGreaterThan(h.repo.clock.nowMs);
+    expect(await h.repo.listDue(10)).toEqual([]);
+    gate.resolve();
+    await h.command.settle();
+    expect(row.lifecycle).toBe("ready");
+    expect(row.lifecycleNextAt).toBeNull();
   });
 });
 

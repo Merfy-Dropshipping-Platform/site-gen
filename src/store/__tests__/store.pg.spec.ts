@@ -26,7 +26,8 @@ import { DrizzleLifecycleRepository } from "../lifecycle/lifecycle.repository";
 import { SitesDomainService } from "../../sites.service";
 import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconciler";
 import { CreateStoreCommand } from "../commands/create-store.command";
-import { DrizzleStoreRegistry } from "../store-registry";
+import { DrizzleStoreRegistry, type StoreRegistryTx } from "../store-registry";
+import { LEASE_MS } from "../lifecycle/store-lifecycle";
 import { DbThemeCatalog } from "../theme-catalog";
 import { SetThemeCommand } from "../theme-switch/set-theme.command";
 import { DocumentAdapter } from "../../content/document.adapter";
@@ -253,7 +254,10 @@ suite("сага рождения на настоящем Postgres", () => {
     };
 
     /** Отдельная команда на своём drizzle — как две реплики сервиса. */
-    function makeCommand(shopsLimit: number) {
+    function makeCommand(
+      shopsLimit: number,
+      adjust: (registry: DrizzleStoreRegistry) => void = () => undefined,
+    ) {
       const own = drizzle(pool, { schema });
       const repo = new DrizzleLifecycleRepository(own);
       const reconciler = new StoreLifecycleReconciler(repo, steps);
@@ -263,8 +267,10 @@ suite("сага рождения на настоящем Postgres", () => {
           known: true,
         }),
       };
+      const registry = new DrizzleStoreRegistry(own);
+      adjust(registry);
       return new CreateStoreCommand(
-        new DrizzleStoreRegistry(own),
+        registry,
         catalogOf(THEMES),
         billing as any,
         reconciler,
@@ -317,6 +323,42 @@ suite("сага рождения на настоящем Postgres", () => {
         }),
       ]);
       expect(await tenantRows(own("new"))).toHaveLength(1);
+    });
+
+    it("строка рождается арендованной командой: тик между вставкой и сидом её не берёт (В3)", async () => {
+      const tick = new DrizzleLifecycleRepository(drizzle(pool, { schema }));
+      const competing: unknown[] = [];
+      const command = makeCommand(5, (registry) => {
+        const lockAndInsert = registry.withTenantLock.bind(registry);
+        registry.withTenantLock = async <T>(
+          tenantId: string,
+          work: (tx: StoreRegistryTx) => Promise<T>,
+        ): Promise<T> => {
+          const reservation = await lockAndInsert(tenantId, work);
+          // Тик «успел» между коммитом вставки и сидом команды.
+          for (const row of await tenantRows(own("race"))) {
+            competing.push(await tick.claim(row.id, LEASE_MS));
+          }
+          return reservation;
+        };
+      });
+
+      const result = await command.execute({
+        tenantId: own("race"),
+        actorUserId: "u1",
+        name: "Гонка",
+      });
+
+      expect(competing).toEqual([null]);
+      expect(result.ok && result.effect.store!.lifecycle.state).toBe("seeded");
+      expect(
+        (await tenantRows(own("race")))[0].currentRevisionId,
+      ).not.toBeNull();
+      await command.settle();
+      expect((await tenantRows(own("race")))[0]).toMatchObject({
+        lifecycle: "ready",
+        lifecycleNextAt: null,
+      });
     });
 
     it("магазин рождается в саге: тема из команды, слаг транслитом, доведён до ready", async () => {

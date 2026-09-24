@@ -46,8 +46,13 @@ export interface LifecycleStepRunner {
 export const LIFECYCLE_STEP_RUNNER = Symbol("LIFECYCLE_STEP_RUNNER");
 
 export interface AdvanceOptions {
-  /** Остановиться, как только магазин дошёл до этого состояния (строка остаётся «созревшей»). */
+  /** Остановиться, как только магазин дошёл до этого состояния. */
   stopAfter?: ReachedState;
+  /**
+   * Остановившись на `stopAfter`, оставить аренду за вызывающим (он доведёт
+   * строку сам, `driveHeld`). Без флага строка сразу становится «созревшей».
+   */
+  keepLease?: boolean;
 }
 
 export interface AdvanceResult {
@@ -55,6 +60,8 @@ export interface AdvanceResult {
   claimed: boolean;
   state: LifecycleState | null;
   error: string | null;
+  /** Аренда по-прежнему у вызывающего: он может продолжить `driveHeld`. */
+  leaseKept: boolean;
 }
 
 export function factsOf(row: LifecycleRow): LifecycleFacts {
@@ -92,15 +99,23 @@ export class StoreLifecycleReconciler {
     opts: AdvanceOptions = {},
   ): Promise<AdvanceResult> {
     const claimed = await this.repo.claim(siteId, LEASE_MS);
-    if (!claimed) {
-      const row = await this.repo.read(siteId);
-      return {
-        claimed: false,
-        state: row?.lifecycle ?? null,
-        error: row?.lifecycleError ?? null,
-      };
-    }
+    if (!claimed) return this.notDriven(siteId);
     return this.drive(claimed, opts);
+  }
+
+  /**
+   * Ведёт строку, которую вызывающий УЖЕ держит: `CreateStore` вставляет
+   * магазин сразу с арендой (`lifecycle_next_at` в будущем), поэтому тик его не
+   * берёт, а команда ведёт без захвата — сид успевает до ответа (В3).
+   * Звать только держателю аренды.
+   */
+  async driveHeld(
+    siteId: string,
+    opts: AdvanceOptions = {},
+  ): Promise<AdvanceResult> {
+    const row = await this.repo.read(siteId);
+    if (!row) return this.notDriven(siteId);
+    return this.drive(row, opts);
   }
 
   /** Один проход по созревшим строкам (для cron). Строки идут по очереди. */
@@ -125,7 +140,7 @@ export class StoreLifecycleReconciler {
     let current = row;
     let seen = observeLifecycle(factsOf(current));
     for (let i = 0; i <= LIFECYCLE_STEPS.length; i += 1) {
-      if (isDone(seen, opts)) return this.finish(current.id, seen.state);
+      if (isDone(seen, opts)) return this.finish(current.id, seen, opts);
       const step = seen.next as LifecycleStep;
       const failure = await this.runStep(step, current);
       current = (await this.repo.read(current.id)) ?? current;
@@ -143,16 +158,35 @@ export class StoreLifecycleReconciler {
       claimed: true,
       state: current.lifecycle,
       error: current.lifecycleError,
+      leaseKept: false,
     };
   }
 
-  /** Проход закончен: состояние записано, аренда снята. */
+  /**
+   * Проход закончен: состояние записано. Аренда снимается — кроме остановки
+   * на `stopAfter` с `keepLease`: тогда она остаётся у вызывающего.
+   */
   private async finish(
     siteId: string,
-    state: ReachedState,
+    seen: Observation,
+    opts: AdvanceOptions,
   ): Promise<AdvanceResult> {
-    await this.repo.record(siteId, progressed(state, "clear"));
-    return { claimed: true, state, error: null };
+    const leaseKept = Boolean(seen.next && opts.keepLease);
+    await this.repo.record(
+      siteId,
+      progressed(seen.state, leaseKept ? "keep" : "clear"),
+    );
+    return { claimed: true, state: seen.state, error: null, leaseKept };
+  }
+
+  private async notDriven(siteId: string): Promise<AdvanceResult> {
+    const row = await this.repo.read(siteId);
+    return {
+      claimed: false,
+      state: row?.lifecycle ?? null,
+      error: row?.lifecycleError ?? null,
+      leaseKept: false,
+    };
   }
 
   /** Выполнить шаг; вернуть причину провала или `null`. */
@@ -180,6 +214,11 @@ export class StoreLifecycleReconciler {
         typeof record.nextAt === "object" ? record.nextAt.inMs : 0
       } ms)`,
     );
-    return { claimed: true, state: "failed", error: record.error };
+    return {
+      claimed: true,
+      state: "failed",
+      error: record.error,
+      leaseKept: false,
+    };
   }
 }

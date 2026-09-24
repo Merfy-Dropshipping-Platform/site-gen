@@ -286,6 +286,81 @@ describe("доводчик: конкуренция — два доводчика
   });
 });
 
+describe("доводчик: строку держит вызывающий — CreateStore вставляет её арендованной (В3)", () => {
+  /** Строка, как её вставляет CreateStore: аренда уже у команды. */
+  function leasedRow(clock: { nowMs: number }) {
+    return makeSiteRow({
+      id: "s1",
+      lifecycleNextAt: new Date(clock.nowMs + LEASE_MS),
+    });
+  }
+
+  it("тик арендованную строку не берёт; driveHeld ведёт её без захвата до ready и снимает аренду", async () => {
+    const { clock, repo, reconciler, calls } = setup();
+    repo.put(leasedRow(clock));
+
+    expect(await reconciler.tick(10)).toEqual({ processed: 0 });
+    const result = await reconciler.driveHeld("s1");
+
+    expect(result).toMatchObject({
+      claimed: true,
+      state: "ready",
+      leaseKept: false,
+    });
+    expect(calls.map((c) => c.step)).toEqual(["seed", "provision", "route"]);
+    expect(repo.rows.get("s1")!.lifecycleNextAt).toBeNull();
+  });
+
+  it("stopAfter + keepLease: сид сделан, аренда осталась у вызывающего — тик ждёт, вызывающий доводит сам", async () => {
+    const { clock, repo, reconciler, calls } = setup();
+    const row = repo.put(leasedRow(clock));
+    const leasedUntil = row.lifecycleNextAt;
+
+    const seeded = await reconciler.driveHeld("s1", {
+      stopAfter: "seeded",
+      keepLease: true,
+    });
+
+    expect(seeded).toMatchObject({ state: "seeded", leaseKept: true });
+    expect(repo.rows.get("s1")!).toMatchObject({
+      lifecycle: "seeded",
+      lifecycleNextAt: leasedUntil,
+    });
+    expect(await reconciler.tick(10)).toEqual({ processed: 0 });
+
+    const rest = await reconciler.driveHeld("s1");
+
+    expect(rest).toMatchObject({ state: "ready", leaseKept: false });
+    expect(calls.map((c) => c.step)).toEqual(["seed", "provision", "route"]);
+  });
+
+  it("сид упал при keepLease — аренда уступила паузе повтора, продолжать вызывающему нечего", async () => {
+    const { clock, repo, reconciler, failures } = setup();
+    repo.put(leasedRow(clock));
+    failures.seed = [new Error("seed exploded")];
+
+    const result = await reconciler.driveHeld("s1", {
+      stopAfter: "seeded",
+      keepLease: true,
+    });
+
+    expect(result).toMatchObject({ state: "failed", leaseKept: false });
+    expect(repo.rows.get("s1")!.lifecycleNextAt!.getTime()).toBe(
+      clock.nowMs + RETRY_DELAYS_MS[0],
+    );
+  });
+
+  it("строки нет — driveHeld ничего не делает", async () => {
+    const { reconciler, calls } = setup();
+    expect(await reconciler.driveHeld("missing")).toMatchObject({
+      claimed: false,
+      state: null,
+      leaseKept: false,
+    });
+    expect(calls).toEqual([]);
+  });
+});
+
 describe("доводчик: старые строки не тронуты", () => {
   it("магазин без состояния (рождён старым путём) — доводчик его не видит и не двигает", async () => {
     const { repo, reconciler, calls } = setup();

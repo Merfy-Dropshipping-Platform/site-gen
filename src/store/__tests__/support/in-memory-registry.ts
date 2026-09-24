@@ -76,6 +76,7 @@ export class InMemoryStoreRegistry implements StoreRegistry {
             createdBy: row.actorUserId,
             lifecycle: "reserved",
             lifecycleAttempts: 0,
+            lifecycleNextAt: new Date(this.repo.clock.nowMs + row.leaseMs),
             createdAt: new Date(this.repo.clock.nowMs),
           }),
         );

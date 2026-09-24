@@ -24,6 +24,12 @@ export interface NewStoreRow {
   slug: string;
   themeId: string;
   actorUserId: string;
+  /**
+   * Строка рождается арендованной командой (`lifecycle_next_at = now() +
+   * leaseMs`): тик доводчика её не берёт, пока команда сама не сделает сид и не
+   * ответит (В3). Упала команда — аренда истечёт, строку подберёт тик.
+   */
+  leaseMs: number;
 }
 
 /**
@@ -36,7 +42,10 @@ export type StoreCountScope = "any" | "counted";
 export interface StoreRegistryTx {
   countStores(tenantId: string, scope: StoreCountScope): Promise<number>;
   slugTaken(tenantId: string, slug: string): Promise<boolean>;
-  /** Новая строка сразу в саге: `lifecycle = 'reserved'` — её ведёт доводчик, не старые cron. */
+  /**
+   * Новая строка сразу в саге (`lifecycle = 'reserved'`: её ведёт доводчик, не
+   * старые cron) и сразу в аренде у вставившей её команды.
+   */
   insertStore(row: NewStoreRow): Promise<void>;
 }
 
@@ -95,6 +104,7 @@ class DrizzleStoreRegistryTx implements StoreRegistryTx {
       updatedBy: row.actorUserId,
       lifecycle: "reserved",
       lifecycleAttempts: 0,
+      lifecycleNextAt: sql`now() + make_interval(secs => ${row.leaseMs / 1000})`,
     });
   }
 }

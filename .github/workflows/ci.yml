@@ -1602,6 +1602,11 @@ jobs:
       # остаётся.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-hero-overlay-default.spec.ts
+      # bloom по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): первый
+      # экран, «Сейчас в тренде», галерея, подвал под PARITY_DESIGN — классы
+      # верстальщиков с признаком, прежняя разметка без него, выбор мерчанта цел.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/bloom-goal-like-designers.spec.ts
       # Секции bloom под PARITY_DESIGN — отступы, зазоры и высота строк как в
       # актуальной вёрстке верстальщиков: «Основной текст», «Мультиколонны»,
       # «Галерея», «Подвал» (владелец 23.09 «пройтись по всем секциям»). Капс

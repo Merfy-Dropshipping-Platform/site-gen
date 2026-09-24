@@ -16,12 +16,19 @@ function isStaleWrite(e: unknown): boolean {
   return e instanceof Error && e.message === "revision_conflict";
 }
 
+type Outcome<T> = { ok: true; value: T } | { ok: false; error: unknown };
+
+function settle<T>(attempt: () => Promise<T>): Promise<Outcome<T>> {
+  return attempt().then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
+}
+
 export async function rewriteCurrent<T>(attempt: () => Promise<T>): Promise<T> {
   for (let tried = 1; ; tried += 1) {
-    try {
-      return await attempt();
-    } catch (e) {
-      if (tried >= ATTEMPTS || !isStaleWrite(e)) throw e;
-    }
+    const outcome = await settle(attempt);
+    if (outcome.ok) return outcome.value;
+    if (tried >= ATTEMPTS || !isStaleWrite(outcome.error)) throw outcome.error;
   }
 }

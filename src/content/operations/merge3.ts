@@ -14,6 +14,8 @@
  * В отчёт (`overwritten`/`conflicts`) попадают только места, которые чужая
  * сторона действительно меняла. Служебные поля (`VOLATILE_PATHS`) спорами не
  * бывают: берётся входящее значение, если входящая сторона его меняла.
+ * Операции, которые модель документа считает не правкой (`options.isAuto`:
+ * значения по умолчанию, вписанные редактором), не спорят и не применяются.
  */
 import {
   ORDER_SEGMENT,
@@ -145,17 +147,32 @@ function valuePair(current: Doc, incoming: Doc) {
   });
 }
 
+export interface MergeOptions {
+  /**
+   * Операция `diff(base, side)`, которая не является правкой (например,
+   * значение по умолчанию, вписанное редактором): она не спорит и не
+   * применяется. Правило даёт модель документа, движок о нём не знает.
+   */
+  isAuto?: (op: Op, base: Doc, side: Doc) => boolean;
+}
+
+const NOTHING_IS_AUTO = () => false;
+
 export function merge3(
   base: Doc,
   current: Doc,
   incoming: Doc,
   policy: MergePolicy,
+  options: MergeOptions = {},
 ): MergeResult {
+  const isAuto = options.isAuto ?? NOTHING_IS_AUTO;
   const plan = atomicContainers([base, current, incoming]);
   const theirs = diffWithPlan(base, current, plan).filter(
-    (op) => !isVolatile(op),
+    (op) => !isVolatile(op) && !isAuto(op, base, current),
   );
-  const ours = diffWithPlan(base, incoming, plan);
+  const ours = diffWithPlan(base, incoming, plan).filter(
+    (op) => !isAuto(op, base, incoming),
+  );
 
   const regions = contestedRegions(
     theirs,

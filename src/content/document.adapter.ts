@@ -20,7 +20,7 @@
  * Исключение — запись с базой: при неудачном CAS свежий указатель читается
  * здесь (`readPointer`), иначе повтор слил бы поверх устаревшего знания.
  */
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { and, eq, isNull } from "drizzle-orm";
@@ -32,7 +32,10 @@ import { seedContentPagesFromTheme } from "../themes/content-page-seed";
 import { resolveAssetUrls } from "../themes/asset-resolver";
 import { filterSeededPagesOnWrite } from "../utils/revision-write-filter";
 import { parityOn } from "../themes/parity-switch";
-import { makeDocumentNormalizer } from "./document-normalizer";
+import { makeDocumentWriteModel } from "./write-model";
+import type { WriteModel } from "./write-model";
+import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
+import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
 import type {
@@ -151,10 +154,19 @@ class CasMiss extends Error {}
 export class DocumentAdapter implements StoreContent {
   private readonly logger = new Logger(DocumentAdapter.name);
 
+  private readonly panelDefaults: PanelDefaultsSource;
+
   constructor(
     @Inject(PG_CONNECTION)
     private readonly db: NodePgDatabase<typeof schema>,
-  ) {}
+    // Значения по умолчанию панели конструктора (автозначения — не правка).
+    // По умолчанию — тот же puck-config, что получает конструктор.
+    @Optional()
+    @Inject(PANEL_DEFAULTS)
+    panelDefaults?: PanelDefaultsSource,
+  ) {
+    this.panelDefaults = panelDefaults ?? puckConfigPanelDefaults;
+  }
 
   async load(siteId: string, opts: LoadOptions): Promise<LoadResult> {
     const revisionId =
@@ -239,17 +251,26 @@ export class DocumentAdapter implements StoreContent {
           | undefined,
       readPointer: (siteId, tenantId) => this.readPointer(siteId, tenantId),
       commit: (write) => this.commit(write),
-      normalizer: (siteId, params, storedCurrent) => {
-        const ctx = stepContextFor(siteId, params.site, this.logger);
-        return makeDocumentNormalizer({
-          load: (doc) => runLoadSteps(doc, ctx),
-          storedCurrent,
-          themeId: params.site.themeId ?? null,
-          publicUrl: params.site.publicUrl ?? null,
-          filterSeeded: Boolean(params.filterSeeded),
-        });
-      },
+      writeModel: (siteId, params, storedCurrent) =>
+        this.writeModel(siteId, params, storedCurrent),
     };
+  }
+
+  private async writeModel(
+    siteId: string,
+    params: SaveParams,
+    storedCurrent: Record<string, unknown> | undefined,
+  ): Promise<WriteModel> {
+    const ctx = stepContextFor(siteId, params.site, this.logger);
+    const themeId = params.site.themeId ?? null;
+    return makeDocumentWriteModel({
+      load: (doc) => runLoadSteps(doc, ctx),
+      storedCurrent,
+      themeId,
+      publicUrl: params.site.publicUrl ?? null,
+      filterSeeded: Boolean(params.filterSeeded),
+      panelDefaults: themeId ? await this.panelDefaults(themeId) : {},
+    });
   }
 
   private async readPointer(

@@ -41,9 +41,16 @@ type PageData = { content?: Block[]; root?: unknown; zones?: unknown };
 /**
  * Служебные блоки-обёртки страницы. Их содержимое задаётся на главной и
  * копируется на остальные страницы автоматически, поэтому оно не является
- * свидетельством того, что мерчант эту страницу открывал.
+ * свидетельством того, что мерчант эту страницу открывал. Тот же список
+ * читает запись с базой (`content/change-kinds.ts`): копия такого блока на
+ * внутренней странице в `meta.changes` правкой не считается.
  */
-const CHROME_TYPES = new Set(['PromoBanner', 'Header', 'CheckoutHeader', 'Footer']);
+export const CHROME_TYPES: ReadonlySet<string> = new Set([
+  'PromoBanner',
+  'Header',
+  'CheckoutHeader',
+  'Footer',
+]);
 
 /**
  * Контент-страницы: их тело сидирует КЛИЕНТ (constructor `seedContentPages`,

@@ -19,7 +19,7 @@ import { VOLATILE_PATHS, apply, diff, merge3, paths } from "./operations";
 import type { Op } from "./operations";
 import { covers } from "./operations/address";
 import { deepEqual } from "./operations/json";
-import type { Normalizer } from "./document-normalizer";
+import type { WriteModel } from "./write-model";
 import {
   CLIENT_SNAPSHOT_KIND,
   RevisionMergeConflictError,
@@ -41,14 +41,15 @@ export interface RevisionStore {
   /** Указатель текущей ревизии свежим чтением. */
   readPointer(siteId: string, tenantId: string): Promise<string | null>;
   /**
-   * Приведение к одной версии формата — дело модели контента: адаптер даёт
-   * свои шаги чтения и фильтр досеянного с эталоном от `storedCurrent`.
+   * Модель записи документа (`write-model.ts`): шаги чтения адаптера, фильтр
+   * досеянного с эталоном от `storedCurrent`, правила «не правка» (значения по
+   * умолчанию панели темы, копии служебных блоков).
    */
-  normalizer(
+  writeModel(
     siteId: string,
     params: SaveParams,
     storedCurrent: Doc | undefined,
-  ): Promise<Normalizer>;
+  ): Promise<WriteModel>;
   /**
    * Одна транзакция: вставить `rows`, переставить указатель на `current`, если
    * он сейчас равен `expected`. `false` — CAS не прошёл, ничего не записано.
@@ -74,11 +75,58 @@ export function writeLabels(params: SaveParams): Record<string, unknown> {
   return labels;
 }
 
-/** Адреса изменений без служебных полей (навигация конструктора — не правка). */
-function contentChanges(ops: readonly Op[]): string[] {
-  return paths(ops).filter(
-    (path) => !VOLATILE_PATHS.some((v) => covers(v, path)),
-  );
+type ChangeKind = "change" | "volatile" | "panelDefault" | "chromeCopy";
+
+type KindRule = {
+  kind: ChangeKind;
+  test: (op: Op, base: Doc, side: Doc, model: WriteModel) => boolean;
+};
+
+/**
+ * Что в `meta.changes` НЕ правка мерчанта — данными; первое сработавшее
+ * правило задаёт вид операции `diff(base, side)`.
+ */
+const NOT_A_CHANGE: KindRule[] = [
+  {
+    kind: "volatile",
+    test: (op) => VOLATILE_PATHS.some((v) => covers(v, op.path)),
+  },
+  {
+    kind: "panelDefault",
+    test: (op, base, side, model) => model.isAutoValue(op, base, side),
+  },
+  {
+    kind: "chromeCopy",
+    test: (op, base, side, model) => model.isDerived(op, side, base),
+  },
+];
+
+function kindOf(op: Op, base: Doc, side: Doc, model: WriteModel): ChangeKind {
+  const rule = NOT_A_CHANGE.find((r) => r.test(op, base, side, model));
+  return rule?.kind ?? "change";
+}
+
+/** Изменения ревизии для `meta` (И5): правки мерчанта + сколько было производных. */
+interface ChangeReport {
+  changes: string[];
+  derived?: { chromeCopies: number; panelDefaults: number };
+}
+
+function reportChanges(
+  ops: readonly Op[],
+  base: Doc,
+  side: Doc,
+  model: WriteModel,
+): ChangeReport {
+  const kinds = ops.map((op) => kindOf(op, base, side, model));
+  const pathsOf = (kind: ChangeKind) =>
+    paths(ops.filter((_, i) => kinds[i] === kind));
+  const derived = {
+    chromeCopies: pathsOf("chromeCopy").length,
+    panelDefaults: pathsOf("panelDefault").length,
+  };
+  const hasDerived = derived.chromeCopies + derived.panelDefaults > 0;
+  return { changes: pathsOf("change"), ...(hasDerived ? { derived } : {}) };
 }
 
 class BaseWrite {
@@ -141,12 +189,12 @@ class BaseWrite {
   /** База = текущая: запись как без базы, плюс метки и список изменений. */
   private async fast(): Promise<SaveResult | null> {
     const stored = await this.fetchBase();
-    const n = await this.store.normalizer(this.siteId, this.params, stored);
-    const incoming = await this.incoming(() => n.normalize(stored));
-    const changes = await this.changesBetween(n, stored, incoming);
+    const model = await this.store.writeModel(this.siteId, this.params, stored);
+    const incoming = await this.incoming(() => model.normalize(stored));
+    const report = await this.changesBetween(model, stored, incoming);
     const id = randomUUID();
     const ok = await this.commit(
-      [{ id, data: n.filterForWrite(incoming), meta: this.meta({ changes }) }],
+      [{ id, data: model.filterForWrite(incoming), meta: this.meta(report) }],
       id,
       this.base,
     );
@@ -156,26 +204,26 @@ class BaseWrite {
       clientVersion: id,
       overwritten: [],
       conflicts: [],
-      changes,
+      changes: report.changes,
     };
     return { version: id, effect };
   }
 
   /** Список изменений не должен ронять запись: не посчитался — `null` и предупреждение. */
   private async changesBetween(
-    n: Normalizer,
+    model: WriteModel,
     stored: Doc | undefined,
     incoming: Doc,
-  ): Promise<string[] | null> {
+  ): Promise<{ changes: string[] | null }> {
     try {
-      return contentChanges(
-        diff(await n.normalize(stored), await n.normalize(incoming)),
-      );
+      const before = await model.normalize(stored);
+      const after = await model.normalize(incoming);
+      return reportChanges(diff(before, after), before, after, model);
     } catch (e) {
       this.logger.warn(
         `revision changes not computed for site ${this.siteId}: ${e instanceof Error ? e.message : e}`,
       );
-      return null;
+      return { changes: null };
     }
   }
 
@@ -186,28 +234,33 @@ class BaseWrite {
         ? undefined
         : await this.store.fetchData(current, this.siteId);
     const baseRaw = await this.fetchBase();
-    const n = await this.store.normalizer(this.siteId, this.params, stored);
-    const base = await n.normalize(baseRaw);
-    const incoming = await n.normalize(await this.incoming(async () => base));
-    const result = merge3(
-      base,
-      await n.normalize(stored),
-      incoming,
-      this.policy,
+    const model = await this.store.writeModel(this.siteId, this.params, stored);
+    const base = await model.normalize(baseRaw);
+    const incoming = await model.normalize(
+      await this.incoming(async () => base),
     );
+    const currentDoc = await model.normalize(stored);
+    const result = merge3(base, currentDoc, incoming, this.policy, {
+      isAuto: (op, b, side) => model.isAutoValue(op, b, side),
+    });
     if (!result.merged) throw new RevisionMergeConflictError(result.conflicts);
 
     const mergedId = randomUUID();
     const snapshotId = deepEqual(result.merged, incoming) ? null : randomUUID();
     const clientVersion = snapshotId ?? mergedId;
-    const changes = contentChanges(result.applied);
+    const report = reportChanges(
+      result.applied,
+      currentDoc,
+      result.merged,
+      model,
+    );
     const rows: NewRevision[] = [
       ...(snapshotId ? [this.snapshotRow(snapshotId, incoming, mergedId)] : []),
       {
         id: mergedId,
         data: result.merged,
         meta: this.meta({
-          changes,
+          ...report,
           merge: {
             onto: current,
             clientVersion,
@@ -225,7 +278,7 @@ class BaseWrite {
       clientVersion,
       overwritten: result.overwritten,
       conflicts: [],
-      changes,
+      changes: report.changes,
     };
     return { version: mergedId, effect };
   }

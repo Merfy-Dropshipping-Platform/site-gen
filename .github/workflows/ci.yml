@@ -1631,6 +1631,10 @@ jobs:
       # «Кнопка» слайда скрыта, «Выбор кнопки» «Мультирядов» из схемы (тестер 24.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/satin-tester-batch.spec.ts
+      # Все темы: у слайд-шоу нет стрелок (нумерация на месте); размеры заголовка и
+      # текста у «Раздела» сворачиваемого раздела (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/slideshow-no-arrows-and-collapsible-sizes.spec.ts
       # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
       # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
       - if: false

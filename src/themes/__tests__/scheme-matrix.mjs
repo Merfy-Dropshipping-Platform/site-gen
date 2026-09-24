@@ -138,11 +138,20 @@ export const CATALOG = {
 const RENDERER = resolve(__dirname, 'render-theme-sections.mjs');
 const CATALOG_STUB = resolve(SITES_ROOT, 'scripts/qa/product-six-images-stub.mjs');
 
+/**
+ * Настройки, которые матрица выставляет секции явно, чтобы нарисовать узел,
+ * которого при значениях по умолчанию теперь нет. До 24.09 «Затемнение» героя
+ * bloom стояло по умолчанию 40, и матрица сторожила этот слой (hero-overlay-veil).
+ * Теперь по умолчанию 0, как у верстальщиков (владелец 24.09), поэтому ползунок
+ * выставляется явно: охват матрицы остаётся ровно прежним, другие темы не трогаются.
+ */
+const MATRIX_PROPS = { bloom: { Hero: { overlay: 40 } } };
+
 /** Живой рендер ВСЕХ секций темы одним процессом — та же лестница, что у витрины. */
 export function renderTheme(theme, blocks, colorScheme = `scheme-${SCHEME_A}`) {
   const jobs = blocks.map((block) => ({
     block, cascade: true, live: true, catalog: CATALOG,
-    props: { id: `${block}-1`, productId: 'p1', colorScheme, padding: { top: 40, bottom: 40 } },
+    props: { id: `${block}-1`, productId: 'p1', colorScheme, padding: { top: 40, bottom: 40 }, ...MATRIX_PROPS[theme]?.[block] },
   }));
   const out = execFileSync('node', ['--import', CATALOG_STUB, RENDERER, theme, JSON.stringify(jobs)], {
     cwd: SITES_ROOT, encoding: 'utf-8', maxBuffer: 1 << 28,

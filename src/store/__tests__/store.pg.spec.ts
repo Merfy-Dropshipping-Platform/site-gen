@@ -23,6 +23,8 @@ import { StoreLifecycleReconciler } from "../lifecycle/store-lifecycle.reconcile
 import { CreateStoreCommand } from "../commands/create-store.command";
 import { DrizzleStoreRegistry } from "../store-registry";
 import { DbThemeCatalog } from "../theme-catalog";
+import { SetThemeCommand } from "../theme-switch/set-theme.command";
+import { DocumentAdapter } from "../../content/document.adapter";
 import { THEMES, catalogOf } from "./support/create-store-harness";
 
 const url = process.env.SITES_TEST_DATABASE_URL;
@@ -62,6 +64,7 @@ suite("сага рождения на настоящем Postgres", () => {
 
   beforeEach(async () => {
     await db.delete(schema.site);
+    await db.delete(schema.siteRevision);
   });
 
   describe("DrizzleLifecycleRepository", () => {
@@ -343,6 +346,100 @@ suite("сага рождения на настоящем Postgres", () => {
       expect(
         (await catalog.list("other-tenant")).map((t) => t.id).sort(),
       ).toEqual(["flux", "rose"]);
+    });
+  });
+
+  describe("SetTheme на настоящем Postgres (порт StoreContent, CAS, строка магазина)", () => {
+    it("rose → flux: новая ревизия текущей, тема и дата выбора в строке, своя страница переехала", async () => {
+      const dep = {} as any;
+      const sites = new SitesDomainService(
+        db,
+        dep,
+        dep,
+        { emit: () => undefined } as any,
+        dep,
+        dep,
+        dep,
+        dep,
+        dep,
+      );
+      const canon: any = JSON.parse(
+        JSON.stringify(await sites.buildInitialRevision("rose")),
+      );
+      canon.pages.push({
+        id: "p-blog",
+        name: "Блог",
+        slug: "/blog",
+        role: "custom",
+        isCustom: true,
+        source: "user",
+        seo: null,
+        locale: null,
+        variant: null,
+        schedule: null,
+        permissions: null,
+        targeting: null,
+      });
+      canon.pagesData["p-blog"] = { text: "Новости" };
+      await insertSite({
+        id: "pg-theme",
+        tenantId: "pg-t1",
+        themeId: "rose",
+        currentRevisionId: "rev-0",
+      });
+      await db
+        .insert(schema.siteRevision)
+        .values({ id: "rev-0", siteId: "pg-theme", data: canon, meta: {} });
+      const command = new SetThemeCommand(
+        sites,
+        new DocumentAdapter(db),
+        {
+          defaultThemeId: "rose",
+          list: async () => [],
+          find: async (id: string) => ({ id }) as any,
+        },
+        { emit: () => undefined } as any,
+      );
+
+      const result = await command.execute({
+        tenantId: "pg-t1",
+        siteId: "pg-theme",
+        themeId: "flux",
+        actorUserId: "u1",
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const [site] = await db
+        .select()
+        .from(schema.site)
+        .where(eq(schema.site.id, "pg-theme"));
+      expect(site).toMatchObject({
+        themeId: "flux",
+        currentRevisionId: result.effect.revisionId,
+        updatedBy: "u1",
+      });
+      expect(site.themeAppliedAt).toBeInstanceOf(Date);
+      const [rev] = await db
+        .select()
+        .from(schema.siteRevision)
+        .where(eq(schema.siteRevision.id, result.effect.revisionId!));
+      expect(rev.meta).toMatchObject({
+        source: "theme-switch",
+        fromThemeId: "rose",
+        toThemeId: "flux",
+      });
+      const data = rev.data as any;
+      expect(data.themeId).toBe("flux");
+      expect(data.pages.map((p: any) => p.id)).toContain("p-blog");
+      expect(data.pagesData["p-blog"].content.map((b: any) => b.type)).toEqual([
+        "Header",
+        "Page",
+        "Footer",
+      ]);
+      expect(result.effect.report!.normalized).toEqual([
+        { pageId: "p-blog", from: "legacy" },
+      ]);
     });
   });
 

@@ -885,10 +885,12 @@ export class PreviewService {
     // уводил гидрацию локального стенда на прод (вечное демо каталога;
     // ловля theme-registry 2026-08-09).
     window.__MERFY_API_BASE__ = window.__MERFY_API_BASE__ || location.origin;
-    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {
-      shopId: ${JSON.stringify(input.siteId ?? '')},
-      apiUrl: location.origin + '/api'
-    };
+    // НЕ клоббер: injectPreviewGlobals может выставить __MERFY_CONFIG__.checkout
+    // ДО этого скрипта (head) — создаём объект при отсутствии и лишь дозаполняем
+    // shopId/apiUrl, сохраняя .checkout.
+    window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || {};
+    if (!window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = ${JSON.stringify(input.siteId ?? '')};
+    if (!window.__MERFY_CONFIG__.apiUrl) window.__MERFY_CONFIG__.apiUrl = location.origin + '/api';
   </script>
   ${input.fontHead}
   <style>${previewTailwind}</style>

@@ -34,6 +34,7 @@ const paddingStyle = padding
       <div
         class={C.field}
         data-checkout-field="country"
+        data-checkout-address
         data-country-default={country.default}
         data-country-selectable={String(country.selectable)}
       >
@@ -79,7 +80,7 @@ const paddingStyle = padding
     ))}
 
     {/* Город — отдельный ряд на всю ширину (Figma 1:19998). */}
-    <div class={C.field} data-checkout-field="city" data-dadata={String(cityDadata)}>
+    <div class={C.field} data-checkout-field="city" data-checkout-address data-dadata={String(cityDadata)}>
       <input
         class={cityDadata ? C.inputWithIcon : C.input}
         id="checkout-city"
@@ -103,7 +104,7 @@ const paddingStyle = padding
     {/* Полный адрес + Индекс — один ряд 50/50 (Figma 1:19998). Индекс
         автозаполняется из выбранного адреса DaData (см. инлайн-скрипт ниже,
         postal autofill), поэтому логически в одном ряду с адресом. */}
-    <div class={C.addressIndexRow}>
+    <div class={C.addressIndexRow} data-checkout-address>
       <div class={C.field} data-checkout-field="address" data-dadata={String(addressDadata)}>
         <input
           class={addressDadata ? C.inputWithIcon : C.input}
@@ -403,6 +404,13 @@ const paddingStyle = padding
         lastQuery = q;
         // Юзер изменил город руками → сохранённый fias_id больше не валиден
         // для фильтрации адресных подсказок. Очищаем.
+        // Адрес правят руками → разобранный из прошлой подсказки больше не
+        // соответствует полю. Выбор подсказки шлёт 'change', сюда не попадает.
+        if (kind === 'address') {
+          ['street', 'building', 'apartment'].forEach(function (part) {
+            section.removeAttribute('data-addr-' + part);
+          });
+        }
         if (kind === 'city') {
           section.removeAttribute('data-selected-city-fias-id');
           // …и старый ИНДЕКС от прежнего города тоже невалиден. Без очистки он
@@ -525,18 +533,17 @@ const paddingStyle = padding
           // Сохраняем структурированный адрес из DaData (street, house, flat)
           // в data-* атрибуты на section — CheckoutSubmit прочитает их и
           // отправит в PATCH /cart/:id/address с правильными полями (не
-          // одним fullAddress, который backend DTO дропает).
-          var dStreet = li.getAttribute('data-street') || '';
-          var dHouseType = li.getAttribute('data-house-type') || 'д';
-          var dHouse = li.getAttribute('data-house') || '';
-          var dFlatType = li.getAttribute('data-flat-type') || 'кв';
-          var dFlat = li.getAttribute('data-flat') || '';
-          if (dStreet) section.setAttribute('data-addr-street', dStreet);
-          else section.removeAttribute('data-addr-street');
-          if (dHouse) section.setAttribute('data-addr-building', (dHouseType + ' ' + dHouse).trim());
-          else section.removeAttribute('data-addr-building');
-          if (dFlat) section.setAttribute('data-addr-apartment', (dFlatType + ' ' + dFlat).trim());
-          else section.removeAttribute('data-addr-apartment');
+          // одним fullAddress, который backend DTO дропает). Дом и квартира —
+          // «сырые» («19», «5»), как ждёт ShippingAddressDto, без «д»/«кв».
+          var addrParts = {
+            street: li.getAttribute('data-street') || '',
+            building: li.getAttribute('data-house') || '',
+            apartment: li.getAttribute('data-flat') || '',
+          };
+          Object.keys(addrParts).forEach(function (part) {
+            if (addrParts[part]) section.setAttribute('data-addr-' + part, addrParts[part]);
+            else section.removeAttribute('data-addr-' + part);
+          });
 
           // Postal autofill ТОЛЬКО при выборе полного адреса.
           var indexField = section.querySelector('[data-checkout-field="postalCode"]');
@@ -578,4 +585,71 @@ const paddingStyle = padding
     document.addEventListener('DOMContentLoaded', initCheckoutDelivery);
   }
   document.addEventListener('astro:page-load', initCheckoutDelivery);
+</script>
+
+<script is:inline define:vars={{ blockId: id, fieldFullClass: C.fieldFull }}>
+  // Рантайм-конфиг чекаута (Фаза 4a): customerNameMode + addressRequired.
+  //  customerNameMode:
+  //    "name-surname" (дефолт) → Имя + Фамилия в 2 колонки (текущее поведение);
+  //    "surname"               → Имя скрыто, Фамилия на всю ширину;
+  //    "name"                  → Фамилия скрыта, Имя на всю ширину.
+  //  addressRequired=false     → весь блок адреса (страна, город+индекс, улица,
+  //                              дом+кв.) скрыт группой по маркеру [data-checkout-address].
+  // Консюмер конфига: применяем ДВУМЯ путями (гонка с продюсером в checkout.astro):
+  //  (1) сразу на init, если window.__MERFY_CONFIG__.checkout уже есть;
+  //  (2) по событию document 'checkout:config-ready'. Идемпотентно.
+  function initCheckoutDeliveryConfig() {
+    var root = window.__merfyRoot(blockId) || document.querySelector('[data-checkout-delivery]'); // merfy-root-allow: page-singleton (один на странице), id undefined на live composed-странице
+    if (!root) return;
+
+    function apply() {
+      var cfg = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
+
+      // === customerNameMode — растяжка/скрытие split-полей имени. ===
+      // Растягиваем КОНКРЕТНОЕ поле имени (не контейнер: C.fieldRow2 шарится
+      // с рядом «дом+кв.»). Null-safe: в non-split (ФИО) режиме полей нет → no-op.
+      var nameMode = cfg.customerNameMode === 'surname' || cfg.customerNameMode === 'name'
+        ? cfg.customerNameMode
+        : 'name-surname';
+      var firstWrap = root.querySelector('[data-checkout-field="firstName"]');
+      var lastWrap = root.querySelector('[data-checkout-field="lastName"]');
+      if (firstWrap && lastWrap) {
+        var hideFirst = nameMode === 'surname';
+        var hideLast = nameMode === 'name';
+        firstWrap.hidden = hideFirst;
+        lastWrap.hidden = hideLast;
+        if (hideFirst) {
+          lastWrap.classList.add(fieldFullClass);
+          firstWrap.classList.remove(fieldFullClass);
+        } else if (hideLast) {
+          firstWrap.classList.add(fieldFullClass);
+          lastWrap.classList.remove(fieldFullClass);
+        } else {
+          firstWrap.classList.remove(fieldFullClass);
+          lastWrap.classList.remove(fieldFullClass);
+        }
+      }
+
+      // === addressRequired=false — весь блок адреса скрыт группой. ===
+      // Дефолт/true → все ряды видны. Скрываем через hidden (не remove) —
+      // DaData-скрипт остаётся null-safe (input'ы в DOM, просто недоступны).
+      var addrHidden = cfg.addressRequired === false;
+      var addrRows = root.querySelectorAll('[data-checkout-address]');
+      for (var i = 0; i < addrRows.length; i++) addrRows[i].hidden = addrHidden;
+    }
+
+    // Один listener на форму (guard-флаг от двойной инициализации при
+    // повторном прогоне на astro:page-load). Повторный init только пере-применяет.
+    if (!root.__merfyDeliveryCfgInit) {
+      root.__merfyDeliveryCfgInit = true;
+      document.addEventListener('checkout:config-ready', apply);
+    }
+    apply();
+  }
+
+  initCheckoutDeliveryConfig();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCheckoutDeliveryConfig);
+  }
+  document.addEventListener('astro:page-load', initCheckoutDeliveryConfig);
 </script>

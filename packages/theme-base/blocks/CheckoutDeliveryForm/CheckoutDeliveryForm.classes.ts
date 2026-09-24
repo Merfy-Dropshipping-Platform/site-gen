@@ -7,6 +7,8 @@ export const CheckoutDeliveryFormClasses = {
     'mb-4 [font-family:var(--font-body)] text-[length:var(--size-h3)] text-[rgb(var(--color-heading))]',
   fields: 'flex flex-col gap-4',
   fieldRow2: 'grid grid-cols-1 md:grid-cols-2 gap-4',
+  // Растяжка одиночного видимого поля имени на всю ширину ряда (customerNameMode).
+  fieldFull: 'md:col-span-2',
   // Полный адрес + Индекс — 50/50 (Figma 1:19998).
   addressIndexRow: 'grid grid-cols-1 md:grid-cols-2 gap-4',
   field:

@@ -153,3 +153,25 @@ describe.each(THEMES)("«Изображение с текстом» — поря
     expect(p.button).toBeLessThan(p.heading);
   });
 });
+
+// Конструктор выбирает панель по НОМЕРУ подсекции: 100 + место поля в реестре
+// (image, heading, text, button — constructor src/lib/utils/arrayField.ts).
+// У vanilla номера были сдвинуты (heading=100), и клик по заголовку открывал
+// панель «Изображение». Номер должен совпадать с реестром при любом порядке.
+const НОМЕР_ПОЛЯ = { image: "100", heading: "101", text: "102", button: "103" } as const;
+
+describe("номер подсекции = место поля в реестре конструктора", () => {
+  const пары = (html: string) =>
+    [...html.matchAll(/data-puck-subsection-index="(\d+)"[^>]*?data-puck-subsection-field="([a-z]+)"/gs)]
+      .map(([, номер, поле]) => [поле, номер]);
+
+  describe.each(THEMES)("%s", (theme) => {
+    it.each([[undefined], [["button", "text", "heading"]]])("порядок %j", (fieldOrder) => {
+      const найдено = пары(отрисовать(theme, fieldOrder ? { fieldOrder } : {}));
+      expect(найдено.length).toBeGreaterThanOrEqual(4);
+      for (const [поле, номер] of найдено) {
+        expect([поле, номер]).toEqual([поле, НОМЕР_ПОЛЯ[поле as keyof typeof НОМЕР_ПОЛЯ]]);
+      }
+    });
+  });
+});

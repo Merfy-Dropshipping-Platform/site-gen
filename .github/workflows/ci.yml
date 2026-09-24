@@ -1627,6 +1627,10 @@ jobs:
         run: pnpm exec jest --runInBand src/themes/__tests__/rose-empty-hero-settings.spec.ts
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/flux-empty-hero-settings.spec.ts
+      # satin: заголовок над текстом в «Изображении с текстом» и слайде, пустая
+      # «Кнопка» слайда скрыта, «Выбор кнопки» «Мультирядов» из схемы (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/satin-tester-batch.spec.ts
       # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
       # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
       - if: false

@@ -173,7 +173,6 @@ describe("шаг route: маршрут хостинга (роутер центр
 
     await steps.route(
       row({
-        storageSlug: "abc",
         publicUrl: "https://abc.merfy.ru",
         coolifyProjectUuid: "p1",
       }),

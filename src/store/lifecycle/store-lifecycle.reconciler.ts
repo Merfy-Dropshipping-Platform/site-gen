@@ -60,7 +60,6 @@ export interface AdvanceResult {
   /** Строку вёл этот проход. `false` — её ведёт другой или время не пришло. */
   claimed: boolean;
   state: LifecycleState | null;
-  error: string | null;
   /** Аренда по-прежнему у вызывающего: он может продолжить `driveHeld`. */
   leaseKept: boolean;
 }
@@ -154,7 +153,6 @@ export class StoreLifecycleReconciler {
     return {
       claimed: true,
       state: current.lifecycle,
-      error: current.lifecycleError,
       leaseKept: false,
     };
   }
@@ -173,7 +171,7 @@ export class StoreLifecycleReconciler {
       siteId,
       progressed(seen.state, leaseKept ? "keep" : "clear"),
     );
-    return { claimed: true, state: seen.state, error: null, leaseKept };
+    return { claimed: true, state: seen.state, leaseKept };
   }
 
   private async notDriven(siteId: string): Promise<AdvanceResult> {
@@ -181,7 +179,6 @@ export class StoreLifecycleReconciler {
     return {
       claimed: false,
       state: row?.lifecycle ?? null,
-      error: row?.lifecycleError ?? null,
       leaseKept: false,
     };
   }
@@ -214,7 +211,6 @@ export class StoreLifecycleReconciler {
     return {
       claimed: true,
       state: "failed",
-      error: record.error,
       leaseKept: false,
     };
   }

@@ -32,7 +32,6 @@ export interface LifecycleRow {
   themeId: string | null;
   createdBy: string | null;
   publicUrl: string | null;
-  storageSlug: string | null;
   currentRevisionId: string | null;
   domainId: string | null;
   coolifyProjectUuid: string | null;
@@ -74,7 +73,6 @@ const ROW = {
   themeId: schema.site.themeId,
   createdBy: schema.site.createdBy,
   publicUrl: schema.site.publicUrl,
-  storageSlug: schema.site.storageSlug,
   currentRevisionId: schema.site.currentRevisionId,
   domainId: schema.site.domainId,
   coolifyProjectUuid: schema.site.coolifyProjectUuid,

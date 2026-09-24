@@ -61,7 +61,6 @@ export function makeCreateStoreHarness(
         domainId: `dom-${siteId}`,
         coolifyProjectUuid: "proj-1",
         publicUrl: `https://${siteId.slice(0, 8)}.merfy.ru`,
-        storageSlug: siteId.slice(0, 8),
       });
       return { publicUrl: row.publicUrl ?? undefined, failures: {} };
     }),

@@ -42,7 +42,6 @@ function makeSteps(repo: InMemoryLifecycleRepository) {
       row.domainId = `dom-${id}`;
       row.coolifyProjectUuid = `proj-${row.tenantId}`;
       row.publicUrl = `https://${id}.merfy.ru`;
-      row.storageSlug = id;
     },
     route: (id) => {
       repo.rows.get(id)!.coolifyAppUuid = "central-proxy";

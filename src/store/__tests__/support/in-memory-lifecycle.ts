@@ -42,7 +42,6 @@ export function makeSiteRow(
     themeId: "rose",
     createdBy: "u1",
     publicUrl: null,
-    storageSlug: null,
     currentRevisionId: null,
     domainId: null,
     coolifyProjectUuid: null,

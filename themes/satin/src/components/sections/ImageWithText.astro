@@ -5,7 +5,9 @@ import { inlineFormat } from "../../lib/rich-text";
 // ImageBanner.astro не тронут (его использует index.astro:28). Схема полей =
 // packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts.
 // Смысловой маппинг: canon heading → title баннера (Kelly Slab 26/32),
-// canon text → строка-КИКЕР верстальщика НАД заголовком (ImageBanner.astro:45).
+// canon text → строка текста ПОД заголовком (у верстальщика кикер стоял над
+// ним, ImageBanner.astro:45; тестер 24.09 — порядок как в панели: заголовок,
+// текст, кнопка).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
@@ -94,7 +96,7 @@ const colAlignCls =
 			? "items-end text-right"
 			: "items-center text-center";
 
-// Канон text: string | { content, size } → КИКЕР над заголовком (литеральная
+// Канон text: string | { content, size } → текст ПОД заголовком (стиль — литеральная
 // роль ImageBanner.astro:45: Arsenal 16/md:20 light uppercase tracking-[0.04em]
 // muted). С данными — кикер мерчанта; пустое состояние — поясняющий текст-
 // плейсхолдер (НЕ мок-кикер «Новая мужская коллекция» верстальщика).
@@ -245,6 +247,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				mdHeightCls,
 				imgRight ? "md:order-2" : "md:order-1",
 			]}
+			data-puck-subsection-parent={id}
+			data-puck-subsection-index="100"
+			data-puck-subsection-field="image"
 		>
 			{
 				imageUrl ? (
@@ -267,22 +272,27 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			]}
 		>
 			<div class={`flex max-w-[420px] flex-col gap-5 ${colAlignCls}${bottomPinned ? " h-full" : ""}`}>
-				{text && !isFieldHidden('text') && (
-					<p
-						class={textCls + italicCls}
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="101"
-						data-puck-subsection-field="text"
-						set:html={inlineFormat(text)}
-					/>
-				)}
+				{/* Порядок как в панели и в остальных темах: заголовок, текст, кнопка
+				   (тестер 24.09: «текст стоит над заголовком»). Индексы подпунктов —
+				   те же, что у левой панели конструктора (100 изображение, 101
+				   заголовок, 102 текст, 103 кнопка): нажатие в превью открывает
+				   тот же подпункт, а не соседний. */}
 				{!isFieldHidden('heading') && (
 					<h2
 						class={headingCls + italicCls}
 						data-puck-subsection-parent={id}
-						data-puck-subsection-index="100"
+						data-puck-subsection-index="101"
 						data-puck-subsection-field="heading"
 						set:html={inlineFormat(heading)}
+					/>
+				)}
+				{text && !isFieldHidden('text') && (
+					<p
+						class={textCls + italicCls}
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="102"
+						data-puck-subsection-field="text"
+						set:html={inlineFormat(text)}
 					/>
 				)}
 				{
@@ -291,7 +301,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							href={btnHref}
 							class={btnCls + (bottomPinned ? " mt-auto" : "")}
 							data-puck-subsection-parent={id}
-							data-puck-subsection-index="102"
+							data-puck-subsection-index="103"
 							data-puck-subsection-field="button"
 						>
 							{btnText}

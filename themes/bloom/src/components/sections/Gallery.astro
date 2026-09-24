@@ -167,17 +167,34 @@ const soloTile = galleryTiles.length === 1;
 // 1440px: разбег низов 656px против 0 у rose и flux). Узкая боковая колонка
 // (rose: minmax(280px,429px)) выравнивает высоты: большая плитка тянется по
 // строке и остаётся почти квадратной.
+// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// зазоры и раскладка по актуальной вёрстке Bloom-theme @5aae2ad6. Признак ставит
+// sites; без него — прежние классы.
+const designParity = p.__designParity === true;
+// Две плитки у верстальщиков: колонки пополам (lg:grid-cols-2), большая —
+// квадрат по своей ширине, справа фото 652/594 с подписью, низы не тянутся
+// друг к другу (items-start). Три плитки (наш канон) — прежняя раскладка.
+const pairLikeDesigners = designParity && sideTiles.length === 1;
 const gridColsCls = mirror
 	? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
 	: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
-const gridLayoutCls = soloTile ? "lg:grid-cols-1" : gridColsCls;
+const GRID_LAYOUT = {
+	solo: { cols: "lg:grid-cols-1", stretch: " lg:items-stretch" },
+	pair: { cols: "lg:grid-cols-2", stretch: "" },
+	legacy: { cols: gridColsCls, stretch: " lg:items-stretch" },
+}[soloTile ? "solo" : pairLikeDesigners ? "pair" : "legacy"];
+const gridLayoutCls = GRID_LAYOUT.cols;
 // Растянутая на всю ширину плитка не должна быть квадратом во весь экран.
 // В паре с колонкой высоту большой плитке задаёт СТРОКА (`lg:h-full`), а не
 // собственный аспект — иначе низы колонок не сходятся ни при каких данных
 // (паритет rose `lg:min-h-0 lg:h-full`, flux `lg:aspect-auto lg:h-full`).
 const heroSizeCls = soloTile
 	? "aspect-[16/9]"
-	: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
+	: pairLikeDesigners
+		? "aspect-square"
+		: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
+// Подпись под фото плитки: у верстальщиков колонка gap-4 (16), у нас mt-5.
+const captionMtCls = designParity ? "mt-4" : "mt-5";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -196,7 +213,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
 // цвета не меняются; без признака — прежние классы. Признак ставит sites.
-const designParity = p.__designParity === true;
 ---
 
 <section
@@ -230,7 +246,7 @@ const designParity = p.__designParity === true;
 			></h2>
 		))}
 
-		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4 lg:items-stretch ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
+		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4${GRID_LAYOUT.stretch} ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
 			{heroTile && (
 				<a
 					href={heroTile.href}
@@ -277,7 +293,7 @@ const designParity = p.__designParity === true;
 								)}
 							</div>
 							{(tile.label || tile.price) && (
-								<div class="mt-5 flex flex-col gap-1">
+								<div class={`${captionMtCls} flex flex-col gap-1`}>
 									{tile.label && (
 										<span
 											class={

@@ -156,12 +156,22 @@ if (siteId) {
 // подзаголовка (24px) — «поменял заголовок → сбились стили». Прецедент rose
 // Popular: small = литерал верстальщика, ступени идут ВВЕРХ.
 const headingSize = p.headingSize ?? p.heading?.size;
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры и
+// ширина»): «Сейчас в тренде» Bloom-theme @5aae2ad6 — заголовок 18 → md 20
+// в одну строку, сетка 1 → sm 2 → lg «Колонки» с зазором 40 (по горизонтали
+// на lg 16), карточка: 20 между фото и текстом, текстовый блок не ниже 150 с
+// кнопкой внизу, строки leading-normal, старая цена 14. Признак ставит sites.
+// Без признака — прежние классы, стиль-добавка не выводится.
+const designParity = p.__designParity === true;
+const headingDefaultCls = designParity
+	? " [&_h2]:!text-[18px] md:[&_h2]:!text-[20px] [&_h2]:!leading-none"
+	: "";
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[38px] max-md:[&_h2]:!text-[24px]"
 		: headingSize === "large"
 			? " [&_h2]:!text-[46px] max-md:[&_h2]:!text-[29px]"
-			: "";
+			: headingDefaultCls;
 // Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок DS
 // дословно (14/18/24) БЕЗ перекрытия; medium → 29px, large → 35px (та же
 // пропорция 1.19/1.44 от базы lg-24; мобильные — от 14). Раньше ступени были
@@ -207,7 +217,21 @@ const cardAspectRatio =
 			? "16/9"
 			: "1/1";
 // Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = "grid grid-cols-2 gap-4 sm:grid-cols-3";
+const gridCls = designParity
+	? "grid grid-cols-1 gap-10 sm:grid-cols-2 lg:gap-x-4"
+	: "grid grid-cols-2 gap-4 sm:grid-cols-3";
+// «Колонки» у верстальщиков включаются с lg (1024), до него — 2 колонки.
+// Карточка — и SSR, и перерисованная гидрацией (renderCardHtml) — меняется
+// одним правилом по data-nt, поэтому стиль живёт на сетке, а не в карточке.
+const POPULAR_PARITY_CSS = [
+	"@media (min-width:768px) and (max-width:1023.98px){[data-nt=popular-grid][data-cols][data-design-parity]{grid-template-columns:repeat(2,minmax(0,1fr))}}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card]{gap:20px;height:100%}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card]>div:last-child{flex:1 1 auto;min-height:150px;gap:4px}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] .bloom-product-name+div{margin-bottom:16px}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] .bloom-product-name+div+*{margin-top:auto}",
+	"[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] :is(.bloom-product-name,.bloom-product-price,.bloom-product-oldprice){line-height:1.5}",
+	"@media (min-width:640px){[data-nt=popular-grid][data-design-parity] [data-nt=bloom-product-card] .bloom-product-oldprice{font-size:14px}}",
+].join("");
 const gridStyle = `--cols:${colsN}`;
 
 // Канон quickAddMode none/standard/cart (+legacy alias count→cart). НЮАНС bloom:
@@ -359,6 +383,10 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Кнопка «Смотреть все» скрыта «глазом» → под признаком не оставляем и пустую
+// строку под ней: иначе зазор gap-10 висит под сеткой (+40 к высоте секции).
+// Без признака — прежняя разметка (пустая строка остаётся, см. отчёт 24.09).
+const viewAllEmptyRow = designParity && isFieldHidden("viewAll");
 
 ---
 
@@ -389,6 +417,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-animate-delay="0.1s"
 			data-nt="popular-grid"
 			data-cols={String(colsN)}
+			data-design-parity={designParity ? "" : undefined}
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -451,7 +480,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							</article>
 						</li>
 					))}
-		</ul>{viewAllShow && (
+		</ul>{viewAllShow && !viewAllEmptyRow && (
 			<div class="flex w-full justify-center">
 				{!isFieldHidden('viewAll') && (
 				<a
@@ -467,7 +496,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			</div>
 		)}
 	</div>
-</section>{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
+</section>{designParity && <style is:inline set:html={POPULAR_PARITY_CSS} />}{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {

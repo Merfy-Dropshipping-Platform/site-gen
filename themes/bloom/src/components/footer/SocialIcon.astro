@@ -9,9 +9,12 @@ interface Props {
 	platform?: string;
 	/** `onDark` — белые иконки (Figma social media_white), для тёмного фона */
 	variant?: "default" | "onDark";
+	/** Иконка 24px, как у верстальщиков (подвал под PARITY_DESIGN). */
+	compact?: boolean;
 }
 
-const { href, ariaLabel, platform = ariaLabel, variant = "default" } = Astro.props;
+const { href, ariaLabel, platform = ariaLabel, variant = "default", compact = false } = Astro.props;
+const boxCls = compact ? "size-6" : "w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10";
 const iconName =
 	variant === "onDark" ? platformToNtIconOnDark(platform) : platformToNtIcon(platform);
 // Иконки темы, которых нет в карте дизайн-системы (закрытый внешний пакет).
@@ -27,7 +30,7 @@ const themeIcon = THEME_ICONS[platform.trim().toLowerCase()] ?? null;
 	target="_blank"
 	rel="noopener noreferrer"
 	aria-label={ariaLabel}
-	class="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 flex items-center justify-center hover:opacity-70 transition-opacity [&_img]:max-h-full [&_img]:max-w-full"
+	class={`${boxCls} flex items-center justify-center hover:opacity-70 transition-opacity [&_img]:max-h-full [&_img]:max-w-full`}
 >
 	{
 		themeIcon ? (

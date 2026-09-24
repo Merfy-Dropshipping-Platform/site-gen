@@ -234,9 +234,12 @@ const footerPadStyle =
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
 // цвета не меняются; без признака — прежние классы. Признак ставит sites.
 const designParity = p.__designParity === true;
+// Верстальщики 24.09 (Bloom-theme @5aae2ad6): адрес одной строкой, иконки
+// соцсетей 24, нижняя полоса высотой 64 с текстом 16.
 const FT = designParity
-	? { pad: "pt-16 pb-20", stack: "gap-16", inputPl: "pl-3", btnPx: "px-2", lines: "gap-1", contactsMt: "mt-6", list: "gap-2", legal: "gap-8" }
-	: { pad: "pt-16 pb-24 md:pb-28", stack: "gap-12", inputPl: "pl-4", btnPx: "px-4", lines: "gap-[3px]", contactsMt: "mt-5", list: "gap-3", legal: "gap-4 pt-2" };
+	? { pad: "pt-16 pb-20", stack: "gap-16", inputPl: "pl-3", btnPx: "px-2", lines: "gap-1", contactsMt: "mt-6", list: "gap-2", legal: "gap-8", strip: "flex h-16 items-center justify-center", stripText: "text-[16px]", compactSocial: true, addressOneLine: true }
+	: { pad: "pt-16 pb-24 md:pb-28", stack: "gap-12", inputPl: "pl-4", btnPx: "px-4", lines: "gap-[3px]", contactsMt: "mt-5", list: "gap-3", legal: "gap-4 pt-2", strip: "py-5", stripText: "text-[14px]", compactSocial: false, addressOneLine: false };
+const addressShown = FT.addressOneLine && addressField ? [addressField.value.trim()] : addressLines;
 const footerContainerCls = footerPadStyle
 	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-[300px]"
 	: `mx-auto w-full max-w-[1920px] px-4 ${FT.pad} md:px-20 2xl:px-[300px]`;
@@ -330,12 +333,12 @@ const footerContainerCls = footerPadStyle
 						)}
 					</a>
 
-					{addressLines.length > 0 && (
+					{addressShown.length > 0 && (
 						<address class={`mt-8 flex flex-col ${FT.lines} not-italic`}>
 							<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
 								{addressField?.label ?? "Адрес"}:
 							</span>
-							{addressLines.map((line) => (
+							{addressShown.map((line) => (
 								<span class="font-inter text-[14px] font-light leading-[18px] text-[rgb(var(--color-muted,153_153_153))]">
 									{line}
 								</span>
@@ -384,6 +387,7 @@ const footerContainerCls = footerPadStyle
 									href={s.href}
 									ariaLabel={s.platform}
 									platform={s.platform}
+									compact={FT.compactSocial}
 								/>
 							))}
 						</div>
@@ -469,12 +473,12 @@ const footerContainerCls = footerPadStyle
 	<!-- Block 4: Bottom pink bar -->
 	{bottomStripVisible && (
 		<div
-			class="w-full bg-[rgb(var(--color-bg,227_142_159))] py-5"
+			class={`w-full bg-[rgb(var(--color-bg,227_142_159))] ${FT.strip}`}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="992"
 			data-puck-subsection-field="bottomStrip"
 		>
-			<p class="text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))]">
+			<p class={`text-center font-inter ${FT.stripText} font-light leading-normal text-[rgb(var(--color-text,255_255_255))]`}>
 				{stripIsDefault ? (
 					<a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" class="hover:opacity-70">{stripText}</a>
 				) : (

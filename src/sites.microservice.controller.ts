@@ -17,6 +17,7 @@ import {
   RmqContext,
 } from "@nestjs/microservices";
 import { SitesDomainService } from "./sites.service";
+import { RevisionMergeConflictError } from "./content/store-content.port";
 
 @Controller()
 export class SitesMicroserviceController {
@@ -297,7 +298,13 @@ export class SitesMicroserviceController {
         meta,
         actorUserId,
         setCurrent,
-        expectedCurrentRevisionId,
+        // Этап 2 (было: жёсткий CAS → 409 → очередь конструктора замерзала):
+        // ожидаемая текущая ревизия конструктора — база записи. Устарела —
+        // слияние, одно и то же поле — побеждает последний (как в Figma).
+        base: expectedCurrentRevisionId,
+        actor: "merchant",
+        source: "constructor",
+        mergePolicy: "last-writer-wins",
         // B17: внешний путь сохранения. Конструктор шлёт всю карту страниц,
         // включая досеянные сервером на чтении, — отсеиваем их здесь, иначе
         // они вмораживаются в ревизию и правки темы до них больше не доходят.
@@ -306,6 +313,14 @@ export class SitesMicroserviceController {
       return { success: true, ...res };
     } catch (e: any) {
       this.logger.error(`revisions.create failed: ${e?.message}`, e?.stack);
+      if (e instanceof RevisionMergeConflictError) {
+        return {
+          success: false,
+          code: "REVISION_MERGE_CONFLICT",
+          message: e.message,
+          conflicts: e.conflicts,
+        };
+      }
       if (e?.message === "revision_conflict") {
         return {
           success: false,

@@ -40,7 +40,14 @@ import { ActivityLogPublisher } from "./activity-log/activity-log.publisher";
 import { getPageResolver } from "./themes/page-resolver-instance";
 import { getThemeManifest } from "./themes/theme-manifest-loader";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
-import type { StoreContent, StoreContentSite } from "./content/store-content.port";
+import { isStoreVersion } from "./content/revision-kinds";
+import type {
+  StoreContent,
+  StoreContentSite,
+  WriteActor,
+  WriteSource,
+} from "./content/store-content.port";
+import type { MergePolicy } from "./content/operations";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
@@ -1659,13 +1666,15 @@ export class SitesDomainService {
   async listRevisions(tenantId: string, siteId: string, limit = 50) {
     const site = await this.get(tenantId, siteId);
     if (!site) throw new Error("site_not_found");
+    // Снимки документа клиента (этап 2, «линия клиента») — служебные базы
+    // слияния, не версии магазина: в истории их нет.
     const rows = await this.db
       .select({
         id: schema.siteRevision.id,
         createdAt: schema.siteRevision.createdAt,
       })
       .from(schema.siteRevision)
-      .where(eq(schema.siteRevision.siteId, siteId))
+      .where(and(eq(schema.siteRevision.siteId, siteId), isStoreVersion()))
       .limit(limit);
     return { items: rows };
   }
@@ -1780,6 +1789,14 @@ export class SitesDomainService {
      * эталонный контент темы намеренно и фильтроваться не должны.
      */
     filterSeededPages?: boolean;
+    /**
+     * Этап 2: база записи. Устарела — слияние по `mergePolicy` вместо
+     * `revision_conflict` (`expectedCurrentRevisionId` — прежний жёсткий CAS).
+     */
+    base?: string | null;
+    actor?: WriteActor;
+    source?: WriteSource;
+    mergePolicy?: MergePolicy;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
@@ -1791,9 +1808,23 @@ export class SitesDomainService {
       setCurrent: params.setCurrent,
       expectedVersion: params.expectedCurrentRevisionId,
       filterSeeded: params.filterSeededPages,
+      base: params.base,
+      actor: params.actor,
+      source: params.source,
+      mergePolicy: params.mergePolicy,
       site: this.toStoreContentSite(site),
     });
-    return { revisionId: saved.version };
+    if (!saved.effect) return { revisionId: saved.version };
+    // Контракт записи для клиентов (план этапа 2): `revisionId` — ревизия,
+    // равная документу клиента (база его следующего сохранения), текущая
+    // ревизия магазина — `currentRevisionId`.
+    return {
+      revisionId: saved.effect.clientVersion,
+      currentRevisionId: saved.version,
+      merged: saved.effect.merged,
+      overwritten: saved.effect.overwritten,
+      conflicts: saved.effect.conflicts,
+    };
   }
 
   async setCurrentRevision(params: {

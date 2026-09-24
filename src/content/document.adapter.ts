@@ -6,14 +6,19 @@
  *   load = выборка ревизии (текущая или по revisionId) → migrateRevisionData →
  *          normalizeRevision (PageResolver) → seedContentPagesFromTheme (B17) →
  *          resolveAssetUrls
- *   save = createRevision: опц. filterSeededPagesOnWrite → insert (+ CAS по
- *          expectedVersion в транзакции, если запрошен) → { version }
+ *   save = с базой (этап 2) → save-on-base.ts: CAS или слияние; этот адаптер
+ *          даёт алгоритму хранилище (ревизии, указатель, транзакция) и
+ *          нормализатор (свои шаги чтения + фильтр досеянного);
+ *          без базы — как раньше: опц. filterSeededPagesOnWrite → insert
+ *          (+ CAS по expectedVersion в транзакции, если запрошен) → { version }
  *
  * `site`-метаданные (тема/publicUrl/…) приходят ПАРАМЕТРОМ, а не
  * отдельным `SELECT` по `schema.site` — так адаптер остаётся мокаемым теми
  * же тестами, что сегодня мокают `SitesDomainService.get()` напрямую
  * (golden.spec.ts, site-create-theme.characterization.spec.ts,
  * revision-create-cas.spec.ts — у последнего `db`-мок вообще не даёт `select`).
+ * Исключение — запись с базой: при неудачном CAS свежий указатель читается
+ * здесь (`readPointer`), иначе повтор слил бы поверх устаревшего знания.
  */
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
@@ -27,6 +32,9 @@ import { seedContentPagesFromTheme } from '../themes/content-page-seed';
 import { resolveAssetUrls } from '../themes/asset-resolver';
 import { filterSeededPagesOnWrite } from '../utils/revision-write-filter';
 import { parityOn } from '../themes/parity-switch';
+import { makeDocumentNormalizer } from './document-normalizer';
+import { saveOnBase, writeLabels } from './save-on-base';
+import type { RevisionStore } from './save-on-base';
 import type {
   LoadOptions,
   LoadResult,
@@ -122,6 +130,20 @@ async function runLoadSteps(
   return data;
 }
 
+function stepContextFor(siteId: string, site: StoreContentSite, logger: Logger): StepContext {
+  return {
+    siteId,
+    themeId: site.themeId,
+    publicUrl: site.publicUrl,
+    siteName: site.name ?? null,
+    logger,
+    unifyFooter: parityOn('FOOTER', siteId),
+  };
+}
+
+/** CAS не прошёл внутри транзакции — откатить вставку и сообщить наружу `false`. */
+class CasMiss extends Error {}
+
 @Injectable()
 export class DocumentAdapter implements StoreContent {
   private readonly logger = new Logger(DocumentAdapter.name);
@@ -136,38 +158,124 @@ export class DocumentAdapter implements StoreContent {
     if (!revisionId) throw new Error('revision_not_found');
     const rev = await this.fetchRevision(revisionId, siteId);
     if (!rev) throw new Error('revision_not_found');
-    const ctx: StepContext = {
-      siteId,
-      themeId: opts.site.themeId,
-      publicUrl: opts.site.publicUrl,
-      siteName: opts.site.name ?? null,
-      logger: this.logger,
-      unifyFooter: parityOn('FOOTER', siteId),
-    };
     const document = await runLoadSteps(
       rev.data as Record<string, unknown> | undefined,
-      ctx,
+      stepContextFor(siteId, opts.site, this.logger),
     );
     return { document, version: revisionId };
   }
 
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
+    if (params.base !== undefined && params.setCurrent) {
+      return saveOnBase(this.revisionStore, siteId, params, this.logger);
+    }
+    return this.saveWithoutBase(siteId, params);
+  }
+
+  /** Старые пути (создание магазина, смена темы, CAS по expectedVersion) — без изменений. */
+  private async saveWithoutBase(siteId: string, params: SaveParams): Promise<SaveResult> {
+    if (!params.document) throw new Error('document_required');
     const id = randomUUID();
     const dataToPersist = params.filterSeeded
       ? await this.stripSeededPages(siteId, params.site, params.document)
       : params.document;
+    const meta = this.legacyMeta(params);
 
     const expectedVersion = params.expectedVersion;
     if (params.setCurrent && expectedVersion !== undefined) {
-      await this.saveWithCas(siteId, id, dataToPersist, expectedVersion, params);
+      const ok = await this.commit({
+        siteId,
+        tenantId: params.tenantId,
+        rows: [{ id, data: dataToPersist, meta: meta ?? {} }],
+        current: id,
+        expected: expectedVersion,
+        createdBy: params.actorUserId,
+      });
+      if (!ok) throw new Error('revision_conflict');
       return { version: id };
     }
 
-    await this.insertRevision(id, siteId, dataToPersist, params.meta, params.actorUserId);
+    await this.insertRevision(id, siteId, dataToPersist, meta, params.actorUserId);
     if (params.setCurrent) {
       await this.setCurrentUnconditional(siteId, params.tenantId, id);
     }
     return { version: id };
+  }
+
+  /** Метки (И5) дописываются, только если их передали: meta старых путей не меняется. */
+  private legacyMeta(params: SaveParams): Record<string, unknown> | undefined {
+    const base = params.base !== undefined ? { base: params.base } : {};
+    const extra = { ...writeLabels(params), ...base };
+    if (Object.keys(extra).length === 0) return params.meta;
+    return { ...(params.meta ?? {}), ...extra };
+  }
+
+  // -- хранилище для записи с базой ---------------------------------------
+
+  private get revisionStore(): RevisionStore {
+    return {
+      fetchData: async (revisionId, siteId) =>
+        (await this.fetchRevision(revisionId, siteId))?.data as Record<string, unknown> | undefined,
+      readPointer: (siteId, tenantId) => this.readPointer(siteId, tenantId),
+      commit: (write) => this.commit(write),
+      normalizer: (siteId, params, storedCurrent) => {
+        const ctx = stepContextFor(siteId, params.site, this.logger);
+        return makeDocumentNormalizer({
+          load: (doc) => runLoadSteps(doc, ctx),
+          storedCurrent,
+          themeId: params.site.themeId ?? null,
+          publicUrl: params.site.publicUrl ?? null,
+          filterSeeded: Boolean(params.filterSeeded),
+        });
+      },
+    };
+  }
+
+  private async readPointer(siteId: string, tenantId: string): Promise<string | null> {
+    const [row] = await this.db
+      .select({ currentRevisionId: schema.site.currentRevisionId })
+      .from(schema.site)
+      .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
+    if (!row) throw new Error('site_not_found');
+    return row.currentRevisionId ?? null;
+  }
+
+  /** Вставка ревизий + CAS указателя одной транзакцией; CAS не прошёл — откат и `false`. */
+  private async commit(write: Parameters<RevisionStore['commit']>[0]): Promise<boolean> {
+    const expectedPredicate =
+      write.expected === null
+        ? isNull(schema.site.currentRevisionId)
+        : eq(schema.site.currentRevisionId, write.expected);
+    try {
+      await this.db.transaction(async (tx) => {
+        for (const row of write.rows) {
+          await tx.insert(schema.siteRevision).values({
+            id: row.id,
+            siteId: write.siteId,
+            data: row.data ?? {},
+            meta: row.meta ?? {},
+            createdAt: new Date(),
+            createdBy: write.createdBy,
+          });
+        }
+        const updated = await tx
+          .update(schema.site)
+          .set({ currentRevisionId: write.current, updatedAt: new Date() })
+          .where(
+            and(
+              eq(schema.site.id, write.siteId),
+              eq(schema.site.tenantId, write.tenantId),
+              expectedPredicate,
+            ),
+          )
+          .returning({ id: schema.site.id });
+        if (updated.length === 0) throw new CasMiss();
+      });
+      return true;
+    } catch (e) {
+      if (e instanceof CasMiss) return false;
+      throw e;
+    }
   }
 
   // -- load helpers ----------------------------------------------------
@@ -261,41 +369,5 @@ export class DocumentAdapter implements StoreContent {
       .update(schema.site)
       .set({ currentRevisionId: revisionId, updatedAt: new Date() })
       .where(and(eq(schema.site.id, siteId), eq(schema.site.tenantId, tenantId)));
-  }
-
-  private async saveWithCas(
-    siteId: string,
-    id: string,
-    data: Record<string, unknown>,
-    expectedCurrentRevisionId: string | null,
-    params: SaveParams,
-  ): Promise<void> {
-    const tenantId = params.tenantId;
-    await this.db.transaction(async (tx) => {
-      await tx.insert(schema.siteRevision).values({
-        id,
-        siteId,
-        data: data ?? {},
-        meta: params.meta ?? {},
-        createdAt: new Date(),
-        createdBy: params.actorUserId,
-      });
-      const expectedPredicate =
-        expectedCurrentRevisionId === null
-          ? isNull(schema.site.currentRevisionId)
-          : eq(schema.site.currentRevisionId, expectedCurrentRevisionId);
-      const updated = await tx
-        .update(schema.site)
-        .set({ currentRevisionId: id, updatedAt: new Date() })
-        .where(
-          and(
-            eq(schema.site.id, siteId),
-            eq(schema.site.tenantId, tenantId),
-            expectedPredicate,
-          ),
-        )
-        .returning({ id: schema.site.id });
-      if (updated.length === 0) throw new Error('revision_conflict');
-    });
   }
 }

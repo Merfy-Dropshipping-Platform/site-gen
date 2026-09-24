@@ -133,8 +133,11 @@ function isEmptyContentPageSeed(pageId: string, page: unknown): boolean {
  * Эталон сида: что сервер досеет в ревизию, где нет ни одной досеиваемой
  * страницы. Считается по СОХРАНЁННОЙ ревизии, а не по входящей, — иначе
  * эталон вычислялся бы из тех же данных, что проверяем.
+ *
+ * Экспортирован для записи с базой (этап 2, `src/content/`): там одним и тем
+ * же эталоном фильтруются три документа — база, текущая и входящая.
  */
-async function buildSeedReference(
+export async function buildSeedReference(
   storedPrev: Record<string, unknown> | null | undefined,
   themeId: string | null,
   publicUrl: string | null | undefined,
@@ -163,11 +166,6 @@ export async function filterSeededPagesOnWrite(
   if (!isPlainObject(incoming) || !isPlainObject(incoming.pagesData)) {
     return { data: incoming, dropped: [], unfrozen: [] };
   }
-  const incomingPages = incoming.pagesData as Record<string, unknown>;
-  const storedPages = isPlainObject(storedPrev?.pagesData)
-    ? (storedPrev!.pagesData as Record<string, unknown>)
-    : {};
-
   let reference: Record<string, unknown>;
   try {
     reference = await buildSeedReference(storedPrev, themeId, publicUrl);
@@ -176,6 +174,22 @@ export async function filterSeededPagesOnWrite(
     // чем лишняя вмороженная страница.
     return { data: incoming, dropped: [], unfrozen: [] };
   }
+  return applySeedFilter(incoming, reference, storedPrev);
+}
+
+/** Тот же фильтр по уже построенному эталону (`buildSeedReference`). */
+export function applySeedFilter(
+  incoming: Record<string, unknown>,
+  reference: Record<string, unknown>,
+  storedPrev: Record<string, unknown> | null | undefined,
+): WriteFilterResult {
+  if (!isPlainObject(incoming) || !isPlainObject(incoming.pagesData)) {
+    return { data: incoming, dropped: [], unfrozen: [] };
+  }
+  const incomingPages = incoming.pagesData as Record<string, unknown>;
+  const storedPages = isPlainObject(storedPrev?.pagesData)
+    ? (storedPrev!.pagesData as Record<string, unknown>)
+    : {};
   const referencePages = isPlainObject(reference.pagesData)
     ? (reference.pagesData as Record<string, unknown>)
     : {};

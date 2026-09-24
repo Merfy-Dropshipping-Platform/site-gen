@@ -322,26 +322,8 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<>
-						<button
-							type="button"
-							data-slide-prev
-							aria-label="Предыдущий слайд"
-							class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90 active:scale-95"
-						>
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
-						<button
-							type="button"
-							data-slide-next
-							aria-label="Следующий слайд"
-							class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-white/80 !text-black transition-opacity hover:opacity-90 active:scale-95"
-						>
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</button>
+						{/* Стрелок «назад/вперёд» по бокам нет (тестер 24.09: «убери на всех темах
+						    стрелки справа и слева»): листают автоинтервал и нумерация. */}
 						{pagination !== "none" && (
 							// Баг b71 (жалоба владельца 2026-09-17): пагинация была
 							// прижата к правому краю (right-4/md:right-20/2xl:right-[300px])
@@ -459,18 +441,6 @@ const paddingStyle = p.padding
 						show(idx + 1);
 					}, interval);
 			}
-			root.querySelectorAll("[data-slide-prev]").forEach(function (b) {
-				b.addEventListener("click", function () {
-					show(idx - 1);
-					restart();
-				});
-			});
-			root.querySelectorAll("[data-slide-next]").forEach(function (b) {
-				b.addEventListener("click", function () {
-					show(idx + 1);
-					restart();
-				});
-			});
 			dots.forEach(function (d, i) {
 				d.addEventListener("click", function () {
 					show(i);

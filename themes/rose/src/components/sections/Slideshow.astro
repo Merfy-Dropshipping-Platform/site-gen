@@ -295,33 +295,6 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<>
-						{/* Боковые круглые стрелки — только для точек/линий/счётчика. Для «Числа»
-						    (canon-default, Figma node 1236-42150) навигация инлайн внутри пагинации:
-						    ← 1 2 3 → (стрелки-шевроны вокруг чисел по центру снизу). */}
-						{pagination !== "numbers" && (
-							<>
-								<button
-									type="button"
-									data-slide-prev
-									aria-label="Предыдущий слайд"
-									class="absolute left-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
-								>
-									<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-										<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-									</svg>
-								</button>
-								<button
-									type="button"
-									data-slide-next
-									aria-label="Следующий слайд"
-									class="absolute right-4 top-1/2 z-20 flex size-10 -translate-y-1/2 items-center justify-center !rounded-full !bg-black/30 !text-white transition-opacity hover:opacity-80"
-								>
-									<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-										<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-									</svg>
-								</button>
-							</>
-						)}
 						{pagination !== "none" && (
 							<div
 								class={`absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center ${pagination === "numbers" ? "gap-4" : "gap-2"}`}
@@ -346,42 +319,21 @@ const paddingStyle = p.padding
 											class="h-0.5 w-6 !bg-white/50 transition-colors data-[active=true]:!bg-white"
 										/>
 									))}
-								{/* Figma node 1236-42150: ← 1 2 3 → — стрелки-шевроны по краям +
-								    числа (активное белое, неактивные white/50) по центру снизу. */}
-								{pagination === "numbers" && (
-									<>
+								{/* Figma node 1236-42150: числа (активное белое, неактивные white/50)
+								    по центру снизу. Стрелки «назад/вперёд» по бокам убраны во всех
+								    темах (тестер 24.09: «убери на всех темах стрелки справа и слева»);
+								    листают автоинтервал и клик по числу. */}
+								{pagination === "numbers" &&
+									slides.map((_, i) => (
 										<button
 											type="button"
-											data-slide-prev
-											aria-label="Предыдущий слайд"
-											class="flex size-6 items-center justify-center !text-white/70 transition-opacity hover:opacity-100"
+											data-slide-dot
+											data-active={i === 0 ? "true" : "false"}
+											class="font-manrope text-[16px] font-normal leading-none !text-white/50 transition-colors data-[active=true]:!text-white"
 										>
-											<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-												<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-											</svg>
+											{i + 1}
 										</button>
-										{slides.map((_, i) => (
-											<button
-												type="button"
-												data-slide-dot
-												data-active={i === 0 ? "true" : "false"}
-												class="font-manrope text-[16px] font-normal leading-none !text-white/50 transition-colors data-[active=true]:!text-white"
-											>
-												{i + 1}
-											</button>
-										))}
-										<button
-											type="button"
-											data-slide-next
-											aria-label="Следующий слайд"
-											class="flex size-6 items-center justify-center !text-white/70 transition-opacity hover:opacity-100"
-										>
-											<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-												<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-											</svg>
-										</button>
-									</>
-								)}
+									))}
 								{pagination === "counter" && (
 									<span
 										data-slide-counter
@@ -397,26 +349,16 @@ const paddingStyle = p.padding
 				)
 			}
 
-			{/* Figma node 1236-42150 — пустое состояние: декоративная пагинация ← 1 2 3 →
+			{/* Figma node 1236-42150 — пустое состояние: декоративная пагинация 1 2 3
 			    поверх слайда-плейсхолдера (реальных слайдов для пролистывания нет, поэтому
-			    статичная, без data-slide-*). Активное «1» белое, «2 3» — white/50; стрелки-
-			    шевроны white/70. Зеркалит рабочую numbers-пагинацию выше. */}
+			    статичная, без data-slide-*). Активное «1» белое, «2 3» — white/50. Зеркалит
+			    рабочую numbers-пагинацию выше (без стрелок, как и она). */}
 			{
 				!hasSlides && (
 					<div class="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4" aria-hidden="true">
-						<span class="flex size-6 items-center justify-center text-white/70">
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M12.5 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</span>
 						<span class="font-manrope text-[16px] font-normal leading-none text-white">1</span>
 						<span class="font-manrope text-[16px] font-normal leading-none text-white/50">2</span>
 						<span class="font-manrope text-[16px] font-normal leading-none text-white/50">3</span>
-						<span class="flex size-6 items-center justify-center text-white/70">
-							<svg class="size-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-								<path d="M7.5 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-						</span>
 					</div>
 				)
 			}
@@ -467,18 +409,6 @@ const paddingStyle = p.padding
 					show(idx + 1);
 				}, interval);
 		}
-		root.querySelectorAll("[data-slide-prev]").forEach(function (b) {
-			b.addEventListener("click", function () {
-				show(idx - 1);
-				restart();
-			});
-		});
-		root.querySelectorAll("[data-slide-next]").forEach(function (b) {
-			b.addEventListener("click", function () {
-				show(idx + 1);
-				restart();
-			});
-		});
 		dots.forEach(function (d, i) {
 			d.addEventListener("click", function () {
 				show(i);

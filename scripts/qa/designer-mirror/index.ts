@@ -32,5 +32,6 @@ export type Mirror = {
 };
 
 import { bloom } from "./bloom";
+import { flux } from "./flux";
 
-export const MIRRORS: Record<string, Mirror> = { bloom };
+export const MIRRORS: Record<string, Mirror> = { bloom, flux };

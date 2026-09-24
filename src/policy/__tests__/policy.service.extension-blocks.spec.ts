@@ -233,4 +233,60 @@ describe("PolicyService.setExtensionBlocks", () => {
     expect(result).toEqual({ sites: 0 });
     expect(upsertSpy).not.toHaveBeenCalled();
   });
+
+  it("siteId задан и принадлежит арендатору -> трогается только этот сайт, sites=1", async () => {
+    // Мок возвращает ровно один сайт -- как проверка принадлежности
+    // (id+tenantId+deletedAt is null), так и listTenantSiteIds бьют в одну и
+    // ту же таблицу schema.site, роутинг по идентичности таблицы (см.
+    // комментарий выше файла).
+    const db = makeSiteDb(["site-1"]);
+    const service = new PolicyService(db);
+
+    jest.spyOn(service, "getBySiteId").mockResolvedValue([]);
+    const upsertCalls: Array<{
+      siteId: string;
+      type: string;
+      content: string;
+    }> = [];
+    jest
+      .spyOn(service, "upsert")
+      .mockImplementation(async (siteId, type, content) => {
+        upsertCalls.push({ siteId, type, content });
+        return makePolicyRow(siteId, type, content);
+      });
+
+    const result = await service.setExtensionBlocks(
+      "tenant-1",
+      "reviews",
+      { privacy: "Цель обработки" },
+      "site-1",
+    );
+
+    expect(result).toEqual({ sites: 1 });
+    expect(upsertCalls).toHaveLength(1);
+    expect(upsertCalls[0]).toMatchObject({ siteId: "site-1", type: "privacy" });
+  });
+
+  it("siteId задан, но сайт не принадлежит арендатору -> отказ, upsert не вызывается", async () => {
+    // Пустой список -- как будто запрос id+tenantId+deletedAt is null ничего
+    // не нашёл (чужой tenant, чужой сайт или удалён).
+    const db = makeSiteDb([]);
+    const service = new PolicyService(db);
+
+    jest.spyOn(service, "getBySiteId").mockResolvedValue([]);
+    const upsertSpy = jest
+      .spyOn(service, "upsert")
+      .mockResolvedValue({} as PolicyData);
+
+    await expect(
+      service.setExtensionBlocks(
+        "tenant-1",
+        "reviews",
+        { privacy: "X" },
+        "foreign-site",
+      ),
+    ).rejects.toThrow("site does not belong to tenant");
+
+    expect(upsertSpy).not.toHaveBeenCalled();
+  });
 });

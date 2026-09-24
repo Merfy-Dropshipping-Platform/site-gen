@@ -5,7 +5,8 @@
  * - sites.policy.get -- получить все политики сайта
  * - sites.policy.update -- создать или обновить политику
  * - sites.policy.setExtensionBlock -- дописать/убрать блок расширения
- *   (privacy, tos) во всех сайтах арендатора; вызывается сервисом `extensions`
+ *   (privacy, tos); siteId задан -- только на этом сайте, иначе -- во всех
+ *   сайтах арендатора; вызывается сервисом `extensions`
  * - sites.contacts.get -- получить контакты сайта
  * - sites.contacts.update -- создать или обновить контакты
  */
@@ -70,8 +71,10 @@ export class PolicyController {
   }
 
   /**
-   * Дописать/заменить/убрать блок расширения в политиках всех сайтов
-   * арендатора. blocks === null -- убрать блок (выключение расширения).
+   * Дописать/заменить/убрать блок расширения в политиках сайтов арендатора.
+   * blocks === null -- убрать блок (выключение расширения). siteId задан --
+   * только на этом сайте (установка расширения привязана к сайту, не к
+   * организации), иначе -- во всех активных сайтах арендатора.
    */
   @MessagePattern("sites.policy.setExtensionBlock")
   async setExtensionBlock(@Payload() data: any) {
@@ -79,7 +82,7 @@ export class PolicyController {
       this.logger.log(
         `policy.setExtensionBlock request: ${JSON.stringify(data)}`,
       );
-      const { tenantId, extensionId, blocks } = data ?? {};
+      const { tenantId, extensionId, blocks, siteId } = data ?? {};
 
       if (!tenantId || !extensionId) {
         return {
@@ -92,6 +95,7 @@ export class PolicyController {
         tenantId,
         extensionId,
         blocks ?? null,
+        siteId,
       );
       return { success: true, data: result };
     } catch (e: any) {

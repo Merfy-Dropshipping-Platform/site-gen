@@ -112,9 +112,14 @@ export class PolicyService {
   }
 
   /**
-   * Дописать/заменить/убрать блок расширения в политиках всех сайтов
-   * арендатора (privacy, tos). Вызывается сервисом `extensions` при
-   * включении (blocks с текстами) и выключении (blocks === null) расширения.
+   * Дописать/заменить/убрать блок расширения в политиках сайтов арендатора
+   * (privacy, tos). Вызывается сервисом `extensions` при включении (blocks с
+   * текстами) и выключении (blocks === null) расширения.
+   *
+   * `siteId` задан -- расширение установлено на конкретный сайт (магазин),
+   * трогаем только его; сайт должен принадлежать `tenantId`, иначе бросаем
+   * ошибку (её ловит контроллер и превращает в `{ success: false, message }`).
+   * `siteId` не задан -- прежнее поведение: все активные сайты арендатора.
    *
    * `blocks === null` -- убрать блок из privacy и tos. Иначе трогаем только
    * типы, чьи ключи присутствуют в blocks: строка -- вставить/заменить,
@@ -125,12 +130,15 @@ export class PolicyService {
     tenantId: string,
     extensionId: string,
     blocks: ExtensionPolicyBlocks,
+    siteId?: string,
   ): Promise<{ sites: number }> {
     this.logger.log(
-      `setExtensionBlocks: tenantId=${tenantId}, extensionId=${extensionId}, remove=${blocks === null}`,
+      `setExtensionBlocks: tenantId=${tenantId}, extensionId=${extensionId}, remove=${blocks === null}, siteId=${siteId ?? "all"}`,
     );
 
-    const siteIds = await this.listTenantSiteIds(tenantId);
+    const siteIds = siteId
+      ? [await this.assertSiteBelongsToTenant(tenantId, siteId)]
+      : await this.listTenantSiteIds(tenantId);
     const changes = extensionBlockChanges(blocks);
 
     for (const siteId of siteIds) {
@@ -165,5 +173,32 @@ export class PolicyService {
       );
 
     return rows.map((row) => row.id);
+  }
+
+  /**
+   * Убедиться, что сайт активен и принадлежит арендатору. Тот же предикат,
+   * что и listTenantSiteIds, только по одному id. Бросает ошибку, если сайт
+   * не найден, удалён или принадлежит другому арендатору.
+   */
+  private async assertSiteBelongsToTenant(
+    tenantId: string,
+    siteId: string,
+  ): Promise<string> {
+    const [row] = await this.db
+      .select({ id: schema.site.id })
+      .from(schema.site)
+      .where(
+        and(
+          eq(schema.site.id, siteId),
+          eq(schema.site.tenantId, tenantId),
+          isNull(schema.site.deletedAt),
+        ),
+      );
+
+    if (!row) {
+      throw new Error("site does not belong to tenant");
+    }
+
+    return row.id;
   }
 }

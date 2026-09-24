@@ -166,13 +166,22 @@ describe("bloom, первый экран: как у верстальщиков �
           "from-black/75 via-black/40 via-40% to-transparent md:hidden",
           "",
         )
-        .replace("from-black/45 to-black/10", "");
+        .replace("from-black/45 to-black/10", "")
+        .replace("2xl:px-[max(300px,calc(50%_-_660px))]", "2xl:px-[300px]");
     expect(безПодложки(дваВкл.replace(классыБлока(дваВкл), ""))).toEqual(
       безПодложки(дваВыкл.replace(классыБлока(дваВыкл), "")),
     );
-    expect(пустоВкл.replace(классыБлока(пустоВкл), "")).toEqual(
+    const безКолонки = (html: string) => html.replace("2xl:px-[max(300px,calc(50%_-_660px))]", "2xl:px-[300px]");
+    expect(безКолонки(пустоВкл.replace(классыБлока(пустоВкл), ""))).toEqual(
       пустоВыкл.replace(классыБлока(пустоВыкл), ""),
     );
+  });
+
+  it("на мониторах шире 1920 текст в колонке 1320 по центру, как остальные секции", () => {
+    const [вкл, выкл] = отрисовать([{ ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ }, ПОЛНАЯ]);
+    expect(вкл).toContain("2xl:px-[max(300px,calc(50%_-_660px))]");
+    expect(вкл).not.toContain("2xl:px-[300px]");
+    expect(выкл).toContain("2xl:px-[300px]");
   });
 
   it("без выключателя разметка прежняя: фото заливает блок, высота лестницей", () => {

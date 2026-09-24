@@ -186,12 +186,13 @@ jobs:
       # доводчик, команды CreateStore/SetTheme, каталог тем, перевод регистрации
       # и cron «без магазина» на команду. src/__tests__/ целиком CI не гоняет —
       # поэтому файлы перечислены явно. store.pg.spec.ts идёт на сервисном
-      # Postgres этой джобы (схема уже накатана шагом db:migrate): захват строки
-      # доводчиком и блокировка тенанта проверяются на настоящей базе, без
+      # Postgres этой джобы, в отдельной эфемерной базе sites_stage3_test: тест
+      # сам её создаёт и накатывает миграции, а к базе без «test» в имени не
+      # подключается вовсе (support/test-database.ts). Без
       # SITES_TEST_DATABASE_URL набор пропускается с предупреждением.
       - name: Этап 3 — команды магазина, сага рождения, каталог тем
         env:
-          SITES_TEST_DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/sites_service
+          SITES_TEST_DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/sites_stage3_test
         run: >-
           pnpm exec jest --runInBand
           src/store

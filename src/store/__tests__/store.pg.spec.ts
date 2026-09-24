@@ -3,19 +3,24 @@
  *
  * Тесты доводчика и команд на памяти проверяют логику; здесь — то, что память
  * только моделирует: условный UPDATE захвата строки, выборку созревших строк,
- * изоляцию старых cron от строк саги, блокировку тенанта при создании.
+ * изоляцию старых cron от строк саги, блокировку тенанта при создании, CAS
+ * ревизии при смене темы.
  *
- * Нужна пустая база: `SITES_TEST_DATABASE_URL=postgres://…/<тестовая_бд>`.
- * Схема накатывается теми же миграциями drizzle, что в проде (`drizzle/`),
- * включая 0018 — заодно проверка, что миграция применяется. Без переменной
- * набор пропускается С ПРЕДУПРЕЖДЕНИЕМ (в CI переменная задана в build-and-test
- * на сервисном Postgres). Прод и общие базы сюда не подключать.
+ * База — `SITES_TEST_DATABASE_URL`, только одноразовая: подключение даёт
+ * `openDisposableDatabase` (support/test-database.ts), она отказывает, если в
+ * имени базы нет «test», создаёт базу при необходимости и накатывает миграции
+ * drizzle (заодно проверка, что 0018/0019 применяются на чистой базе). Без
+ * переменной набор пропускается С ПРЕДУПРЕЖДЕНИЕМ; в CI она задана в
+ * build-and-test (эфемерная `sites_stage3_test`).
+ *
+ * Следов не оставляет: все id и тенанты тестов начинаются с `stage3-pg-`,
+ * удаляются только такие строки. Тесты, которые зовут запросы по всей таблице
+ * (reaper, clearMockCache, каталог тем), идут в транзакции с откатом — чужие
+ * строки они не меняют даже на время прогона вне своей транзакции.
  */
-import { Pool } from "pg";
+import type { Pool } from "pg";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { resolve } from "node:path";
-import { eq } from "drizzle-orm";
+import { eq, inArray, like, or } from "drizzle-orm";
 import * as schema from "../../db/schema";
 import { DrizzleLifecycleRepository } from "../lifecycle/lifecycle.repository";
 import { SitesDomainService } from "../../sites.service";
@@ -26,6 +31,9 @@ import { DbThemeCatalog } from "../theme-catalog";
 import { SetThemeCommand } from "../theme-switch/set-theme.command";
 import { DocumentAdapter } from "../../content/document.adapter";
 import { THEMES, catalogOf } from "./support/create-store-harness";
+import { openDisposableDatabase } from "./support/test-database";
+
+type Db = NodePgDatabase<typeof schema>;
 
 const url = process.env.SITES_TEST_DATABASE_URL;
 const suite = url ? describe : describe.skip;
@@ -35,42 +43,67 @@ if (!url) {
   );
 }
 
+/** Префикс всех id и тенантов этого набора: удаляются только такие строки. */
+const P = "stage3-pg-";
+const own = (id: string) => `${P}${id}`;
+
 let pool: InstanceType<typeof Pool>;
-let db: NodePgDatabase<typeof schema>;
+let db: Db;
 
 async function insertSite(
   values: Partial<typeof schema.site.$inferInsert> & { id: string },
+  into: Db = db,
 ) {
-  await db.insert(schema.site).values({
-    tenantId: "pg-t1",
+  await into.insert(schema.site).values({
+    tenantId: own("t1"),
     name: values.id,
     status: "draft",
     ...values,
   });
 }
 
+async function removeOwnRows() {
+  await db
+    .delete(schema.siteRevision)
+    .where(like(schema.siteRevision.siteId, `${P}%`));
+  await db
+    .delete(schema.site)
+    .where(
+      or(like(schema.site.id, `${P}%`), like(schema.site.tenantId, `${P}%`)),
+    );
+}
+
+const ROLLBACK = new Error("откат: тест не оставляет следов");
+
+/** Работа в транзакции, которая всегда откатывается. */
+async function inRolledBackTx(work: (tx: Db) => Promise<void>) {
+  await db
+    .transaction(async (tx) => {
+      await work(tx as unknown as Db);
+      throw ROLLBACK;
+    })
+    .catch((e: unknown) => {
+      if (e !== ROLLBACK) throw e;
+    });
+}
+
 suite("сага рождения на настоящем Postgres", () => {
   beforeAll(async () => {
-    pool = new Pool({ connectionString: url, max: 6 });
-    db = drizzle(pool, { schema });
-    await migrate(db, {
-      migrationsFolder: resolve(__dirname, "..", "..", "..", "drizzle"),
-    });
+    ({ pool, db } = await openDisposableDatabase(url!));
+    await removeOwnRows();
   });
 
   afterAll(async () => {
+    if (db) await removeOwnRows();
     await pool?.end();
   });
 
-  beforeEach(async () => {
-    await db.delete(schema.site);
-    await db.delete(schema.siteRevision);
-  });
+  beforeEach(removeOwnRows);
 
   describe("DrizzleLifecycleRepository", () => {
     it("два одновременных захвата одной строки — выигрывает ровно один", async () => {
       await insertSite({
-        id: "claim-1",
+        id: own("claim-1"),
         lifecycle: "reserved",
         lifecycleAttempts: 0,
       });
@@ -78,10 +111,10 @@ suite("сага рождения на настоящем Postgres", () => {
       const b = new DrizzleLifecycleRepository(drizzle(pool, { schema }));
 
       const results = await Promise.all([
-        a.claim("claim-1", 60_000),
-        b.claim("claim-1", 60_000),
-        a.claim("claim-1", 60_000),
-        b.claim("claim-1", 60_000),
+        a.claim(own("claim-1"), 60_000),
+        b.claim(own("claim-1"), 60_000),
+        a.claim(own("claim-1"), 60_000),
+        b.claim(own("claim-1"), 60_000),
       ]);
 
       expect(results.filter(Boolean)).toHaveLength(1);
@@ -89,90 +122,89 @@ suite("сага рождения на настоящем Postgres", () => {
 
     it("захват ставит аренду по часам базы; пока аренда идёт, строка не созревшая", async () => {
       await insertSite({
-        id: "lease-1",
+        id: own("lease-1"),
         lifecycle: "seeded",
         lifecycleAttempts: 0,
       });
       const repo = new DrizzleLifecycleRepository(db);
 
-      const claimed = await repo.claim("lease-1", 60_000);
+      const claimed = await repo.claim(own("lease-1"), 60_000);
 
-      expect(claimed?.id).toBe("lease-1");
+      expect(claimed?.id).toBe(own("lease-1"));
       const leaseMs = claimed!.lifecycleNextAt!.getTime() - Date.now();
       expect(leaseMs).toBeGreaterThan(50_000);
       expect(leaseMs).toBeLessThan(70_000);
-      expect(await repo.listDue(10)).toEqual([]);
-      expect(await repo.claim("lease-1", 60_000)).toBeNull();
+      expect(await repo.listDue(1000)).not.toContain(own("lease-1"));
+      expect(await repo.claim(own("lease-1"), 60_000)).toBeNull();
     });
 
     it("выборка: только строки саги, не готовые, не удалённые, чьё время пришло", async () => {
       const past = new Date(Date.now() - 60_000);
       const future = new Date(Date.now() + 60_000);
-      await insertSite({ id: "legacy", lifecycle: null });
+      await insertSite({ id: own("legacy"), lifecycle: null });
       await insertSite({
-        id: "fresh",
+        id: own("fresh"),
         lifecycle: "reserved",
         lifecycleAttempts: 0,
       });
       await insertSite({
-        id: "retry-due",
+        id: own("retry-due"),
         lifecycle: "failed",
         lifecycleAttempts: 2,
         lifecycleNextAt: past,
       });
       await insertSite({
-        id: "retry-later",
+        id: own("retry-later"),
         lifecycle: "failed",
         lifecycleAttempts: 1,
         lifecycleNextAt: future,
       });
       await insertSite({
-        id: "done",
+        id: own("done"),
         lifecycle: "ready",
         lifecycleAttempts: 0,
       });
       await insertSite({
-        id: "gone",
+        id: own("gone"),
         lifecycle: "seeded",
         deletedAt: new Date(),
       });
       const repo = new DrizzleLifecycleRepository(db);
 
-      expect(new Set(await repo.listDue(10))).toEqual(
-        new Set(["fresh", "retry-due"]),
-      );
-      expect(await repo.claim("legacy", 60_000)).toBeNull();
-      expect(await repo.claim("done", 60_000)).toBeNull();
-      expect(await repo.claim("gone", 60_000)).toBeNull();
-      expect(await repo.claim("retry-later", 60_000)).toBeNull();
+      const due = (await repo.listDue(1000)).filter((id) => id.startsWith(P));
+      expect(new Set(due)).toEqual(new Set([own("fresh"), own("retry-due")]));
+      expect(await repo.claim(own("legacy"), 60_000)).toBeNull();
+      expect(await repo.claim(own("done"), 60_000)).toBeNull();
+      expect(await repo.claim(own("gone"), 60_000)).toBeNull();
+      expect(await repo.claim(own("retry-later"), 60_000)).toBeNull();
     });
 
     it("запись исхода: пауза повтора по часам базы, «keep» не трогает аренду, «clear» снимает", async () => {
       await insertSite({
-        id: "rec-1",
+        id: own("rec-1"),
         lifecycle: "reserved",
         lifecycleAttempts: 0,
       });
       const repo = new DrizzleLifecycleRepository(db);
-      const claimed = await repo.claim("rec-1", 60_000);
+      const claimed = await repo.claim(own("rec-1"), 60_000);
 
-      await repo.record("rec-1", {
+      await repo.record(own("rec-1"), {
         state: "seeded",
         error: null,
         attempts: 0,
         nextAt: "keep",
       });
-      expect((await repo.read("rec-1"))!.lifecycleNextAt!.getTime()).toBe(
+      expect((await repo.read(own("rec-1")))!.lifecycleNextAt!.getTime()).toBe(
         claimed!.lifecycleNextAt!.getTime(),
       );
 
-      await repo.record("rec-1", {
+      await repo.record(own("rec-1"), {
         state: "failed",
         error: "provision: REG.RU timeout",
         attempts: 1,
         nextAt: { inMs: 30_000 },
       });
-      const failed = (await repo.read("rec-1"))!;
+      const failed = (await repo.read(own("rec-1")))!;
       expect(failed).toMatchObject({
         lifecycle: "failed",
         lifecycleError: "provision: REG.RU timeout",
@@ -182,13 +214,13 @@ suite("сага рождения на настоящем Postgres", () => {
       expect(pauseMs).toBeGreaterThan(20_000);
       expect(pauseMs).toBeLessThan(40_000);
 
-      await repo.record("rec-1", {
+      await repo.record(own("rec-1"), {
         state: "ready",
         error: null,
         attempts: 0,
         nextAt: "clear",
       });
-      expect((await repo.read("rec-1"))!.lifecycleNextAt).toBeNull();
+      expect((await repo.read(own("rec-1")))!.lifecycleNextAt).toBeNull();
     });
   });
 
@@ -247,13 +279,13 @@ suite("сага рождения на настоящем Postgres", () => {
     it("две одновременные команды у лимита 1 — одна создала, вторая shops_limit_reached", async () => {
       const [a, b] = await Promise.all([
         makeCommand(1).execute({
-          tenantId: "pg-lim",
+          tenantId: own("lim"),
           actorUserId: "u1",
           name: "Первый",
           wait: true,
         }),
         makeCommand(1).execute({
-          tenantId: "pg-lim",
+          tenantId: own("lim"),
           actorUserId: "u2",
           name: "Второй",
           wait: true,
@@ -264,32 +296,32 @@ suite("сага рождения на настоящем Postgres", () => {
         .map((r) => (r.ok ? "created" : r.error.code))
         .sort();
       expect(outcomes).toEqual(["created", "shops_limit_reached"]);
-      expect(await tenantRows("pg-lim")).toHaveLength(1);
+      expect(await tenantRows(own("lim"))).toHaveLength(1);
     });
 
     it("регистрация и cron одновременно для нового тенанта — магазин ровно один", async () => {
       await Promise.all([
         makeCommand(5).execute({
-          tenantId: "pg-new",
+          tenantId: own("new"),
           actorUserId: "u1",
           name: "Мой сайт",
           ifNoStores: true,
           source: "registration",
         }),
         makeCommand(5).execute({
-          tenantId: "pg-new",
+          tenantId: own("new"),
           actorUserId: "u1",
           name: "Мой магазин",
           ifNoStores: true,
           source: "missing-store",
         }),
       ]);
-      expect(await tenantRows("pg-new")).toHaveLength(1);
+      expect(await tenantRows(own("new"))).toHaveLength(1);
     });
 
     it("магазин рождается в саге: тема из команды, слаг транслитом, доведён до ready", async () => {
       const result = await makeCommand(5).execute({
-        tenantId: "pg-saga",
+        tenantId: own("saga"),
         actorUserId: "u1",
         name: "Мой Магазин",
         themeId: "satin",
@@ -297,7 +329,7 @@ suite("сага рождения на настоящем Postgres", () => {
       });
 
       expect(result.ok && result.effect.ready).toBe(true);
-      const [row] = await tenantRows("pg-saga");
+      const [row] = await tenantRows(own("saga"));
       expect(row).toMatchObject({
         themeId: "satin",
         slug: "moy-magazin",
@@ -311,41 +343,47 @@ suite("сага рождения на настоящем Postgres", () => {
   });
 
   describe("каталог тем на настоящем Postgres (миграция 0019)", () => {
+    const FIXTURE = ["rose", "default", "flux", "satin"];
+
     it("пять тем витрины с «подходит для»; default и чужая своя тема скрыты", async () => {
-      await db.delete(schema.theme);
-      const row = (
-        id: string,
-        extra: Partial<typeof schema.theme.$inferInsert> = {},
-      ) => ({
-        id,
-        name: id,
-        slug: id,
-        templateId: `${id}-1.0`,
-        isActive: true,
-        ...extra,
-      });
-      await db
-        .insert(schema.theme)
-        .values([
-          row("rose", { fitsFor: ["Одежда"], previewDesktop: "/img/rose.png" }),
+      await inRolledBackTx(async (tx) => {
+        await tx.delete(schema.theme).where(inArray(schema.theme.id, FIXTURE));
+        const row = (
+          id: string,
+          extra: Partial<typeof schema.theme.$inferInsert> = {},
+        ) => ({
+          id,
+          name: id,
+          slug: id,
+          templateId: `${id}-1.0`,
+          isActive: true,
+          ...extra,
+        });
+        await tx.insert(schema.theme).values([
+          row("rose", {
+            fitsFor: ["Одежда"],
+            previewDesktop: "/img/rose.png",
+          }),
           row("default"),
-          row("flux", { ownerTenantId: "other-tenant" }),
+          row("flux", { ownerTenantId: own("other-tenant") }),
           row("satin", { isActive: false }),
         ]);
+        const catalog = new DbThemeCatalog(tx);
+        const ids = async (tenantId: string) =>
+          (await catalog.list(tenantId))
+            .map((t) => t.id)
+            .filter((id) => FIXTURE.includes(id))
+            .sort();
 
-      const catalog = new DbThemeCatalog(db);
-      const list = await catalog.list("pg-t1");
-
-      expect(list.map((t) => t.id)).toEqual(["rose"]);
-      expect(list[0]).toMatchObject({
-        fitsFor: ["Одежда"],
-        previewDesktop: "/img/rose.png",
-        ownerTenantId: null,
-        baseThemeId: null,
+        expect(await ids(own("t1"))).toEqual(["rose"]);
+        expect(await ids(own("other-tenant"))).toEqual(["flux", "rose"]);
+        expect(await catalog.find("rose", own("t1"))).toMatchObject({
+          fitsFor: ["Одежда"],
+          previewDesktop: "/img/rose.png",
+          ownerTenantId: null,
+          baseThemeId: null,
+        });
       });
-      expect(
-        (await catalog.list("other-tenant")).map((t) => t.id).sort(),
-      ).toEqual(["flux", "rose"]);
     });
   });
 
@@ -382,14 +420,16 @@ suite("сага рождения на настоящем Postgres", () => {
       });
       canon.pagesData["p-blog"] = { text: "Новости" };
       await insertSite({
-        id: "pg-theme",
-        tenantId: "pg-t1",
+        id: own("theme"),
         themeId: "rose",
-        currentRevisionId: "rev-0",
+        currentRevisionId: own("rev-0"),
       });
-      await db
-        .insert(schema.siteRevision)
-        .values({ id: "rev-0", siteId: "pg-theme", data: canon, meta: {} });
+      await db.insert(schema.siteRevision).values({
+        id: own("rev-0"),
+        siteId: own("theme"),
+        data: canon,
+        meta: {},
+      });
       const command = new SetThemeCommand(
         sites,
         new DocumentAdapter(db),
@@ -402,8 +442,8 @@ suite("сага рождения на настоящем Postgres", () => {
       );
 
       const result = await command.execute({
-        tenantId: "pg-t1",
-        siteId: "pg-theme",
+        tenantId: own("t1"),
+        siteId: own("theme"),
         themeId: "flux",
         actorUserId: "u1",
       });
@@ -413,7 +453,7 @@ suite("сага рождения на настоящем Postgres", () => {
       const [site] = await db
         .select()
         .from(schema.site)
-        .where(eq(schema.site.id, "pg-theme"));
+        .where(eq(schema.site.id, own("theme")));
       expect(site).toMatchObject({
         themeId: "flux",
         currentRevisionId: result.effect.revisionId,
@@ -444,7 +484,7 @@ suite("сага рождения на настоящем Postgres", () => {
   });
 
   describe("старые cron и строки саги", () => {
-    function reaperWith(touched: string[]) {
+    function reaperWith(touched: string[], on: Db) {
       const domainClient = {
         generateSubdomain: jest.fn(async (tenantId: string) => {
           touched.push(tenantId);
@@ -462,7 +502,7 @@ suite("сага рождения на настоящем Postgres", () => {
       };
       const dep = {} as any;
       const service = new SitesDomainService(
-        db,
+        on,
         dep,
         dep,
         dep,
@@ -478,56 +518,75 @@ suite("сага рождения на настоящем Postgres", () => {
       return service;
     }
 
+    const siteRow = async (on: Db, id: string) =>
+      (await on.select().from(schema.site).where(eq(schema.site.id, id)))[0];
+
     it("reaper довыполняет старый магазин и не трогает магазин в саге", async () => {
-      await insertSite({
-        id: "old-orphan",
-        tenantId: "old-tenant",
-        lifecycle: null,
-      });
-      await insertSite({
-        id: "saga-orphan",
-        tenantId: "saga-tenant",
-        lifecycle: "seeded",
-        lifecycleAttempts: 0,
-      });
-      const touched: string[] = [];
+      await inRolledBackTx(async (tx) => {
+        await insertSite(
+          {
+            id: own("old-orphan"),
+            tenantId: own("old-tenant"),
+            lifecycle: null,
+          },
+          tx,
+        );
+        await insertSite(
+          {
+            id: own("saga-orphan"),
+            tenantId: own("saga-tenant"),
+            lifecycle: "seeded",
+            lifecycleAttempts: 0,
+          },
+          tx,
+        );
+        const touched: string[] = [];
 
-      const result = await reaperWith(touched).migrateOrphanedSites();
+        await reaperWith(touched, tx).migrateOrphanedSites();
 
-      expect(result.migrated).toBe(1);
-      expect(touched).toEqual(["old-tenant"]);
-      const [saga] = await db
-        .select()
-        .from(schema.site)
-        .where(eq(schema.site.id, "saga-orphan"));
-      expect(saga).toMatchObject({
-        domainId: null,
-        publicUrl: null,
-        coolifyAppUuid: null,
-        lifecycle: "seeded",
+        expect(touched.filter((t) => t.startsWith(P))).toEqual([
+          own("old-tenant"),
+        ]);
+        expect(await siteRow(tx, own("old-orphan"))).toMatchObject({
+          domainId: `dom-${own("old-tenant")}`,
+          coolifyAppUuid: "central-proxy",
+        });
+        expect(await siteRow(tx, own("saga-orphan"))).toMatchObject({
+          domainId: null,
+          publicUrl: null,
+          coolifyAppUuid: null,
+          lifecycle: "seeded",
+        });
       });
     });
 
     it("clearMockCache не обнуляет проект у магазина в саге", async () => {
-      await insertSite({
-        id: "old-mock",
-        lifecycle: null,
-        coolifyProjectUuid: "mock-project-1",
-      });
-      await insertSite({
-        id: "saga-mock",
-        lifecycle: "ready",
-        coolifyProjectUuid: "mock-project-2",
-      });
+      await inRolledBackTx(async (tx) => {
+        await insertSite(
+          {
+            id: own("old-mock"),
+            lifecycle: null,
+            coolifyProjectUuid: "mock-project-1",
+          },
+          tx,
+        );
+        await insertSite(
+          {
+            id: own("saga-mock"),
+            lifecycle: "ready",
+            coolifyProjectUuid: "mock-project-2",
+          },
+          tx,
+        );
 
-      await reaperWith([]).clearMockCache();
+        await reaperWith([], tx).clearMockCache();
 
-      const rows = await db
-        .select({ id: schema.site.id, p: schema.site.coolifyProjectUuid })
-        .from(schema.site);
-      expect(Object.fromEntries(rows.map((r) => [r.id, r.p]))).toEqual({
-        "old-mock": null,
-        "saga-mock": "mock-project-2",
+        expect(
+          (await siteRow(tx, own("old-mock"))).coolifyProjectUuid,
+        ).toBeNull();
+        expect((await siteRow(tx, own("saga-mock"))).coolifyProjectUuid).toBe(
+          "mock-project-2",
+        );
       });
     });
   });

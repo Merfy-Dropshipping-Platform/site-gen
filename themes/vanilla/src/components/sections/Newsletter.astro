@@ -61,6 +61,13 @@ const descSizeCls =
 // состояния: input «email@example.com», кнопка «Кнопка» (дефолты верстальщика
 // FN:36 «E-mail» / FN:44 «ОТПРАВИТЬ» заменены на Figma-текст; эталон rose).
 // Мерчант задал свои placeholder/buttonText → рендерим ИХ (fallback лишь при пустых данных).
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
+// подзаголовок рассылки у верстальщиков — .vanilla-section-subtitle
+// (Vanilla-theme @c65d9e1c, footer/FooterNewsletter.astro): колонка до 1320 и
+// одна строка с lg. Без признака — прежние классы байт-в-байт.
+const designParity = p.__designParity === true;
+const DESC_GEOMETRY_CLS = designParity ? " max-w-[1320px] lg:whitespace-nowrap" : "";
+
 const placeholder =
 	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";
 const buttonText =
@@ -146,7 +153,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)}
 					{!isFieldHidden('text') && (
 						<p
-							class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]`}
+							class={`m-0 w-full font-vanilla-arsenal ${descSizeCls} font-normal italic leading-none text-[rgb(var(--color-text,240_240_240))]${DESC_GEOMETRY_CLS}`}
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="101"
 							data-puck-subsection-field="text"

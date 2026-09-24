@@ -213,6 +213,24 @@ const pagination =
 	p.pagination === "none"
 		? p.pagination
 		: "numbers";
+// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
+// первый экран Vanilla-theme @c65d9e1c (sections/Hero.astro) — заголовок и
+// подзаголовок слайда стоят плотно (их обёртка gap-[4px] внутри gap-5 → у
+// нас подзаголовок поднят на 16px), полоса «← 1 2 3 →» — gap-4, у стрелок и
+// цифр область нажатия 44×44 (min-h-11 min-w-11). Цифры — только ветка
+// «Нумерация = цифры» (по умолчанию); точки/линии/счётчик как прежде.
+// Без признака — прежние классы байт-в-байт.
+const designParity = p.__designParity === true;
+const SUBTITLE_PULL_CLS = designParity ? " -mt-4" : "";
+const CONTROLS = designParity
+	? {
+			bar: "gap-4",
+			barTail: "",
+			arrow: "flex min-h-11 min-w-11 items-center justify-center text-white hover:opacity-90",
+			bullets: "gap-4",
+			number: "flex min-h-11 min-w-11 items-center justify-center p-1",
+		}
+	: { bar: "gap-10", barTail: " md:gap-14", arrow: "text-white hover:opacity-90", bullets: "gap-10 md:gap-12", number: "min-w-[1ch] p-1" };
 const bulletCls = (i: number) =>
 	pagination === "dots"
 		? `h-2 w-2 rounded-full bg-current transition-opacity hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
@@ -220,7 +238,7 @@ const bulletCls = (i: number) =>
 			? `h-0.5 w-6 bg-current transition-opacity hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
 			: pagination === "counter"
 				? `min-w-[1ch] p-1 font-normal tracking-normal hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`
-				: `min-w-[1ch] p-1 font-normal uppercase tracking-normal hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`;
+				: `${CONTROLS.number} font-normal uppercase tracking-normal hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`;
 
 // Канон interval (slider 1-20 c, схема до 60) / autoplay: canon-defaults
 // 5 / true. Скрипту — миллисекунды в data-interval.
@@ -317,7 +335,7 @@ const paddingStyle = p.padding
 							><Fragment set:html={inlineFormat(slides[0].title)} /></h2>
 							<p
 								data-hero-subtitle
-								class={`hero-animate-2 vanilla-slideshow-subtitle ${hasSlides ? textCls : phTextCls}`}
+								class={`hero-animate-2 vanilla-slideshow-subtitle ${hasSlides ? textCls : phTextCls}${SUBTITLE_PULL_CLS}`}
 							><Fragment set:html={inlineFormat(slides[0].subtitle)} /></p>
 							<a
 								data-hero-cta
@@ -352,7 +370,7 @@ const paddingStyle = p.padding
 			{
 				slides.length > 1 && (
 					<div
-						class="flex h-16 items-center justify-center gap-10 bg-[rgb(var(--color-accent,38_49_28))] font-vanilla-arsenal text-base leading-none md:gap-14"
+						class={`flex h-16 items-center justify-center ${CONTROLS.bar} bg-[rgb(var(--color-accent,38_49_28))] font-vanilla-arsenal text-base leading-none${CONTROLS.barTail}`}
 						role="toolbar"
 						aria-label="Переключение слайдов"
 						data-hero-controls
@@ -360,13 +378,13 @@ const paddingStyle = p.padding
 						<button
 							type="button"
 							data-hero-prev
-							class="text-white hover:opacity-90"
+							class={CONTROLS.arrow}
 							aria-label="Предыдущий слайд"
 						>
 							←
 						</button>
 						{pagination !== "none" && (
-							<div class="flex items-center gap-10 md:gap-12" data-pagination={pagination}>
+							<div class={`flex items-center ${CONTROLS.bullets}`} data-pagination={pagination}>
 								{slides.map((_, i) => (
 									<button
 										type="button"
@@ -394,7 +412,7 @@ const paddingStyle = p.padding
 						<button
 							type="button"
 							data-hero-next
-							class="text-white hover:opacity-90"
+							class={CONTROLS.arrow}
 							aria-label="Следующий слайд"
 						>
 							→

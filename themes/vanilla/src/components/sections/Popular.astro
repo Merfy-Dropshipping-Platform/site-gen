@@ -135,8 +135,15 @@ const quickAddMode = qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRa
 const quickAddText =
 	(typeof p.quickAddText === "string" && p.quickAddText) ||
 	(quickAddMode === "cart" ? "В КОРЗИНУ" : "В корзину");
+// PARITY_DESIGN: кнопка «В корзину» карточки верстальщиков (VanillaProductCard
+// @c65d9e1c) — h-11, px-3; у них она внутри карточки (gap-3 + mt-3 = 24px от
+// цены), у нас стоит после карточки — отсюда mt-6. Без признака — прежняя
+// mt-3 h-12 px-4.
+const QA_BTN_GEOM = designParity
+	? { mt: "mt-6", h: "h-11 min-h-11", px: "px-3" }
+	: { mt: "mt-3", h: "h-12 min-h-12", px: "px-4" };
 const QA_BTN_CLS =
-	"mt-3 inline-flex h-12 min-h-12 w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+	`${QA_BTN_GEOM.mt} inline-flex ${QA_BTN_GEOM.h} w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] ${QA_BTN_GEOM.px} font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
 // «Быстрое добавление → Количество» ('cart'): ПЕРЕД кнопкой встаёт счётчик
 // − N + (паритет flux/bloom, где он уже работает). Кнопка несёт data-quantity,
 // счётчик его правит, делегат корзины (`Number(addBtn.dataset.quantity ?? "1")`)

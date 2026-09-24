@@ -299,19 +299,29 @@ const alignCls =
 			? " items-end text-right"
 			: "";
 
-// Канон buttonStyle: canon-default И отсутствие = светлая контурная
-// .satin-button-md LIGHT ЛИТЕРАЛ (родная роль satin! CollectionRows.astro:67);
-// black|solid → тёмная заливка .satin-button-dark; white → белая заливка
-// (инверсия на тёмном §3). Метрики .satin-button-md (g:106-126) + токены;
-// mt-auto w-fit — кнопка прижата к низу ряда (литерал).
+// Канон buttonStyle — цвета кнопки ИЗ СХЕМЫ секции, как в остальных темах:
+// «Основная» (primary, дефолт панели) и «Чёрная» — роль «Основная кнопка»
+// схемы (--color-button-*), «Белая» — «Дополнительная кнопка»
+// (--color-button-2-*). Раньше «Основная» рисовалась светлым контуром
+// (литерал верстальщика CollectionRows.astro:67), и заливка основной кнопки
+// из схемы до секции не доходила (тестер 24.09: «в схеме основная кнопка
+// чёрная, а рисуется с бордером»). Без значения — как «Основная»: панель
+// показывает её же. Метрики .satin-button-md (g:106-126); mt-auto w-fit —
+// кнопка прижата к низу ряда (литерал).
 const btnBase =
 	"mt-auto inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
-const btnCls =
-	p.buttonStyle === "black" || p.buttonStyle === "solid"
-		? `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`
-		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
-			? `${btnBase} border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-			: `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`;
+const BTN_PRIMARY_CLS =
+	"border-[rgb(var(--color-button-border,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]";
+const BTN_SECONDARY_CLS =
+	"border-[rgb(var(--color-button-2-border,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]";
+const BTN_STYLE_CLS: Record<string, string> = {
+	primary: BTN_PRIMARY_CLS,
+	black: BTN_PRIMARY_CLS,
+	solid: BTN_PRIMARY_CLS,
+	white: BTN_SECONDARY_CLS,
+	secondary: BTN_SECONDARY_CLS,
+};
+const btnCls = `${btnBase} ${BTN_STYLE_CLS[String(p.buttonStyle)] ?? BTN_PRIMARY_CLS}`;
 
 // Канон containerEnabled (toggle «Контейнер»; canon-default ВЫКЛ — паритет
 // rose/MultiColumns). ИСПРАВЛЕНИЕ канона Nikita: ВКЛ рисует surface-бокс §4

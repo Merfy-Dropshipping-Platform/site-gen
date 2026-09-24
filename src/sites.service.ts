@@ -248,6 +248,13 @@ export function carryOverMenuLinks(
   return changed ? { ...next, pagesData: nextPages } : nextData;
 }
 
+/** Что нужно, чтобы поставить маршрут хостинга магазина. */
+interface HostingTarget {
+  siteId: string;
+  slug: string | null | undefined;
+  projectUuid: string | null | undefined;
+}
+
 @Injectable()
 export class SitesDomainService {
   private readonly logger = new Logger(SitesDomainService.name);
@@ -1003,42 +1010,56 @@ export class SitesDomainService {
   /**
    * Роутер центрального прокси (SITES_USE_CENTRAL_PROXY) или per-site static
    * app в проекте тенанта. Общий код reaper и саги; в строку не пишет —
-   * возвращает app для записи или причину провала.
+   * возвращает app для записи или причину провала. Режимы — таблица
+   * `hostingModes`, провал любого — одной веткой ниже.
    */
-  private async resolveSiteHosting(params: {
-    siteId: string;
-    slug: string | null | undefined;
-    projectUuid: string | null | undefined;
-  }): Promise<{ coolifyAppUuid: string | null; error?: string }> {
-    const { siteId, slug, projectUuid } = params;
-    if (!slug) return { coolifyAppUuid: null, error: "no storage slug yet" };
-    if (this.deployments.centralProxyEnabled) {
-      // Phase 3: central proxy — Traefik dynamic-роутер вместо per-site
-      // контейнера. Sentinel закрывает сайт от повторного провижна.
-      try {
-        await this.deployments.ensureCentralRouter(slug);
-        this.logger.log(
-          `Site ${siteId}: central proxy router ensured for ${buildSiteHost(slug)} (no per-site app)`,
-        );
-        return { coolifyAppUuid: CENTRAL_PROXY_APP_SENTINEL };
-      } catch (e) {
-        const error = e instanceof Error ? e.message : String(e);
-        this.logger.warn(
-          `Site ${siteId}: central proxy router ensure error: ${error}`,
-        );
-        return { coolifyAppUuid: null, error };
-      }
-    }
-    if (!projectUuid)
-      return { coolifyAppUuid: null, error: "no coolify project yet" };
+  private async resolveSiteHosting(params: HostingTarget): Promise<{
+    coolifyAppUuid: string | null;
+    error?: string;
+  }> {
+    if (!params.slug)
+      return { coolifyAppUuid: null, error: "no storage slug yet" };
+    const mode = this.deployments.centralProxyEnabled
+      ? "centralProxy"
+      : "perSite";
     try {
+      const coolifyAppUuid = await this.hostingModes[mode]({
+        ...params,
+        slug: params.slug,
+      });
       this.logger.log(
-        `Site ${siteId}: creating Coolify app for ${buildSiteHost(slug)}`,
+        `Site ${params.siteId}: hosting (${mode}) ready for ${buildSiteHost(params.slug)} — app ${coolifyAppUuid}`,
       );
-      const coolifyResult = await this.callCoolify<{
+      return { coolifyAppUuid };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      this.logger.warn(
+        `Site ${params.siteId}: hosting (${mode}) error: ${error}`,
+      );
+      return { coolifyAppUuid: null, error };
+    }
+  }
+
+  /**
+   * Как магазин получает маршрут хостинга. Возвращает `coolifyAppUuid` или
+   * бросает с причиной.
+   *   centralProxy — Phase 3: Traefik dynamic-роутер на общий прокси вместо
+   *                  per-site контейнера; sentinel закрывает сайт от повтора;
+   *   perSite      — static site app в проекте тенанта в Coolify.
+   */
+  private readonly hostingModes: Record<
+    "centralProxy" | "perSite",
+    (target: HostingTarget & { slug: string }) => Promise<string>
+  > = {
+    centralProxy: async ({ slug }) => {
+      await this.deployments.ensureCentralRouter(slug);
+      return CENTRAL_PROXY_APP_SENTINEL;
+    },
+    perSite: async ({ slug, projectUuid }) => {
+      if (!projectUuid) throw new Error("no coolify project yet");
+      const created = await this.callCoolify<{
         success: boolean;
         appUuid?: string;
-        url?: string;
         message?: string;
       }>("coolify.create_static_site_app", {
         projectUuid,
@@ -1046,25 +1067,11 @@ export class SitesDomainService {
         subdomain: buildSiteHost(slug),
         sitePath: `sites/${slug}`,
       });
-      if (coolifyResult.success && coolifyResult.appUuid) {
-        this.logger.log(
-          `Site ${siteId}: created Coolify app ${coolifyResult.appUuid}`,
-        );
-        return { coolifyAppUuid: coolifyResult.appUuid };
-      }
-      this.logger.warn(
-        `Site ${siteId}: Coolify app creation failed: ${coolifyResult.message}`,
-      );
-      return {
-        coolifyAppUuid: null,
-        error: coolifyResult.message || "coolify_app_create_failed",
-      };
-    } catch (e) {
-      const error = e instanceof Error ? e.message : String(e);
-      this.logger.warn(`Site ${siteId}: Coolify app creation error: ${error}`);
-      return { coolifyAppUuid: null, error };
-    }
-  }
+      if (!created.success || !created.appUuid)
+        throw new Error(created.message || "coolify_app_create_failed");
+      return created.appUuid;
+    },
+  };
 
   /**
    * Backward-compat facade: synchronously creates AND provisions a site.

@@ -314,49 +314,83 @@ interface ThemePageFate {
   dropped: ThemeSwitchReport["dropped"];
 }
 
-function fateOfThemePages(
+/** Страница темы прежнего документа, у которой есть своё тело в ревизии. */
+interface JudgedPage {
+  pageId: string;
+  slug: string;
+  name: string;
+  /** Страница есть в каноне новой темы (её пересеют). */
+  inNewTheme: boolean;
+  /** Тело отличается от канона прежней темы: правка мерчанта. */
+  edited: boolean;
+}
+
+/**
+ * Что сказать в отчёте о странице темы — таблица «есть в новой теме ×
+ * правлена»: правленая теряется (пересев или тема её не знает), нетронутая,
+ * которой нет в новой теме, — «убрана», нетронутая в новой теме — не новость.
+ */
+const LOST_REASON: Record<"true" | "false", LostReason> = {
+  true: "merchant_edits_on_theme_page",
+  false: "theme_page_dropped",
+};
+
+function judgeThemePages(
   previous: Json | null,
   canon: Json,
-  previousCanon: Json | null,
-): ThemePageFate {
-  const fate: ThemePageFate = { lost: [], dropped: [] };
-  if (!previousCanon) return fate;
+  previousCanon: Json,
+): JudgedPage[] {
   const prevPages: Json[] = Array.isArray(previous?.pages)
     ? previous.pages
     : [];
   const prevData: Json = isObject(previous?.pagesData)
     ? previous.pagesData
     : {};
-  const refData: Json = isObject(previousCanon?.pagesData)
+  const refData: Json = isObject(previousCanon.pagesData)
     ? previousCanon.pagesData
     : {};
   const inNewTheme = new Set(
     (canon.pages ?? []).map((p: Json) => String(p.id)),
   );
-
-  for (const page of prevPages.filter((p) => !isUserPage(p))) {
-    const data = prevData[page.id];
-    if (data === undefined) continue; // досеивается из темы — правок мерчанта в ней нет
-    const body = pageBodyFingerprint(data);
+  // Нет тела в ревизии — страница досеивается из темы, правок мерчанта в ней нет.
+  const withBody = prevPages.filter(
+    (p) => !isUserPage(p) && prevData[p.id] !== undefined,
+  );
+  return withBody.map((page) => {
     const reference = refData[page.id];
-    const edited =
-      reference === undefined
-        ? body !== EMPTY_BODY
-        : body !== pageBodyFingerprint(reference);
-    const entry = {
+    const body = pageBodyFingerprint(prevData[page.id]);
+    return {
       pageId: String(page.id),
       slug: String(page.slug ?? ""),
       name: String(page.name ?? page.id),
+      inNewTheme: inNewTheme.has(String(page.id)),
+      edited:
+        body !==
+        (reference === undefined ? EMPTY_BODY : pageBodyFingerprint(reference)),
     };
-    if (inNewTheme.has(String(page.id))) {
-      if (edited)
-        fate.lost.push({ ...entry, reason: "merchant_edits_on_theme_page" });
-      continue;
-    }
-    if (edited) fate.lost.push({ ...entry, reason: "theme_page_dropped" });
-    else fate.dropped.push({ pageId: entry.pageId, slug: entry.slug });
-  }
-  return fate;
+  });
+}
+
+function fateOfThemePages(
+  previous: Json | null,
+  canon: Json,
+  previousCanon: Json | null,
+): ThemePageFate {
+  if (!previousCanon) return { lost: [], dropped: [] };
+  const judged = judgeThemePages(previous, canon, previousCanon);
+  return {
+    lost: judged
+      .filter((p) => p.edited)
+      .map(({ pageId, slug, name, inNewTheme }) => ({
+        pageId,
+        slug,
+        name,
+        reason: LOST_REASON[String(inNewTheme) as "true" | "false"],
+      })),
+    dropped: judged
+      .filter((p) => !p.edited && !p.inNewTheme)
+      .map(({ pageId, slug }) => ({ pageId, slug })),
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -46,8 +46,13 @@ const PHOTO = "/images/hero-merchant.png";
 
 type Theme = "rose" | "bloom" | "satin" | "vanilla" | "flux";
 
-function renderHero(theme: Theme, scheme: string, withPhoto: boolean): string {
-  const props: Record<string, unknown> = { id: "Hero-1", colorScheme: scheme };
+function renderHero(
+  theme: Theme,
+  scheme: string,
+  withPhoto: boolean,
+  extra: Record<string, unknown> = {},
+): string {
+  const props: Record<string, unknown> = { id: "Hero-1", colorScheme: scheme, ...extra };
   if (withPhoto) {
     props.backgroundImages = { url1: PHOTO };
     props.heading = { text: "Заголовок героя", size: "large" };
@@ -211,8 +216,10 @@ describe("читаемость: тёмный слой между фото и т�
     expect(renderHero("bloom", "scheme-3", true)).toContain("from-black/45 to-black/10");
   });
 
+  // Ползунок выставлен явно: по умолчанию у bloom затемнения нет (0, как у
+  // верстальщиков, владелец 24.09), проверяем, что сам ползунок работает.
   it("bloom: ползунок «Затемнение» по-прежнему рисует чёрный слой", () => {
-    const html = renderHero("bloom", "scheme-3", true);
+    const html = renderHero("bloom", "scheme-3", true, { overlay: 40 });
     expect(html).toMatch(/absolute inset-0 z-\[1\] bg-black/);
   });
 

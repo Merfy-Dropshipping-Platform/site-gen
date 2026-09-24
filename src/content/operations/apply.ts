@@ -4,6 +4,7 @@
  * `apply_target_missing`, а не молчаливая порча. Убрать отсутствующее —
  * ничего не делает: так одна и та же операция безопасна при повторе.
  */
+import { hasForbiddenSegment } from "./address";
 import { cloneJson } from "./json";
 import { idsOf } from "./shape";
 import type { ListShape } from "./shape";
@@ -105,6 +106,9 @@ const APPLY: {
 };
 
 function applyOne(doc: Doc, op: Op): void {
+  if (hasForbiddenSegment(op.path)) {
+    throw new Error(`apply_forbidden_segment: ${op.path}`);
+  }
   (APPLY[op.op] as (d: Doc, o: Op) => void)(doc, op);
 }
 

@@ -10,13 +10,17 @@
  *                       документ клиента, если он отличается от слитого, —
  *                       снимок-ревизия `meta.kind = 'client-snapshot'`, её id
  *                       — база следующего сохранения клиента (И4);
+ *   база устарела,
+ *   политика `refuse` → `revision_conflict`, ничего не записано (откат);
  *   CAS не прошёл     → свежий указатель и новая попытка (слияние поверх
  *                       записи, успевшей раньше).
+ * Без базы (`base: null` — первая ревизия) список изменений не считается:
+ * от пустого документа это был бы весь магазин.
  */
 import type { Logger } from "@nestjs/common";
 import { randomUUID } from "crypto";
 import { VOLATILE_PATHS, apply, diff, merge3, paths } from "./operations";
-import type { Op } from "./operations";
+import type { Doc, MergePolicy, Op } from "./operations";
 import { covers } from "./operations/address";
 import { deepEqual } from "./operations/json";
 import type { WriteModel } from "./write-model";
@@ -25,8 +29,6 @@ import {
   RevisionMergeConflictError,
 } from "./store-content.port";
 import type { SaveEffect, SaveParams, SaveResult } from "./store-content.port";
-
-type Doc = Record<string, unknown>;
 
 export interface NewRevision {
   id: string;
@@ -107,10 +109,13 @@ function kindOf(op: Op, base: Doc, side: Doc, model: WriteModel): ChangeKind {
 }
 
 /** Изменения ревизии для `meta` (И5): правки мерчанта + сколько было производных. */
-interface ChangeReport {
-  changes: string[];
+type ChangeReport = {
+  changes: string[] | null;
   derived?: { chromeCopies: number; panelDefaults: number };
-}
+};
+
+/** Записи без базы: список изменений не считается. */
+const NO_BASE_REPORT: ChangeReport = { changes: null };
 
 function reportChanges(
   ops: readonly Op[],
@@ -149,7 +154,7 @@ class BaseWrite {
     let current = await this.initialPointer();
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
       const written =
-        current === this.base ? await this.fast() : await this.merge(current);
+        current === this.base ? await this.fast() : await this.stale(current);
       if (written) return written;
       current = await this.store.readPointer(this.siteId, this.params.tenantId);
     }
@@ -191,7 +196,10 @@ class BaseWrite {
     const stored = await this.fetchBase();
     const model = await this.store.writeModel(this.siteId, this.params, stored);
     const incoming = await this.incoming(() => model.normalize(stored));
-    const report = await this.changesBetween(model, stored, incoming);
+    const report =
+      this.base === null
+        ? NO_BASE_REPORT
+        : await this.changesBetween(model, stored, incoming);
     const id = randomUUID();
     const ok = await this.commit(
       [{ id, data: model.filterForWrite(incoming), meta: this.meta(report) }],
@@ -214,7 +222,7 @@ class BaseWrite {
     model: WriteModel,
     stored: Doc | undefined,
     incoming: Doc,
-  ): Promise<{ changes: string[] | null }> {
+  ): Promise<ChangeReport> {
     try {
       const before = await model.normalize(stored);
       const after = await model.normalize(incoming);
@@ -227,8 +235,18 @@ class BaseWrite {
     }
   }
 
-  /** База устарела: слияние поверх текущей. */
-  private async merge(current: string | null): Promise<SaveResult | null> {
+  /** База устарела: слить по политике или отказать (`refuse`). */
+  private async stale(current: string | null): Promise<SaveResult | null> {
+    const policy = this.policy;
+    if (policy === "refuse") throw new Error("revision_conflict");
+    return this.merge(current, policy);
+  }
+
+  /** Слияние поверх текущей. */
+  private async merge(
+    current: string | null,
+    policy: MergePolicy,
+  ): Promise<SaveResult | null> {
     const stored =
       current === null
         ? undefined
@@ -240,7 +258,7 @@ class BaseWrite {
       await this.incoming(async () => base),
     );
     const currentDoc = await model.normalize(stored);
-    const result = merge3(base, currentDoc, incoming, this.policy, {
+    const result = merge3(base, currentDoc, incoming, policy, {
       isAuto: (op, b, side) => model.isAutoValue(op, b, side),
     });
     if (!result.merged) throw new RevisionMergeConflictError(result.conflicts);
@@ -248,12 +266,10 @@ class BaseWrite {
     const mergedId = randomUUID();
     const snapshotId = deepEqual(result.merged, incoming) ? null : randomUUID();
     const clientVersion = snapshotId ?? mergedId;
-    const report = reportChanges(
-      result.applied,
-      currentDoc,
-      result.merged,
-      model,
-    );
+    const report =
+      this.base === null
+        ? NO_BASE_REPORT
+        : reportChanges(result.applied, currentDoc, result.merged, model);
     const rows: NewRevision[] = [
       ...(snapshotId ? [this.snapshotRow(snapshotId, incoming, mergedId)] : []),
       {

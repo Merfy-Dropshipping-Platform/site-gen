@@ -354,6 +354,47 @@ describe("apply: операция в пустоту — явная ошибка,
   });
 });
 
+describe("apply: адреса с __proto__/prototype/constructor отвергаются (защита для внешних операций)", () => {
+  const polluted = () => ({}) as Record<string, unknown>;
+
+  it.each<[string, Op]>([
+    [
+      "set в __proto__ секции",
+      {
+        op: "set",
+        path: "page:home/block:Hero-1/props/__proto__/polluted",
+        value: true,
+      },
+    ],
+    [
+      "set в constructor/prototype",
+      {
+        op: "set",
+        path: "themeSettings/constructor/prototype/polluted",
+        value: true,
+      },
+    ],
+    [
+      "set страницы __proto__",
+      { op: "set", path: "page:__proto__", value: { polluted: true } },
+    ],
+    ["remove через __proto__", { op: "remove", path: "pages/__proto__" }],
+    [
+      "add секции с id prototype",
+      { op: "add", path: "page:home/block:prototype", value: {}, after: [] },
+    ],
+    [
+      "order в зоне constructor",
+      { op: "order", path: "page:home/zone:constructor/order", ids: [] },
+    ],
+  ])("%s", (_label, op) => {
+    const a = doc(HOME());
+    expect(() => apply(a, [op])).toThrow("apply_forbidden_segment");
+    expect(polluted().polluted).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty("polluted");
+  });
+});
+
 describe("diff/apply на золотых документах пяти тем", () => {
   it.each(["rose", "flux", "bloom", "satin", "vanilla"])(
     "%s: из пустого документа и обратно",

@@ -22,9 +22,7 @@ import {
 } from "../utils/revision-write-filter";
 import { isChromeCopy, makeAutoValueRule } from "./change-kinds";
 import type { PanelDefaults } from "./change-kinds";
-import type { Op } from "./operations";
-
-type Doc = Record<string, unknown>;
+import type { Doc, Op } from "./operations";
 
 export interface WriteModel {
   /** Шаги чтения + фильтр досеянного. */
@@ -48,18 +46,29 @@ export interface WriteModelInput {
   filterSeeded: boolean;
   /** Значения по умолчанию панели темы (тип секции → defaultProps). */
   panelDefaults: PanelDefaults;
+  /** Куда писать предупреждения (лог адаптера). */
+  warn: (message: string) => void;
+}
+
+function reasonOf(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 export async function makeDocumentWriteModel(
   input: WriteModelInput,
 ): Promise<WriteModel> {
   // Эталон не построился — фильтр не применяется (как у обычной записи:
-  // потеря данных хуже лишней вмороженной страницы).
+  // потеря данных хуже лишней вмороженной страницы), но не молча.
   const reference = await buildSeedReference(
     input.storedCurrent,
     input.themeId,
     input.publicUrl,
-  ).catch(() => null);
+  ).catch((e: unknown) => {
+    input.warn(
+      `эталон досеянного не построился (тема ${input.themeId ?? "—"}): ${reasonOf(e)} — фильтр досеянного для этой записи выключен`,
+    );
+    return null;
+  });
   const filter = (doc: Doc): Doc =>
     reference ? applySeedFilter(doc, reference, input.storedCurrent).data : doc;
   return {

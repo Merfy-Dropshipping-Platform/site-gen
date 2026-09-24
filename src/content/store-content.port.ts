@@ -33,6 +33,23 @@ export interface StoreContentSite {
   contentModel?: string | null;
 }
 
+/** Строка `site` (или её часть) → то, что нужно порту. Одна функция на всех вызывающих. */
+export function toStoreContentSite(site: {
+  themeId?: string | null;
+  publicUrl?: string | null;
+  name?: string | null;
+  currentRevisionId?: string | null;
+  contentModel?: string | null;
+}): StoreContentSite {
+  return {
+    themeId: site.themeId ?? null,
+    publicUrl: site.publicUrl ?? null,
+    name: site.name ?? null,
+    currentRevisionId: site.currentRevisionId ?? null,
+    contentModel: site.contentModel ?? null,
+  };
+}
+
 export interface LoadOptions {
   /** Конкретная ревизия. Без неё — текущая (`site.currentRevisionId`). */
   revisionId?: string;
@@ -70,6 +87,14 @@ export type WriteSource =
 /** `meta.kind` снимка документа клиента («линия клиента», И4). Такая ревизия никогда не текущая. */
 export const CLIENT_SNAPSHOT_KIND = "client-snapshot";
 
+/**
+ * Что делать, если база устарела:
+ *  - политика слияния движка — слить (`last-writer-wins` / `reject-conflicts`);
+ *  - `refuse` — не сливать вовсе: `revision_conflict` (откат — осознанное
+ *    действие, поверх чужой правки его молча не пишем).
+ */
+export type StaleBasePolicy = MergePolicy | "refuse";
+
 export interface SaveParams {
   /** Документ целиком (путь конструктора). Вместо него можно `ops` от `base`. */
   document?: Record<string, unknown>;
@@ -105,8 +130,8 @@ export interface SaveParams {
   actor?: WriteActor;
   /** Откуда запись (И5). Не задан — в `meta` не пишется. */
   source?: WriteSource;
-  /** Политика для одного и того же места при слиянии. По умолчанию `reject-conflicts`. */
-  mergePolicy?: MergePolicy;
+  /** Что делать при устаревшей базе (слить по политике или отказать). По умолчанию `reject-conflicts`. */
+  mergePolicy?: StaleBasePolicy;
   actorUserId?: string;
   meta?: Record<string, unknown>;
   /** B17: серверный фильтр досеянных страниц перед записью (revision-write-filter). */
@@ -138,6 +163,41 @@ export interface SaveResult {
   version: string;
   /** Есть у записи с базой (`base !== undefined`). */
   effect?: SaveEffect;
+}
+
+/**
+ * Недопустимые сочетания параметров записи — данными. Без проверки такие
+ * сочетания молча уходили бы в другой путь: `base` без `setCurrent` — в
+ * старую запись без базы, `base` вместе с `expectedVersion` — жёсткий CAS
+ * молча игнорировался бы.
+ */
+const SAVE_PARAM_RULES: ReadonlyArray<{
+  error: string;
+  broken: (p: SaveParams) => boolean;
+}> = [
+  { error: "document_or_ops_required", broken: (p) => !p.document && !p.ops },
+  {
+    error: "document_and_ops_are_exclusive",
+    broken: (p) => Boolean(p.document && p.ops),
+  },
+  {
+    error: "ops_require_base",
+    broken: (p) => Boolean(p.ops) && p.base === undefined,
+  },
+  {
+    error: "base_requires_set_current",
+    broken: (p) => p.base !== undefined && !p.setCurrent,
+  },
+  {
+    error: "base_and_expected_version_are_exclusive",
+    broken: (p) => p.base !== undefined && p.expectedVersion !== undefined,
+  },
+];
+
+/** Адаптер вызывает до записи: недопустимое сочетание — ошибка, ничего не записано. */
+export function assertSaveParams(params: SaveParams): void {
+  const rule = SAVE_PARAM_RULES.find((r) => r.broken(params));
+  if (rule) throw new Error(rule.error);
 }
 
 /** Слияние при политике `reject-conflicts` упёрлось в одно и то же место. Ничего не записано. */

@@ -38,6 +38,7 @@ import { PANEL_DEFAULTS, puckConfigPanelDefaults } from "./panel-defaults";
 import type { PanelDefaultsSource } from "./panel-defaults";
 import { saveOnBase, writeLabels } from "./save-on-base";
 import type { RevisionStore } from "./save-on-base";
+import { assertSaveParams } from "./store-content.port";
 import type {
   LoadOptions,
   LoadResult,
@@ -188,7 +189,8 @@ export class DocumentAdapter implements StoreContent {
   }
 
   async save(siteId: string, params: SaveParams): Promise<SaveResult> {
-    if (params.base !== undefined && params.setCurrent) {
+    assertSaveParams(params);
+    if (params.base !== undefined) {
       return saveOnBase(this.revisionStore, siteId, params, this.logger);
     }
     return this.saveWithoutBase(siteId, params);
@@ -235,10 +237,9 @@ export class DocumentAdapter implements StoreContent {
 
   /** Метки (И5) дописываются, только если их передали: meta старых путей не меняется. */
   private legacyMeta(params: SaveParams): Record<string, unknown> | undefined {
-    const base = params.base !== undefined ? { base: params.base } : {};
-    const extra = { ...writeLabels(params), ...base };
-    if (Object.keys(extra).length === 0) return params.meta;
-    return { ...(params.meta ?? {}), ...extra };
+    const labels = writeLabels(params);
+    if (Object.keys(labels).length === 0) return params.meta;
+    return { ...(params.meta ?? {}), ...labels };
   }
 
   // -- хранилище для записи с базой ---------------------------------------
@@ -270,6 +271,7 @@ export class DocumentAdapter implements StoreContent {
       publicUrl: params.site.publicUrl ?? null,
       filterSeeded: Boolean(params.filterSeeded),
       panelDefaults: themeId ? await this.panelDefaults(themeId) : {},
+      warn: (message) => this.logger.warn(`site ${siteId}: ${message}`),
     });
   }
 

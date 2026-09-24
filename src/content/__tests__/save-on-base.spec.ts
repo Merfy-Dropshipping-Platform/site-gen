@@ -56,7 +56,8 @@ async function freshStore(themeId = "bloom") {
   const fake = makeFakeRevisionDb({ id: SITE, tenantId: TENANT, themeId });
   const initial = await makeBareService().buildInitialRevision(themeId);
   fake.seedRevision("r0", initial);
-  const adapter = new DocumentAdapter(fake.db);
+  // Дефолты панели здесь не нужны — их правила сторожит save-derived-changes.
+  const adapter = new DocumentAdapter(fake.db, async () => ({}));
   const site = () => ({
     themeId,
     publicUrl: null,
@@ -329,13 +330,60 @@ describe("save с базой: устаревшая база сливается (
     expect(homeBlock(now, "Gallery-1").props.testField).toBe("чужое");
   });
 
-  it("база, которой нет у этого магазина, — явная ошибка, а не запись вслепую", async () => {
+  it("первая ревизия (база null, текущей нет): список изменений не считается — changes: null", async () => {
+    const fake = makeFakeRevisionDb({
+      id: SITE,
+      tenantId: TENANT,
+      themeId: "bloom",
+    });
+    const adapter = new DocumentAdapter(fake.db, async () => ({}));
+    const initial = await makeBareService().buildInitialRevision("bloom");
+
+    const saved = await adapter.save(SITE, {
+      document: initial,
+      base: null,
+      tenantId: TENANT,
+      setCurrent: true,
+      actor: "merchant",
+      source: "constructor",
+      mergePolicy: "last-writer-wins",
+      site: { themeId: "bloom", publicUrl: null, currentRevisionId: null },
+    });
+
+    expect(fake.site.currentRevisionId).toBe(saved.version);
+    expect(saved.effect?.changes).toBeNull();
+    expect(fake.storedMeta(saved.version)).toMatchObject({
+      base: null,
+      changes: null,
+    });
+  });
+
+  it("база — настоящая ревизия ДРУГОГО магазина: base_revision_not_found, ничего не записано", async () => {
     const { fake, load, save } = await freshStore();
     await save(setHeading((await load()).document, "B"), "r0");
+    // Чужая ревизия лежит в той же таблице — изоляцию держит только фильтр
+    // по магазину в выборке ревизии.
+    fake.seedRevision("r-foreign", clone(fake.storedData("r0")), {
+      siteId: "site-foreign",
+    });
     const count = fake.revisions.size;
-    await expect(
-      save((await load()).document, "rev-of-another-site"),
-    ).rejects.toThrow("base_revision_not_found");
+    await expect(save((await load()).document, "r-foreign")).rejects.toThrow(
+      "base_revision_not_found",
+    );
+    expect(fake.revisions.size).toBe(count);
+  });
+
+  it("база — снимок клиента другого магазина: base_revision_not_found", async () => {
+    const { fake, load, save } = await freshStore();
+    await save(setHeading((await load()).document, "B"), "r0");
+    fake.seedRevision("snap-foreign", clone(fake.storedData("r0")), {
+      siteId: "site-foreign",
+      meta: { kind: "client-snapshot", snapshotOf: "rev-foreign" },
+    });
+    const count = fake.revisions.size;
+    await expect(save((await load()).document, "snap-foreign")).rejects.toThrow(
+      "base_revision_not_found",
+    );
     expect(fake.revisions.size).toBe(count);
   });
 });

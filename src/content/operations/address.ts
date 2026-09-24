@@ -69,12 +69,33 @@ export function parentPath(path: string): string {
   return at < 0 ? "" : path.slice(0, at);
 }
 
-/** `outer` равен `inner` или содержит его. */
+/**
+ * `outer` равен `inner` или содержит его — по строке, без учёта поднятых
+ * контейнеров. Для слияния — `coversPath`/`overlapsPath` из walk.ts.
+ */
 export function covers(outer: string, inner: string): boolean {
   return outer === "" || outer === inner || inner.startsWith(`${outer}/`);
 }
 
-/** Два адреса задевают одно место: равны или один внутри другого. */
-export function overlaps(a: string, b: string): boolean {
-  return covers(a, b) || covers(b, a);
+/**
+ * Имена, которые не могут быть сегментом адреса: запись в них испортила бы
+ * прототипы объектов (защита для внешних операций — черновики, агент).
+ */
+const FORBIDDEN_NAMES: ReadonlySet<string> = new Set([
+  "__proto__",
+  "prototype",
+  "constructor",
+]);
+
+function nameOf(segment: ParsedSegment): string {
+  if (segment.kind === "key") return segment.key;
+  if (segment.kind === "prefixed") return segment.id;
+  return ORDER_SEGMENT;
+}
+
+/** В адресе есть запрещённое имя (ключ, id секции, страницы или зоны). */
+export function hasForbiddenSegment(path: string): boolean {
+  return splitPath(path)
+    .map(parseSegment)
+    .some((segment) => FORBIDDEN_NAMES.has(nameOf(segment)));
 }

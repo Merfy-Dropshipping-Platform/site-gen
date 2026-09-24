@@ -34,6 +34,7 @@ import {
   StoreContentService,
   resolveStoreContent,
 } from "../content/store-content.service";
+import { toStoreContentSite } from "../content/store-content.port";
 import type { StoreContent } from "../content/store-content.port";
 import { rewriteCurrent } from "../content/rewrite-current";
 
@@ -120,13 +121,7 @@ export class PagesService {
       actor: "merchant",
       source: "admin-pages",
       mergePolicy: "reject-conflicts",
-      site: {
-        themeId: site.themeId,
-        publicUrl: site.publicUrl,
-        name: site.name,
-        currentRevisionId: baseRevisionId,
-        contentModel: site.contentModel,
-      },
+      site: toStoreContentSite({ ...site, currentRevisionId: baseRevisionId }),
     });
   }
 

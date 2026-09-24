@@ -10,7 +10,13 @@
  * По каноническому адресу видно, что `page:home/content` (список целиком)
  * содержит `page:home/block:Hero-1`, а `pagesData` — `page:home`.
  */
-import { ORDER_SEGMENT, covers, parseSegment, splitPath } from "./address";
+import {
+  ORDER_SEGMENT,
+  covers,
+  hasForbiddenSegment,
+  parseSegment,
+  splitPath,
+} from "./address";
 import type { ParsedSegment } from "./address";
 import { isPlainObject } from "./json";
 import { DOCUMENT, RECORD, childShape, idsOf, prefixOf } from "./shape";
@@ -141,6 +147,7 @@ function step(cursor: Cursor, seg: ParsedSegment): Step {
 }
 
 export function locate(doc: unknown, path: string): Target | null {
+  if (hasForbiddenSegment(path)) return null;
   const segments = splitPath(path).map(parseSegment);
   let cursor: Cursor = { value: doc, shape: DOCUMENT };
   let target: Target | null = null;

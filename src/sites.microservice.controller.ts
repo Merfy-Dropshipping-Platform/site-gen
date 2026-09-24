@@ -19,6 +19,26 @@ import {
 import { SitesDomainService } from "./sites.service";
 import { RevisionMergeConflictError } from "./content/store-content.port";
 
+/** Ошибка записи ревизии → устойчивый конверт RPC (шлюз отображает код в HTTP). */
+function revisionWriteFailure(e: any) {
+  if (e instanceof RevisionMergeConflictError) {
+    return {
+      success: false,
+      code: "REVISION_MERGE_CONFLICT",
+      message: e.message,
+      conflicts: e.conflicts,
+    };
+  }
+  if (e?.message === "revision_conflict") {
+    return {
+      success: false,
+      code: "REVISION_CONFLICT",
+      message: "revision_conflict",
+    };
+  }
+  return { success: false, message: e?.message ?? "internal_error" };
+}
+
 @Controller()
 export class SitesMicroserviceController {
   private readonly logger = new Logger(SitesMicroserviceController.name);
@@ -313,22 +333,7 @@ export class SitesMicroserviceController {
       return { success: true, ...res };
     } catch (e: any) {
       this.logger.error(`revisions.create failed: ${e?.message}`, e?.stack);
-      if (e instanceof RevisionMergeConflictError) {
-        return {
-          success: false,
-          code: "REVISION_MERGE_CONFLICT",
-          message: e.message,
-          conflicts: e.conflicts,
-        };
-      }
-      if (e?.message === "revision_conflict") {
-        return {
-          success: false,
-          code: "REVISION_CONFLICT",
-          message: "revision_conflict",
-        };
-      }
-      return { success: false, message: e?.message ?? "internal_error" };
+      return revisionWriteFailure(e);
     }
   }
 
@@ -347,7 +352,8 @@ export class SitesMicroserviceController {
           success: false,
           message: "tenantId, siteId and revisionId required",
         };
-      // Этап 2 (И6): откат — новая ревизия-копия с CAS, ответ несёт её id.
+      // Этап 2 (И6): откат — точная копия со сверкой текущей; сменилась —
+      // REVISION_CONFLICT (шлюз отдаст 409), ничего не записано.
       const res = await this.service.setCurrentRevision({
         tenantId,
         siteId,
@@ -358,7 +364,7 @@ export class SitesMicroserviceController {
       return res;
     } catch (e: any) {
       this.logger.error("revisions.set_current failed", e);
-      return { success: false, message: e?.message ?? "internal_error" };
+      return revisionWriteFailure(e);
     }
   }
 

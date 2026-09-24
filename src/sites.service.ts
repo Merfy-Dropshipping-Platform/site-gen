@@ -42,13 +42,13 @@ import { getThemeManifest } from "./themes/theme-manifest-loader";
 import { StoreContentService, resolveStoreContent } from "./content/store-content.service";
 import { isStoreVersion } from "./content/revision-kinds";
 import { rewriteCurrent } from "./content/rewrite-current";
+import { toStoreContentSite } from "./content/store-content.port";
 import type {
+  StaleBasePolicy,
   StoreContent,
-  StoreContentSite,
   WriteActor,
   WriteSource,
 } from "./content/store-content.port";
-import type { MergePolicy } from "./content/operations";
 
 const USE_PAGE_RESOLVER = process.env.USE_PAGE_RESOLVER !== 'false'; // default ON, set to 'false' to disable
 
@@ -307,23 +307,6 @@ export class SitesDomainService {
    * (фабрика — content/store-content.service.ts, общая с PreviewController). */
   private get storeContent(): StoreContent {
     return (this.storeContentInstance ??= resolveStoreContent(this.injectedStoreContent, this.db));
-  }
-
-  /** Подмножество `site`, нужное порту StoreContent (см. store-content.port.ts). */
-  private toStoreContentSite(site: {
-    themeId?: string | null;
-    publicUrl?: string | null;
-    name?: string | null;
-    currentRevisionId?: string | null;
-    contentModel?: string | null;
-  }): StoreContentSite {
-    return {
-      themeId: site.themeId ?? null,
-      publicUrl: site.publicUrl ?? null,
-      name: site.name ?? null,
-      currentRevisionId: site.currentRevisionId ?? null,
-      contentModel: site.contentModel ?? null,
-    };
   }
 
   /**
@@ -1583,7 +1566,7 @@ export class SitesDomainService {
 
     // === SYNCHRONOUS BUILD PATH (legacy) ===
     // Build runs in parallel with Coolify app creation
-    const { buildId, artifactUrl, revisionId } = await this.generator.build({
+    const { buildId, artifactUrl } = await this.generator.build({
       tenantId: params.tenantId,
       siteId: params.siteId,
       mode: params.mode,
@@ -1613,12 +1596,14 @@ export class SitesDomainService {
       }
     }
 
-    // Обновить статус сайта + publicUrl
+    // Обновить статус сайта + publicUrl. Указатель текущей ревизии НЕ трогаем
+    // (этап 2): сборка и так собирала текущую, а автосейв, записанный во
+    // время сборки, иначе молча перестал бы быть текущим. Двигает указатель
+    // только порт StoreContent.
     await this.db
       .update(schema.site)
       .set({
         status: "published",
-        currentRevisionId: revisionId,
         ...(finalUrl ? { publicUrl: finalUrl } : {}),
         updatedAt: new Date(),
       })
@@ -1707,7 +1692,7 @@ export class SitesDomainService {
     // normalizeRevision → seedContentPagesFromTheme (B17) → resolveAssetUrls.
     const loaded = await this.storeContent.load(siteId, {
       revisionId,
-      site: this.toStoreContentSite(site),
+      site: toStoreContentSite(site),
     });
     return { item: { ...rev, data: loaded.document } };
   }
@@ -1797,7 +1782,7 @@ export class SitesDomainService {
     base?: string | null;
     actor?: WriteActor;
     source?: WriteSource;
-    mergePolicy?: MergePolicy;
+    mergePolicy?: StaleBasePolicy;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
@@ -1813,7 +1798,7 @@ export class SitesDomainService {
       actor: params.actor,
       source: params.source,
       mergePolicy: params.mergePolicy,
-      site: this.toStoreContentSite(site),
+      site: toStoreContentSite(site),
     });
     if (!saved.effect) return { revisionId: saved.version };
     // Контракт записи для клиентов (план этапа 2): `revisionId` — ревизия,
@@ -1829,24 +1814,29 @@ export class SitesDomainService {
   }
 
   /**
-   * Откат (этап 2, И6): новая ревизия — копия содержимого выбранной версии —
-   * через порт с базой = текущая и пометкой `restoredFrom`. Раньше —
-   * безусловная перестановка указателя на старую строку без CAS: автосейв,
-   * успевший между чтением и откатом, пропадал молча. Теперь откат
-   * сливается поверх него (то же место — побеждает откат, он последний),
-   * правки в других местах остаются.
+   * Откат (этап 2, И6): новая ревизия — ТОЧНАЯ копия выбранной версии (как
+   * она хранится) — через порт со сверкой «текущая = та, что видел клиент»
+   * и пометкой `restoredFrom`. Раньше — безусловная перестановка указателя на
+   * старую строку. Откат — осознанное действие: если текущая сменилась
+   * (автосейв успел раньше), он НЕ сливается и не перезаписывает чужое —
+   * `revision_conflict` (409), в базе ничего нового. Выбранная версия и так
+   * текущая — ничего не пишется.
    */
   async setCurrentRevision(params: {
     tenantId: string;
     siteId: string;
     revisionId: string;
     actorUserId?: string;
-    /** CAS отката (этап 2.5 подаст из истории); по умолчанию — текущая на момент вызова. */
+    /**
+     * Текущая ревизия, которую видел клиент (шлюз начнёт передавать в 2.5).
+     * Не передана — текущая на момент чтения. `null` — «ревизии нет»: явное
+     * значение, не подменяется текущей.
+     */
     expectedCurrentRevisionId?: string | null;
   }) {
     const site = await this.get(params.tenantId, params.siteId);
     if (!site) throw new Error("site_not_found");
-    const storeSite = this.toStoreContentSite(site);
+    const storeSite = toStoreContentSite(site);
     // Копия ревизии как она лежит (без шагов чтения и фильтра досеянного):
     // восстановленная версия читается ровно как выбранная.
     const target = await this.storeContent.load(params.siteId, {
@@ -1854,26 +1844,30 @@ export class SitesDomainService {
       site: storeSite,
       asStored: true,
     });
+    const restored = {
+      success: true,
+      restoredFrom: params.revisionId,
+    } as const;
+    if (params.revisionId === storeSite.currentRevisionId) {
+      return { ...restored, revisionId: params.revisionId };
+    }
+    const seen =
+      params.expectedCurrentRevisionId !== undefined
+        ? params.expectedCurrentRevisionId
+        : storeSite.currentRevisionId;
     const saved = await this.storeContent.save(params.siteId, {
       document: target.document,
-      base:
-        params.expectedCurrentRevisionId ?? storeSite.currentRevisionId ?? null,
+      base: seen ?? null,
       tenantId: params.tenantId,
       setCurrent: true,
       actor: "merchant",
       source: "rollback",
-      mergePolicy: "last-writer-wins",
+      mergePolicy: "refuse",
       meta: { restoredFrom: params.revisionId },
       actorUserId: params.actorUserId,
       site: storeSite,
     });
-    return {
-      success: true,
-      revisionId: saved.version,
-      restoredFrom: params.revisionId,
-      merged: saved.effect?.merged ?? false,
-      overwritten: saved.effect?.overwritten ?? [],
-    } as const;
+    return { ...restored, revisionId: saved.version };
   }
 
   async freezeTenant(tenantId: string) {
@@ -3046,7 +3040,7 @@ export class SitesDomainService {
       source: "ops",
       mergePolicy: "reject-conflicts",
       meta: { operation: "reset-content-pages" },
-      site: this.toStoreContentSite(site),
+      site: toStoreContentSite(site),
     });
     return { reset };
   }

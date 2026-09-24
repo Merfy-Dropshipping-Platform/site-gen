@@ -11,10 +11,10 @@ import {
   itemSegment,
   joinPath,
   keySegment,
-  overlaps,
   parseSegment,
   splitPath,
 } from "../address";
+import { overlapsPath } from "../walk";
 
 describe("адрес поля: сегменты", () => {
   it.each([
@@ -112,8 +112,20 @@ describe("адрес поля: пересечение (для слияния)", 
       "page:page-about/block:Hero-1",
       false,
     ],
+    [
+      "список секций целиком содержит секцию (поднятый контейнер)",
+      "page:home/content",
+      "page:home/block:Hero-1/props/x",
+      true,
+    ],
+    [
+      "pagesData целиком содержит страницу",
+      "pagesData",
+      "page:home/order",
+      true,
+    ],
   ])("%s", (_label, a, b, expected) => {
-    expect(overlaps(a, b)).toBe(expected);
-    expect(overlaps(b, a)).toBe(expected);
+    expect(overlapsPath(a, b)).toBe(expected);
+    expect(overlapsPath(b, a)).toBe(expected);
   });
 });

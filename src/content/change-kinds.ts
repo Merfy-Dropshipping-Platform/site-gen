@@ -17,10 +17,8 @@
 import { parseSegment, splitPath } from "./operations/address";
 import { deepEqual, isPlainObject } from "./operations/json";
 import { readAt } from "./operations";
-import type { Op } from "./operations";
+import type { Doc, Op } from "./operations";
 import { CHROME_TYPES } from "../utils/revision-write-filter";
-
-type Doc = Record<string, unknown>;
 
 /** Значения по умолчанию панели: тип секции → её `defaultProps`. */
 export type PanelDefaults = Readonly<Record<string, Record<string, unknown>>>;

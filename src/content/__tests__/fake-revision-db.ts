@@ -212,19 +212,24 @@ export function makeFakeRevisionDb(
     revisions,
     inPlaceUpdates,
     hooks,
-    /** Положить ревизию напрямую (стартовое состояние магазина). */
+    /**
+     * Положить ревизию напрямую (стартовое состояние магазина). `siteId` —
+     * ревизия ДРУГОГО магазина в той же базе (проверки изоляции): она не
+     * становится текущей.
+     */
     seedRevision(
       id: string,
       data: unknown,
-      opts: { current?: boolean; meta?: Record<string, unknown> } = {},
+      opts: {
+        current?: boolean;
+        meta?: Record<string, unknown>;
+        siteId?: string;
+      } = {},
     ) {
-      insertRevision(revisions, {
-        id,
-        siteId: site.id,
-        data,
-        meta: opts.meta ?? {},
-      });
-      if (opts.current ?? true) site.currentRevisionId = id;
+      const siteId = opts.siteId ?? site.id;
+      insertRevision(revisions, { id, siteId, data, meta: opts.meta ?? {} });
+      const current = opts.current ?? siteId === site.id;
+      if (current) site.currentRevisionId = id;
     },
     storedData(id: string): any {
       return revisions.get(id)?.data;

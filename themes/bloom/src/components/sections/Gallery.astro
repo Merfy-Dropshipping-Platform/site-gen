@@ -156,6 +156,10 @@ galleryTiles.forEach((t) => {
 // Куртка-плейсхолдер вписывается в бокс (object-contain), реальное фото — кроп.
 const fitCls = (t: GalleryTile, hover: string) =>
 	t.placeholder && t.kind === "product" ? "object-contain p-[12%]" : `object-cover ${hover}`;
+// Плитка с выбранной коллекцией: адрес фото приходит только с гидрацией
+// (data-gallery-collection), поэтому <img> рисуется заранее скрытым — гидрации
+// есть куда положить фото. Без него фото коллекции не вставало (тестер 24.09).
+const awaitsCover = (t: GalleryTile) => t.kind === "collection" && Boolean(t.ref) && !t.url;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
 // Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
@@ -258,9 +262,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					data-puck-subsection-index={0}
 					data-puck-subsection-field="items"
 				>
-					{heroTile.url && (
+					{(heroTile.url || awaitsCover(heroTile)) && (
 						<img
-							src={heroTile.url}
+							src={heroTile.url || undefined}
+							hidden={!heroTile.url}
 							alt={heroTile.alt}
 							loading="lazy"
 							class={`absolute inset-0 size-full ${fitCls(heroTile, "transition-transform duration-500 ease-out group-hover:scale-[1.03]")}`}
@@ -283,9 +288,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-field="items"
 						>
 							<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
-								{tile.url && (
+								{(tile.url || awaitsCover(tile)) && (
 									<img
-										src={tile.url}
+										src={tile.url || undefined}
+										hidden={!tile.url}
 										alt={tile.alt}
 										loading="lazy"
 										class={`absolute inset-0 size-full ${fitCls(tile, "transition-transform duration-500 ease-out group-hover:scale-[1.05]")}`}
@@ -354,6 +360,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const cover = productImage(product);
 			if (img && cover) {
 				img.setAttribute("src", cover);
+				img.removeAttribute("hidden");
+				img.parentElement?.removeAttribute("aria-hidden");
 				if (product.name) img.setAttribute("alt", product.name);
 			}
 			tile.setAttribute("href", productHref(product));
@@ -368,6 +376,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const img = tile.querySelector("img");
 			if (img && cover) {
 				img.setAttribute("src", cover);
+				img.removeAttribute("hidden");
+				img.parentElement?.removeAttribute("aria-hidden");
 				if (col.name) img.setAttribute("alt", col.name);
 			}
 			if (col.name) tile.setAttribute("aria-label", col.name);

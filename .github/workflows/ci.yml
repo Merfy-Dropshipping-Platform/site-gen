@@ -1607,6 +1607,10 @@ jobs:
       # верстальщиков с признаком, прежняя разметка без него, выбор мерчанта цел.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-goal-like-designers.spec.ts
+      # «Галерея» всех тем: плитка с выбранной коллекцией несёт <img>, куда
+      # гидрация кладёт фото коллекции (тестер 24.09: фото коллекции не вставало).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/gallery-collection-tile-hydrates.spec.ts
       # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
       # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
       - if: false

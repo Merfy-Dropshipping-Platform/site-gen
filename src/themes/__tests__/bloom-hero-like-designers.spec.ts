@@ -118,6 +118,18 @@ describe("bloom, первый экран: как у верстальщиков �
     expect(фото).not.toContain("size-full");
   });
 
+  it("своё фото мерчанта заполняет блок (тестер 24.09: полосы по бокам)", () => {
+    const [html] = отрисовать([
+      { ...ПОЛНАЯ, backgroundImages: { url1: "https://minio.merfy.ru/media/own-photo.jpg" }, ...КАК_У_ВЕРСТАЛЬЩИКОВ },
+    ]);
+    const фото = классыФото(html, "https://minio.merfy.ru/media/own-photo.jpg").split(/\s+/);
+    expect(фото).toContain("object-cover");
+    expect(фото).toContain("size-full");
+    expect(фото).not.toContain("h-[122%]");
+    // Высота блока — верстальщиков и со своим фото.
+    expect(классыБлока(html)).toContain("aspect-[375/716]");
+  });
+
   it("«Размер» по умолчанию и «Большой» — пропорция верстальщиков", () => {
     const [поУмолчанию, большой] = отрисовать([
       { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ },

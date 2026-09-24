@@ -1607,6 +1607,18 @@ jobs:
       # верстальщиков с признаком, прежняя разметка без него, выбор мерчанта цел.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-goal-like-designers.spec.ts
+      # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
+      # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/flux-goal-geometry.spec.ts
+      # vanilla по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
+      # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/vanilla-goal-geometry.spec.ts
+      # rose по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
+      # секций главной под PARITY_DESIGN, выбор мерчанта цел, без признака — прежнее.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/rose-goal-sizes.spec.ts
       # Секции bloom под PARITY_DESIGN — отступы, зазоры и высота строк как в
       # актуальной вёрстке верстальщиков: «Основной текст», «Мультиколонны»,
       # «Галерея», «Подвал» (владелец 23.09 «пройтись по всем секциям»). Капс

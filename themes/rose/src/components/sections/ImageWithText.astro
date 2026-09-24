@@ -5,8 +5,18 @@
 // (gap-6 md:gap-8), медиа §4 (rounded 8 на медиа, плейсхолдер-поверхность #F5F5F5),
 // типографика §1, кнопка §3 (solid чёрная, габариты Contacts CTA).
 import { inlineFormat } from "../../lib/rich-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/lib/field-order";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+
+// Field-order 24.09 (тестер: «слетели дрэг-н-дропы»): порядок заголовка/
+// текста/кнопки, который конструктор пишет перетаскиванием (props.fieldOrder).
+// Колонка держит `gap-6` на прямых детях (ниже) — CSS gap сам не добавляет
+// отступ ни перед первым, ни после последнего, поэтому переставленным полям
+// «зазор между соседями» не требует отдельного кода. Нет fieldOrder → порядок
+// реестра, и isDefaultOrder держит разметку БЕЗ ЕДИНОГО изменения байта.
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 
 // heading: string | { text, alignment, size }; text: string | { content, size }.
 // Figma 1:19335 — ПУСТОЕ состояние секции «Изображение с текстом»: дословные
@@ -144,7 +154,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 		{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида) */}
 		<div class={`flex w-full flex-col gap-6${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
-			{!isFieldHidden('heading') && (
+			{isDefaultOrder && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls + italicCls}
@@ -155,7 +165,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)}
-			{!isFieldHidden('text') && (
+			{isDefaultOrder && !isFieldHidden('text') && (
 				<div
 					class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
 					data-puck-subsection-parent={id}
@@ -165,7 +175,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 			{
-				btnText && (
+				isDefaultOrder && btnText && (
 					<div class={`${bottomPinned ? "mt-auto" : "mt-2"}${headingAlignCls}`}>
 						{!isFieldHidden('button') && (
 						<a
@@ -181,6 +191,60 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				)
 			}
+			{/* Field-order: перестановка мимо реестра — те же три узла (heading/
+			   text/button), тот же gap-6 родителя, только порядок вставки другой.
+			   Кнопка теряет свою mt-2/mt-auto (это отступ ОТ ТЕКСТА конкретно, не
+			   универсальный «зазор от соседа») — gap-6 родителя даёт тот же зазор
+			   любой паре, первому элементу gap ничего не добавляет сам. */}
+			{!isDefaultOrder && fieldOrder.map((field) => {
+				// Без TS-аннотации типа: `Record<string, unknown>` в теле шаблона
+				// компилятор Astro читает как открывающий тег `<string, unknown>` —
+				// разметка после нее рвётся молча (см. field-order-astro-generics в
+				// журнале). Тип объекта тут и не нужен, ключи буквальные.
+				const nodes = {
+					heading: !isFieldHidden('heading') && (
+						<h2
+							id={titleId}
+							class={headingCls + italicCls}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="101"
+							data-puck-subsection-field="heading"
+						>
+							<Fragment set:html={inlineFormat(heading)} />
+						</h2>
+					),
+					text: !isFieldHidden('text') && (
+						<div
+							class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
+							data-puck-subsection-parent={id}
+							data-puck-subsection-index="102"
+							data-puck-subsection-field="text"
+							set:html={inlineFormat(text)}
+						/>
+					),
+					// Обёртка нужна структурно (не для зазора — его даёт gap-6 родителя):
+					// сама кнопка — inline-flex, и без блочной обёртки-на-всю-ширину
+					// растянулась бы по кросс-оси flex-col родителя. mt-auto сохраняем
+					// ТОЛЬКО для «прижать к низу» (ctaPosition), это отдельная от
+					// перестановки настройка.
+					button: btnText && (
+						<div class={`${bottomPinned ? "mt-auto" : ""}${headingAlignCls}`}>
+							{!isFieldHidden('button') && (
+							<a
+								href={btnHref}
+								class="inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="103"
+								data-puck-subsection-field="button"
+							>
+								{btnText}
+							</a>
+							)}
+						</div>
+					),
+				};
+				return nodes[field];
+			})}
 		</div>
 	</div>
 </section>

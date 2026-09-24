@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/lib/field-order";
 // Секция «Puk» = «Основной текст» / CTA верстальщиков flux (репо flux-theme
 // src/components/sections/Puk.astro, Figma 905:19320). ВЁРСТКА (текст/CTA) —
 // дословный канон репо: заголовок Roboto Flex uppercase 19/md:23 #000, абзац
@@ -62,6 +63,16 @@ import { inlineFormat } from "../../lib/rich-text";
 // дефолт-контент верстальщика (title/paragraph/cta репо).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+
+// Field-order 24.09 (тестер: «слетели дрэг-н-дропы»): порядок заголовка/
+// текста/кнопки из перетаскивания в конструкторе. Эта секция — canon-мапа
+// ImageWithText НА Puk (sections.map.json), ниже держит те же ДВА уровня gap,
+// что и sibling ImageWithText.astro (группа gap-2, пара [группа,кнопка]
+// gap-10) — custom-порядок рисуется плоским списком в ВНЕШНЕМ контейнере (тот
+// же gap-10 даёт зазор любой соседней паре). Нет fieldOrder → порядок
+// реестра, isDefaultOrder держит разметку БЕЗ ЕДИНОГО изменения байта.
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 
 // Заголовок: string | { text, size } (канон-union). Пусто → дефолт верстальщика.
 //
@@ -273,52 +284,109 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    между [заголовок+текст]-группой и кнопкой). h-full только при
 			    bottom-pinned (иначе ломает lg:items-center грида). */}
 			<div class={`flex w-full flex-col items-start gap-10${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
-				<div class="flex flex-col gap-2">
-					{!isFieldHidden('heading') && (
-						<h2
-							id={titleId}
-							class={headingCls + alignCls + italicCls}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="heading"
-						>
-							<Fragment set:html={inlineFormat(heading)} />
-						</h2>
-					)}
-					{!isFieldHidden('text') && (
-						<p
-							class={textCls + alignCls + italicCls}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="102"
-							data-puck-subsection-field="text"
-							set:html={inlineFormat(text)}
-						/>
-					)}
-				</div>
+				{isDefaultOrder && (
+					<>
+					<div class="flex flex-col gap-2">
+						{!isFieldHidden('heading') && (
+							<h2
+								id={titleId}
+								class={headingCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="heading"
+							>
+								<Fragment set:html={inlineFormat(heading)} />
+							</h2>
+						)}
+						{!isFieldHidden('text') && (
+							<p
+								class={textCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="text"
+								set:html={inlineFormat(text)}
+							/>
+						)}
+					</div>
 
-				{
-					btnText && (
-						<div
-							class:list={[
-								"w-full",
-								bottomPinned ? "mt-auto" : "",
-								sectionAlignment === "center" ? "!text-center" : sectionAlignment === "right" ? "!text-right" : "",
-							]}
-						>
-							{!isFieldHidden('button') && (
-								<a
-									href={btnHref}
-									class={btnCls}
-									data-puck-subsection-parent={id}
-									data-puck-subsection-index="103"
-									data-puck-subsection-field="button"
-								>
-									{btnText}
-								</a>
-							)}
-						</div>
-					)
-				}
+					{
+						btnText && (
+							<div
+								class:list={[
+									"w-full",
+									bottomPinned ? "mt-auto" : "",
+									sectionAlignment === "center" ? "!text-center" : sectionAlignment === "right" ? "!text-right" : "",
+								]}
+							>
+								{!isFieldHidden('button') && (
+									<a
+										href={btnHref}
+										class={btnCls}
+										data-puck-subsection-parent={id}
+										data-puck-subsection-index="103"
+										data-puck-subsection-field="button"
+									>
+										{btnText}
+									</a>
+								)}
+							</div>
+						)
+					}
+					</>
+				)}
+				{/* Field-order: группа+пара выше не укладываются в произвольный порядок
+				   — плоский список прямо в ЭТОЙ колонке (items-start, тот же gap-10
+				   даёт зазор любой соседней паре без отдельного кода). Кнопка не
+				   нуждается в обёртке под ширину — колонка сама НЕ растягивает детей
+				   (items-start), обёртка "w-full" остаётся только для выравнивания. */}
+				{!isDefaultOrder && fieldOrder.map((field) => {
+					// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона
+					// Astro читает как открывающий тег и рвёт разметку молча.
+					const nodes = {
+						heading: !isFieldHidden('heading') && (
+							<h2
+								id={titleId}
+								class={headingCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="heading"
+							>
+								<Fragment set:html={inlineFormat(heading)} />
+							</h2>
+						),
+						text: !isFieldHidden('text') && (
+							<p
+								class={textCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="text"
+								set:html={inlineFormat(text)}
+							/>
+						),
+						button: btnText && (
+							<div
+								class:list={[
+									"w-full",
+									bottomPinned ? "mt-auto" : "",
+									sectionAlignment === "center" ? "!text-center" : sectionAlignment === "right" ? "!text-right" : "",
+								]}
+							>
+								{!isFieldHidden('button') && (
+									<a
+										href={btnHref}
+										class={btnCls}
+										data-puck-subsection-parent={id}
+										data-puck-subsection-index="103"
+										data-puck-subsection-field="button"
+									>
+										{btnText}
+									</a>
+								)}
+							</div>
+						),
+					};
+					return nodes[field];
+				})}
 			</div>
 		</div>
 	</div>

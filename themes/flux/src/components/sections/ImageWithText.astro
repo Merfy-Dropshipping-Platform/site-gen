@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/lib/field-order";
 // Секция ImageWithText («Изображение с текстом») в манере flux. Секции нет у
 // верстальщика flux (всего 4, MANNER §10) — дизайним в ЕДИНОМ flux-языке: ВСЯ
 // секция на font-roboto-flex (заголовок/текст/кнопка); прежний дрейф на
@@ -18,6 +19,17 @@ import { inlineFormat } from "../../lib/rich-text";
 // навешивается обёрткой composeV2Page; фон секции = bg-токен с белым фоллбеком.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
+
+// Field-order 24.09 (тестер: «слетели дрэг-н-дропы»): порядок заголовка/
+// текста/кнопки из перетаскивания в конструкторе. Колонка ниже — ДВА уровня
+// gap (внутренняя группа «заголовок+текст» gap-2/gap-4, внешняя пара
+// [группа, кнопка] gap-6/gap-8) — перестановка не укладывается в них без
+// перестройки, поэтому custom-порядок рисуется ОДНИМ плоским списком в том
+// же внешнем контейнере (тот же gap-6 md:gap-8 даёт зазор любой соседней
+// паре). Нет fieldOrder → порядок реестра, isDefaultOrder держит разметку
+// БЕЗ ЕДИНОГО изменения байта.
+const fieldOrder = orderTextFields(p);
+const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 
 // heading: string | { text, alignment, size }; text: string | { content, size }.
 // Figma 1:19335 — ПУСТОЕ состояние секции «Изображение с текстом»: дословные
@@ -206,47 +218,97 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 			{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида). */}
 			<div class={`flex w-full flex-col gap-6 md:gap-8${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
-				{/* Внутренняя группа [заголовок+текст] gap-2 md:gap-4, группа↔кнопка
-				    gap-6 md:gap-8 (внешний gap колонки) — ритм flux (эталон MainText). */}
-				<div class="flex w-full flex-col gap-2 md:gap-4">
-					{!isFieldHidden('heading') && (
-						<h2
-							id={titleId}
-							class={headingCls + alignCls + italicCls}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="101"
-							data-puck-subsection-field="heading"
-						>
-							<Fragment set:html={inlineFormat(heading)} />
-						</h2>
-					)}
-					{!isFieldHidden('text') && (
-						<div
-							class={textCls + alignCls + italicCls}
-							data-puck-subsection-parent={id}
-							data-puck-subsection-index="102"
-							data-puck-subsection-field="text"
-							set:html={inlineFormat(text)}
-						/>
-					)}
-				</div>
-				{
-					btnText && (
-						<div class={(bottomPinned ? "mt-auto" : "mt-2") + alignCls}>
-							{!isFieldHidden('button') && (
-							<a
-								href={btnHref}
-								class={btnCls}
+				{isDefaultOrder && (
+					<>
+					{/* Внутренняя группа [заголовок+текст] gap-2 md:gap-4, группа↔кнопка
+					    gap-6 md:gap-8 (внешний gap колонки) — ритм flux (эталон MainText). */}
+					<div class="flex w-full flex-col gap-2 md:gap-4">
+						{!isFieldHidden('heading') && (
+							<h2
+								id={titleId}
+								class={headingCls + alignCls + italicCls}
 								data-puck-subsection-parent={id}
-								data-puck-subsection-index="103"
-								data-puck-subsection-field="button"
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="heading"
 							>
-								{btnText}
-							</a>
-							)}
-						</div>
-					)
-				}
+								<Fragment set:html={inlineFormat(heading)} />
+							</h2>
+						)}
+						{!isFieldHidden('text') && (
+							<div
+								class={textCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="text"
+								set:html={inlineFormat(text)}
+							/>
+						)}
+					</div>
+					{
+						btnText && (
+							<div class={(bottomPinned ? "mt-auto" : "mt-2") + alignCls}>
+								{!isFieldHidden('button') && (
+								<a
+									href={btnHref}
+									class={btnCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="103"
+									data-puck-subsection-field="button"
+								>
+									{btnText}
+								</a>
+								)}
+							</div>
+						)
+					}
+					</>
+				)}
+				{/* Field-order: два уровня gap выше не подходят под произвольный порядок
+				   — плоский список прямо в ЭТОМ контейнере, тот же gap-6 md:gap-8 даёт
+				   зазор любой соседней паре без отдельного кода. Кнопка теряет mt-2
+				   (зазор ОТ ТЕКСТА, заменён на gap), mt-auto (прижать к низу) остаётся. */}
+				{!isDefaultOrder && fieldOrder.map((field) => {
+					// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона
+					// Astro читает как открывающий тег и рвёт разметку молча.
+					const nodes = {
+						heading: !isFieldHidden('heading') && (
+							<h2
+								id={titleId}
+								class={headingCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="101"
+								data-puck-subsection-field="heading"
+							>
+								<Fragment set:html={inlineFormat(heading)} />
+							</h2>
+						),
+						text: !isFieldHidden('text') && (
+							<div
+								class={textCls + alignCls + italicCls}
+								data-puck-subsection-parent={id}
+								data-puck-subsection-index="102"
+								data-puck-subsection-field="text"
+								set:html={inlineFormat(text)}
+							/>
+						),
+						button: btnText && (
+							<div class={(bottomPinned ? "mt-auto" : "") + alignCls}>
+								{!isFieldHidden('button') && (
+								<a
+									href={btnHref}
+									class={btnCls}
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="103"
+									data-puck-subsection-field="button"
+								>
+									{btnText}
+								</a>
+								)}
+							</div>
+						),
+					};
+					return nodes[field];
+				})}
 			</div>
 		</div>
 	</div>

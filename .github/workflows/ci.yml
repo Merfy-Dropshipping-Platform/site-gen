@@ -137,6 +137,17 @@ jobs:
           src/__tests__/preview-block-hidden-items.spec.ts
           src/themes/__tests__/asset-resolver-relativize.spec.ts
 
+      # «Галерея» на главной — состав и порядок плиток как у новой секции из
+      # каталога (задача 25.09, BURGER-GALLERY-BRIEF.md п.2). Владелец: было
+      # «три Изображения» из старого сида, стало image→product→collection —
+      # как в defaultProps панели. Гард читает исходники (home.json пакета
+      # темы + Gallery.puckConfig.ts текстом, тот же приём что у
+      # header-burger-position.spec.ts) — без артефактов тем, секунды.
+      - name: Тесты состава плиток «Галереи» на главной
+        run: >-
+          pnpm exec jest --runInBand
+          src/themes/__tests__/gallery-home-seed-tile-types.spec.ts
+
       # Контракт тем: схема манифеста, реестр токенов, резолвер страниц,
       # конформанс-движок. Джоба satin гоняла отсюда только conformance-*
       # (9 сьютов из 40). 39 сьютов, 418 проверок, ~3 c.

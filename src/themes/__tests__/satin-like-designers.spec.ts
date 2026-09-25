@@ -88,11 +88,14 @@ describe("satin Header: переход мобильная↔десктопная
     ]);
     expect(сПризнаком).toContain("md:!hidden");
     expect(сПризнаком).not.toContain("lg:!hidden");
-    expect(сПризнаком).toContain("md:left-auto md:w-[360px]");
-    expect(сПризнаком).not.toContain("lg:left-auto");
+    // Сторона панели (25.09, владелец: бургер слева на любой ширине — см.
+    // header-burger-position.spec.ts) — right-auto, не left-auto; порог
+    // (md под парити, lg без) эта проверка держит по-прежнему.
+    expect(сПризнаком).toContain("md:right-auto md:w-[360px]");
+    expect(сПризнаком).not.toContain("lg:right-auto");
     expect(безПризнака).toContain("lg:!hidden");
     expect(безПризнака).not.toContain("md:!hidden");
-    expect(безПризнака).toContain("lg:left-auto lg:w-[360px]");
+    expect(безПризнака).toContain("lg:right-auto lg:w-[360px]");
   });
 
   it("меню-дефолт (dropdown): нижняя шторка мобильного бургера тоже на md", () => {

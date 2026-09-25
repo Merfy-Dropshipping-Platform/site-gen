@@ -331,6 +331,24 @@ const headerHeartSvg =
 						/* top-left: Row1=[logo LEFT + icons RIGHT], Row2=[nav LEFT] */
 						<>
 							<div class="flex w-full items-center justify-between">
+								<div class="flex items-center gap-3">
+								{isSidebar && (
+									<button
+										type="button"
+										data-burger-toggle
+										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+										aria-label="Меню"
+										aria-expanded="false"
+										aria-controls="bloom-burger"
+									>
+										<span class="burger-icon" data-icon="open">
+											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+										</span>
+										<span class="burger-icon hidden" data-icon="close">
+											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+										</span>
+									</button>
+								)}
 								<a href="/" class="flex items-center hover:opacity-90" aria-label={siteTitle}>
 									{
 										logo ? (
@@ -340,6 +358,7 @@ const headerHeartSvg =
 										)
 									}
 								</a>
+								</div>
 								<div class="flex items-center gap-4">
 									<button
 										type="button"
@@ -383,23 +402,6 @@ const headerHeartSvg =
 									>
 										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 									</a>
-									{isSidebar && (
-										<button
-											type="button"
-											data-burger-toggle
-											class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
-											aria-label="Меню"
-											aria-expanded="false"
-											aria-controls="bloom-burger"
-										>
-											<span class="burger-icon" data-icon="open">
-												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
-											</span>
-											<span class="burger-icon hidden" data-icon="close">
-												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
-											</span>
-										</button>
-									)}
 								</div>
 							</div>
 							<nav
@@ -425,6 +427,23 @@ const headerHeartSvg =
 						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
 						    не разрывался. */}
 								<div class="flex items-center justify-start">
+									{isSidebar && (
+										<button
+											type="button"
+											data-burger-toggle
+											class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+											aria-label="Меню"
+											aria-expanded="false"
+											aria-controls="bloom-burger"
+										>
+											<span class="burger-icon" data-icon="open">
+												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+											</span>
+											<span class="burger-icon hidden" data-icon="close">
+												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+											</span>
+										</button>
+									)}
 								</div>
 
 								<a href="/" class="flex items-center justify-center hover:opacity-90" aria-label={siteTitle}>
@@ -480,23 +499,6 @@ const headerHeartSvg =
 									>
 										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 									</a>
-									{isSidebar && (
-										<button
-											type="button"
-											data-burger-toggle
-											class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
-											aria-label="Меню"
-											aria-expanded="false"
-											aria-controls="bloom-burger"
-										>
-											<span class="burger-icon" data-icon="open">
-												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
-											</span>
-											<span class="burger-icon hidden" data-icon="close">
-												<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
-											</span>
-										</button>
-									)}
 								</div>
 							</div>
 
@@ -523,6 +525,23 @@ const headerHeartSvg =
 					{logoPosition === "center-absolute" ? (
 						/* center-absolute: nav LEFT, logo ABSOLUTE-center, icons RIGHT */
 						<>
+							{isSidebar && (
+								<button
+									type="button"
+									data-burger-toggle
+									class="col-start-1 flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="bloom-burger"
+								>
+									<span class="burger-icon" data-icon="open">
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+									</span>
+								</button>
+							)}
 							<nav
 								class:list={["col-start-1 flex flex-wrap items-center justify-start gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
 								aria-label="Основная навигация"
@@ -589,29 +608,30 @@ const headerHeartSvg =
 								>
 									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 								</a>
-								{isSidebar && (
-									<button
-										type="button"
-										data-burger-toggle
-										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
-										aria-label="Меню"
-										aria-expanded="false"
-										aria-controls="bloom-burger"
-									>
-										<span class="burger-icon" data-icon="open">
-											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
-										</span>
-										<span class="burger-icon hidden" data-icon="close">
-											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
-										</span>
-									</button>
-								)}
 							</div>
 						</>
 					) : (
 						/* center-left: logo LEFT, nav CENTER ПО СТРАНИЦЕ (равные flex-1 фланги logo+icons), icons RIGHT */
 						<>
-							<a href="/" class="flex flex-1 items-center hover:opacity-90" aria-label={siteTitle}>
+							<div class="flex flex-1 items-center gap-3">
+							{isSidebar && (
+								<button
+									type="button"
+									data-burger-toggle
+									class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="bloom-burger"
+								>
+									<span class="burger-icon" data-icon="open">
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
+									</span>
+								</button>
+							)}
+							<a href="/" class="flex items-center hover:opacity-90" aria-label={siteTitle}>
 								{
 									logo ? (
 										<img src={logo} alt={siteTitle} class={logoImgCls} />
@@ -620,6 +640,7 @@ const headerHeartSvg =
 									)
 								}
 							</a>
+							</div>
 
 							<nav
 								class:list={["flex flex-wrap items-center justify-center gap-8 lg:gap-10", menuSchemeClass, isSidebar && "md:!hidden"]}
@@ -677,23 +698,6 @@ const headerHeartSvg =
 								>
 									<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="user" sizeClass="size-5" />
 								</a>
-								{isSidebar && (
-									<button
-										type="button"
-										data-burger-toggle
-										class="flex size-8 items-center justify-center rounded-[8px] transition-opacity hover:opacity-80"
-										aria-label="Меню"
-										aria-expanded="false"
-										aria-controls="bloom-burger"
-									>
-										<span class="burger-icon" data-icon="open">
-											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-burger" sizeClass="size-5" />
-										</span>
-										<span class="burger-icon hidden" data-icon="close">
-											<SchemeIcon svgs={BLOOM_ICON_SVGS} iconBasePath="/icons" name="menu-close" sizeClass="size-5" />
-										</span>
-									</button>
-								)}
 							</div>
 						</>
 					)}
@@ -774,8 +778,11 @@ const headerHeartSvg =
 			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с md
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на md бургер и панель были
+			// справа). На телефоне и с md панель — колонка у левого края, кнопка
+			// слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -784,7 +791,7 @@ const headerHeartSvg =
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"

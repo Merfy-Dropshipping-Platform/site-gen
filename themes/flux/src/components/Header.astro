@@ -283,7 +283,25 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
 						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
 						    не разрывался. */}
-						<div class="flex items-center"></div>
+						<div class="flex items-center">
+							{isSidebar && (
+								<button
+									type="button"
+									data-burger-toggle
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="flux-burger"
+								>
+									<span class="burger-icon" data-icon="open">
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+									</span>
+								</button>
+							)}
+						</div>
 						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
@@ -321,23 +339,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 								</a>
 							)}
-							{isSidebar && (
-								<button
-									type="button"
-									data-burger-toggle
-									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Меню"
-									aria-expanded="false"
-									aria-controls="flux-burger"
-								>
-									<span class="burger-icon" data-icon="open">
-										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
-									</span>
-									<span class="burger-icon hidden" data-icon="close">
-										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
-									</span>
-								</button>
-							)}
 						</div>
 					</div>
 					<nav
@@ -362,9 +363,28 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 				/* top-left (designer default = two-tier эталона): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
 				<>
 					<div class="flex w-full items-center justify-between">
+						<div class="flex items-center gap-3">
+							{isSidebar && (
+								<button
+									type="button"
+									data-burger-toggle
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="flux-burger"
+								>
+									<span class="burger-icon" data-icon="open">
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+									</span>
+								</button>
+							)}
 						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
 							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 						</a>
+						</div>
 						<div class="flex items-center gap-4">
 							{showSearch && (
 								<button
@@ -397,23 +417,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 								</a>
 							)}
-							{isSidebar && (
-								<button
-									type="button"
-									data-burger-toggle
-									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Меню"
-									aria-expanded="false"
-									aria-controls="flux-burger"
-								>
-									<span class="burger-icon" data-icon="open">
-										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
-									</span>
-									<span class="burger-icon hidden" data-icon="close">
-										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
-									</span>
-								</button>
-							)}
 						</div>
 					</div>
 					<nav
@@ -439,9 +442,28 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	) : (
 		/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute / top-right ── */
 		<div class={singleRowContainerCls} style={headerPadStyle}>
-			<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
+			<div class:list={["flex items-center gap-3", logoLeft && "flex-1"]}>
+				{isSidebar && (
+					<button
+						type="button"
+						data-burger-toggle
+						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Меню"
+						aria-expanded="false"
+						aria-controls="flux-burger"
+					>
+						<span class="burger-icon" data-icon="open">
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
+						</span>
+						<span class="burger-icon hidden" data-icon="close">
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+						</span>
+					</button>
+				)}
+			<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
 				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
 			</a>
+			</div>
 
 			<nav
 				class:list={[
@@ -499,23 +521,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					>
 						<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 					</a>
-				)}
-				{isSidebar && (
-					<button
-						type="button"
-						data-burger-toggle
-						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
-						aria-label="Меню"
-						aria-expanded="false"
-						aria-controls="flux-burger"
-					>
-						<span class="burger-icon" data-icon="open">
-							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
-						</span>
-						<span class="burger-icon hidden" data-icon="close">
-							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
-						</span>
-					</button>
 				)}
 			</div>
 		</div>
@@ -593,8 +598,11 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с md
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на md бургер и панель были
+			// справа). На телефоне и с md панель — колонка у левого края, кнопка
+			// слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -603,7 +611,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 top-[80px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"

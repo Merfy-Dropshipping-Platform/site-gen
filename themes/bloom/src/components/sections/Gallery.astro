@@ -172,13 +172,12 @@ const soloTile = galleryTiles.length === 1;
 // (rose: minmax(280px,429px)) выравнивает высоты: большая плитка тянется по
 // строке и остаётся почти квадратной.
 // PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
-// зазоры и раскладка по актуальной вёрстке Bloom-theme @5aae2ad6. Признак ставит
-// sites; без него — прежние классы.
-const designParity = p.__designParity === true;
+// зазоры и раскладка по актуальной вёрстке Bloom-theme @5aae2ad6. Владелец
+// 25.09: одна версия секции — прежняя ветка удалена.
 // Две плитки у верстальщиков: колонки пополам (lg:grid-cols-2), большая —
 // квадрат по своей ширине, справа фото 652/594 с подписью. Три плитки
 // (наш канон) — прежняя раскладка.
-const pairLikeDesigners = designParity && sideTiles.length === 1;
+const pairLikeDesigners = sideTiles.length === 1;
 const gridColsCls = mirror
 	? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
 	: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
@@ -203,8 +202,8 @@ const heroSizeCls = soloTile
 	: pairLikeDesigners
 		? "aspect-square"
 		: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
-// Подпись под фото плитки: у верстальщиков колонка gap-4 (16), у нас mt-5.
-const captionMtCls = designParity ? "mt-4" : "mt-5";
+// Подпись под фото плитки: как у верстальщиков, gap-4 (16).
+const captionMtCls = "mt-4";
 
 // Боковая плитка ПАРЫ (pairLikeDesigners): низ обязан лечь на низ квадрата
 // (владелец 25.09). Ссылка становится flex-колонкой во всю высоту строки
@@ -301,7 +300,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			)}
 
 			{sideTiles.length > 0 && (
-				<div class={`flex w-full min-h-0 min-w-0 flex-col ${designParity ? "gap-4" : "gap-5"}${sideOrderCls}`}>
+				<div class={`flex w-full min-h-0 min-w-0 flex-col gap-4${sideOrderCls}`}>
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}

@@ -65,6 +65,8 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { themeReadsDesignParity } from "./design-parity-forks";
+
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 const PANEL = resolve(__dirname, "puck-config-deep.mjs");
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
@@ -204,33 +206,6 @@ function divergence(withDef?: Row, without?: Row): string | null {
   const pipe = withDef?.pipelineError ?? without?.pipelineError;
   if (pipe) return `живая цепочка не поднялась: ${pipe}`;
   return digest(withDef?.html) === digest(without?.html) ? null : "разошлись";
-}
-
-/**
- * Читает ли порт темы признак «как у верстальщиков». Владелец 25.09: «одна
- * версия секции» — темы по одной избавляются от развилки; у темы без неё
- * признак ни на что не влияет. Считаем по исходникам порта и пакета темы.
- */
-function themeReadsDesignParity(theme: string): boolean {
-  try {
-    const out = execFileSync(
-      "git",
-      [
-        "grep",
-        "-l",
-        "__designParity",
-        "--",
-        `themes/${theme}/src`,
-        `packages/theme-${theme}`,
-        ":(exclude)**/__tests__/**",
-      ],
-      { cwd: resolve(__dirname, "..", "..", ".."), encoding: "utf8" },
-    );
-    return out.trim().length > 0;
-  } catch {
-    // git grep без совпадений завершается кодом 1 — признак тема не читает.
-    return false;
-  }
 }
 
 describe.each(THEMES)("дефолт не меняет вид витрины — %s", (theme) => {

@@ -59,6 +59,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse, type HTMLElement } from "node-html-parser";
+import { themeReadsDesignParity } from "./design-parity-forks";
 
 // Первый рендер каждой темы холодный: отдельный процесс + рантайм astro. Под
 // нагрузкой (параллельная пересборка) он выходит за штатные 5000 мс, и падала
@@ -380,7 +381,8 @@ describe("Галерея: низ большой плитки сходится с
       // верстальщиков»): там большая плитка тянется по высоте строки. Путь прода
       // (большая плитка — квадрат верстальщиков, тянутся боковые) проверяется
       // РЕЗУЛЬТАТОМ в gallery-bottoms-align.spec.ts — замер низов в браузере.
-      it(`${theme}: ${имя} — большая плитка берёт высоту строки (прежняя ветка)`, () => {
+      // Только пока у темы есть прежняя ветка (design-parity-forks.ts).
+      (themeReadsDesignParity(theme) ? it : it.skip)(`${theme}: ${имя} — большая плитка берёт высоту строки (прежняя ветка)`, () => {
         const shape = galleryShape(
           theme,
           render(theme, "Gallery", { colorScheme: "scheme-3", items, __designParity: false }),
@@ -389,7 +391,8 @@ describe("Галерея: низ большой плитки сходится с
         expect(prop(theme, shape!.hero, "height")).toBe("100%");
       });
 
-      it(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg (прежняя ветка)`, () => {
+      // Только пока у темы есть прежняя ветка (design-parity-forks.ts).
+      (themeReadsDesignParity(theme) ? it : it.skip)(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg (прежняя ветка)`, () => {
         const shape = galleryShape(
           theme,
           render(theme, "Gallery", { colorScheme: "scheme-3", items, __designParity: false }),

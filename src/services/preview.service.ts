@@ -1414,19 +1414,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
       askInit();
     }, 300);
   }
-  /** Отложить сообщение, пришедшее до 'init'. На блок держим только последнее. */
+  /**
+   * Какие отложенные сообщения — «одно и то же»: из них нужно только последнее.
+   * Правка блока — по блоку; токены темы (цвета/шрифты/радиусы) — одни на страницу.
+   */
+  function pendingKey(msg) {
+    if (!msg) return '';
+    if (msg.type === 'update-block') return msg.blockId ? 'update-block:' + msg.blockId : '';
+    if (msg.type === 'update-tokens') return 'update-tokens';
+    return '';
+  }
+  /** Отложить сообщение, пришедшее до 'init'. Из одинаковых держим только последнее. */
   function deferUntilInit(msg) {
-    if (msg && msg.type === 'update-block' && msg.blockId) {
-      for (var qi = 0; qi < PENDING_BEFORE_INIT.length; qi++) {
-        var q = PENDING_BEFORE_INIT[qi];
-        if (q && q.type === 'update-block' && q.blockId === msg.blockId) {
-          PENDING_BEFORE_INIT[qi] = msg;
-          startReadyRetry();
-          return;
-        }
-      }
+    var key = pendingKey(msg);
+    var same = -1;
+    for (var qi = 0; key && qi < PENDING_BEFORE_INIT.length; qi++) {
+      if (pendingKey(PENDING_BEFORE_INIT[qi]) === key) same = qi;
     }
-    if (PENDING_BEFORE_INIT.length < 50) PENDING_BEFORE_INIT.push(msg);
+    if (same >= 0) PENDING_BEFORE_INIT[same] = msg;
+    else if (PENDING_BEFORE_INIT.length < 50) PENDING_BEFORE_INIT.push(msg);
     startReadyRetry();
   }
   // Контекст коллекции страницы page-collection. Его кладёт в <head> GET-превью
@@ -2709,7 +2715,12 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // Hot-replace tokens.css включён для всех тем после консолидации
       // на packages/theme-base (2026-05-10). До этого был allowlist
       // [rose, vanilla] — symmetric to update-block fix.
-      if (!currentThemeId) return;
+      // 'init' ещё не пришёл — откладываем, как update-block. Раньше здесь был
+      // молчаливый выход: цвет/шрифт, поменянный в первые секунды после
+      // открытия конструктора, сохранялся, но в превью появлялся только после
+      // перезагрузки (баг владельца 26.09, замер на bloom: update-tokens
+      // пришёл за 0,5 с до init).
+      if (!currentThemeId) { deferUntilInit(ev.data); return; }
       if (!currentSiteId) return;
       fetch('/api/sites/' + currentSiteId + '/preview/tokens-css', {
         method: 'POST',

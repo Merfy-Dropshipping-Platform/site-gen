@@ -67,6 +67,12 @@ export const ProductSchema = z.object({
     counter: z.object({ variant: z.enum(['inline', 'boxed', 'split']).optional() }).optional(),
     showDescription: z.boolean().optional(),
   }).optional(),
+  /**
+   * Порядок строк колонки информации из перетаскивания в дереве конструктора
+   * (владелец 25.09). Имена — SECTION_FIELDS.Product
+   * (packages/theme-base/runtime/field-order.ts).
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -263,6 +269,10 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     // dynamicButton теперь видимый toggle (см. выше, между zoomMode и colorScheme).
     badge: { type: 'hidden', label: '' },
     visualConfig: { type: 'hidden', label: '' },
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     productId: '',

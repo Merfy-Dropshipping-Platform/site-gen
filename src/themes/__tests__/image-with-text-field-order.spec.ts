@@ -5,7 +5,7 @@
  *
  * Конструктор (PR constructor #38) кладёт порядок в `props.fieldOrder:
  * string[]` — имена панели `image`/`heading`/`text`/`button`. Порт читает его
- * общим помощником `orderTextFields` (packages/theme-base/lib/field-order.ts)
+ * общим помощником `orderTextFields` (packages/theme-base/runtime/field-order.ts)
  * и рисует заголовок/текст/кнопку текстовой колонки в этом порядке; `image`
  * не переставляется — свою сторону задаёт `imagePosition`.
  *
@@ -17,7 +17,7 @@
  * Требует сборки: pnpm build && pnpm build:blocks && pnpm build:theme-sections:all.
  */
 
-import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../packages/theme-base/lib/field-order";
+import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../packages/theme-base/runtime/field-order";
 import { renderSections } from "../../../scripts/qa/lib/render";
 
 const THEMES = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
@@ -65,7 +65,7 @@ function отрисовать(
   return row.html ?? "";
 }
 
-describe("orderTextFields — общий помощник (packages/theme-base/lib/field-order.ts)", () => {
+describe("orderTextFields — общий помощник (packages/theme-base/runtime/field-order.ts)", () => {
   it("нет fieldOrder → порядок реестра (heading, text, button)", () => {
     expect(orderTextFields({})).toEqual(["heading", "text", "button"]);
   });

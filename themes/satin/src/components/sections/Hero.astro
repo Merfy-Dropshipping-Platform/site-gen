@@ -3,7 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import SatinPicture from "../img/SatinPicture.astro";
 import { SITE_TITLE } from "../../consts";
-import { fieldRuns, orderFields, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { fieldRuns, orderFields, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base Hero.puckConfig
 // поверх разметки верстальщика. Тело ниже — verbatim; дефолтные ветки тернарников =
@@ -356,7 +356,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). ПУСТАЯ секция —
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). ПУСТАЯ секция —
 // обычный реестр (heading выше text — Figma-плейсхолдер). ЗАПОЛНЕННАЯ секция
 // satin по манере держит кикер (text) ВЫШЕ заголовка — свой базовый порядок
 // SATIN_HERO_ORDER; при явном fieldOrder порядок буквальный (orderFields).

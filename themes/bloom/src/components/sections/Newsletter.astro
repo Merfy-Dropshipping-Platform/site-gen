@@ -1,6 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 // Фаза B (bloom, группа misc): канон-секция Newsletter в манере bloom
 // (см. themes/bloom/MANNER.md; процесс-эталон — rose T17 Newsletter). Схема
 // полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -147,7 +147,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок из перетаскивания в конструкторе (props.fieldOrder,
-// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// packages/theme-base/runtime/field-order.ts): `heading` — блок заголовка с
 // текстом, `buttonText` — форма подписки вместе с согласием и строкой статуса
 // под ней (обе живут в одной обёртке разметки). Без fieldOrder — прежняя
 // разметка.

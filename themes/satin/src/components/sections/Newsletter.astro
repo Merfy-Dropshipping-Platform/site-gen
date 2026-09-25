@@ -1,7 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // Фаза B (satin, группа misc): новая канон-секция Newsletter в манере satin
 // (themes/satin/MANNER.md; эталон процесса — bloom Newsletter). Тело = блок
@@ -160,7 +160,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок из перетаскивания в конструкторе (props.fieldOrder,
-// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// packages/theme-base/runtime/field-order.ts): `heading` — блок заголовка с
 // текстом (то, что прячет hideTitle), `buttonText` — форма подписки (оба
 // варианта) вместе с согласием под ней. Строка статуса — всегда последняя.
 // Без fieldOrder — прежняя разметка.

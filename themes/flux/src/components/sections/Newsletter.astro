@@ -1,6 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 // Канон-секция Newsletter в манере flux. Схема полей = packages/theme-base/blocks/
 // Newsletter/Newsletter.puckConfig.ts; настройки применяются КАК rose T17
 // (heading/headingSize · text/textSize · position-«Выравнивание» · formLayout ·
@@ -140,7 +140,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок из перетаскивания в конструкторе (props.fieldOrder,
-// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// packages/theme-base/runtime/field-order.ts): `heading` — блок заголовка с
 // текстом, `buttonText` — форма подписки вместе с согласием под ней. Строка
 // статуса всегда последняя. Без fieldOrder — прежняя разметка.
 const newsletterOrder = sectionFieldOrder("Newsletter", p);

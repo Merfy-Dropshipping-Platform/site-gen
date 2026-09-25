@@ -3,7 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import VanillaPicture from "../img/VanillaPicture.astro";
 import { V_IMG } from "../../data/imageAssets";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base
 // Hero.puckConfig ВКЛЮЧАЯ carousel-ветку «084 vanilla pilot» (mode, slides[]≤8,
@@ -433,7 +433,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). У vanilla Hero
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). У vanilla Hero
 // заголовок/текст/кнопка — плоские соседи ОДНОГО родителя (copyWrapCls) и в
 // карусельной, и в одиночной ветке — группировка не нужна, порядок применяется
 // прямым перебором. Без fieldOrder — прежний порядок реестра.

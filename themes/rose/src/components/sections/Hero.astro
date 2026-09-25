@@ -4,7 +4,7 @@ import RosePicture from "../img/RosePicture.astro";
 import { inlineFormat } from "../../lib/rich-text";
 import { ROSE_HERO_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
-import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
@@ -368,7 +368,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
 // заголовок и текст остаются в общей колонке (emptyCopyCls / копи-обёртка),
 // кнопки — отдельным звеном. Без fieldOrder — прежняя разметка.
 const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);

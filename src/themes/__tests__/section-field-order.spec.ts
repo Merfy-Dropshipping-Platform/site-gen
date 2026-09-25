@@ -28,7 +28,7 @@ import {
   orderFields,
   SECTION_FIELDS,
   sectionFieldOrder,
-} from "../../../packages/theme-base/lib/field-order";
+} from "../../../packages/theme-base/runtime/field-order";
 import { renderSections } from "../../../scripts/qa/lib/render";
 
 const THEMES = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
@@ -146,13 +146,23 @@ function permutations<T>(list: readonly T[]): T[][] {
   );
 }
 
-describe("помощники порядка (packages/theme-base/lib/field-order.ts)", () => {
+describe("помощники порядка (packages/theme-base/runtime/field-order.ts)", () => {
   it("реестр секций — как NAMED_SUBSECTIONS конструктора", () => {
     expect(SECTION_FIELDS).toEqual({
       ImageWithText: ["heading", "text", "button"],
       Hero: ["heading", "text", "buttons"],
       MainText: ["heading", "text", "button"],
       Newsletter: ["heading", "buttonText"],
+      Product: [
+        "text",
+        "title",
+        "price",
+        "variants",
+        "quantity",
+        "buttons",
+        "description",
+        "share",
+      ],
     });
   });
 

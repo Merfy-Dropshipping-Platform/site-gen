@@ -3,7 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
-import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim,
@@ -317,7 +317,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
 // заголовок и текст остаются в общей колонке (gap-2), кнопка(и) — отдельным
 // звеном. Без fieldOrder — прежняя разметка.
 const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);

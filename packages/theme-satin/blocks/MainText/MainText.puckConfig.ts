@@ -53,7 +53,7 @@ export const MainTextSchema = z.object({
   /**
    * Порядок параметров из перетаскивания в дереве конструктора (владелец
    * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
-   * SECTION_FIELDS (packages/theme-base/lib/field-order.ts); порт темы рисует
+   * SECTION_FIELDS (packages/theme-base/runtime/field-order.ts); порт темы рисует
    * параметры в этом порядке.
    */
   fieldOrder: z.array(z.string()).optional(),

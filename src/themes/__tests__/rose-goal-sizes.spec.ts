@@ -2,38 +2,28 @@ import { renderSections } from "../../../scripts/qa/lib/render";
 import { classSelector, themeCss } from "../../../scripts/qa/lib/tailwind-css";
 import * as PARITY from "../../../themes/rose/src/lib/design-parity";
 
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
-
 /**
  * rose — размеры «как у верстальщиков» по цели designer-goal (24.09),
  * пересобранные по решению владельца 25.09 «что в панели — то и на витрине».
+ * С 25.09 у секций rose одна версия (владелец: «стили приравнивали, секции и
+ * параметры менять не нужно было») — прежняя ветка удалена вместе с признаком.
  *
- * Два вида полей с кеглями верстальщиков под признаком PARITY_DESIGN:
+ * Два вида полей с кеглями верстальщиков:
  *   - «значение по умолчанию берёт числа верстальщиков» (порядок
  *     «Маленький ≤ Средний ≤ Большой» сохраняется — panel-size-order.spec.ts):
- *     с признаком их рисует и не заданное поле, и ЯВНО выбранное значение по
- *     умолчанию; остальные варианты — прежние;
+ *     их рисует и не заданное поле, и ЯВНО выбранное значение по умолчанию;
+ *     остальные варианты — свои;
  *   - «ветка не задано» — только у полей, которые панель не заполняет
  *     значением по умолчанию (Hero: размер заголовка, «Позиция»; размер в
- *     объекте подвала): с признаком и не заданным полем — классы
- *     верстальщиков, выбранное мерчантом значение — прежнее.
+ *     объекте подвала): не заданное поле — классы верстальщиков, выбранное
+ *     мерчантом значение — своё.
  * Поля, чьи числа верстальщиков порядок ломали («Список коллекций» и
  * «Галерея» — заголовок, «Галерея» — текст, Hero «Размер» (кнопка), промо-полоса,
- * «Вид изображения» «Популярного»), чисел верстальщиков больше не имеют: их
- * «не задано» сверяет со значением панели panel-default-is-noop.spec.ts в
- * обоих режимах.
- * Везде: без признака — разметка байт в байт как при __designParity:false и
- * без единого класса верстальщиков; капс не растёт; каждый класс
- * верстальщиков есть в собранном CSS темы (иначе правка молча не действует на
- * витрине).
+ * «Вид изображения» «Популярного»), чисел верстальщиков не имеют: их
+ * «не задано» сверяет со значением панели panel-default-is-noop.spec.ts.
+ * Везде: признак режима ничего не меняет (одна версия); капса нет; каждый
+ * класс верстальщиков есть в собранном CSS темы (иначе правка молча не
+ * действует на витрине).
  */
 
 jest.setTimeout(90_000);
@@ -119,78 +109,70 @@ const СЛУЧАИ: Array<{
 ];
 
 describe.each(СЛУЧАИ)("rose-goal: $name", ({ block, props, set, def, designers }) => {
-  const [вкл, выкл, безПризнака, вклЗадано, вклПоУмолчанию] = отрисовать([
+  const [неЗадано, вкл, выкл, задано, поУмолчанию] = отрисовать([
+    { block, props },
     { block, props: { ...props, ...ВКЛ } },
     { block, props: { ...props, ...ВЫКЛ } },
-    { block, props },
-    { block, props: { ...props, ...set, ...ВКЛ } },
-    { block, props: { ...props, ...(def ?? set), ...ВКЛ } },
+    { block, props: { ...props, ...set } },
+    { block, props: { ...props, ...(def ?? set) } },
   ]).map(разэкран);
 
-  it("с признаком и несданной настройкой — размер верстальщиков", () => {
-    expect(вкл).toContain(designers);
+  it("несданная настройка — размер верстальщиков", () => {
+    expect(неЗадано).toContain(designers);
   });
 
-  it("с признаком выбранное НЕ по умолчанию значение — прежний вариант", () => {
-    expect(вклЗадано).not.toContain(designers);
+  it("выбранное НЕ по умолчанию значение — свой вариант, без классов верстальщиков", () => {
+    expect(задано).not.toContain(designers);
   });
 
-  it("с признаком явно выбранное значение по умолчанию — то же, что не заданное", () => {
+  it("явно выбранное значение по умолчанию — то же, что не заданное", () => {
     // Иначе панель, показывающая значение по умолчанию, и витрина расходятся:
     // первая правка секции вписывает его, и вид прыгает.
-    if (def) expect(вклПоУмолчанию).toEqual(вкл);
-    else expect(вклПоУмолчанию).not.toContain(designers);
+    if (def) expect(поУмолчанию).toEqual(неЗадано);
+    else expect(поУмолчанию).not.toContain(designers);
   });
 
-  it("без признака — прежняя разметка байт в байт, классов верстальщиков нет", () => {
-    expect(выкл).toEqual(безПризнака);
-    expect(выкл).not.toContain(designers);
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(вкл).toEqual(неЗадано);
+    expect(выкл).toEqual(неЗадано);
   });
 
-  it("капс не растёт", () => {
-    expect(капсов(вкл)).toBeLessThanOrEqual(капсов(выкл));
+  it("капса нет", () => {
+    expect(капсов(неЗадано)).toBe(0);
   });
 });
 
-describe("rose-goal: «Популярное» — «Вид изображения» не задан = «Квадрат» и с признаком", () => {
+describe("rose-goal: «Популярное» — «Вид изображения» не задан = «Квадрат»", () => {
   const БАЗА = { id: "Popular-1", heading: "Хиты" };
-  const [вкл, квадрат, выкл] = отрисовать([
-    { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ } },
-    { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ, imageView: "square" } },
+  const [неЗадано, квадрат] = отрисовать([
     { block: "PopularProducts", props: БАЗА },
+    { block: "PopularProducts", props: { ...БАЗА, imageView: "square" } },
   ]).map(разэкран);
 
-  it("несданный вид под признаком — квадрат 1/1, как «Квадрат» панели", () => {
-    expect(вкл).toEqual(квадрат);
-    expect(вкл).toContain("aspect-ratio:1/1");
-    expect(вкл).not.toContain("--rose-card-ar");
-  });
-
-  it("без признака — тот же квадрат 1/1", () => {
-    expect(выкл).toContain("aspect-ratio:1/1");
-    expect(выкл).not.toContain("--rose-card-ar");
+  it("несданный вид — квадрат 1/1, как «Квадрат» панели", () => {
+    expect(неЗадано).toEqual(квадрат);
+    expect(неЗадано).toContain("aspect-ratio:1/1");
+    expect(неЗадано).not.toContain("--rose-card-ar");
   });
 });
 
 describe("rose-goal: шапка — строка планшета 56px и кнопки-иконки 40px", () => {
-  const [вкл, выкл, безПризнака] = отрисовать([
+  const [неЗадано, вкл, выкл] = отрисовать([
+    { block: "Header", props: { id: "Header-1" } },
     { block: "Header", props: { id: "Header-1", ...ВКЛ } },
     { block: "Header", props: { id: "Header-1", ...ВЫКЛ } },
-    { block: "Header", props: { id: "Header-1" } },
   ]);
 
-  it("с признаком: md:h-14 у мобильной строки, size-10 у кнопок, p-2 pr-1 у коробки поиска", () => {
-    expect(вкл).toContain(`lg:hidden ${PARITY.ROSE_HEADER_MOBILE_ROW_DESIGNERS}`);
-    expect(вкл).toContain(`flex ${PARITY.ROSE_HEADER_ACTION_BTN_DESIGNERS} items-center`);
-    expect(вкл).not.toContain("flex size-8 items-center");
-    expect(вкл).toContain(PARITY.ROSE_HEADER_SEARCH_BOX_DESIGNERS);
+  it("md:h-14 у мобильной строки, size-10 у кнопок, p-2 pr-1 у коробки поиска", () => {
+    expect(неЗадано).toContain(`lg:hidden ${PARITY.ROSE_HEADER_MOBILE_ROW_DESIGNERS}`);
+    expect(неЗадано).toContain(`flex ${PARITY.ROSE_HEADER_ACTION_BTN_DESIGNERS} items-center`);
+    expect(неЗадано).not.toContain("flex size-8 items-center");
+    expect(неЗадано).toContain(PARITY.ROSE_HEADER_SEARCH_BOX_DESIGNERS);
   });
 
-  it("без признака — прежние size-8 и p-2, байт в байт", () => {
-    expect(выкл).toEqual(безПризнака);
-    expect(выкл).toContain("flex size-8 items-center");
-    expect(выкл).not.toContain("md:h-14");
-    expect(выкл).not.toContain("p-2 pr-1");
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(вкл).toEqual(неЗадано);
+    expect(выкл).toEqual(неЗадано);
   });
 });
 

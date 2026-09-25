@@ -13,13 +13,11 @@ import { ROSE_GALLERY_TILES_DESIGNERS } from "../../lib/design-parity";
 // конструктора (medium/medium/left) → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// отступы, зазоры и md-ступень сетки по актуальной вёрстке Rose-theme
-// @b719c193 (Gallery.astro). Настройки и цвета не меняются; без признака —
-// прежние классы. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const sectionPadCls = designParity ? "pb-20 pt-20" : "pb-14 pt-14";
-const wrapGapCls = designParity ? "gap-10" : "gap-8 md:gap-10";
+// Отступы, зазоры и md-ступень сетки по актуальной вёрстке Rose-theme
+// @b719c193 (Gallery.astro) — владелец 23-24.09: «как у верстальщиков,
+// только стили». Настройки и цвета не меняются.
+const sectionPadCls = "pb-20 pt-20";
+const wrapGapCls = "gap-10";
 // Пустое состояние (Figma 1:19335) — ДОСЛОВНЫЙ плейсхолдер: заголовок «Галерея»,
 // БЕЗ подзаголовка (в контракте Gallery подзаголовка нет → дефолт пуст, текст
 // верстальщика «Сравнивайте, находите своё…» убран). Заданный мерчантом heading/
@@ -73,36 +71,27 @@ const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center$
 // плитка слева (пиксель верстальщика); 'right' → зеркало раскладки на lg
 // (узкая колонка слева, большая плитка справа — через swap grid-template + order).
 const mirror = p.imagePosition === "right";
-// PARITY_DESIGN: у верстальщиков сетка получает промежуточную md-ступень
-// (узкая колонка 200-260px рядом с большой плиткой) — у нас раньше сразу
-// с grid-cols-1 прыгало на lg. Значения данными (designers/legacy × normal/mirror).
+// Как у верстальщиков: сетка получает промежуточную md-ступень (узкая колонка
+// 200-260px рядом с большой плиткой), а не прыгает с grid-cols-1 сразу на lg.
 const GAL_GRID = {
-	designers: {
-		normal: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(200px,260px)] md:items-stretch md:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8",
-		mirror: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] md:items-stretch md:gap-4 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8",
-	},
-	legacy: {
-		normal: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8",
-		mirror: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8",
-	},
+	normal: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(200px,260px)] md:items-stretch md:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)] lg:items-stretch lg:gap-6 xl:gap-8",
+	mirror: "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] md:items-stretch md:gap-4 lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)] lg:items-stretch lg:gap-6 xl:gap-8",
 };
-const galleryGridCls = GAL_GRID[designParity ? "designers" : "legacy"][mirror ? "mirror" : "normal"];
+const galleryGridCls = GAL_GRID[mirror ? "mirror" : "normal"];
 const heroTileOrderCls = mirror ? " lg:order-2" : "";
 const sideColOrderCls = mirror ? " lg:order-1" : "";
-// Большой тайл: min-h-[280px] → aspect-square (+ md:h-full, только у нескольких
-// плиток — solo-плитка у верстальщиков не встречается, её пропорция 16/9 не трогаем).
-const heroBaseCls = designParity ? "aspect-square" : "min-h-[280px]";
+// Большой тайл — квадрат (+ md:h-full, только у нескольких плиток — solo-плитка
+// у верстальщиков не встречается, её пропорция 16/9 не трогаем).
+const heroBaseCls = "aspect-square";
 // Боковые тайлы: квадрат на моб/планшете, фикс-пропорция верстальщика — только с lg.
-const sideProductAspectCls = designParity ? "aspect-square lg:aspect-[429/444]" : "aspect-[429/444]";
-const sideCollectionAspectCls = designParity ? "aspect-square lg:aspect-[429/309]" : "aspect-[429/309]";
+const sideProductAspectCls = "aspect-square lg:aspect-[429/444]";
+const sideCollectionAspectCls = "aspect-square lg:aspect-[429/309]";
 // Обёртка боковых тайлов: 2 в ряд на моб/планшете (grid-cols-2), колонка с md.
 // Плитки справа: зазор фото–подпись 12 → 20 (lg) и подписи 14px на планшете —
-// как у верстальщиков. Без признака — прежние gap-4 md:gap-5.
-const sideTileGapCls = designParity ? "gap-3 text-left lg:gap-5" : "gap-4 text-left md:gap-5";
-const sideCaptionParityCls = designParity ? ` ${ROSE_GALLERY_TILES_DESIGNERS}` : "";
-const sideWrapCls = designParity
-	? "grid grid-cols-2 gap-2 min-h-0 min-w-0 md:flex md:flex-col md:gap-4 lg:gap-6"
-	: "flex min-h-0 min-w-0 flex-col gap-6";
+// как у верстальщиков.
+const sideTileGapCls = "gap-3 text-left lg:gap-5";
+const sideCaptionParityCls = ` ${ROSE_GALLERY_TILES_DESIGNERS}`;
+const sideWrapCls = "grid grid-cols-2 gap-2 min-h-0 min-w-0 md:flex md:flex-col md:gap-4 lg:gap-6";
 
 // Канон items[] (≤3, типы image/product/collection): плитки из пропсов.
 // SSR рендерит канон-плейсхолдеры («Товар» 2 500 ₽ / «Выбери коллекцию»);
@@ -199,8 +188,8 @@ const mediaFitCls = (t: GalleryTile) =>
 const awaitsCover = (t: GalleryTile) => t.kind === "collection" && Boolean(t.ref) && !t.url;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
-// Владелец: низы колонок «Галереи» сходятся. Под признаком большая плитка —
-// квадрат верстальщиков и задаёт высоту строки; при ТРЁХ плитках две боковые
+// Владелец: низы колонок «Галереи» сходятся. Большая плитка — квадрат
+// верстальщиков и задаёт высоту строки; при ТРЁХ плитках две боковые
 // сходятся с ним по пропорциям, а ОДНА боковая со своей пропорцией короче —
 // под ней оставалась дыра (до 375px на 1440). Пара: боковая плитка тянется на
 // высоту строки с планшета (там колонки уже стоят рядом), фото кадрируется
@@ -208,19 +197,15 @@ const sideTiles = galleryTiles.slice(1);
 const SIDE_FILL = {
 	pair: { anchor: " md:flex-1", collection: "aspect-square md:aspect-auto md:flex-1", product: "aspect-square md:aspect-auto md:flex-1" },
 	rest: { anchor: "", collection: sideCollectionAspectCls, product: sideProductAspectCls },
-}[designParity && sideTiles.length === 1 ? "pair" : "rest"];
+}[sideTiles.length === 1 ? "pair" : "rest"];
 
 // Одна видимая плитка — одна колонка на всю ширину; высоту задаёт соотношение
 // сторон, потому что брать её от соседней колонки больше не у кого.
 const soloTile = galleryTiles.length === 1;
-// Соло-плитка у верстальщиков не встречается (у них всегда 3) — её раскладку
-// design parity не трогает, только многоплиточную (md:h-full — большой тайл
-// тянется на всю высоту колонки уже с планшета, не только с lg).
-const heroSizeCls = soloTile
-	? "lg:aspect-[16/9]"
-	: designParity
-		? "md:h-full lg:min-h-0 lg:h-full"
-		: "lg:min-h-0 lg:h-full";
+// Соло-плитка у верстальщиков не встречается (у них всегда 3) — у неё своя
+// пропорция; у нескольких плиток большой тайл тянется на всю высоту колонки
+// уже с планшета (md:h-full), не только с lg.
+const heroSizeCls = soloTile ? "lg:aspect-[16/9]" : "md:h-full lg:min-h-0 lg:h-full";
 const gridLayoutCls = soloTile
 	? "grid min-h-0 min-w-0 grid-cols-1 gap-6 md:gap-8"
 	: galleryGridCls;

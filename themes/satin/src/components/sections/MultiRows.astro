@@ -155,7 +155,7 @@ const rowHeadingCls = (s: string | undefined) =>
 // верстальщика абзац ряда `.satin-copy md:text-[20px]`, но его .satin-copy
 // (16px, вне слоёв) перебивает утилиту — на экране 16px на любой ширине. Под
 // признаком так рисуется только «размер текста не задан»; выбранный — как раньше.
-const designParity = p.__designParity === true;
+// Одна версия секции (владелец 25.09): прежняя ветка удалена.
 const ROW_TEXT_CLS: Record<string, string> = {
 	small: "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
 	large: "max-w-[600px] text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]",
@@ -163,7 +163,7 @@ const ROW_TEXT_CLS: Record<string, string> = {
 	designers: "max-w-[600px] text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]",
 };
 const rowTextCls = (s: string | undefined) =>
-	ROW_TEXT_CLS[s === "small" || s === "large" ? s : s === undefined && designParity ? "designers" : "medium"];
+	ROW_TEXT_CLS[s === "small" || s === "large" ? s : s === undefined ? "designers" : "medium"];
 
 // «Высота» секции и «Размер» ряда — две ЖИВЫЕ настройки, и ни одна из них не
 // угадывается по данным. Ряд со своим размером всегда главнее; секция задаёт
@@ -276,7 +276,7 @@ const rowSplitKey: "small" | "medium" | "large" =
 // b68871f1, ebd40ea0, a01dfd7a, ae55ded6, 4287e8ae): пара ряда впритык, у
 // текстовой колонки свои поля 32px, доля медиа по ROW_SPLIT (незаданная
 // «Ширина» = large), между рядами 32px. Решение владельца главнее вёрстки
-// верстальщика — ветки под designParity здесь больше нет ни при каком
+// верстальщика — отдельной ветки «как у верстальщиков» здесь нет ни при каком
 // значении «Ширины». ROW_TEXT_CLS.designers (размер текста ряда) — другая
 // настройка, эта задача её не трогает.
 

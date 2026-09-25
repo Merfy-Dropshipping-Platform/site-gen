@@ -70,22 +70,21 @@ describe("satin Header: переход мобильная↔десктопная
       "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
     );
     expect(html).not.toContain("hidden w-full lg:block");
-    expect(html).toContain('data-design-parity="true"');
+    expect(html).not.toContain("data-design-parity");
   });
 
-  it("без признака и с явным __designParity:false — разметка байт в байт прежняя (lg)", () => {
-    const [безПризнака, признакВыкл] = отрисовать([
+  // Владелец 25.09: одна версия секции — прежняя ветка (порог lg) удалена,
+  // признак режима больше ничего не меняет.
+  it("одна версия: с признаком, без него и с явным false — одна и та же разметка (порог md)", () => {
+    const [безПризнака, признакВыкл, сПризнаком] = отрисовать([
       { block: "Header", props: БАЗА },
       { block: "Header", props: { ...БАЗА, __designParity: false } },
+      { block: "Header", props: { ...БАЗА, ...ВКЛ } },
     ]);
     expect(признакВыкл).toEqual(безПризнака);
-    expect(безПризнака).toContain(
-      "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
-    );
-    expect(безПризнака).toContain("hidden w-full lg:block");
-    expect(безПризнака).not.toContain("md:hidden");
-    expect(безПризнака).not.toContain("md:block");
-    expect(безПризнака).not.toContain('data-design-parity="true"');
+    expect(сПризнаком).toEqual(безПризнака);
+    expect(безПризнака).toContain("hidden w-full md:block");
+    expect(безПризнака).not.toContain("hidden w-full lg:block");
   });
 
   it("menuType=sidebar: инлайн-меню и выезд шторки следуют тому же порогу", () => {
@@ -100,9 +99,8 @@ describe("satin Header: переход мобильная↔десктопная
     // (md под парити, lg без) эта проверка держит по-прежнему.
     expect(сПризнаком).toContain("md:right-auto md:w-[360px]");
     expect(сПризнаком).not.toContain("lg:right-auto");
-    expect(безПризнака).toContain("lg:!hidden");
-    expect(безПризнака).not.toContain("md:!hidden");
-    expect(безПризнака).toContain("lg:right-auto lg:w-[360px]");
+    // Одна версия: без признака — то же самое.
+    expect(безПризнака).toEqual(сПризнаком);
   });
 
   it("меню-дефолт (dropdown): нижняя шторка мобильного бургера тоже на md", () => {
@@ -111,16 +109,16 @@ describe("satin Header: переход мобильная↔десктопная
       { block: "Header", props: БАЗА },
     ]);
     expect(сПризнаком).toContain("pb-8 md:hidden [clip-path:inset(0)]");
-    expect(безПризнака).toContain("pb-8 lg:hidden [clip-path:inset(0)]");
+    expect(безПризнака).toEqual(сПризнаком);
   });
 
-  it("JS-порог поиска несёт оба значения статично, режим решает data-атрибут в рантайме", () => {
+  it("JS-порог поиска один — md (767.98), без атрибута режима", () => {
     const [html] = отрисовать([
       { block: "Header", props: { ...БАЗА, ...ВКЛ } },
     ]);
     expect(html).toContain("767.98");
-    expect(html).toContain("1023.98");
-    expect(html).toContain("data-design-parity");
+    expect(html).not.toContain("1023.98");
+    expect(html).not.toContain("data-design-parity");
   });
 
   it("настройки шапки продолжают менять разметку под признаком: логотип, меню, липкость, отступы", () => {
@@ -172,15 +170,15 @@ describe("satin Footer: верхний ряд без лишнего gap-10, по
     expect(html).not.toContain("md:text-[14px]");
   });
 
-  it("без признака и с явным __designParity:false — разметка байт в байт прежняя", () => {
-    const [безПризнака, признакВыкл] = отрисовать([
+  // Владелец 25.09: одна версия секции — прежняя ветка удалена.
+  it("одна версия: с признаком и без — одна и та же разметка", () => {
+    const [безПризнака, признакВыкл, сПризнаком] = отрисовать([
       { block: "Footer", props: БАЗА },
       { block: "Footer", props: { ...БАЗА, __designParity: false } },
+      { block: "Footer", props: { ...БАЗА, ...ВКЛ } },
     ]);
     expect(признакВыкл).toEqual(безПризнака);
-    expect(безПризнака).toContain("flex items-start gap-10 md:justify-between");
-    expect(безПризнака).toContain("md:text-[14px]");
-    expect(безПризнака).not.toContain("md:text-[16px]");
+    expect(сПризнаком).toEqual(безПризнака);
   });
 
   it("contentAlign=right — свой зазор не трогаем (настройка продолжает работать)", () => {
@@ -331,10 +329,10 @@ function байтВБайтИКапс(block: string, база: Record<string, un
 describe("satin Header: «логотип по центру» — меню и иконки в той же строке под PARITY_DESIGN", () => {
   const БАЗА = { id: "Header-1", colorScheme: "scheme-1", logoPosition: "center-absolute" };
 
-  it("с признаком строка грида плотная (grid-flow-dense), без — прежняя", () => {
+  it("строка грида плотная (grid-flow-dense) — одна версия, с признаком и без", () => {
     const { безПризнака, сПризнаком } = байтВБайтИКапс("Header", БАЗА);
     expect(сПризнаком).toContain("grid grid-cols-[1fr_auto_1fr] grid-flow-dense");
-    expect(безПризнака).not.toContain("grid-flow-dense");
+    expect(безПризнака).toEqual(сПризнаком);
   });
 
   it("другие положения логотипа не трогаем", () => {
@@ -392,7 +390,8 @@ describe("satin MultiRows: решение владельца 17–20.09 глав
       { block: "MultiRows", props: БАЗА },
     ]);
     expect(сПризнаком).not.toContain("md:text-[20px]");
-    expect(безПризнака).toContain("md:text-[20px]");
+    // Одна версия (владелец 25.09): без признака — то же самое.
+    expect(безПризнака).toEqual(сПризнаком);
   });
 
   it("заданные «Ширина» и «Размер текста» работают как раньше под признаком", () => {
@@ -419,8 +418,8 @@ describe("satin MainText: текст 16 без «Размера текста»; 
     expect(сПризнаком).not.toContain("flex w-full flex-col gap-4 items-start text-left");
     const [центр] = отрисовать([{ block: "MainText", props: { ...БАЗА, ...ВКЛ, position: "center" } }]);
     expect(сПризнаком).toEqual(центр);
-    expect(безПризнака).toContain("mx-auto items-center text-center");
-    expect(безПризнака).toContain("md:text-[20px]");
+    // Одна версия (владелец 25.09): без признака — то же самое.
+    expect(безПризнака).toEqual(сПризнаком);
   });
 
   it("выбранные позиция и размер работают как раньше под признаком", () => {
@@ -441,7 +440,8 @@ describe("satin ImageWithText: фото и текст встык — тольк�
   it("с признаком — без зазора; без признака — md:gap-x-10", () => {
     const { безПризнака, сПризнаком } = байтВБайтИКапс("ImageWithText", БАЗА);
     expect(сПризнаком).not.toContain("md:gap-x-10");
-    expect(безПризнака).toContain("md:grid-cols-2 md:gap-x-10");
+    // Одна версия (владелец 25.09): без признака — то же самое.
+    expect(безПризнака).toEqual(сПризнаком);
   });
 
   it("заданная ширина держит зазор и под признаком", () => {

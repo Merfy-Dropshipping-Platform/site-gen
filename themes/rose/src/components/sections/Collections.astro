@@ -5,7 +5,7 @@
 // и классы 1:1, кроме `uppercase` — его тема и так снимала правилом
 // #collections-title,#popular-title,#gallery-title{text-transform:none}.
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
-import { ROSE_COLLECTIONS_CARD_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
+import { ROSE_COLLECTIONS_CARD_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS } from "../../lib/design-parity";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Collections (heading/subtitle). Тело + данные verbatim.
 // T13: полная канон-схема (headingSize/subtitleSize/titleAlignment/columns/imageView/
@@ -40,26 +40,30 @@ const sectionSubtitle = p.subtitle ?? "";
 // бесслойный (CSS Cascade 5), т.е. ID-правило молча проигрывало и «Размер
 // заголовка» не действовал (ловля theme-registry 2026-08-06, движок-пруф).
 // Переменные остаются для мобильного медиа-правила в <style> ниже.
-// PARITY_DESIGN: «Размер заголовка»/«Размер подзаголовка» не заданы → кегли
-// верстальщиков на телефоне и планшете (lib/design-parity.ts).
+// Владелец 25.09 «что в панели — то и на витрине»: не заданный «Размер
+// заголовка» рисует значение панели по умолчанию — «Средний» — и под признаком
+// PARITY_DESIGN тоже. Кегли верстальщиков (телефон 14, планшет 16) взять
+// «Среднему» нельзя: на телефоне и планшете он стал бы меньше «Маленького»
+// (17) — порядок размеров сломался бы (замер Chromium 25.09).
 const HEADING_SIZE_CLS: Record<string, string> = {
 	small: " [&_h2]:!text-[17px] [--size-section-heading:17px] [--size-section-heading-m:12px]",
 	large: " [&_h2]:!text-[24px] [--size-section-heading:24px] [--size-section-heading-m:17px]",
 };
-const headingSizeCls =
-	HEADING_SIZE_CLS[p.headingSize] ??
-	designersWhenUnset(designParity, p.headingSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}`);
+const headingSizeCls = HEADING_SIZE_CLS[p.headingSize] ?? "";
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
 // Desktop — утилита [&_p]:!text-[ (работает на десктопе); мобиле — через
 // --size-section-text-m (её читает #collections-title ~ p в <style> ниже),
 // иначе ID-правило держало 12px и слайдер на мобиле игнорировался.
+// PARITY_DESIGN (владелец 25.09): «Маленький» — значение панели по умолчанию,
+// и под признаком он (выбранный или не заданный) рисует кегли верстальщиков —
+// телефон 12, планшет 14, иначе 16; порядок размеров сохраняется на каждой
+// ширине (замер Chromium 25.09, сторож panel-size-order.spec.ts).
 const SUBTITLE_SIZE_CLS: Record<string, string> = {
+	small: designParity ? ` ${ROSE_SECTION_HEADING_DESIGNERS.text}` : "",
 	medium: " [&_p]:!text-[19px] [--size-section-text-m:19px]",
 	large: " [&_p]:!text-[23px] [--size-section-text-m:23px]",
 };
-const subtitleSizeCls =
-	SUBTITLE_SIZE_CLS[p.subtitleSize] ??
-	designersWhenUnset(designParity, p.subtitleSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.text}`);
+const subtitleSizeCls = SUBTITLE_SIZE_CLS[p.subtitleSize ?? "small"] ?? "";
 // Канон titleAlignment: 'center'/отсутствие = строка верстальщика байт-в-байт.
 const headWrapBase = `flex w-full justify-center md:justify-center${headingSizeCls}${subtitleSizeCls}`;
 const headWrapCls =

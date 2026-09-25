@@ -272,6 +272,12 @@ const shopId = "";
 								<>
 									<div class="flex w-full items-center justify-between">
 										<div class="flex items-center gap-3 lg:gap-4">
+										{isSidebar && (
+											<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+												<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+												<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+											</button>
+										)}
 										<a
 											href="/"
 											class="shrink-0 font-comfortaa text-[length:var(--size-logo-width,24px)] font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90"
@@ -323,12 +329,6 @@ const shopId = "";
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
-												{isSidebar && (
-													<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-													</button>
-												)}
 										</div>
 									</div>
 									<nav
@@ -348,11 +348,18 @@ const shopId = "";
 								/* top-center: Row1=[search LEFT | logo CENTER | cart+user RIGHT], Row2=[nav CENTER] */
 								<>
 									<div class="grid w-full grid-cols-[1fr_auto_1fr] items-center">
-						{/* Левая ячейка — распорка: она держит логотип ровно по центру грида.
-						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
-						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
-						    не разрывался. */}
+						{/* Левая ячейка: бургер бокового меню (владелец, 25.09 — слева на
+						    любой ширине). Поиск отсюда убран (жалоба владельца 21.09 «не
+						    должно быть поиска слева»): он переехал к остальным иконкам
+						    справа, чтобы ряд действий не разрывался; распорка остаётся
+						    распоркой, когда бургера нет (menuType≠sidebar). */}
 										<div class="flex items-center gap-4 lg:gap-6">
+											{isSidebar && (
+												<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+													<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+													<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+												</button>
+											)}
 										</div>
 										<div class="flex items-center justify-center">
 											<a
@@ -406,12 +413,6 @@ const shopId = "";
 											>
 												<RoseNtIcon name="user" sizeClass="size-6" />
 											</a>
-												{isSidebar && (
-													<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-													</button>
-												)}
 										</div>
 									</div>
 									<nav
@@ -434,6 +435,12 @@ const shopId = "";
 						/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute ── */
 						<div class={desktopRowCls} style={headerPadStyle}>
 						<div class={singleRowCentered ? desktopRailGridCls : desktopRailCls}>
+								{isSidebar && (
+									<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
+										<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
+										<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
+									</button>
+								)}
 								<a href="/" class:list={[singleRowCentered ? desktopCenterLogoCls : desktopLogoCls, logoLeft && "flex-1"]}>
 								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 							</a>
@@ -494,12 +501,6 @@ const shopId = "";
 								>
 									<RoseNtIcon name="user" sizeClass="size-6" />
 								</a>
-												{isSidebar && (
-													<button type="button" data-burger-toggle class={`flex ${actionBtnSizeCls} items-center justify-center transition-opacity hover:opacity-80`} aria-label="Меню" aria-expanded="false" aria-controls="rose-burger">
-														<span class="burger-icon" data-icon="open"><RoseNtIcon name="menu-burger" sizeClass="size-6" /></span>
-														<span class="burger-icon hidden" data-icon="close"><RoseNtIcon name="menu-close" sizeClass="size-6" /></span>
-													</button>
-												)}
 							</div>
 						</div>
 						</div>
@@ -589,8 +590,11 @@ const shopId = "";
 			// прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с lg
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на lg бургер и панель были
+			// справа). На телефоне и с lg панель — колонка у левого края, кнопка
+			// слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -599,7 +603,7 @@ const shopId = "";
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:translate-x-full lg:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:right-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:-translate-x-full lg:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 bottom-0 w-full px-4 pt-4 pb-8 sm:px-5 md:px-10 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"

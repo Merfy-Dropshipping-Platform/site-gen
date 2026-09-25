@@ -229,6 +229,12 @@ const shopId = "";
 						<>
 							<div class="flex w-full items-center justify-between">
 								<div class="flex items-center gap-3">
+									{isSidebar && (
+										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+										</button>
+									)}
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
 										{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 									</a>
@@ -245,12 +251,6 @@ const shopId = "";
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
-									{isSidebar && (
-										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-										</button>
-									)}
 								</div>
 							</div>
 							<nav
@@ -274,6 +274,12 @@ const shopId = "";
 						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
 						    не разрывался. */}
 								<div class="flex items-center gap-4">
+									{isSidebar && (
+										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+										</button>
+									)}
 								</div>
 								<div class="flex items-center justify-center">
 									<a href="/" class="font-logo text-[22px] font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] hover:opacity-90">
@@ -292,12 +298,6 @@ const shopId = "";
 										<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 										<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 									</button>
-									{isSidebar && (
-										<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-											<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-											<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-										</button>
-									)}
 								</div>
 							</div>
 							<nav
@@ -317,6 +317,12 @@ const shopId = "";
 				</div>
 			) : (
 				<div class={desktopRowCls} style={headerPadStyle}>
+					{isSidebar && (
+						<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
+							<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
+							<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
+						</button>
+					)}
 					<a href="/" class:list={[singleRowCentered ? desktopCenterLogoCls : desktopLogoCls, logoLeft && "flex-1"]}>
 						{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : siteTitle}
 					</a>
@@ -344,12 +350,6 @@ const shopId = "";
 							<SchemeIcon svgs={SATIN_ICON_SVGS} name="cart" sizeClass="size-6" />
 							<span data-cart-count data-empty="true" class="absolute right-0 top-0 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#000000] px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden">0</span>
 						</button>
-											{isSidebar && (
-							<button type="button" data-burger-toggle class="flex h-8 w-8 items-center justify-center transition-opacity hover:opacity-80" aria-label="Меню" aria-expanded="false" aria-controls="satin-burger">
-								<span class="burger-icon" data-icon="open"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-burger" sizeClass="size-6" /></span>
-								<span class="burger-icon hidden" data-icon="close"><SchemeIcon svgs={SATIN_ICON_SVGS} name="menu-close" sizeClass="size-6" /></span>
-							</button>
-						)}
 					</div>
 				</div>
 			)}
@@ -405,8 +405,11 @@ const shopId = "";
 			// прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с lg
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на lg/md бургер и панель
+			// были справа). На телефоне и с порогом панель — колонка у левого
+			// края, кнопка слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -419,8 +422,8 @@ const shopId = "";
 			// строкой в 768–1023).
 			isSidebar
 				? designParity
-					? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
-					: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:left-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:translate-x-full lg:[&.hidden]:translate-x-full motion-reduce:transition-none"
+					? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
+					: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:right-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:-translate-x-full lg:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: designParity
 					? "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none"
 					: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",

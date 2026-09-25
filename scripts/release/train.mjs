@@ -28,6 +28,8 @@ import { fileURLToPath } from 'node:url';
 import { run, sh, git, gitOk, tail, dur } from './lib/proc.mjs';
 import { collectGuards, classify, otherWorkflows } from './lib/ci-guards.mjs';
 import { runGuards, formatGuardTable } from './lib/guard-runner.mjs';
+import { BUILD_SEQUENCE } from './lib/build-sequence.mjs';
+import { acquireMachineLockOrWarn } from './lib/machine-lock.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TOOLS = resolve(homedir(), '.claude/projects/-Users-alexey-projects-merfy/tools');
@@ -259,14 +261,6 @@ function stepMerge(o, ctx, plan, round) {
 }
 const KNOWN_CONFLICTS = ['docs/theme-work/STATUS.md', 'docs/theme-work/WORKLOG.md', '.github/workflows/ci.yml', 'package.json', 'conformance/inventory/satin.generated.json'];
 
-const BUILD_SEQUENCE = [
-  ['pnpm build', 'сборка сервиса'],
-  ['pnpm build:blocks', 'блоки Astro'],
-  ['pnpm build:theme-sections satin', 'секции satin'],
-  ['pnpm exec tsx scripts/run-theme-build.ts satin', 'НАСТОЯЩАЯ сборка темы satin — по ней считается кандидат инвентаря'],
-  ['pnpm build:theme-sections:all', 'секции всех пяти тем — иначе снимкам не с чем сравнивать'],
-  ['pnpm build:preview-tailwind', 'бандл превью — без него часть гардов даёт ноль проверок'],
-];
 
 function stepBuild(o, ctx) {
   step('полная пересборка в порядке CI');
@@ -519,8 +513,18 @@ async function main() {
     res.merge = stepMerge(o, ctx, plan, round);
     res.build = stepBuild(o, ctx);
     res.inventory = stepInventory(o, ctx);
-    res.guards = stepGuards(o, ctx);
-    res.gate = stepGate(o, ctx);
+    // Гарды и гейт — самая тяжёлая часть: встаём в очередь на машину, чтобы не
+    // делить ядра с соседним прогоном (spec 115). Дети видят HELD и не встают
+    // в очередь второй раз.
+    const lock = await acquireMachineLockOrWarn({ label: `поезд ${plan.train}`, log: say });
+    if (!lock.disabled) process.env.MERFY_CHECKS_LOCK_HELD = '1';
+    try {
+      res.guards = stepGuards(o, ctx);
+      res.gate = stepGate(o, ctx);
+    } finally {
+      lock.release();
+      if (!lock.disabled) delete process.env.MERFY_CHECKS_LOCK_HELD;
+    }
     const fresh = stepFreshness(o, ctx, plan);
     if (!fresh.drifted) break;
     if (round === o.maxRounds) {

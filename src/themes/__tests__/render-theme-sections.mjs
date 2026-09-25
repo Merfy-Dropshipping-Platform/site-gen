@@ -59,17 +59,12 @@ import { withDesignParity } from './prod-design-parity.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
 
-async function main() {
-  const theme = process.argv[2];
-  // Задания приходят либо строкой JSON, либо «@путь» — файлом. Файл нужен не
-  // для красоты: Linux режет ОДИН аргумент командной строки на 128 КиБ
-  // (MAX_ARG_STRLEN), а пакетный прогон аудита настроек даёт ~330 КиБ. На
-  // macOS такого предела нет, поэтому проверка была зелёной локально и давала
-  // ноль прошедших проверок на раннере (CI 22.09, сегмент 9).
-  const сырое = process.argv[3] ?? '[]';
-  const jobs = JSON.parse(
-    сырое.startsWith('@') ? readFileSync(сырое.slice(1), 'utf-8') : сырое,
-  );
+/**
+ * Рендер заданий одной темы. Командная строка ниже — тонкая обёртка над этой
+ * функцией; тёплый рендер jest (render-worker.mjs) зовёт её напрямую, без
+ * нового процесса на каждый вызов (spec 115, часть 2).
+ */
+export async function renderJobs(theme, jobs) {
   const dist = resolve(SITES_ROOT, 'dist', 'theme-sections', theme);
   const manifest = JSON.parse(readFileSync(resolve(dist, 'manifest.json'), 'utf-8'));
   const { experimental_AstroContainer } = await import('astro/container');
@@ -205,10 +200,29 @@ async function main() {
       out.push({ block, error: String(err?.message ?? err).slice(0, 300) });
     }
   }
-  process.stdout.write(JSON.stringify(out));
+  return out;
 }
 
-main().catch((err) => {
-  process.stderr.write(String(err?.stack ?? err));
-  process.exit(1);
-});
+/** Задания — строка JSON или «@путь» к файлу с ней. */
+export function parseJobsArg(сырое = '[]') {
+  // Файл нужен не для красоты: Linux режет ОДИН аргумент командной строки на
+  // 128 КиБ (MAX_ARG_STRLEN), а пакетный прогон аудита настроек даёт ~330 КиБ.
+  // На macOS такого предела нет, поэтому проверка была зелёной локально и давала
+  // ноль прошедших проверок на раннере (CI 22.09, сегмент 9).
+  return JSON.parse(сырое.startsWith('@') ? readFileSync(сырое.slice(1), 'utf-8') : сырое);
+}
+
+async function main() {
+  const theme = process.argv[2];
+  const jobs = parseJobsArg(process.argv[3]);
+  process.stdout.write(JSON.stringify(await renderJobs(theme, jobs)));
+}
+
+// Командная строка: node render-theme-sections.mjs <тема> <задания|@файл>.
+// Импорт модуля (тёплый рендер) ничего не запускает.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    process.stderr.write(String(err?.stack ?? err));
+    process.exit(1);
+  });
+}

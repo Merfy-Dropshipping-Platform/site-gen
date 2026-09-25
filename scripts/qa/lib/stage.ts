@@ -63,18 +63,22 @@ export type Stage = {
 /** Заглушка хелпера esbuild: см. комментарий в openStage. */
 const SHIM_NAME = "globalThis.__name = globalThis.__name || function (f) { return f; };";
 
-let shared: Browser | null = null;
-async function browser(): Promise<Browser> {
-  if (!shared) shared = await chromium.launch();
+// Запоминаем ОБЕЩАНИЕ запуска, а не браузер: замеры идут параллельно
+// (Promise.all в зондах и гардах), и пока первый запуск не закончился, второй вызов
+// видел null и запускал свой браузер. Закрывался только последний — лишний
+// держал jest живым после прогона: одиночный запуск файла висел до потолка в
+// 10 минут (25.09, spec 115).
+let shared: Promise<Browser> | null = null;
+function browser(): Promise<Browser> {
+  shared ??= chromium.launch();
   return shared;
 }
 
 /** Закрыть общий браузер (вызывать в конце прогона/в afterAll). */
 export async function closeBrowser(): Promise<void> {
-  if (shared) {
-    await shared.close();
-    shared = null;
-  }
+  const b = await shared;
+  shared = null;
+  await b?.close();
 }
 
 function serveOnce(html: string): Promise<{ base: string; server: Server }> {

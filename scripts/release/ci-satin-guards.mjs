@@ -46,7 +46,7 @@
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { guardsFromWorkflow, expandChain } from './lib/ci-guards.mjs';
-import { runGuards, formatGuardTable } from './lib/guard-runner.mjs';
+import { runGuards, formatGuardTable, localJestArgs } from './lib/guard-runner.mjs';
 
 const REPO_ROOT = process.cwd();
 
@@ -98,10 +98,12 @@ function main() {
 
   console.log(`сегмент ${index}/${total}: ${mine.length} гард(ов) из ${batchable.length} (дословный хвост — отдельная джоба satin-dictated-conformance), файлов: ${new Set(mine.flatMap((g) => g.paths)).size}`);
 
+  // Раннер CI двухъядерный — два воркера. Локально — все ядра, кроме двух:
+  // запуск без --shard гоняет весь набор одним прогоном (spec 115).
   const res = runGuards(mine, {
     repoRoot: REPO_ROOT,
     log: (s) => console.log(s),
-    jestArgs: ['--maxWorkers=2', '--workerIdleMemoryLimit=1G'],
+    jestArgs: process.env.CI === 'true' ? ['--maxWorkers=2', '--workerIdleMemoryLimit=1G'] : localJestArgs(),
   });
 
   console.log('');

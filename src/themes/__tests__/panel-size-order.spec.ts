@@ -179,26 +179,35 @@ function casesOf(panel: Deep): { cases: Case[]; vacant: string[] } {
   };
 }
 
-let shared: Browser | null = null;
-async function browser(): Promise<Browser> {
-  if (shared) return shared;
+// Запоминаем ОБЕЩАНИЕ запуска, а не браузер: замеры идут параллельно
+// (Promise.all по ширинам), и пока первый запуск не закончился, второй вызов
+// видел null и запускал свой браузер. Закрывался только последний — лишний
+// держал jest живым после прогона: одиночный запуск файла висел до потолка в
+// 10 минут (25.09, spec 115).
+let shared: Promise<Browser> | null = null;
+function browser(): Promise<Browser> {
+  shared ??= launchBrowser();
+  return shared;
+}
+
+async function launchBrowser(): Promise<Browser> {
   try {
-    shared = await chromium.launch();
+    return await chromium.launch();
   } catch (bundled) {
     try {
-      shared = await chromium.launch({ channel: "chrome" });
+      return await chromium.launch({ channel: "chrome" });
     } catch (system) {
       throw new Error(
         `нет браузера для замера: встроенный Chromium — ${String(bundled).slice(0, 200)}; Chrome системы — ${String(system).slice(0, 200)}`,
       );
     }
   }
-  return shared;
 }
 
 afterAll(async () => {
-  await shared?.close();
+  const b = await shared;
   shared = null;
+  await b?.close();
 });
 
 /** Скрипты секций вон: замер кегля от них не зависит, а гидрация тянула бы сеть. */

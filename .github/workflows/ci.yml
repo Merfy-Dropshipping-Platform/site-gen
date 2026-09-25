@@ -193,6 +193,17 @@ jobs:
           __tests__/checkout-submit-auth-gate.dom.test.ts
           __tests__/checkout-submit-full-address.dom.test.ts
 
+      # Инструменты самих проверок (spec 115): очередь на машину (flock через
+      # perl — ubuntu-раннер его имеет), поток тёплого рендера секций и разбор
+      # ci.yml поездом. Без артефактов тем, секунды. Раньше эти node:test
+      # не гонялись нигде — сторожили только машину автора.
+      - name: Тесты инструментов проверок (node:test)
+        run: >-
+          node --test
+          scripts/release/__tests__/machine-lock.test.mjs
+          scripts/release/__tests__/ci-guards.test.mjs
+          src/themes/__tests__/render-worker.test.mjs
+
   satin-structural-conformance:
     needs: satin-build
     runs-on: ubuntu-latest

@@ -5,7 +5,7 @@
 // и классы 1:1, кроме `uppercase` — его тема и так снимала правилом
 // #collections-title,#popular-title,#gallery-title{text-transform:none}.
 import NtSectionHeading from "../ui/RoseSectionHeading.astro";
-import { ROSE_GALLERY_TILES_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
+import { ROSE_GALLERY_TILES_DESIGNERS } from "../../lib/design-parity";
 
 // ОЖИВЛЕНИЕ: конструкторная схема Gallery (heading/subtitle union). Тело + данные verbatim.
 // T13: полная канон-схема (items[] ≤3, imagePosition, headingSize, textSize, padding).
@@ -44,23 +44,29 @@ const headingSize = p.headingSize ?? p.heading?.size;
 // layered-утилите DS !text-[20px] (@layer utilities, CSS Cascade 5) — тот же
 // каскадный баг, что Collections (ловля theme-registry 2026-08-06).
 // Переменная остаётся для мобильных медиа-правил в <style> ниже.
-// PARITY_DESIGN: размер не задан → кегли верстальщиков на телефоне/планшете.
+// Владелец 25.09 «что в панели — то и на витрине»: не заданные «Размер
+// заголовка» и «Размер текста» рисуют значение панели по умолчанию — «Средний».
+// Владелец 25.09: «Средний» (значение по умолчанию) — как у верстальщиков:
+// телефон clamp(14px, 3.8vw, 20px), планшет 16, компьютер 20. «Маленький» и
+// «Большой» на планшете — 14 и 19, чтобы порядок держался на любой ширине.
 const HEADING_SIZE_CLS: Record<string, string> = {
-	small: " [--gallery-heading-size:clamp(12px,3.2vw,17px)] [&_h2]:!text-[length:clamp(12px,3.2vw,17px)]",
-	large: " [--gallery-heading-size:clamp(17px,4.6vw,24px)] [&_h2]:!text-[length:clamp(17px,4.6vw,24px)]",
+	small: " [--gallery-heading-size:clamp(12px,3.2vw,17px)] [&_h2]:!text-[length:clamp(12px,3.2vw,17px)] md:max-lg:[&_h2]:!text-[14px]",
+	medium: " max-sm:[&_h2]:!text-[length:clamp(14px,3.8vw,20px)] max-sm:[&_h2]:!leading-none md:max-lg:[&_h2]:!text-[16px]",
+	large: " [--gallery-heading-size:clamp(17px,4.6vw,24px)] [&_h2]:!text-[length:clamp(17px,4.6vw,24px)] md:max-lg:[&_h2]:!text-[19px]",
 };
-const headingSizeCls =
-	HEADING_SIZE_CLS[headingSize] ??
-	designersWhenUnset(designParity, headingSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.galleryHeading}`);
+const headingSizeCls = HEADING_SIZE_CLS[headingSize] ?? HEADING_SIZE_CLS.medium;
 // Канон textSize (top-level приоритетнее legacy text.size): 'medium' (canon-default)
 // и отсутствие = 16px верстальщика; small → 14px, large → 19px.
 const textSize = p.textSize ?? p.text?.size;
+// Владелец 25.09: текст «Средний» — 12/14/16 (телефон/планшет/компьютер), как у
+// верстальщиков, чтобы на телефоне текст не был крупнее заголовка; «Маленький»
+// 11/12/14 и «Большой» 14/17/19 — в пропорции.
 const TEXT_SIZE_CLS: Record<string, string> = {
-	small: " [&_p]:!text-[14px] [--size-section-text-m:14px]",
-	large: " [&_p]:!text-[19px] [--size-section-text-m:19px]",
+	small: " [&_p]:!text-[14px] max-sm:[&_p]:!text-[11px] md:max-lg:[&_p]:!text-[12px] [--size-section-text-m:11px]",
+	medium: " max-sm:[&_p]:!text-[12px] max-sm:[&_p]:!leading-[1.4] md:max-lg:[&_p]:!text-[14px] [--size-section-text-m:12px]",
+	large: " [&_p]:!text-[19px] max-sm:[&_p]:!text-[14px] md:max-lg:[&_p]:!text-[17px] [--size-section-text-m:14px]",
 };
-const textSizeCls =
-	TEXT_SIZE_CLS[textSize] ?? designersWhenUnset(designParity, textSize, ` ${ROSE_SECTION_HEADING_DESIGNERS.text}`);
+const textSizeCls = TEXT_SIZE_CLS[textSize] ?? TEXT_SIZE_CLS.medium;
 const headWrapCls = `gallery-section-heading flex w-full min-w-0 justify-center${headingSizeCls}${textSizeCls}`;
 
 // Канон imagePosition left/right: 'left' (canon-default) и отсутствие = большая

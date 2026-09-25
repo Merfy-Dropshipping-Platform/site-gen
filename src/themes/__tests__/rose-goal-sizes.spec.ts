@@ -3,18 +3,27 @@ import { classSelector, themeCss } from "../../../scripts/qa/lib/tailwind-css";
 import * as PARITY from "../../../themes/rose/src/lib/design-parity";
 
 /**
- * rose — размеры «как у верстальщиков» по цели designer-goal (24.09).
+ * rose — размеры «как у верстальщиков» по цели designer-goal (24.09),
+ * пересобранные по решению владельца 25.09 «что в панели — то и на витрине».
  *
- * Сторожит правки шага 2 брифа (кегли, зазоры, пропорции — под признаком
- * PARITY_DESIGN и только в ветке «по умолчанию» настройки):
- *   - с признаком и НЕсданной настройкой — классы верстальщиков
- *     (lib/design-parity.ts);
- *   - с признаком и ВЫСТАВЛЕННОЙ настройкой — прежний рендер этой настройки;
- *   - без признака — разметка байт в байт как при __designParity:false и без
- *     единого класса верстальщиков;
- *   - капс не растёт;
- *   - каждый класс верстальщиков есть в собранном CSS темы (иначе правка
- *     молча не действует на витрине).
+ * Два вида полей с кеглями верстальщиков под признаком PARITY_DESIGN:
+ *   - «значение по умолчанию берёт числа верстальщиков» (порядок
+ *     «Маленький ≤ Средний ≤ Большой» сохраняется — panel-size-order.spec.ts):
+ *     с признаком их рисует и не заданное поле, и ЯВНО выбранное значение по
+ *     умолчанию; остальные варианты — прежние;
+ *   - «ветка не задано» — только у полей, которые панель не заполняет
+ *     значением по умолчанию (Hero: размер заголовка, «Позиция»; размер в
+ *     объекте подвала): с признаком и не заданным полем — классы
+ *     верстальщиков, выбранное мерчантом значение — прежнее.
+ * Поля, чьи числа верстальщиков порядок ломали («Список коллекций» и
+ * «Галерея» — заголовок, «Галерея» — текст, Hero «Размер» (кнопка), промо-полоса,
+ * «Вид изображения» «Популярного»), чисел верстальщиков больше не имеют: их
+ * «не задано» сверяет со значением панели panel-default-is-noop.spec.ts в
+ * обоих режимах.
+ * Везде: без признака — разметка байт в байт как при __designParity:false и
+ * без единого класса верстальщиков; капс не растёт; каждый класс
+ * верстальщиков есть в собранном CSS темы (иначе правка молча не действует на
+ * витрине).
  */
 
 jest.setTimeout(90_000);
@@ -40,79 +49,55 @@ const разэкран = (html: string) => html.replace(/&#38;/g, "&").replace(/
 const капсов = (html: string) => (html.match(/class="[^"]*\buppercase\b/g) ?? []).length;
 
 /**
- * Секция: пропсы без признака, с признаком и с выставленной настройкой.
- * `designers` — строка класса, которая обязана появиться ТОЛЬКО с признаком
- * и несданной настройкой.
+ * Секция: пропсы без поля, выставленное НЕ по умолчанию значение (`set`) и,
+ * у полей первого вида, явно выбранное значение по умолчанию (`def`).
+ * `designers` — строка класса верстальщиков этого поля.
  */
 const СЛУЧАИ: Array<{
   name: string;
   block: string;
   props: Record<string, unknown>;
   set: Record<string, unknown>;
+  def?: Record<string, unknown>;
   designers: string;
 }> = [
   {
-    name: "«Список коллекций»: заголовок 14/16 на телефоне/планшете",
-    block: "Collections",
-    props: { id: "Collections-1", heading: "Коллекции", subtitle: "Текст" },
-    set: { headingSize: "large" },
-    designers: PARITY.ROSE_SECTION_HEADING_DESIGNERS.heading,
-  },
-  {
-    name: "«Список коллекций»: подзаголовок 12/14",
+    name: "«Список коллекций»: подзаголовок «Маленький» 12/14",
     block: "Collections",
     props: { id: "Collections-1", heading: "Коллекции", subtitle: "Текст" },
     set: { subtitleSize: "medium" },
+    def: { subtitleSize: "small" },
     designers: PARITY.ROSE_SECTION_HEADING_DESIGNERS.text,
   },
   {
-    name: "«Популярное»: заголовок 14/16",
+    name: "«Популярное»: заголовок «Маленький» 14/16",
     block: "PopularProducts",
     props: { id: "Popular-1", heading: "Хиты", text: "Текст" },
     set: { headingSize: "large" },
+    def: { headingSize: "small" },
     designers: PARITY.ROSE_SECTION_HEADING_DESIGNERS.heading,
   },
   {
-    name: "«Популярное»: портрет верстальщиков при несданном «Виде изображения»",
+    name: "«Популярное»: текст «Маленький» 12/14",
     block: "PopularProducts",
-    props: { id: "Popular-1", heading: "Хиты" },
-    set: { imageView: "square" },
-    designers: PARITY.ROSE_POPULAR_DESIGNERS.aspectVar,
+    props: { id: "Popular-1", heading: "Хиты", text: "Текст" },
+    set: { textSize: "medium" },
+    def: { textSize: "small" },
+    designers: PARITY.ROSE_SECTION_HEADING_DESIGNERS.text,
   },
   {
-    name: "«Галерея»: заголовок clamp на телефоне, 16 на планшете",
-    block: "Gallery",
-    props: { id: "Gallery-1", heading: "Галерея", text: "Текст" },
-    set: { headingSize: "small" },
-    designers: PARITY.ROSE_SECTION_HEADING_DESIGNERS.galleryHeading,
-  },
-  {
-    name: "Первый экран: заголовок 24 на планшете",
+    name: "Первый экран: заголовок 24 на планшете (размер заголовка не задан)",
     block: "Hero",
     props: { id: "Hero-1", heading: { text: "Rose" }, text: { content: "Текст" }, backgroundImages: { url1: "/h.webp" } },
     set: { heading: { text: "Rose", size: "large" } },
     designers: PARITY.ROSE_HERO_DESIGNERS.heading,
   },
   {
-    name: "Первый экран: кнопка 40px/14 на планшете",
-    block: "Hero",
-    props: { id: "Hero-1", heading: { text: "Rose" }, backgroundImages: { url1: "/h.webp" } },
-    set: { size: "large" },
-    designers: PARITY.ROSE_HERO_DESIGNERS.cta,
-  },
-  {
-    name: "Первый экран: нижний отступ контента 80 на телефоне",
+    name: "Первый экран: нижний отступ контента 80 на телефоне («Позиция» не задана)",
     block: "Hero",
     props: { id: "Hero-1", heading: { text: "Rose" }, backgroundImages: { url1: "/h.webp" } },
     set: { position: "bottom-center" },
     designers: PARITY.ROSE_HERO_DESIGNERS.contentPad,
-  },
-  {
-    name: "Промо-полоса: кегль clamp(10px, 2vw + 5px, 16px)",
-    block: "PromoBanner",
-    props: { id: "PromoBanner-1", text: "Скидка 10%" },
-    set: { size: "large" },
-    designers: PARITY.ROSE_PROMO_TEXT_DESIGNERS,
   },
   {
     name: "Подвал: заголовок рассылки clamp(14px, 2.2vw, 20px)",
@@ -123,20 +108,28 @@ const СЛУЧАИ: Array<{
   },
 ];
 
-describe.each(СЛУЧАИ)("rose-goal: $name", ({ block, props, set, designers }) => {
-  const [вкл, выкл, безПризнака, вклЗадано] = отрисовать([
+describe.each(СЛУЧАИ)("rose-goal: $name", ({ block, props, set, def, designers }) => {
+  const [вкл, выкл, безПризнака, вклЗадано, вклПоУмолчанию] = отрисовать([
     { block, props: { ...props, ...ВКЛ } },
     { block, props: { ...props, ...ВЫКЛ } },
     { block, props },
     { block, props: { ...props, ...set, ...ВКЛ } },
+    { block, props: { ...props, ...(def ?? set), ...ВКЛ } },
   ]).map(разэкран);
 
   it("с признаком и несданной настройкой — размер верстальщиков", () => {
     expect(вкл).toContain(designers);
   });
 
-  it("выставленная мерчантом настройка работает как прежде", () => {
+  it("с признаком выбранное НЕ по умолчанию значение — прежний вариант", () => {
     expect(вклЗадано).not.toContain(designers);
+  });
+
+  it("с признаком явно выбранное значение по умолчанию — то же, что не заданное", () => {
+    // Иначе панель, показывающая значение по умолчанию, и витрина расходятся:
+    // первая правка секции вписывает его, и вид прыгает.
+    if (def) expect(вклПоУмолчанию).toEqual(вкл);
+    else expect(вклПоУмолчанию).not.toContain(designers);
   });
 
   it("без признака — прежняя разметка байт в байт, классов верстальщиков нет", () => {
@@ -149,7 +142,7 @@ describe.each(СЛУЧАИ)("rose-goal: $name", ({ block, props, set, designers 
   });
 });
 
-describe("rose-goal: «Популярное» — пропорция карточки и выбранный «Вид изображения»", () => {
+describe("rose-goal: «Популярное» — «Вид изображения» не задан = «Квадрат» и с признаком", () => {
   const БАЗА = { id: "Popular-1", heading: "Хиты" };
   const [вкл, квадрат, выкл] = отрисовать([
     { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ } },
@@ -157,14 +150,13 @@ describe("rose-goal: «Популярное» — пропорция карто�
     { block: "PopularProducts", props: БАЗА },
   ]).map(разэкран);
 
-  it("несданный вид под признаком — карточки читают переменную сетки", () => {
-    expect(вкл).toContain("aspect-ratio:var(--rose-card-ar)");
-    expect(вкл).toContain('data-card-aspect="var(--rose-card-ar)"');
+  it("несданный вид под признаком — квадрат 1/1, как «Квадрат» панели", () => {
+    expect(вкл).toEqual(квадрат);
+    expect(вкл).toContain("aspect-ratio:1/1");
+    expect(вкл).not.toContain("--rose-card-ar");
   });
 
-  it("«Квадрат» мерчанта и рендер без признака — 1/1, как было", () => {
-    expect(квадрат).toContain("aspect-ratio:1/1");
-    expect(квадрат).not.toContain("--rose-card-ar");
+  it("без признака — тот же квадрат 1/1", () => {
     expect(выкл).toContain("aspect-ratio:1/1");
     expect(выкл).not.toContain("--rose-card-ar");
   });
@@ -198,17 +190,14 @@ describe("rose-goal: классы верстальщиков есть в соб�
   const css = themeCss("rose");
   const строки = [
     ...Object.values(PARITY.ROSE_SECTION_HEADING_DESIGNERS),
-    PARITY.ROSE_POPULAR_DESIGNERS.aspectVar,
     PARITY.ROSE_POPULAR_DESIGNERS.card,
     PARITY.ROSE_COLLECTIONS_CARD_DESIGNERS,
     PARITY.ROSE_GALLERY_TILES_DESIGNERS,
-    PARITY.ROSE_HERO_DESIGNERS.cta,
     PARITY.ROSE_HERO_DESIGNERS.copyGap,
     PARITY.ROSE_HERO_DESIGNERS.contentPad,
     "md:!text-[24px]",
     "md:!font-medium",
     "md:font-medium",
-    PARITY.ROSE_PROMO_TEXT_DESIGNERS,
     PARITY.ROSE_FOOTER_DESIGNERS.text,
     PARITY.ROSE_FOOTER_DESIGNERS.link,
     PARITY.ROSE_FOOTER_DESIGNERS.newsletter,

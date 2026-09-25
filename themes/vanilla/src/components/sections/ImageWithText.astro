@@ -83,16 +83,15 @@ const text =
 const textSize = p.textSize ?? p.text?.size;
 // PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
 // бэнд «Ваш дом — наша забота» Vanilla-theme @c65d9e1c (sections/Gallery.astro,
-// [data-gallery-care]) — абзац под заголовком mt-3; на lg колонка текста 352 и
-// фото 652×366 стоят по краям (justify-between, обе не сжимаются). Раскладка —
-// только в ветке «Ширина не задана»: выбранная мерчантом ширина работает как
-// прежде. Без признака — прежние классы байт-в-байт.
+// [data-gallery-care]) — абзац под заголовком mt-3. Без признака — прежние
+// классы байт-в-байт.
+// Владелец 25.09 «что в панели — то и на витрине»: не заданная «Ширина»
+// рисует значение панели по умолчанию — «Большая» — и под признаком тоже.
+// Раскладку верстальщиков (на lg колонка текста 352 и фото 652 по краям)
+// взять «Большой» нельзя: её колонка текста уже, чем у «Маленькой» (370) и
+// «Средней» (428–520) — порядок ширин сломался бы (замер Chromium 25.09).
 const designParity = p.__designParity === true;
-const designLayout = designParity && p.width === undefined;
 const TEXT_MT_CLS = designParity ? "mt-3" : "mt-5";
-const LAYOUT = designLayout
-	? { justify: "lg:items-start lg:justify-between", textCol: "lg:w-[352px] lg:shrink-0", media: "lg:w-[652px] lg:shrink-0" }
-	: { justify: "lg:justify-center", textCol: "lg:min-w-0 lg:shrink lg:grow-0", media: "lg:min-w-0 lg:max-w-none lg:shrink lg:grow-0" };
 // Field-order: тело класса БЕЗ отступа-от-соседа — нужно custom-порядку
 // (там отступ не «text-специфичный», а позиционный, см. ниже у разметки).
 const textClsBody =
@@ -196,7 +195,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div
-		class={`mx-auto flex w-full ${widthCls} flex-col items-center gap-10 lg:flex-row ${LAYOUT.justify} lg:gap-10${containerSchemeCls}`}
+		class={`mx-auto flex w-full ${widthCls} flex-col items-center gap-10 lg:flex-row lg:justify-center lg:gap-10${containerSchemeCls}`}
 		data-animate
 	>
 		{/* Текстовая колонка = РОВНО ПОЛОВИНА пары, как у rose (владелец
@@ -212,7 +211,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   width:100%, базисы равны, значит нехватку места на `lg:shrink` они
 		   делят поровну. Классы `basis-*` в этой сборке НЕ генерируются вовсе
 		   (в бандле ноль вхождений «basis») — на них опираться нельзя. */}
-		<div class={`flex w-full flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""} ${LAYOUT.textCol}`}>
+		<div class={`flex w-full flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""} lg:min-w-0 lg:shrink lg:grow-0`}>
 		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}`}>
 			{isDefaultOrder && (
 				heading && !isFieldHidden('heading') && (
@@ -297,7 +296,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		</div>
 		{!isFieldHidden('image') && (
 		<div
-			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]${imageLeft ? " lg:order-1" : ""} ${LAYOUT.media}`}
+			class={`relative ${aspectCls} w-full max-w-[652px] overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,236_235_231))]${imageLeft ? " lg:order-1" : ""} lg:min-w-0 lg:max-w-none lg:shrink lg:grow-0`}
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="image"

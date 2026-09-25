@@ -8,7 +8,9 @@ interface Props {
 }
 
 const { collection, priority = false } = Astro.props;
-const href = collection.name.includes("Декор") ? "/catalog/decor" : "/catalog/textile";
+// Владелец 25.09: «страницы только магазинные, без верстальщиков» — у /catalog/textile
+// и /catalog/decor на витрине своей страницы нет; карточка ведёт в общий каталог.
+const href = "/catalog";
 ---
 
 <a

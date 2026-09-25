@@ -42,16 +42,25 @@ const headingSize = p.heading?.size ?? p.headingSize;
 // промо-полоса главной Vanilla-theme @c65d9e1c (sections/Gallery.astro,
 // [data-gallery-promo]) — заголовок 16, абзац 14/1.5 в колонке 680 (с 1920 —
 // 16 в колонке 1320), кнопка h-10 px-3 14, до кнопки mt-10, полоса lg:py-20.
-// Кегли меняются ТОЛЬКО в ветке «размер не задан» — выбранный мерчантом
-// размер работает как прежде. Без признака — прежние классы байт-в-байт.
+// Без признака — прежние классы байт-в-байт.
+//
+// Владелец 25.09 «что в панели — то и на витрине». У секции в defaultProps
+// скрытые headingSize/textSize = 'medium', и первая же правка секции (даже
+// цвета) вписывает их — значит «Средний» и есть значение по умолчанию. Под
+// признаком «не задано» обязано рисовать то же, что «Средний»:
+//   • заголовок: 16px верстальщиков «Среднему» взять нельзя — он стал бы
+//     меньше «Маленького» (17), поэтому «не задано» = «Средний» 20px;
+//   • текст: 14px в колонке 680 (с 1920 — 16 в колонке 1320) порядок
+//     «Маленький 14 ≤ Средний ≤ Большой 19» не ломает, поэтому под признаком
+//     «Средний» (выбранный или не заданный) рисует вид верстальщиков.
+// Замер Chromium 25.09; сторожа panel-default-is-noop и panel-size-order.
 const designParity = p.__designParity === true;
-const HEADING_DEFAULT_SIZE_CLS = designParity && headingSize === undefined ? "text-[16px]" : "text-[20px]";
 const headingCls =
 	headingSize === "small"
 		? "m-0 font-vanilla-bitter text-[17px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
 		: headingSize === "large"
 			? "m-0 font-vanilla-bitter text-[24px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
-			: `m-0 font-vanilla-bitter ${HEADING_DEFAULT_SIZE_CLS} font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]`;
+			: "m-0 font-vanilla-bitter text-[20px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
 
 // Канон text: string | { content, size }. set:html — базовая HTML-разметка.
 // Пустое состояние (Figma 1:19335) → контрактный поясняющий текст плейсхолдера,
@@ -67,7 +76,7 @@ const text =
 // 16 (text-base), small 14, large 19.
 const textSize = p.textSize ?? p.text?.size;
 const TEXT_DEFAULT_CLS =
-	designParity && textSize === undefined
+	designParity
 		? "m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]"
 		: "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]";
 const textCls =

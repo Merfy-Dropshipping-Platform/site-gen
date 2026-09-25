@@ -190,13 +190,33 @@ describe("«Коллекция товаров»: сетка и карточка 
   });
 });
 
-describe("«Галерея»: две плитки как у верстальщиков, три — прежние", () => {
-  it("две плитки: колонки пополам, большая — квадрат, подпись через 16", () => {
+describe("«Галерея»: две плитки — низы на одной линии (владелец 25.09), три — прежние", () => {
+  it("две плитки: колонки пополам, грид тянет пару (items-stretch), большая — квадрат (не тянется)", () => {
     const h = html(вкл, "galleryPair");
-    expect(h).toContain("grid-cols-1 items-start gap-4 lg:grid-cols-2");
-    expect(h).not.toContain("lg:items-stretch");
-    expect(h).not.toContain("lg:h-full");
-    expect(h).toContain("aspect-square");
+    expect(h).toContain("grid-cols-1 items-start gap-4 lg:items-stretch lg:grid-cols-2");
+    // Квадрат задаёт высоту строки — сам НЕ тянется (иначе перестал бы быть квадратом).
+    const hero = классы(h, "aspect-square");
+    expect(hero).toContain("aspect-square");
+    expect(hero).not.toContain("lg:h-full");
+    expect(hero).not.toContain("lg:aspect-auto");
+  });
+
+  it("две плитки: боковая — flex-колонка во всю высоту строки, фото растёт (не подпись)", () => {
+    const h = html(вкл, "galleryPair");
+    // Ссылка боковой плитки — flex-колонка на всю высоту (lg:h-full получает
+    // высоту от lg:items-stretch грида выше).
+    const anchor = классы(h, "lg:h-full");
+    expect(anchor).toContain("lg:flex");
+    expect(anchor).toContain("lg:h-full");
+    expect(anchor).toContain("lg:flex-col");
+    // Фото-бокс без своего аспекта на lg — растёт (flex-1), кроп через object-cover
+    // (не сплющивание): мобильный аспект 652/594 остаётся базой.
+    const photo = классы(h, "lg:flex-1");
+    expect(photo).toContain("aspect-[652/594]");
+    expect(photo).toContain("lg:aspect-auto");
+    expect(photo).toContain("lg:min-h-0");
+    expect(photo).toContain("lg:flex-1");
+    // Подпись — прежнего размера, сама не тянется (растёт фото, не она).
     expect(h).toContain("mt-4 flex flex-col gap-1");
   });
 

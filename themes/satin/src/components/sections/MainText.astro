@@ -59,9 +59,9 @@ const textSize = p.text?.size ?? p.textSize;
 // PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): у
 // верстальщика (Satin-theme @cb548963, TextBlock.astro:13-16) текст
 // `.satin-copy md:text-[20px]`, но .satin-copy (16px, вне слоёв) перебивает
-// утилиту — на экране 16px на любой ширине; блок во всю ширину контейнера,
-// выровнен влево. Под признаком так рисуются только НЕ заданные «Размер текста»
-// и «Позиция»; выбранные мерчантом значения — как раньше.
+// утилиту — на экране 16px на любой ширине. Под признаком так рисуется только
+// НЕ заданный «Размер текста» (у «Текст → Размер» в панели нет значения по
+// умолчанию, панель его не вписывает); выбранный мерчантом — как раньше.
 const designParity = p.__designParity === true;
 const TEXT_CLS: Record<string, string> = {
 	small: "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
@@ -78,17 +78,16 @@ const textCls =
 // Двигают только отличные значения: position left/right сужает колонку до
 // текстовой ширины манеры max-w-[600px] (CollectionRows.astro:65) и прижимает
 // auto-margin'ом; alignment right выравнивает содержимое вправо.
-const position =
-	p.position === "left" || p.position === "right" || p.position === "center"
-		? p.position
-		: designParity
-			? "designers"
-			: "center";
+// Владелец 25.09 «что в панели — то и на витрине»: не заданная «Позиция»
+// рисует значение панели по умолчанию — «По центру» — и под признаком
+// PARITY_DESIGN тоже. Вид верстальщиков (блок во всю ширину 1320, прижат
+// влево) не совпадает ни с одним вариантом панели: «Слева» — колонка 600
+// (замер Chromium 25.09), поэтому ветки «не задано → вид верстальщиков» нет.
+const position = p.position === "left" || p.position === "right" ? p.position : "center";
 const POSITION_CLS: Record<string, { pos: string; align: string }> = {
 	left: { pos: " max-w-[600px] mr-auto", align: " items-start text-left" },
 	right: { pos: " max-w-[600px] ml-auto", align: " items-end text-right" },
 	center: { pos: " mx-auto", align: " items-center text-center" },
-	designers: { pos: "", align: " items-start text-left" },
 };
 const posCls = POSITION_CLS[position].pos;
 const alignCls = POSITION_CLS[position].align;

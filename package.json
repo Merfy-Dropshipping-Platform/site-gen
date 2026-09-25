@@ -54,6 +54,8 @@
     "test:section-snapshots": "jest --runInBand src/themes/__tests__/section-html-snapshot.spec.ts",
     "test:hidden-fields": "jest --runInBand src/themes/__tests__/hidden-named-fields.spec.ts",
     "test:panel-defaults": "jest --runInBand src/themes/__tests__/panel-field-defaults.spec.ts src/themes/__tests__/panel-default-is-noop.spec.ts",
+    "test:size-order": "jest --runInBand src/themes/__tests__/panel-size-order.spec.ts",
+    "test:owner-sizes": "jest --runInBand src/themes/__tests__/owner-default-sizes.spec.ts",
     "test:hidden-items": "jest --runInBand src/__tests__/preview-block-hidden-items.spec.ts",
     "test:gallery-count": "jest --runInBand src/themes/__tests__/gallery-item-count.spec.ts",
     "test:fresh-sections": "jest --runInBand src/themes/__tests__/fresh-site-sections.spec.ts",

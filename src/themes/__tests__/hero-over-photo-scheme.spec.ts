@@ -21,6 +21,15 @@
  * 0,0,0. satin scheme-1/3 → 0,0,0; scheme-2 → 18,18,18; scheme-4 → 255,255,255.
  * rose, vanilla и flux — ни одной сдвинутой клетки (30/24/24 из 30/24/24).
  *
+ * ДОБАВЛЕНО 25.09 (bloom первый экран, отдельная жалоба владельца): постоянный
+ * градиент над фото мерчанта (раньше держал читаемость параллельно ползунку —
+ * свой на телефоне, свой на компьютере) СНЯТ. «В зависимости от настройки
+ * затемнения, если 0 — то и там и там светло»: единственный слой затемнения —
+ * ползунок «Затемнение» (overlay), одинаково на всех ширинах; при 0 — слоя нет
+ * вовсе. ЦВЕТ текста по-прежнему решает схема (правило выше не поменялось).
+ * rose (эталон) и satin (плейсхолдер) этой правкой не затронуты — их градиент
+ * стоит по другой причине (эталонная читаемость / замена фото плейсхолдера).
+ *
  * Браузера здесь нет (в CI его нет вовсе), поэтому цвет считается из тех же двух
  * артефактов, из которых его собирает браузер: класс из ЖИВОГО рендера секции +
  * `dist/theme-css/<тема>.css` + `buildTokensCss(settings, тема)`.
@@ -212,16 +221,38 @@ describe.each(OVER_PHOTO)("Hero поверх фото / $theme ($где)", ({ th
 // ── 3. Затемнение приехало вместе с цветом ──────────────────────────────────
 
 describe("читаемость: тёмный слой между фото и текстом на месте", () => {
-  it("bloom с фото: постоянный градиент from-black/45 to-black/10", () => {
-    expect(renderHero("bloom", "scheme-3", true)).toContain("from-black/45 to-black/10");
-  });
+  // Владелец 25.09: «в зависимости от настройки затемнения, если 0 — то и там
+  // и там светло». Раньше постоянный градиент лежал над фото ВСЕГДА (свой на
+  // телефоне, свой на компьютере) — ползунок «Затемнение»=0 фото не спасал.
+  // Теперь темнит ТОЛЬКО ползунок, одинаково на обеих ширинах: с ним и без
+  // __designParity.
+  it.each([true, false])(
+    "bloom с фото, __designParity=%s: постоянного градиента над фото больше нет",
+    (designParity) => {
+      const html = renderHero("bloom", "scheme-3", true, { __designParity: designParity });
+      expect(html).not.toContain("from-black/75");
+      expect(html).not.toContain("from-black/45 to-black/10");
+      expect(html).not.toContain("via-black/40");
+    },
+  );
 
-  // Ползунок выставлен явно: по умолчанию у bloom затемнения нет (0, как у
-  // верстальщиков, владелец 24.09), проверяем, что сам ползунок работает.
-  it("bloom: ползунок «Затемнение» по-прежнему рисует чёрный слой", () => {
-    const html = renderHero("bloom", "scheme-3", true, { overlay: 40 });
-    expect(html).toMatch(/absolute inset-0 z-\[1\] bg-black/);
-  });
+  it.each([true, false])(
+    "bloom: «Затемнение»=0 (по умолчанию, как у верстальщиков) — слоя нет совсем, __designParity=%s",
+    (designParity) => {
+      const html = renderHero("bloom", "scheme-3", true, { __designParity: designParity });
+      expect(html).not.toMatch(/absolute inset-0 z-\[1\] bg-black/);
+    },
+  );
+
+  // Сам ползунок по-прежнему работает — единственный источник затемнения.
+  it.each([true, false])(
+    "bloom: ползунок «Затемнение» рисует чёрный слой, __designParity=%s",
+    (designParity) => {
+      const html = renderHero("bloom", "scheme-3", true, { overlay: 40, __designParity: designParity });
+      expect(html).toMatch(/absolute inset-0 z-\[1\] bg-black/);
+      expect(html).toContain("opacity:0.4");
+    },
+  );
 
   it("satin, плейсхолдер: градиент from-black/30 to-black/45", () => {
     expect(renderHero("satin", "scheme-3", false)).toContain("from-black/30 to-black/45");

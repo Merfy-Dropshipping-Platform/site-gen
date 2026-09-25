@@ -303,6 +303,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -1065,6 +1070,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -1972,6 +1982,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -3469,6 +3484,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -4231,6 +4251,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -5157,6 +5182,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -6654,6 +6684,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -7416,6 +7451,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -8333,6 +8373,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -9830,6 +9875,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -10592,6 +10642,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -11499,6 +11554,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -12996,6 +13056,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -13758,6 +13823,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -14665,6 +14735,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"

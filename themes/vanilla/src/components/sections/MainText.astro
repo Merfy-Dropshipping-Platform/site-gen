@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
 // pages/about.astro:138-166 (см. themes/vanilla/MANNER.md §10: welcome =
 // тёмное полотно №2 «заголовок + текст + outlined-CTA» = аналог MainText).
@@ -154,6 +155,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке (gap-3), кнопка — отдельным
+// звеном стека (STACK_GAP_CLS). Без fieldOrder — прежняя разметка.
+const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]);
 ---
 
 <section
@@ -166,9 +172,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	<div
 		class={`${posCls} flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col ${alignCls} ${STACK_GAP_CLS}`}
 	>
+		{textRuns.map((run) => run.grouped ? (
 		<div class={`flex w-full flex-col ${alignCls} gap-3`}>
+			{run.fields.map((field) => (
+			<Fragment>
 			{
-				heading && !isFieldHidden('heading') && (
+				field === 'heading' && heading && !isFieldHidden('heading') && (
 					<h2
 						id={headingId}
 						class={headingCls + italicCls}
@@ -181,7 +190,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</h2>
 				)
 			}
-			{!isFieldHidden('text') && (
+			{field === 'text' && !isFieldHidden('text') && (
 				<p
 					class={textCls + italicCls}
 					data-animate
@@ -191,8 +200,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					set:html={inlineFormat(text)}
 				/>
 			)}
+			</Fragment>
+			))}
 		</div>
-		{
+		) : (
 			btnText && !isFieldHidden('button') && (
 				<a
 					href={btnHref}
@@ -206,6 +217,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{btnText}
 				</a>
 			)
-		}
+		))}
 	</div>
 </section>

@@ -53,6 +53,13 @@ export const MainTextSchema = z.object({
    */
   textStyle: z.enum(['normal', 'italic']).optional(),
   colorScheme: z.string().optional(),
+  /**
+   * Порядок параметров из перетаскивания в дереве конструктора (владелец
+   * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
+   * SECTION_FIELDS (packages/theme-base/lib/field-order.ts); порт темы рисует
+   * параметры в этом порядке.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -133,6 +140,10 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     cta: { type: 'hidden', label: '' },
     buttonStyle: { type: 'hidden', label: '' },
     textStyle: { type: 'hidden', label: '' },
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок темы.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Расскажи о своем бренде',

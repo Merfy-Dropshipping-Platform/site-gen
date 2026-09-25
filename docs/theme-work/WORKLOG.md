@@ -10160,3 +10160,24 @@ ILIKE, через product-service и gateway, на всех пяти темах,
 - Как проверено: 20/20 юнит-тестов + прод-конструктор на реальных сайтах bloom и satin
   (Playwright) — выбор «Всегда» у Шапки, прокрутка превью до 1200, замер `position`/`top`/
   `transform` шапки до и после.
+
+## 2026-09-25 — перетаскивание параметров «Изображения», «Основного текста», «Подписки на рассылку» (все пять тем) — WIP, не залито
+
+- Владелец: «Изображение, Основной текст, Подписка на рассылку не работает drag and drop в
+  параметрах». Воспроизведено на проде во всех пяти темах: у Hero/MainText/Newsletter в дереве
+  конструктора 0 ручек (у «Изображения с текстом» — 4, работает).
+- Причина: конструктор даёт ручки параметров только секциям, чей puck-config объявляет скрытое
+  `fieldOrder` (constructor `arrayField.ts` → `supportsNamedOrder`); механизм 24.09 заведён
+  только для ImageWithText.
+- Сделано (ветка `fix/param-dnd-0925`, worktree `sites-param-dnd`): `fieldOrder` объявлен в
+  puckConfig Hero/MainText/Newsletter (theme-base + satin Hero/MainText); общий реестр
+  `SECTION_FIELDS` + `sectionFieldOrder`/`orderFields`/`fieldRuns` в
+  `packages/theme-base/lib/field-order.ts`; 15 портов (`themes/<t>/…/{Hero,MainText,Newsletter}.astro`)
+  рисуют параметры в порядке `fieldOrder`. Без `fieldOrder` разметка прежняя (отличие — только
+  пробелы между тегами внутри flex-контейнеров). satin Hero с фото держит кикер над заголовком,
+  пока порядок не задан явно. Newsletter: «Заголовок» = заголовок с текстом, «Кнопка» = форма с
+  согласием.
+- Гард: `src/themes/__tests__/section-field-order.spec.ts` (+ шаг в ci.yml); `panel-canon.json`
+  переснят (+15 скрытых `fieldOrder`), снимок `section-html-snapshot` обновлён (только пробелы).
+- Хвост: «Товар» (Product) — 8 именованных параметров без `fieldOrder`, ручек нет (владелец не
+  просил).

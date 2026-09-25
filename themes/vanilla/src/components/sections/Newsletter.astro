@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (vanilla, группа misc): новая канон-секция Newsletter в манере vanilla
 // (см. themes/vanilla/MANNER.md §8; эталон процесса — themes/bloom Newsletter).
 // Схема полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -124,6 +125,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок из перетаскивания в конструкторе (props.fieldOrder,
+// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// текстом (то, что прячет hideTitle), `buttonText` — форма подписки (оба
+// варианта разметки) вместе с блоком согласия под ней. Строка статуса —
+// всегда последней. Без fieldOrder — прежняя разметка.
+const newsletterOrder = sectionFieldOrder("Newsletter", p);
 ---
 
 <section
@@ -137,8 +144,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		class={`mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col gap-10 ${alignCls}`}
 		data-animate
 	>
+		{newsletterOrder.map((field) => (
+		<Fragment>
 		{
-			!hideTitle && (
+			field === 'heading' && !hideTitle && (
 				<div class="flex w-full flex-col gap-2">
 					{!isFieldHidden('heading') && (
 						<h2
@@ -165,7 +174,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		}
 
 		{
-			inlineSubmit ? (
+			field === 'buttonText' && (inlineSubmit ? (
 				<form
 					class="flex w-full max-w-[652px] flex-col items-stretch justify-between gap-3 rounded-[var(--radius-input,0px)] border border-white bg-transparent p-3 transition-colors focus-within:border-white/80 sm:h-14 sm:flex-row sm:items-center sm:gap-2 sm:py-0 sm:pl-4 sm:pr-3"
 					data-newsletter-form
@@ -215,10 +224,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</button>
 					)}
 				</form>
-			)
+			))
 		}
 		{
-			showAgreement && (
+			field === 'buttonText' && showAgreement && (
 				<label class="flex w-full max-w-[652px] cursor-pointer items-center gap-2.5 font-vanilla-arsenal text-[14px] font-normal italic leading-snug text-[rgb(var(--color-text,240_240_240))]">
 					<span class="relative flex size-5 shrink-0">
 							<input
@@ -245,6 +254,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</label>
 			)
 		}
+		</Fragment>
+		))}
 		<p
 			data-newsletter-status
 			role="status"

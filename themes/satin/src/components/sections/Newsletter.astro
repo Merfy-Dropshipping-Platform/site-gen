@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 
 // Фаза B (satin, группа misc): новая канон-секция Newsletter в манере satin
 // (themes/satin/MANNER.md; эталон процесса — bloom Newsletter). Тело = блок
@@ -158,6 +159,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок из перетаскивания в конструкторе (props.fieldOrder,
+// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// текстом (то, что прячет hideTitle), `buttonText` — форма подписки (оба
+// варианта) вместе с согласием под ней. Строка статуса — всегда последняя.
+// Без fieldOrder — прежняя разметка.
+const newsletterOrder = sectionFieldOrder("Newsletter", p);
 ---
 
 {/* Секционная обёртка (новая): вертикаль-стандарт §2, поля .satin-pad, контейнер 1320.
@@ -170,8 +177,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class="satin-container">
 		<div class={colCls}>
+			{newsletterOrder.map((field) => (
+			<Fragment>
 			{
-				!hideTitle && heading && !isFieldHidden('heading') && (
+				field === 'heading' && !hideTitle && heading && !isFieldHidden('heading') && (
 					<p
 						id={titleId}
 						class={headingCls}
@@ -183,7 +192,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 			{
-				!hideTitle && description && (
+				field === 'heading' && !hideTitle && description && (
 					<p
 						class={`font-manrope ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 						data-puck-subsection-parent={id}
@@ -194,7 +203,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 			{
-				inlineSubmit ? (
+				field === 'buttonText' && (inlineSubmit ? (
 					<form
 						class="flex h-10 w-full items-center justify-between rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] pl-3 pr-2.5"
 						data-newsletter-form
@@ -244,10 +253,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							{buttonText || "Подписаться"}
 						</button>
 					</form>
-				)
+				))
 			}
 			{
-				showAgreement && (
+				field === 'buttonText' && showAgreement && (
 					<label class="flex w-full cursor-pointer items-center gap-2.5 font-manrope text-[14px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
 						<span class="relative flex size-5 shrink-0">
 							<input
@@ -274,6 +283,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</label>
 				)
 			}
+			</Fragment>
+			))}
 			<p
 				data-newsletter-status
 				role="status"

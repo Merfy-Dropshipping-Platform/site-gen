@@ -13,6 +13,7 @@
 // онлайн-магазине в этом блоке», кнопка «Кнопка». Когда мерчант задаёт свои
 // heading/text/button — рендерятся ИХ значения (ветки p.heading/p.text/p.button ниже).
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -99,6 +100,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Заголовок, текст
+// и кнопка — плоские соседи одной колонки (gap-6), поэтому порядок применяется
+// напрямую, без группировки. Без fieldOrder — прежняя разметка. Добавка mt-2
+// у кнопки — отступ ОТ соседа выше, первой в колонке она не нужна.
+const mainTextOrder = sectionFieldOrder("MainText", p);
 ---
 
 <section
@@ -109,7 +116,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class="mx-auto w-full max-w-[1320px]">
 		<div class={`flex w-full max-w-[780px] flex-col gap-6 ${posCls} ${alignCls}`} data-animate>
-			{!isFieldHidden('heading') && (
+			{mainTextOrder.map((field, i) => (
+			<Fragment>
+			{field === 'heading' && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls + italicCls}
@@ -120,7 +129,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)}
-			{!isFieldHidden('text') && (
+			{field === 'text' && !isFieldHidden('text') && (
 				<div
 					class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}`}
 					data-puck-subsection-parent={id}
@@ -130,8 +139,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				/>
 			)}
 			{
-				btnText && (
-					<div class="mt-2">
+				field === 'button' && btnText && (
+					<div class={i > 0 ? "mt-2" : undefined}>
 						{!isFieldHidden('button') && (
 							<a
 								href={btnHref}
@@ -146,6 +155,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</div>
 				)
 			}
+			</Fragment>
+			))}
 		</div>
 	</div>
 </section>

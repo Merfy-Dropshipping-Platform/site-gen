@@ -3,6 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim,
@@ -333,6 +334,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке (gap-2), кнопка(и) — отдельным
+// звеном. Без fieldOrder — прежняя разметка.
+const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 ---
 
 {
@@ -363,8 +369,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				class={`relative w-full ${heroHeightCls}`}
 			>
 				<div class={`absolute inset-0 z-10 flex h-full w-full flex-col items-center justify-center gap-6 px-4 text-center md:px-20 ${heroSidePadCls}`}>
+					{heroRuns.map((run) => run.grouped ? (
 					<div class="flex w-full max-w-[540px] flex-col items-center gap-2 text-center">
-						{!isFieldHidden('heading') && (
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && !isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
 								class="font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]"
@@ -375,7 +384,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_LABEL}
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && !isFieldHidden('text') && (
 							<p
 								class="font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]"
 								data-puck-subsection-parent={id}
@@ -385,8 +394,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_HELPER}
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
+					) : !isFieldHidden('buttons') && (
 					<a
 						href={ctaLink}
 						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
@@ -396,7 +407,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					>
 						{PH_BUTTON}
 					</a>
-					)}
+					))}
 				</div>
 			</div>
 		</section>
@@ -460,8 +471,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	>
 		<div class={containerCls}>
 			<div class={`flex w-full ${HERO_BOX.box} flex-col ${alignItemsCls} ${HERO_BOX.gap}${boxedCls}`}>
+				{heroRuns.map((run) => run.grouped ? (
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
-					{!isFieldHidden('heading') && (
+					{run.fields.map((field) => (
+					<Fragment>
+					{field === 'heading' && !isFieldHidden('heading') && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -471,7 +485,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(title)}
 						></h1>
 					)}
-					{!isFieldHidden('text') && (
+					{field === 'text' && !isFieldHidden('text') && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -480,9 +494,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(subtitle)}
 						></p>
 					)}
+					</Fragment>
+					))}
 				</div>
-				{
-					!isFieldHidden('buttons') && (secondaryText ? (
+				) : !isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls}`}>
 							<a
 								href={ctaLink}
@@ -503,7 +518,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{secondaryText}
 							</a>
 						</div>
-					) : (
+				) : (
 						<a
 							href={ctaLink}
 							class={`hero-animate-3 ${ctaBtnCls}`}
@@ -513,8 +528,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						>
 							{ctaText}
 						</a>
-					))
-				}
+				)))}
 			</div>
 		</div>
 	</div>

@@ -1878,6 +1878,12 @@ jobs:
       # заданной последовательности, «глаз» прячет поле независимо от порядка.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/image-with-text-field-order.spec.ts
+      # Перетаскивание параметров «Изображения», «Основного текста» и «Подписки
+      # на рассылку» (владелец 25.09: «не работает drag and drop в параметрах»):
+      # puck-config пяти тем объявляет fieldOrder (без него в дереве нет ручек),
+      # порт рисует заголовок/текст/кнопки в порядке fieldOrder.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/section-field-order.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

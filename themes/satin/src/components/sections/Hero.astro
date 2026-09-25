@@ -3,6 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import SatinPicture from "../img/SatinPicture.astro";
 import { SITE_TITLE } from "../../consts";
+import { fieldRuns, orderFields, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base Hero.puckConfig
 // поверх разметки верстальщика. Тело ниже — verbatim; дефолтные ветки тернарников =
@@ -354,6 +355,14 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). ПУСТАЯ секция —
+// обычный реестр (heading выше text — Figma-плейсхолдер). ЗАПОЛНЕННАЯ секция
+// satin по манере держит кикер (text) ВЫШЕ заголовка — свой базовый порядок
+// SATIN_HERO_ORDER; при явном fieldOrder порядок буквальный (orderFields).
+const SATIN_HERO_ORDER = ["text", "heading", "buttons"] as const;
+const heroEmptyRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "text"]);
 ---
 
 {
@@ -446,8 +455,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					    контейнер = `contents`: обёртка исчезает из раскладки целиком,
 					    прежний вид сохраняется байт-в-байт. */}
 					<div class:list={[boxed ? `${emptyBoxCls}${boxedCls}` : emptyWrapCls]}>
+					{heroEmptyRuns.map((run) => run.grouped ? (
 					<div class={emptyInnerCls}>
-						{!isFieldHidden('heading') && (
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && !isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
 								class={emptyHeadingCls}
@@ -458,7 +470,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_LABEL}
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && !isFieldHidden('text') && (
 							<p
 								class={emptyTextCls}
 								data-puck-subsection-parent={id}
@@ -468,8 +480,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_HELPER}
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
+					) : !isFieldHidden('buttons') && (
 					/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
 					   isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] + токен
 					   текста; белый там — ФОЛБЭК, а не литерал). Было `bg-white`,
@@ -502,7 +516,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</a>
 					)}
 					</div>
-					)}
+					))}
 					</div>
 				</div>
 			</div>
@@ -517,8 +531,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	<div class="mx-auto grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2">
 		<div class={textColCls}>
 			<div class={blockCls}>
+				{heroFilledRuns.map((run) => run.grouped ? (
 				<div class="flex flex-col gap-4">
-					{!isFieldHidden('text') && (
+					{run.fields.map((field) => (
+					<Fragment>
+					{field === 'text' && !isFieldHidden('text') && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -527,7 +544,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(subtitle)}
 						/>
 					)}
-					{!isFieldHidden('heading') && (
+					{field === 'heading' && !isFieldHidden('heading') && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -537,8 +554,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(title)}
 						/>
 					)}
+					</Fragment>
+					))}
 				</div>
-				{
+				) : (
 					!isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`flex w-full flex-row flex-wrap items-center gap-3 ${rowJustifyCls}`}>
 							<a
@@ -571,7 +590,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							{ctaText}
 						</a>
 					))
-				}
+				))}
 			</div>
 		</div>
 

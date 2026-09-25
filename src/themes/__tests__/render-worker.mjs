@@ -23,12 +23,42 @@
  * весь воркер jest вместе с чужими гардами.
  */
 import { workerData } from 'node:worker_threads';
+import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
-const { port, flag, renderer } = workerData;
+const { port, flag, renderer, trace } = workerData;
 const pristineFetch = globalThis.fetch;
 let loaded = null;
 let generation = 0;
+
+/**
+ * Запись входов для памяти результатов (spec 115, часть 3), только если мост
+ * её попросил. Модули секций второй вызов не читает — поэтому их берём
+ * статическим замыканием от модуля каждого задания. Всё прочее, что поток
+ * прочитал через fs с момента запуска (манифесты, theme.json, конвейер
+ * dist/src), отдаём каждому вызову с запасом: кэш модуля мог прочитать это
+ * для прошлого вызова и не читать снова.
+ */
+const tracing = trace ? await setUpTracing(trace) : null;
+
+async function setUpTracing({ fsTracer, staticClosure: closurePath }) {
+  const tracer = createRequire(import.meta.url)(fsTracer).install();
+  const sticky = tracer.openScope('render-worker');
+  const { staticClosure } = await import(pathToFileURL(closurePath).href);
+  const memo = new Map();
+  // import(modPath) самого рендерера — это модуль задания, он приходит через onModule;
+  // поэтому «вычисляемый import()» рендерера замыкание не портит.
+  const rendererClosure = staticClosure([renderer], memo);
+  return {
+    inputsOf(modules, stubs) {
+      const own = staticClosure([...modules, ...stubs], memo);
+      return {
+        inputs: [...new Set([...own, ...rendererClosure, ...sticky.reads])],
+        volatile: own.dynamic.map((f) => `import() по вычисляемому пути в ${f.split('/').slice(-2).join('/')}`),
+      };
+    },
+  };
+}
 
 function reply(res) {
   port.postMessage(res);
@@ -48,12 +78,14 @@ async function handle({ theme, jobsArg, stubs }) {
   process.argv = [process.argv[0], 'render-worker', theme, jobsArg];
   generation += 1;
   for (const stub of stubs) await import(`${pathToFileURL(stub).href}?r=${generation}`);
-  return JSON.stringify(await renderJobs(theme, parseJobsArg(jobsArg)));
+  const modules = [];
+  const stdout = JSON.stringify(await renderJobs(theme, parseJobsArg(jobsArg), { onModule: (m) => modules.push(m) }));
+  return { stdout, ...tracing?.inputsOf(modules, stubs) };
 }
 
 port.on('message', async (req) => {
   try {
-    reply({ ok: true, stdout: await handle(req) });
+    reply({ ok: true, ...(await handle(req)) });
   } catch (e) {
     reply({ ok: false, error: String(e?.stack ?? e) });
   }

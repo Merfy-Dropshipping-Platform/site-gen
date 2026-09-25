@@ -22,6 +22,7 @@ import { emptyProductView, normaliseProduct, resolveProduct } from './Product.he
 // flows through the headless layer above.
 import ProductGallery from './ProductGallery.astro';
 import ProductInfo from './ProductInfo.astro';
+import { fieldRuns, sectionFieldOrder } from '../../runtime/field-order';
 import ProductPrice from './ProductPrice.astro';
 import ProductVariants from './ProductVariants.astro';
 import { VARIANT_CHIP_EQUALIZE_SOURCE } from '../../runtime/variant-chip-equalize';
@@ -141,6 +142,17 @@ const hiddenFields: string[] = Array.isArray(
     ) as string[])
   : [];
 const isFieldHidden = (f: string): boolean => hiddenFields.includes(f);
+
+/**
+ * Порядок строк колонки информации — перетаскивание в дереве конструктора
+ * (`props.fieldOrder`, реестр SECTION_FIELDS.Product в runtime/field-order.ts).
+ * Соседние бренд/название/цена держатся в общей «шапке» (gap-2), бренд и
+ * название рядом — в одной обёртке ProductInfo; остальные строки — звенья
+ * колонки (gap-10). Без fieldOrder — прежняя разметка.
+ */
+const HEAD_FIELDS = ['text', 'title', 'price'] as const;
+const INFO_FIELDS = ['text', 'title'] as const;
+const productRuns = fieldRuns(sectionFieldOrder('Product', Astro.props), HEAD_FIELDS);
 
 // — Authored prop fallbacks. —
 const apiBase = 'https://gateway.merfy.ru/api';
@@ -319,21 +331,24 @@ const cartImage = view.gallery.hero?.src ?? '';
 
       {/* Right: info + variants + actions + description + share. */}
       <div class="flex flex-col gap-10 flex-1 min-w-0 w-full">
+        {productRuns.map((run) => run.grouped ? (
         <div class="flex flex-col gap-2 w-full">
           {/* text (бренд) и title — РАЗНЫЕ строки реестра конструктора
               (NAMED_SUBSECTIONS.Product), значит и «глаз» у них раздельный.
               Раньше оба жили под одним узлом field="info" (индекс 100) — из-за
               этого у «Названия» (индекс 101) вообще не было своего узла. */}
+          {fieldRuns(run.fields, INFO_FIELDS).map((sub, i) => sub.grouped ? (
           <ProductInfo
             blockId={id}
             brand={brandText}
             hideBrand={isFieldHidden('text')}
             title={view.name || 'Товар'}
             hideTitle={isFieldHidden('title')}
+            fields={sub.fields}
           />
-          {priceVisible && view.price.formatted && (
+          ) : priceVisible && view.price.formatted && (
             <div
-              class="mt-2"
+              class={i > 0 ? 'mt-2' : undefined}
               data-puck-subsection-parent={id}
               data-puck-subsection-index="102"
               data-puck-subsection-field="price"
@@ -345,10 +360,11 @@ const cartImage = view.gallery.hero?.src ?? '';
                 variant={visual.gallery.variant === 'inline-small' ? 'spaced' : 'compact'}
               />
             </div>
-          )}
+          ))}
         </div>
-
-        {view.hasVariants && view.variantGroups.length > 0 && !isFieldHidden('variants') && (
+        ) : run.fields.map((field) => (
+        <Fragment>
+        {field === 'variants' && view.hasVariants && view.variantGroups.length > 0 && !isFieldHidden('variants') && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="103"
@@ -364,7 +380,7 @@ const cartImage = view.gallery.hero?.src ?? '';
           </div>
         )}
 
-        {quantityVisible && (
+        {field === 'quantity' && quantityVisible && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="104"
@@ -374,7 +390,7 @@ const cartImage = view.gallery.hero?.src ?? '';
           </div>
         )}
 
-        {!isFieldHidden('buttons') && (
+        {field === 'buttons' && !isFieldHidden('buttons') && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="105"
@@ -397,7 +413,7 @@ const cartImage = view.gallery.hero?.src ?? '';
           </div>
         )}
 
-        {visual.showDescription && (view.description || '').trim() && !isFieldHidden('description') && (
+        {field === 'description' && visual.showDescription && (view.description || '').trim() && !isFieldHidden('description') && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="106"
@@ -407,7 +423,7 @@ const cartImage = view.gallery.hero?.src ?? '';
           </div>
         )}
 
-        {!isFieldHidden('share') && (
+        {field === 'share' && !isFieldHidden('share') && (
           <div
             data-puck-subsection-parent={id}
             data-puck-subsection-index="107"
@@ -416,6 +432,8 @@ const cartImage = view.gallery.hero?.src ?? '';
             <ProductShare label={shareText} />
           </div>
         )}
+        </Fragment>
+        )))}
       </div>
     </div>
   </div>

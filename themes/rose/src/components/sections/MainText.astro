@@ -13,7 +13,7 @@
 // онлайн-магазине в этом блоке», кнопка «Кнопка». Когда мерчант задаёт свои
 // heading/text/button — рендерятся ИХ значения (ветки p.heading/p.text/p.button ниже).
 import { inlineFormat } from "../../lib/rich-text";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -101,7 +101,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Заголовок, текст
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Заголовок, текст
 // и кнопка — плоские соседи одной колонки (gap-6), поэтому порядок применяется
 // напрямую, без группировки. Без fieldOrder — прежняя разметка. Добавка mt-2
 // у кнопки — отступ ОТ соседа выше, первой в колонке она не нужна.

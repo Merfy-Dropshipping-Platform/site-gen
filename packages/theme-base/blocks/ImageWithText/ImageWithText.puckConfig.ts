@@ -52,7 +52,7 @@ export const ImageWithTextSchema = z.object({
    * Field-order 24.09 — порядок drag-n-drop заголовка/текста/кнопки в
    * текстовой колонке (тестер: «слетели дрэг-н-дропы»). Пишет конструктор
    * (PR constructor #38): имена панели `image`/`heading`/`text`/`button`.
-   * Порт читает через `orderTextFields` (packages/theme-base/lib/field-order.ts).
+   * Порт читает через `orderTextFields` (packages/theme-base/runtime/field-order.ts).
    * Поле объявлено скрытым (не в `fields` как видимый контрол) — без него
    * конструктор не показывает ручку перетаскивания вовсе.
    */

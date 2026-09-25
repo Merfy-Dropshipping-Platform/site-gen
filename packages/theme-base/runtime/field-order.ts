@@ -20,12 +20,24 @@
  * «Изображение с текстом»: только текстовая колонка (картинку не двигаем).
  * «Подписка на рассылку»: `heading` — блок заголовка с текстом, `buttonText` —
  * форма подписки (поле, кнопка и согласие под ней).
+ * «Товар»: все восемь строк дерева колонки информации; галерея фото в дереве
+ * не параметр — её сторону задаёт «Позиция фото», она не переставляется.
  */
 export const SECTION_FIELDS = {
   ImageWithText: ["heading", "text", "button"],
   Hero: ["heading", "text", "buttons"],
   MainText: ["heading", "text", "button"],
   Newsletter: ["heading", "buttonText"],
+  Product: [
+    "text",
+    "title",
+    "price",
+    "variants",
+    "quantity",
+    "buttons",
+    "description",
+    "share",
+  ],
 } as const;
 
 export type OrderedSection = keyof typeof SECTION_FIELDS;

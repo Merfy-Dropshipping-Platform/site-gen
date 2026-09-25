@@ -1,6 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
-import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 // Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
 // pages/about.astro:138-166 (см. themes/vanilla/MANNER.md §10: welcome =
 // тёмное полотно №2 «заголовок + текст + outlined-CTA» = аналог MainText).
@@ -156,7 +156,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
 // заголовок и текст остаются в общей колонке (gap-3), кнопка — отдельным
 // звеном стека (STACK_GAP_CLS). Без fieldOrder — прежняя разметка.
 const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]);

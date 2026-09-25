@@ -1,6 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 // Фаза B (satin): канон-секция MainText — адаптация TextBlock.astro (см.
 // themes/satin/MANNER.md §10: TextBlock = заголовок + крупный body-абзац,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — TextBlock.astro не
@@ -149,7 +149,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Заголовок,
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Заголовок,
 // текст и кнопка — плоские соседи одной колонки (gap-4), без общей обёртки —
 // достаточно порядка полей. Без fieldOrder — прежняя разметка.
 const textOrder = sectionFieldOrder("MainText", p);

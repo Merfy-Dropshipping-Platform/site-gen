@@ -1873,7 +1873,7 @@ jobs:
         run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-click.spec.ts
       # Порядок заголовка/текста/кнопки «Изображения с текстом» из
       # перетаскивания в конструкторе (тестер 24.09: «слетели дрэг-н-дропы»).
-      # Помощник packages/theme-base/lib/field-order.ts + рендер пяти тем:
+      # Помощник packages/theme-base/runtime/field-order.ts + рендер пяти тем:
       # порядок по умолчанию — прежняя разметка, custom-порядок — узлы в
       # заданной последовательности, «глаз» прячет поле независимо от порядка.
       - if: false
@@ -1884,6 +1884,11 @@ jobs:
       # порт рисует заголовок/текст/кнопки в порядке fieldOrder.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/section-field-order.spec.ts
+      # То же для «Товара»: восемь строк колонки информации в порядке
+      # fieldOrder — общий блок theme-base (rose/vanilla/satin/bloom) и порт
+      # flux FeaturedProduct (десктоп и мобила).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/product-field-order.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное

@@ -1,6 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
-import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 // Фаза B (bloom): канон-секция MainText — адаптация Philosophy.astro (см.
 // themes/bloom/MANNER.md §10: Philosophy = текст-манифест + CTA без картинки,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
@@ -154,7 +154,7 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
-// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Заголовок, текст
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Заголовок, текст
 // и кнопка — плоские соседи одной колонки, отдельной обёртки не нужно. Без
 // fieldOrder — прежняя разметка.
 const textOrder = sectionFieldOrder("MainText", p);

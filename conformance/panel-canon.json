@@ -957,6 +957,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -4135,6 +4140,11 @@
             "visibility": "off"
           },
           "visualConfig": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -7338,6 +7348,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -10529,6 +10544,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -13707,6 +13727,11 @@
             "visibility": "off"
           },
           "visualConfig": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"

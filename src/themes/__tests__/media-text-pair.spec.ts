@@ -65,6 +65,12 @@
  * собранных бандлах для реальных узлов реального рендера. Проверка «есть класс»
  * слепа: и утилиты Tailwind, и классы темы лежат рядом, и решают слой/порядок.
  *
+ * Раздел 7 (25.09) — PARITY_DESIGN: на проде признак включён у ВСЕХ сайтов
+ * (`__designParity: true`), поэтому зазор пары и поля текстовой колонки
+ * (владелец 19.09) проверены И с признаком, И без — иначе сторож проверяет
+ * разметку, которую никто не видит (регресс 7c87010e у satin прошёл
+ * незамеченным ровно по этой причине).
+ *
  * Требует сборки (тот же порядок, что в CI):
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
  *   && pnpm build:preview-tailwind
@@ -544,6 +550,87 @@ describe("пара «медиа + текст»: зазор, доли колон�
         const seamBottom = seamPx("border-bottom-right-radius");
         expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
       });
+    }
+  });
+
+  describe("7) PARITY_DESIGN (25.09): MultiRows при незаданной «Ширине» — С признаком и без", () => {
+    /**
+     * На проде `PARITY_DESIGN='*'` включён у ВСЕХ сайтов — designParity=true
+     * это РАБОЧАЯ ветка, не эксперимент. Регресс 24.09 (7c87010e, satin) ломал
+     * ровно этот случай: признак + НЕЗАДАННАЯ «Ширина» — единственная развилка,
+     * которую задевала испорченная ROWS_GEOMETRY. Раздел 1 выше (зазор пары)
+     * покрывает только явные small/medium/large; здесь — тот же зазор пары
+     * (владелец 2026-09-17) и НОВАЯ проверка «поля текстовой колонки» (владелец
+     * 19.09, ebd40ea0: 32px на брейкпоинте, где ряд становится двухколоночным),
+     * которую до сих пор никто не мерил через каскад — саботаж §"что сделать"
+     * брифа 25.09 (убрать md:p-8) остался бы незамеченным.
+     */
+    const propsFor = (designParity: boolean) => ({
+      id: "MultiRows-parity-guard",
+      colorScheme: "1",
+      padding: { top: 40, bottom: 40 },
+      ...(designParity ? { __designParity: true } : {}),
+      size: "small",
+      heading: "Мультиряды",
+      alignment: "left",
+      rows: [
+        {
+          id: "row-1",
+          title: "Ряд 1",
+          description: "Текст ряда",
+          image: "",
+          size: "small",
+          headingSize: "small",
+          button: { text: "Кнопка", link: "/catalog" },
+        },
+      ],
+    });
+
+    const cache = new Map<string, string>();
+    const render = (theme: Theme, designParity: boolean): string => {
+      const key = `${theme}/${designParity}`;
+      const ready = cache.get(key);
+      if (ready !== undefined) return ready;
+      const jobs = [{ block: "MultiRows", cascade: true, live: true, props: propsFor(designParity) }];
+      const raw = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
+        cwd: SITES_ROOT,
+        encoding: "utf-8",
+        maxBuffer: 64 * 1024 * 1024,
+      });
+      const row = (JSON.parse(raw) as Record<string, string>[])[0];
+      if (row.html === undefined) {
+        throw new Error(
+          `рендер MultiRows (${theme}, designParity=${designParity}, ширина не задана) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`,
+        );
+      }
+      cache.set(key, row.html);
+      return row.html;
+    };
+
+    const parts = (theme: Theme, designParity: boolean) => {
+      const section = parse(render(theme, designParity));
+      const root = section.querySelector("[data-puck-component-id]") ?? (section.firstChild as HTMLElement);
+      const pair = findPair(root);
+      const kids = elementChildren(pair);
+      const media = kids.find(looksLikeMedia) ?? kids[0];
+      const text = kids.find((k) => k !== media) as HTMLElement;
+      return { pair, text };
+    };
+
+    for (const theme of THEMES) {
+      for (const designParity of [true, false] as const) {
+        it(`${theme} (__designParity=${designParity}): зазор пары РОВНО ноль`, () => {
+          const { pair } = parts(theme, designParity);
+          const gap = gapPx(theme, pair);
+          expect({ theme, designParity, gap }).toEqual({ theme, designParity, gap: 0 });
+        });
+
+        it(`${theme} (__designParity=${designParity}): у текстовой колонки свои поля — РОВНО 32px (решение владельца 19.09, ebd40ea0)`, () => {
+          const { text } = parts(theme, designParity);
+          const padding = pxOf(bundleOf(theme, false), text, ["padding"], DESKTOP_PX);
+          expect({ theme, designParity, padding }).toEqual({ theme, designParity, padding: 32 });
+        });
+      }
     }
   });
 });

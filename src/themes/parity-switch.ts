@@ -18,8 +18,7 @@ export type ParityItem =
   | "LOGO"
   | "CHROME"
   | "FOOTER"
-  | "HOT"
-  | "DESIGN";
+  | "HOT";
 
 export function parityOn(
   item: ParityItem,

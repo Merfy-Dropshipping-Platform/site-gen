@@ -8,8 +8,7 @@
  * а соседние варианты масштабируются пропорционально — порядок размеров
  * сторожит panel-size-order.spec.ts.
  *
- * Мерим кегль в браузере (тот же CSS темы и токены, что у витрины), с
- * признаком «как у верстальщиков» и без: на проде признак у всех сайтов.
+ * Мерим кегль в браузере (тот же CSS темы и токены, что у витрины).
  *
  * Требует сборки: pnpm build, pnpm build:blocks, pnpm build:theme-sections:all.
  */
@@ -63,11 +62,6 @@ const TARGETS: Target[] = [
   },
 ];
 
-const MODES = [
-  { name: "без признака", extra: { __designParity: false } },
-  { name: "с признаком", extra: { __designParity: true } },
-] as const;
-
 // Запоминаем ОБЕЩАНИЕ запуска, а не браузер: замеры идут параллельно
 // (Promise.all по ширинам), и пока первый запуск не закончился, второй вызов
 // видел null и запускал свой браузер. Закрывался только последний — лишний
@@ -106,9 +100,9 @@ async function fontSizeAt(html: string, node: string, width: number): Promise<nu
   }
 }
 
-describe.each(MODES)("числа владельца по умолчанию — $name", ({ extra }) => {
+describe("числа владельца по умолчанию", () => {
   it.each(TARGETS)("$name", async ({ block, props, node, expect: points }) => {
-    const [row] = renderSections("rose", [{ block, props: { ...props, ...extra } }]);
+    const [row] = renderSections("rose", [{ block, props }]);
     if (!row?.html) throw new Error(`${block}: ${row?.error ?? "нет html"}`);
     const got = await Promise.all(points.map((p) => fontSizeAt(row.html as string, node, p.width)));
     const bad = points

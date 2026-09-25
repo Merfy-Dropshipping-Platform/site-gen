@@ -35,26 +35,24 @@
  * и вообще не знают про defaultProps — «дефолт разошёлся с портом» для них
  * выглядит нормой.
  *
- * ДВА РЕЖИМА: без признака и с `__designParity: true`. На проде признак
- * «как у верстальщиков» стоит у ВСЕХ сайтов (выключатель PARITY_DESIGN), и под
- * ним в секциях бывает ветка «настройка не задана — рисуем вид верстальщиков».
- * Прогон только без признака оставался зелёным, пока панель показывала
+ * «Вид верстальщиков при незаданной настройке». В секциях бывает ветка
+ * «настройка не задана — рисуем вид верстальщиков». Панель показывала
  * «Квадрат», а витрина — портрет верстальщиков: первая же правка секции
  * вписывала «Квадрат», и вид прыгал (владелец 25.09: «что в панели — то и на
- * витрине»). Признак кладётся в пропсы ревизии — живая цепочка его не
- * вычищает, как и page-blocks `prepareBlockProps` на витрине; отдельная
- * проверка ниже следит, что он действительно доходит до секций.
+ * витрине»).
  *
  * ВСЕ КЛЮЧИ, не только поля. updateProp вписывает весь defaultProps — и
  * скрытые поля, и ключи вовсе без поля. Поэтому «полный набор» ниже — это
  * defaultProps целиком (puck-config-deep.mjs), а вторая проверка проходит по
- * КАЖДОМУ его ключу: признак не имеет права добавить расхождение, которого нет
- * без признака. Так ловится vanilla «Основной текст»: скрытые
- * headingSize/textSize='medium' вписывались первой правкой, и под признаком
- * заголовок прыгал 16 → 20 px. Расхождения, которые есть и БЕЗ признака, —
- * старая отдельная история (контент, колонки подвала), их сторожит не этот
- * файл; здесь сторожится ровно класс «вид верстальщиков при незаданной
- * настройке».
+ * КАЖДОМУ его ключу. Так ловится vanilla «Основной текст»: скрытые
+ * headingSize/textSize='medium' вписывались первой правкой, и заголовок
+ * прыгал 16 → 20 px. Часть ключей расходится законно (контент, колонки
+ * подвала) — их набор закреплён в KNOWN_ANY_KEY; новый ключ в нём сам не
+ * появляется: новое расхождение — красный.
+ *
+ * До 25.09 файл гонял каждую тему в двух режимах — с признаком «как у
+ * верстальщиков» (`__designParity`) и без. У секций теперь одна версия,
+ * признака нет, режим один.
  *
  * Требует сборки: pnpm build, pnpm build:blocks, pnpm build:theme-sections:all.
  */
@@ -64,8 +62,6 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-
-import { themeReadsDesignParity } from "./design-parity-forks";
 
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 const PANEL = resolve(__dirname, "puck-config-deep.mjs");
@@ -84,21 +80,10 @@ const STYLE_TYPES = new Set([
 ]);
 
 /**
- * Режимы рендера. `extra` кладётся в пропсы ОБОИХ рендеров пары (с дефолтом и
- * без него) — сравниваем только поле, режим у пары общий.
- */
-const MODES = [
-  { name: "без признака", extra: { __designParity: false } },
-  { name: "с признаком __designParity", extra: { __designParity: true } },
-] as const;
-type Mode = (typeof MODES)[number]["name"];
-
-/**
  * Дефолты оформления, которые РАСХОДЯТСЯ с фолбэком порта на ЖИВОЙ цепочке.
  *
  * Новая запись здесь НЕ появляется сама: добавили дефолт — либо он совпал с
- * портом, либо тест красный. Именно это и сторожим. Список общий для обоих
- * режимов: на проде признак у всех, без признака — прежние сайты и превью.
+ * портом, либо тест красный. Именно это и сторожим.
  */
 const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
   rose: [],
@@ -106,6 +91,187 @@ const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
   vanilla: [],
   satin: [],
   bloom: [],
+};
+
+/**
+ * Ключи defaultProps (любые, не только оформление), у которых рендер с
+ * дефолтом и без ключа уже расходится. Снимок 25.09, когда у секций осталась
+ * одна версия; до этого те же ключи расходились и без признака режима, и
+ * сторож их не показывал. Здесь контент-заглушки, колонки подвала, отступы и
+ * известные долги: rose/vanilla `Hero.contentPosition`, bloom
+ * `MainText.textSize` и `Footer.newsletter`, flux `Product.variants`. Ключ
+ * отсюда уходит, когда его чинят; новый сюда сам не попадает.
+ */
+const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
+  rose: [
+    "CartBody.colorScheme",
+    "CartSection.padding",
+    "CollapsibleSection.heading",
+    "CollapsibleSection.sections",
+    "Collections.collections",
+    "Collections.heading",
+    "ContactForm.description",
+    "Footer.informationColumn",
+    "Footer.navigationColumn",
+    "Gallery.items",
+    "Header.navigationLinks",
+    "Hero.contentPosition",
+    "Hero.cta",
+    "Hero.padding",
+    "Hero.title",
+    "ImageWithText.button",
+    "MainText.heading",
+    "MainText.text",
+    "MultiColumns.columns",
+    "MultiColumns.heading",
+    "MultiRows.rows",
+    "Newsletter.buttonText",
+    "Newsletter.heading",
+    "Newsletter.placeholder",
+    "PopularProducts.heading",
+    "PromoBanner.link",
+    "PromoBanner.padding",
+    "PromoBanner.text",
+    "Slideshow.slides",
+    "WishlistSection.padding",
+  ],
+  flux: [
+    "CartBody.colorScheme",
+    "CartBody.padding",
+    "CartSection.padding",
+    "CartSummary.padding",
+    "CollapsibleSection.heading",
+    "CollapsibleSection.sections",
+    "Collections.collections",
+    "Collections.heading",
+    "ContactForm.description",
+    "Gallery.items",
+    "Header.navigationLinks",
+    "Header.siteTitle",
+    "Hero.cta",
+    "Hero.padding",
+    "Hero.title",
+    "ImageWithText.button",
+    "ImageWithText.heading",
+    "ImageWithText.text",
+    "MainText.heading",
+    "MainText.text",
+    "MultiColumns.columns",
+    "MultiColumns.heading",
+    "MultiRows.rows",
+    "Newsletter.buttonText",
+    "Newsletter.heading",
+    "Newsletter.placeholder",
+    "PopularProducts.heading",
+    "PopularProducts.quickAddText",
+    "Product.variants",
+    "PromoBanner.colorScheme",
+    "PromoBanner.link",
+    "PromoBanner.padding",
+    "PromoBanner.text",
+    "Slideshow.slides",
+    "WishlistSection.padding",
+  ],
+  vanilla: [
+    "CartBody.colorScheme",
+    "CartBody.padding",
+    "CartSection.padding",
+    "CartSummary.padding",
+    "CollapsibleSection.heading",
+    "CollapsibleSection.sections",
+    "Collections.collections",
+    "Collections.heading",
+    "Collections.imageView",
+    "ContactForm.description",
+    "Footer.informationColumn",
+    "Footer.navigationColumn",
+    "Gallery.items",
+    "Header.navigationLinks",
+    "Header.siteTitle",
+    "Hero.contentPosition",
+    "Hero.cta",
+    "Hero.padding",
+    "Hero.title",
+    "ImageWithText.text",
+    "MainText.heading",
+    "MainText.text",
+    "MultiColumns.columns",
+    "MultiColumns.heading",
+    "MultiRows.rows",
+    "Newsletter.buttonText",
+    "Newsletter.heading",
+    "Newsletter.placeholder",
+    "PopularProducts.heading",
+    "PromoBanner.link",
+    "PromoBanner.padding",
+    "PromoBanner.text",
+    "Slideshow.slides",
+    "WishlistSection.padding",
+  ],
+  satin: [
+    "CartBody.colorScheme",
+    "CartBody.padding",
+    "CartSection.padding",
+    "CartSummary.padding",
+    "CollapsibleSection.sections",
+    "Collections.padding",
+    "ContactForm.description",
+    "Footer.informationColumn",
+    "Footer.navigationColumn",
+    "Footer.socialColumn",
+    "Gallery.items",
+    "Header.navigationLinks",
+    "Header.padding",
+    "Header.siteTitle",
+    "Hero.cta",
+    "Hero.padding",
+    "ImageWithText.button",
+    "ImageWithText.text",
+    "MainText.heading",
+    "MainText.text",
+    "MultiColumns.columns",
+    "MultiRows.padding",
+    "MultiRows.rows",
+    "Newsletter.buttonText",
+    "Newsletter.placeholder",
+    "PopularProducts.heading",
+    "PromoBanner.link",
+    "PromoBanner.padding",
+    "PromoBanner.text",
+    "Slideshow.slides",
+    "WishlistSection.padding",
+  ],
+  bloom: [
+    "CartBody.padding",
+    "CartSection.padding",
+    "CartSummary.padding",
+    "CollapsibleSection.sections",
+    "Collections.imageView",
+    "ContactForm.description",
+    "ContactForm.heading",
+    "Footer.informationColumn",
+    "Footer.navigationColumn",
+    "Footer.newsletter",
+    "Gallery.items",
+    "Header.navigationLinks",
+    "Hero.cta",
+    "Hero.padding",
+    "ImageWithText.button",
+    "MainText.heading",
+    "MainText.text",
+    "MainText.textSize",
+    "MultiColumns.columns",
+    "MultiRows.rows",
+    "Newsletter.buttonText",
+    "Newsletter.placeholder",
+    "PopularProducts.heading",
+    "PopularProducts.quickAddText",
+    "PromoBanner.link",
+    "PromoBanner.padding",
+    "PromoBanner.text",
+    "Slideshow.slides",
+    "WishlistSection.padding",
+  ],
 };
 
 type Deep = Record<
@@ -158,7 +324,7 @@ function readPanel(theme: Theme): Deep | null {
 }
 
 /**
- * Задания — ФАЙЛОМ («@путь»), не строкой аргумента: два режима дают сотни
+ * Задания — ФАЙЛОМ («@путь»), не строкой аргумента: пары рендеров дают сотни
  * КиБ на тему, а Linux режет один аргумент на 128 КиБ (MAX_ARG_STRLEN) — на
  * раннере проверка упала бы там, где на macOS зелёная.
  */
@@ -213,95 +379,55 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
   const panel = readPanel(theme);
   const built = blocks !== null && panel !== null;
   const pairs = built ? defaultPairs(panel, blocks) : [];
-  const fullBlocks = built
-    ? Object.keys(panel).filter((b) => blocks.includes(b))
-    : [];
 
-  /** Задания: на каждый режим — пара рендеров (с дефолтом / без ключа) на
-   *  каждый ключ, затем по одному полному рендеру на блок (проверка признака). */
-  const pairJobs: Job[] = MODES.flatMap(({ extra }) =>
-    pairs.flatMap(({ key, block, full }) => {
-      const without: Record<string, unknown> = { ...full, ...extra };
-      delete without[key];
-      return [
-        { block, props: { ...full, ...extra }, live: true as const },
-        { block, props: without, live: true as const },
-      ];
-    }),
-  );
-  const fullJobs: Job[] = MODES.flatMap(({ extra }) =>
-    fullBlocks.map((block) => ({
-      block,
-      props: { id: `${block}-1`, ...panel![block].defaults, ...extra },
-      live: true as const,
-    })),
-  );
+  /** Задания: пара рендеров (с дефолтом / без ключа) на каждый ключ. */
+  const pairJobs: Job[] = pairs.flatMap(({ key, block, full }) => {
+    const without: Record<string, unknown> = { ...full };
+    delete without[key];
+    return [
+      { block, props: { ...full }, live: true as const },
+      { block, props: without, live: true as const },
+    ];
+  });
 
   let rows: Row[] = [];
   beforeAll(() => {
     if (!built || pairs.length === 0) return;
-    rows = render(theme, [...pairJobs, ...fullJobs]);
+    rows = render(theme, pairJobs);
   }, 600_000);
 
-  /** Расхождение ключа `i` в режиме `m` (индексы MODES). */
-  const verdict = (m: number, i: number): string | null => {
-    const at = (m * pairs.length + i) * 2;
-    return divergence(rows[at], rows[at + 1]);
-  };
+  /** Расхождение ключа `i`. */
+  const verdict = (i: number): string | null => divergence(rows[i * 2], rows[i * 2 + 1]);
+
+  /** Ключи, у которых рендер с дефолтом и без него расходится. */
+  const divergentKeys = (only: (p: Pair) => boolean): string[] =>
+    pairs
+      .map((p, i) => ({ p, why: verdict(i) }))
+      .filter(({ p, why }) => only(p) && why !== null)
+      .map(({ p, why }) =>
+        why === "разошлись" ? `${p.block}.${p.key}` : `${p.block}.${p.key} (${why})`,
+      )
+      .sort();
 
   it("секции темы собраны и puck-config прочитан", () => {
     expect(built).toBe(true);
     expect(pairs.filter((p) => p.style).length).toBeGreaterThan(0);
   });
 
-  it("признак __designParity: тема с развилкой — меняет секции, тема одной версии — ничего", () => {
+  it("каждый дефолт оформления — no-op для порта", () => {
     if (!built) return;
-    // Пока у темы есть развилка «как у верстальщиков / прежний вид», режим «с
-    // признаком» обязан отличаться от режима «без» — иначе он мог бы молча
-    // выродиться в копию (звено живой цепочки начнёт вычищать служебные
-    // ключи), и сторож был бы зелёным, ничего не проверяя. Когда тема
-    // переведена на одну версию секций (владелец 25.09), признак не должен
-    // менять НИЧЕГО — это и проверяем.
-    const base = pairJobs.length;
-    const n = fullBlocks.length;
-    const changed = fullBlocks.filter(
-      (_, i) =>
-        rows[base + i]?.html !== undefined &&
-        rows[base + i]?.html !== rows[base + n + i]?.html,
-    );
-    if (themeReadsDesignParity(theme)) expect(changed.length).toBeGreaterThan(0);
-    else expect(changed.length).toBe(0);
+    // Дефолт разошёлся с портом: рендер со значением и без него отличается.
+    // Правьте ДЕФОЛТ (он обязан повторять фолбэк порта) или ветку порта
+    // «не задано», а не снимок.
+    expect(divergentKeys((p) => p.style)).toEqual([...KNOWN_DIVERGENT[theme]].sort());
   });
 
-  it.each(MODES.map((m, i) => [m.name, i] as [Mode, number]))(
-    "каждый дефолт оформления — no-op для порта (%s)",
-    (_mode, m) => {
-      if (!built) return;
-      const divergent = pairs
-        .map((p, i) => ({ p, why: verdict(m, i) }))
-        .filter(({ p, why }) => p.style && why !== null)
-        .map(({ p, why }) =>
-          why === "разошлись"
-            ? `${p.block}.${p.key}`
-            : `${p.block}.${p.key} (${why})`,
-        );
-      // Дефолт разошёлся с портом: рендер со значением и без него отличается.
-      // Правьте ДЕФОЛТ (он обязан повторять фолбэк порта) или ветку порта
-      // «не задано», а не снимок.
-      expect(divergent.sort()).toEqual([...KNOWN_DIVERGENT[theme]].sort());
-    },
-  );
-
-  it("признак не добавляет расхождений ни одному ключу defaultProps", () => {
+  it("ни один ключ defaultProps не добавляет нового расхождения", () => {
     if (!built) return;
-    // Любой ключ, который БЕЗ признака впишется незаметно, обязан вписываться
-    // незаметно и С признаком. Иначе под признаком живёт ветка «не задано —
-    // рисуем вид верстальщиков», и первая правка секции (даже цвета) меняет
-    // ей вид: панель вписывает свой дефолт, в том числе скрытый.
-    const added = pairs
-      .map((p, i) => ({ p, off: verdict(0, i), on: verdict(1, i) }))
-      .filter(({ off, on }) => off === null && on !== null)
-      .map(({ p }) => `${p.block}.${p.key}`);
-    expect(added.sort()).toEqual([]);
+    // Любой ключ вне KNOWN_ANY_KEY обязан вписываться незаметно. Иначе в
+    // секции живёт ветка «не задано — рисуем вид верстальщиков», и первая
+    // правка секции (даже цвета) меняет ей вид: панель вписывает свой
+    // дефолт, в том числе скрытый.
+    expect(divergentKeys(() => true)).toEqual([...KNOWN_ANY_KEY[theme]].sort());
   });
 });

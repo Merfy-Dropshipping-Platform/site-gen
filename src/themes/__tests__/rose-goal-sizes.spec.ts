@@ -6,7 +6,7 @@ import * as PARITY from "../../../themes/rose/src/lib/design-parity";
  * rose — размеры «как у верстальщиков» по цели designer-goal (24.09),
  * пересобранные по решению владельца 25.09 «что в панели — то и на витрине».
  * С 25.09 у секций rose одна версия (владелец: «стили приравнивали, секции и
- * параметры менять не нужно было») — прежняя ветка удалена вместе с признаком.
+ * параметры менять не нужно было») — прежняя ветка удалена.
  *
  * Два вида полей с кеглями верстальщиков:
  *   - «значение по умолчанию берёт числа верстальщиков» (порядок
@@ -21,15 +21,13 @@ import * as PARITY from "../../../themes/rose/src/lib/design-parity";
  * «Галерея» — заголовок, «Галерея» — текст, Hero «Размер» (кнопка), промо-полоса,
  * «Вид изображения» «Популярного»), чисел верстальщиков не имеют: их
  * «не задано» сверяет со значением панели panel-default-is-noop.spec.ts.
- * Везде: признак режима ничего не меняет (одна версия); капса нет; каждый
+ * Везде: капса нет; каждый
  * класс верстальщиков есть в собранном CSS темы (иначе правка молча не
  * действует на витрине).
  */
 
 jest.setTimeout(90_000);
 
-const ВКЛ = { __designParity: true };
-const ВЫКЛ = { __designParity: false };
 
 type Job = { block: string; props: Record<string, unknown> };
 
@@ -109,10 +107,8 @@ const СЛУЧАИ: Array<{
 ];
 
 describe.each(СЛУЧАИ)("rose-goal: $name", ({ block, props, set, def, designers }) => {
-  const [неЗадано, вкл, выкл, задано, поУмолчанию] = отрисовать([
+  const [неЗадано, задано, поУмолчанию] = отрисовать([
     { block, props },
-    { block, props: { ...props, ...ВКЛ } },
-    { block, props: { ...props, ...ВЫКЛ } },
     { block, props: { ...props, ...set } },
     { block, props: { ...props, ...(def ?? set) } },
   ]).map(разэкран);
@@ -130,11 +126,6 @@ describe.each(СЛУЧАИ)("rose-goal: $name", ({ block, props, set, def, desig
     // первая правка секции вписывает его, и вид прыгает.
     if (def) expect(поУмолчанию).toEqual(неЗадано);
     else expect(поУмолчанию).not.toContain(designers);
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(вкл).toEqual(неЗадано);
-    expect(выкл).toEqual(неЗадано);
   });
 
   it("капса нет", () => {
@@ -157,10 +148,8 @@ describe("rose-goal: «Популярное» — «Вид изображени�
 });
 
 describe("rose-goal: шапка — строка планшета 56px и кнопки-иконки 40px", () => {
-  const [неЗадано, вкл, выкл] = отрисовать([
+  const [неЗадано] = отрисовать([
     { block: "Header", props: { id: "Header-1" } },
-    { block: "Header", props: { id: "Header-1", ...ВКЛ } },
-    { block: "Header", props: { id: "Header-1", ...ВЫКЛ } },
   ]);
 
   it("md:h-14 у мобильной строки, size-10 у кнопок, p-2 pr-1 у коробки поиска", () => {
@@ -168,11 +157,6 @@ describe("rose-goal: шапка — строка планшета 56px и кно
     expect(неЗадано).toContain(`flex ${PARITY.ROSE_HEADER_ACTION_BTN_DESIGNERS} items-center`);
     expect(неЗадано).not.toContain("flex size-8 items-center");
     expect(неЗадано).toContain(PARITY.ROSE_HEADER_SEARCH_BOX_DESIGNERS);
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(вкл).toEqual(неЗадано);
-    expect(выкл).toEqual(неЗадано);
   });
 });
 

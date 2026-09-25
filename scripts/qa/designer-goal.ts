@@ -9,8 +9,8 @@
  * верстальщиков (scripts/qa/designer-mirror/<тема>.ts), — и меряется рядом с той
  * же секцией на <тема>.merfy.ru. Любое расхождение тогда — стиль, а не данные.
  *
- * КАК. Наша секция: живой рендер порта темы (та же лестница, что у витрины)
- * с признаком PARITY_DESIGN, страница = живой CSS витрины темы (шрифты и общие
+ * КАК. Наша секция: живой рендер порта темы (та же лестница, что у витрины),
+ * страница = живой CSS витрины темы (шрифты и общие
  * правила) + свежесобранный CSS темы из этой ветки + токены схем темы по
  * умолчанию. Их секция: n-я полоса главной <тема>.merfy.ru.
  *
@@ -178,7 +178,7 @@ async function main() {
   const rendered = sections.map((s) => {
     const rows = renderSections(
       theme,
-      s.blocks.map((block) => ({ block, props: { ...(s.props[block] ?? {}), __designParity: true }, catalog: mirror.catalog })),
+      s.blocks.map((block) => ({ block, props: { ...(s.props[block] ?? {}), __designerMirror: true }, catalog: mirror.catalog })),
     );
     for (const r of rows) if (r.error) throw new Error(`${theme}/${r.block}: ${r.error}`);
     return rows.map((r) => r.html ?? "").join("\n");

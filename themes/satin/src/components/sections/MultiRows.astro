@@ -151,10 +151,10 @@ const rowHeadingCls = (s: string | undefined) =>
 			? "font-logo text-[24px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]"
 			: "font-logo text-[20px] font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]";
 //
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): у
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только стили»): у
 // верстальщика абзац ряда `.satin-copy md:text-[20px]`, но его .satin-copy
-// (16px, вне слоёв) перебивает утилиту — на экране 16px на любой ширине. Под
-// признаком так рисуется только «размер текста не задан»; выбранный — как раньше.
+// (16px, вне слоёв) перебивает утилиту — на экране 16px на любой ширине. Так
+// рисуется только «размер текста не задан»; выбранный — как раньше.
 // Одна версия секции (владелец 25.09): прежняя ветка удалена.
 const ROW_TEXT_CLS: Record<string, string> = {
 	small: "max-w-[600px] text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
@@ -270,7 +270,7 @@ const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; text
 const rowSplitKey: "small" | "medium" | "large" =
 	p.width === "small" ? "small" : p.width === "medium" ? "medium" : "large";
 
-// РЕГРЕСС 24.09 (7c87010e) — под признаком без «Ширины» сюда подставлялась
+// РЕГРЕСС 24.09 (7c87010e) — без «Ширины» сюда подставлялась
 // геометрия верстальщика (md:grid-cols-2 md:gap-10, ряды gap-12 md:gap-20, текст
 // без md:p-8), и она перебивала решения владельца 17–20.09 (f3ffa73e, ed711995,
 // b68871f1, ebd40ea0, a01dfd7a, ae55ded6, 4287e8ae): пара ряда впритык, у

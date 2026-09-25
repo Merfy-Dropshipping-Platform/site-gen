@@ -59,7 +59,6 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse, type HTMLElement } from "node-html-parser";
-import { themeReadsDesignParity } from "./design-parity-forks";
 
 // Первый рендер каждой темы холодный: отдельный процесс + рантайм astro. Под
 // нагрузкой (параллельная пересборка) он выходит за штатные 5000 мс, и падала
@@ -377,30 +376,9 @@ describe("Галерея: низ большой плитки сходится с
         expect([null, "stretch", "normal"]).toContain(align);
       });
 
-      // Способ выравнивания — только для прежней ветки (без режима «как у
-      // верстальщиков»): там большая плитка тянется по высоте строки. Путь прода
-      // (большая плитка — квадрат верстальщиков, тянутся боковые) проверяется
-      // РЕЗУЛЬТАТОМ в gallery-bottoms-align.spec.ts — замер низов в браузере.
-      // Только пока у темы есть прежняя ветка (design-parity-forks.ts).
-      (themeReadsDesignParity(theme) ? it : it.skip)(`${theme}: ${имя} — большая плитка берёт высоту строки (прежняя ветка)`, () => {
-        const shape = galleryShape(
-          theme,
-          render(theme, "Gallery", { colorScheme: "scheme-3", items, __designParity: false }),
-        );
-        expect(shape).not.toBeNull();
-        expect(prop(theme, shape!.hero, "height")).toBe("100%");
-      });
-
-      // Только пока у темы есть прежняя ветка (design-parity-forks.ts).
-      (themeReadsDesignParity(theme) ? it : it.skip)(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg (прежняя ветка)`, () => {
-        const shape = galleryShape(
-          theme,
-          render(theme, "Gallery", { colorScheme: "scheme-3", items, __designParity: false }),
-        );
-        expect(shape).not.toBeNull();
-        const ar = prop(theme, shape!.hero, "aspect-ratio");
-        expect([null, "auto"]).toContain(ar);
-      });
+      // Сами низы колонок (большая плитка — квадрат верстальщиков, тянутся
+      // боковые) проверяются РЕЗУЛЬТАТОМ в gallery-bottoms-align.spec.ts —
+      // замер низов в браузере.
     }
 
     it(`${theme}: картинка большой плитки не задаёт высоту строки`, () => {

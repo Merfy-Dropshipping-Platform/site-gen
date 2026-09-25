@@ -54,7 +54,6 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { withDesignParity } from './prod-design-parity.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
@@ -167,9 +166,7 @@ export async function renderJobs(theme, jobs) {
   }
 
   const out = [];
-  for (const { block, props: rawProps, pkg, cascade, pipeline: usePipeline, live: useLive, catalog: rawCatalog } of jobs) {
-    // Как на проде: признак режима «как у верстальщиков» (prod-design-parity.mjs).
-    const props = withDesignParity(rawProps);
+  for (const { block, props, pkg, cascade, pipeline: usePipeline, live: useLive, catalog: rawCatalog } of jobs) {
     let modPath = null;
     if (pkg === 'theme-base') {
       const entry = themeBaseEntry(block);

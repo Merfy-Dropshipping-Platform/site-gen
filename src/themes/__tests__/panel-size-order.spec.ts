@@ -1,23 +1,20 @@
 /**
  * Порядок размеров: «Тонкий ≤ Маленький ≤ Средний ≤ Большой» на КАЖДОЙ ширине.
  *
- * Зачем. Владелец 25.09: «что в панели — то и на витрине». Под признаком
- * «как у верстальщиков» (`__designParity`, на проде у всех сайтов) значение
- * по умолчанию может взять кегли верстальщиков, ТОЛЬКО если порядок
- * вариантов сохраняется на каждой ширине, а явно выбранный вариант всегда
- * рисует себя. До правки bloom «Изображение» нарушал оба правила сразу: явно
- * выбранный «Большой» заголовок попадал в ветку «не задано» и на телефоне
- * выходил 14 px — меньше «Среднего» (15), а «Большой» текст равнялся
- * «Среднему». Байт-сравнение дефолта (panel-default-is-noop) такого не видит:
- * там сравнивается дефолт с «не задано», а не варианты между собой.
+ * Зачем. Владелец 25.09: «что в панели — то и на витрине». Значение по
+ * умолчанию может взять кегли верстальщиков, ТОЛЬКО если порядок вариантов
+ * сохраняется на каждой ширине. До правки bloom «Изображение» это нарушал:
+ * явно выбранный «Большой» заголовок попадал в ветку «не задано» и на
+ * телефоне выходил 14 px — меньше «Среднего» (15). Байт-сравнение дефолта
+ * (panel-default-is-noop) такого не видит: там сравнивается дефолт с «не
+ * задано», а не варианты между собой.
  *
  * Как. СПЛОШНОЙ обход пяти тем: каждое поле-размер каждой секции на любой
  * глубине (верхнее поле, «Заголовок → Размер заголовка», «Ряды → Размер») —
  * список берётся из панели темы (puck-config-deep.mjs), не из списка файлов.
  * Каждый вариант рендерится ЖИВОЙ цепочкой витрины (renderSections: та же
- * лестница модулей, adaptLegacyProps → blockDefaults → resolveBlockProps) в
- * двух режимах — без признака и с ним, — и кладётся на страницу с CSS темы и
- * tokens.css. Кегль меряет настоящий браузер: у тем он собирается из
+ * лестница модулей, adaptLegacyProps → blockDefaults → resolveBlockProps) и
+ * кладётся на страницу с CSS темы и tokens.css. Кегль меряет настоящий браузер: у тем он собирается из
  * медиазапросов, слоёв, `clamp()` от ширины окна и переменных на предках —
  * разбор CSS без браузера на этом врёт. На каждой ширине для каждого
  * ВИДИМОГО узла с собственным текстом, который есть у обоих вариантов, кегль
@@ -27,14 +24,10 @@
  * других — высота или ширина, и крупный текст законно сужает соседнюю
  * колонку. Кегль у любого поля-размера обязан расти монотонно.
  *
- * Вторая проверка — «явный вариант рисует себя». Порядок «≤» пропускает
- * равенство, а bloom «Большой» текст под признаком был РАВЕН «Среднему»:
- * явное значение падало в ветку «не задано». Поэтому: узлы, которые поле
- * двигает (их кегль различается между вариантами), у явно выбранного
- * варианта, который НЕ является значением панели по умолчанию, рисуются
- * одинаково с признаком и без. Значение по умолчанию под признаком менять
- * кегль может — правило 25.09 разрешает ему взять числа верстальщиков, если
- * порядок сохраняется; остальные варианты признак не трогает.
+ * До 25.09 здесь была вторая проверка — «явный вариант рисует себя»:
+ * вариант, не являющийся значением по умолчанию, рисовался одинаково с
+ * признаком режима «как у верстальщиков» и без. У секций теперь одна версия,
+ * признака нет — сравнивать нечего, проверка снята.
  *
  * Браузер: встроенный Chromium Playwright, если он установлен; иначе Google
  * Chrome системы (`channel: "chrome"`, на раннерах ubuntu-latest он стоит).
@@ -65,14 +58,8 @@ const WIDTHS = [
   1920,
 ] as const;
 
-const MODES = [
-  { name: "без признака", extra: {} },
-  { name: "с признаком", extra: { __designParity: true } },
-] as const;
-
 /**
- * Нарушения порядка, которые были ДО 25.09 и к признаку отношения не имеют
- * (есть в обоих режимах). Найдены этим обходом; решение за владельцем —
+ * Нарушения порядка, которые были ДО 25.09. Найдены этим обходом; решение за владельцем —
  * какие числа правильные. Новая запись сама не появляется: любое новое
  * нарушение — красный.
  *   (пусто: оба прежних нарушения — rose «Галерея» заголовок и flux «Панель
@@ -98,13 +85,12 @@ type Deep = Record<
   { sample: Record<string, unknown>; scales: Scale[] }
 >;
 /**
- * Вариант поля-размера в одном из режимов; `def` — значение панели по
- * умолчанию, `placed` — во сколько мест значение легло в пропсы.
+ * Вариант поля-размера; `def` — значение панели по умолчанию, `placed` — во
+ * сколько мест значение легло в пропсы.
  */
 type Case = {
   block: string;
   scale: string;
-  mode: string;
   value: string;
   def: string | null;
   placed: number;
@@ -146,24 +132,21 @@ function setAt(obj: unknown, path: string[], value: string): number {
   return 1;
 }
 
-/** Все варианты поля-размера в обоих режимах. */
+/** Все варианты поля-размера. */
 function variantsOf(
   block: string,
   sample: Record<string, unknown>,
   s: Scale,
 ): Case[] {
   const scale = `${block}.${s.path.filter((x) => x !== "*").join(".")}`;
-  return MODES.flatMap(({ name, extra }) =>
-    s.options.map((value) => {
-      const props = structuredClone({
-        id: `${block}-1`,
-        ...sample,
-        ...extra,
-      }) as Record<string, unknown>;
-      const placed = setAt(props, s.path, value);
-      return { block, scale, mode: name, value, def: s.def, placed, props };
-    }),
-  );
+  return s.options.map((value) => {
+    const props = structuredClone({
+      id: `${block}-1`,
+      ...sample,
+    }) as Record<string, unknown>;
+    const placed = setAt(props, s.path, value);
+    return { block, scale, value, def: s.def, placed, props };
+  });
 }
 
 function casesOf(panel: Deep): { cases: Case[]; vacant: string[] } {
@@ -172,7 +155,7 @@ function casesOf(panel: Deep): { cases: Case[]; vacant: string[] } {
   );
   const vacant = all
     .filter((c) => c.placed === 0)
-    .map((c) => `${c.scale} [${c.mode}]`);
+    .map((c) => c.scale);
   return {
     cases: all.filter((c) => c.placed > 0),
     vacant: [...new Set(vacant)],
@@ -302,7 +285,7 @@ async function measure(
     .filter(({ r }) => !r.html)
     .map(
       ({ r, c }) =>
-        `${c.scale}=${c.value} [${c.mode}]: ${r.error ?? (r.missing ? "нет модуля" : "нет html")}`,
+        `${c.scale}=${c.value}: ${r.error ?? (r.missing ? "нет модуля" : "нет html")}`,
     );
   const head = `<meta charset="utf-8"><style>${themeCss(theme)}</style><style id="__merfy_tokens_css">${tokensCssFor(theme)}</style>`;
   const ctx = await (
@@ -352,17 +335,15 @@ type Verdict = {
   scales: number;
 };
 
-/** Порядок вариантов каждого поля в каждом режиме: меньший вариант ≤ большего. */
+/** Порядок вариантов каждого поля: меньший вариант ≤ большего. */
 function judge(cases: Case[], sizes: Sizes[]): Verdict {
-  const groups = groupBy(cases, (c) => `${c.scale}\u0000${c.mode}`).map(
-    (ids) => ({
-      label: `${cases[ids[0]].scale} [${cases[ids[0]].mode}]`,
-      pairs: pairsOf(ids).map(([a, b]) => ({
-        tag: `${cases[a].scale}: ${cases[a].value}>${cases[b].value} [${cases[a].mode}]`,
-        cells: cellsOf(sizes, a, b),
-      })),
-    }),
-  );
+  const groups = groupBy(cases, (c) => c.scale).map((ids) => ({
+    label: cases[ids[0]].scale,
+    pairs: pairsOf(ids).map(([a, b]) => ({
+      tag: `${cases[a].scale}: ${cases[a].value}>${cases[b].value}`,
+      cells: cellsOf(sizes, a, b),
+    })),
+  }));
   const pairs = groups.flatMap((g) => g.pairs);
   const broken = pairs
     .map(({ tag, cells }) => ({
@@ -380,88 +361,14 @@ function judge(cases: Case[], sizes: Sizes[]): Verdict {
       .filter((g) => g.pairs.every((p) => p.cells.length === 0))
       .map((g) => g.label),
     cells: pairs.reduce((n, p) => n + p.cells.length, 0),
-    scales: groups.length / MODES.length,
+    scales: groups.length,
   };
-}
-
-/** Индекс случая по (поле, режим, вариант). */
-const caseKey = (scale: string, mode: string, value: string): string =>
-  `${scale}\u0000${mode}\u0000${value}`;
-
-/**
- * Узлы, которые поле двигает: на какой-то ширине кегль узла различается
- * между вариантами (узел есть у всех). Остальные узлы (цена карточки,
- * соседний заголовок) полю не принадлежат, и признак законно меняет их сам.
- */
-const movedKeys = (sizes: Sizes[], ids: number[]): string[] =>
-  WIDTHS.flatMap((width) =>
-    Object.keys(sizes[ids[0]]?.[width] ?? {}).filter((key) => {
-      const px: (number | undefined)[] = ids.map((i) => sizes[i][width]?.[key]);
-      return !px.includes(undefined) && new Set(px).size > 1;
-    }),
-  );
-
-/**
- * Нарушения «явный вариант рисует себя» у одного поля: вне значения по
- * умолчанию признак не меняет кегль узлов, которые двигает поле.
- */
-function ownVariantBreaks(
-  scale: string,
-  def: string | null,
-  cases: Case[],
-  sizes: Sizes[],
-  at: Map<string, number>,
-): string[] {
-  const values = [
-    ...new Set(cases.filter((c) => c.scale === scale).map((c) => c.value)),
-  ];
-  const idsOf = (mode: string): number[] =>
-    values
-      .map((v) => at.get(caseKey(scale, mode, v)))
-      .filter((i): i is number => i !== undefined);
-  const moved = new Set(
-    MODES.flatMap(({ name }) => movedKeys(sizes, idsOf(name))),
-  );
-  return values
-    .filter((value) => value !== def)
-    .map((value) => ({
-      value,
-      off: at.get(caseKey(scale, MODES[0].name, value)),
-      on: at.get(caseKey(scale, MODES[1].name, value)),
-    }))
-    .filter(
-      (v): v is { value: string; off: number; on: number } =>
-        v.off !== undefined && v.on !== undefined,
-    )
-    .map(({ value, off, on }) => ({
-      value,
-      cell: cellsOf(sizes, off, on).find(
-        (c) => moved.has(c.key) && Math.abs(c.first - c.second) > 0.01,
-      ),
-    }))
-    .filter((v): v is { value: string; cell: Cell } => v.cell !== undefined)
-    .map(
-      ({ value, cell }) =>
-        `${scale}: «${value}» — ${cell.width}px ${cell.key}: без признака ${cell.first}, с признаком ${cell.second}`,
-    );
-}
-
-/** Явный вариант рисует себя — по всем полям темы. */
-function judgeOwnVariant(cases: Case[], sizes: Sizes[]): string[] {
-  const at = new Map(
-    cases.map((c, i) => [caseKey(c.scale, c.mode, c.value), i]),
-  );
-  const scales = [...new Map(cases.map((c) => [c.scale, c.def])).entries()];
-  return scales
-    .flatMap(([scale, def]) => ownVariantBreaks(scale, def, cases, sizes, at))
-    .sort();
 }
 
 jest.setTimeout(600_000);
 
 describe.each(THEMES)("порядок размеров — %s", (theme) => {
   let verdict: Verdict | null = null;
-  let ownVariant: string[] = [];
   let errors: string[] = [];
   let vacant: string[] = [];
 
@@ -471,10 +378,9 @@ describe.each(THEMES)("порядок размеров — %s", (theme) => {
     const measured = await measure(theme, cases);
     errors = measured.errors;
     verdict = judge(cases, measured.sizes);
-    ownVariant = judgeOwnVariant(cases, measured.sizes);
   }, 600_000);
 
-  it("каждое поле-размер отрисовано и измерено в обоих режимах", () => {
+  it("каждое поле-размер отрисовано и измерено", () => {
     expect(errors).toEqual([]);
     expect(vacant).toEqual([]);
     expect(verdict?.scales ?? 0).toBeGreaterThan(20);
@@ -494,13 +400,5 @@ describe.each(THEMES)("порядок размеров — %s", (theme) => {
       violations: [...KNOWN_ORDER[theme]].sort(),
       fresh: [],
     });
-  });
-
-  it("явно выбранный вариант рисует себя: признак не трогает его кегль", () => {
-    // Значение по умолчанию сюда не входит: под признаком оно может взять
-    // числа верстальщиков, если порядок сохраняется. Любой другой явный
-    // вариант с признаком и без — один и тот же кегль у узлов, которые
-    // двигает поле. Иначе явное значение падает в ветку «не задано».
-    expect(ownVariant).toEqual([]);
   });
 });

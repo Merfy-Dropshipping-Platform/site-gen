@@ -154,10 +154,10 @@ const headingSize = p.heading?.size;
 // затронута. Заголовок снова читает ТОЛЬКО литерал вёрстки (18px/md:20px), как
 // у flux/satin/vanilla — их «Кегль заголовка Hero» тоже не подключён к рендеру.
 // Владелец 25.09: явно выбранный размер всегда рисует СВОЙ вариант. Раньше
-// «Большой» падал в ветку «не задано» и под признаком получал кегли
-// верстальщиков: заголовок на телефоне 14px — меньше «Среднего» (15), текст
-// 12px — равен «Среднему». Теперь «Большой» — прежние 18/20 и 14/16 в обоих
-// режимах (сторож panel-size-order.spec.ts).
+// «Большой» падал в ветку «не задано» и получал кегли верстальщиков:
+// заголовок на телефоне 14px — меньше «Среднего» (15), текст 12px — равен
+// «Среднему». Теперь «Большой» — свои 18/20 и 14/16 (сторож
+// panel-size-order.spec.ts).
 const HEADING_CLS: Record<string, string> = {
 	small: "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]",
 	medium: "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]",
@@ -178,7 +178,7 @@ const subtitleCls = SUBTITLE_CLS[textSize] ?? HERO_TYPE_UNSET.text;
 // (aspect 1920/925 на десктопе) — подняты значения и добавлены брейкпоинты; medium/
 // small заметно ниже. Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): геометрия
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): геометрия
 // по актуальной вёрстке Bloom-theme @5aae2ad6 (правка 8058391 от 14.06, «adaptive
 // hero per Figma»). Блок — пропорция по ширине экрана, одно фото вписано по высоте
 // (лицо целиком), а не заливает блок: раньше на широком окне фото было в 2,3 раза

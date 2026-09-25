@@ -73,7 +73,7 @@ const nav: NavLink[] =
 
 // Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
 // <img> высотой var(--size-logo-width) (слайдер «Размер» канона задаёт высоту лого)
-// в mobile И desktop. Дефолт = SVG-вордмарк VanilaLogo верстальщика (white-вариант):
+// в mobile И desktop. Дефолт = SVG-вордмарк верстальщиков VanilaLogoDesigners (white):
 // mobile h-6 (24px), desktop h-7 (28px) — фоллбеки токена = родные высоты.
 const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgMobileCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px] object-contain";

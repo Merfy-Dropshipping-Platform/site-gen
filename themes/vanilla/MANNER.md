@@ -46,7 +46,7 @@ Arsenal (всё остальное) + оливково-зелёная палит
 | Ссылки/контакты футера | Arsenal 16 leading-none white; копирайт 14 → md:16 | F:61, 74, 109, 117 |
 | Label форм | Arsenal 16 leading-normal #444444; input Arsenal 16 `--vanilla-dark` | about:82, 87 |
 | Бейдж корзины | Manrope 10px на белом кружке, текст `--vanilla-dark` (служебная роль) | H:98, 163 |
-| Логотип | SVG-вордмарк «Vanila» 89×28 white (`VanilaLogo`/`VanilaFooterLogo`), не текст | H:121; F:54; icons/VanilaLogo.astro |
+| Логотип | SVG-вордмарк «Vanilla» 98×28 white (`VanilaLogoDesigners`/`VanilaFooterLogoDesigners`, с 25.09 единственный), не текст | H:121; F:54; icons/VanilaLogoDesigners.astro |
 | Подключённые семейства | Google Fonts: Arsenal 400/700/italic-400, Bitter 400/italic-400; `--font-nt-ui`=Manrope из DS | BaseHead.astro:38-41; g:23-24, 41-57 |
 
 Итого ролей две: **заголовки = Bitter 400 italic** (никогда не bold, капс только в

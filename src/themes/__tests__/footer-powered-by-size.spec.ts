@@ -5,8 +5,7 @@
  * копирайта». Владелец 25.09 решил иначе: «размеры задаём мы, меняется только
  * если капс». Поэтому размер подписи здесь не проверяется вовсе — он такой,
  * как в теме. Проверяется одно: подпись не набрана капсом (`uppercase`) ни в
- * одной из пяти тем, ни с признаком «как у верстальщиков», ни без него (на
- * проде признак у всех сайтов).
+ * одной из пяти тем.
  *
  * Проверка по ОТРИСОВАННОМУ подвалу (тот же модуль темы, что уходит на витрину),
  * а не по исходнику: капс может прийти классом на обёртке выше подписи.
@@ -16,10 +15,6 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
 const THEMES = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
-const MODES = [
-  { name: "без признака", extra: {} },
-  { name: "с признаком", extra: { __designParity: true } },
-] as const;
 const SIGN = "Разработано на Merfy";
 
 /** Классы всех открытых на месте подписи тегов: от начала подвала до самой надписи. */
@@ -40,9 +35,9 @@ function classesAround(html: string): string[] {
   return open;
 }
 
-describe.each(MODES)("подпись платформы в подвале — $name", ({ extra }) => {
+describe("подпись платформы в подвале", () => {
   it.each(THEMES)("%s: подпись есть и не набрана капсом", (theme) => {
-    const [row] = renderSections(theme, [{ block: "Footer", props: { id: "Footer-1", ...extra } }]);
+    const [row] = renderSections(theme, [{ block: "Footer", props: { id: "Footer-1" } }]);
     if (!row?.html) throw new Error(`${theme}: ${row?.error ?? "нет html"}`);
     expect(row.html).toContain(SIGN);
     const upper = classesAround(row.html).filter((cls) => /(^|\s)uppercase(\s|$)/.test(cls));

@@ -30,14 +30,11 @@ import { renderSections } from "../../../scripts/qa/lib/render";
  *     изменений.
  * Капс верстальщиков не переносим (владелец 13.09 велел его убрать везде).
  * С 25.09 у секций одна версия (владелец: «стили приравнивали, секции и
- * параметры менять не нужно было») — прежняя ветка удалена вместе с
- * признаком режима, и признак (true/false) разметку не меняет.
+ * параметры менять не нужно было») — прежняя ветка удалена.
  */
 
 jest.setTimeout(60_000);
 
-const ВКЛ = { __designParity: true };
-const ВЫКЛ = { __designParity: false };
 
 function отрисовать(
   jobs: Array<{ block: string; props: Record<string, unknown> }>,
@@ -57,10 +54,8 @@ function отрисовать(
 
 describe("rose: «Список коллекций» — отступы и зазоры как у верстальщиков", () => {
   const БАЗА = { id: "Collections-1", colorScheme: "scheme-1" };
-  const [html, вкл, выкл] = отрисовать([
+  const [html] = отрисовать([
     { block: "Collections", props: БАЗА },
-    { block: "Collections", props: { ...БАЗА, ...ВКЛ } },
-    { block: "Collections", props: { ...БАЗА, ...ВЫКЛ } },
   ]);
 
   it("pb-20/pt-20, gap-10, сетка gap-10 sm:gap-5 md:gap-4 lg:gap-6", () => {
@@ -72,11 +67,6 @@ describe("rose: «Список коллекций» — отступы и заз
     expect(html).not.toContain("gap-6 sm:gap-5 md:gap-5 lg:gap-6");
   });
 
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(вкл).toEqual(html);
-    expect(выкл).toEqual(html);
-  });
-
   it("капс верстальщиков не перенесён", () => {
     expect(html).not.toMatch(/class="[^"]*\buppercase\b/);
   });
@@ -84,10 +74,8 @@ describe("rose: «Список коллекций» — отступы и заз
 
 describe("rose: «Популярное» — отступы и зазоры как у верстальщиков", () => {
   const БАЗА = { id: "Popular-1", colorScheme: "scheme-1" };
-  const [html, вкл, выкл] = отрисовать([
+  const [html] = отрисовать([
     { block: "PopularProducts", props: БАЗА },
-    { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ } },
-    { block: "PopularProducts", props: { ...БАЗА, ...ВЫКЛ } },
   ]);
 
   it("pb-20/pt-20, gap-10, базовая сетка gap-x-2 gap-y-10", () => {
@@ -98,11 +86,6 @@ describe("rose: «Популярное» — отступы и зазоры ка
     );
     expect(html).not.toContain("pb-14 pt-14");
     expect(html).not.toContain("gap-x-3 gap-y-8");
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(вкл).toEqual(html);
-    expect(выкл).toEqual(html);
   });
 
   it("капс верстальщиков не перенесён", () => {
@@ -119,10 +102,8 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
     ],
   };
   const БАЗА = { id: "Gallery-1", colorScheme: "scheme-1", ...ТРИ_ПЛИТКИ };
-  const [вкл, признакВкл, выкл, вклЗеркало] = отрисовать([
+  const [вкл, вклЗеркало] = отрисовать([
     { block: "Gallery", props: БАЗА },
-    { block: "Gallery", props: { ...БАЗА, ...ВКЛ } },
-    { block: "Gallery", props: { ...БАЗА, ...ВЫКЛ } },
     { block: "Gallery", props: { ...БАЗА, imagePosition: "right" } },
   ]);
 
@@ -157,11 +138,6 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
     expect(вклЗеркало).not.toEqual(вкл);
   });
 
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(признакВкл).toEqual(вкл);
-    expect(выкл).toEqual(вкл);
-  });
-
   it("капс верстальщиков не перенесён", () => {
     expect(вкл).not.toMatch(/class="[^"]*\buppercase\b/);
   });
@@ -172,10 +148,8 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
 // ---------------------------------------------------------------------------
 
 describe("rose: Header — иконка бургера мобилы size-6, как у верстальщиков", () => {
-  const [вкл, признакВкл, выкл] = отрисовать([
+  const [вкл] = отрисовать([
     { block: "Header", props: { id: "Header-1" } },
-    { block: "Header", props: { id: "Header-1", ...ВКЛ } },
-    { block: "Header", props: { id: "Header-1", ...ВЫКЛ } },
   ]);
 
   /** Блок мобильной кнопки-бургера (уникальный id, без вложенных <button>). */
@@ -189,11 +163,6 @@ describe("rose: Header — иконка бургера мобилы size-6, ка
     const блок = блокБургера(вкл);
     expect(блок).toContain("size-6");
     expect(блок).not.toContain("size-5");
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(признакВкл).toEqual(вкл);
-    expect(выкл).toEqual(вкл);
   });
 
   it("отдельный планшетный ярус шапки не появился (одна мобильная строка, а не две)", () => {
@@ -217,10 +186,8 @@ describe("rose: Footer — дефолт-ветка «Выравнивания» 
       socialLinks: [{ platform: "vk", href: "https://vk.com/shop" }],
     },
   };
-  const [вклЛево, признакВклЛево, выклЛево, вклЦентр, вклСправа] = отрисовать([
+  const [вклЛево, вклЦентр, вклСправа] = отрисовать([
     { block: "Footer", props: БАЗА },
-    { block: "Footer", props: { ...БАЗА, ...ВКЛ } },
-    { block: "Footer", props: { ...БАЗА, ...ВЫКЛ } },
     { block: "Footer", props: { ...БАЗА, contentAlign: "center" } },
     { block: "Footer", props: { ...БАЗА, contentAlign: "right" } },
   ]);
@@ -243,11 +210,6 @@ describe("rose: Footer — дефолт-ветка «Выравнивания» 
     );
     expect(вклЛево).toContain("md:text-right lg:text-right");
     expect(вклЛево).toContain("md:justify-end lg:justify-end");
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    expect(признакВклЛево).toEqual(вклЛево);
-    expect(выклЛево).toEqual(вклЛево);
   });
 
   it("center/right — у верстальщиков своей раскладки нет, остаются своими (две колонки с lg)", () => {
@@ -347,24 +309,6 @@ describe("rose: Hero — первый экран как у верстальщи�
     const [два] = отрисовать([{ block: "Hero", props: дваФото }]);
     expect(два).toContain("grid grid-cols-2");
     expect(два).toContain("object-cover");
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет — ни у фото, ни у пустого", () => {
-    const пусто = { id: "Hero-1", colorScheme: "scheme-1" };
-    const [html, вкл, выкл, пустое, пустоеВкл, пустоеВыкл] = отрисовать([
-      { block: "Hero", props: ПОЛНАЯ },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ } },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВЫКЛ } },
-      { block: "Hero", props: пусто },
-      { block: "Hero", props: { ...пусто, ...ВКЛ } },
-      { block: "Hero", props: { ...пусто, ...ВЫКЛ } },
-    ]);
-    expect(вкл).toEqual(html);
-    expect(выкл).toEqual(html);
-    expect(пустоеВкл).toEqual(пустое);
-    expect(пустоеВыкл).toEqual(пустое);
-    // Прежнего мобильного стека «фото сверху, подложка снизу» нет.
-    expect(html).not.toContain("aspect-[4/3] w-full md:absolute");
   });
 
   it("капс верстальщиков не перенесён", () => {

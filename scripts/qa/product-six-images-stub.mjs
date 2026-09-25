@@ -46,7 +46,7 @@ if (process.env.MERFY_QA_STUB_PRODUCT) {
 }
 /**
  * Каталог зеркала верстальщиков (scripts/qa/designer-goal.ts). Задание с
- * признаком `__designParity` и непустым `catalog.products` рисуется ТЕМ ЖЕ
+ * меткой `__designerMirror` и непустым `catalog.products` рисуется ТЕМ ЖЕ
  * содержимым, что демо верстальщиков: столько же товаров, те же названия и
  * цены. Иначе секции bloom/flux/vanilla, которые ходят за товарами HTTP-
  * запросом, получали четыре «Товар N» — и разница в числе карточек выглядела
@@ -59,7 +59,7 @@ function mirrorCatalog() {
     const text = raw.startsWith("@") ? readFileSync(raw.slice(1), "utf-8") : raw;
     const jobs = JSON.parse(text);
     const job = jobs.find(
-      (j) => j?.props?.__designParity === true && Array.isArray(j?.catalog?.products) && j.catalog.products.length > 0,
+      (j) => j?.props?.__designerMirror === true && Array.isArray(j?.catalog?.products) && j.catalog.products.length > 0,
     );
     return job ? job.catalog : null;
   } catch {

@@ -224,35 +224,25 @@ describe("читаемость: тёмный слой между фото и т�
   // Владелец 25.09: «в зависимости от настройки затемнения, если 0 — то и там
   // и там светло». Раньше постоянный градиент лежал над фото ВСЕГДА (свой на
   // телефоне, свой на компьютере) — ползунок «Затемнение»=0 фото не спасал.
-  // Теперь темнит ТОЛЬКО ползунок, одинаково на обеих ширинах: с ним и без
-  // __designParity.
-  it.each([true, false])(
-    "bloom с фото, __designParity=%s: постоянного градиента над фото больше нет",
-    (designParity) => {
-      const html = renderHero("bloom", "scheme-3", true, { __designParity: designParity });
-      expect(html).not.toContain("from-black/75");
-      expect(html).not.toContain("from-black/45 to-black/10");
-      expect(html).not.toContain("via-black/40");
-    },
-  );
+  // Теперь темнит ТОЛЬКО ползунок, одинаково на обеих ширинах.
+  it("bloom с фото: постоянного градиента над фото больше нет", () => {
+    const html = renderHero("bloom", "scheme-3", true);
+    expect(html).not.toContain("from-black/75");
+    expect(html).not.toContain("from-black/45 to-black/10");
+    expect(html).not.toContain("via-black/40");
+  });
 
-  it.each([true, false])(
-    "bloom: «Затемнение»=0 (по умолчанию, как у верстальщиков) — слоя нет совсем, __designParity=%s",
-    (designParity) => {
-      const html = renderHero("bloom", "scheme-3", true, { __designParity: designParity });
-      expect(html).not.toMatch(/absolute inset-0 z-\[1\] bg-black/);
-    },
-  );
+  it("bloom: «Затемнение»=0 (по умолчанию, как у верстальщиков) — слоя нет совсем", () => {
+    const html = renderHero("bloom", "scheme-3", true);
+    expect(html).not.toMatch(/absolute inset-0 z-\[1\] bg-black/);
+  });
 
   // Сам ползунок по-прежнему работает — единственный источник затемнения.
-  it.each([true, false])(
-    "bloom: ползунок «Затемнение» рисует чёрный слой, __designParity=%s",
-    (designParity) => {
-      const html = renderHero("bloom", "scheme-3", true, { overlay: 40, __designParity: designParity });
-      expect(html).toMatch(/absolute inset-0 z-\[1\] bg-black/);
-      expect(html).toContain("opacity:0.4");
-    },
-  );
+  it("bloom: ползунок «Затемнение» рисует чёрный слой", () => {
+    const html = renderHero("bloom", "scheme-3", true, { overlay: 40 });
+    expect(html).toMatch(/absolute inset-0 z-\[1\] bg-black/);
+    expect(html).toContain("opacity:0.4");
+  });
 
   it("satin, плейсхолдер: градиент from-black/30 to-black/45", () => {
     expect(renderHero("satin", "scheme-3", false)).toContain("from-black/30 to-black/45");

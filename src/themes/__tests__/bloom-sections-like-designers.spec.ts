@@ -1,18 +1,8 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
-
 /**
  * Секции bloom — отступы, зазоры и высота строк как в актуальной вёрстке
- * верстальщиков (Bloom-theme @5aae2ad6), под PARITY_DESIGN.
+ * верстальщиков (Bloom-theme @5aae2ad6).
  *
  * Владелец 23.09 после первого экрана: «лучше стало, нужно пройтись по всем
  * секциям» — и раньше: «только стили, не сломай цветовые схемы и настройки».
@@ -27,11 +17,10 @@ afterEach(() => {
  *   «Подвал»: pb-20, gap-16, поле pl-3, кнопка px-2, строки gap-1, контакты
  *     mt-6, списки gap-2, правовая строка gap-8.
  * Капс верстальщиков НЕ переносим: 13.09 владелец велел его убрать.
- * Без признака разметка байт в байт прежняя.
+ * С 25.09 у секций одна версия — прежняя ветка удалена.
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
-const ВКЛ = { __designParity: true };
 
 type Секция = { block: string; props: Record<string, unknown> };
 const СЕКЦИИ: Секция[] = [
@@ -133,32 +122,19 @@ const ОЖИДАНИЯ: Record<string, { есть: string[]; нет: string[] }>
   },
 };
 
-describe("bloom: секции как у верстальщиков под PARITY_DESIGN", () => {
-  const вкл = отрисовать(
-    СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, ...ВКЛ } })),
-  );
-  const выкл = отрисовать(СЕКЦИИ);
-  const безПризнака = отрисовать(
-    СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, __designParity: false } })),
-  );
+describe("bloom: секции как у верстальщиков", () => {
+  const отрисовано = отрисовать(СЕКЦИИ);
 
   СЕКЦИИ.forEach((с, i) => {
-    it(`${с.block}: с признаком — классы верстальщиков`, () => {
-      expect(вкл[i].length).toBeGreaterThan(0);
-      for (const к of ОЖИДАНИЯ[с.block].есть) expect(вкл[i]).toContain(к);
-      for (const к of ОЖИДАНИЯ[с.block].нет) expect(вкл[i]).not.toContain(к);
-    });
-
-    // Владелец 25.09: одна версия секции — прежняя ветка удалена, признак
-    // режима больше ничего не меняет.
-    it(`${с.block}: одна версия — с признаком, без него и с явным false одинаково`, () => {
-      expect(безПризнака[i]).toEqual(выкл[i]);
-      expect(вкл[i]).toEqual(выкл[i]);
+    it(`${с.block}: классы верстальщиков`, () => {
+      expect(отрисовано[i].length).toBeGreaterThan(0);
+      for (const к of ОЖИДАНИЯ[с.block].есть) expect(отрисовано[i]).toContain(к);
+      for (const к of ОЖИДАНИЯ[с.block].нет) expect(отрисовано[i]).not.toContain(к);
     });
   });
 
   it("капс верстальщиков не перенесён", () => {
-    for (const html of вкл)
+    for (const html of отрисовано)
       expect(html).not.toMatch(/class="[^"]*\buppercase\b/);
   });
 });

@@ -322,23 +322,7 @@ export function prepareBlockProps(
   // списка (Publications и будущие) не получали siteId, их SSR-фетч
   // storefront-данных молча не запускался и рендерились demo-карточки.
   props.siteId = ctx.siteId;
-  Object.assign(props, designParityFlag(ctx.siteId));
   return props;
-}
-
-/**
- * PARITY_DESIGN — секция рисуется по актуальной вёрстке верстальщиков.
- *
- * Владелец 23.09: «делать как верстальщики, в точности, но только стили —
- * секции, настройки и цветовые схемы не ломать». Признак получает секция
- * сайта из списка выключателя; читают его только те секции, у которых стиль
- * уже сведён с вёрсткой, остальным он безразличен. Без выключателя секция
- * рисуется как раньше.
- */
-export function designParityFlag(siteId: string | null | undefined): {
-  __designParity?: true;
-} {
-  return parityOn("DESIGN", siteId) ? { __designParity: true } : {};
 }
 
 /**

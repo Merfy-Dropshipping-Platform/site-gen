@@ -270,25 +270,15 @@ const ROW_SPLIT: Record<"small" | "medium" | "large", { mediaFirst: string; text
 const rowSplitKey: "small" | "medium" | "large" =
 	p.width === "small" ? "small" : p.width === "medium" ? "medium" : "large";
 
-// PARITY_DESIGN: геометрия рядов верстальщика (Satin-theme @cb548963,
-// CollectionRows.astro:50-62) — ряд `md:grid-cols-2 md:gap-10` (фото и текст
-// поровну, зазор 40), ряды через `gap-12 md:gap-20`, текст без своих полей.
-// Под признаком — только когда «Ширина» не задана; заданная мерчантом ширина
-// ведёт себя как раньше (доли 2:3/1:1/3:2 и ряды впритык, решение 17.09).
-const ROWS_GEOMETRY = {
-	designers: {
-		rows: "flex flex-col gap-12 md:gap-20",
-		row: "grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10",
-		split: "",
-		text: "flex flex-col gap-5",
-	},
-	legacy: {
-		rows: "flex flex-col gap-8",
-		row: "grid grid-cols-1 items-stretch gap-8 md:gap-0",
-		split: undefined,
-		text: "flex flex-col gap-5 md:p-8",
-	},
-}[designParity && p.width === undefined ? "designers" : "legacy"];
+// РЕГРЕСС 24.09 (7c87010e) — под признаком без «Ширины» сюда подставлялась
+// геометрия верстальщика (md:grid-cols-2 md:gap-10, ряды gap-12 md:gap-20, текст
+// без md:p-8), и она перебивала решения владельца 17–20.09 (f3ffa73e, ed711995,
+// b68871f1, ebd40ea0, a01dfd7a, ae55ded6, 4287e8ae): пара ряда впритык, у
+// текстовой колонки свои поля 32px, доля медиа по ROW_SPLIT (незаданная
+// «Ширина» = large), между рядами 32px. Решение владельца главнее вёрстки
+// верстальщика — ветки под designParity здесь больше нет ни при каком
+// значении «Ширины». ROW_TEXT_CLS.designers (размер текста ряда) — другая
+// настройка, эта задача её не трогает.
 
 // Канон alignment текст-колонки: left/отсутствие = ЛИТЕРАЛ (без классов —
 // контент слева, CollectionRows.astro:62); center/right двигают содержимое.
@@ -413,13 +403,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    как остальные темы — media-text-pair.spec.ts). На мобильном (одна
 		    колонка) зазор оставлен, иначе ряды сливаются в кашу
 		    (multirows-row-gap.spec.ts). */}
-		<div class={ROWS_GEOMETRY.rows}>
+		<div class="flex flex-col gap-8">
 			{
 				rows.map((row, i) => (
 					<div
 						class:list={[
-							ROWS_GEOMETRY.row,
-							ROWS_GEOMETRY.split ?? ROW_SPLIT[rowSplitKey][row.right ? "textFirst" : "mediaFirst"],
+							"grid grid-cols-1 items-stretch gap-8 md:gap-0",
+							ROW_SPLIT[rowSplitKey][row.right ? "textFirst" : "mediaFirst"],
 							rowBoxCls,
 						]}
 						data-puck-subsection-parent={hasRealRows ? id : undefined}
@@ -461,7 +451,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									/>
 								))}
 						</div>
-						<div class:list={[`${ROWS_GEOMETRY.text}${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
+						<div class:list={[`flex flex-col gap-5 md:p-8${alignCls}${containerSchemeCls}`, row.right && "md:order-1"]}>
 							{row.heading && <h3 class={row.headingCls} set:html={inlineFormat(row.heading)} />}
 							{row.paragraphs.length > 0 && (
 								<div class="flex flex-col gap-3">

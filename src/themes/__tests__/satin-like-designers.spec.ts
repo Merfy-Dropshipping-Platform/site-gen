@@ -287,9 +287,14 @@ describe("satin PopularProducts: карточка без явного «Вид �
 
 /**
  * Цель «как у верстальщиков» (24.09, scripts/qa/designer-goal.ts satin):
- * шапка в одну строку, полоса объявления, ряды, основной текст, «Изображение
- * с текстом». С признаком — классы верстальщиков ТОЛЬКО для незаданных
+ * шапка в одну строку, полоса объявления, основной текст, «Изображение с
+ * текстом». С признаком — классы верстальщиков ТОЛЬКО для незаданных
  * настроек; без признака — байт в байт; капс не растёт.
+ *
+ * ИСКЛЮЧЕНИЕ — «Мультиряды» (MultiRows). 25.09: геометрия ряда верстальщика
+ * (md:grid-cols-2 md:gap-10, ряды gap-12 md:gap-20) была РЕГРЕССОМ решений
+ * владельца 17–20.09 (ряд впритык, у текста md:p-8, доли ROW_SPLIT) — см.
+ * describe ниже. Для этого блока признак геометрию НЕ меняет вовсе.
  */
 const считатьКапс = (html: string) =>
   [...html.matchAll(/class="[^"]*"/g)].filter((m) => /\buppercase\b/.test(m[0])).length;
@@ -343,21 +348,30 @@ describe("satin PromoBanner: полоса верстальщика py-2, 11/md:1
   });
 });
 
-describe("satin MultiRows: ряды верстальщика 1:1 с зазором 40, текст 16 — только без «Ширины»", () => {
+describe("satin MultiRows: решение владельца 17–20.09 главнее геометрии верстальщика под PARITY_DESIGN (регресс 24.09 7c87010e)", () => {
   const РЯДЫ = [
     { id: "r1", title: "Женская", description: "Текст", button: { text: "Для женщин", link: "/catalog" } },
     { id: "r2", title: "Мужская", description: "Текст", button: { text: "Для мужчин", link: "/catalog" } },
   ];
   const БАЗА = { id: "MultiRows-1", rows: РЯДЫ };
 
-  it("с признаком — геометрия верстальщика; без — прежняя (доли, впритык, md:p-8, md:20px)", () => {
+  it("с признаком геометрия ряда та же, что без признака: пара впритык (md:gap-0), у текста md:p-8, доли ROW_SPLIT, между рядами gap-8 — геометрия верстальщика (md:grid-cols-2 md:gap-10, gap-12 md:gap-20) не рисуется НИКОГДА", () => {
     const { безПризнака, сПризнаком } = байтВБайтИКапс("MultiRows", БАЗА);
-    expect(сПризнаком).toContain("grid grid-cols-1 items-stretch gap-8 md:grid-cols-2 md:gap-10");
-    expect(сПризнаком).toContain("flex flex-col gap-12 md:gap-20");
-    expect(сПризнаком).not.toContain("md:p-8");
+    for (const html of [сПризнаком, безПризнака]) {
+      expect(html).toContain("grid grid-cols-1 items-stretch gap-8 md:gap-0");
+      expect(html).toContain("md:grid-cols-[3fr_2fr]");
+      expect(html).toContain("md:p-8");
+      expect(html).not.toContain("md:grid-cols-2 md:gap-10");
+      expect(html).not.toContain("gap-12 md:gap-20");
+    }
+  });
+
+  it("размер текста ряда без своего значения — отдельная настройка (ROW_TEXT_CLS.designers), эта задача её не трогает: под признаком флэт 16px без md:, без признака md:text-[20px]", () => {
+    const [сПризнаком, безПризнака] = отрисовать([
+      { block: "MultiRows", props: { ...БАЗА, ...ВКЛ } },
+      { block: "MultiRows", props: БАЗА },
+    ]);
     expect(сПризнаком).not.toContain("md:text-[20px]");
-    expect(безПризнака).toContain("md:grid-cols-[3fr_2fr]");
-    expect(безПризнака).toContain("md:p-8");
     expect(безПризнака).toContain("md:text-[20px]");
   });
 

@@ -1785,6 +1785,13 @@ jobs:
       # их растягивала, владелец 23.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/collapsible-heading-size-scope.spec.ts
+      # «Основной текст»: размер из «Заголовок → Размер заголовка» / «Текст →
+      # Размер текста» главнее скрытых headingSize/textSize, которые вписывала
+      # первая правка секции (владелец 25.09): нормализатор и сквозной рендер.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/maintext-heading-size.spec.ts
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/maintext-size-after-edit.spec.ts
       # «Следующее фото при наведении» — путь тестера: включил переключатель,
       # больше ничего не трогал, водит мышью. bloom и vanilla листают ВСЕ фото
       # по положению курсора (как на Авито), rose/satin/flux показывают второе;

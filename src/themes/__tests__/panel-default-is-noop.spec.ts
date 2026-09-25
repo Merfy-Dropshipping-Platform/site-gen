@@ -98,10 +98,11 @@ const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
  * дефолтом и без ключа уже расходится. Снимок 25.09, когда у секций осталась
  * одна версия; до этого те же ключи расходились и без признака режима, и
  * сторож их не показывал. Здесь контент-заглушки, колонки подвала, отступы и
- * известные долги: bloom `MainText.textSize` и `Footer.newsletter`, flux
- * `Product.variants`. Ключ отсюда уходит, когда его чинят; новый сюда сам не
- * попадает. Ушли: rose/vanilla `Hero.contentPosition` (25.09 — панель больше не
- * вписывает скрытую позицию первого экрана).
+ * известные долги: bloom `Footer.newsletter`, flux `Product.variants`. Ключ
+ * отсюда уходит, когда его чинят; новый сюда сам не попадает. Ушли:
+ * rose/vanilla `Hero.contentPosition` (25.09 — панель больше не вписывает
+ * скрытую позицию первого экрана), bloom `MainText.textSize` (25.09 — панель
+ * больше не вписывает скрытый размер текста).
  */
 const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
   rose: [
@@ -258,7 +259,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "ImageWithText.button",
     "MainText.heading",
     "MainText.text",
-    "MainText.textSize",
     "MultiColumns.columns",
     "MultiRows.rows",
     "Newsletter.buttonText",

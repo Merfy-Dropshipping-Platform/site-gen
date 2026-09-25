@@ -68,15 +68,20 @@ const MODES = [
   { name: "с признаком", extra: { __designParity: true } },
 ] as const;
 
-let shared: Browser | null = null;
-async function browser(): Promise<Browser> {
-  if (shared) return shared;
-  shared = await chromium.launch().catch(() => chromium.launch({ channel: "chrome" }));
+// Запоминаем ОБЕЩАНИЕ запуска, а не браузер: замеры идут параллельно
+// (Promise.all по ширинам), и пока первый запуск не закончился, второй вызов
+// видел null и запускал свой браузер. Закрывался только последний — лишний
+// держал jest живым после прогона: одиночный запуск файла висел до потолка в
+// 10 минут (25.09, spec 115).
+let shared: Promise<Browser> | null = null;
+function browser(): Promise<Browser> {
+  shared ??= chromium.launch().catch(() => chromium.launch({ channel: "chrome" }));
   return shared;
 }
 afterAll(async () => {
-  await shared?.close();
+  const b = await shared;
   shared = null;
+  await b?.close();
 });
 
 const stripScripts = (html: string): string => html.replace(/<script\b[\s\S]*?<\/script>/gi, "");

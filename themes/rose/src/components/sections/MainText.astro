@@ -39,7 +39,10 @@ const headingCls = `rose-title${headingSizeCls}`;
 
 // Канон textSize (text.size сабпанели): 'medium' (canon-default) и отсутствие =
 // body-манера 16px. small 14, large 19 (шаги ≈0.85/1.2 как T13 subtitle).
-const textSize = p.textSize ?? p.text?.size;
+// §11 Контракта секции: видимое поле «Текст → Размер» (text.size) приоритетнее
+// СКРЫТОГО top-level textSize — иначе скрытое значение, вписанное первой
+// правкой секции, глушило выбор мерчанта в панели (владелец 25.09).
+const textSize = p.text?.size ?? p.textSize;
 const textSizeCls =
 	textSize === "small" ? " !text-[14px]" : textSize === "large" ? " !text-[19px]" : "";
 

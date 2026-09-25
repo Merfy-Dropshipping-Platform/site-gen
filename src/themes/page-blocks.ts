@@ -1065,17 +1065,21 @@ function coerceMainTextProps(out: Record<string, unknown>): void {
   // а схема блока ждёт строку. Раньше конверт плющился сразу, и размер
   // выбрасывался — в панели «Большой», на витрине всегда средний (баг тестера
   // «Основной текст ▸ Заголовок → Размер заголовка», перепроверено 20.09).
-  // Тот же приём уже стоит в ContactForm/ImageWithText/Collections.
+  // У «Основного текста» размеры в панели — это поля конвертов («Заголовок →
+  // Размер заголовка», «Текст → Размер текста»), а top-level headingSize/
+  // textSize скрыты. Поэтому размер конверта ГЛАВНЕЕ (§11 контракта секции):
+  // скрытое значение вписывает первая же правка секции, и раньше оно глушило
+  // выбор мерчанта (владелец 25.09).
   const headingEnvelope = isPlainObject(out.heading)
     ? (out.heading as Record<string, unknown>)
     : null;
-  if (isHeadingSize(headingEnvelope?.size) && !isHeadingSize(out.headingSize)) {
+  if (isHeadingSize(headingEnvelope?.size)) {
     out.headingSize = headingEnvelope!.size;
   }
   const textEnvelope = isPlainObject(out.text)
     ? (out.text as Record<string, unknown>)
     : null;
-  if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
+  if (isHeadingSize(textEnvelope?.size)) {
     out.textSize = textEnvelope!.size;
   }
   const h = unwrapTextSize(out.heading);

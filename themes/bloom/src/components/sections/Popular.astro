@@ -182,15 +182,18 @@ const textSizeCls =
 			? " [&_p]:!text-[35px] max-md:[&_p]:!text-[20px]"
 			: "";
 // blockDefaults bloom headingAlignment/cardCaptionStyle из theme.json.
+// У края подзаголовок теряет `px-2` заголовка темы (ui/BloomSectionHeading.astro —
+// разметка 1:1 с дизайн-системой, где заголовок по центру). По центру отступ
+// симметричен и не виден; у края он сдвигал подзаголовок на 8px от заголовка и
+// карточек («текст не прижат к левому блоку», владелец). Сторож — замер в
+// браузере: section-heading-alignment.spec.ts.
+const HEAD_ALIGN_CLS: Record<string, string> = {
+	center: " [&_[data-nt=section-heading]]:items-center [&_h2]:!text-center [&_p]:!text-center",
+	right: " [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right [&_p]:!px-0",
+	left: " [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left [&_p]:!px-0",
+};
 const headingAlignment = p.headingAlignment ?? p.heading?.alignment;
-const headAlignCls =
-	headingAlignment === "center"
-		? " [&_[data-nt=section-heading]]:items-center [&_h2]:!text-center [&_p]:!text-center"
-		: headingAlignment === "right"
-			? " [&_[data-nt=section-heading]]:items-end [&_h2]:!text-right [&_p]:!text-right"
-			: headingAlignment === "left"
-				? " [&_[data-nt=section-heading]]:items-start [&_h2]:!text-left [&_p]:!text-left"
-				: "";
+const headAlignCls = HEAD_ALIGN_CLS[headingAlignment] ?? "";
 const headWrapCls = `${headingSizeCls}${textSizeCls}${headAlignCls}`.trim() || undefined;
 
 // Колонки 1-6 (дефолт 3). Применяются с md (768px) и выше через CSS-переменную

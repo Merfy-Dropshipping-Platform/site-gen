@@ -150,6 +150,9 @@
     },
     "Footer": {
       "variant": "2-part",
+      "newsletter": {
+        "enabled": true
+      },
       "bottomStrip": {
         "enabled": true,
         "text": "© 2026 Bloom Theme. Powered by Merfy"

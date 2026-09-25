@@ -137,3 +137,93 @@ describe("саботаж: гард ловит откат на литерал", (
     expect(BANNED.test('class="text-[rgb(var(--color-text,0_0_0))]"')).toBe(false);
   });
 });
+
+/**
+ * СПЛОШНОЙ ОБХОД (25.09, после выкатки #134). Список TARGETS выше сторожил
+ * только файлы, которые правила партия, и пропустил два живых места: шаблон
+ * дорисовки каталога satin внутри `packages/theme-satin/blocks/Catalog/Catalog.astro`
+ * (название и цена `text-[#000000]` при старой цене цветом схемы) и плитку-товар
+ * «Галереи» rose (`text-black`). Замер на проде это показал, гард — нет.
+ * Поэтому здесь обходим ВСЕ исходники пяти тем и их пакетов: любая строка, где
+ * рисуется название или цена товара с литеральным цветом текста, — красная.
+ *
+ * Исключения — с обоснованием:
+ *  - `nt-cart-*` — строки выдвижной корзины: там литералом залиты И название,
+ *    И цена, И кнопки +/- (у vanilla часть утилит ещё и не попадает в CSS).
+ *    Чинить надо строку целиком, отдельной задачей (вынесено владельцу 25.09),
+ *    а не одну цену — иначе внутри строки появится тот же разнобой;
+ *  - `theme-contract/tokens/sources` — справочные выжимки, на витрине не рисуются;
+ *  - `design-system.astro` — служебная страница темы, не витрина;
+ *  - `luna` — вне объёма; тесты и `node_modules`.
+ */
+import { readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const WALK_SKIP = ["nt-cart-", "theme-contract/tokens/sources", "design-system.astro", "luna", "node_modules", "__tests__", "/dist/", "/.astro/"];
+const WALK_EXT = /\.(astro|ts|tsx|mjs|js)$/;
+// Только маркеры ТОВАРА: класс карточки (`*-product-name/price/title`) или
+// подстановка названия/цены товара. Голый `{title}` сюда не входит — это
+// заголовки секций (баннер satin и т.п.), не товар.
+const PRODUCT_TEXT =
+  /product-(name|price|title)|\$\{(name|price)\}|\{(p\.name|p\.price|product\.(name|title|price))\}|formatPrice\(/;
+const LITERAL_TEXT = /text-\[#[0-9A-Fa-f]{3,8}\]|text-black\b/;
+
+function walkSources(dir: string, acc: string[]): string[] {
+  let names: string[] = [];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return acc;
+  }
+  for (const name of names) {
+    const full = join(dir, name);
+    const rel = relative(SITES_ROOT, full);
+    if (WALK_SKIP.some((s) => `/${rel}/`.includes(s) || rel.includes(s))) continue;
+    if (statSync(full).isDirectory()) walkSources(full, acc);
+    else if (WALK_EXT.test(name)) acc.push(full);
+  }
+  return acc;
+}
+
+const THEMES_ALL = ["rose", "vanilla", "flux", "satin", "bloom"] as const;
+const walked = [
+  ...THEMES_ALL.flatMap((t) => walkSources(resolve(SITES_ROOT, "themes", t, "src"), [])),
+  ...THEMES_ALL.flatMap((t) => walkSources(resolve(SITES_ROOT, "packages", `theme-${t}`), [])),
+  ...walkSources(resolve(SITES_ROOT, "packages", "theme-base"), []),
+];
+
+const literalProductLines = walked.flatMap((f) =>
+  readFileSync(f, "utf-8")
+    .split("\n")
+    .filter((l) => PRODUCT_TEXT.test(l) && LITERAL_TEXT.test(l))
+    .map((l) => `  ${relative(SITES_ROOT, f)}\n    ${l.trim().slice(0, 160)}`),
+);
+
+describe("сплошной обход: название и цена товара нигде не залиты литералом", () => {
+  it("обход видит исходники всех пяти тем", () => {
+    for (const t of THEMES_ALL) {
+      expect(walked.some((f) => relative(SITES_ROOT, f).includes(`/${t}/`) || relative(SITES_ROOT, f).includes(`theme-${t}/`))).toBe(true);
+    }
+  });
+
+  it("ни одной строки названия/цены товара с литеральным цветом", () => {
+    expect(
+      literalProductLines.length === 0 ? "" : `НАРУШЕНИЙ: ${literalProductLines.length}\n${literalProductLines.join("\n")}`,
+    ).toBe("");
+  });
+
+  it("саботаж: шаблон каталога satin с литералом ловится", () => {
+    const line = '<a href="${href}" class="font-manrope text-[16px] text-[#000000] hover:opacity-80">${name}</a>';
+    expect(PRODUCT_TEXT.test(line) && LITERAL_TEXT.test(line)).toBe(true);
+  });
+
+  it("заголовок секции с {title} (баннер) — не товар, не ловится", () => {
+    const line = '<h2 class="font-logo text-[26px] text-[#000000] md:text-[32px]">{title}</h2>';
+    expect(PRODUCT_TEXT.test(line) && LITERAL_TEXT.test(line)).toBe(false);
+  });
+
+  it("саботаж: плитка-товар галереи rose с text-black ловится", () => {
+    const line = 'class="gallery-product-title font-manrope text-[16px] leading-none text-black md:text-[16px]"';
+    expect(PRODUCT_TEXT.test(line) && LITERAL_TEXT.test(line)).toBe(true);
+  });
+});

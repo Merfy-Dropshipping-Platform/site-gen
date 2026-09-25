@@ -61,7 +61,7 @@ function media(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
 
 function panelCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
 	const oldPrice = hit.oldPrice
-		? `<span class="text-[14px] leading-[17px] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
+		? `<span class="text-[14px] leading-[17px] text-[rgb(var(--color-text,0_0_0))] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
 		: "";
 	return (
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="flex min-w-0 flex-col gap-5">` +
@@ -95,7 +95,7 @@ function addToCart(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string
 
 function drawerCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
 	const oldPrice = hit.oldPrice
-		? `<span class="text-[12px] leading-[15px] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
+		? `<span class="text-[12px] leading-[15px] text-[rgb(var(--color-text,0_0_0))] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
 		: "";
 	return (
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="flex min-w-0 flex-col gap-5">` +

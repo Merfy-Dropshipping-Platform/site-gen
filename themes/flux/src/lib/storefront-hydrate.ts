@@ -904,9 +904,9 @@ export function renderCardHtml(p: RealProduct, ctaLabel?: string, qaMode?: strin
 		<div class="flex flex-col gap-4">
 			${swatchesHtml}
 			<div class="flex flex-col gap-1">
-				<a href="${href}" class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[#000000] hover:opacity-80 md:text-[16px]">${name}</a>
+				<a href="${href}" class="truncate font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] hover:opacity-80 md:text-[16px]">${name}</a>
 				<div class="flex items-center gap-2">
-					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[#000000] md:text-[16px]">${price}</span>
+					<span class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]">${price}</span>
 					${oldPrice}
 				</div>
 			</div>

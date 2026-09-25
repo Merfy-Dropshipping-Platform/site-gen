@@ -262,14 +262,16 @@ const heroSizeCls = soloTile
 	: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0 lg:flex-1";
 
 // Подписи плиток — манера карточек satin (PC:48-62 / CC:31-35): имя Arsenal 16
-// 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
-// line-through (SSR-пустышка скрыта, открывает гидрация при oldPrice).
+// 400 uppercase leading-tight; цена 16 400; старая цена 14 light, цвет ТЕКСТА
+// схемы (решение владельца 19.09, 5e9201a4 — без приглушения), а не серым
+// (SSR-пустышка скрыта, открывает гидрация при oldPrice — script.ts:461 меняет
+// только "hidden", цвет остаётся этот же).
 const captionNameCls =
 	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
 const captionPriceCls =
 	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
 const captionOldPriceCls =
-	"hidden font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-muted,153_153_153))] line-through";
+	"hidden font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-text,0_0_0))] line-through";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding

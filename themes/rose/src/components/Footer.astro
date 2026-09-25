@@ -32,13 +32,6 @@ const navColumn = [
 // (заголовки колонок) не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»): на
-// планшете подвал уже переходит в две колонки (Rose-theme @b719c193
-// Footer.astro), а не с lg, и выравнивание блока контактов сдвигается туда
-// же. Правится только дефолт-ветка «Выравнивания» (contentAlign=left) — у
-// «По центру»/«Справа» своих раскладок у верстальщиков нет, остаются
-// прежними. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Rose Theme».
 // Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
 // подвал должна идти лого из настроек темы, если загружена, или, если нет, то
@@ -79,14 +72,13 @@ const newsletterText =
 	typeof p.text?.content === "string" && p.text.content.trim()
 		? p.text.content
 		: "Получайте информацию от нашего бренда";
-// PARITY_DESIGN: размер заголовка/текста рассылки не задан → как у
-// верстальщиков: заголовок clamp(14px, 2.2vw, 20px) (на планшете ~17px вместо
-// 20), текст на телефоне 12px. Выбранный мерчантом размер — прежний.
+// Размер заголовка/текста рассылки не задан → как у верстальщиков: заголовок
+// clamp(14px, 2.2vw, 20px) (на планшете ~17px вместо 20), текст на телефоне
+// 12px. Выбранный мерчантом размер — свой.
 const newsletterHeadingSizeStyle =
-	designersWhenUnset(designParity, p.heading?.size, ROSE_FOOTER_DESIGNERS.headingStyle) ||
-	roseFooterHeadingStyle(p.heading?.size);
+	designersWhenUnset(p.heading?.size, ROSE_FOOTER_DESIGNERS.headingStyle) || roseFooterHeadingStyle(p.heading?.size);
 const newsletterTextSizeCls =
-	designersWhenUnset(designParity, p.text?.size, ROSE_FOOTER_DESIGNERS.text) || roseFooterTextClass(p.text?.size);
+	designersWhenUnset(p.text?.size, ROSE_FOOTER_DESIGNERS.text) || roseFooterTextClass(p.text?.size);
 // item 1 — выравнивание блока рассылки, ОДНО значение на десктоп И адаптив. Классы
 // ЛИТЕРАЛАМИ (Tailwind JIT scan). Дефолт left (раньше был захардкожен text-left + @media center).
 const _AL_ITEMS: Record<string, string> = { left: "items-start", center: "items-center", right: "items-end" };
@@ -97,53 +89,49 @@ const nlCopyAlignCls = `${_AL_ITEMS[_ca]} ${_AL_TEXT[_ca]}`;
 // «Выравнивание» центрирует ГРУППУ колонок (ЦЕНТРИРОВАННЫЙ БЛОК, равные поля по краям —
 // юзер выбрал этот вариант). center → секция justify-center + узкий равный gap (колонки
 // вместе по центру), контент внутри колонок остаётся СЛЕВА (естественно). left (дефолт) =
-// нав слева / контакты справа (justify-between, текущий); right = группа к правому краю.
-// Классы литералами (Tailwind JIT).
-const colsJustifyCls = _ca === "center" ? "lg:justify-center lg:gap-24" : _ca === "right" ? "lg:justify-end" : "lg:justify-between";
-const navInfoGapCls = _ca === "center" ? "sm:gap-24" : "sm:gap-[200px]";
+// нав слева / контакты справа, в две колонки уже с планшета (как у верстальщиков,
+// Rose-theme @b719c193), и внутри левой группы список навигации/инфо на планшете снова
+// стоит колонкой, пока рядом появляется колонка контактов; right = группа к правому краю.
 // center = центрированный блок колонок И контент ВНУТРИ блоков по центру (юзер: «когда по
-// центру, и контент блоков был по центру»). right = к правому краю. left (дефолт) = слева/справа.
-const colInnerCls = _ca === "center" ? "items-center text-center" : _ca === "right" ? "items-end text-right" : "";
-const contactGroupCls =
-	_ca === "center"
-		? "items-center text-center"
-		: _ca === "right"
-			? "items-end text-right"
-			: designParity
-				? "md:items-end md:text-right lg:items-end lg:text-right"
-				: "lg:items-end lg:text-right";
-const contactTextCls =
-	_ca === "center"
-		? "text-center"
-		: _ca === "right"
-			? "text-right"
-			: designParity
-				? "md:text-right lg:text-right"
-				: "lg:text-right";
-const contactJustifyCls =
-	_ca === "center"
-		? "justify-center"
-		: _ca === "right"
-			? "justify-end"
-			: designParity
-				? "md:justify-end lg:justify-end"
-				: "lg:justify-end";
-// PARITY_DESIGN, только дефолт-ветка «Выравнивания» (left): подвал уходит в
-// две колонки уже с планшета, а не с lg (Rose-theme @b719c193), и внутри
-// левой группы список навигации/инфо на планшете снова стоит колонкой (между
-// sm и lg), пока рядом появляется колонка контактов.
-const sectionRowCls =
-	designParity && _ca === "left"
-		? "flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between"
-		: `flex w-full flex-col gap-10 lg:flex-row lg:items-start ${colsJustifyCls}`;
-// PARITY_DESIGN: на телефоне ссылки навигации и контактов 14px (у верстальщиков
-// правило в @layer utilities; наше такое же в <style> без слоя не действует).
-const navSectionParityCls = designParity ? ` ${ROSE_FOOTER_DESIGNERS.link}` : "";
-const newsletterParityCls = designParity ? ` ${ROSE_FOOTER_DESIGNERS.newsletter}` : "";
-const navInfoWrapCls =
-	designParity && _ca === "left"
-		? "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]"
-		: `flex flex-col gap-10 sm:flex-row ${navInfoGapCls}`;
+// центру, и контент блоков был по центру»). Классы литералами (Tailwind JIT).
+const FOOTER_ALIGN = {
+	left: {
+		sectionRow:
+			"flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between",
+		navInfoWrap: "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]",
+		colInner: "",
+		contactGroup: "md:items-end md:text-right lg:items-end lg:text-right",
+		contactText: "md:text-right lg:text-right",
+		contactJustify: "md:justify-end lg:justify-end",
+	},
+	center: {
+		sectionRow: "flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-center lg:gap-24",
+		navInfoWrap: "flex flex-col gap-10 sm:flex-row sm:gap-24",
+		colInner: "items-center text-center",
+		contactGroup: "items-center text-center",
+		contactText: "text-center",
+		contactJustify: "justify-center",
+	},
+	right: {
+		sectionRow: "flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-end",
+		navInfoWrap: "flex flex-col gap-10 sm:flex-row sm:gap-[200px]",
+		colInner: "items-end text-right",
+		contactGroup: "items-end text-right",
+		contactText: "text-right",
+		contactJustify: "justify-end",
+	},
+}[_ca as "left" | "center" | "right"];
+const sectionRowCls = FOOTER_ALIGN.sectionRow;
+const navInfoWrapCls = FOOTER_ALIGN.navInfoWrap;
+const colInnerCls = FOOTER_ALIGN.colInner;
+const contactGroupCls = FOOTER_ALIGN.contactGroup;
+const contactTextCls = FOOTER_ALIGN.contactText;
+const contactJustifyCls = FOOTER_ALIGN.contactJustify;
+// На телефоне ссылки навигации и контактов 14px, заголовок рассылки обычного
+// начертания (у верстальщиков правила в @layer utilities; наши такие же в
+// <style> без слоя не действуют).
+const navSectionParityCls = ` ${ROSE_FOOTER_DESIGNERS.link}`;
+const newsletterParityCls = ` ${ROSE_FOOTER_DESIGNERS.newsletter}`;
 
 // Канон-колонки {title, links:[{label,href}]}: ссылки из пропсов с fallback на
 // литералы верстальщика; заголовок колонки — НОВЫЙ элемент, рендерится только

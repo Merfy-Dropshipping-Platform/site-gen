@@ -1,18 +1,7 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
-import { ROSE_FOOTER_DESIGNERS } from "../../../themes/rose/src/lib/design-parity";
-
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
 
 /**
- * rose — геометрия «как у верстальщиков» под PARITY_DESIGN.
+ * rose — геометрия «как у верстальщиков».
  *
  * Владелец 23-24.09: «делать как верстальщики, актуально, в точности»,
  * «не сломай цветовые схемы, ничего не сломай, нужно только стили, базовые».
@@ -40,7 +29,9 @@ afterEach(() => {
  *     позиция/выравнивание/контейнер/кнопки/два фото/пустое состояние — без
  *     изменений.
  * Капс верстальщиков не переносим (владелец 13.09 велел его убрать везде).
- * Без признака (или __designParity:false) разметка байт-в-байт прежняя.
+ * С 25.09 у секций одна версия (владелец: «стили приравнивали, секции и
+ * параметры менять не нужно было») — прежняя ветка удалена вместе с
+ * признаком режима, и признак (true/false) разметку не меняет.
  */
 
 jest.setTimeout(60_000);
@@ -64,67 +55,62 @@ function отрисовать(
 // «Список коллекций» / «Популярное» / «Галерея»
 // ---------------------------------------------------------------------------
 
-describe("rose: «Список коллекций» — отступы и зазоры как у верстальщиков под PARITY_DESIGN", () => {
+describe("rose: «Список коллекций» — отступы и зазоры как у верстальщиков", () => {
   const БАЗА = { id: "Collections-1", colorScheme: "scheme-1" };
-  const [вкл, выкл, безПризнака] = отрисовать([
+  const [html, вкл, выкл] = отрисовать([
+    { block: "Collections", props: БАЗА },
     { block: "Collections", props: { ...БАЗА, ...ВКЛ } },
     { block: "Collections", props: { ...БАЗА, ...ВЫКЛ } },
-    { block: "Collections", props: БАЗА },
   ]);
 
-  it("с признаком: pb-20/pt-20, gap-10, сетка gap-10 sm:gap-5 md:gap-4 lg:gap-6", () => {
-    expect(вкл).toContain("pb-20 pt-20");
-    expect(вкл).toContain("max-w-[1320px] flex-col gap-10");
-    expect(вкл).toContain("grid grid-cols-1 gap-10 sm:gap-5 md:gap-4 lg:gap-6");
-    expect(вкл).not.toContain("pb-14 pt-14");
-    expect(вкл).not.toContain("gap-8 md:gap-10");
-    expect(вкл).not.toContain("gap-6 sm:gap-5 md:gap-5 lg:gap-6");
+  it("pb-20/pt-20, gap-10, сетка gap-10 sm:gap-5 md:gap-4 lg:gap-6", () => {
+    expect(html).toContain("pb-20 pt-20");
+    expect(html).toContain("max-w-[1320px] flex-col gap-10");
+    expect(html).toContain("grid grid-cols-1 gap-10 sm:gap-5 md:gap-4 lg:gap-6");
+    expect(html).not.toContain("pb-14 pt-14");
+    expect(html).not.toContain("gap-8 md:gap-10");
+    expect(html).not.toContain("gap-6 sm:gap-5 md:gap-5 lg:gap-6");
   });
 
-  it("без признака: прежняя разметка, __designParity:false совпадает с отсутствием признака", () => {
-    expect(выкл).toEqual(безПризнака);
-    expect(выкл).not.toEqual(вкл);
-    expect(выкл).toContain("pb-14 pt-14");
-    expect(выкл).toContain("gap-8 md:gap-10");
-    expect(выкл).toContain("grid grid-cols-1 gap-6 sm:gap-5 md:gap-5 lg:gap-6");
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(вкл).toEqual(html);
+    expect(выкл).toEqual(html);
   });
 
   it("капс верстальщиков не перенесён", () => {
-    expect(вкл).not.toMatch(/class="[^"]*\buppercase\b/);
+    expect(html).not.toMatch(/class="[^"]*\buppercase\b/);
   });
 });
 
-describe("rose: «Популярное» — отступы и зазоры как у верстальщиков под PARITY_DESIGN", () => {
+describe("rose: «Популярное» — отступы и зазоры как у верстальщиков", () => {
   const БАЗА = { id: "Popular-1", colorScheme: "scheme-1" };
-  const [вкл, выкл, безПризнака] = отрисовать([
+  const [html, вкл, выкл] = отрисовать([
+    { block: "PopularProducts", props: БАЗА },
     { block: "PopularProducts", props: { ...БАЗА, ...ВКЛ } },
     { block: "PopularProducts", props: { ...БАЗА, ...ВЫКЛ } },
-    { block: "PopularProducts", props: БАЗА },
   ]);
 
-  it("с признаком: pb-20/pt-20, gap-10, базовая сетка gap-x-2 gap-y-10", () => {
-    expect(вкл).toContain("pb-20 pt-20");
-    expect(вкл).toContain("max-w-[1320px] flex-col gap-10");
-    expect(вкл).toContain(
+  it("pb-20/pt-20, gap-10, базовая сетка gap-x-2 gap-y-10", () => {
+    expect(html).toContain("pb-20 pt-20");
+    expect(html).toContain("max-w-[1320px] flex-col gap-10");
+    expect(html).toContain(
       "grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5",
     );
-    expect(вкл).not.toContain("pb-14 pt-14");
-    expect(вкл).not.toContain("gap-x-3 gap-y-8");
+    expect(html).not.toContain("pb-14 pt-14");
+    expect(html).not.toContain("gap-x-3 gap-y-8");
   });
 
-  it("без признака: прежняя разметка, __designParity:false совпадает с отсутствием признака", () => {
-    expect(выкл).toEqual(безПризнака);
-    expect(выкл).not.toEqual(вкл);
-    expect(выкл).toContain("pb-14 pt-14");
-    expect(выкл).toContain("gap-x-3 gap-y-8");
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(вкл).toEqual(html);
+    expect(выкл).toEqual(html);
   });
 
   it("капс верстальщиков не перенесён", () => {
-    expect(вкл).not.toMatch(/class="[^"]*\buppercase\b/);
+    expect(html).not.toMatch(/class="[^"]*\buppercase\b/);
   });
 });
 
-describe("rose: «Галерея» — отступы, зазоры и md-ступень сетки как у верстальщиков под PARITY_DESIGN", () => {
+describe("rose: «Галерея» — отступы, зазоры и md-ступень сетки как у верстальщиков", () => {
   const ТРИ_ПЛИТКИ = {
     items: [
       { type: "image", url: "/images/gallery-1.webp", alt: "Фото" },
@@ -133,14 +119,14 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
     ],
   };
   const БАЗА = { id: "Gallery-1", colorScheme: "scheme-1", ...ТРИ_ПЛИТКИ };
-  const [вкл, выкл, безПризнака, вклЗеркало] = отрисовать([
+  const [вкл, признакВкл, выкл, вклЗеркало] = отрисовать([
+    { block: "Gallery", props: БАЗА },
     { block: "Gallery", props: { ...БАЗА, ...ВКЛ } },
     { block: "Gallery", props: { ...БАЗА, ...ВЫКЛ } },
-    { block: "Gallery", props: БАЗА },
-    { block: "Gallery", props: { ...БАЗА, ...ВКЛ, imagePosition: "right" } },
+    { block: "Gallery", props: { ...БАЗА, imagePosition: "right" } },
   ]);
 
-  it("с признаком: pb-20/pt-20, gap-10, md-ступень сетки, большой тайл — aspect-square + md:h-full", () => {
+  it("pb-20/pt-20, gap-10, md-ступень сетки, большой тайл — aspect-square + md:h-full", () => {
     expect(вкл).toContain("pb-20 pt-20");
     expect(вкл).toContain("max-w-[1320px] flex-col gap-10");
     expect(вкл).toContain(
@@ -152,12 +138,12 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
     expect(вкл).not.toContain("pb-14 pt-14");
   });
 
-  it("с признаком: боковые тайлы — квадрат до lg, фикс-пропорция только с lg", () => {
+  it("боковые тайлы — квадрат до lg, фикс-пропорция только с lg", () => {
     expect(вкл).toContain("lg:aspect-[429/444]");
     expect(вкл).toContain("lg:aspect-[429/309]");
   });
 
-  it("с признаком: обёртка боковых — grid grid-cols-2 gap-2 md:flex md:flex-col md:gap-4 lg:gap-6", () => {
+  it("обёртка боковых — grid grid-cols-2 gap-2 md:flex md:flex-col md:gap-4 lg:gap-6", () => {
     expect(вкл).toContain(
       "grid grid-cols-2 gap-2 min-h-0 min-w-0 md:flex md:flex-col md:gap-4 lg:gap-6",
     );
@@ -171,13 +157,9 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
     expect(вклЗеркало).not.toEqual(вкл);
   });
 
-  it("без признака: прежняя разметка, __designParity:false совпадает с отсутствием признака", () => {
-    expect(выкл).toEqual(безПризнака);
-    expect(выкл).not.toEqual(вкл);
-    expect(выкл).toContain("pb-14 pt-14");
-    expect(выкл).toContain("min-h-[280px]");
-    expect(выкл).toContain("aspect-[429/444]");
-    expect(выкл).not.toContain("aspect-square");
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(признакВкл).toEqual(вкл);
+    expect(выкл).toEqual(вкл);
   });
 
   it("капс верстальщиков не перенесён", () => {
@@ -189,11 +171,11 @@ describe("rose: «Галерея» — отступы, зазоры и md-сту
 // Header — иконка бургера мобилы
 // ---------------------------------------------------------------------------
 
-describe("rose: Header — иконка бургера мобилы size-5 → size-6 под PARITY_DESIGN", () => {
-  const [вкл, выкл, безПризнака] = отрисовать([
+describe("rose: Header — иконка бургера мобилы size-6, как у верстальщиков", () => {
+  const [вкл, признакВкл, выкл] = отрисовать([
+    { block: "Header", props: { id: "Header-1" } },
     { block: "Header", props: { id: "Header-1", ...ВКЛ } },
     { block: "Header", props: { id: "Header-1", ...ВЫКЛ } },
-    { block: "Header", props: { id: "Header-1" } },
   ]);
 
   /** Блок мобильной кнопки-бургера (уникальный id, без вложенных <button>). */
@@ -203,17 +185,15 @@ describe("rose: Header — иконка бургера мобилы size-5 → s
     return m![0];
   };
 
-  it("с признаком: size-6 на кнопке и на обеих иконках, size-5 нет", () => {
+  it("size-6 на кнопке и на обеих иконках, size-5 нет", () => {
     const блок = блокБургера(вкл);
     expect(блок).toContain("size-6");
     expect(блок).not.toContain("size-5");
   });
 
-  it("без признака: прежний size-5, __designParity:false совпадает с отсутствием признака", () => {
-    expect(выкл).toEqual(безПризнака);
-    const блок = блокБургера(выкл);
-    expect(блок).toContain("size-5");
-    expect(блок).not.toContain("size-6");
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(признакВкл).toEqual(вкл);
+    expect(выкл).toEqual(вкл);
   });
 
   it("отдельный планшетный ярус шапки не появился (одна мобильная строка, а не две)", () => {
@@ -227,7 +207,7 @@ describe("rose: Header — иконка бургера мобилы size-5 → s
 // Footer — переход в 2 колонки с планшета (дефолт-ветка выравнивания)
 // ---------------------------------------------------------------------------
 
-describe("rose: Footer — дефолт-ветка «Выравнивания» переходит в 2 колонки с планшета под PARITY_DESIGN", () => {
+describe("rose: Footer — дефолт-ветка «Выравнивания» переходит в 2 колонки с планшета", () => {
   const БАЗА = {
     id: "Footer-1",
     colorScheme: "scheme-1",
@@ -237,37 +217,27 @@ describe("rose: Footer — дефолт-ветка «Выравнивания» 
       socialLinks: [{ platform: "vk", href: "https://vk.com/shop" }],
     },
   };
-  const [
-    вклЛево,
-    выклЛево,
-    безПризнакаЛево,
-    вклЦентр,
-    выклЦентр,
-    вклСправа,
-    выклСправа,
-  ] = отрисовать([
+  const [вклЛево, признакВклЛево, выклЛево, вклЦентр, вклСправа] = отрисовать([
+    { block: "Footer", props: БАЗА },
     { block: "Footer", props: { ...БАЗА, ...ВКЛ } },
     { block: "Footer", props: { ...БАЗА, ...ВЫКЛ } },
-    { block: "Footer", props: БАЗА },
-    { block: "Footer", props: { ...БАЗА, ...ВКЛ, contentAlign: "center" } },
-    { block: "Footer", props: { ...БАЗА, ...ВЫКЛ, contentAlign: "center" } },
-    { block: "Footer", props: { ...БАЗА, ...ВКЛ, contentAlign: "right" } },
-    { block: "Footer", props: { ...БАЗА, ...ВЫКЛ, contentAlign: "right" } },
+    { block: "Footer", props: { ...БАЗА, contentAlign: "center" } },
+    { block: "Footer", props: { ...БАЗА, contentAlign: "right" } },
   ]);
 
-  it("left (дефолт) с признаком: секция — md:flex-row md:items-start md:justify-between", () => {
+  it("left (дефолт): секция — md:flex-row md:items-start md:justify-between", () => {
     expect(вклЛево).toContain(
       "flex w-full flex-col gap-10 md:flex-row md:items-start md:justify-between lg:flex-row lg:items-start lg:justify-between",
     );
   });
 
-  it("left (дефолт) с признаком: обёртка nav/info — md:flex-col md:gap-10 между sm и lg", () => {
+  it("left (дефолт): обёртка nav/info — md:flex-col md:gap-10 между sm и lg", () => {
     expect(вклЛево).toContain(
       "flex flex-col gap-10 sm:flex-row sm:gap-[200px] md:flex-col md:gap-10 lg:flex-row lg:gap-[200px]",
     );
   });
 
-  it("left (дефолт) с признаком: выравнивание контактов — md:items-end md:text-right", () => {
+  it("left (дефолт): выравнивание контактов — md:items-end md:text-right", () => {
     expect(вклЛево).toContain(
       "md:items-end md:text-right lg:items-end lg:text-right",
     );
@@ -275,27 +245,18 @@ describe("rose: Footer — дефолт-ветка «Выравнивания» 
     expect(вклЛево).toContain("md:justify-end lg:justify-end");
   });
 
-  it("left (дефолт) без признака: прежняя разметка, __designParity:false совпадает с отсутствием признака", () => {
-    expect(выклЛево).toEqual(безПризнакаЛево);
-    expect(выклЛево).not.toEqual(вклЛево);
-    expect(выклЛево).not.toContain(
-      "md:flex-row md:items-start md:justify-between",
-    );
-    expect(выклЛево).not.toContain("md:flex-col md:gap-10");
-    expect(выклЛево).not.toContain("md:items-end md:text-right");
+  it("одна версия: признак режима (true, false) ничего не меняет", () => {
+    expect(признакВклЛево).toEqual(вклЛево);
+    expect(выклЛево).toEqual(вклЛево);
   });
 
-  it("center/right — у верстальщиков своей раскладки нет, признак их не трогает", () => {
-    // Раскладка center/right прежняя; признак меняет только кегли (заголовок
-    // рассылки, ссылки на телефоне — rose-goal-sizes.spec.ts), их и вычитаем.
-    const безКеглей = (html: string) =>
-      html
-        .replace(/&#38;/g, "&")
-        .replace(` ${ROSE_FOOTER_DESIGNERS.link}`, "")
-        .replace(` ${ROSE_FOOTER_DESIGNERS.newsletter}`, "")
-        .replace(/style="--size-section-heading:[^"]*"/, 'style="…"');
-    expect(безКеглей(вклЦентр)).toEqual(безКеглей(выклЦентр));
-    expect(безКеглей(вклСправа)).toEqual(безКеглей(выклСправа));
+  it("center/right — у верстальщиков своей раскладки нет, остаются своими (две колонки с lg)", () => {
+    expect(вклЦентр).toContain(
+      "flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-center lg:gap-24",
+    );
+    expect(вклСправа).toContain(
+      "flex w-full flex-col gap-10 lg:flex-row lg:items-start lg:justify-end",
+    );
     expect(вклЦентр).not.toContain("md:flex-row md:items-start md:justify-between");
     expect(вклСправа).not.toContain("md:flex-row md:items-start md:justify-between");
   });
@@ -309,7 +270,7 @@ describe("rose: Footer — дефолт-ветка «Выравнивания» 
 // Hero — первый экран: оверлей на всех ширинах вместо стека на мобиле
 // ---------------------------------------------------------------------------
 
-describe("rose: Hero — первый экран как у верстальщиков под PARITY_DESIGN", () => {
+describe("rose: Hero — первый экран как у верстальщиков", () => {
   const ФОТО = "/images/hero-photo.webp";
   const ФОТО2 = "/images/hero-background.webp";
   const ПОЛНАЯ = {
@@ -327,10 +288,8 @@ describe("rose: Hero — первый экран как у верстальщи�
     return m![0];
   };
 
-  it("с признаком (размер по умолчанию — «Большой»): оверлей на всех ширинах, пропорция верстальщиков", () => {
-    const [html] = отрисовать([
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ } },
-    ]);
+  it("размер по умолчанию — «Большой»: оверлей на всех ширинах, пропорция верстальщиков", () => {
+    const [html] = отрисовать([{ block: "Hero", props: ПОЛНАЯ }]);
     const секция = блокСекции(html);
     expect(секция).toContain(
       "min-h-[calc(100svh-92px)] sm:min-h-[calc(100svh-92px)] md:min-h-[calc(100svh-104px)] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]",
@@ -342,10 +301,10 @@ describe("rose: Hero — первый экран как у верстальщи�
     );
   });
 
-  it("«Размер: Средний»/«Маленький» с признаком — та же пропорция ниже в 0,8/0,6 раза", () => {
+  it("«Размер: Средний»/«Маленький» — та же пропорция ниже в 0,8/0,6 раза", () => {
     const [средний, маленький] = отрисовать([
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ, size: "medium" } },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ, size: "small" } },
+      { block: "Hero", props: { ...ПОЛНАЯ, size: "medium" } },
+      { block: "Hero", props: { ...ПОЛНАЯ, size: "small" } },
     ]);
     expect(средний).toContain(
       "min-h-[calc((100svh-92px)*0.8)] sm:min-h-[calc((100svh-92px)*0.8)] md:min-h-[calc((100svh-104px)*0.8)] lg:min-h-[368px] aspect-[10/12] sm:aspect-[4/4] md:aspect-[4/2.4] lg:aspect-[16/7.2] xl:aspect-[2/0.8] 2xl:aspect-[21/7.2]",
@@ -355,18 +314,14 @@ describe("rose: Hero — первый экран как у верстальщи�
     );
   });
 
-  it("«Затемнение» видно на всех ширинах с признаком (было — только с md)", () => {
-    const [вкл, выкл] = отрисовать([
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ, overlay: 50 } },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВЫКЛ, overlay: 50 } },
-    ]);
-    expect(вкл).toContain('bg-black block"');
-    expect(вкл).not.toContain("hidden md:block");
-    expect(выкл).toContain('bg-black hidden md:block"');
+  it("«Затемнение» видно на всех ширинах (текст оверлеем везде)", () => {
+    const [html] = отрисовать([{ block: "Hero", props: { ...ПОЛНАЯ, overlay: 50 } }]);
+    expect(html).toContain('bg-black block"');
+    expect(html).not.toContain("hidden md:block");
   });
 
   it("остальные настройки по-прежнему меняют секцию (Позиция/Выравнивание/Контейнер/Кнопки)", () => {
-    const база = { ...ПОЛНАЯ, ...ВКЛ };
+    const база = ПОЛНАЯ;
     const [исходная, ...варианты] = отрисовать([
       { block: "Hero", props: база },
       { block: "Hero", props: { ...база, position: "top-left" } },
@@ -384,70 +339,50 @@ describe("rose: Hero — первый экран как у верстальщи�
     for (const v of варианты) expect(v).not.toEqual(исходная);
   });
 
-  it("два фото не меняются признаком, пустое состояние — только высотой", () => {
+  it("два фото — раскладка 50/50 (grid-cols-2) с кадрированием", () => {
     const дваФото = {
       ...ПОЛНАЯ,
       backgroundImages: { url1: ФОТО, url2: ФОТО2 },
     };
-    const пусто = { id: "Hero-1", colorScheme: "scheme-1" };
-    const [дваВкл, дваВыкл, пустоВкл, пустоВыкл] = отрисовать([
-      { block: "Hero", props: { ...дваФото, ...ВКЛ } },
-      { block: "Hero", props: дваФото },
-      { block: "Hero", props: { ...пусто, ...ВКЛ } },
-      { block: "Hero", props: пусто },
-    ]);
-    expect(дваВкл).toContain("grid grid-cols-2");
-    expect(дваВкл).toContain("object-cover");
-    // Пустое состояние отличается ТОЛЬКО высотой блока (см. отдельный
-    // describe ниже): у нового магазина первый экран именно такой.
-    const безВысоты = (html: string) =>
-      html.replace(
-        /<div class="relative w-full [^"]*"/,
-        '<div class="relative w-full"',
-      );
-    expect(безВысоты(пустоВкл)).toEqual(безВысоты(пустоВыкл));
-    // Два фото: признак не переносит оверлей-геометрию на мобиль-стек 4/3 —
-    // единственная разница — контейнер секции (высота/оверлей), сама раскладка
-    // 50/50 (grid-cols-2 внутри) остаётся прежней у обоих.
-    expect(дваВкл.includes("grid grid-cols-2")).toBe(
-      дваВыкл.includes("grid grid-cols-2"),
-    );
+    const [два] = отрисовать([{ block: "Hero", props: дваФото }]);
+    expect(два).toContain("grid grid-cols-2");
+    expect(два).toContain("object-cover");
   });
 
-  it("без признака (или __designParity:false): разметка байт-в-байт прежняя", () => {
-    const [безПризнака, признакВыкл] = отрисовать([
+  it("одна версия: признак режима (true, false) ничего не меняет — ни у фото, ни у пустого", () => {
+    const пусто = { id: "Hero-1", colorScheme: "scheme-1" };
+    const [html, вкл, выкл, пустое, пустоеВкл, пустоеВыкл] = отрисовать([
       { block: "Hero", props: ПОЛНАЯ },
+      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ } },
       { block: "Hero", props: { ...ПОЛНАЯ, ...ВЫКЛ } },
+      { block: "Hero", props: пусто },
+      { block: "Hero", props: { ...пусто, ...ВКЛ } },
+      { block: "Hero", props: { ...пусто, ...ВЫКЛ } },
     ]);
-    expect(признакВыкл).toEqual(безПризнака);
-    expect(безПризнака).toContain("aspect-[4/3] w-full md:absolute");
+    expect(вкл).toEqual(html);
+    expect(выкл).toEqual(html);
+    expect(пустоеВкл).toEqual(пустое);
+    expect(пустоеВыкл).toEqual(пустое);
+    // Прежнего мобильного стека «фото сверху, подложка снизу» нет.
+    expect(html).not.toContain("aspect-[4/3] w-full md:absolute");
   });
 
   it("капс верстальщиков не перенесён", () => {
-    const [html] = отрисовать([
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ } },
-    ]);
+    const [html] = отрисовать([{ block: "Hero", props: ПОЛНАЯ }]);
     expect(html).not.toMatch(/class="[^"]*\buppercase\b/);
   });
 });
 
-describe("rose: пустой первый экран — высота как у верстальщиков под PARITY_DESIGN", () => {
+describe("rose: пустой первый экран — высота как у верстальщиков", () => {
   const пусто = { id: "Hero-1", colorScheme: "scheme-1" };
-  const [вкл, выкл, безПризнака] = renderSections("rose", [
-    { block: "Hero", props: { ...пусто, __designParity: true }, catalog: {} },
+  const [html] = renderSections("rose", [
     { block: "Hero", props: пусто, catalog: {} },
-    { block: "Hero", props: { ...пусто, __designParity: false }, catalog: {} },
   ]).map((r) => r.html ?? "");
 
-  it("с признаком — пропорции и высота от экрана как у верстальщиков", () => {
-    expect(вкл).toContain("min-h-[calc(100svh-92px)]");
-    expect(вкл).toContain("2xl:aspect-[21/9]");
-    expect(вкл).toContain("landscape-image.png");
-  });
-
-  it("без признака — прежняя лестница высот, разметка та же", () => {
-    expect(выкл).toContain("min-h-[min(46svh,320px)]");
-    expect(выкл).not.toContain("min-h-[calc(100svh-92px)]");
-    expect(безПризнака).toEqual(выкл);
+  it("пропорции и высота от экрана как у верстальщиков, прежней лестницы высот нет", () => {
+    expect(html).toContain("min-h-[calc(100svh-92px)]");
+    expect(html).toContain("2xl:aspect-[21/9]");
+    expect(html).toContain("landscape-image.png");
+    expect(html).not.toContain("min-h-[min(46svh,320px)]");
   });
 });

@@ -24,24 +24,22 @@ const defaultNav: NavLink[] = [
 // прежним строкам классов байт-в-байт; новые элементы не рендерятся без пропсов.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// иконка мобильного бургера крупнее (Rose-theme @b719c193). Отдельный
-// планшетный ярус шапки верстальщиков НЕ переносим — владелец велел его не
-// делать. Без признака — прежний размер. Признак ставит sites
-// (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const burgerSizeCls = designParity ? "size-6" : "size-5";
+// Как у верстальщиков (владелец 23-24.09: «как у верстальщиков, только
+// стили»): иконка мобильного бургера крупнее (Rose-theme @b719c193).
+// Отдельный планшетный ярус шапки верстальщиков НЕ переносим — владелец
+// велел его не делать.
+const burgerSizeCls = "size-6";
 // Мобильная строка на планшете (768–1023) — высотой планшетного ряда
 // верстальщиков, 56px (py-4 + иконка 24). Раскладка строки прежняя: сам
 // планшетный ярус не переносим (решение владельца выше), только высота.
-const mobileRowParityCls = designParity ? ` ${ROSE_HEADER_MOBILE_ROW_DESIGNERS}` : "";
+const mobileRowParityCls = ` ${ROSE_HEADER_MOBILE_ROW_DESIGNERS}`;
 // Кнопки-иконки десктопной строки (поиск, избранное, корзина, профиль, бургер
-// «Бокового» меню) — 40px, как у верстальщиков (у нас 32): строка шапки
-// становится 88px вместо 80. Сами иконки прежние, 24px.
-const actionBtnSizeCls = designParity ? ROSE_HEADER_ACTION_BTN_DESIGNERS : "size-8";
+// «Бокового» меню) — 40px, как у верстальщиков (было 32): строка шапки
+// 88px вместо 80. Сами иконки прежние, 24px.
+const actionBtnSizeCls = ROSE_HEADER_ACTION_BTN_DESIGNERS;
 // Панель поиска: кнопка «Найти» в 4px от правого края коробки, как у
-// верстальщиков (pr-1); у нас было 8 (p-2).
-const searchBoxPadCls = designParity ? ROSE_HEADER_SEARCH_BOX_DESIGNERS : "p-2";
+// верстальщиков (pr-1); было 8 (p-2).
+const searchBoxPadCls = ROSE_HEADER_SEARCH_BOX_DESIGNERS;
 // Пустая строка (впрыск коэрсера live-пути) не должна гасить текстовый логотип.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 // Рекурсивно сохраняем submenu (до 3 уровней) — иначе вложенные меню теряются.

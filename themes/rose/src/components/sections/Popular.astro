@@ -15,13 +15,11 @@ import { ROSE_POPULAR_DESIGNERS, ROSE_SECTION_HEADING_DESIGNERS } from "../../li
 // впрыск коэрсера cards=4/columns=4 → пиксель верстальщика (прецедент T11 'center').
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// отступы и зазоры по актуальной вёрстке Rose-theme @b719c193 (Popular.astro).
-// Настройки и цвета не меняются; без признака — прежние классы. Признак
-// ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const sectionPadCls = designParity ? "pb-20 pt-20" : "pb-14 pt-14";
-const wrapGapCls = designParity ? "gap-10" : "gap-8 md:gap-10";
+// Отступы и зазоры по актуальной вёрстке Rose-theme @b719c193 (Popular.astro)
+// — владелец 23-24.09: «как у верстальщиков, только стили». Настройки и
+// цвета не меняются.
+const sectionPadCls = "pb-20 pt-20";
+const wrapGapCls = "gap-10";
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
@@ -66,24 +64,23 @@ const placeholderCards = Array.from({ length: cardsN }, (_, i) => ({
 // top-level (живой селект панели) приоритетнее legacy nested — порт cc64b373
 // с origin/main (worktree отставал: nested-first глушил панель при legacy-данных).
 const headingSize = p.headingSize ?? p.heading?.size;
-// PARITY_DESIGN, владелец 25.09 «что в панели — то и на витрине»: «Маленький» —
-// значение панели по умолчанию, и под признаком он (выбранный или не заданный)
-// рисует кегли верстальщиков — телефон 14, планшет 16, иначе 20. Порядок
+// Владелец 25.09 «что в панели — то и на витрине»: «Маленький» — значение
+// панели по умолчанию, и он (выбранный или не заданный) рисует кегли
+// верстальщиков — телефон 14, планшет 16, иначе 20. Порядок
 // «Маленький ≤ Средний ≤ Большой» при этом сохраняется на каждой ширине
 // (замер Chromium 25.09, сторож panel-size-order.spec.ts).
 const HEADING_SIZE_CLS: Record<string, string> = {
-	small: designParity ? ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}` : "",
+	small: ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}`,
 	medium: " [&_h2]:!text-[24px]",
 	large: " [&_h2]:!text-[29px]",
 };
 const headingSizeCls = HEADING_SIZE_CLS[headingSize ?? "small"] ?? "";
 // Канон textSize (top-level приоритетнее legacy text.size): 'small' (canon-default)
-// и отсутствие = 16px верстальщика; medium → 19px, large → 23px. Под признаком
-// «Маленький» — кегли верстальщиков (телефон 12, планшет 14, иначе 16), порядок
-// сохраняется (тот же замер).
+// и отсутствие = «Маленький» — кегли верстальщиков (телефон 12, планшет 14,
+// иначе 16); medium → 19px, large → 23px, порядок сохраняется (тот же замер).
 const textSize = p.textSize ?? p.text?.size;
 const TEXT_SIZE_CLS: Record<string, string> = {
-	small: designParity ? ` ${ROSE_SECTION_HEADING_DESIGNERS.text}` : "",
+	small: ` ${ROSE_SECTION_HEADING_DESIGNERS.text}`,
 	medium: " [&_p]:!text-[19px]",
 	large: " [&_p]:!text-[23px]",
 };
@@ -112,8 +109,8 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // бьёт любой класс независимо от селектора. Настройка «Вид изображения»
 // молча не применялась ни в одном из трёх значений.
 // Владелец 25.09 «что в панели — то и на витрине»: не заданный «Вид
-// изображения» рисует значение панели по умолчанию — «Квадрат» 1:1 — и под
-// признаком PARITY_DESIGN тоже. Портрет верстальщиков (168/220 → 203/250 →
+// изображения» рисует значение панели по умолчанию — «Квадрат» 1:1. Портрет
+// верстальщиков (168/220 → 203/250 →
 // 318/444) не совпадает ни с одним вариантом панели («Портрет» — 430/500),
 // поэтому ветки «не задано → портрет верстальщиков» больше нет: первая же
 // правка секции вписывала «Квадрат», и карточки меняли пропорцию.
@@ -122,11 +119,10 @@ const cardAspectRatio = CARD_ASPECT[p.imageView] ?? "1/1";
 // Моб = 2 колонки (grid-cols-2); с md и выше grid-template-columns задаёт <style>
 // по --cols. Гэпы оставляем как у верстальщика.
 // Зазор фото–подпись и цена на телефоне/планшете — как у карточки верстальщиков.
-const cardTextParityCls = designParity ? ` ${ROSE_POPULAR_DESIGNERS.card}` : "";
-const gridBaseCls = designParity
-	? "grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5"
-	: "grid w-full grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
-// «Колонки» под признак не берём: живая нормализация (page-blocks
+const cardTextParityCls = ` ${ROSE_POPULAR_DESIGNERS.card}`;
+const gridBaseCls =
+	"grid w-full grid-cols-2 gap-x-2 gap-y-10 sm:gap-x-4 sm:gap-y-9 md:gap-x-4 md:gap-y-10 xl:gap-x-5";
+// «Колонки» верстальщиков не берём: живая нормализация (page-blocks
 // coercePopularProductsProps) всегда дописывает columns=4, и «не задано» здесь
 // не отличить от выбора мерчанта. У верстальщиков до 1280 — 3 колонки.
 const gridCls = `${gridBaseCls}${cardTextParityCls}`;

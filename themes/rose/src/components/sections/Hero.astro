@@ -11,17 +11,12 @@ import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base
 // ниже — verbatim. Значения rose = дефолты. Поддержаны flat и nested (Pupa) пропсы.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»): у
-// Rose-theme @b719c193 фото ВСЕГДА оверлеем под текстом — на мобиле нет
-// отдельного стека «фото сверху, подложка снизу». Высота секции — их
-// пропорция по ширине экрана (min-h + aspect-ratio по брейкпоинтам); «Размер»
-// продолжает работать — «Большой» = пропорция верстальщиков, «Средний» и
-// «Маленький» — та же пропорция ниже в 0,8 и 0,6 раза (как heroHeightMdCls
-// ниже). Позиция/выравнивание/контейнер/затемнение/кнопки/два фото/пустое
-// состояние — без изменений: меняются только контейнеры фото/контента с
-// «стек на мобиле» на «оверлей всегда». Признак ставит sites (page-blocks
-// designParityFlag).
-const designParity = p.__designParity === true;
+// Как у верстальщиков (владелец 23-24.09: «как у верстальщиков, только
+// стили»): у Rose-theme @b719c193 фото ВСЕГДА оверлеем под текстом — на
+// мобиле нет отдельного стека «фото сверху, подложка снизу». Высота секции —
+// их пропорция по ширине экрана (min-h + aspect-ratio по брейкпоинтам);
+// «Размер» работает — «Большой» = пропорция верстальщиков, «Средний» и
+// «Маленький» — та же пропорция ниже в 0,8 и 0,6 раза.
 const title = p.heading?.text ?? p.title ?? SITE_TITLE;
 const subtitle =
 	p.text?.content ?? p.subtitle ?? "Там, где классика встречается с характером";
@@ -87,7 +82,7 @@ const backgroundImage2 = heroSlots.secondary || undefined;
 
 
 // ДВА НЕЗАВИСИМЫХ размера у Hero:
-//   • p.size (small/medium/large) — ВЫСОТА секции (heroHeightCls ниже). НЕ шрифт.
+//   • p.size (small/medium/large) — ВЫСОТА секции (HERO_HEIGHT_DESIGNERS_CLS ниже). НЕ шрифт.
 //   • heading.size / text.size — размер ШРИФТА заголовка/текста (поля «Размер
 //     заголовка»/«Размер текста» панели «Изображение»). Возвращены по решению
 //     владельца (откат unify ee611471). КЛЮЧЕВОЕ: font-size берётся ТОЛЬКО из
@@ -103,7 +98,7 @@ const headingCls =
 		? "hero-animate-1 !text-[14px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[20px] md:!text-[25px] lg:!text-[28px]"
 		: headingSize === "medium"
 			? "hero-animate-1 !text-[17px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[24px] md:!text-[31px] lg:!text-[34px]"
-			: designersWhenUnset(designParity, headingSize, ROSE_HERO_DESIGNERS.heading) ||
+			: designersWhenUnset(headingSize, ROSE_HERO_DESIGNERS.heading) ||
 				"hero-animate-1 !text-[20px] !font-normal !leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))] sm:!text-[28px] md:!text-[36px] lg:!text-[length:var(--size-hero-heading,40px)]";
 const textSize = p.text?.size;
 const subtitleCls =
@@ -111,33 +106,19 @@ const subtitleCls =
 		? "hero-animate-2 max-w-xl px-1 font-manrope text-[10px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[11px] md:text-[13px] lg:text-[14px]"
 		: textSize === "medium"
 			? "hero-animate-2 max-w-xl px-1 font-manrope text-[12px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[14px] md:text-[15px] lg:text-[17px]"
-			: designersWhenUnset(designParity, textSize, ROSE_HERO_DESIGNERS.text) ||
+			: designersWhenUnset(textSize, ROSE_HERO_DESIGNERS.text) ||
 				"hero-animate-2 max-w-xl px-1 font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))] sm:text-[16px] md:text-[18px] lg:text-[20px]";
 // «Размер» → высота секции (вьюпорт). large (дефолт rose blockDefaults) = прежняя
 // лестница верстальщика байт-в-байт; medium ≈0.82×, small ≈0.64× (вьюпорт-доля и
 // px-кэпы пропорционально ниже). Дефолт (p.size не задан) = large.
 const heroSize = p.size === "small" ? "small" : p.size === "medium" ? "medium" : "large";
-const heroHeightCls = {
-	large: "min-h-[min(46svh,320px)] sm:min-h-[600px] md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
-	medium: "min-h-[min(38svh,260px)] sm:min-h-[480px] md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
-	small: "min-h-[min(30svh,210px)] sm:min-h-[360px] md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
-}[heroSize];
-// Мобила = стек (картинка сверху + подложка снизу, Shopify Image banner), десктоп
-// = оверлей. Поэтому min-h секции нужен ТОЛЬКО на md+ (на мобиле высота = картинка
-// + блок-подложка). md-only лестница высоты (без base/sm min-h).
-const heroHeightMdCls = {
-	large: "md:min-h-[560px] lg:min-h-[600px] xl:min-h-[640px]",
-	medium: "md:min-h-[440px] lg:min-h-[470px] xl:min-h-[500px]",
-	small: "md:min-h-[320px] lg:min-h-[340px] xl:min-h-[360px]",
-}[heroSize];
-// PARITY_DESIGN: у верстальщиков фото — оверлей на всех ширинах (высота секции =
-// min-h + aspect-ratio по брейкпоинтам, Rose-theme @b719c193). «Большой» = их
+// У верстальщиков фото — оверлей на всех ширинах (высота секции = min-h +
+// aspect-ratio по брейкпоинтам, Rose-theme @b719c193). «Большой» = их
 // пропорция дословно; «Средний»/«Маленький» — та же пропорция ниже в 0,8 и 0,6
 // раза (aspect — множитель к высотной стороне отношения, min-h — прямое
-// умножение; лестница 460/368/276 повторяет соотношение 0,8/0,6, как у
-// heroHeightMdCls выше). Пустое состояние (isEmpty) под признаком берёт ту же
-// высоту: у нового магазина первый экран именно такой, и на нём владелец сверяет
-// тему с верстальщиками (замер 24.09: 320 px вместо 752 на телефоне).
+// умножение; лестница 460/368/276 повторяет соотношение 0,8/0,6). Пустое
+// состояние (isEmpty) берёт ту же высоту: у нового магазина первый экран
+// именно такой, и на нём владелец сверяет тему с верстальщиками.
 const HERO_HEIGHT_DESIGNERS_CLS = {
 	large: "min-h-[calc(100svh-92px)] sm:min-h-[calc(100svh-92px)] md:min-h-[calc(100svh-104px)] lg:min-h-[460px] aspect-[10/15] sm:aspect-[4/5] md:aspect-[4/3] lg:aspect-[16/9] xl:aspect-[2/1] 2xl:aspect-[21/9]",
 	medium: "min-h-[calc((100svh-92px)*0.8)] sm:min-h-[calc((100svh-92px)*0.8)] md:min-h-[calc((100svh-104px)*0.8)] lg:min-h-[368px] aspect-[10/12] sm:aspect-[4/4] md:aspect-[4/2.4] lg:aspect-[16/7.2] xl:aspect-[2/0.8] 2xl:aspect-[21/7.2]",
@@ -167,8 +148,8 @@ const panelPadCls = {
 	small: "p-4 md:p-6",
 }[heroSize];
 // Владелец 25.09 «что в панели — то и на витрине»: не заданный «Размер» рисует
-// значение панели по умолчанию — «Большой» — и под признаком PARITY_DESIGN
-// тоже. Кнопку верстальщиков (на планшете 40px/14) взять «Большому» нельзя:
+// значение панели по умолчанию — «Большой». Кнопку верстальщиков (на
+// планшете 40px/14) взять «Большому» нельзя:
 // на планшете она меньше кнопки «Среднего» (46px/15) — порядок размеров
 // сломался бы (замер Chromium 25.09).
 const ctaSizeCls = {
@@ -176,8 +157,8 @@ const ctaSizeCls = {
 	medium: "h-10 min-h-10 min-w-[110px] px-3 py-2.5 text-[13px] sm:h-[46px] sm:min-h-[46px] sm:min-w-[140px] sm:px-5 sm:py-[9px] sm:text-[14px] md:text-[15px]",
 	small: "h-9 min-h-9 min-w-[100px] px-2.5 py-2 text-[12px] sm:h-10 sm:min-h-10 sm:min-w-[120px] sm:px-4 sm:py-2 sm:text-[13px] md:text-[14px]",
 }[heroSize];
-// Зазор заголовок–текст верстальщиков (под признаком; настройки у него нет).
-const heroCopyGapCls = designParity ? ROSE_HERO_DESIGNERS.copyGap : "gap-2 sm:gap-3 md:gap-4";
+// Зазор заголовок–текст верстальщиков (настройки у него нет).
+const heroCopyGapCls = ROSE_HERO_DESIGNERS.copyGap;
 
 // Канон secondaryButton {text, link: string|{href}} — рендер ТОЛЬКО при непустом тексте.
 const secondaryText =
@@ -201,14 +182,6 @@ const boxed = String(p.container ?? "false") === "true";
 const boxedCls = boxed
 	? ` rounded-[var(--radius-card,8px)] bg-[rgb(var(--color-bg,255_255_255))]/95 ${panelPadCls} shadow-sm [&_h1]:!text-[rgb(var(--color-heading,0_0_0))] [&_p]:!text-[rgb(var(--color-text,0_0_0))]`
 	: "";
-// Мобила-обёртка контента ПОД медиа (стек). «Контейнер» ON → карточка (boxedCls) сама
-// = плашка-контейнер, поэтому обёртка ПРОЗРАЧНАЯ (только боковой гаттер + зазор от
-// медиа) — иначе «контейнер внутри контейнера» (белая полоса-обёртка + вложенная
-// карточка). «Контейнер» OFF → обёртка = сама подложка (фон схемы + вертик.паддинги).
-// Десктоп (md+) — всегда absolute-оверлей, фон прозрачный (md:bg-transparent ниже).
-const wrapperMobileCls = boxed
-	? "px-4 pt-4 pb-8 sm:px-5"
-	: "bg-[rgb(var(--color-bg,255_255_255))] px-4 py-10 sm:px-5 sm:py-12";
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9 значений).
 // Позиция управляет РАЗМЕЩЕНИЕМ контент-блока по сетке 3×3 (Figma 648-55404):
@@ -235,15 +208,13 @@ const vJustifyCls = vPos === "top" ? "justify-start" : vPos === "middle" ? "just
 // pt-28/pb-10 (112/40) центрирует контент в перекошенном боксе → он уезжает вниз
 // на ~36px = «ниже центра». Верх/низ оставляем asymmetric (верх отодвигает контент
 // от края, низ держит нижний отступ). Одинаково mobile+desktop.
-// PARITY_DESIGN: «Позиция» не задана → нижний отступ контента на телефоне 80px,
-// как у верстальщиков (у нас было 40 — кнопка стояла ниже).
+// «Позиция» не задана → нижний отступ контента на телефоне 80px, как у
+// верстальщиков (было 40 — кнопка стояла ниже).
 const vPadCls =
 	vPos === "middle"
 		? "py-10 sm:py-12 md:py-16"
-		: designersWhenUnset(designParity, posRaw || undefined, ROSE_HERO_DESIGNERS.contentPad) ||
+		: designersWhenUnset(posRaw || undefined, ROSE_HERO_DESIGNERS.contentPad) ||
 			"pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
-// md-only верт.паддинг для десктоп-оверлея (на мобиле блок-подложка имеет свой py-10).
-const vPadMdCls = vPos === "middle" ? "md:py-16" : "md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-end" : "items-center";
 // alignment — выравнивание КОНТЕНТА внутри блока (НЕ двигает сам блок — это делает
 // Позиция через items на внешнем контейнере). items-* выравнивают заголовок/текст/
@@ -251,23 +222,16 @@ const hItemsCls = hPos === "left" ? "items-start" : hPos === "right" ? "items-en
 const textAlignCls = p.alignment === "left" ? "text-left" : p.alignment === "right" ? "text-right" : "text-center";
 const alignItemsCls = p.alignment === "left" ? "items-start" : p.alignment === "right" ? "items-end" : "items-center";
 
-// PARITY_DESIGN: фото и контент — оверлей на всех ширинах (не только md+), как
-// у верстальщиков. Фото-обёртка — просто absolute inset-0 (высоту теперь несёт
-// секция, HERO_HEIGHT_DESIGNERS_CLS выше), обёртка контента — absolute inset-0
-// прозрачным фоном на ВСЮ ширину (вместо блока-подложки на мобиле), паддинг —
-// уже готовый vPadCls (полная лестница, раньше использовался только частично
-// через vPadMdCls). Позиция/выравнивание (hItemsCls/vJustifyCls/alignItemsCls/
-// textAlignCls) не меняются — сохраняют работу «Позиции»/«Выравнивания».
-const heroMediaWrapCls = designParity
-	? "absolute inset-0 z-0"
-	: "relative z-0 aspect-[4/3] w-full md:absolute md:inset-0 md:aspect-auto";
-const heroContentWrapCls = designParity
-	? `absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} bg-transparent px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadCls}`
-	: `relative z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} ${wrapperMobileCls} md:absolute md:inset-0 md:bg-transparent md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadMdCls}`;
-// Затемнение фото раньше показывалось только на десктопе (на мобиле текст
-// сидел на своей подложке, не на фото). Теперь текст оверлеем везде — и
-// затемнение обязано включаться везде, иначе на мобиле оно не читалось бы.
-const heroOverlayVisibleCls = designParity ? "block" : "hidden md:block";
+// Фото и контент — оверлей на всех ширинах, как у верстальщиков. Фото-обёртка —
+// просто absolute inset-0 (высоту несёт секция, HERO_HEIGHT_DESIGNERS_CLS выше),
+// обёртка контента — absolute inset-0 прозрачным фоном на ВСЮ ширину, паддинг —
+// vPadCls. Позиция/выравнивание (hItemsCls/vJustifyCls/alignItemsCls/
+// textAlignCls) сохраняют работу «Позиции»/«Выравнивания».
+const heroMediaWrapCls = "absolute inset-0 z-0";
+const heroContentWrapCls = `absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} bg-transparent px-4 sm:px-5 md:px-10 lg:px-16 xl:px-20 2xl:px-[280px] ${vPadCls}`;
+// Текст оверлеем везде — и затемнение включается везде, иначе на мобиле оно не
+// читалось бы.
+const heroOverlayVisibleCls = "block";
 
 // ПУСТОЕ СОСТОЯНИЕ (заглушка до своих фото и текста) слушает те же настройки,
 // что заполненное: «Затемнение», «Позиция», «Выравнивание», «Размер заголовка»,
@@ -275,7 +239,7 @@ const heroOverlayVisibleCls = designParity ? "block" : "hidden md:block";
 // жёсткими классами при любых значениях (тестер 24.09: «Изображение по всем
 // настройкам сломалась, не принимает изменения»). Классы — те же, что у
 // заполненной ветки выше; текст заглушки лежит поверх фото на всех ширинах,
-// поэтому берётся «оверлейный» вариант правил (как под PARITY_DESIGN).
+// поэтому берётся «оверлейный» вариант правил.
 // Без своего значения — то, что показывает панель: «Выравнивание» по центру
 // (theme.json), размеры «Большой» (прежние кегли заглушки байт-в-байт),
 // «Позиция» по центру — у свежей секции панель пишет скрытый contentPosition
@@ -412,7 +376,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 				)
 			}
 			<div
-				class={`relative w-full ${designParity ? HERO_HEIGHT_DESIGNERS_CLS : heroHeightCls}`}
+				class={`relative w-full ${HERO_HEIGHT_DESIGNERS_CLS}`}
 			>
 				<div class={emptyOuterCls}>
 					{/* «Контейнер» работает и на ПУСТОЙ секции (баг тестера 22.09, satin):
@@ -478,7 +442,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 		</section>
 	) : (
 <section
-	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${designParity ? HERO_HEIGHT_DESIGNERS_CLS : heroHeightMdCls}`}
+	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${HERO_HEIGHT_DESIGNERS_CLS}`}
 	aria-labelledby="hero-title"
 	data-puck-component-id={id}
 	style={paddingVars}
@@ -488,9 +452,8 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 	    «Отступы») → фон цветовой схемы больше не проступает полосами. «Отступы»
 	    (padding на <section>) теперь отодвигают КОНТЕНТ (inner-div в нормальном
 	    потоке ниже), а не создают полосы. */}
-	{/* КАРТИНКА — мобила: блок-картинка сверху (стек как Shopify Image banner);
-	    десктоп: absolute на всю секцию (оверлей под текстом). PARITY_DESIGN — оверлей
-	    на всех ширинах, heroMediaWrapCls выше. */}
+	{/* КАРТИНКА — absolute на всю секцию, оверлей под текстом на всех ширинах
+	    (heroMediaWrapCls выше). */}
 	<div class={heroMediaWrapCls}>
 		{
 			backgroundImage2 ? (
@@ -524,8 +487,8 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 		}
 	</div>
 
-	{/* Затемнение фото — только десктоп (на мобиле текст на подложке снизу).
-	    PARITY_DESIGN — контент оверлеем везде, затемнение тоже везде (heroOverlayVisibleCls). */}
+	{/* Затемнение фото — контент оверлеем везде, затемнение тоже везде
+	    (heroOverlayVisibleCls). */}
 	{
 		overlayN > 0 && (
 			<div
@@ -535,14 +498,13 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 		)
 	}
 
-	{/* КОНТЕНТ — мобила: блок-подложка (фон схемы) ПОД картинкой; десктоп: overlay поверх.
-	    PARITY_DESIGN — оверлей везде, heroContentWrapCls выше. */}
+	{/* КОНТЕНТ — overlay поверх картинки на всех ширинах (heroContentWrapCls выше). */}
 	<div
 		class={heroContentWrapCls}
 	>
 			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				{heroRuns.map((run) => run.grouped ? (
-				<div class={designParity ? `flex flex-col ${alignItemsCls} ${heroCopyGapCls} ${textAlignCls}` : `flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
+				<div class={`flex flex-col ${alignItemsCls} ${heroCopyGapCls} ${textAlignCls}`}>
 					{run.fields.map((field) => (
 					<Fragment>
 					{field === 'heading' && !isFieldHidden('heading') && (

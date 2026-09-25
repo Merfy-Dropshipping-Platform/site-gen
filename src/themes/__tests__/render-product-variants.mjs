@@ -12,6 +12,7 @@
  */
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { withDesignParity } from './prod-design-parity.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
@@ -28,7 +29,8 @@ async function main() {
     const { experimental_AstroContainer } = await import('astro/container');
     const container = await experimental_AstroContainer.create();
     const mod = await import(pathToFileURL(COMPILED).href);
-    const html = await container.renderToString(mod.default, { props });
+    // Как на проде: признак режима «как у верстальщиков» (prod-design-parity.mjs).
+    const html = await container.renderToString(mod.default, { props: withDesignParity(props) });
     process.stdout.write(JSON.stringify({ html }));
   } catch (err) {
     process.stdout.write(JSON.stringify({ error: String(err?.message ?? err).slice(0, 300) }));

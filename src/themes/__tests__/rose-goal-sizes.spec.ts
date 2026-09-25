@@ -2,6 +2,16 @@ import { renderSections } from "../../../scripts/qa/lib/render";
 import { classSelector, themeCss } from "../../../scripts/qa/lib/tailwind-css";
 import * as PARITY from "../../../themes/rose/src/lib/design-parity";
 
+// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
+// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
+// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
+// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
+// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
+process.env.PARITY_DESIGN = "off";
+afterEach(() => {
+  process.env.PARITY_DESIGN = "off";
+});
+
 /**
  * rose — размеры «как у верстальщиков» по цели designer-goal (24.09),
  * пересобранные по решению владельца 25.09 «что в панели — то и на витрине».

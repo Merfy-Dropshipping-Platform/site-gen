@@ -86,7 +86,7 @@ const STYLE_TYPES = new Set([
  * без него) — сравниваем только поле, режим у пары общий.
  */
 const MODES = [
-  { name: "без признака", extra: {} },
+  { name: "без признака", extra: { __designParity: false } },
   { name: "с признаком __designParity", extra: { __designParity: true } },
 ] as const;
 type Mode = (typeof MODES)[number]["name"];

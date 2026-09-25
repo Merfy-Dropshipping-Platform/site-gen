@@ -1,5 +1,15 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
+// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
+// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
+// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
+// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
+// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
+process.env.PARITY_DESIGN = "off";
+afterEach(() => {
+  process.env.PARITY_DESIGN = "off";
+});
+
 /**
  * vanilla — шапка, подвал и секции как в актуальной вёрстке верстальщиков
  * (Vanilla-theme @c65d9e1c776cc5f2a80cd2525c1fcb18a38fad9e), под PARITY_DESIGN.

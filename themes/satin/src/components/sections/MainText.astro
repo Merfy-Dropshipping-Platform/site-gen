@@ -63,7 +63,7 @@ const textSize = p.text?.size ?? p.textSize;
 // утилиту — на экране 16px на любой ширине. Под признаком так рисуется только
 // НЕ заданный «Размер текста» (у «Текст → Размер» в панели нет значения по
 // умолчанию, панель его не вписывает); выбранный мерчантом — как раньше.
-const designParity = p.__designParity === true;
+// Одна версия секции (владелец 25.09): прежняя ветка удалена.
 const TEXT_CLS: Record<string, string> = {
 	small: "text-[14px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[17px]",
 	large: "text-[19px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))] md:text-[24px]",
@@ -71,7 +71,7 @@ const TEXT_CLS: Record<string, string> = {
 	designers: "text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]",
 };
 const textCls =
-	TEXT_CLS[textSize === "small" || textSize === "large" ? textSize : textSize === undefined && designParity ? "designers" : "medium"];
+	TEXT_CLS[textSize === "small" || textSize === "large" ? textSize : textSize === undefined ? "designers" : "medium"];
 
 // Канон position/alignment: canon-default обоих = 'center' (его пишет коэрсер)
 // И отсутствие = ЛИТЕРАЛ верстальщика — всё СЛЕВА во всю ширину satin-container

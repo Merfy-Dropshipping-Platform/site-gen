@@ -206,6 +206,33 @@ function divergence(withDef?: Row, without?: Row): string | null {
   return digest(withDef?.html) === digest(without?.html) ? null : "разошлись";
 }
 
+/**
+ * Читает ли порт темы признак «как у верстальщиков». Владелец 25.09: «одна
+ * версия секции» — темы по одной избавляются от развилки; у темы без неё
+ * признак ни на что не влияет. Считаем по исходникам порта и пакета темы.
+ */
+function themeReadsDesignParity(theme: string): boolean {
+  try {
+    const out = execFileSync(
+      "git",
+      [
+        "grep",
+        "-l",
+        "__designParity",
+        "--",
+        `themes/${theme}/src`,
+        `packages/theme-${theme}`,
+        ":(exclude)**/__tests__/**",
+      ],
+      { cwd: resolve(__dirname, "..", "..", ".."), encoding: "utf8" },
+    );
+    return out.trim().length > 0;
+  } catch {
+    // git grep без совпадений завершается кодом 1 — признак тема не читает.
+    return false;
+  }
+}
+
 describe.each(THEMES)("дефолт не меняет вид витрины — %s", (theme) => {
   const blocks = themeBlocks(theme);
   const panel = readPanel(theme);
@@ -252,11 +279,14 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
     expect(pairs.filter((p) => p.style).length).toBeGreaterThan(0);
   });
 
-  it("признак __designParity доходит до секций темы", () => {
+  it("признак __designParity: тема с развилкой — меняет секции, тема одной версии — ничего", () => {
     if (!built) return;
-    // Без этой проверки режим «с признаком» мог бы молча выродиться в копию
-    // режима «без» (например, звено живой цепочки начнёт вычищать служебные
-    // ключи) — и сторож стал бы зелёным, ничего не проверяя.
+    // Пока у темы есть развилка «как у верстальщиков / прежний вид», режим «с
+    // признаком» обязан отличаться от режима «без» — иначе он мог бы молча
+    // выродиться в копию (звено живой цепочки начнёт вычищать служебные
+    // ключи), и сторож был бы зелёным, ничего не проверяя. Когда тема
+    // переведена на одну версию секций (владелец 25.09), признак не должен
+    // менять НИЧЕГО — это и проверяем.
     const base = pairJobs.length;
     const n = fullBlocks.length;
     const changed = fullBlocks.filter(
@@ -264,7 +294,8 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
         rows[base + i]?.html !== undefined &&
         rows[base + i]?.html !== rows[base + n + i]?.html,
     );
-    expect(changed.length).toBeGreaterThan(0);
+    if (themeReadsDesignParity(theme)) expect(changed.length).toBeGreaterThan(0);
+    else expect(changed.length).toBe(0);
   });
 
   it.each(MODES.map((m, i) => [m.name, i] as [Mode, number]))(

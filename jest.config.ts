@@ -17,15 +17,17 @@ const config: Config = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  // Тесты рисуют как прод: режим «как у верстальщиков» включён по умолчанию.
-  setupFiles: ['<rootDir>/jest.setup-prod-parity.ts'],
+  setupFiles: [
+    // Тесты рисуют как прод: режим «как у верстальщиков» включён по умолчанию.
+    '<rootDir>/jest.setup-prod-parity.ts',
+    // Рендер секций в уже запущенном потоке вместо нового процесса на вызов
+    // (spec 115, часть 2). MERFY_RENDER_BRIDGE=off — старый путь, =verify — оба
+    // пути с побайтной сверкой HTML.
+    '<rootDir>/src/themes/__tests__/render-bridge.cjs',
+  ],
   // Большой прогон (весь набор, каталог, 4+ файлов) встаёт в очередь на машину.
   globalSetup: '<rootDir>/jest.global-setup.cjs',
   globalTeardown: '<rootDir>/jest.global-teardown.cjs',
-  // Рендер секций в уже запущенном потоке вместо нового процесса на вызов
-  // (spec 115, часть 2). MERFY_RENDER_BRIDGE=off — старый путь, =verify — оба
-  // пути с побайтной сверкой HTML.
-  setupFiles: ['<rootDir>/src/themes/__tests__/render-bridge.cjs'],
   verbose: false,
 };
 

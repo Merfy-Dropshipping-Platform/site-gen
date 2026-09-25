@@ -47,20 +47,18 @@
           {
             "id": "item-1",
             "type": "image",
-            "url": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp",
+            "url": "https://minio.merfy.ru/product-images/72b8fafa-5500-4547-b8c8-b1aeede1abe7.webp?e2eSeed=1",
             "alt": "Изображение"
           },
           {
             "id": "item-2",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/1352e026-ad8e-40e0-82ea-313f6d28f0a8.webp",
-            "alt": "Изображение"
+            "type": "product",
+            "productId": null
           },
           {
             "id": "item-3",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/d6b22fd7-98ea-40d6-ac2c-c5d4a17ded7e.webp",
-            "alt": "Изображение"
+            "type": "collection",
+            "collectionId": null
           }
         ]
       }

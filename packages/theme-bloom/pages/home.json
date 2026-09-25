@@ -158,15 +158,13 @@
           },
           {
             "id": "item-2",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/fbc737b0-c024-4b0a-8a8a-05dff445f628.webp",
-            "alt": "Изображение"
+            "type": "product",
+            "productId": null
           },
           {
             "id": "item-3",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/c35a2f11-cc45-4e3c-9c1a-6fec10024a30.webp",
-            "alt": "Изображение"
+            "type": "collection",
+            "collectionId": null
           }
         ]
       }

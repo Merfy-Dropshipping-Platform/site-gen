@@ -121,7 +121,7 @@
         },
         "alignment": "center",
         "position": "center",
-        "cta": { "text": "К покупкам", "href": "/catalog", "variant": "primary" },
+        "button": { "text": "К покупкам", "link": { "href": "/catalog" } },
         "buttonStyle": "outlined",
         "textStyle": "italic",
         "colorScheme": "scheme-2",

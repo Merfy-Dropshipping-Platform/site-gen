@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
 // pages/about.astro:138-166 (см. themes/vanilla/MANNER.md §10: welcome =
 // тёмное полотно №2 «заголовок + текст + outlined-CTA» = аналог MainText).
@@ -105,16 +106,11 @@ const alignCls =
 			? "items-end text-right"
 			: "items-center text-center";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Пустое состояние (плейсхолдер Figma 1:19335, секция вообще без контента) →
-// контрактная «Кнопка» (НЕ мок-CTA «ПЕРЕЙТИ В КАТАЛОГ»→/catalog/textile
-// верстальщика). Когда мерчант заполнил секцию, но кнопку не задал — кнопка
-// СКРЫТА. Заданный текст рендерится как есть; пустой проп СКРЫВАЕТ кнопку.
-// Ссылка-фоллбек /catalog (паттерн satin/bloom T15).
-const btnTextProp =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (isEmptyState ? "Кнопка" : undefined);
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

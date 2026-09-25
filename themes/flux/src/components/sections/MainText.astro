@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Секция MainText («Основной текст») в манере flux. Донора-манифеста у
 // верстальщика flux НЕТ (секций всего 4, MANNER §10) — но есть родственная Puk
 // («Основной текст» / CTA репо), потому MainText дизайним в ЕДИНОМ flux-языке:
@@ -97,16 +98,11 @@ const alignCls =
 // Канон textStyle (hidden, 084): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Figma 1:19335 — пустое состояние: дословный плейсхолдер «Кнопка». Мерчант задал
-// текст пропа — рендерим его; пустой текст ЗАДАННОГО пропа СКРЫВАЕТ кнопку
-// (canon-defaults кнопку не пишут → показываем плейсхолдер «Кнопка»). Ссылка-
-// фоллбек /catalog.
-const btnProvided = p.button !== undefined || p.cta !== undefined;
-const btnTextProp =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (btnProvided ? undefined : "Кнопка");
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

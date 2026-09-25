@@ -29,10 +29,9 @@ const id = p.id;
 // и ширина выезда шторки, JS-порог поиска (см. <script> ниже) — переезжают на md
 // синхронно, иначе в 768–1023 расходятся десктопная строка и меню/шторка/поиск.
 // Настройки «Положение логотипа», меню, липкость и отступы не меняются — только
-// порог переключения. Без признака — прежние lg. Признак ставит sites.
-const designParity = p.__designParity === true;
+// порог переключения. Владелец 25.09: одна версия секции — порог md стал
+// единственным (прежняя ветка с lg удалена).
 const HEADER_BP = {
-	designers: {
 		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 md:hidden",
 		desktopWrap: "hidden w-full md:block",
 		sidebarNavHide: "md:!hidden",
@@ -43,14 +42,7 @@ const HEADER_BP = {
 		// выше). У верстальщика всё в одной строке — dense ставит меню и иконки
 		// в свободные ячейки первой.
 		centerRowFlow: "grid-flow-dense",
-	},
-	legacy: {
-		mobileRow: "relative z-[60] flex h-14 items-center justify-between bg-[rgb(var(--color-bg,255_255_255))] px-4 lg:hidden",
-		desktopWrap: "hidden w-full lg:block",
-		sidebarNavHide: "lg:!hidden",
-		centerRowFlow: "",
-	},
-}[designParity ? "designers" : "legacy"];
+};
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : SITE_TITLE;
 const mapNavLink = (l: any): NavLink => ({
 	label: l.label ?? l.text ?? "",
@@ -172,7 +164,6 @@ const shopId = "";
 	data-puck-component-id={id}
 	data-header-wrapper
 	data-satin-sticky={stickiness === "scroll-up" ? "scroll-up" : undefined}
-	data-design-parity={designParity ? "true" : undefined}
 >
 	{
 		!id && (
@@ -185,7 +176,7 @@ const shopId = "";
 	<div class="overflow-visible bg-[rgb(var(--color-bg,255_255_255))]">
 	<header class:list={["relative w-full overflow-visible border-b border-[rgb(var(--color-text,0_0_0)/13%)] bg-[rgb(var(--color-bg,255_255_255))]", headerSchemeClass]} data-nt="satin-header">
 		{/* Mobile — как rose: lg:hidden, logoPosition не трогает эту полосу.
-		    PARITY_DESIGN двигает порог на md — HEADER_BP.mobileRow. */}
+		    Порог переключения — md, HEADER_BP.mobileRow. */}
 		<div class={HEADER_BP.mobileRow}>
 			<button
 				type="button"
@@ -225,7 +216,7 @@ const shopId = "";
 		</div>
 
 		{/* Desktop — как rose: hidden lg:block. Конструктор 1280px → эта ветка.
-		    PARITY_DESIGN двигает порог на md — HEADER_BP.desktopWrap. */}
+		    Порог переключения — md, HEADER_BP.desktopWrap. */}
 		<div class={HEADER_BP.desktopWrap}>
 			{isTwoRow ? (
 				<div class={twoRowCls} style={headerPadStyle}>
@@ -421,16 +412,12 @@ const shopId = "";
 			// Нижняя шторка других типов меню (на телефоне) спадает из-под шапки
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
-			// PARITY_DESIGN двигает и эту пару порогов на md — строки прямо в теге
+			// Пара порогов шторки тоже на md — строки прямо в теге
 			// (гард header-burger-position ищет сторону панели в теге; иначе шторка не совпадёт с новой десктопной
 			// строкой в 768–1023).
 			isSidebar
-				? designParity
-					? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
-					: "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 lg:right-auto lg:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full lg:starting:-translate-x-full lg:[&.hidden]:-translate-x-full motion-reduce:transition-none"
-				: designParity
-					? "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none"
-					: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 lg:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
+				: "inset-x-0 top-[56px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"
 		aria-modal="true"
@@ -632,11 +619,8 @@ const shopId = "";
 	// PARITY_DESIGN двигает и этот порог на md (767.98): иначе desktop-строка
 	// на 768–1023 уже видна (HEADER_BP.desktopWrap), а лупа всё равно тянулась
 	// бы в скрытую по CSS шторку (шторка по умолчанию прячется с md) —
-	// клик по поиску не открывал бы ничего. Признак читаем с data-header-wrapper,
-	// а не замыканием: скрипт статичен для обоих режимов одной сборки темы.
-	const isDesignParity = () =>
-		document.querySelector('[data-header-wrapper]')?.getAttribute("data-design-parity") === "true";
-	const MOBILE_QUERY = () => (isDesignParity() ? "(max-width: 767.98px)" : "(max-width: 1023.98px)");
+	// клик по поиску не открывал бы ничего.
+	const MOBILE_QUERY = () => "(max-width: 767.98px)";
 	const openDrawerSearch = (): boolean => {
 		if (!window.matchMedia(MOBILE_QUERY()).matches) return false;
 		const burger = burgerEl();

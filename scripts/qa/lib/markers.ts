@@ -46,7 +46,7 @@ export type Marker =
  *   attr:data-cfg-name         → [data-cfg-name]
  *   attr:data-nt=promo-banner  → [data-nt="promo-banner"]
  *   #cart-title                → #cart-title
- *   css:.flux-container        → .flux-container
+ *   css:.flux-container-designers → .flux-container-designers
  *   data-block="cart-body"     → [data-block="cart-body"]   (форма из старых гардов)
  *   id="cart-title"            → #cart-title                (форма из старых гардов)
  */

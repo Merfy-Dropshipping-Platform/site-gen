@@ -24,8 +24,7 @@ import { renderSections } from "../../../scripts/qa/lib/render";
  * Капс верстальщиков НЕ переносим (владелец 13.09 велел его убрать): число
  * `uppercase` в разметке секции закреплено (`КАПС`).
  * С 25.09 у секций одна версия (владелец: «стили приравнивали, секции и
- * параметры менять не нужно было») — прежняя ветка удалена вместе с
- * признаком режима, и признак (true/false) разметку не меняет.
+ * параметры менять не нужно было») — прежняя ветка удалена.
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
@@ -163,23 +162,12 @@ const КАПС: Record<string, number> = {
 
 describe("vanilla: шапка, подвал и секции как у верстальщиков", () => {
   const html = отрисовать(СЕКЦИИ);
-  const вкл = отрисовать(
-    СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, __designParity: true } })),
-  );
-  const выкл = отрисовать(
-    СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, __designParity: false } })),
-  );
 
   СЕКЦИИ.forEach((с, i) => {
     it(`${с.block} (${с.props.id}): классы верстальщиков`, () => {
       expect(html[i].length).toBeGreaterThan(0);
       for (const к of ОЖИДАНИЯ[с.block].есть) expect(html[i]).toContain(к);
       for (const к of ОЖИДАНИЯ[с.block].нет) expect(html[i]).not.toContain(к);
-    });
-
-    it(`${с.block} (${с.props.id}): одна версия — признак режима (true, false) ничего не меняет`, () => {
-      expect(вкл[i]).toEqual(html[i]);
-      expect(выкл[i]).toEqual(html[i]);
     });
 
     it(`${с.block} (${с.props.id}): капс верстальщиков не перенесён (число uppercase не растёт)`, () => {

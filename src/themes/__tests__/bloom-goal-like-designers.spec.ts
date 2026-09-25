@@ -1,22 +1,12 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
-
 /**
  * bloom по цели «как у верстальщиков» (владелец 24.09: «нужно как у
  * верстальщиков, но не ломать структуру секций, их настроек, цветовых схем»;
  * его интересуют размеры и ширина). Эталон — Bloom-theme @5aae2ad6, замер —
  * scripts/qa/designer-goal.ts bloom на восьми ширинах.
  *
- * Под PARITY_DESIGN:
+ * Как у верстальщиков:
  *   «Первый экран»: заголовок 14 → md 20, текст 12 → md 16 (оба leading-normal),
  *     колонка 330 → md 410 с полем py-10 pr-10, 32 между текстом и кнопкой,
  *     кнопка 40 → md 48 (кегль 14 → md 16), снизу 80 на телефоне;
@@ -28,11 +18,10 @@ afterEach(() => {
  *     через 16; три плитки — прежняя раскладка (решает владелец);
  *   «Подвал»: адрес одной строкой, иконки соцсетей 24, нижняя полоса 64 / 16.
  * Настройки размеров работают поверх, цвета не трогаются, капс не переносится.
- * Без признака разметка байт в байт прежняя.
+ * С 25.09 у секций одна версия — прежняя ветка удалена.
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
-const ВКЛ = { __designParity: true };
 
 type Секция = { block: string; props: Record<string, unknown> };
 
@@ -104,9 +93,7 @@ const СЕКЦИИ: Record<string, Секция> = {
 };
 
 const ИМЕНА = Object.keys(СЕКЦИИ);
-const вкл = отрисовать(ИМЕНА.map((n) => ({ ...СЕКЦИИ[n], props: { ...СЕКЦИИ[n].props, ...ВКЛ } })));
-const выкл = отрисовать(ИМЕНА.map((n) => СЕКЦИИ[n]));
-const признакЛожь = отрисовать(ИМЕНА.map((n) => ({ ...СЕКЦИИ[n], props: { ...СЕКЦИИ[n].props, __designParity: false } })));
+const отрисовано = отрисовать(ИМЕНА.map((n) => СЕКЦИИ[n]));
 const html = (набор: string[], имя: string) => набор[ИМЕНА.indexOf(имя)];
 
 /** Классы первого тега, у которого в class есть метка. */
@@ -116,30 +103,21 @@ const классы = (h: string, метка: string): string => {
   return m!;
 };
 
-// Владелец 25.09: одна версия секции — прежняя ветка удалена, признак режима
-// больше ничего не меняет.
-describe("bloom по цели: одна версия секций", () => {
-  it.each(ИМЕНА)("%s: с признаком, без него и с явным false — одна и та же разметка", (имя) => {
-    expect(html(признакЛожь, имя)).toEqual(html(выкл, имя));
-    expect(html(вкл, имя)).toEqual(html(выкл, имя));
-  });
-
+describe("bloom по цели: капс", () => {
   it("капс верстальщиков не перенесён", () => {
-    for (const h of вкл) expect(h).not.toMatch(/class="[^"]*\buppercase\b/);
+    for (const h of отрисовано) expect(h).not.toMatch(/class="[^"]*\buppercase\b/);
   });
 });
 
 describe("«Первый экран»: текстовый блок как у верстальщиков", () => {
   it("кегли по умолчанию 14/20 и 12/16, строки leading-normal", () => {
-    const h = html(вкл, "hero");
+    const h = html(отрисовано, "hero");
     expect(классы(h, "hero-over-photo-heading")).toContain("text-[14px] font-normal leading-normal hero-over-photo-heading md:text-[20px]");
     expect(классы(h, "hero-over-photo-text")).toContain("text-[12px] font-light leading-normal hero-over-photo-text md:text-[16px]");
-    // Одна версия: без признака — то же самое.
-    expect(html(выкл, "hero")).toEqual(h);
   });
 
   it("колонка 330 → md 410, 32 до кнопки, кнопка 40 → md 48, снизу 80", () => {
-    const h = html(вкл, "hero");
+    const h = html(отрисовано, "hero");
     expect(h).toContain("max-w-[330px] md:max-w-[410px] md:py-10 md:pr-10");
     expect(h).toMatch(/flex-col items-start gap-8/);
     expect(h).toContain("h-10 md:h-12");
@@ -148,26 +126,24 @@ describe("«Первый экран»: текстовый блок как у в�
     expect(h).toContain(" pb-20 md:px-20");
   });
 
-  it("«Размер заголовка»/«Размер текста», выставленные мерчантом, работают как прежде", () => {
+  it("«Размер заголовка»/«Размер текста», выставленные мерчантом, рисуют себя, а не кегли по умолчанию", () => {
     const задано = { heading: { text: "Заголовок", size: "medium" }, text: { content: "Текст", size: "small" } };
-    const [с, без] = отрисовать([
-      { block: "Hero", props: { ...СЕКЦИИ.hero.props, ...задано, ...ВКЛ } },
-      { block: "Hero", props: { ...СЕКЦИИ.hero.props, ...задано } },
-    ]);
-    expect(классы(с, "hero-over-photo-heading")).toEqual(классы(без, "hero-over-photo-heading"));
-    expect(классы(с, "hero-over-photo-text")).toEqual(классы(без, "hero-over-photo-text"));
+    const [с] = отрисовать([{ block: "Hero", props: { ...СЕКЦИИ.hero.props, ...задано } }]);
+    const поУмолчанию = html(отрисовано, "hero");
+    expect(классы(с, "hero-over-photo-heading")).not.toEqual(классы(поУмолчанию, "hero-over-photo-heading"));
+    expect(классы(с, "hero-over-photo-text")).not.toEqual(классы(поУмолчанию, "hero-over-photo-text"));
   });
 
   it("с «Контейнером» внутреннее поле верстальщиков не добавляется", () => {
-    const [h] = отрисовать([{ block: "Hero", props: { ...СЕКЦИИ.hero.props, container: "true", ...ВКЛ } }]);
+    const [h] = отрисовать([{ block: "Hero", props: { ...СЕКЦИИ.hero.props, container: "true" } }]);
     expect(h).toContain("max-w-[330px] md:max-w-[410px]");
     expect(h).not.toContain("md:py-10 md:pr-10");
   });
 });
 
 describe("«Коллекция товаров»: сетка и карточка как у верстальщиков", () => {
-  it("сетка 1 → sm 2 → lg «Колонки», признак на сетке и стиль-добавка", () => {
-    const h = html(вкл, "popular");
+  it("сетка 1 → sm 2 → lg «Колонки», метка на сетке и стиль-добавка", () => {
+    const h = html(отрисовано, "popular");
     expect(h).toContain("grid grid-cols-1 gap-10 sm:grid-cols-2 lg:gap-x-4");
     expect(h).toContain("data-design-parity");
     expect(h).toContain("min-height:150px");
@@ -175,14 +151,10 @@ describe("«Коллекция товаров»: сетка и карточка 
     expect(h).toMatch(/\.bloom-product-oldprice\{font-size:14px\}/);
   });
 
-  it("одна версия: без признака — та же сетка и стиль-добавка", () => {
-    expect(html(выкл, "popular")).toEqual(html(вкл, "popular"));
-  });
-
   it("заголовок по умолчанию 18 → md 20; «Средний» — как прежде", () => {
-    expect(html(вкл, "popular")).toContain("[&_h2]:!text-[18px] md:[&_h2]:!text-[20px] [&_h2]:!leading-none");
+    expect(html(отрисовано, "popular")).toContain("[&_h2]:!text-[18px] md:[&_h2]:!text-[20px] [&_h2]:!leading-none");
     const [средний] = отрисовать([
-      { block: "PopularProducts", props: { ...СЕКЦИИ.popular.props, headingSize: "medium", ...ВКЛ } },
+      { block: "PopularProducts", props: { ...СЕКЦИИ.popular.props, headingSize: "medium" } },
     ]);
     expect(средний).toContain("[&_h2]:!text-[38px]");
     expect(средний).not.toContain("[&_h2]:!text-[18px]");
@@ -190,19 +162,14 @@ describe("«Коллекция товаров»: сетка и карточка 
 
   it("«Смотреть все», скрытая «глазом», не оставляет пустой строки", () => {
     const скрыта = { ...СЕКЦИИ.popular.props, hiddenFields: ["viewAll"] };
-    const [с, без] = отрисовать([
-      { block: "PopularProducts", props: { ...скрыта, ...ВКЛ } },
-      { block: "PopularProducts", props: скрыта },
-    ]);
+    const [с] = отрисовать([{ block: "PopularProducts", props: скрыта }]);
     expect(с).not.toContain('<div class="flex w-full justify-center">');
-    // Одна версия: без признака — тоже без пустой строки.
-    expect(без).toEqual(с);
   });
 });
 
 describe("«Галерея»: две плитки — низы на одной линии (владелец 25.09), три — прежние", () => {
   it("две плитки: колонки пополам, грид тянет пару (items-stretch), большая — квадрат (не тянется)", () => {
-    const h = html(вкл, "galleryPair");
+    const h = html(отрисовано, "galleryPair");
     expect(h).toContain("grid-cols-1 items-start gap-4 lg:items-stretch lg:grid-cols-2");
     // Квадрат задаёт высоту строки — сам НЕ тянется (иначе перестал бы быть квадратом).
     const hero = классы(h, "aspect-square");
@@ -212,7 +179,7 @@ describe("«Галерея»: две плитки — низы на одной �
   });
 
   it("две плитки: боковая — flex-колонка во всю высоту строки, фото растёт (не подпись)", () => {
-    const h = html(вкл, "galleryPair");
+    const h = html(отрисовано, "galleryPair");
     // Ссылка боковой плитки — flex-колонка на всю высоту (lg:h-full получает
     // высоту от lg:items-stretch грида выше).
     const anchor = классы(h, "lg:h-full");
@@ -231,7 +198,7 @@ describe("«Галерея»: две плитки — низы на одной �
   });
 
   it("три плитки: прежняя раскладка (узкая правая колонка)", () => {
-    const h = html(вкл, "galleryThree");
+    const h = html(отрисовано, "galleryThree");
     expect(h).toContain("lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]");
     expect(h).toContain("lg:items-stretch");
     expect(h).toContain("lg:aspect-auto lg:h-full");
@@ -240,14 +207,10 @@ describe("«Галерея»: две плитки — низы на одной �
 
 describe("«Подвал»: адрес, иконки и нижняя полоса как у верстальщиков", () => {
   it("адрес одной строкой, иконки 24, полоса 64 с текстом 16", () => {
-    const h = html(вкл, "footer");
+    const h = html(отрисовано, "footer");
     expect(h).toContain("г. Москва, ул. Пушкина, д. 0");
     expect(h).toMatch(/class="size-6 flex items-center justify-center/);
     expect(h).toContain("flex h-16 items-center justify-center");
     expect(h).toMatch(/text-center font-inter text-\[16px\] font-light/);
-  });
-
-  it("одна версия: без признака — тот же подвал", () => {
-    expect(html(выкл, "footer")).toEqual(html(вкл, "footer"));
   });
 });

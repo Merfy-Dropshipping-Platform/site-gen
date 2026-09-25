@@ -21,13 +21,10 @@ import { renderSections } from "../../../scripts/qa/lib/render";
  *      — прежние.
  *
  * С 25.09 у секций одна версия (владелец: «стили приравнивали, секции и
- * параметры менять не нужно было») — прежняя ветка удалена вместе с признаком
- * режима, признак (true/false) разметку не меняет.
+ * параметры менять не нужно было») — прежняя ветка удалена.
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
-const ВКЛ = { __designParity: true };
-const ВЫКЛ = { __designParity: false };
 
 /** Классы токена — точное вхождение (не подстрокой: "flux-container" ⊂ "flux-container-designers"). */
 function токеныКласса(html: string, маркер: string): string[] {
@@ -156,8 +153,6 @@ const КАПС: Record<string, number> = {
 
 describe("flux: контейнер секций главной как у верстальщиков", () => {
   const html = отрисовать(СЕКЦИИ);
-  const вкл = отрисовать(СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, ...ВКЛ } })));
-  const выкл = отрисовать(СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, ...ВЫКЛ } })));
 
   СЕКЦИИ.forEach((с, i) => {
     it(`${с.block}: контейнер 1480/px-4/md:px-10/lg:px-20, прежнего 1920/2xl:px-80 нет`, () => {
@@ -167,11 +162,6 @@ describe("flux: контейнер секций главной как у вер�
       expect(html[i]).toContain("lg:px-20");
       expect(html[i]).not.toContain("max-w-[1920px]");
       expect(html[i]).not.toContain("2xl:px-80");
-    });
-
-    it(`${с.block}: одна версия — признак режима (true, false) ничего не меняет`, () => {
-      expect(вкл[i]).toEqual(html[i]);
-      expect(выкл[i]).toEqual(html[i]);
     });
   });
 
@@ -234,21 +224,6 @@ describe("flux: Footer — контейнер и подвал верстальщ
     expect(html).not.toContain("md:py-[80px]");
     expect(html).toContain('style="padding-top:20px;padding-bottom:20px;"');
   });
-
-  it("одна версия: признак режима (true, false) ничего не меняет в обеих ветках «Отступов»", () => {
-    const [деф, дефВкл, дефВыкл, свои, своиВкл, своиВыкл] = отрисовать([
-      { block: "Footer", props: дефолтныеОтступы },
-      { block: "Footer", props: { ...дефолтныеОтступы, ...ВКЛ } },
-      { block: "Footer", props: { ...дефолтныеОтступы, ...ВЫКЛ } },
-      { block: "Footer", props: своиОтступы },
-      { block: "Footer", props: { ...своиОтступы, ...ВКЛ } },
-      { block: "Footer", props: { ...своиОтступы, ...ВЫКЛ } },
-    ]);
-    expect(дефВкл).toEqual(деф);
-    expect(дефВыкл).toEqual(деф);
-    expect(своиВкл).toEqual(свои);
-    expect(своиВыкл).toEqual(свои);
-  });
 });
 
 describe("flux: Header + FluxNavItem mega-menu — контейнер верстальщика", () => {
@@ -278,17 +253,6 @@ describe("flux: Header + FluxNavItem mega-menu — контейнер верст
     const токены = токеныКласса(html, "grid-cols-2 gap-x-8 gap-y-6 py-8");
     expect(токены).toContain("flux-container-designers");
     expect(токены).not.toContain("flux-container");
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет, прежнего контейнера 1920 нет", () => {
-    const [html, вкл, выкл] = отрисовать([
-      { block: "Header", props: базаHeader },
-      { block: "Header", props: { ...базаHeader, ...ВКЛ } },
-      { block: "Header", props: { ...базаHeader, ...ВЫКЛ } },
-    ]);
-    expect(вкл).toEqual(html);
-    expect(выкл).toEqual(html);
-    expect(html).not.toContain("max-w-[1920px]");
   });
 });
 
@@ -356,15 +320,13 @@ describe("flux: Hero — первый экран как у верстальщи�
     expect(фото).not.toContain("md:absolute");
   });
 
-  it("«Средний» и «Маленький» не зависят от признака режима (у верстальщиков контрола «Размер» нет)", () => {
-    const [срВкл, срВыкл, мВкл, мВыкл] = отрисовать([
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ, size: "medium" } },
+  it("«Средний» и «Маленький» — свои высоты (у верстальщиков контрола «Размер» нет)", () => {
+    const [средний, маленький] = отрисовать([
       { block: "Hero", props: { ...ПОЛНАЯ, size: "medium" } },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ, size: "small" } },
       { block: "Hero", props: { ...ПОЛНАЯ, size: "small" } },
     ]);
-    expect(срВкл).toEqual(срВыкл);
-    expect(мВкл).toEqual(мВыкл);
+    for (const к of ["h-[315px]", "md:h-[395px]", "lg:h-[445px]"]) expect(классыПолотна(средний)).toContain(к);
+    for (const к of ["h-[245px]", "md:h-[305px]", "lg:h-[345px]"]) expect(классыПолотна(маленький)).toContain(к);
   });
 
   it("остальные настройки (положение/контейнер/overlay) по-прежнему меняют секцию", () => {
@@ -376,15 +338,5 @@ describe("flux: Hero — первый экран как у верстальщи�
       { block: "Hero", props: { ...база, overlay: 50 } },
     ]);
     for (const v of варианты) expect(v).not.toEqual(исходная);
-  });
-
-  it("одна версия: признак режима (true, false) ничего не меняет", () => {
-    const [html, вкл, выкл] = отрисовать([
-      { block: "Hero", props: ПОЛНАЯ },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВКЛ } },
-      { block: "Hero", props: { ...ПОЛНАЯ, ...ВЫКЛ } },
-    ]);
-    expect(вкл).toEqual(html);
-    expect(выкл).toEqual(html);
   });
 });

@@ -6,13 +6,12 @@
  * когда плитки стоят рядом, нижние края большой плитки и боковой колонки на
  * одной линии, без дыры. Прежний сторож (media-section-column-parity) проверял
  * СПОСОБ — «большая плитка тянется по высоте строки, пропорция на lg снята».
- * У верстальщиков (режим «как у верстальщиков», на проде у всех) большая
- * плитка — квадрат, и выравнивают боковые плитки; разбор классов этого не
+ * У верстальщиков большая плитка — квадрат, и выравнивают боковые плитки; разбор классов этого не
  * различал: краснел там, где низы сходятся, и молчал о дыре rose с двумя
  * плитками (до 375px на 1440). Поэтому мерим РЕЗУЛЬТАТ.
  *
  * Рисуем тем же модулем темы, что витрина (renderSections), CSS темы и токены —
- * как в owner-default-sizes. Оба режима: как на проде и прежняя ветка.
+ * как в owner-default-sizes.
  *
  * Требует сборки: pnpm build, pnpm build:blocks, pnpm build:theme-sections:all.
  */
@@ -22,10 +21,6 @@ import { renderSections, themeCss, tokensCssFor } from "../../../scripts/qa/lib"
 
 const THEMES = ["rose", "bloom", "satin", "flux", "vanilla"] as const;
 const WIDTHS = [768, 1024, 1470, 1920] as const;
-const MODES = [
-  { name: "как на проде", extra: {} },
-  { name: "прежняя ветка", extra: { __designParity: false } },
-] as const;
 
 const IMAGES = [1, 2, 3].map((i) => ({
   id: `i${i}`,
@@ -101,11 +96,11 @@ async function measure(theme: string, html: string): Promise<{ width: number; p:
   }
 }
 
-describe.each(MODES)("«Галерея»: низы колонок сходятся — $name", ({ extra }) => {
+describe("«Галерея»: низы колонок сходятся", () => {
   describe.each(THEMES)("%s", (theme) => {
     it.each(SETS)("%s", async (_name, items) => {
       const [row] = renderSections(theme, [
-        { block: "Gallery", props: { id: "Gallery-1", colorScheme: "scheme-3", items, ...extra } },
+        { block: "Gallery", props: { id: "Gallery-1", colorScheme: "scheme-3", items } },
       ]);
       if (!row?.html) throw new Error(`${theme}: ${row?.error ?? "нет html"}`);
       const got = await measure(theme, row.html);

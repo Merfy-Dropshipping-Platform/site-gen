@@ -51,7 +51,7 @@ const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 const heading = headingProvided
 	? (typeof p.heading === "string" ? p.heading : p.heading.text)
 	: (isEmptyState ? "Расскажи о своем бренде" : "");
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): отступы,
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
 // цвета не меняются. Владелец 25.09: одна версия секции — прежняя ветка удалена.
 const headingSize = p.heading?.size ?? p.headingSize;
@@ -76,10 +76,9 @@ const text =
 // читаем nested ПЕРВЫМ, иначе дефолт скрытого поля глушит живой селект.
 const textSize = p.text?.size ?? p.textSize;
 // Владелец 25.09: явно выбранный размер всегда рисует СВОЙ вариант. Раньше
-// «Большой» падал в ветку «не задано» и под признаком получал вид
-// верстальщиков — 20px на телефоне, как «Средний». Теперь «Большой» — прежние
-// 24px в обоих режимах; вид верстальщиков остаётся только у «не задано»
-// (сторож panel-size-order.spec.ts).
+// «Большой» падал в ветку «не задано» и получал вид верстальщиков — 20px на
+// телефоне, как «Средний». Теперь «Большой» — свои 24px; вид верстальщиков
+// остаётся только у «не задано» (сторож panel-size-order.spec.ts).
 const TEXT_CLS: Record<string, string> = {
 	small: "w-full max-w-[1320px] font-urbanist text-[17px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]",
 	medium: "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]",

@@ -160,12 +160,9 @@ const headingSize = p.headingSize ?? p.heading?.size;
 // ширина»): «Сейчас в тренде» Bloom-theme @5aae2ad6 — заголовок 18 → md 20
 // в одну строку, сетка 1 → sm 2 → lg «Колонки» с зазором 40 (по горизонтали
 // на lg 16), карточка: 20 между фото и текстом, текстовый блок не ниже 150 с
-// кнопкой внизу, строки leading-normal, старая цена 14. Признак ставит sites.
-// Без признака — прежние классы, стиль-добавка не выводится.
-const designParity = p.__designParity === true;
-const headingDefaultCls = designParity
-	? " [&_h2]:!text-[18px] md:[&_h2]:!text-[20px] [&_h2]:!leading-none"
-	: "";
+// кнопкой внизу, строки leading-normal, старая цена 14. Владелец 25.09: одна
+// версия секции — прежняя ветка удалена.
+const headingDefaultCls = " [&_h2]:!text-[18px] md:[&_h2]:!text-[20px] [&_h2]:!leading-none";
 const headingSizeCls =
 	headingSize === "medium"
 		? " [&_h2]:!text-[38px] max-md:[&_h2]:!text-[24px]"
@@ -217,9 +214,7 @@ const cardAspectRatio =
 			? "16/9"
 			: "1/1";
 // Моб 2 кол → sm:3; с md и выше grid-template-columns задаёт <style> по --cols.
-const gridCls = designParity
-	? "grid grid-cols-1 gap-10 sm:grid-cols-2 lg:gap-x-4"
-	: "grid grid-cols-2 gap-4 sm:grid-cols-3";
+const gridCls = "grid grid-cols-1 gap-10 sm:grid-cols-2 lg:gap-x-4";
 // «Колонки» у верстальщиков включаются с lg (1024), до него — 2 колонки.
 // Карточка — и SSR, и перерисованная гидрацией (renderCardHtml) — меняется
 // одним правилом по data-nt, поэтому стиль живёт на сетке, а не в карточке.
@@ -383,10 +378,9 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
-// Кнопка «Смотреть все» скрыта «глазом» → под признаком не оставляем и пустую
-// строку под ней: иначе зазор gap-10 висит под сеткой (+40 к высоте секции).
-// Без признака — прежняя разметка (пустая строка остаётся, см. отчёт 24.09).
-const viewAllEmptyRow = designParity && isFieldHidden("viewAll");
+// Кнопка «Смотреть все» скрыта «глазом» → не оставляем и пустую строку под
+// ней: иначе зазор gap-10 висит под сеткой (+40 к высоте секции).
+const viewAllEmptyRow = isFieldHidden("viewAll");
 
 ---
 
@@ -417,7 +411,7 @@ const viewAllEmptyRow = designParity && isFieldHidden("viewAll");
 			data-animate-delay="0.1s"
 			data-nt="popular-grid"
 			data-cols={String(colsN)}
-			data-design-parity={designParity ? "" : undefined}
+			data-design-parity=""
 			style={gridStyle}
 			data-cards={cardsN !== 4 ? String(cardsN) : undefined}
 			data-collection={collectionRef}
@@ -496,7 +490,7 @@ const viewAllEmptyRow = designParity && isFieldHidden("viewAll");
 			</div>
 		)}
 	</div>
-</section>{designParity && <style is:inline set:html={POPULAR_PARITY_CSS} />}{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
+</section><style is:inline set:html={POPULAR_PARITY_CSS} />{nextPhoto && <script is:inline set:html={NEXT_PHOTO_JS} />}{cardQuickAdd === "cart" && <script is:inline set:html={QA_STEPPER_JS} />}
 
 <script>
 	import {

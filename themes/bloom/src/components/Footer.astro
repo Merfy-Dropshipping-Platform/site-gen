@@ -232,13 +232,10 @@ const footerPadStyle =
 // строка gap-8. Подпись платформы и две колонки — наши решения, не трогаем.
 // PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
-// цвета не меняются; без признака — прежние классы. Признак ставит sites.
-const designParity = p.__designParity === true;
+// цвета не меняются. Владелец 25.09: одна версия секции — прежняя ветка удалена.
 // Верстальщики 24.09 (Bloom-theme @5aae2ad6): адрес одной строкой, иконки
 // соцсетей 24, нижняя полоса высотой 64 с текстом 16.
-const FT = designParity
-	? { pad: "pt-16 pb-20", stack: "gap-16", inputPl: "pl-3", btnPx: "px-2", lines: "gap-1", contactsMt: "mt-6", list: "gap-2", legal: "gap-8", strip: "flex h-16 items-center justify-center", stripText: "text-[16px]", compactSocial: true, addressOneLine: true }
-	: { pad: "pt-16 pb-24 md:pb-28", stack: "gap-12", inputPl: "pl-4", btnPx: "px-4", lines: "gap-[3px]", contactsMt: "mt-5", list: "gap-3", legal: "gap-4 pt-2", strip: "py-5", stripText: "text-[14px]", compactSocial: false, addressOneLine: false };
+const FT = { pad: "pt-16 pb-20", stack: "gap-16", inputPl: "pl-3", btnPx: "px-2", lines: "gap-1", contactsMt: "mt-6", list: "gap-2", legal: "gap-8", strip: "flex h-16 items-center justify-center", stripText: "text-[16px]", compactSocial: true, addressOneLine: true };
 const addressShown = FT.addressOneLine && addressField ? [addressField.value.trim()] : addressLines;
 const footerContainerCls = footerPadStyle
 	? "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-[300px]"

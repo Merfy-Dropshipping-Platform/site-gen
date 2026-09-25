@@ -116,8 +116,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 // лестница 1 → md:2 фиксирована, xl — через CSS-var.
 // PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
-// цвета не меняются; без признака — прежние классы. Признак ставит sites.
-const designParity = p.__designParity === true;
+// цвета не меняются. Владелец 25.09: одна версия секции — прежняя ветка удалена.
 const displayColumnsRaw = Number(p.displayColumns);
 const displayColumns =
 	Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
@@ -126,9 +125,7 @@ const displayColumns =
 // Benefits: сетка gap-4, карточка gap-8 между иконкой и текстом и gap-3 внутри
 // текста, min-h только с md, строки leading-normal. Разметка карточки плоская,
 // поэтому 8 = gap-3 + mb-5 у медиа.
-const MC = designParity
-	? { gridGap: "gap-4", cardMinH: "md:min-h-[252px]", cardGap: "gap-3", mediaMb: " mb-5", leading: "leading-normal" }
-	: { gridGap: "gap-10", cardMinH: "min-h-[252px]", cardGap: "gap-6", mediaMb: "", leading: "leading-none" };
+const MC = { gridGap: "gap-4", cardMinH: "md:min-h-[252px]", cardGap: "gap-3", mediaMb: " mb-5", leading: "leading-normal" };
 const gridCls =
 	displayColumns === 3
 		? `grid w-full grid-cols-1 justify-items-center ${MC.gridGap} md:grid-cols-2 xl:grid-cols-3`

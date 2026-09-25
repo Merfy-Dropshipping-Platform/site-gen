@@ -116,10 +116,12 @@ const классы = (h: string, метка: string): string => {
   return m!;
 };
 
-describe("bloom по цели: без признака разметка прежняя", () => {
-  it.each(ИМЕНА)("%s: __designParity=false = без признака, с признаком — другая", (имя) => {
+// Владелец 25.09: одна версия секции — прежняя ветка удалена, признак режима
+// больше ничего не меняет.
+describe("bloom по цели: одна версия секций", () => {
+  it.each(ИМЕНА)("%s: с признаком, без него и с явным false — одна и та же разметка", (имя) => {
     expect(html(признакЛожь, имя)).toEqual(html(выкл, имя));
-    expect(html(вкл, имя)).not.toEqual(html(выкл, имя));
+    expect(html(вкл, имя)).toEqual(html(выкл, имя));
   });
 
   it("капс верстальщиков не перенесён", () => {
@@ -132,8 +134,8 @@ describe("«Первый экран»: текстовый блок как у в�
     const h = html(вкл, "hero");
     expect(классы(h, "hero-over-photo-heading")).toContain("text-[14px] font-normal leading-normal hero-over-photo-heading md:text-[20px]");
     expect(классы(h, "hero-over-photo-text")).toContain("text-[12px] font-light leading-normal hero-over-photo-text md:text-[16px]");
-    const прежний = html(выкл, "hero");
-    expect(классы(прежний, "hero-over-photo-heading")).toContain("text-[18px]");
+    // Одна версия: без признака — то же самое.
+    expect(html(выкл, "hero")).toEqual(h);
   });
 
   it("колонка 330 → md 410, 32 до кнопки, кнопка 40 → md 48, снизу 80", () => {
@@ -173,11 +175,8 @@ describe("«Коллекция товаров»: сетка и карточка 
     expect(h).toMatch(/\.bloom-product-oldprice\{font-size:14px\}/);
   });
 
-  it("без признака — прежняя сетка, ни признака, ни стиль-добавки", () => {
-    const h = html(выкл, "popular");
-    expect(h).toContain("grid grid-cols-2 gap-4 sm:grid-cols-3");
-    expect(h).not.toContain("data-design-parity");
-    expect(h).not.toContain("min-height:150px");
+  it("одна версия: без признака — та же сетка и стиль-добавка", () => {
+    expect(html(выкл, "popular")).toEqual(html(вкл, "popular"));
   });
 
   it("заголовок по умолчанию 18 → md 20; «Средний» — как прежде", () => {
@@ -196,7 +195,8 @@ describe("«Коллекция товаров»: сетка и карточка 
       { block: "PopularProducts", props: скрыта },
     ]);
     expect(с).not.toContain('<div class="flex w-full justify-center">');
-    expect(без).toContain('<div class="flex w-full justify-center">');
+    // Одна версия: без признака — тоже без пустой строки.
+    expect(без).toEqual(с);
   });
 });
 
@@ -247,10 +247,7 @@ describe("«Подвал»: адрес, иконки и нижняя полос�
     expect(h).toMatch(/text-center font-inter text-\[16px\] font-light/);
   });
 
-  it("без признака — адрес по строкам, иконки 32-40, полоса py-5", () => {
-    const h = html(выкл, "footer");
-    expect(h).not.toContain("г. Москва, ул. Пушкина, д. 0");
-    expect(h).toContain("w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10");
-    expect(h).toMatch(/\] py-5"/);
+  it("одна версия: без признака — тот же подвал", () => {
+    expect(html(выкл, "footer")).toEqual(html(вкл, "footer"));
   });
 });

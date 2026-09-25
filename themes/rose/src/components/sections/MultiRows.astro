@@ -174,16 +174,12 @@ const alignCls =
 			? "sm:items-end sm:text-right"
 			: "sm:items-start sm:text-left";
 
-// Канон buttonStyle (primary/black/white): primary|black/отсутствие = чёрная
-// заливка манеры §3 (габариты Contacts CTA); white = белая (button-2 токены,
-// манера hero CTA).
-const btnBase =
-	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
-const buttonStyle = normalizeRoseMultiRowsButtonStyle(p.buttonStyle);
+// «Стиль кнопки» ряда выбирает РОЛЬ: white (= «Дополнительная») ← поля
+// «Дополнительной кнопки» схемы, остальное ← «Основной». Цвета даёт правило
+// роли (data-scheme-button, src/themes/scheme-buttons.ts), у порта — только каркас.
 const btnCls =
-	buttonStyle === "white"
-		? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-		: `${btnBase} bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+	"inline-flex h-12 w-auto min-w-[200px] items-center justify-center rounded-[var(--radius-button,6px)] border border-solid px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90";
+const btnRole = normalizeRoseMultiRowsButtonStyle(p.buttonStyle) === "white" ? "secondary" : "primary";
 
 // Канон containerEnabled (toggle; puckConfig готов) — per-element: surface-бокс
 // (#F5F5F5 / радиус / паддинг) на КАЖДЫЙ ряд (паттерн MultiColumns/Сворачиваемый),
@@ -305,7 +301,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							)}
 							{r.btnText && (
 								<div class="mt-2">
-									<a href={r.btnHref} class={btnCls}>
+									<a href={r.btnHref} class={btnCls} data-scheme-button={btnRole}>
 										{r.btnText}
 									</a>
 								</div>

@@ -116,7 +116,8 @@ describe("packages/theme-vanilla/pages/home.json — пакетный сид г�
     // MainText
     const mainText = blocks[4].props;
     expect(mainText.buttonStyle).toBe("outlined");
-    expect(mainText.colorScheme).toBe("scheme-2");
+    // Схема 5 — олива с белым контуром кнопки (вёрстка «К покупкам», 26.09).
+    expect(mainText.colorScheme).toBe("scheme-5");
     expect(mainText.textStyle).toBe("italic");
     expect(mainText.padding).toEqual({ top: 120, bottom: 120 });
     // Кнопка — в поле панели «Кнопка», не в скрытом legacy `cta`: иначе витрина
@@ -137,7 +138,7 @@ describe("packages/theme-vanilla/pages/home.json — пакетный сид г�
     const iwt = blocks[6].props;
     expect(iwt.imagePosition).toBe("right");
     expect(iwt.ctaPosition).toBe("bottom-pinned");
-    expect(iwt.colorScheme).toBe("scheme-2");
+    expect(iwt.colorScheme).toBe("scheme-5");
     expect(iwt.textStyle).toBe("italic");
     expect(iwt.padding).toEqual({ top: 120, bottom: 120 });
 

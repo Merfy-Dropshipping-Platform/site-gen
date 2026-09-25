@@ -440,7 +440,7 @@
               "props": {
                 "alignment": "center",
                 "buttonStyle": "outlined",
-                "colorScheme": "scheme-2",
+                "colorScheme": "scheme-5",
                 "cta": {
                   "href": "/catalog",
                   "text": "К покупкам",
@@ -487,7 +487,7 @@
                   "link": "/catalog",
                   "text": "Смотреть каталог"
                 },
-                "colorScheme": "scheme-2",
+                "colorScheme": "scheme-5",
                 "ctaPosition": "bottom-pinned",
                 "heading": {
                   "size": "large",

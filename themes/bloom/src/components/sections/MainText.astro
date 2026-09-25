@@ -121,15 +121,13 @@ const btnHref =
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
 	"/";
 
-// Канон buttonStyle: 'solid' (canon-default из theme.json blockDefaults) и
-// отсутствие = белый pill верстальщика дословно (МАННЕРА §3: CTA на розовом
-// полотне; button-2 токены, rounded-full ≡ var(--radius-button,100px) пиксельно).
-// outlined = бордер цвета заливки на прозрачном фоне.
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09: раньше порт сажал её на «Дополнительную» (белый pill
+// верстальщика), а скрытый buttonStyle=outlined — на контур её Фона.
+// rounded-full ≡ var(--radius-button,100px).
 const btnPadCls = "px-4";
-const btnCls =
-	p.buttonStyle === "outlined"
-		? `inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent ${btnPadCls} font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-90 active:scale-95`
-		: `inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] ${btnPadCls} font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95`;
+const btnCls = `inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid ${btnPadCls} font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95`;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding
@@ -192,6 +190,7 @@ const textOrder = sectionFieldOrder("MainText", p);
 				<a
 					href={btnHref}
 					class={btnCls}
+					data-scheme-button="primary"
 					data-animate
 					data-animate-delay="0.1s"
 					data-puck-subsection-parent={id}

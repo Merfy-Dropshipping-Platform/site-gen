@@ -76,8 +76,10 @@ describe('MultiColumns «Контейнер»: vanilla обязан красит
     tokens: Record<string, string>;
   }>;
 
-  it('в theme.json заданы все 4 схемы (гард сверяет ровно их)', () => {
-    expect(schemes.map((s) => s.id)).toEqual(['scheme-1', 'scheme-2', 'scheme-3', 'scheme-4']);
+  // Схема 5 (26.09) — «олива с белым контуром кнопки» для «Основного текста» и
+  // «Изображения с текстом» по вёрстке (scheme-button-defaults.spec.ts).
+  it('в theme.json заданы все 5 схем (гард сверяет ровно их)', () => {
+    expect(schemes.map((s) => s.id)).toEqual(['scheme-1', 'scheme-2', 'scheme-3', 'scheme-4', 'scheme-5']);
   });
 
   it.each(schemes.map((s) => [s.id, s.tokens] as const))(

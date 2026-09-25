@@ -185,15 +185,13 @@ const btnHref =
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	(typeof p.button?.href === "string" && p.button.href ? p.button.href : undefined) ??
 	"/catalog";
-// Канон buttonStyle: solid/отсутствие (canon-default) = тёмная CTA литерала
-// (метрики .satin-button-md + .satin-button-dark, g:106-126,155-159; цвета
-// токенами); outlined = светлая контурная .satin-button-light (§3).
-const btnBase =
-	"inline-flex min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09: скрытый buttonStyle=outlined раньше делал её
+// контуром «Дополнительной» с рамкой из поля «Текст».
+// Метрики .satin-button-md (g:106-126,155-159).
 const btnCls =
-	p.buttonStyle === "outlined"
-		? `${btnBase} border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-text,0_0_0))]`
-		: `${btnBase} border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))]`;
+	"inline-flex min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Канон ctaPosition: inline/отсутствие = литерал (кнопка в потоке под
 // заголовком, gap-5); bottom-pinned — контент-блок растягивается, кнопка
@@ -309,6 +307,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<a
 							href={btnHref}
 							class={btnCls + (bottomPinned ? " mt-auto" : "")}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="103"
 							data-puck-subsection-field="button"
@@ -347,6 +346,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<a
 								href={btnHref}
 								class={btnCls + (bottomPinned ? " mt-auto" : "")}
+								data-scheme-button="primary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="button"

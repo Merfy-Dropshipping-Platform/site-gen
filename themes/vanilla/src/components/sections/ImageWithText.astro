@@ -156,13 +156,12 @@ const btnHref =
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??
 	"/about";
 
-// Канон buttonStyle: 'outlined' и отсутствие = контур care-бэнда ДОСЛОВНО
-// (border 1.3px white, Gal:105; button-2 токены); 'solid' = заливка кнопки-2.
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Толщина рамки care-бэнда 1.3px (Gal:105) — вёрстка темы, остаётся здесь.
 // Радиус 0 ≡ var(--radius-button,0px); active:scale в манере НЕ используется.
 const btnCls =
-	p.buttonStyle === "solid"
-		? "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80"
-		: "inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border-[1.3px] border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80";
+	"inline-flex h-12 min-h-12 items-center justify-center rounded-[var(--radius-button,0px)] border-[1.3px] border-solid px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal transition-opacity hover:opacity-80";
 
 // Канон ctaPosition: 'bottom-pinned' (canon-default из theme.json blockDefaults)
 // и отсутствие = литерал care-бэнда (кнопка mt-10 self-start под текстом);
@@ -238,6 +237,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<a
 						href={btnHref}
 						class={`${ctaMtCls} ${selfCls} ${btnCls}`}
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="103"
 						data-puck-subsection-field="button"
@@ -280,6 +280,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<a
 							href={btnHref}
 							class={`${gapCls} ${selfCls} ${btnCls}`}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="103"
 							data-puck-subsection-field="button"

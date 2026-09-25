@@ -218,11 +218,13 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-// Чёрная CTA манеры flux: h-14 rounded-6 px-6 roboto-flex 16 uppercase leading-none,
-// hover:opacity-90 (эталон MainText/Hero; кнопка-2 = чёрная в схемах flux, MANNER §7).
-// active:scale в манере flux НЕ используется (§3).
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09: раньше порт сажал её на кнопку-2 («чёрная кнопка
+// = кнопка-2», MANNER §7), а скрытый buttonStyle=outlined — на контур цвета
+// Фона. active:scale в манере flux НЕ используется (§3).
 const btnCls =
-	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-2-bg,0_0_0))] px-6 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-2-text,255_255_255))] transition-opacity hover:opacity-90";
+	"inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] border border-solid px-6 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90";
 
 // Контейнер = flux-носитель темы (Header/Footer/Popular/MainText: mx-auto
 // max-w-[1920px] px-4 md:px-20 2xl:px-80). Вертикаль py-10 md:py-16 (канон); при
@@ -336,6 +338,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<a
 							href={btnHref}
 							class={btnCls}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="buttonText"

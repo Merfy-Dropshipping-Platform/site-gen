@@ -37,9 +37,12 @@ const at = (html: string, field: string): number =>
   html.search(new RegExp(`data-puck-subsection-field="${field}"`));
 
 /** Кнопки-ссылки секции с их классами. */
-const links = (html: string): Array<{ cls: string; text: string }> =>
-  Array.from(html.matchAll(/<a\b[^>]*class="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)).map((m) => ({
-    cls: m[1],
+const links = (html: string): Array<{ cls: string; role: string | null; text: string }> =>
+  Array.from(html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)).map((m) => ({
+    cls: /class="([^"]*)"/.exec(m[1])?.[1] ?? "",
+    // Роль схемы кнопки (data-scheme-button, src/themes/scheme-buttons.ts):
+    // с 25.09 цвета кнопок даёт правило роли, а не классы порта.
+    role: /data-scheme-button="([^"]*)"/.exec(m[1])?.[1] ?? null,
     text: m[2].replace(/<[^>]+>/g, "").trim(),
   }));
 
@@ -133,7 +136,7 @@ describe("пункт 3: слайд — заголовок над текстом"
 
 describe("пункт 4: пустое поле «Кнопка» слайда скрывает кнопку", () => {
   const ctas = (props: Record<string, unknown>) =>
-    links(render("Slideshow", props)).filter((l) => /satin-slide-cta|button-2-bg/.test(l.cls));
+    links(render("Slideshow", props)).filter((l) => l.role === "primary");
 
   it("заполненная: кнопка с текстом поля", () => {
     const got = ctas({ ...panelDefaults.Slideshow, slides: [slide({ button: { text: "Смотреть", link: "/catalog" } })] });
@@ -164,9 +167,9 @@ describe("пункт 4: пустое поле «Кнопка» слайда ск
 
 describe("пункт 5: «Мультиряды ▸ Выбор кнопки» — цвета из схемы", () => {
   const rowButton = (buttonStyle: unknown) =>
-    links(render("MultiRows", { ...panelDefaults.MultiRows, buttonStyle }))[0]?.cls ?? "";
-  const PRIMARY = /bg-\[rgb\(var\(--color-button-bg,[^)]*\)\)\].*text-\[rgb\(var\(--color-button-text,/;
-  const SECONDARY = /bg-\[rgb\(var\(--color-button-2-bg,[^)]*\)\)\].*text-\[rgb\(var\(--color-button-2-text,/;
+    links(render("MultiRows", { ...panelDefaults.MultiRows, buttonStyle }))[0]?.role ?? null;
+  const PRIMARY = "primary";
+  const SECONDARY = "secondary";
 
   it.each([
     ["Основная", "primary", PRIMARY],
@@ -174,13 +177,11 @@ describe("пункт 5: «Мультиряды ▸ Выбор кнопки» —
     ["Белая", "white", SECONDARY],
     ["без значения — как «Основная» панели", undefined, PRIMARY],
   ])("%s", (_label, value, role) => {
-    const cls = rowButton(value);
-    expect(cls).toMatch(role);
-    expect(cls).not.toContain("bg-transparent");
+    expect(rowButton(value)).toBe(role);
   });
 
   it("дефолт панели — «Основная», и рисуется заливкой основной кнопки", () => {
     expect(panelDefaults.MultiRows.buttonStyle).toBe("primary");
-    expect(rowButton(panelDefaults.MultiRows.buttonStyle)).toMatch(PRIMARY);
+    expect(rowButton(panelDefaults.MultiRows.buttonStyle)).toBe(PRIMARY);
   });
 });

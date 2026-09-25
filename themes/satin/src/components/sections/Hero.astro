@@ -224,21 +224,16 @@ const ctaSizeCls = {
 	small: "min-h-10 px-4 text-[14px]",
 }[heroSize];
 
-// Кнопки манеры §3 на токенах — реплика .satin-button.satin-button-md (литеральные
-// --satin-* тех классов не реагируют на смену схемы, поэтому утилиты с токенами):
-// dark = чёрная заливка (кнопка-1: 0_0_0 / 255_255_255), light = контурная (кнопка-2 —
-// родная роль satin: бордер/текст 0_0_0 на прозрачном), радиус rounded-[var(--radius-button,0px)].
-const BTN_DARK =
-	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] font-manrope font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
-const BTN_LIGHT =
-	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent font-manrope font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]`;
-// Канон buttonStyle: solid (canon-default) И отсутствие = dark литерал; outlined = light.
-const primaryBtnCls = p.buttonStyle === "outlined" ? BTN_LIGHT : BTN_DARK;
-// Канон secondaryButton — заливка ПРОТИВОПОЛОЖНА первой (паритет rose secondaryCtaCls):
-// solid → вторая контурная (light), outlined → вторая залитая (dark). Согласованная
-// пара «главная + второстепенная». Раньше вторая была ЖЁСТКО light → при outlined обе
-// кнопки выходили контурными (ни одной залитой) — расхождение с rose.
-const secondaryBtnCls = p.buttonStyle === "outlined" ? BTN_DARK : BTN_LIGHT;
+// Кнопки манеры §3 — реплика метрик .satin-button.satin-button-md. Цвета обеих —
+// поля схемы своей роли (атрибут data-scheme-button, src/themes/scheme-buttons.ts):
+// Основная ← «Основная кнопка», Дополнительная ← «Дополнительная кнопка»; Фон →
+// фон, Текст → буквы, Обводка → рамка. Задача владельца 25.09: раньше рамка
+// основной бралась из её Фона, дополнительная была прозрачным контуром с рамкой
+// из «Текста», а скрытый buttonStyle=outlined менял кнопки местами.
+const BTN_FRAME =
+	`inline-flex ${ctaSizeCls} w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid font-manrope font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]`;
+const primaryBtnCls = BTN_FRAME;
+const secondaryBtnCls = BTN_FRAME;
 // Канон secondaryButton — рендер ТОЛЬКО при непустом тексте, рядом в ряд gap-3.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
@@ -484,20 +479,14 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 						))}
 					</div>
 					) : !isFieldHidden('buttons') && (
-					/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
-					   isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] + токен
-					   текста; белый там — ФОЛБЭК, а не литерал). Было `bg-white`,
-					   `border-white` и `text-[#111111]`: Tailwind 4 печатает `bg-white`
-					   как var(--color-white) — переменная ЕСТЬ, схемы в ней нет, и кнопка
-					   замирала белой (замер матрицы, схемы-зонды 1 → 4: #fff → #fff).
-					   Заливка, бордер и надпись переводятся ЦЕЛИКОМ: увести один фон
-					   значит получить светлое на светлом. Заголовок и текст поверх фото
-					   остаются на hero-over-photo — они намеренно белые. Фолбэки =
-					   прежний вид. Сторож: pnpm test:scheme-targets. */
+					/* Кнопки пустого состояния красятся ролью схемы (data-scheme-button),
+					   как у заполненной ветки. Заголовок и текст поверх фото остаются на
+					   hero-over-photo — они намеренно белые. */
 					<div class={emptyButtonsRowCls}>
 					<a
 						href={ctaLink}
-						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,255_255_255))] bg-[rgb(var(--color-button-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,17_17_17))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 font-manrope text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]"
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"
@@ -507,7 +496,8 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 					{secondaryText && (
 						<a
 							href={secondaryLink}
-							class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,255_255_255))] bg-transparent px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-bg,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
+							class="inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 font-manrope text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]"
+							data-scheme-button="secondary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="103"
 							data-puck-subsection-field="secondaryButton"
@@ -563,6 +553,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 							<a
 								href={ctaLink}
 								class={primaryBtnCls}
+								data-scheme-button="primary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
 								data-puck-subsection-field="primaryButton"
@@ -572,6 +563,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 							<a
 								href={secondaryLink}
 								class={secondaryBtnCls}
+								data-scheme-button="secondary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"
@@ -583,6 +575,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 						<a
 							href={ctaLink}
 							class={primaryBtnCls}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"

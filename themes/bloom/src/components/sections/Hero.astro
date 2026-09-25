@@ -293,16 +293,14 @@ const HERO_BOX = { pb: "pb-20", box: `max-w-[330px] md:max-w-[410px]${boxed ? ""
 const HERO_BTN = { size: "h-10 md:h-12", pad: "px-3 md:px-4", text: "text-[14px] md:text-[16px]" };
 const containerCls = `absolute inset-0 z-10 flex h-full w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 ${HERO_BOX.pb} md:px-20 md:pb-12 xl:pb-20 ${heroSidePadCls}${needsTopPad ? " pt-8 md:pt-12 xl:pt-20" : ""}`;
 
-// Канон buttonStyle solid|outlined: outlined = pill с бордером/текстом цвета
-// заливки кнопки на прозрачном фоне; solid/отсутствие = розовый pill верстальщика
-// дословно (токены кнопки-1 §7, rounded-full → --radius-button 100px).
-const ctaBtnCls =
-	p.buttonStyle === "outlined"
-		? `inline-flex ${HERO_BTN.size} items-center justify-center rounded-[var(--radius-button,100px)] border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent ${HERO_BTN.pad} font-inter ${HERO_BTN.text} font-light leading-none text-[rgb(var(--color-button-bg,227_142_159))] transition-opacity hover:opacity-90 active:scale-95`
-		: `inline-flex ${HERO_BTN.size} items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] ${HERO_BTN.pad} font-inter ${HERO_BTN.text} font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95`;
-// Вторая кнопка — белый pill манеры (Philosophy.astro:26) на токенах кнопки-2.
-const secondaryBtnCls =
-	`inline-flex ${HERO_BTN.size} items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] ${HERO_BTN.pad} font-inter ${HERO_BTN.text} font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95`;
+// Pill верстальщика (rounded-full → --radius-button 100px). Цвета обеих кнопок —
+// поля схемы своей роли (атрибут data-scheme-button, src/themes/scheme-buttons.ts):
+// Основная ← «Основная кнопка», Дополнительная ← «Дополнительная кнопка»; Фон →
+// фон, Текст → буквы, Обводка → рамка. Задача владельца 25.09: раньше
+// «Обводку» не читала ни одна из кнопок, а скрытый buttonStyle=outlined делал
+// основную контуром цвета её Фона.
+const ctaBtnCls = `inline-flex ${HERO_BTN.size} items-center justify-center rounded-[var(--radius-button,100px)] border border-solid ${HERO_BTN.pad} font-inter ${HERO_BTN.text} font-light leading-none transition-opacity hover:opacity-90 active:scale-95`;
+const secondaryBtnCls = ctaBtnCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T14).
 const paddingStyle = p.padding
@@ -382,7 +380,8 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 					) : !isFieldHidden('buttons') && (
 					<a
 						href={ctaLink}
-						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-bg,227_142_159))] px-4 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90 active:scale-95"
+						class="border border-solid inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-4 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95"
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"
@@ -484,6 +483,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 							<a
 								href={ctaLink}
 								class={ctaBtnCls}
+								data-scheme-button="primary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
 								data-puck-subsection-field="primaryButton"
@@ -493,6 +493,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 							<a
 								href={secondaryLink}
 								class={secondaryBtnCls}
+								data-scheme-button="secondary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"
@@ -504,6 +505,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 						<a
 							href={ctaLink}
 							class={`hero-animate-3 ${ctaBtnCls}`}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"

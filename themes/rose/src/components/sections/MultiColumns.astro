@@ -3,6 +3,7 @@
 // Схема полей = packages/theme-base/blocks/MultiColumns/MultiColumns.puckConfig.ts.
 // Секции нет у верстальщика — композиция из манеры: сетка секций §2, зазор шапки
 // gap-8 md:gap-10, поверхность контейнера #F5F5F5 §4, типографика §1, кнопка §3.
+import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
@@ -48,7 +49,8 @@ const FIGMA_PLACEHOLDER_COLUMNS = [
 		heading: "Колонна",
 		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
-		link: { text: "Кнопка", href: "/catalog" },
+		linkText: "Кнопка",
+		link: "/catalog",
 		isPlaceholder: true,
 	},
 	{
@@ -56,7 +58,8 @@ const FIGMA_PLACEHOLDER_COLUMNS = [
 		heading: "Колонна",
 		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
-		link: { text: "Кнопка", href: "/catalog" },
+		linkText: "Кнопка",
+		link: "/catalog",
 		isPlaceholder: true,
 	},
 	{
@@ -64,24 +67,16 @@ const FIGMA_PLACEHOLDER_COLUMNS = [
 		heading: "Колонна",
 		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
-		link: { text: "Кнопка", href: "/catalog" },
+		linkText: "Кнопка",
+		link: "/catalog",
 		isPlaceholder: true,
 	},
 ];
 const rawColumns = hasColumns ? p.columns : FIGMA_PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
-	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link
-	// (string из arrayFields конструктора — паритет flux/satin/vanilla/bloom).
-	const linkText =
-		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
-			? c.link.text
-			: undefined) ?? (typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined);
-	const linkHref =
-		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
-			? c.link.href
-			: undefined) ??
-		(typeof c.link === "string" && c.link ? c.link : undefined) ??
-		"/catalog";
+	// Кнопка колонки — общее правило пяти тем: подпись только из «Названия
+	// ссылки», пустое поле = кнопки нет (packages/theme-base/runtime/multicolumn-link.ts).
+	const link = multiColumnLink(c);
 	return {
 		// Конструктор саб-панели колонны пишет `title` — читаем ЕГО первым; legacy seed
 		// `heading:'Колонна'` только fallback (иначе seed-heading глушил правку → не синкалось,
@@ -100,7 +95,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
-		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		link,
 		// Пустое состояние Figma: рисуем пустой surface-rect вместо <img> даже без
 		// картинки (в обычном режиме колонка без image вообще не показывает блок медиа).
 		isPlaceholder: c.isPlaceholder === true,

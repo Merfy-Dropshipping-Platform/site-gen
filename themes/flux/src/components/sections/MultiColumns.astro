@@ -1,4 +1,5 @@
 ---
+import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
 // Секция MultiColumns («Мультиколонны») в манере flux. Донора-секции у
 // верстальщика flux НЕТ (секций всего 4, MANNER §10) — секция собрана в ЕДИНОМ
@@ -62,7 +63,8 @@ const FIGMA_PLACEHOLDER_COLUMNS = [
 		heading: "Колонна",
 		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
-		link: { text: "Кнопка", href: "/catalog" },
+		linkText: "Кнопка",
+		link: "/catalog",
 		isPlaceholder: true,
 	},
 	{
@@ -70,7 +72,8 @@ const FIGMA_PLACEHOLDER_COLUMNS = [
 		heading: "Колонна",
 		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
-		link: { text: "Кнопка", href: "/catalog" },
+		linkText: "Кнопка",
+		link: "/catalog",
 		isPlaceholder: true,
 	},
 	{
@@ -78,24 +81,16 @@ const FIGMA_PLACEHOLDER_COLUMNS = [
 		heading: "Колонна",
 		text: "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.",
 		imageUrl: "",
-		link: { text: "Кнопка", href: "/catalog" },
+		linkText: "Кнопка",
+		link: "/catalog",
 		isPlaceholder: true,
 	},
 ];
 const rawColumns = hasColumns ? p.columns : FIGMA_PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
-	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link
-	// (string из arrayFields конструктора). Рендер при непустом тексте.
-	const linkText =
-		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
-			? c.link.text
-			: undefined) ?? (typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined);
-	const linkHref =
-		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
-			? c.link.href
-			: undefined) ??
-		(typeof c.link === "string" && c.link ? c.link : undefined) ??
-		"/catalog";
+	// Кнопка колонки — общее правило пяти тем: подпись только из «Названия
+	// ссылки», пустое поле = кнопки нет (packages/theme-base/runtime/multicolumn-link.ts).
+	const link = multiColumnLink(c);
 	return {
 		heading:
 			// Канон панели («Заголовок»/«Текст» пишутся в title/description) ПЕРВЫМ,
@@ -113,7 +108,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
-		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		link,
 		// Пустое состояние Figma: рисуем пустой surface-rect вместо <img> даже без
 		// картинки (в обычном режиме колонка без image вообще не показывает медиа-блок).
 		isPlaceholder: c.isPlaceholder === true,

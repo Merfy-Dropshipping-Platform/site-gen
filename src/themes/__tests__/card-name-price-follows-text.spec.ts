@@ -62,7 +62,9 @@ const TARGETS: Target[] = [
   },
   {
     file: "packages/theme-satin/blocks/Catalog/storefront-hydrate.ts",
-    nameLine: 'class="font-manrope text-[16px] font-normal uppercase leading-tight',
+    // Название узнаём по содержимому, а не по классу: без навязанного капса
+    // (product-name-text-case.spec.ts) класс у названия и цены один и тот же.
+    nameLine: 'hover:opacity-80">${name}</a>',
     priceLine: 'class="font-manrope text-[16px] font-normal leading-tight',
   },
   {
@@ -82,7 +84,8 @@ const TARGETS: Target[] = [
   },
   {
     file: "themes/satin/src/components/sections/WishlistSection.astro",
-    nameLine: 'class="font-manrope text-[16px] font-normal uppercase leading-tight',
+    // Как у зеркала каталога выше: класс названия совпадает с классом цены.
+    nameLine: 'hover:opacity-80">\' + name',
     priceLine: 'class="font-manrope text-[16px] font-normal leading-tight',
   },
   {

@@ -23,6 +23,9 @@ const config: Config = {
     // пути с побайтной сверкой HTML.
     '<rootDir>/src/themes/__tests__/render-bridge.cjs',
   ],
+  // Запись входов каждого файла для памяти результатов `pnpm checks` (spec 115,
+  // часть 3). Работает только при MERFY_TRACE_DIR, иначе ничего не делает.
+  setupFilesAfterEnv: ['<rootDir>/scripts/release/lib/trace/jest-trace-setup.cjs'],
   // Большой прогон (весь набор, каталог, 4+ файлов) встаёт в очередь на машину.
   globalSetup: '<rootDir>/jest.global-setup.cjs',
   globalTeardown: '<rootDir>/jest.global-teardown.cjs',

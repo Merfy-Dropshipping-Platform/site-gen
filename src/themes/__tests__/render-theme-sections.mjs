@@ -62,8 +62,12 @@ const SITES_ROOT = resolve(__dirname, '..', '..', '..');
  * Рендер заданий одной темы. Командная строка ниже — тонкая обёртка над этой
  * функцией; тёплый рендер jest (render-worker.mjs) зовёт её напрямую, без
  * нового процесса на каждый вызов (spec 115, часть 2).
+ *
+ * `hooks.onModule(путь)` — какой модуль рисует задание. Нужен памяти
+ * результатов (часть 3): второй вызов модуль не читает, поэтому, чем рисовал
+ * вызов, по fs не узнать.
  */
-export async function renderJobs(theme, jobs) {
+export async function renderJobs(theme, jobs, hooks = {}) {
   const dist = resolve(SITES_ROOT, 'dist', 'theme-sections', theme);
   const manifest = JSON.parse(readFileSync(resolve(dist, 'manifest.json'), 'utf-8'));
   const { experimental_AstroContainer } = await import('astro/container');
@@ -186,6 +190,7 @@ export async function renderJobs(theme, jobs) {
       continue;
     }
     try {
+      hooks.onModule?.(modPath);
       const mod = await import(modPath);
       const finalProps = useLive
         ? await livePipeline(block, props, rawCatalog)

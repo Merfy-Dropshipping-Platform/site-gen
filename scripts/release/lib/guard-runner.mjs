@@ -47,40 +47,66 @@ export const localJestArgs = (cpus = availableParallelism()) => [
 export function runJestBatch(guards, { repoRoot, log, jestArgs = localJestArgs() }) {
   if (!guards.length) return [];
   const paths = [...new Set(guards.flatMap((g) => g.paths))];
+  log(`   один прогон jest (${jestArgs.join(' ')}) на ${guards.length} гард(ов), ${paths.length} путь(ей)…`);
+  const r = runJestFiles(paths, { repoRoot, jestArgs });
+  if (!r.files) {
+    return guards.map((g) => ({ ...stat(g), code: r.code, ok: false, ms: r.ms, why: 'jest не отдал отчёт', log: r.log }));
+  }
+  return attributeGuards(guards, r.files, repoRoot);
+}
+
+/**
+ * Один прогон jest по путям. files — Map(абсолютный путь → {passed, failed,
+ * skipped, status, message}) или null, если jest не дошёл до отчёта.
+ */
+export function runJestFiles(paths, { repoRoot, jestArgs = localJestArgs(), extraEnv = {} }) {
   const tmp = mkdtempSync(join(tmpdir(), 'release-train-'));
   const outFile = join(tmp, 'jest.json');
-  log(`   один прогон jest (${jestArgs.join(' ')}) на ${guards.length} гард(ов), ${paths.length} путь(ей)…`);
-  const r = run('pnpm', ['exec', 'jest', ...jestArgs, '--json', `--outputFile=${outFile}`, ...paths], { cwd: repoRoot, env: env(repoRoot) });
+  const r = run('pnpm', ['exec', 'jest', ...jestArgs, '--json', `--outputFile=${outFile}`, ...paths], {
+    cwd: repoRoot,
+    env: { ...env(repoRoot), ...extraEnv },
+  });
   let report = null;
   try { report = JSON.parse(readFileSync(outFile, 'utf-8')); } catch { /* jest не дошёл до отчёта */ }
   rmSync(tmp, { recursive: true, force: true });
-  if (!report) {
-    return guards.map((g) => ({ ...stat(g), code: r.code, ok: false, ms: r.ms, why: 'jest не отдал отчёт', log: r.all }));
-  }
+  if (!report) return { files: null, code: r.code, ms: r.ms, log: r.all };
   const files = new Map();
   for (const t of report.testResults ?? []) {
     const passed = (t.assertionResults ?? []).filter((a) => a.status === 'passed').length;
     const failed = (t.assertionResults ?? []).filter((a) => a.status === 'failed').length;
     const skipped = (t.assertionResults ?? []).filter((a) => a.status !== 'passed' && a.status !== 'failed').length;
-    files.set(resolve(t.name), { passed, failed, skipped, status: t.status, message: t.message ?? '' });
+    // Первое падение файла — чтобы красный гард сразу говорил, что именно упало.
+    const firstFail = (t.assertionResults ?? []).find((a) => a.status === 'failed');
+    const failure = firstFail ? `${firstFail.fullName}\n${String(firstFail.failureMessages?.[0] ?? '').split('\n').slice(0, 12).join('\n')}` : '';
+    files.set(resolve(t.name), { passed, failed, skipped, status: t.status, message: t.message ?? '', failure });
   }
-  const perGuard = guards.map((g) => {
+  return { files, code: r.code, ms: r.ms, log: r.all };
+}
+
+/**
+ * Счётчики файлов → счётчики гардов. Файлы могут прийти и из прогона, и из
+ * памяти результатов (`pnpm checks`, spec 115 часть 3): гарду всё равно, откуда
+ * число прошедших проверок, — ноль по-прежнему провал.
+ */
+export function attributeGuards(guards, files, repoRoot) {
+  return guards.map((g) => {
     const mine = [...files.entries()].filter(([abs]) => g.paths.some((p) => matches(abs, resolve(repoRoot, p), repoRoot)));
     const acc = mine.reduce((a, [, v]) => ({ passed: a.passed + v.passed, failed: a.failed + v.failed, skipped: a.skipped + v.skipped }), { passed: 0, failed: 0, skipped: 0 });
     const suiteErr = mine.filter(([, v]) => v.status === 'failed' && v.failed === 0).map(([abs, v]) => `${relative(repoRoot, abs)}: ${String(v.message).split('\n')[0]}`);
+    const failures = mine.filter(([, v]) => v.failure).map(([abs, v]) => `${relative(repoRoot, abs)} › ${v.failure}`);
     return {
       ...stat(g),
       files: mine.length,
+      fromMemory: mine.length > 0 && mine.every(([, v]) => v.fromMemory),
       passed: acc.passed,
       failed: acc.failed + suiteErr.length,
       skipped: acc.skipped,
       ok: acc.failed === 0 && suiteErr.length === 0 && acc.passed > 0,
       ms: null,
       why: acc.passed === 0 ? (mine.length ? 'ни одной ПРОШЕДШЕЙ проверки' : 'ни один файл не найден по пути из ci.yml') : null,
-      log: suiteErr.join('\n'),
+      log: [...suiteErr, ...failures].join('\n'),
     };
   });
-  return perGuard;
 }
 
 const matches = (absFile, absPattern, repoRoot) =>
@@ -89,11 +115,11 @@ const matches = (absFile, absPattern, repoRoot) =>
 const stat = (g) => ({ label: g.label, kind: g.kind, cmd: g.cmd, body: g.body, cwd: g.cwd ?? null });
 
 /** jest со своим конфигом/фильтрами — отдельный прогон, счётчик тот же. */
-export function runJestSolo(g, { repoRoot, log }) {
+export function runJestSolo(g, { repoRoot, log, extraEnv = {} }) {
   const tmp = mkdtempSync(join(tmpdir(), 'release-train-'));
   const outFile = join(tmp, 'jest.json');
   const cwd = g.cwd ? resolve(repoRoot, g.cwd) : repoRoot;
-  const r = sh(`${cmdOf(g)} --json --outputFile=${j(outFile)}`, { cwd, env: env(repoRoot) });
+  const r = sh(`${cmdOf(g)} --json --outputFile=${j(outFile)}`, { cwd, env: { ...env(repoRoot), ...extraEnv } });
   let report = null;
   try { report = JSON.parse(readFileSync(outFile, 'utf-8')); } catch { /* не дошёл */ }
   rmSync(tmp, { recursive: true, force: true });
@@ -112,8 +138,8 @@ export function runJestSolo(g, { repoRoot, log }) {
 }
 
 /** node --test: счётчики берём из TAP-итогов. */
-export function runNodeTest(g, { repoRoot }) {
-  const r = sh(cmdOf(g), { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot, env: env(repoRoot) });
+export function runNodeTest(g, { repoRoot, extraEnv = {} }) {
+  const r = sh(cmdOf(g), { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot, env: { ...env(repoRoot), ...extraEnv } });
   // Итог печатают оба репортёра node:test, но по-разному: spec — «ℹ pass 6»,
   // tap — «# pass 6». Ищем оба, иначе живой гард выглядит как пустой.
   const num = (re) => Number((r.all.match(re) ?? [])[1] ?? 0);
@@ -132,22 +158,46 @@ export function runNodeTest(g, { repoRoot }) {
 }
 
 /** Конформанс, линтер, валидаторы: счётчика проверок нет — только код возврата. */
-export function runOpaque(g, { repoRoot }) {
-  const r = sh(cmdOf(g), { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot, env: env(repoRoot) });
+export function runOpaque(g, { repoRoot, extraEnv = {} }) {
+  const r = sh(cmdOf(g), { cwd: g.cwd ? resolve(repoRoot, g.cwd) : repoRoot, env: { ...env(repoRoot), ...extraEnv } });
   return { ...stat(g), files: 0, passed: null, failed: null, skipped: null, ok: r.code === 0, ms: r.ms, why: null, log: r.all };
 }
 
 /** Прогоняет весь набор и печатает таблицу. Возвращает {results, red, empty, totals}. */
+/**
+ * Джобы CI, шаги которых идут строго по очереди, — и локально их jest-гарды
+ * идут по очереди, после общего параллельного прогона. В satin-dictated-
+ * conformance живут тесты, которые на время меняют отслеживаемые входы
+ * отпечатка конформанса и возвращают байты (conformance-theme-digest-isolation,
+ * satin-conformance-tier-transaction). Рядом с ними в параллельном прогоне
+ * проверка детерминизма snapshot'а satin читала файл посреди перезаписи и
+ * краснела (25.09, spec 115), а память могла бы запомнить результат,
+ * посчитанный на временном содержимом. В CI эта джоба — последовательные шаги,
+ * поэтому там гонки не было.
+ */
+export const SEQUENTIAL_JOBS = new Set(['satin-dictated-conformance']);
+
+/** jest-гарды: параллельные (общий прогон) и последовательные (по одному процессу, --runInBand). */
+export function splitJestGuards(guards) {
+  const jest = guards.filter((g) => g.kind === 'jest-batch');
+  return {
+    parallel: jest.filter((g) => !SEQUENTIAL_JOBS.has(g.job)),
+    sequential: jest.filter((g) => SEQUENTIAL_JOBS.has(g.job)),
+  };
+}
+
 export function runGuards(guards, { repoRoot, log, jestArgs }) {
-  const batch = guards.filter((g) => g.kind === 'jest-batch');
+  const { parallel, sequential } = splitJestGuards(guards);
   const rest = guards.filter((g) => g.kind !== 'jest-batch');
   const started = Date.now();
   const results = [];
 
-  const batchStart = Date.now();
-  const batchRes = runJestBatch(batch, { repoRoot, log, ...(jestArgs ? { jestArgs } : {}) });
-  const batchMs = Date.now() - batchStart;
-  results.push(...batchRes.map((r) => ({ ...r, ms: r.ms ?? Math.round(batchMs / Math.max(1, batchRes.length)) })));
+  for (const [batch, args] of [[parallel, jestArgs], [sequential, ['--runInBand']]]) {
+    const batchStart = Date.now();
+    const batchRes = runJestBatch(batch, { repoRoot, log, ...(args ? { jestArgs: args } : {}) });
+    const batchMs = Date.now() - batchStart;
+    results.push(...batchRes.map((r) => ({ ...r, ms: r.ms ?? Math.round(batchMs / Math.max(1, batchRes.length)) })));
+  }
 
   for (const g of rest) {
     log(`   ${g.label}…`);
@@ -179,6 +229,7 @@ export function formatGuardTable(results) {
     else if (r.passed === 0) state = `НОЛЬ ПРОВЕРОК — ${r.why}`;
     else if (!r.ok) state = `КРАСНЫЙ: не прошло ${r.failed}`;
     else state = 'ок';
+    if (r.ok && r.fromMemory) state += ' · из памяти';
     lines.push(`${pad(cut(r.label, 45), 46)}${lpad(count, 9)}${lpad(r.skipped ?? '—', 9)}  ${state}`);
   }
   return lines.join('\n');

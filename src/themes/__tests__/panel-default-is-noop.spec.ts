@@ -63,6 +63,8 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { resolveVariantDisplay } from "../../../packages/theme-base/runtime/variant-display";
+
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 const PANEL = resolve(__dirname, "puck-config-deep.mjs");
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
@@ -98,11 +100,13 @@ const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
  * дефолтом и без ключа уже расходится. Снимок 25.09, когда у секций осталась
  * одна версия; до этого те же ключи расходились и без признака режима, и
  * сторож их не показывал. Здесь контент-заглушки, колонки подвала, отступы и
- * известные долги: bloom `Footer.newsletter`, flux `Product.variants`. Ключ
- * отсюда уходит, когда его чинят; новый сюда сам не попадает. Ушли:
+ * Ключ отсюда уходит, когда его чинят; новый сюда сам не попадает. Ушли:
  * rose/vanilla `Hero.contentPosition` (25.09 — панель больше не вписывает
  * скрытую позицию первого экрана), bloom `MainText.textSize` (25.09 — панель
- * больше не вписывает скрытый размер текста).
+ * больше не вписывает скрытый размер текста), bloom `Footer.newsletter` (25.09 —
+ * «Рассылка» по умолчанию «Показать», как тема и рисует без настройки), flux
+ * `Product.variants` (25.09 — «Вариации» по умолчанию «Нет», как рисует
+ * страница товара).
  */
 const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
   rose: [
@@ -165,7 +169,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "Newsletter.placeholder",
     "PopularProducts.heading",
     "PopularProducts.quickAddText",
-    "Product.variants",
     "PromoBanner.colorScheme",
     "PromoBanner.link",
     "PromoBanner.padding",
@@ -251,7 +254,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "ContactForm.heading",
     "Footer.informationColumn",
     "Footer.navigationColumn",
-    "Footer.newsletter",
     "Gallery.items",
     "Header.navigationLinks",
     "Hero.cta",
@@ -419,6 +421,17 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
     // Правьте ДЕФОЛТ (он обязан повторять фолбэк порта) или ветку порта
     // «не задано», а не снимок.
     expect(divergentKeys((p) => p.style)).toEqual([...KNOWN_DIVERGENT[theme]].sort());
+  });
+
+  it("«Товар»: «Стиль» и «Вариации» по умолчанию = вид страницы товара без настройки", () => {
+    if (!built) return;
+    // Секции «Товар» у rose/vanilla/bloom/satin нет в наборе модулей темы (её
+    // рисует общий блок), поэтому парный рендер выше её не видит. Правило то же:
+    // значение панели по умолчанию обязано рисовать то, что рисует отсутствие
+    // значения, — иначе первая правка секции меняет вид вариантов.
+    expect(resolveVariantDisplay(panel?.Product?.defaults?.variants)).toEqual(
+      resolveVariantDisplay(undefined),
+    );
   });
 
   it("панель не вписывает скрытую легаси-позицию первого экрана (contentPosition)", () => {

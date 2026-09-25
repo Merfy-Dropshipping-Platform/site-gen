@@ -284,8 +284,11 @@ export const ProductPuckConfig: BlockPuckConfig<ProductProps> = {
     // price/quantity больше не имеют тоггла (Figma 1236-42145 → disabledHint):
     // рендер показывает их всегда (priceProp/quantity === undefined → visible).
     // Единое поле формы: дефолт 'button' = прямоугольные текст-кнопки (Figma).
-    // 'circle'/'square'/'list' — явный выбор мерчанта.
-    variants: { displayStyle: 'button', shape: 'circle' },
+    // 'circle'/'square'/'list' — явный выбор мерчанта. «Вариации» по умолчанию
+    // — «Нет», как рисует страница товара без настройки
+    // (runtime/variant-display.ts DEFAULTS). Раньше здесь стоял «Круг», и первая
+    // правка секции превращала кнопки вариантов в кружки-образцы (владелец 25.09).
+    variants: { displayStyle: 'button', shape: 'none' },
     // «Основная кнопка» (addToCart). Пусто = скрыть. «Купить сейчас» —
     // фиксированный лейбл, видимость через dynamicButton.
     buttons: { addToCart: { text: 'Добавить в корзину' } },

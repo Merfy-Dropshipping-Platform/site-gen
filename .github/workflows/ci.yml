@@ -1003,6 +1003,12 @@ jobs:
         run: pnpm exec jest --runInBand src/utils/__tests__/revision-migrations-header-unify.test.ts src/themes/__tests__/page-blocks-header-unify.spec.ts src/themes/__tests__/page-seed-header-parity.spec.ts src/utils/__tests__/revision-migrations-profile.test.ts
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-scheme-notation.spec.ts
+      # «Мультиколонны»: выбор ссылки колонки схлопывал колонку в {text, href}
+      # (общая развёртка конвертов в page-blocks.ts), кнопка и заголовок колонки
+      # пропадали у rose/vanilla/flux/bloom (владелец 26.09). Пять тем × три
+      # вида ссылки через живую цепочку рантайма.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/multicolumns-column-link-pick.spec.ts
       # Шапка bloom: размер иконок и отступы (жалоба владельца 20.09 «иконки
       # большие, отступов сверху и снизу нет»). Сверено с эталоном
       # верстальщиков canon-sections/header.html: десктопные Поиск/Корзина/

@@ -74,6 +74,7 @@
     {
       "type": "Product",
       "props": {
+        "colorScheme": "scheme-5",
         "id": "Product-home"
       }
     },

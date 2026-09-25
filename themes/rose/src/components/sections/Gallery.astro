@@ -324,12 +324,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{(tile.label || tile.price) && (
 									<div class="flex flex-col gap-[4px] bg-transparent">
 										{tile.label && (
-											<h3 class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">
+											<h3 class="gallery-product-title font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[16px] lg:text-[16px] xl:text-[16px]">
 												{tile.label}
 											</h3>
 										)}
 										{tile.price && (
-											<span class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-black md:text-[16px] lg:text-[16px] xl:text-[16px]">
+											<span class="gallery-product-price font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] md:text-[16px] lg:text-[16px] xl:text-[16px]">
 												{tile.price}
 											</span>
 										)}

@@ -30,16 +30,19 @@
  *   • секция «Товар» и «Коллекции товаров» печатают имя в SSR-разметке →
  *     ищем маркер и поднимаемся по цепочке предков (text-transform
  *     наследуется, капс на любом предке — та же подмена);
- *   • карточка каталога рисуется клиентом из шаблона, который лежит строкой в
- *     инлайн-скрипте блока. Шаблон уезжает в браузер ровно таким — поэтому
- *     проверяем сам узел `<a …>${name}</a>` в отрендеренном артефакте, а не
- *     текст исходника.
+ *   • карточки каталога и избранного рисуются клиентом из шаблона, который
+ *     лежит строкой в инлайн-скрипте блока. Шаблон уезжает в браузер ровно
+ *     таким — поэтому проверяем сам узел `<a …>${name}</a>` в отрендеренном
+ *     артефакте, а не текст исходника.
+ *
+ * Плюс отдельный слой по исходникам (в конце файла): копии и зеркала шаблона
+ * карточки, которые рендер не видит, — капс в избранном satin жил именно там.
  *
  * Требует сборки: pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { relative, resolve } from "node:path";
 
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
 /** Каталог магазина для тем, которые ходят за товарами HTTP-запросом. */
@@ -105,6 +108,10 @@ const JOBS = [
     block: "Catalog",
     props: { ...base, id: "Cat-1", categoryTitle: HEADING_MARK },
   },
+  // Карточка избранного — копия рецепта карточки каталога в инлайн-скрипте
+  // страницы /wishlist. Товары она берёт клиентом, поэтому меряется так же,
+  // как каталог: узел имени в шаблоне.
+  { block: "WishlistSection", props: { ...base, id: "Wish-1" } },
 ] as const;
 
 /** Самозакрывающиеся теги — в стек предков не кладутся. */
@@ -173,16 +180,21 @@ const capsedChains = (html: string, marker: string): string[] =>
     );
 
 /**
- * Узел имени товара в клиентском шаблоне карточки каталога.
- * Пять тем собирают его либо шаблонной строкой (`${name}`), либо конкатенацией
- * (`" + name + "`) — ловим оба вида.
+ * Узел имени товара в клиентском шаблоне карточки (каталог, избранное).
+ * Темы собирают его шаблонной строкой (`${name}`) или конкатенацией, причём
+ * кавычки бывают любые: каталог пишет `" + name + "`, избранное —
+ * `'…">' + name + "</a>"`. Ловим все виды: прежний шаблон знал только двойные
+ * кавычки, и карточку избранного не увидел бы, даже будь она в списке блоков.
  */
-const catalogNameNodes = (html: string): string[] =>
+const clientNameNodes = (html: string): string[] =>
   [
     ...html.matchAll(
-      /<a[^>]*>\s*(?:\$\{name\}|"\s*\+\s*name\s*\+\s*")\s*<\/a>/g,
+      /<a[^>]*>\s*(?:\$\{name\}|["']\s*\+\s*name\s*\+\s*["'])\s*<\/a>/g,
     ),
   ].map((m) => m[0]);
+
+/** Капс классом на узле шаблона (класс стоит в строке, отсюда кавычки в границах). */
+const nodeHasCaps = (node: string) => /(^|[\s"'])uppercase([\s"'])/.test(node);
 
 /** Только разметка, без инлайн-скриптов (для SSR-слоя). */
 const markupOnly = (html: string) =>
@@ -193,7 +205,7 @@ const built = (theme: Theme) =>
     resolve(SITES_ROOT, "dist", "theme-sections", theme, "manifest.json"),
   );
 
-/** Один прогон темы: все три блока живой цепочкой, со стабом каталога. */
+/** Один прогон темы: все блоки JOBS живой цепочкой, со стабом каталога. */
 function renderTheme(theme: Theme): Record<string, string | null> {
   const jobs = JOBS.map((j) => ({
     ...j,
@@ -259,16 +271,25 @@ describe.each(THEMES)("название товара — %s", (theme) => {
   it("карточка каталога: узел имени в клиентском шаблоне найден", () => {
     const html = rendered.Catalog;
     if (html == null) return; // блока в теме нет
-    expect(catalogNameNodes(html).length).toBeGreaterThan(0);
+    expect(clientNameNodes(html).length).toBeGreaterThan(0);
   });
 
   it("карточка каталога: имя печатается без принудительного капса", () => {
     const html = rendered.Catalog;
     if (html == null) return;
-    const capsed = catalogNameNodes(html).filter((node) =>
-      /(^|[\s"])uppercase([\s"])/.test(node),
-    );
-    expect(capsed).toEqual([]);
+    expect(clientNameNodes(html).filter(nodeHasCaps)).toEqual([]);
+  });
+
+  it("карточка избранного: узел имени в клиентском шаблоне найден", () => {
+    const html = rendered.WishlistSection;
+    if (html == null) return; // блока в теме нет
+    expect(clientNameNodes(html).length).toBeGreaterThan(0);
+  });
+
+  it("карточка избранного: имя печатается без принудительного капса", () => {
+    const html = rendered.WishlistSection;
+    if (html == null) return;
+    expect(clientNameNodes(html).filter(nodeHasCaps)).toEqual([]);
   });
 
   it("карточка «Коллекции товаров»: имя без капса (узость — не сломать)", () => {
@@ -313,19 +334,27 @@ describe("саботаж: детектор капса не вырожден", ()
   it("прежний узел карточки каталога ловится", () => {
     const before =
       '<a href="${href}" class="font-manrope text-[16px] font-normal uppercase leading-tight">${name}</a>';
-    expect(
-      catalogNameNodes(before).filter((n) =>
-        /(^|[\s"])uppercase([\s"])/.test(n),
-      ),
-    ).toHaveLength(1);
+    expect(clientNameNodes(before).filter(nodeHasCaps)).toHaveLength(1);
+  });
+
+  it("прежний узел карточки избранного satin (одинарные кавычки) ловится", () => {
+    const before =
+      "'<a href=\"' + href + '\" class=\"font-manrope text-[16px] font-normal uppercase leading-tight\">' + name + \"</a>\"";
+    expect(clientNameNodes(before).filter(nodeHasCaps)).toHaveLength(1);
   });
 
   it("чистый узел карточки каталога капсом НЕ считается", () => {
     const ok =
       '<a href="${href}" class="rose-product-name block w-full font-manrope">${name}</a>';
-    expect(
-      catalogNameNodes(ok).filter((n) => /(^|[\s"])uppercase([\s"])/.test(n)),
-    ).toEqual([]);
+    expect(clientNameNodes(ok).filter(nodeHasCaps)).toEqual([]);
+  });
+
+  it("ссылка-картинка с именем в aria-label узлом имени НЕ считается", () => {
+    // Рядом с узлом имени в карточке стоит ссылка на фото: имя у неё только в
+    // атрибуте, внутри — картинка. Её регистр читателю не виден.
+    const media =
+      "'<a href=\"' + href + '\" class=\"uppercase\" aria-label=\"' + name + '\">' + media + \"</a>\"";
+    expect(clientNameNodes(media)).toEqual([]);
   });
 
   it("имя в alt/aria-label капсом не считается", () => {
@@ -369,5 +398,102 @@ describe.each(THEMES)("заголовок «Каталога» — %s", (theme) 
   it("регистр заголовка не переписан в тексте", () => {
     if (html == null) return;
     expect(markupOnly(html)).not.toContain(HEADING_MARK.toUpperCase());
+  });
+});
+
+// ───── слой 4: исходники — копии и зеркала шаблона карточки ─────
+
+/**
+ * Рендер выше видит только блоки из JOBS. А шаблон карточки строкой живёт во
+ * многих копиях: инлайн-скрипты каталога и избранного, тело корзины, зеркала
+ * `storefront-hydrate.ts` (не исполняются, но с них копируют). Капс в
+ * избранном satin приехал именно так: карточку избранного собрали из рецепта
+ * каталога за 13 минут до того, как с каталога сняли капс, и правка прошла
+ * мимо копии и мимо зеркала.
+ *
+ * Поэтому этот слой читает исходники пяти тем целиком и находит каждый узел,
+ * который строковым шаблоном печатает имя из данных магазина: товар,
+ * коллекция, группа вариантов, значение фильтра. Капс на самом узле — красный.
+ * Капс на предке этот слой не видит, для этого есть рендер выше.
+ */
+const SOURCE_ROOTS = (theme: Theme) => [
+  resolve(SITES_ROOT, "themes", theme, "src"),
+  resolve(SITES_ROOT, "packages", `theme-${theme}`, "blocks"),
+];
+
+const isShippedSource = (file: string) =>
+  /\.(astro|ts|js|mjs)$/.test(file) &&
+  !/(^|\/)__tests__\//.test(file) &&
+  !/\.(test|spec)\./.test(file);
+
+const sourceFiles = (root: string): string[] =>
+  existsSync(root)
+    ? readdirSync(root, { recursive: true, encoding: "utf-8" })
+        .filter(isShippedSource)
+        .map((file) => resolve(root, file))
+    : [];
+
+/** Имя из данных: `name`, `p.name`, `line.name`, `escapeHtml(g.name)`, `productName`. */
+const DATA_NAME = String.raw`(?:[\w$]+\()?(?:[\w$]+\.)?(?:name|productName)\)?`;
+
+/** Узел, всё содержимое которого — имя: конкатенацией в любых кавычках или `${…}`. */
+const TEMPLATE_NAME_NODE = new RegExp(
+  String.raw`<(a|div|span|p|h[1-6]|strong|b)\b([^<>]*)>\s*(?:["']\s*\+\s*${DATA_NAME}\s*\+\s*["']|\$\{\s*${DATA_NAME}\s*\})\s*<\/\1>`,
+  "g",
+);
+
+type SourceNode = { where: string; attrs: string };
+
+const nodesIn = (file: string): SourceNode[] => {
+  const src = readFileSync(file, "utf-8");
+  return [...src.matchAll(TEMPLATE_NAME_NODE)].map((m) => ({
+    where: `${relative(SITES_ROOT, file)}:${src.slice(0, m.index).split("\n").length}`,
+    attrs: m[2],
+  }));
+};
+
+const attrsHaveCaps = (attrs: string) =>
+  nodeHasCaps(attrs) || /text-transform:\s*uppercase/i.test(attrs);
+
+/** Карточки, которые видит покупатель: без них проход по исходникам пуст по смыслу. */
+const CARD_TEMPLATES = ["Catalog.astro", "WishlistSection.astro", "CartBody.astro"];
+
+describe.each(THEMES)("исходники %s: имя из данных магазина в шаблонах карточек", (theme) => {
+  const nodes = SOURCE_ROOTS(theme).flatMap(sourceFiles).flatMap(nodesIn);
+
+  it.each(CARD_TEMPLATES)("шаблон %s найден (проход не вырожден)", (file) => {
+    expect(nodes.some((n) => n.where.includes(`/${file}:`))).toBe(true);
+  });
+
+  it("ни один узел не навязывает капс", () => {
+    expect(nodes.filter((n) => attrsHaveCaps(n.attrs)).map((n) => n.where)).toEqual([]);
+  });
+});
+
+describe("саботаж: проход по исходникам узнаёт прежние узлы", () => {
+  const capsed = (src: string) =>
+    [...src.matchAll(TEMPLATE_NAME_NODE)].filter((m) => attrsHaveCaps(m[2]));
+
+  it("избранное satin: конкатенация в одинарных кавычках", () => {
+    const before =
+      "'<a href=\"' + href + '\" class=\"font-manrope font-normal uppercase leading-tight\">' + name + \"</a>\" +";
+    expect(capsed(before)).toHaveLength(1);
+  });
+
+  it("зеркало каталога satin: шаблонная строка", () => {
+    const before =
+      '<a href="${href}" class="font-manrope font-normal uppercase leading-tight">${name}</a>';
+    expect(capsed(before)).toHaveLength(1);
+  });
+
+  it("капс правилом в style= и имя через escapeHtml(line.name)", () => {
+    const before =
+      "'<div class=\"font-body\" style=\"font-size: 20px; text-transform: uppercase;\">' + escapeHtml(line.name) + '</div>'";
+    expect(capsed(before)).toHaveLength(1);
+  });
+
+  it("подпись темы капсом узлом имени НЕ считается", () => {
+    const own = '<span class="uppercase">Скидка</span>';
+    expect([...own.matchAll(TEMPLATE_NAME_NODE)]).toEqual([]);
   });
 });

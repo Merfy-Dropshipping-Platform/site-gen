@@ -122,8 +122,9 @@ const CASES: Case[] = [
   // и на всех путях рендера теперь берёт сам «--color-text»; сплошной обход
   // сторожит «old-price-follows-text.spec.ts» (57 мишеней в 56 файлах).
   { theme: "flux", block: "Product", label: "Товар", target: "цена ДО скидки", marker: "data-cfg-oldprice", prop: "color", expect: "--color-text" },
-  { theme: "flux", block: "Product", label: "Товар", target: "фон основной кнопки", marker: "data-add-to-cart", prop: "background-color", expect: "--color-bg" },
-  { theme: "flux", block: "Product", label: "Товар", target: "текст основной кнопки", marker: "data-add-to-cart", prop: "color", expect: "--color-button-bg" },
+  // Кнопки секций с настройкой «Кнопка»/«Кнопки» красит правило роли схемы
+  // (data-scheme-button, src/themes/scheme-buttons.ts), а не классы порта —
+  // их фон/текст/рамку по всем пяти темам меряет scheme-button-roles.spec.ts.
   { theme: "flux", block: "CartSection", label: "Корзина", target: "фон секции", marker: 'data-block="cart-section"', prop: "background-color", expect: "--color-bg" },
   { theme: "flux", block: "CartBody", label: "Корзина (тело)", target: "фон секции", marker: 'data-block="cart-body"', prop: "background-color", expect: "--color-bg" },
   { theme: "flux", block: "CartSummary", label: "Промежуточный итог", target: "фон секции", marker: 'data-block="cart-summary"', prop: "background-color", expect: "--color-bg" },
@@ -182,10 +183,9 @@ const CASES: Case[] = [
     { theme, block: "WishlistSection", label: "Избранное", target: "заголовок", marker: 'id="wishlist-title"', prop: "color", expect: "--color-heading" } as Case
   )),
 
-  // [9] Кнопка слайда «Слайд-шоу» во flux. До: фон 0,0,0 → 0,0,0 (`bg-black`),
-  // текст 255,255,255 → 255,255,255 (`text-white`). Эталон rose — те же роли.
-  { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "фон кнопки слайда", marker: "текст:Кнопка", prop: "background-color", expect: "--color-button-bg" },
-  { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "текст кнопки слайда", marker: "текст:Кнопка", prop: "color", expect: "--color-button-text" },
+  // Кнопки секций с настройкой «Кнопка»/«Кнопки» красит правило роли схемы
+  // (data-scheme-button, src/themes/scheme-buttons.ts), а не классы порта —
+  // их фон/текст/рамку по всем пяти темам меряет scheme-button-roles.spec.ts.
 
   // [b64-1] Владелец, 17.09: «Секция слайд-шоу поломана» в bloom — заголовок
   // красный, подзаголовок зелёный, кнопка бордовая на голубом фоне (Схема 3).
@@ -193,8 +193,9 @@ const CASES: Case[] = [
   // что видел владелец. Роли те же, что у flux выше + заголовок/подзаголовок.
   { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "заголовок слайда", marker: "текст:Слайд-шоу", prop: "color", expect: "--color-heading" },
   { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "подзаголовок слайда", marker: "текст:Добавь несколько изображений с информацией о своём бренде", prop: "color", expect: "--color-text" },
-  { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "фон кнопки слайда", marker: "текст:Кнопка", prop: "background-color", expect: "--color-button-bg" },
-  { theme: "bloom", block: "Slideshow", label: "Слайд-шоу", target: "текст кнопки слайда", marker: "текст:Кнопка", prop: "color", expect: "--color-button-text" },
+  // Кнопки секций с настройкой «Кнопка»/«Кнопки» красит правило роли схемы
+  // (data-scheme-button, src/themes/scheme-buttons.ts), а не классы порта —
+  // их фон/текст/рамку по всем пяти темам меряет scheme-button-roles.spec.ts.
 
   // [47] Цена карточки «Коллекции товаров» у vanilla. До: 0,0,0 → 0,0,0
   // (`text-black`; Tailwind 4 печатает его как `var(--color-black)` — переменная
@@ -280,8 +281,9 @@ const CASES: Case[] = [
   // Эталон rose (ImageWithText.astro:160) — тело секции на `--color-text`.
   { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "заголовок", marker: 'data-puck-subsection-field="heading"', prop: "color", expect: "--color-heading" },
   { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "текст", marker: 'data-puck-subsection-field="text"', prop: "color", expect: "--color-text" },
-  { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "фон кнопки", marker: 'data-puck-subsection-field="button"', prop: "background-color", expect: "--color-button-2-bg" },
-  { theme: "flux", block: "ImageWithText", label: "Изображение с текстом", target: "текст кнопки", marker: 'data-puck-subsection-field="button"', prop: "color", expect: "--color-button-2-text" },
+  // Кнопки секций с настройкой «Кнопка»/«Кнопки» красит правило роли схемы
+  // (data-scheme-button, src/themes/scheme-buttons.ts), а не классы порта —
+  // их фон/текст/рамку по всем пяти темам меряет scheme-button-roles.spec.ts.
 
   // ── b74 17.09: «Подвал» flux — заголовок колонки (`FooterColumn.astro`,
   // «Навигация»/«Информация») стоял на литерале `text-black`: на ЛЮБОЙ схеме
@@ -292,7 +294,7 @@ const CASES: Case[] = [
   // ── b74 17.09: «Слайд-шоу» flux — заголовок/подзаголовок пустого слайда УЖЕ
   // ехали токеном (`slideHeadingCls`/`slideTextCls`), но кейса на них не было —
   // ставим сторож, чтобы регрессия не проскочила молча (кнопка слайда уже
-  // сторожилась выше, CASES «фон/текст кнопки слайда»).
+  // сторожится в scheme-button-roles.spec.ts).
   { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "заголовок слайда", marker: "текст:Слайд-шоу", prop: "color", expect: "--color-heading" },
   { theme: "flux", block: "Slideshow", label: "Слайд-шоу", target: "подзаголовок слайда", marker: "текст:Добавь несколько изображений с информацией о своём бренде", prop: "color", expect: "--color-text" },
 
@@ -874,7 +876,12 @@ describe("flux · «Товар» · вариации идут токеном с�
  * Сторож ловит и «залип на примари» (после правки марта секондари не должна
  * тайком читать `--color-button-bg`), и «наведение не меняет значение».
  */
-describe("flux · «Товар» · дополнительная (динамическая) кнопка «Купить сейчас» — секондари + наведение", () => {
+describe("flux · «Товар» · кнопки «В корзину»/«Купить сейчас» красит роль схемы", () => {
+  // С 25.09 цвета обеих кнопок (покой и наведение) даёт правило роли
+  // (data-scheme-button, src/themes/scheme-buttons.ts); нарисованный фон,
+  // текст и рамку меряет scheme-button-roles.spec.ts. Здесь — что порт не
+  // перебивает правило инлайном: прежние style/onmouseover «Купить сейчас»
+  // красили кнопку мимо «Обводки».
   const html = built("flux") ? renderBlock("flux", "Product", {
     id: "Product-1",
     productId: "p1",
@@ -885,49 +892,22 @@ describe("flux · «Товар» · дополнительная (динамич
     if (!built("flux")) throw new Error("тема flux не собрана");
   });
 
-  it("оба узла (desktop+mobile) существуют", () => {
-    const nodes = classesOfAllMarker(html, "data-cfg-buy");
-    expect(nodes.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("покой: инлайн ссылается на --color-button-secondary-bg/-text, НЕ на примари и НЕ на литерал", () => {
-    const styles = inlineStylesOfAllMarker(html, "data-cfg-buy");
-    styles.forEach((style, i) => {
-      const where = `узел №${i + 1}`;
-      expect({ where, style }).toEqual({
-        where,
-        style: expect.stringContaining("--color-button-secondary-bg"),
-      });
-      expect({ where, style }).toEqual({
-        where,
-        style: expect.stringContaining("--color-button-secondary-text"),
-      });
-      // Залип на примари — регрессия к старому багу (владелец 15.09), которую
-      // эта правка НЕ должна тайком воскресить.
-      expect(style).not.toMatch(/background:rgb\(var\(--color-button-bg,/);
-    });
-  });
-
-  it("наведение: onmouseover переключает НА -hover пару токенов (значение реально меняется)", () => {
+  it.each([
+    ["«В корзину» — Основная", "data-cfg-add", "primary"],
+    ["«Купить сейчас» — Дополнительная", "data-cfg-buy", "secondary"],
+  ])("%s", (_name, marker, role) => {
     const doc = require("node-html-parser").parse(html);
-    const nodes = doc.querySelectorAll("[data-cfg-buy]");
+    const nodes = doc.querySelectorAll(`[${marker}]`);
     expect(nodes.length).toBeGreaterThanOrEqual(1);
-    nodes.forEach((el: { getAttribute: (n: string) => string | null }, i: number) => {
+    nodes.forEach((el: { getAttribute: (n: string) => string | undefined }, i: number) => {
       const where = `узел №${i + 1}`;
-      const over = el.getAttribute("onmouseover") ?? "";
-      const out = el.getAttribute("onmouseout") ?? "";
-      expect({ where, over }).toEqual({
+      const got = {
         where,
-        over: expect.stringContaining("--color-button-secondary-bg-hover"),
-      });
-      expect({ where, over }).toEqual({
-        where,
-        over: expect.stringContaining("--color-button-secondary-text-hover"),
-      });
-      // onmouseout обязан вернуть РОВНО состояние покоя — иначе кнопка
-      // «залипает» в hover-цвете после первого наведения.
-      expect(out).toContain("--color-button-secondary-bg");
-      expect(out).not.toContain("-hover");
+        role: el.getAttribute("data-scheme-button") ?? null,
+        style: el.getAttribute("style") ?? null,
+        onmouseover: el.getAttribute("onmouseover") ?? null,
+      };
+      expect(got).toEqual({ where, role, style: null, onmouseover: null });
     });
   });
 });
@@ -978,9 +958,12 @@ describe("[б90] «Слайд-шоу» · CTA outlined · наведение ч�
     // --color-button-bg-hover…)) правило не считается найденным.
   });
 
-  it.each(["rose", "vanilla", "bloom", "flux"] as const)(
-    "%s · живой рендер Slideshow(outlined) — CTA класс реально ловится фиксом (подстрока есть в разметке)",
+  it.each(["rose", "vanilla", "bloom", "flux", "satin"] as const)(
+    "%s · живой рендер Slideshow(outlined) — CTA несёт роль «Основная»: покой и наведение даёт правило роли",
     (theme) => {
+      // С 25.09 скрытый buttonStyle цвет кнопки слайда не выбирает: «Кнопка»
+      // одна, и она — «Основная кнопка» схемы (задача владельца). Наведение —
+      // поля «При наведении» той же роли (src/themes/scheme-buttons.ts).
       if (!built(theme)) throw new Error(`тема ${theme} не собрана`);
       const html = renderBlock(theme, "Slideshow", {
         colorScheme: `scheme-${SCHEME_A}`,
@@ -1001,22 +984,8 @@ describe("[б90] «Слайд-шоу» · CTA outlined · наведение ч�
         .querySelectorAll("a")
         .find((el: { text: string }) => el.text.trim() === "Кнопка");
       expect({ theme, найдена: !!cta }).toEqual({ theme, найдена: true });
-      const cls = cta!.getAttribute("class") ?? "";
-      if (theme === "vanilla") {
-        // vanilla оставлена на --color-primary (см. комментарий выше) — фикс
-        // этого дефекта в бюджет б90 не входит, гард это не должен скрывать
-        // ложным зелёным по чужому классу.
-        expect(cls).toContain("border-[rgb(var(--color-primary");
-        return;
-      }
-      expect({ theme, cls }).toEqual({
-        theme,
-        cls: expect.stringContaining("border-[rgb(var(--color-button-bg"),
-      });
-      expect({ theme, cls }).toEqual({
-        theme,
-        cls: expect.stringContaining("text-[rgb(var(--color-button-bg"),
-      });
+      expect({ theme, role: cta!.getAttribute("data-scheme-button") }).toEqual({ theme, role: "primary" });
     },
   );
+
 });

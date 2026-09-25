@@ -85,14 +85,16 @@ const buttonText =
 	contentSet("buttonText", p.buttonText) && typeof p.buttonText === "string" && p.buttonText.trim()
 		? p.buttonText
 		: "Кнопка";
+// Обе формы кнопки — «Кнопка» секции, цвета «Основной кнопки» схемы
+// (data-scheme-button, src/themes/scheme-buttons.ts).
 const inlineTextBtnCls =
-	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-manrope text-[12px] font-normal leading-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-95";
+	"flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-4 font-manrope text-[12px] font-normal leading-normal transition-opacity hover:opacity-95";
 // Тёмная md-кнопка (роль satin-button-md DARK, g:106-126,155-159) пересобрана
 // utility-классами с токенами: unlayered .satin-button-dark из global.css
 // перебил бы токен-утилиты (background: var(--satin-black)) и сломал смену
 // схемы из конструктора.
 const stackedBtnCls =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-bg,0_0_0))] bg-[rgb(var(--color-button-bg,0_0_0))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 font-manrope text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Канон formLayout: canon-default 'inline-submit' (совпадает с отсутствием
 // пропа) = форма подвала VERBATIM (контейнер h-10 border muted pl-3 pr-2.5,
@@ -220,7 +222,7 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 							class="min-w-0 flex-1 bg-transparent font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none placeholder:text-[rgb(var(--color-muted,153_153_153))]"
 						/>
 						{!isFieldHidden('buttonText') && (buttonText ? (
-							<button type="submit" class={inlineTextBtnCls}>
+							<button type="submit" class={inlineTextBtnCls} data-scheme-button="primary">
 								{buttonText}
 							</button>
 						) : (
@@ -249,7 +251,7 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 							aria-label="Email"
 							class="h-10 w-full rounded-[var(--radius-input,0px)] border border-[rgb(var(--color-muted,153_153_153))] bg-transparent px-3 font-manrope text-xs font-light leading-normal text-[rgb(var(--color-text,0_0_0))] outline-none transition-colors placeholder:text-[rgb(var(--color-muted,153_153_153))] focus-visible:border-[rgb(var(--color-text,0_0_0))]"
 						/>
-						<button type="submit" class={`${stackedBtnCls} ${selfCls}`}>
+						<button type="submit" class={`${stackedBtnCls} ${selfCls}`} data-scheme-button="primary">
 							{buttonText || "Подписаться"}
 						</button>
 					</form>

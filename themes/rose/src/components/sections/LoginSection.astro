@@ -146,16 +146,20 @@ const btnText =
 			</form>
 
 			<div class="w-full flex flex-col items-center gap-8">
+				{/* «Кнопка» секции — цвета «Основной кнопки» схемы (data-scheme-button,
+				    src/themes/scheme-buttons.ts). Толщина рамки — inline: класс
+				    .auth-button-primary гасит её `border:none` вне @layer. */}
 				<button
 					type="submit"
 					id="btn-magic"
 					form="magic-form"
 					class="auth-button-primary"
+					data-scheme-button="primary"
 					data-testid="btn-magic"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="100"
 					data-puck-subsection-field="button"
-					style="border-radius:var(--radius-button,8px);"
+					style="border-radius:var(--radius-button,8px);border-width:1px;border-style:solid;"
 				>
 					<span class="auth-button-loading hidden inline-flex items-center gap-2" data-loading>
 						<span class="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

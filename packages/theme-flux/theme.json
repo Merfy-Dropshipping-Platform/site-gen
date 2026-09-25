@@ -141,7 +141,8 @@
           "variant": "inline"
         },
         "showDescription": false
-      }
+      },
+      "colorScheme": "scheme-5"
     },
     "Hero": {
       "size": "large",
@@ -300,6 +301,34 @@
         "--color-button-2-border": "255 255 255",
         "--color-button-2-bg-hover": "224 224 224",
         "--color-button-2-text-hover": "11 11 11"
+      }
+    },
+    {
+      "id": "scheme-5",
+      "name": "5",
+      "tokens": {
+        "--color-bg": "255 255 255",
+        "--color-surface": "251 251 251",
+        "--color-heading": "0 0 0",
+        "--color-text": "153 153 153",
+        "--color-muted": "204 204 204",
+        "--color-primary": "0 0 0",
+        "--color-accent": "250 81 9",
+        "--color-button-bg": "255 255 255",
+        "--color-button-text": "30 41 82",
+        "--color-button-border": "30 41 82",
+        "--color-button-bg-hover": "30 41 82",
+        "--color-button-text-hover": "255 255 255",
+        "--color-button-secondary-bg": "30 41 82",
+        "--color-button-secondary-text": "255 255 255",
+        "--color-button-secondary-border": "30 41 82",
+        "--color-button-secondary-bg-hover": "57 67 103",
+        "--color-button-secondary-text-hover": "255 255 255",
+        "--color-button-2-bg": "30 41 82",
+        "--color-button-2-text": "255 255 255",
+        "--color-button-2-border": "30 41 82",
+        "--color-button-2-bg-hover": "57 67 103",
+        "--color-button-2-text-hover": "255 255 255"
       }
     }
   ],

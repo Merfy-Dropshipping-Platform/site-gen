@@ -60,7 +60,7 @@
 			"type": "Product",
 			"props": {
 				"id": "Product-1",
-				"colorScheme": "scheme-2",
+				"colorScheme": "scheme-5",
 				"visualConfig": {
 					"showDescription": true
 				},

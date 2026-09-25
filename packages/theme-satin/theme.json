@@ -71,7 +71,9 @@
     "Hero": {},
     "ImageWithText": {},
     "Gallery": {},
-    "Slideshow": {},
+    "Slideshow": {
+      "colorScheme": "scheme-4"
+    },
     "MultiRows": {},
     "MultiColumns": {
       "width": "large"

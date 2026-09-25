@@ -248,8 +248,10 @@ const btnHref =
 		? (p.link as any).href
 		: undefined) ??
 	"/catalog";
+// Цвета — «Основная кнопка» схемы (data-scheme-button, src/themes/scheme-buttons.ts):
+// «Кнопка» секции одна. Раньше — контур «Дополнительной» (задача владельца 25.09).
 const btnCls =
-	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-text,0_0_0))] bg-transparent px-6 text-[16px] font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 
 // Шкалы per-item (лестницы §9): заголовок карточки 18/md:20 — литерал
 // Features.astro:43 (small 15/17, large 22/24 — ряд аккордеона); текст
@@ -403,6 +405,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<a
 					href={btnHref}
 					class={btnCls}
+					data-scheme-button="primary"
 					data-puck-subsection-parent={isPlaceholder ? undefined : id}
 					data-puck-subsection-index={isPlaceholder ? undefined : "102"}
 					data-puck-subsection-field={isPlaceholder ? undefined : "buttonText"}

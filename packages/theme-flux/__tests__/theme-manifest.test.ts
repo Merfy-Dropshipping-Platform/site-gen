@@ -41,10 +41,11 @@ describe("@merfy/theme-flux theme.json", () => {
     expect(manifest.extends).toMatch(/^@merfy\/theme-base@/);
   });
 
-  it("has exactly 4 color schemes (dark+orange accent)", () => {
-    expect(manifest.colorSchemes.length).toBe(4);
+  // Схема 5 (26.09) — секция «Товар» по вёрстке верстальщиков.
+  it("has exactly 5 color schemes (dark+orange accent, product)", () => {
+    expect(manifest.colorSchemes.length).toBe(5);
     const names = manifest.colorSchemes.map((s: { name: string }) => s.name);
-    expect(names).toEqual(["1", "2", "3", "4"]);
+    expect(names).toEqual(["1", "2", "3", "4", "5"]);
   });
 
   it("first scheme has required color tokens", () => {
@@ -95,10 +96,17 @@ describe("@merfy/theme-flux theme.json", () => {
   // Акцент flux — тёмно-синий #1e2952 (rgb 30 41 82), а НЕ оранжевый #fa5109.
   // Оранжевый пришёл из spec-111 FR-008, но на живом flux.merfy.ru его ноль
   // вхождений: кнопки, промо-полоса и бейдж корзины — все #1e2952.
+  // Схема 5 (26.09) — секция «Товар» по вёрстке: основная кнопка «Добавить в
+  // корзину» белая с синим контуром, синий там — рамка и текст, а не заливка.
   it("navy accent #1e2952 is used by buttons in every scheme", () => {
     for (const scheme of manifest.colorSchemes) {
-      expect(scheme.tokens["--color-button-bg"]).toBe("30 41 82");
       expect(scheme.tokens["--color-button-border"]).toBe("30 41 82");
+      if (scheme.id === "scheme-5") {
+        expect(scheme.tokens["--color-button-text"]).toBe("30 41 82");
+        expect(scheme.tokens["--color-button-2-bg"]).toBe("30 41 82");
+        continue;
+      }
+      expect(scheme.tokens["--color-button-bg"]).toBe("30 41 82");
     }
   });
 

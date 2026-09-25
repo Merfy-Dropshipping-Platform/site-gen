@@ -230,22 +230,13 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: outlined (canon-default blockDefaults satin) И отсутствие =
-// ЛИТЕРАЛ верстальщика — белый контур на фото `satin-button satin-button-md
-// text-white` (about.astro:55; бордер базы = currentColor → белый); solid =
-// белая заливка в токенах кнопки-2 (255_255_255 / 0_0_0), реплика
-// .satin-button-md утилитами (паттерн Hero §3).
-// Белый В ПОКОЕ остаётся: кнопка лежит на ЗАТЕМНЁННОЙ фотографии, и это
-// санкционированный дизайн (белый список матрицы `slide-over-photo`; тёмная
-// схема satin дала бы `--color-button-2-*` = 8 2 0 и кнопка пропала бы на
-// фото). Маркер `satin-slide-cta` добавлен РАДИ НАВЕДЕНИЯ: правило
-// `.satin-slide-cta:hover` в global.css читает «Дополнительная кнопка → Текст
-// при наведении» схемы, фолбэк — та же белая. Сторож: pnpm test:scheme-matrix
-// (мишень «текст кнопки (:hover)»).
+// «Кнопка» слайда одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09. Раньше по умолчанию стоял литерал верстальщика —
+// белый контур на фото (`satin-button satin-button-md text-white`), а
+// buttonStyle=solid брал «Дополнительную». Метрики .satin-button-md утилитами.
 const ctaCls =
-	p.buttonStyle === "solid"
-		? "inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid border-[rgb(var(--color-button-2-bg,255_255_255))] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-manrope text-[16px] font-normal leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity duration-[180ms] hover:opacity-[0.78]"
-		: "satin-button satin-button-md satin-slide-cta text-white";
+	"inline-flex min-h-12 w-fit items-center justify-center rounded-[var(--radius-button,0px)] border border-solid px-6 font-manrope text-[16px] font-normal leading-none transition-opacity duration-[180ms] hover:opacity-[0.78]";
 // (Пустое состояние теперь несёт дизайн-ассет landscape-slideshow.png → рендерится
 // как обычный фото-слайд: белый текст/контурная белая CTA = ctaCls. Отдельные
 // placeholder-классы для светлого rect больше не нужны — правило 2.)
@@ -366,6 +357,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<a
 										href={s.ctaHref}
 										class={ctaCls}
+										data-scheme-button="primary"
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="102"
 										data-puck-subsection-field="button"

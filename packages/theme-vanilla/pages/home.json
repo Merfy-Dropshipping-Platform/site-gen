@@ -124,7 +124,7 @@
         "button": { "text": "К покупкам", "link": { "href": "/catalog" } },
         "buttonStyle": "outlined",
         "textStyle": "italic",
-        "colorScheme": "scheme-2",
+        "colorScheme": "scheme-5",
         "padding": { "top": 120, "bottom": 120 }
       }
     },
@@ -156,7 +156,7 @@
         "imagePosition": "right",
         "ctaPosition": "bottom-pinned",
         "textStyle": "italic",
-        "colorScheme": "scheme-2",
+        "colorScheme": "scheme-5",
         "padding": { "top": 120, "bottom": 120 }
       }
     },

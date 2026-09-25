@@ -208,14 +208,12 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: solid (canon-default) = CTA героя flux дословно — ЧЁРНАЯ
-// заливка h-14, белый текст, Roboto Flex uppercase (Hero.astro:198, MANNER §3);
-// outlined = чёрный контур того же языка (Hero.astro:197). active:scale в манере
-// не используется; чёрная CTA читается и на фото, и на светлой плашке boxed.
+// «Кнопка» слайда одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Скрытый buttonStyle=outlined раньше делал её контуром цвета Фона.
+// active:scale в манере не используется.
 const ctaCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-bg,0_0_0))] transition-colors hover:opacity-90"
-		: "inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+	"inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] border border-solid px-4 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -286,7 +284,7 @@ const paddingStyle = p.padding
 									{s.subtitle && <p class={s.textCls}><Fragment set:html={inlineFormat(s.subtitle)} /></p>}
 								</div>
 								{s.ctaText && (
-									<a href={s.ctaHref} class={ctaCls}>
+									<a href={s.ctaHref} class={ctaCls} data-scheme-button="primary">
 										{s.ctaText}
 									</a>
 								)}

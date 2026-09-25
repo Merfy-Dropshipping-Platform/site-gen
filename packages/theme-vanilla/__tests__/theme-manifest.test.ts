@@ -25,10 +25,12 @@ describe('@merfy/theme-vanilla theme.json', () => {
     expect(manifest.extends).toMatch(/^@merfy\/theme-base@/);
   });
 
-  it('has exactly 4 olive color schemes', () => {
-    expect(manifest.colorSchemes.length).toBe(4);
+  // Схема 5 (26.09) — олива с белым контуром кнопки для «Основного текста»
+  // и «Изображения с текстом» по вёрстке верстальщиков.
+  it('has exactly 5 olive color schemes', () => {
+    expect(manifest.colorSchemes.length).toBe(5);
     const names = manifest.colorSchemes.map((s: { name: string }) => s.name);
-    expect(names).toEqual(['1', '2', '3', '4']);
+    expect(names).toEqual(['1', '2', '3', '4', '5']);
   });
 
   it('first scheme has required color tokens', () => {

@@ -199,12 +199,11 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: solid (canon-default) = белая CTA героя §3; outlined =
-// прозрачная с белым бордером (ветка outlined героя T11).
+// «Кнопка» слайда одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Скрытый buttonStyle=outlined раньше делал её контуром цвета Фона.
 const ctaCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-bg,255_255_255))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]"
-		: "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] px-3 py-2.5 font-manrope text-[14px] font-normal leading-none !text-[rgb(var(--color-button-text,0_0_0))] transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
+	"inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid px-3 py-2.5 font-manrope text-[14px] font-normal leading-none transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн T11).
 const paddingStyle = p.padding
@@ -281,7 +280,7 @@ const paddingStyle = p.padding
 								)}
 								{s.ctaText && (
 									<div class="mt-2">
-										<a href={s.ctaHref} class={ctaCls}>
+										<a href={s.ctaHref} class={ctaCls} data-scheme-button="primary">
 											{s.ctaText}
 										</a>
 									</div>

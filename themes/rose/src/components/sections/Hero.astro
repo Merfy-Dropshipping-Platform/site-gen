@@ -275,28 +275,18 @@ const emptyCopyCls = `flex w-full max-w-[540px] flex-col ${alignItemsCls} gap-2 
 const emptyButtonsCls = secondaryText
 	? "inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3 sm:gap-4"
 	: `flex w-full flex-col ${alignItemsCls} justify-center`;
-// Кнопка заглушки = «Большая» кнопка заполненной ветки; вторая — её контурная
-// пара того же цвета схемы (правило secondaryCtaCls).
-const EMPTY_CTA_BASE = "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded px-3 py-2.5 font-manrope text-[14px] font-normal leading-none transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
-const emptyPrimaryCls = `${EMPTY_CTA_BASE} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`;
-const emptySecondaryCls = `${EMPTY_CTA_BASE} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`;
+// Кнопка заглушки = «Большая» кнопка заполненной ветки. Цвета обеих кнопок —
+// поля схемы своей роли (атрибут data-scheme-button, src/themes/scheme-buttons.ts).
+const EMPTY_CTA_BASE = "inline-flex h-10 min-h-10 w-auto min-w-[120px] items-center justify-center rounded border border-solid px-3 py-2.5 font-manrope text-[14px] font-normal leading-none transition-opacity hover:opacity-90 sm:h-[52px] sm:min-h-[52px] sm:min-w-[160px] sm:rounded-[var(--radius-button,6px)] sm:px-6 sm:py-[10px] sm:text-[15px] md:text-[16px]";
 
-// Канон buttonStyle solid|outlined: outlined = бордер/текст цвета заливки кнопки,
-// прозрачный фон; solid/отсутствие = текущий вид CTA дословно (кнопка-1 токены, T8).
-const ctaBaseCls = `inline-flex w-auto items-center justify-center rounded font-manrope font-normal leading-none transition-opacity hover:opacity-90 sm:rounded-[var(--radius-button,6px)] ${ctaSizeCls}`;
-const ctaCls =
-	p.buttonStyle === "outlined"
-		? `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`
-		: `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`;
-// Вторая кнопка = ТОТ ЖЕ каркас ctaBaseCls (один размер/радиус/шрифт/паддинг,
-// масштабируется «Размером» — раньше была отдельная захардкоженная строка + свои
-// button-2 токены → «другие стили»). Заливка ПРОТИВОПОЛОЖНА первой в ТОМ ЖЕ цвете
-// (button-1): первая залита → вторая контур того же цвета, и наоборот. Согласованная
-// пара «главная + второстепенная», а не отдельный button-2 (белый-на-белом).
-const secondaryCtaCls =
-	p.buttonStyle === "outlined"
-		? `${ctaBaseCls} !border-0 !bg-[rgb(var(--color-button-bg,255_255_255))] !text-[rgb(var(--color-button-text,0_0_0))]`
-		: `${ctaBaseCls} border border-solid border-[rgb(var(--color-button-bg,255_255_255))] !bg-transparent !text-[rgb(var(--color-button-bg,255_255_255))]`;
+// Обе кнопки — ОДИН каркас (размер/радиус/шрифт/паддинг, масштабируется
+// «Размером»). Цвета — поля схемы своей роли: Основная ← «Основная кнопка»,
+// Дополнительная ← «Дополнительная кнопка» (Фон → фон, Текст → буквы,
+// Обводка → рамка; атрибут data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09. Раньше вторая кнопка была контуром ТОГО ЖЕ цвета, что
+// первая (фон Основной красил её текст и рамку), а buttonStyle=outlined менял
+// их местами — выбор цвета из схемы от этого не зависит.
+const ctaCls = `inline-flex w-auto items-center justify-center rounded border border-solid font-manrope font-normal leading-none transition-opacity hover:opacity-90 sm:rounded-[var(--radius-button,6px)] ${ctaSizeCls}`;
 
 // Кнопочный ряд: дефолт (нет второй кнопки) = прежняя строка дословно; при
 // secondaryButton — две кнопки РАВНОЙ ширины «по большей»: inline-grid из двух
@@ -414,7 +404,8 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 					<div class={emptyButtonsCls}>
 						<a
 							href={ctaLink}
-							class={emptyPrimaryCls}
+							class={EMPTY_CTA_BASE}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
@@ -425,7 +416,8 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 							secondaryText && (
 								<a
 									href={secondaryLink}
-									class={emptySecondaryCls}
+									class={EMPTY_CTA_BASE}
+									data-scheme-button="secondary"
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="103"
 									data-puck-subsection-field="secondaryButton"
@@ -536,6 +528,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 					<a
 						href={ctaLink}
 						class={ctaCls}
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="primaryButton"
@@ -546,7 +539,8 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 						secondaryText && (
 							<a
 								href={secondaryLink}
-								class={secondaryCtaCls}
+								class={ctaCls}
+								data-scheme-button="secondary"
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="103"
 								data-puck-subsection-field="secondaryButton"

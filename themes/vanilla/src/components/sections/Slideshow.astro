@@ -129,25 +129,21 @@ const textCls =
 			? "font-vanilla-arsenal text-[14px] font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]"
 			: "font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]";
 
-// Канон buttonStyle: solid (canon-default) = CTA героя дословно (h-12 px-4
-// Arsenal 16 uppercase, заливка кнопки-1 §3); outlined = контур care-бэнда
-// (border 1.3px, --color-primary с белым фоллбеком — паттерн Gallery).
+// «Кнопка» слайда одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Скрытый buttonStyle=outlined раньше красил её литералом --color-primary.
 const ctaCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-12 min-h-12 max-w-full items-center justify-center border-[1.3px] border-[rgb(var(--color-primary,255_255_255))] bg-transparent px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-primary,255_255_255))] transition-opacity hover:opacity-80"
-		: "inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+	"inline-flex h-12 min-h-12 max-w-full items-center justify-center border border-solid px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal transition-opacity hover:opacity-90";
 
 // Классы копи-блока ПУСТОГО состояния (плейсхолдер, Figma 1:19335). Плейсхолдер
 // лежит на дизайн-ассете landscape-slideshow.png с тем же bg-black-оверлеем, что
 // и реальные слайды → белый фоллбек heading/text (читаемо на затемнённом фото),
-// CTA — solid заливка кнопки-1. Классы режима данных (headingCls/textCls/ctaCls)
+// CTA — тот же ctaCls, что у слайдов. Классы режима данных (headingCls/textCls)
 // не трогаем.
 const phHeadingCls =
 	"font-vanilla-bitter text-2xl font-normal italic leading-[1.2] tracking-normal text-[rgb(var(--color-heading,255_255_255))]";
 const phTextCls =
 	"font-vanilla-arsenal text-base font-normal italic tracking-normal text-[rgb(var(--color-text,240_240_240))]";
-const phCtaCls =
-	"inline-flex h-12 min-h-12 max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
 
 // position слайда №1 (приоритет) | top-level contentAlign: 'left'
 // (canon-default из blockDefaults vanilla) и отсутствие = блок слева
@@ -336,7 +332,8 @@ const paddingStyle = p.padding
 							><Fragment set:html={inlineFormat(slides[0].subtitle)} /></p>
 							<a
 								data-hero-cta
-								class={`hero-animate-3 ${hasSlides ? ctaCls : phCtaCls}`}
+								class={`hero-animate-3 ${ctaCls}`}
+								data-scheme-button="primary"
 								href={slides[0].ctaHref}
 							>{slides[0].ctaText}</a>
 						</div>

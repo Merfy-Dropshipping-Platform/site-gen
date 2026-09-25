@@ -141,6 +141,10 @@ const SCROLL_UP_JS = [
 	"var last=window.scrollY;",
 	"window.addEventListener('scroll',function(){",
 	"var y=window.scrollY;",
+	// Режим читается на КАЖДОЙ прокрутке: в конструкторе «Статичность» меняют без
+	// перезагрузки превью, и слушатель, повешенный для scroll-up, иначе прятал
+	// шапку и после выбора «Всегда» (баг 25.09). Превью переписывает атрибут.
+	"if(root.getAttribute('data-vanilla-sticky')!=='scroll-up'){root.style.transform='';last=y;return;}",
 	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
 	"last=y;",
 	"},{passive:true});",

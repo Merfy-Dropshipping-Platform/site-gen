@@ -20,17 +20,19 @@ const size = typeof p.size === "string" ? p.size : "large";
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 	// 'thin' — additive-значение общей панели (084 vanilla pilot); rose его не
 	// мапила и молча рендерила как large (ловля theme-registry 2026-08-06).
-	thin: { mh: "min-h-6", text: "text-[11px]" },
-	small: { mh: "min-h-8", text: "text-[12px]" },
-	medium: { mh: "min-h-10", text: "text-[14px]" },
-	large: { mh: "min-h-12", text: "text-[16px]" },
+	// Владелец 25.09: на телефоне «Большой» (значение по умолчанию) — 11–13px,
+	// как у верстальщиков: clamp(10px, 2vw + 5px, 16px). Остальные варианты — та
+	// же кривая в пропорции 11/16, 12/16, 14/16, не мельче 10px, чтобы порядок
+	// «Тонкий ≤ Маленький ≤ Средний ≤ Большой» держался на любой ширине. С ~560px
+	// все четыре упираются в прежние 11/12/14/16.
+	thin: { mh: "min-h-6", text: "text-[length:clamp(10px,1.375vw_+_3.4375px,11px)]" },
+	small: { mh: "min-h-8", text: "text-[length:clamp(10px,1.5vw_+_3.75px,12px)]" },
+	medium: { mh: "min-h-10", text: "text-[length:clamp(10px,1.75vw_+_4.375px,14px)]" },
+	large: { mh: "min-h-12", text: "text-[length:clamp(10px,2vw_+_5px,16px)]" },
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 // Владелец 25.09 «что в панели — то и на витрине»: не заданный «Размер»
-// рисует значение панели по умолчанию — «Большой», 16px — и под признаком
-// PARITY_DESIGN тоже. Кегль верстальщиков clamp(10px, 2vw + 5px, 16px) взять
-// «Большому» нельзя: на телефоне он 11–13px, меньше «Маленького» (12) и
-// «Среднего» (14) — порядок размеров сломался бы (замер Chromium 25.09).
+// рисует значение панели по умолчанию — «Большой» (кегль см. SIZE_MAP).
 const upper = p.textTransform === "uppercase";
 // Канон «Отступы» {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн
 // Slideshow/rose T11). «Размер» задаёт минимальную высоту полосы, «Отступы» добавляют

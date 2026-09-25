@@ -41,15 +41,16 @@ const sectionSubtitle = p.subtitle ?? "";
 // заголовка» не действовал (ловля theme-registry 2026-08-06, движок-пруф).
 // Переменные остаются для мобильного медиа-правила в <style> ниже.
 // Владелец 25.09 «что в панели — то и на витрине»: не заданный «Размер
-// заголовка» рисует значение панели по умолчанию — «Средний» — и под признаком
-// PARITY_DESIGN тоже. Кегли верстальщиков (телефон 14, планшет 16) взять
-// «Среднему» нельзя: на телефоне и планшете он стал бы меньше «Маленького»
-// (17) — порядок размеров сломался бы (замер Chromium 25.09).
+// заголовка» рисует значение панели по умолчанию — «Средний».
+// Владелец 25.09: «Средний» (значение по умолчанию) — телефон 14, планшет 16,
+// компьютер 20, как у верстальщиков; «Маленький» и «Большой» — в пропорции
+// 17/20 и 24/20 на каждой ширине: 12/14/17 и 17/19/24.
 const HEADING_SIZE_CLS: Record<string, string> = {
-	small: " [&_h2]:!text-[17px] [--size-section-heading:17px] [--size-section-heading-m:12px]",
-	large: " [&_h2]:!text-[24px] [--size-section-heading:24px] [--size-section-heading-m:17px]",
+	small: " [&_h2]:!text-[17px] max-sm:[&_h2]:!text-[12px] md:max-lg:[&_h2]:!text-[14px] [--size-section-heading:17px] [--size-section-heading-m:12px]",
+	medium: ` ${ROSE_SECTION_HEADING_DESIGNERS.heading}`,
+	large: " [&_h2]:!text-[24px] max-sm:[&_h2]:!text-[17px] md:max-lg:[&_h2]:!text-[19px] [--size-section-heading:24px] [--size-section-heading-m:17px]",
 };
-const headingSizeCls = HEADING_SIZE_CLS[p.headingSize] ?? "";
+const headingSizeCls = HEADING_SIZE_CLS[p.headingSize] ?? HEADING_SIZE_CLS.medium;
 // Канон subtitleSize: 'small' (canon-default) и отсутствие = 16px верстальщика.
 // Desktop — утилита [&_p]:!text-[ (работает на десктопе); мобиле — через
 // --size-section-text-m (её читает #collections-title ~ p в <style> ниже),

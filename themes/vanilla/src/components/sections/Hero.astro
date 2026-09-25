@@ -226,12 +226,14 @@ const pagination =
 		? p.pagination
 		: "numbers";
 
-// Канон buttonStyle: solid (canon-default) = olive-CTA верстальщика дословно
-// (токены кнопки-1); outlined = белый контур манеры на тёмном (§3, токены кнопки-2).
-const ctaCls =
-	p.buttonStyle === "outlined"
-		? `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`
-		: `hero-animate-3 inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
+// Каркас кнопок героя. Цвета — поля схемы своей роли (атрибут
+// data-scheme-button, src/themes/scheme-buttons.ts): Основная ← «Основная
+// кнопка», Дополнительная ← «Дополнительная кнопка», Фон → фон, Текст →
+// буквы, Обводка → рамка. Задача владельца 25.09: раньше Дополнительная была
+// прозрачной и брала текст и рамку из ОДНОГО поля «Фон», а скрытый
+// buttonStyle=outlined менял кнопки местами.
+const CTA_FRAME = `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-solid font-vanilla-arsenal font-normal leading-none tracking-normal transition-opacity hover:opacity-90`;
+const ctaCls = `hero-animate-3 ${CTA_FRAME}`;
 
 // Канон position (видимое поле панели) / contentPosition (legacy, те же 9
 // значений) — РАЗМЕЩЕНИЕ контент-блока по сетке 3×3 (Figma 648-55404): вертикаль
@@ -406,12 +408,7 @@ const heroBoxed = String(p.container ?? "false") === "true";
 const heroBoxedCls = heroBoxed
 	? ` rounded-[var(--radius-card,0px)] bg-[rgb(var(--color-bg,238_238_238))]/95 ${panelPadCls} [&_h1]:!text-[rgb(var(--color-heading,38_49_28))] [&_p]:!text-[rgb(var(--color-text,68_68_68))]`
 	: "";
-// Вторая кнопка (только single) — рендер при непустом тексте. Заливка ПРОТИВОПОЛОЖНА
-// первой (паттерн rose secondaryCtaCls): согласованная пара «главная + вторая» — при
-// «Стиль solid» первая залита оливой → вторая = контур манеры; при «outlined» первая
-// = контур → вторая заливается оливой (флип). Раньше secondaryCls был ЖЁСТКО контуром
-// → при buttonStyle=outlined ОБЕ кнопки становились прозрачными контурами (ни одной
-// залитой, потеря иерархии). Классы — vanilla-манера дословно (инверсия ctaCls-веток).
+// Вторая кнопка (только single) — рендер при непустом тексте.
 const secondaryText =
 	typeof p.secondaryButton?.text === "string" && p.secondaryButton.text.trim()
 		? p.secondaryButton.text
@@ -420,10 +417,7 @@ const secondaryHref =
 	p.secondaryButton?.link?.href ??
 	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
 	"/catalog";
-const secondaryCls =
-	p.buttonStyle === "outlined"
-		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`
-		: `inline-flex ${ctaSizeCls} max-w-full items-center justify-center border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
+const secondaryCls = CTA_FRAME;
 
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
@@ -527,6 +521,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 							<a
 								data-hero-cta
 								class:list={[ctaCls, !slides[0].ctaText && "hidden"]}
+								data-scheme-button="primary"
 								href={slides[0].ctaHref}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="102"
@@ -701,6 +696,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 								<div class="inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3">
 									<a
 										class={ctaCls}
+										data-scheme-button="primary"
 										href={singleCtaHref}
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="102"
@@ -710,6 +706,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 									</a>
 									<a
 										class={secondaryCls}
+										data-scheme-button="secondary"
 										href={secondaryHref}
 										data-puck-subsection-parent={id}
 										data-puck-subsection-index="103"
@@ -721,6 +718,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 							) : (
 								<a
 									class:list={[ctaCls, !singleCtaText && "hidden"]}
+									data-scheme-button="primary"
 									href={singleCtaHref}
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="102"

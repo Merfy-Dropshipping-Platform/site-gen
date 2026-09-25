@@ -309,7 +309,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{!isFieldHidden('buttonText') && (
 					<a
 						href={btnHref}
-						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95"
+						class="border border-solid inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95"
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="buttonText"

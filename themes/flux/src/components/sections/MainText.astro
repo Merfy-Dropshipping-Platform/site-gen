@@ -110,15 +110,12 @@ const btnHref =
 	(typeof p.cta?.link === "string" && p.cta.link ? p.cta.link : undefined) ??
 	"/catalog";
 
-// Канон buttonStyle: solid/отсутствие = чёрная CTA манеры flux (эталон Hero/Puk:
-// h-14 rounded-6 px-4 roboto-flex 16 uppercase leading-none, hover:opacity-90; в
-// схемах flux чёрная кнопка = кнопка-2, MANNER §7). outlined = бордер/текст цвета
-// заливки на прозрачном. active:scale в манере flux НЕ используется (§3).
-const btnBase = `inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] ${MAIN_TEXT_GEOMETRY.btnPad} font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90`;
-const btnCls =
-	p.buttonStyle === "outlined"
-		? `${btnBase} border border-solid border-[rgb(var(--color-button-2-bg,0_0_0))] bg-transparent text-[rgb(var(--color-button-2-bg,0_0_0))]`
-		: `${btnBase} bg-[rgb(var(--color-button-2-bg,0_0_0))] text-[rgb(var(--color-button-2-text,255_255_255))]`;
+// «Кнопка» секции одна — цвета «Основной кнопки» схемы (Фон → фон, Текст →
+// буквы, Обводка → рамка; data-scheme-button, src/themes/scheme-buttons.ts).
+// Задача владельца 25.09: раньше порт сажал её на кнопку-2 («чёрная кнопка
+// = кнопка-2», MANNER §7), а скрытый buttonStyle=outlined — на контур цвета
+// Фона. active:scale в манере flux НЕ используется (§3).
+const btnCls = `inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] border border-solid ${MAIN_TEXT_GEOMETRY.btnPad} font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90`;
 
 // Канон padding {top,bottom} — inline-override вертикали ТОЛЬКО при заданном пропе
 // (паттерн Popular): тогда py-классы контейнера снимаются, чтобы не было двойного
@@ -201,6 +198,7 @@ const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]
 					<a
 						href={btnHref}
 						class={btnCls}
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="button"

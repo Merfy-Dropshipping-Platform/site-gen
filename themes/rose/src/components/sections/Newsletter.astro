@@ -209,7 +209,8 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 						{!isFieldHidden('buttonText') && (
 						<button
 							type="submit"
-							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} !rounded-[var(--radius-button,6px)] !bg-[rgb(var(--color-button-bg,0_0_0))] px-8 font-manrope text-[16px] font-normal leading-normal !text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`}
+							class={`inline-flex h-12 w-auto min-w-[200px] items-center justify-center ${selfCls} border border-solid !rounded-[var(--radius-button,6px)] px-8 font-manrope text-[16px] font-normal leading-normal transition-opacity hover:opacity-90`}
+							data-scheme-button="primary"
 						>
 							{buttonText}
 						</button>

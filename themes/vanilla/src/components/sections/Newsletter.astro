@@ -191,7 +191,8 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 					{!isFieldHidden('buttonText') && (
 					<button
 						type="submit"
-						class="inline-flex h-9 w-full shrink-0 items-center justify-center bg-[rgb(var(--color-button-2-bg,255_255_255))] px-2 py-2.5 font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80 sm:h-8 sm:w-auto"
+						class="border border-solid inline-flex h-9 w-full shrink-0 items-center justify-center px-2 py-2.5 font-vanilla-arsenal text-base font-normal leading-none transition-opacity hover:opacity-80 sm:h-8 sm:w-auto"
+						data-scheme-button="primary"
 					>
 						{buttonText}
 					</button>
@@ -216,7 +217,8 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 					{!isFieldHidden('buttonText') && (
 					<button
 						type="submit"
-						class={`inline-flex h-12 min-h-12 items-center justify-center ${selfCls} bg-[rgb(var(--color-button-2-bg,255_255_255))] px-4 font-vanilla-arsenal text-base font-normal leading-none text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80`}
+						class={`inline-flex h-12 min-h-12 items-center justify-center ${selfCls} border border-solid px-4 font-vanilla-arsenal text-base font-normal leading-none transition-opacity hover:opacity-80`}
+						data-scheme-button="primary"
 					>
 						{buttonText}
 					</button>

@@ -215,27 +215,16 @@ const alignCls =
 			? "items-end text-right"
 			: "items-start text-left";
 
-// Канон buttonStyle: solid/primary/отсутствие = розовый pill манеры §3 (родная
-// solid-кнопка bloom на белом); black = тёмная кнопка (инверсия text↔bg —
-// паритет rose MultiRows «чёрная заливка», отлична и от white, и от розового
-// дефолта; раньше 'black' проваливался в розовый); white = белый pill (button-2
-// токены, CTA Philosophy); outlined = бордер цвета заливки на прозрачном.
-const btnBase =
-	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95";
-// Канонное значение панели — `secondary` («Дополнительная»), и оно обязано
-// попадать СЮДА. Порт был написан на словаре верстальщиков (white/black/
-// outlined), которого в панели нет: ветки не срабатывали, и «Стиль кнопки»
-// рисовал основную кнопку при любом выборе. Замер локальным рендерером 20.09:
-// основная и дополнительная давали одни и те же токены. Легаси-слова оставлены
-// — они доезжают до порта СЫРЫМИ из старых ревизий (проверено на живом стенде).
+// «Стиль кнопки» ряда выбирает РОЛЬ: «Дополнительная» (`secondary`, легаси
+// `white`) ← поля «Дополнительной кнопки» схемы, остальное (primary, black,
+// outlined, без значения) ← «Основной». Цвета даёт правило роли
+// (data-scheme-button, src/themes/scheme-buttons.ts), у порта — только pill
+// манеры §3. Легаси-слова доезжают до порта СЫРЫМИ из старых ревизий
+// (проверено на живом стенде 20.09).
 const btnCls =
-	p.buttonStyle === "outlined"
-		? `${btnBase} border border-solid border-[rgb(var(--color-button-bg,227_142_159))] bg-transparent text-[rgb(var(--color-button-bg,227_142_159))]`
-		: p.buttonStyle === "white" || p.buttonStyle === "secondary"
-			? `${btnBase} bg-[rgb(var(--color-button-2-bg,255_255_255))] text-[rgb(var(--color-button-2-text,0_0_0))]`
-			: p.buttonStyle === "black"
-				? `${btnBase} bg-[rgb(var(--color-text,0_0_0))] text-[rgb(var(--color-bg,255_255_255))]`
-				: `${btnBase} bg-[rgb(var(--color-button-bg,227_142_159))] text-[rgb(var(--color-button-text,255_255_255))]`;
+	"inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] border border-solid px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95";
+const SECONDARY_STYLES = ["secondary", "white"];
+const btnRole = SECONDARY_STYLES.includes(String(p.buttonStyle)) ? "secondary" : "primary";
 
 // Канон containerEnabled (toggle; puckConfig готов). ИСПРАВЛЕНИЕ канона (Nikita):
 // «контейнер» = surface-бокс манеры §4 (surface #F5F5F5, радиус карточки 12px) НА
@@ -359,7 +348,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							)}
 							{r.btnText && (
 								<div class="mt-2">
-									<a href={r.btnHref} class={btnCls}>
+									<a href={r.btnHref} class={btnCls} data-scheme-button={btnRole}>
 										{r.btnText}
 									</a>
 								</div>

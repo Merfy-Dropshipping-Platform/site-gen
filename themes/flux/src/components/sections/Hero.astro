@@ -299,27 +299,17 @@ const buttonsCls = secondaryText
 // планшете контент стоял плотнее эталона.
 const contentCls = `flex max-w-[520px] flex-col gap-8 lg:gap-10 ${alignItemsCls}${boxedCls}`;
 
-// Кнопка вёрстки (Hero.astro:64): h-12 (48px), rounded-[4px], bg-[#1e2952],
-// белый текст, font-light, uppercase, px-4, text-[16px], leading-none.
-// Высота и радиус берутся ТОКЕНАМИ темы — `--size-hero-button-h` уже объявлен в
-// theme.json со значением 48px, но раньше не потреблялся (стоял хардкод h-14=56px),
-// т.е. у свойства было два владельца и живым был неверный.
-// Цвет — токен цветосхемы с фолбэком на литерал вёрстки: пока схема не выбрана,
-// кнопка тёмно-синяя как в оригинале.
+// Кнопка вёрстки (Hero.astro:64): h-12 (48px), rounded-[4px], font-light,
+// uppercase, px-4, text-[16px], leading-none. Высота и радиус — токены темы
+// (`--size-hero-button-h` = 48px в theme.json).
+// Цвета обеих кнопок — поля схемы своей роли (атрибут data-scheme-button,
+// src/themes/scheme-buttons.ts): Основная ← «Основная кнопка», Дополнительная ←
+// «Дополнительная кнопка»; Фон → фон, Текст → буквы, Обводка → рамка. Задача
+// владельца 25.09: раньше вторая кнопка была контуром цвета Фона ОСНОВНОЙ, а
+// скрытый buttonStyle=outlined менял кнопки местами.
 const ctaBtnCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
-// Вторая кнопка — согласованная ПАРА с «Стилем кнопки» (паритет rose): solid
-// (дефолт) → primary залитая / secondary контурная; outlined → НАОБОРОТ
-// (primary контурная / secondary залитая). Раньше secondaryBtnCls был
-// фиксированной строкой (всегда контур) — «Стиль кнопки»=outlined на вторую
-// кнопку не действовал. Рендерится ТОЛЬКО когда мерчант задал secondaryButton
-// (условие ниже).
-const secondaryBtnCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
+	"inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid px-4 font-roboto-flex text-[16px] font-light leading-none transition-opacity hover:opacity-90";
+const secondaryBtnCls = ctaBtnCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне
@@ -374,17 +364,11 @@ const EMPTY_TEXT_SIZE: Record<string, string> = {
 };
 const emptyHeadingSizeCls = EMPTY_HEADING_SIZE[headingSize] ?? EMPTY_HEADING_SIZE.large;
 const emptyTextSizeCls = EMPTY_TEXT_SIZE[textSize] ?? EMPTY_TEXT_SIZE.large;
-// Кнопки заглушки — её же рамка (h-14, радиус 6px). Вторая — противоположная
-// заливка той же рамки, как пара у заполненной ветки; при двух кнопках обе
-// тянутся в свою колонку buttonsCls (w-auto), одна — по содержимому (w-fit).
-const EMPTY_BTN_FRAME = "inline-flex h-14 items-center justify-center rounded-[var(--radius-button,6px)] px-4 font-roboto-flex text-[16px] font-normal leading-none";
-const EMPTY_BTN_FILL: Record<string, string> = {
-	solid: "bg-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90",
-	outlined: "border border-[rgb(var(--color-button-bg,0_0_0))] text-[rgb(var(--color-button-bg,0_0_0))] transition-colors hover:bg-black/5",
-};
+// Кнопки заглушки — её же рамка (h-14, радиус 6px); цвета — роль схемы, как у
+// заполненной ветки. При двух кнопках обе тянутся в свою колонку buttonsCls
+// (w-auto), одна — по содержимому (w-fit).
 const emptyBtnWidthCls = secondaryText ? "w-auto" : "w-fit";
-const emptyPrimaryBtnCls = `${EMPTY_BTN_FRAME} ${emptyBtnWidthCls} ${EMPTY_BTN_FILL.solid}`;
-const emptySecondaryBtnCls = `${EMPTY_BTN_FRAME} ${emptyBtnWidthCls} ${EMPTY_BTN_FILL.outlined}`;
+const emptyBtnCls = `inline-flex h-14 ${emptyBtnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] border border-solid px-4 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90`;
 const emptyOuterCls = `absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 py-8 md:px-20 md:py-10 2xl:px-80`;
 // Заголовок, текст и кнопки — одна колонка (как contentCls заполненной ветки),
 // чтобы «Выравнивание» двигало и кнопку, а не только текст.
@@ -460,18 +444,13 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 					</div>
 					) : !isFieldHidden('buttons') && (
 					<div class={buttonsCls}>
-						{/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
-						    isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] +
-						    токен текста). Было `bg-black` + `text-white`: Tailwind 4 печатает
-						    их как var(--color-black)/var(--color-white) — переменные ЕСТЬ, а
-						    схемы в них нет, и кнопка замирала (замер матрицы, схемы-зонды
-						    1 → 4: #000 → #000 и #fff → #fff), при том что рабочая кнопка
-						    ниже по файлу на токенах уже едет. Заголовок и текст поверх фото
-						    остаются белыми намеренно (hero-over-photo). Фолбэки = прежний
-						    вид. Сторож: pnpm test:scheme-targets. */}
+						{/* Кнопки пустого состояния красятся ролью схемы (data-scheme-button),
+						    как у заполненной ветки. Заголовок и текст поверх фото остаются
+						    белыми намеренно (hero-over-photo). */}
 						<a
 							href={ctaLink}
-							class={emptyPrimaryBtnCls}
+							class={emptyBtnCls}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
@@ -482,7 +461,8 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 							secondaryText && (
 								<a
 									href={secondaryLink}
-									class={emptySecondaryBtnCls}
+									class={emptyBtnCls}
+									data-scheme-button="secondary"
 									data-puck-subsection-parent={id}
 									data-puck-subsection-index="103"
 									data-puck-subsection-field="secondaryButton"
@@ -597,6 +577,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 				<a
 					href={ctaLink}
 					class={ctaBtnCls}
+					data-scheme-button="primary"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="102"
 					data-puck-subsection-field="primaryButton"
@@ -608,6 +589,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 						<a
 							href={secondaryLink}
 							class={secondaryBtnCls}
+							data-scheme-button="secondary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="103"
 							data-puck-subsection-field="secondaryButton"

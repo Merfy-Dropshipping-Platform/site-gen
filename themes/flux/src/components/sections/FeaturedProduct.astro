@@ -403,14 +403,12 @@ const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-"
 // 1480 и поля 1/2.5/5rem (`.flux-container-designers` в global.css темы), а не
 // 1920/1rem/5rem/20rem: на 1536+ колонки товара сжимались до 896px.
 const containerBaseCls = "flux-container-designers";
-// «Купить сейчас» — ДОПОЛНИТЕЛЬНАЯ (динамическая) кнопка, канон
-// `packages/theme-base/blocks/Product/ProductActions.astro`: свой набор токенов
-// `--color-button-secondary-*` (не общий `--color-button-*` основной кнопки) +
-// явный onmouseover/onmouseout свап на `-hover` пару, как у эталона rose.
-// Жалоба владельца 17.09: «к дополнительной кнопке [цвет при наведении] нет» —
-// было `hover:opacity-90`, который НЕ меняет rgb() фона/текста, только альфу.
-const SEC_BG_FALLBACK = "30 41 82";
-const SEC_TEXT_FALLBACK = "255 255 255";
+// «Кнопки» секции: «Добавить в корзину» — Основная, «Купить сейчас» —
+// Дополнительная (динамическая). Цвета обеих — поля схемы своей роли (Фон →
+// фон, Текст → буквы, Обводка → рамка, наведение — поля «При наведении»):
+// атрибут data-scheme-button, src/themes/scheme-buttons.ts. Задача владельца
+// 25.09: раньше «Добавить в корзину» была контуром цвета Фона Основной на фоне
+// секции, а «Купить сейчас» красилась inline-стилями без рамки.
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -630,7 +628,8 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 								    прежний вид на дефолте. */}
 								data-cfg-add
 								{...addToCartAttrs}
-								class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-6 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
+								class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid px-6 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+								data-scheme-button="primary"
 							>
 								{addBtnText}
 							</button>
@@ -639,10 +638,8 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 							<button
 								type="button"
 								data-cfg-buy
-								class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] px-6 font-roboto-flex text-[16px] font-light leading-none transition-colors"
-								style={`background:rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK})); color:rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}));`}
-								onmouseover={`this.style.background='rgb(var(--color-button-secondary-bg-hover, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text-hover, ${SEC_TEXT_FALLBACK}))';`}
-								onmouseout={`this.style.background='rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}))';`}
+								class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid px-6 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+								data-scheme-button="secondary"
 							>
 								{buyBtnText}
 							</button>
@@ -770,7 +767,8 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 							type="button"
 							data-cfg-add
 							{...addToCartAttrs}
-							class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-bg,30_41_82))] bg-[rgb(var(--color-bg,255_255_255))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-[rgb(var(--color-button-bg,30_41_82))] hover:text-[rgb(var(--color-button-text,255_255_255))]"
+							class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid px-4 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+							data-scheme-button="primary"
 						>
 							{addBtnText}
 						</button>
@@ -779,10 +777,8 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 						<button
 							type="button"
 							data-cfg-buy
-							class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] px-4 font-roboto-flex text-[16px] font-light leading-none transition-colors"
-							style={`background:rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK})); color:rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}));`}
-							onmouseover={`this.style.background='rgb(var(--color-button-secondary-bg-hover, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text-hover, ${SEC_TEXT_FALLBACK}))';`}
-							onmouseout={`this.style.background='rgb(var(--color-button-secondary-bg, ${SEC_BG_FALLBACK}))'; this.style.color='rgb(var(--color-button-secondary-text, ${SEC_TEXT_FALLBACK}))';`}
+							class="inline-flex h-14 w-full items-center justify-center rounded-[var(--radius-button,4px)] border border-solid px-4 font-roboto-flex text-[16px] font-light leading-none transition-colors"
+							data-scheme-button="secondary"
 						>
 							{buyBtnText}
 						</button>

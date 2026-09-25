@@ -193,10 +193,13 @@ if (built) {
       return tag;
     }
 
-    it("кнопка читает --color-button-2-text/-border (не хардкод-цвет)", () => {
+    it("кнопка несёт роль «Дополнительная» схемы (не хардкод-цвет)", () => {
+      // С 25.09 цвета даёт правило роли (data-scheme-button,
+      // src/themes/scheme-buttons.ts): Фон/Текст/Обводка «Дополнительной
+      // кнопки» → фон/текст/рамка. Нарисованное меряет scheme-button-roles.spec.ts.
       const tag = secondaryButtonTag("scheme-1");
-      expect(tag).toMatch(/text-\[rgb\(var\(--color-button-2-text,0_0_0\)\)\]/);
-      expect(tag).toMatch(/border-\[rgb\(var\(--color-button-2-text,0_0_0\)\)\]/);
+      expect(tag).toMatch(/data-scheme-button="secondary"/);
+      expect(tag).not.toMatch(/(?:bg|text|border)-\[(?:#|rgb\(\d)/);
     });
 
     it("scheme-1 (светлая) и scheme-4 (тёмная) satin реально дают РАЗНЫЙ --color-button-2-text", () => {

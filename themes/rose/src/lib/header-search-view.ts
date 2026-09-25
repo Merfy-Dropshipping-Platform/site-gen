@@ -57,7 +57,7 @@ function drawerCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): strin
 		? `<span class="absolute left-2 top-2 z-10 flex h-5 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-1 font-manrope text-[10px] font-normal leading-[14px] !text-white">Скидка</span>`
 		: "";
 	const oldPrice = hit.oldPrice
-		? `<span class="text-[10px] leading-[14px] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
+		? `<span class="text-[10px] leading-[14px] text-[rgb(var(--color-text,0_0_0))] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
 		: "";
 	return (
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="min-w-0">` +

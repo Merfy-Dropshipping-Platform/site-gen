@@ -59,7 +59,7 @@ function card(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext, drawer: bool
 	const size = drawer ? "text-[12px] leading-[15px]" : "text-[14px] leading-[18px]";
 	const oldSize = drawer ? "text-[10px] leading-[13px]" : "text-[12px] leading-[15px]";
 	const oldPrice = hit.oldPrice
-		? `<span class="${oldSize} line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
+		? `<span class="${oldSize} text-[rgb(var(--color-text,0_0_0))] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
 		: "";
 	return (
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="${drawer ? "min-w-0" : "w-[195px] shrink-0"}">` +

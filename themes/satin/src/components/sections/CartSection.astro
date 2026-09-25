@@ -170,7 +170,7 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 								<button type="button" data-cart-inc data-id="${line.id}" class="flex h-10 w-10 items-center justify-center" aria-label="Увеличить">+</button>
 							</div>
 							<span class="font-manrope text-[16px] font-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]">${formatCartPrice(line.price * line.quantity)}</span>
-						${totalOld ? `<span class="font-manrope text-[14px] font-normal text-[rgb(var(--color-muted,153_153_153))] line-through md:text-[16px]">${totalOld}</span>` : ""}
+						${totalOld ? `<span class="font-manrope text-[14px] font-normal text-[rgb(var(--color-text,0_0_0))] line-through md:text-[16px]">${totalOld}</span>` : ""}
 						</div>
 					</li>
 				`;

@@ -8,7 +8,7 @@
  * количество ПРОШЕДШИХ проверок по каждому гарду, и ноль — это провал.
  */
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { availableParallelism, tmpdir } from 'node:os';
 import { join, resolve, relative } from 'node:path';
 import { run, sh, dur } from './proc.mjs';
 
@@ -25,18 +25,26 @@ const cmdOf = (g) => g.cmd ?? g.body;
 const j = (o) => JSON.stringify(o);
 
 /**
- * Прогоняет батч jest-гардов одним запуском и раскладывает счётчики по гардам.
+ * Воркеры jest для локального прогона: все ядра, кроме двух (ОС, агенты).
  *
- * `jestArgs` по умолчанию — `--runInBand` (как раньше, для локального
- * pre-push/train.mjs: один процесс, предсказуемо, без лишних воркеров на
- * ноутбуке). В CI это оказалось МЕДЛЕННЕЕ: замер 15.09 (ci: collapse 74 jest
- * starts, 470142b1) — один прогон --runInBand 14 мин 32 с против 6 мин 04 с
- * на --maxWorkers=2. Причина не в стартах процессов (их уже один), а в GC:
- * восемьдесят с лишним сьют подряд в общей куче упираются в сборку мусора;
- * два воркера — отдельные дочерние процессы со своей кучей, которые jest
- * перезапускает сам. Вызывающий (CI-скрипт) передаёт свои jestArgs.
+ * Раньше умолчанием был `--runInBand` — «один процесс, без лишних воркеров на
+ * ноутбуке». Он медленнее вдвойне: замер 15.09 (470142b1) — 14 мин 32 с
+ * против 6 мин 04 с на двух воркерах. Причина не в стартах процессов, а в GC:
+ * восемьдесят с лишним сьют подряд в общей куче упираются в сборку мусора, а
+ * воркеры — отдельные процессы со своей кучей, их jest перезапускает сам.
+ * «Лишние воркеры на ноутбуке» больше не страшны: большой прогон стоит в
+ * очереди на машину (machine-lock.mjs) и идёт один.
  */
-export function runJestBatch(guards, { repoRoot, log, jestArgs = ['--runInBand'] }) {
+export const localJestArgs = (cpus = availableParallelism()) => [
+  `--maxWorkers=${Math.max(2, cpus - 2)}`,
+  '--workerIdleMemoryLimit=1G',
+];
+
+/**
+ * Прогоняет батч jest-гардов одним запуском и раскладывает счётчики по гардам.
+ * CI-скрипт передаёт свои jestArgs (раннер двухъядерный).
+ */
+export function runJestBatch(guards, { repoRoot, log, jestArgs = localJestArgs() }) {
   if (!guards.length) return [];
   const paths = [...new Set(guards.flatMap((g) => g.paths))];
   const tmp = mkdtempSync(join(tmpdir(), 'release-train-'));

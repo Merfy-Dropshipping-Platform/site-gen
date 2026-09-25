@@ -209,55 +209,32 @@ const footerPadStyle =
 	pad && !isCanonPad
 		? `padding-top:${Number(pad.top) || 0}px;padding-bottom:${Number(pad.bottom) || 0}px;`
 		: undefined;
-// flux-container эталона = mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80 (носитель темы).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// ширина контейнера — по актуальной вёрстке flux-theme@be32556d
-// (src/styles/global.css:30 .flux-container: 1480, поля 1/2.5/5rem) — заменяет
-// носитель темы 1920/px-4/md:px-20/2xl:px-80 В ОБЕИХ ветках (ширина не зависит
-// от «Отступов»). Подвал верстальщика (Footer.astro@be32556d:39): py-12
-// md:py-[80px], gap-10 md:gap-[80px] — ТОЛЬКО в ветке значения по умолчанию
-// «Отступов» (canon/isCanonPad, footerPadStyle не задан); нестандартные
-// отступы мерчанта (footerPadStyle) — прежние py/gap. Без признака — байт в
-// байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер — по актуальной вёрстке flux-theme@be32556d
+// (src/styles/global.css:30 .flux-container: 1480, поля 1/2.5/5rem; владелец
+// 23-24.09: «как у верстальщиков, только стили») при любых «Отступах».
+// Подвал верстальщика (Footer.astro@be32556d:39): py-12 md:py-[80px], gap-10
+// md:gap-[80px] — ТОЛЬКО в ветке значения по умолчанию «Отступов»
+// (canon/isCanonPad, footerPadStyle не задан); у нестандартных отступов
+// мерчанта (footerPadStyle) вертикаль задаёт инлайн-стиль.
 const FOOTER_CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-10 px-4 md:px-10 lg:px-20",
-		default:
-			"mx-auto flex w-full max-w-[1480px] flex-col gap-10 md:gap-[80px] px-4 py-12 md:px-10 md:py-[80px] lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-10 px-4 py-12 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-10 px-4 md:px-10 lg:px-20",
+	default:
+		"mx-auto flex w-full max-w-[1480px] flex-col gap-10 md:gap-[80px] px-4 py-12 md:px-10 md:py-[80px] lg:px-20",
 };
-const footerContainerCls =
-	FOOTER_CONTAINER_CLS[designParity ? "designers" : "legacy"][footerPadStyle ? "custom" : "default"];
-// PARITY_DESIGN — размеры элементов подвала по той же вёрстке
-// (Footer.astro@be32556d): поле рассылки h-14 шириной до 429px, текст в нём 16,
-// кнопка-стрелка 44×44; иконки соцсетей в кнопках 44×44 через gap-2; полоса
-// подписи высотой 64px, кегль 14 → md:16. Цвета не трогаются. Карта
-// «верстальщики / прежнее», без признака — прежние строки байт в байт.
+const footerContainerCls = FOOTER_CONTAINER_CLS[footerPadStyle ? "custom" : "default"];
+// Размеры элементов подвала по той же вёрстке (Footer.astro@be32556d): поле
+// рассылки h-14 шириной до 429px, текст в нём 16, кнопка-стрелка 44×44; иконки
+// соцсетей в кнопках 44×44 через gap-2; полоса подписи высотой 64px, кегль
+// 14 → md:16. Цвета не трогаются.
 const FOOTER_GEOMETRY = {
-	designers: {
-		form: "flex h-14 w-full max-w-[429px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4",
-		input: "min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[rgb(var(--color-text))] outline-none",
-		submit: "flex size-11 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80",
-		socialRow: "flex items-center gap-2",
-		socialLink: "flex size-11 items-center justify-center transition-opacity hover:opacity-70",
-		strip: "flex h-[64px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))]",
-		stripText: "px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]",
-	},
-	legacy: {
-		form: "flex h-14 w-full max-w-[652px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4 md:h-16",
-		input: "min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[rgb(var(--color-text))] outline-none md:text-[20px]",
-		submit: "flex size-8 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80",
-		socialRow: "flex items-center gap-4",
-		socialLink: "flex size-6 items-center justify-center transition-opacity hover:opacity-70",
-		strip: "flex h-[80px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))] md:h-[100px]",
-		stripText: "px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]",
-	},
-}[designParity ? "designers" : "legacy"];
+	form: "flex h-14 w-full max-w-[429px] items-center justify-between gap-2 rounded-[var(--radius-input,8px)] border border-[rgb(var(--color-surface,245_245_245))] bg-[rgb(var(--color-bg,255_255_255))] px-4",
+	input: "min-w-0 flex-1 bg-transparent font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] placeholder:text-[rgb(var(--color-text))] outline-none",
+	submit: "flex size-11 shrink-0 items-center justify-center text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-80",
+	socialRow: "flex items-center gap-2",
+	socialLink: "flex size-11 items-center justify-center transition-opacity hover:opacity-70",
+	strip: "flex h-[64px] w-full items-center justify-center bg-[rgb(var(--color-bg,251_251_251))]",
+	stripText: "px-4 text-center font-inter text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]",
+};
 
 // Паритет с Rose (rose Footer.astro, 8 коммитов 80f57884/a39fcb8a/79b14bb9/97d31708/
 // 107c3ea2/c60f6206/b71bd733): поле «Выравнивание» уже показывается в сайдбаре (общий

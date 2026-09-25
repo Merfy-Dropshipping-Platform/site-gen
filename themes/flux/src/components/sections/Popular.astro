@@ -100,25 +100,17 @@ const colsN = typeof p.columns === "number" ? Math.max(1, Math.min(6, Math.round
 // Вёрстка верстальщиков: grid grid-cols-2 gap-4 md:grid-cols-4. Моб = 2 колонки;
 // с md (768px) и выше grid-template-columns задаёт <style> по --cols (слайдер
 // «Колонки» перебивает md:grid-cols-4).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// геометрия по актуальной вёрстке flux-theme@be32556d. Карта «верстальщики /
-// прежнее»; без признака — прежние строки байт в байт.
+// Геометрия по актуальной вёрстке flux-theme@be32556d (владелец 23-24.09: «как
+// у верстальщиков, только стили»):
 //   • карточка (components/ProductCard.astro): текстовый блок ↔ кнопка gap-6,
 //     кнопка h-12 px-4 font-light, кегль 14 → md:16. Правила висят на СЕТКЕ
 //     (arbitrary-варианты), а не на карточке: живая гидрация
 //     (renderCardHtml) перезаписывает innerHTML сетки, класс сетки остаётся;
 //   • заголовок по центру (sections/Popular.astro: text-center);
 //   • «Смотреть ещё» — кегль 16 на всех ширинах.
-const DESIGN_KEY = p.__designParity === true ? "designers" : "legacy";
-const GRID_EXTRA_CLS = {
-	designers:
-		" [&_[data-nt=flux-product-card]>div:last-child]:gap-6 [&_[data-add-to-cart]]:h-12 [&_[data-add-to-cart]]:px-4 [&_[data-add-to-cart]]:font-light md:[&_[data-add-to-cart]]:text-[16px]",
-	legacy: "",
-}[DESIGN_KEY];
-const HEAD_WRAP_CLS = {
-	designers: "flex flex-col gap-2 text-center",
-	legacy: "flex flex-col gap-2",
-}[DESIGN_KEY];
+const GRID_EXTRA_CLS =
+	" [&_[data-nt=flux-product-card]>div:last-child]:gap-6 [&_[data-add-to-cart]]:h-12 [&_[data-add-to-cart]]:px-4 [&_[data-add-to-cart]]:font-light md:[&_[data-add-to-cart]]:text-[16px]";
+const HEAD_WRAP_CLS = "flex flex-col gap-2 text-center";
 const gridCls = "grid grid-cols-2 gap-4 md:grid-cols-4" + tileAspectCls + GRID_EXTRA_CLS;
 const gridStyle = `--cols:${colsN}`;
 
@@ -239,12 +231,8 @@ const viewAllHref =
 // 1195-42536): link = текстовая ссылка с подчёркиванием, secondary = контурная
 // (бордер в тонах кнопки-2), primary/отсутствие = чёрная CTA манеры (заливка
 // кнопки-2). Манера flux: font-roboto-flex, rounded-button (6px), токены кнопки-2.
-const viewAllBase = {
-	designers:
-		"inline-flex h-12 items-center justify-center font-roboto-flex text-[16px] font-normal leading-normal transition-opacity",
-	legacy:
-		"inline-flex h-12 items-center justify-center font-roboto-flex text-[14px] font-normal leading-normal transition-opacity md:text-[16px]",
-}[DESIGN_KEY];
+const viewAllBase =
+	"inline-flex h-12 items-center justify-center font-roboto-flex text-[16px] font-normal leading-normal transition-opacity";
 const viewAllCls =
 	p.buttonStyle === "link"
 		? `${viewAllBase} px-0 text-[rgb(var(--color-text,0_0_0))] underline underline-offset-4 hover:opacity-70`
@@ -335,24 +323,14 @@ const paddingStyle = p.padding
 // верстальщиков). Вертикаль py-10 md:py-16 (канон эталона); при заданном padding
 // (настройка) py-классы убираются — inline-стиль ставит padding-top/bottom
 // (паттерн Footer flux, чтобы не было двойного отступа).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
-// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
-		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
+	default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][paddingStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 
 // Канон Nikita (ИСПРАВЛЕНИЕ): у flux Popular контейнер-бокс УБРАН полностью — контент
 // (шапка + грид карточек + «Смотреть все») сразу в max-width-обёртке, без подложки/схемы

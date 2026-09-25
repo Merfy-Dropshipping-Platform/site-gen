@@ -1718,18 +1718,27 @@ const PREVIEW_NAV_AGENT_INLINE = `
       },
       stickiness: function (el, _oldVal, newVal) {
         var wrap = el.closest('[data-header-wrapper]') || el;
-        wrap.className = wrap.className
-          .replace(/sticky\\s+top-0\\s+z-50(\\s+transition-transform\\s+duration-300)?/g, '')
-          .replace(/relative\\s+z-50/g, '')
-          .replace(/\\s+/g, ' ')
-          .trim();
-        var classToAdd = newVal === 'scroll-up' ? 'sticky top-0 z-50 transition-transform duration-300'
-          : newVal === 'always' ? 'sticky top-0 z-50'
-          : 'relative z-50';
-        var parts = classToAdd.split(' ');
-        for (var pi = 0; pi < parts.length; pi++) {
-          if (parts[pi]) wrap.classList.add(parts[pi]);
+        // Классы снимаются поштучно: у bloom/satin порядок в class другой
+        // («w-full transition-transform duration-300 color-scheme-3 …»), и
+        // прежняя замена одной строкой их не находила — хвост scroll-up
+        // оставался после выбора «Всегда».
+        var MODE_CLASSES = {
+          'scroll-up': 'sticky top-0 z-50 transition-transform duration-300',
+          always: 'sticky top-0 z-50'
+        };
+        var OWN_CLASSES = ['sticky', 'top-0', 'z-50', 'transition-transform', 'duration-300', 'relative'];
+        for (var ci = 0; ci < OWN_CLASSES.length; ci++) wrap.classList.remove(OWN_CLASSES[ci]);
+        var parts = (MODE_CLASSES[newVal] || 'relative z-50').split(' ');
+        for (var pi = 0; pi < parts.length; pi++) wrap.classList.add(parts[pi]);
+        // Режим для скрипта темы: data-<тема>-sticky читается на каждой прокрутке
+        // (themes/<тема>/Header.astro, SCROLL_UP_JS). Без этого слушатель,
+        // повешенный при первом рендере в режиме scroll-up, продолжал прятать
+        // шапку и после «Всегда» (баг 25.09, bloom и satin).
+        var attrs = wrap.attributes;
+        for (var ai = 0; ai < attrs.length; ai++) {
+          if (/^data-[a-z]+-sticky$/.test(attrs[ai].name)) wrap.setAttribute(attrs[ai].name, newVal || 'none');
         }
+        wrap.style.transform = '';
         // Некоторые темы (vanilla) задают sticky inline-стилем, а не классом —
         // class-замена выше их не трогает. Синхронизируем inline position, иначе
         // «Статичность» не применяется в превью для этих тем (баг тестера).

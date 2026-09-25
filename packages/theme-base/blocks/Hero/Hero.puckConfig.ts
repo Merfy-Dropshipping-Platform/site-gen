@@ -95,6 +95,13 @@ export const HeroSchema = z.object({
   imageFullBleed: z.boolean().optional(),
   contentAlign: z.enum(['center', 'left']).optional(),
   buttonStyle: z.enum(['solid', 'outlined']).optional(),
+  /**
+   * Порядок параметров из перетаскивания в дереве конструктора (владелец
+   * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
+   * SECTION_FIELDS (packages/theme-base/lib/field-order.ts); порт темы рисует
+   * параметры в этом порядке.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -291,6 +298,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // от шапки. Поле открыто; дефолт 0/0, чтобы новая секция выглядела как раньше
     // (полотно во всю ширину), а мерчант мог добавить воздух.
     padding: { type: 'padding', label: 'Отступы' } as any,
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок темы.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     title: 'Добро пожаловать',

@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (bloom): канон-секция MainText — адаптация Philosophy.astro (см.
 // themes/bloom/MANNER.md §10: Philosophy = текст-манифест + CTA без картинки,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
@@ -152,6 +153,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Заголовок, текст
+// и кнопка — плоские соседи одной колонки, отдельной обёртки не нужно. Без
+// fieldOrder — прежняя разметка.
+const textOrder = sectionFieldOrder("MainText", p);
 ---
 
 <section
@@ -162,8 +168,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class={`${posCls} flex w-full max-w-[1320px] flex-col ${itemsCls} gap-10${designParity ? " md:gap-16" : ""} ${textAlignCls}`}>
+		{textOrder.map((field) => (
+		<Fragment>
 		{
-			heading && !isFieldHidden('heading') && (
+			field === 'heading' && heading && !isFieldHidden('heading') && (
 				<h2
 					class={headingCls + italicCls}
 					data-animate
@@ -174,7 +182,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				></h2>
 			)
 		}
-		{!isFieldHidden('text') && (
+		{field === 'text' && !isFieldHidden('text') && (
 			<p
 				id={textId}
 				data-animate
@@ -185,9 +193,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				set:html={inlineFormat(text)}
 			/>
 		)}
-
 		{
-			btnText && !isFieldHidden('button') && (
+			field === 'button' && btnText && !isFieldHidden('button') && (
 				<a
 					href={btnHref}
 					class={btnCls}
@@ -201,5 +208,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</a>
 			)
 		}
+		</Fragment>
+		))}
 	</div>
 </section>

@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 // Канон-секция Newsletter в манере flux. Схема полей = packages/theme-base/blocks/
 // Newsletter/Newsletter.puckConfig.ts; настройки применяются КАК rose T17
 // (heading/headingSize · text/textSize · position-«Выравнивание» · formLayout ·
@@ -138,6 +139,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок из перетаскивания в конструкторе (props.fieldOrder,
+// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// текстом, `buttonText` — форма подписки вместе с согласием под ней. Строка
+// статуса всегда последняя. Без fieldOrder — прежняя разметка.
+const newsletterOrder = sectionFieldOrder("Newsletter", p);
 // ПОЛЕ И КНОПКА ПОДПИСКИ — роли СХЕМЫ. Было `bg-white`, `text-[#000000]` у
 // поля и `bg-[#FA5109]` + `text-white` у кнопки. `bg-white`/`text-white`
 // Tailwind 4 печатает как var(--color-white): переменная ЕСТЬ, схемы в ней
@@ -157,8 +163,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class={newsletterContainerCls}>
 		<div class={`flex w-full max-w-[652px] flex-col gap-6 ${posCls} ${alignCls}`}>
+			{newsletterOrder.map((field) => (
+			<Fragment>
 			{
-				!hideTitle && (
+				field === 'heading' && !hideTitle && (
 					<div class="flex w-full flex-col gap-2">
 						{!isFieldHidden('heading') && (
 							<h2
@@ -186,7 +194,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			}
 
 			{
-				inlineSubmit ? (
+				field === 'buttonText' && (inlineSubmit ? (
 					<form
 						class="flex h-14 w-full items-center justify-between gap-2 rounded-[8px] border border-[#FA5109] bg-[rgb(var(--color-bg,255_255_255))] pl-4 pr-2 md:h-16"
 						data-newsletter-form
@@ -236,10 +244,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</button>
 						)}
 					</form>
-				)
+				))
 			}
 			{
-				showAgreement && (
+				field === 'buttonText' && showAgreement && (
 					<label class="flex w-full cursor-pointer items-start gap-2 font-roboto-flex text-[13px] font-light leading-snug text-[rgb(var(--color-muted,153_153_153))]">
 						<input
 							type="checkbox"
@@ -256,6 +264,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					</label>
 				)
 			}
+			</Fragment>
+			))}
 			<p
 				data-newsletter-status
 				role="status"

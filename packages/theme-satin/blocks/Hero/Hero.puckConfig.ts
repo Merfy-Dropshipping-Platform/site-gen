@@ -98,6 +98,13 @@ export const HeroSchema = z.object({
   imageFullBleed: z.boolean().optional(),
   contentAlign: z.enum(['center', 'left']).optional(),
   buttonStyle: z.enum(['solid', 'outlined']).optional(),
+  /**
+   * Порядок параметров из перетаскивания в дереве конструктора (владелец
+   * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
+   * SECTION_FIELDS (packages/theme-base/lib/field-order.ts); порт темы рисует
+   * параметры в этом порядке.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -288,6 +295,10 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     // В Figma 314-34815 «Отступы» нет — скрыто из sidebar. Padding в данных
     // сохраняется (для Hero.astro), но мерчант не редактирует.
     padding: { type: 'hidden', label: '' } as any,
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок темы.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   // defaults — satin'овская манера (НЕ канон-дефолты). Редакторский настрой satin:
   // STYLE'S WEAR заголовок, серый кикер, split-вариант, padding 0 (edge-to-edge),

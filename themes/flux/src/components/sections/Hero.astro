@@ -3,6 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import FluxPicture from "../img/FluxPicture.astro";
 import { SITE_TITLE } from "../../consts";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim;
@@ -364,6 +365,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке со своим ритмом (gap-2), кнопки
+// — отдельным звеном (gap-8 колонки контента). Без fieldOrder — прежняя разметка.
+const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 
 // ПУСТАЯ секция (заглушка до своих фото и текста) слушает панель так же, как
 // заполненная. Тестер 24.09: «Изображение по всем настройкам сломалась, не
@@ -443,8 +449,11 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 					{/* «Контейнер» работает и на ПУСТОЙ секции (баг тестера 22.09, satin):
 					    включённый — плашка boxedCls на колонке заголовка, текста и кнопок. */}
 					<div class={emptyBlockCls}>
+					{heroRuns.map((run) => run.grouped ? (
 					<div class={emptyTextColCls}>
-						{!isFieldHidden('heading') && (
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && !isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
 								class={`font-roboto-flex ${emptyHeadingSizeCls} font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))]`}
@@ -455,7 +464,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 								{PH_LABEL}
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && !isFieldHidden('text') && (
 							<p
 								class={`font-roboto-flex ${emptyTextSizeCls} font-light leading-normal text-[rgb(var(--color-text,255_255_255))]`}
 								data-puck-subsection-parent={id}
@@ -465,8 +474,10 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 								{PH_HELPER}
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
+					) : !isFieldHidden('buttons') && (
 					<div class={buttonsCls}>
 						{/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
 						    isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] +
@@ -500,7 +511,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 							)
 						}
 					</div>
-					)}
+					))}
 					</div>
 				</div>
 			</div>
@@ -571,8 +582,11 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 		style={overlayPadStyle}
 	>
 		<div class={contentCls} data-reveal>
+			{heroRuns.map((run) => run.grouped ? (
 			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
-				{!isFieldHidden('heading') && (
+				{run.fields.map((field) => (
+				<Fragment>
+				{field === 'heading' && !isFieldHidden('heading') && (
 					<h1
 						id="hero-title"
 						class={headingCls}
@@ -583,7 +597,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 						<Fragment set:html={inlineFormat(title)} />
 					</h1>
 				)}
-				{!isFieldHidden('text') && (
+				{field === 'text' && !isFieldHidden('text') && (
 					<p
 						class={subtitleCls}
 						data-puck-subsection-parent={id}
@@ -594,9 +608,10 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 						<Fragment set:html={inlineFormat(subtitle).replace(/\n/g, "<br>")} />
 					</p>
 				)}
+				</Fragment>
+				))}
 			</div>
-
-			{!isFieldHidden('buttons') && (
+			) : !isFieldHidden('buttons') && (
 			<div class={buttonsCls}>
 				<a
 					href={ctaLink}
@@ -621,7 +636,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 					)
 				}
 			</div>
-			)}
+			))}
 		</div>
 	</div>
 </section>

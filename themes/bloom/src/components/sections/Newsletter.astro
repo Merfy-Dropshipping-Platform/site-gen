@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 // Фаза B (bloom, группа misc): канон-секция Newsletter в манере bloom
 // (см. themes/bloom/MANNER.md; процесс-эталон — rose T17 Newsletter). Схема
 // полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -145,6 +146,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок из перетаскивания в конструкторе (props.fieldOrder,
+// packages/theme-base/lib/field-order.ts): `heading` — блок заголовка с
+// текстом, `buttonText` — форма подписки вместе с согласием и строкой статуса
+// под ней (обе живут в одной обёртке разметки). Без fieldOrder — прежняя
+// разметка.
+const newsletterOrder = sectionFieldOrder("Newsletter", p);
 // ФОН И ТЕКСТ ПОЛЯ ПОДПИСКИ — роли СХЕМЫ. Было `bg-white` + `text-black`:
 // Tailwind 4 печатает их как var(--color-white)/var(--color-black) —
 // переменные ЕСТЬ, а схемы в них нет, поэтому поле замирало белым с чёрной
@@ -162,7 +169,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class="mx-auto w-full max-w-[1320px]" data-animate>
 		<div class={wrapCls}>
-			{!hideTitle && (
+			{newsletterOrder.map((field) => (
+			<Fragment>
+			{field === 'heading' && !hideTitle && (
 				<div class={textBlockCls}>
 					{!isFieldHidden('heading') && (
 						<h2
@@ -184,6 +193,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				</div>
 			)}
 
+			{field === 'buttonText' && (
 			<div class="flex w-full max-w-[318px] flex-col gap-2 lg:shrink-0">
 				{
 					inlineSubmit ? (
@@ -262,6 +272,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					class="hidden font-inter text-[14px] font-light leading-normal text-[#E38E9F]"
 				></p>
 			</div>
+			)}
+			</Fragment>
+			))}
 		</div>
 	</div>
 </section>

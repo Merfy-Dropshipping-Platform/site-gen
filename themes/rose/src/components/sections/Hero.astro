@@ -4,6 +4,7 @@ import RosePicture from "../img/RosePicture.astro";
 import { inlineFormat } from "../../lib/rich-text";
 import { ROSE_HERO_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
@@ -366,6 +367,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке (emptyCopyCls / копи-обёртка),
+// кнопки — отдельным звеном. Без fieldOrder — прежняя разметка.
+const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 ---
 
 {
@@ -412,8 +418,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{/* «Контейнер» работает и на ПУСТОЙ секции (баг тестера 22.09, satin):
 					    включённый — плашка boxedCls вокруг заголовка, текста и кнопок. */}
 					<div class={emptyWrapCls}>
+					{heroRuns.map((run) => run.grouped ? (
 					<div class={emptyCopyCls}>
-						{!isFieldHidden('heading') && (
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && !isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
 								class={emptyHeadingCls}
@@ -424,7 +433,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<Fragment set:html={inlineFormat(PH_LABEL)} />
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && !isFieldHidden('text') && (
 							<p
 								class={emptyTextCls}
 								data-puck-subsection-parent={id}
@@ -434,8 +443,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<Fragment set:html={inlineFormat(PH_HELPER)} />
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
+					) : !isFieldHidden('buttons') && (
 					<div class={emptyButtonsCls}>
 						<a
 							href={ctaLink}
@@ -460,7 +471,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							)
 						}
 					</div>
-					)}
+					))}
 					</div>
 				</div>
 			</div>
@@ -530,8 +541,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		class={heroContentWrapCls}
 	>
 			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
+				{heroRuns.map((run) => run.grouped ? (
 				<div class={designParity ? `flex flex-col ${alignItemsCls} ${heroCopyGapCls} ${textAlignCls}` : `flex flex-col ${alignItemsCls} gap-2 ${textAlignCls} sm:gap-3 md:gap-4`}>
-					{!isFieldHidden('heading') && (
+					{run.fields.map((field) => (
+					<Fragment>
+					{field === 'heading' && !isFieldHidden('heading') && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -542,7 +556,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<Fragment set:html={inlineFormat(title)} />
 						</h1>
 					)}
-					{!isFieldHidden('text') && (
+					{field === 'text' && !isFieldHidden('text') && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -552,9 +566,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<Fragment set:html={inlineFormat(subtitle)} />
 						</p>
 					)}
+					</Fragment>
+					))}
 				</div>
-
-				{!isFieldHidden('buttons') && (
+				) : !isFieldHidden('buttons') && (
 				<div class={buttonsCls}>
 					<a
 						href={ctaLink}
@@ -579,7 +594,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						)
 					}
 				</div>
-				)}
+				))}
 			</div>
 		</div>
 </section>

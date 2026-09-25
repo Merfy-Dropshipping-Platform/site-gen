@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 // Секция MainText («Основной текст») в манере flux. Донора-манифеста у
 // верстальщика flux НЕТ (секций всего 4, MANNER §10) — но есть родственная Puk
 // («Основной текст» / CTA репо), потому MainText дизайним в ЕДИНОМ flux-языке:
@@ -174,6 +175,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). Соседние
+// заголовок и текст остаются в общей группе (gap-2), кнопка — отдельным звеном
+// колонки. Без fieldOrder — прежняя разметка.
+const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]);
 ---
 
 <section
@@ -187,9 +193,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		    Ритм неравномерный — внутренняя группа [заголовок+текст] gap-2 md:gap-4,
 		    группа↔кнопка gap-6 md:gap-8 (манера flux, эталон Puk). */}
 		<div class={`${MAIN_TEXT_GEOMETRY.column} ${posCls} ${alignCls}`}>
+			{textRuns.map((run) => run.grouped ? (
 			<div class={MAIN_TEXT_GEOMETRY.group}>
+				{run.fields.map((field) => (
+				<Fragment>
 				{
-					heading && !isFieldHidden('heading') && (
+					field === 'heading' && heading && !isFieldHidden('heading') && (
 						<h2
 							id={titleId}
 							class={headingCls + italicCls}
@@ -201,7 +210,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						</h2>
 					)
 				}
-				{!isFieldHidden('text') && (
+				{field === 'text' && !isFieldHidden('text') && (
 					<div
 						class={textCls + italicCls}
 						data-puck-subsection-parent={id}
@@ -210,9 +219,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						set:html={inlineFormat(text)}
 					/>
 				)}
+				</Fragment>
+				))}
 			</div>
-
-			{
+			) : (
 				btnText && !isFieldHidden('button') && (
 					<a
 						href={btnHref}
@@ -224,7 +234,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						{btnText}
 					</a>
 				)
-			}
+			))}
 		</div>
 	</div>
 </section>

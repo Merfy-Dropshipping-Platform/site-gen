@@ -3,6 +3,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import VanillaPicture from "../img/VanillaPicture.astro";
 import { V_IMG } from "../../data/imageAssets";
+import { sectionFieldOrder } from "../../../../../packages/theme-base/lib/field-order";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose/bloom Hero): канон-схема theme-base
 // Hero.puckConfig ВКЛЮЧАЯ carousel-ветку «084 vanilla pilot» (mode, slides[]≤8,
@@ -431,6 +432,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/lib/field-order.ts). У vanilla Hero
+// заголовок/текст/кнопка — плоские соседи ОДНОГО родителя (copyWrapCls) и в
+// карусельной, и в одиночной ветке — группировка не нужна, порядок применяется
+// прямым перебором. Без fieldOrder — прежний порядок реестра.
+const heroOrder = sectionFieldOrder("Hero", p);
 ---
 
 {
@@ -491,7 +498,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", carouselLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
 						<div class={carouselLayout.copyWrapCls} aria-live="polite">
-							{!isFieldHidden('heading') && (
+							{heroOrder.map((field) => (
+							<Fragment>
+							{field === 'heading' && !isFieldHidden('heading') && (
 								<h1
 									id="hero-title"
 									data-hero-title
@@ -503,7 +512,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(slides[0].title)} />
 								</h1>
 							)}
-							{!isFieldHidden('text') && (
+							{field === 'text' && !isFieldHidden('text') && (
 								<p
 									data-hero-subtitle
 									class={slides[0].subtitleCls}
@@ -514,7 +523,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(slides[0].subtitle)} />
 								</p>
 							)}
-							{!isFieldHidden('buttons') && (
+							{field === 'buttons' && !isFieldHidden('buttons') && (
 							<a
 								data-hero-cta
 								class:list={[ctaCls, !slides[0].ctaText && "hidden"]}
@@ -526,6 +535,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{slides[0].ctaText}
 							</a>
 							)}
+							</Fragment>
+							))}
 						</div>
 					</div>
 				</div>
@@ -663,7 +674,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<div class:list={["vanilla-pad absolute inset-0 z-10 flex h-full w-full pointer-events-none", singleLayout.vItemsCls]}>
 					<div class="vanilla-container pointer-events-none">
 						<div class={`${singleLayout.copyWrapCls}${heroBoxedCls}`}>
-							{!isFieldHidden('heading') && (
+							{heroOrder.map((field) => (
+							<Fragment>
+							{field === 'heading' && !isFieldHidden('heading') && (
 								<h1
 									id="hero-title"
 									class={singleTitleCls}
@@ -674,7 +687,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(singleTitle)} />
 								</h1>
 							)}
-							{!isFieldHidden('text') && (
+							{field === 'text' && !isFieldHidden('text') && (
 								<p
 									class={singleSubtitleCls}
 									data-puck-subsection-parent={id}
@@ -684,7 +697,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 									<Fragment set:html={inlineFormat(singleSubtitle)} />
 								</p>
 							)}
-							{!isFieldHidden('buttons') && (secondaryText ? (
+							{field === 'buttons' && !isFieldHidden('buttons') && (secondaryText ? (
 								<div class="inline-grid [grid-template-columns:1fr_1fr] items-stretch gap-3">
 									<a
 										class={ctaCls}
@@ -715,6 +728,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								>
 									{singleCtaText}
 								</a>
+							))}
+							</Fragment>
 							))}
 						</div>
 					</div>

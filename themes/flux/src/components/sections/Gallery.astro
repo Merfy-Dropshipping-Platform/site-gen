@@ -183,56 +183,34 @@ const heroSizeCls = soloTile ? "lg:aspect-[16/9]" : "lg:aspect-auto lg:h-full";
 // Task 8 note в шапке файла): плитка 1 (карточка товара, FluxProductCard media
 // — aspect-square) — aspect-square (scale-105 300ms), плитка 2 (карточка
 // коллекции) — aspect-[429/269] (scale-[1.03] 500ms ease-out).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// боковые плитки по актуальной вёрстке flux-theme@be32556d
-// (sections/Gallery.astro + components/ProductCard.astro). Карта
-// «верстальщики / прежнее», без признака — прежние строки байт в байт:
+// Боковые плитки по актуальной вёрстке flux-theme@be32556d
+// (sections/Gallery.astro + components/ProductCard.astro; владелец 23-24.09:
+// «как у верстальщиков, только стили»):
 //   • товар — карточка с полями p-3 и скруглением 12 (фото 402 при колонке
 //     426, как в сетке «Популярных»), подпись и цена 14 → md:16;
 //   • вторая плитка (коллекция) до lg тянется на высоту ряда (flex-1), с lg —
 //     пропорция 429/269;
 //   • ссылки плиток занимают всю ячейку (h-full).
-// Признак ставит sites (page-blocks designParityFlag).
-// Прежние аспекты — литералом: их сторожит flux-section-source-contract.
-const SIDE_ASPECTS = ["aspect-square", "aspect-[429/269]"];
 const GALLERY_TILES = {
-	designers: {
-		aspects: ["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-[429/269]"],
-		tile: {
-			product: "group flex h-full min-w-0 flex-col gap-4 rounded-[12px] p-3",
-			collection: "group flex h-full min-w-0 flex-col gap-4",
-			image: "group flex h-full min-w-0 flex-col gap-4",
-		},
+	aspects: ["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-[429/269]"],
+	tile: {
+		product: "group flex h-full min-w-0 flex-col gap-4 rounded-[12px] p-3",
+		collection: "group flex h-full min-w-0 flex-col gap-4",
+		image: "group flex h-full min-w-0 flex-col gap-4",
 	},
-	legacy: {
-		aspects: SIDE_ASPECTS,
-		tile: {
-			product: "group flex min-w-0 flex-col gap-4",
-			collection: "group flex min-w-0 flex-col gap-4",
-			image: "group flex min-w-0 flex-col gap-4",
-		},
-	},
-}[p.__designParity === true ? "designers" : "legacy"];
+};
 const sideAspects = GALLERY_TILES.aspects;
 const SIDE_HOVERS = [
 	"transition-transform duration-300 group-hover:scale-105",
 	"transition-transform duration-500 ease-out group-hover:scale-[1.03]",
 ];
-// Подписи карточек = эталон верстальщика: товар text-[18px] md:text-[20px],
+// Подписи карточек = эталон верстальщика: товар text-[14px] md:text-[16px],
 // коллекция text-[16px], ВСЁ font-roboto-flex font-light. Хук-классы гидрации
 // (gallery-product-title / -price, gallery-collection-title) сохранены.
-const productTitleCls = {
-	designers:
-		"gallery-product-title font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]",
-	legacy:
-		"gallery-product-title font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]",
-}[p.__designParity === true ? "designers" : "legacy"];
-const productPriceCls = {
-	designers:
-		"gallery-product-price font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]",
-	legacy:
-		"gallery-product-price font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]",
-}[p.__designParity === true ? "designers" : "legacy"];
+const productTitleCls =
+	"gallery-product-title font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]";
+const productPriceCls =
+	"gallery-product-price font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]";
 const collectionTitleCls =
 	"gallery-collection-title font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]";
 
@@ -244,24 +222,14 @@ const collectionTitleCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
-// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
-		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
+	default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][paddingStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.

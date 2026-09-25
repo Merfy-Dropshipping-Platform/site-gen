@@ -976,10 +976,13 @@ test('Gallery (src/components/sections/Gallery.astro): upstream tile geometry (a
   });
 
   await t.test('side tile 0 (позиция "товар"): aspect-square + hover scale-105 duration-300 (паритет FluxProductCard media)', () => {
+    // Одна версия секции (владелец 25.09): аспекты боковых плиток — вёрстки
+    // flux-theme@be32556d; вторая плитка до lg тянется на высоту ряда, с lg —
+    // пропорция 429/269.
     assert.match(
       content,
-      /const SIDE_ASPECTS = \["aspect-square", "aspect-\[429\/269\]"\];/,
-      'ожидался SIDE_ASPECTS = ["aspect-square", "aspect-[429/269]"]',
+      /aspects: \["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-\[429\/269\]"\],/,
+      'ожидались аспекты ["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-[429/269]"]',
     );
     assert.match(
       content,

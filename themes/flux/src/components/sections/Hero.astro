@@ -176,19 +176,13 @@ const heroHeightCls = {
 // Мобильные высоты — КАНОН верстальщиков: полотно 380px с контентом-оверлеем
 // (мобстек «медиа сверху, контент ниже» был перенесён из rose и канону
 // противоречил — юзер-репорт 2026-08-08, скрин эталона localhost:4321@390).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// первая ступень «Размера» ПО УМОЛЧАНИЮ (large) — как в актуальной вёрстке
+// Первая ступень «Размера» ПО УМОЛЧАНИЮ (large) — как в актуальной вёрстке
 // flux-theme@be32556d (src/components/sections/Hero.astro:26 `h-[380px]
-// sm:h-[480px] lg:aspect-[1920/810] lg:h-auto`): у нас первая ступень стояла
-// на md:, а не на sm:. «Средний»/«Маленький» не трогаем — у верстальщиков
-// контрола «Размер» нет вовсе, эти ступени изобретены конструктором. Без
-// признака — байт в байт прежняя строка. Признак ставит sites (page-blocks
-// designParityFlag).
-const designParity = p.__designParity === true;
+// sm:h-[480px] lg:aspect-[1920/810] lg:h-auto`; владелец 23-24.09: «как у
+// верстальщиков, только стили»). «Средний»/«Маленький» — у верстальщиков
+// контрола «Размер» нет вовсе, эти ступени изобретены конструктором.
 const heroHeightMdCls = {
-	large: designParity
-		? "h-[380px] sm:h-[480px] lg:aspect-[1920/810] lg:h-auto"
-		: "h-[380px] md:h-[480px] lg:aspect-[1920/810] lg:h-auto",
+	large: "h-[380px] sm:h-[480px] lg:aspect-[1920/810] lg:h-auto",
 	medium: "h-[315px] md:h-[395px] lg:h-[445px]",
 	small: "h-[245px] md:h-[305px] lg:h-[345px]",
 }[heroSize];
@@ -203,26 +197,13 @@ const heroHeightMdCls = {
 // не пропорционально высоте. Для large крой НЕ трогаем (пиксель-в-пиксель
 // эталон); medium/small — паттерн Rose (inset-0 size-full object-cover): сам
 // пересчитывается под любую высоту контейнера, без ручной калибровки под каждую.
-// #7 (июльский аудит паритета, мобстек): на мобиле картинка теперь ЖИВЁТ ВНУТРИ
-// aspect-[4/3]-коробки в потоке (см. imageWrapCls ниже) — калиброванный крой
-// «large» (top-[-10.8%]/w-[200%]/…) считался под ЦЕЛИКОМ ДРУГОЙ, широкую
-// desktop-пропорцию (1920×810) — внутри 4:3 он даёт мимо. На мобиле просто
-// object-cover (сам вписывается в коробку); калиброванный крой включается
-// ТОЛЬКО с md: (там картинка снова становится absolute-оверлеем на всю секцию,
-// прежняя вёрстка не трогается). Старое sm:w-[160%] переехало на md: (это и
-// была первая ступень calibrated-crop, теперь она начинается сразу с md:).
-// PARITY_DESIGN: кадрирование одного фото у верстальщиков (Hero.astro:29,35)
-// вне md-гейта — <640 absolute left-1/2 top-[-10.8%] h-auto w-[200%]
-// max-w-none -translate-x-1/2; 640-1023 (sm) w-[160%]; ≥1024 (lg) left-0
-// w-full translate-x-0 (как сейчас, не трогаем). У нас та же калибровка
-// включалась только с md: (на мобиле фото просто заливало блок). «Средний»/
-// «Маленький» — не трогаем (ветка ниже, паттерн Rose). Без признака — байт в
-// байт прежняя строка.
+// Кадрирование одного фото «Большого» — как у верстальщиков (Hero.astro:29,35):
+// <640 absolute left-1/2 top-[-10.8%] h-auto w-[200%] max-w-none
+// -translate-x-1/2; 640-1023 (sm) w-[160%]; ≥1024 (lg) left-0 w-full
+// translate-x-0. «Средний»/«Маленький» — своя ветка (паттерн Rose).
 const singleImageCropCls =
 	heroSize === "large"
-		? designParity
-			? "absolute left-1/2 top-[-10.8%] h-auto w-[200%] max-w-none -translate-x-1/2 object-cover object-center sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
-			: "size-full object-cover object-center md:absolute md:left-1/2 md:top-[-10.8%] md:h-auto md:w-[160%] md:max-w-none md:-translate-x-1/2 md:object-cover lg:left-0 lg:w-full lg:translate-x-0"
+		? "absolute left-1/2 top-[-10.8%] h-auto w-[200%] max-w-none -translate-x-1/2 object-cover object-center sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
 		: "size-full object-cover object-center md:absolute md:inset-0";
 
 // Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не

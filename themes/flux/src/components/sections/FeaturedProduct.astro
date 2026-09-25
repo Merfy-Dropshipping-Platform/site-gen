@@ -398,13 +398,11 @@ const paddingStyle = p.padding
 	? `padding-top:${Math.min(Number(p.padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(p.padding.bottom) || 0, 160)}px;`
 	: undefined;
 const schemeClass = `color-scheme-${String(p.colorScheme ?? 2).replace("scheme-", "")}`;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem (`.flux-container-designers` в
-// global.css темы), а не носитель темы 1920/1rem/5rem/20rem: на 1536+ колонки
-// товара сжимались до 896px. Без признака — прежний класс байт в байт.
-// Признак ставит sites (page-blocks designParityFlag).
-const containerBaseCls = p.__designParity === true ? "flux-container-designers" : "flux-container";
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem (`.flux-container-designers` в global.css темы), а не
+// 1920/1rem/5rem/20rem: на 1536+ колонки товара сжимались до 896px.
+const containerBaseCls = "flux-container-designers";
 // «Купить сейчас» — ДОПОЛНИТЕЛЬНАЯ (динамическая) кнопка, канон
 // `packages/theme-base/blocks/Product/ProductActions.astro`: свой набор токенов
 // `--color-button-secondary-*` (не общий `--color-button-*` основной кнопки) +

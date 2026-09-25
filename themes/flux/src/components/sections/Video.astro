@@ -136,16 +136,11 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 const pyCls = paddingStyle ? "" : " py-10 md:py-16";
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Ветка «Положение видео» по умолчанию (padded, не
-// fullBleed) — остальные ветки настройки не трогаем. Без признака — байт в
-// байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const paddedContainerCls = designParity
-	? "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20"
-	: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80";
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Только ветка «Положение видео» по умолчанию (padded,
+// не fullBleed) — остальные ветки настройки свои.
+const paddedContainerCls = "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20";
 const containerCls = fullBleed
 	? `flex w-full flex-col gap-8${pyCls}`
 	: padded

@@ -174,17 +174,11 @@ const badgeCls =
 const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:order-2 md:col-start-2 md:justify-self-center" : ""}`;
 const mobileLogoCls = "flex items-center hover:opacity-80";
 
-// Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Без признака — байт в байт прежняя строка. Признак
-// ставит sites (page-blocks designParityFlag); FluxNavItem получает его отдельным
-// пропом (mega-menu контейнер несёт literal-класс flux-container, см. компонент).
-const designParity = p.__designParity === true;
-const deskContainerBase = designParity
-	? "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20"
-	: "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80";
+// Десктопный контейнер — по актуальной вёрстке flux-theme@be32556d
+// (src/styles/global.css:30 .flux-container; владелец 23-24.09: «как у
+// верстальщиков, только стили») — 1480 и поля 1/2.5/5rem, как у секций flux
+// и контейнера mega-menu (FluxNavItem).
+const deskContainerBase = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 // py-6 = вертикальный отступ верстальщика (дефолт); inline-стиль перебивает при настройке padding.
 const deskPadCls = headerPad ? "" : "py-6";
 const twoRowContainerCls = [deskContainerBase, "hidden flex-col gap-5 md:flex", deskPadCls].filter(Boolean).join(" ");
@@ -357,7 +351,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 								link={link}
 								menuType={menuType}
 								active={isActive(link)}
-								designParity={designParity}
 								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
 							/>
 						))}
@@ -435,7 +428,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 								link={link}
 								menuType={menuType}
 								active={isActive(link)}
-								designParity={designParity}
 								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
 							/>
 						))}
@@ -488,7 +480,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						link={link}
 						menuType={menuType}
 						active={isActive(link)}
-						designParity={designParity}
 						linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
 					/>
 				))}

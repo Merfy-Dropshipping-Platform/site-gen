@@ -1,19 +1,9 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
-
 /**
  * flux — цель «как у верстальщиков» (scripts/qa/designer-goal.ts flux),
  * вторая волна после flux-like-designers.spec.ts: размеры ВНУТРИ секций
- * главной по flux-theme@be32556d под PARITY_DESIGN.
+ * главной по flux-theme@be32556d.
  *
  *   Collections — на телефоне плитка во всю ширину (grid-cols-1 sm:grid-cols-3);
  *   Popular     — карточка: зазор текст↔кнопка gap-6, кнопка h-12 px-4
@@ -24,11 +14,13 @@ afterEach(() => {
  *                 плитка тянется до lg;
  *   Footer      — поле рассылки 429px h-14, кнопки соцсетей 44px, полоса 64px.
  *
- * Без признака — разметка байт в байт прежняя; капс не растёт.
+ * С 25.09 у секций одна версия (владелец: «стили приравнивали, секции и
+ * параметры менять не нужно было») — прежняя ветка удалена вместе с признаком
+ * режима, признак (true/false) разметку не меняет. Капс не растёт: число
+ * `uppercase` у каждого случая закреплено (`капс`).
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
-const ВКЛ = { __designParity: true };
 
 type Секция = { block: string; props: Record<string, unknown> };
 
@@ -53,10 +45,12 @@ function классы(html: string, маркер: RegExp): string[] {
 
 type Случай = {
   секция: Секция;
-  /** Классы, которые обязаны быть под признаком и отсутствовать без него. */
+  /** Классы верстальщиков — обязаны быть. */
   верстальщики: string[];
-  /** Прежние классы: без признака есть, под признаком их нет. */
+  /** Классы удалённой прежней ветки — их нет. */
   прежние: string[];
+  /** Сколько раз в разметке стоит `uppercase` — больше не должно стать. */
+  капс: number;
 };
 
 const СЛУЧАИ: Случай[] = [
@@ -71,6 +65,7 @@ const СЛУЧАИ: Случай[] = [
     },
     верстальщики: ["grid grid-cols-1 gap-4 sm:grid-cols-3 md:grid-cols-4"],
     прежние: ["grid grid-cols-2 gap-4 md:grid-cols-4"],
+    капс: 0,
   },
   {
     секция: {
@@ -84,6 +79,7 @@ const СЛУЧАИ: Случай[] = [
       'class="flex flex-col gap-2 text-center"',
     ],
     прежние: ['class="flex flex-col gap-2"'],
+    капс: 1,
   },
   {
     секция: {
@@ -105,11 +101,13 @@ const СЛУЧАИ: Случай[] = [
       "flex w-full flex-col gap-2 md:gap-4",
       "text-[16px] md:text-[19px]",
     ],
+    капс: 0,
   },
   {
     секция: { block: "Product", props: { id: "Product-1", colorScheme: "scheme-1" } },
     верстальщики: ['class="flux-container-designers py-10 md:py-16"'],
     прежние: ['class="flux-container py-10 md:py-16"'],
+    капс: 0,
   },
   {
     секция: {
@@ -130,6 +128,7 @@ const СЛУЧАИ: Случай[] = [
       "gallery-product-title font-roboto-flex text-[14px]",
     ],
     прежние: ["gallery-product-title font-roboto-flex text-[18px]"],
+    капс: 0,
   },
   {
     секция: {
@@ -147,66 +146,59 @@ const СЛУЧАИ: Случай[] = [
       "flex size-11 shrink-0",
     ],
     прежние: ["max-w-[652px]", "md:h-[100px]", "flex size-8 shrink-0", "flex items-center gap-4"],
+    капс: 2,
   },
 ];
 
-describe("flux: размеры внутри секций главной как у верстальщиков под PARITY_DESIGN", () => {
-  const вкл = отрисовать(СЛУЧАИ.map((с) => ({ ...с.секция, props: { ...с.секция.props, ...ВКЛ } })));
-  const выкл = отрисовать(СЛУЧАИ.map((с) => с.секция));
-  const безПризнака = отрисовать(
+describe("flux: размеры внутри секций главной как у верстальщиков", () => {
+  const html = отрисовать(СЛУЧАИ.map((с) => с.секция));
+  const вкл = отрисовать(
+    СЛУЧАИ.map((с) => ({ ...с.секция, props: { ...с.секция.props, __designParity: true } })),
+  );
+  const выкл = отрисовать(
     СЛУЧАИ.map((с) => ({ ...с.секция, props: { ...с.секция.props, __designParity: false } })),
   );
 
   СЛУЧАИ.forEach((с, i) => {
-    it(`${с.секция.block}: с признаком — классы верстальщиков`, () => {
-      for (const к of с.верстальщики) expect(вкл[i]).toContain(к);
-      for (const к of с.прежние) expect(вкл[i]).not.toContain(к);
+    it(`${с.секция.block}: классы верстальщиков, прежних нет`, () => {
+      for (const к of с.верстальщики) expect(html[i]).toContain(к);
+      for (const к of с.прежние) expect(html[i]).not.toContain(к);
     });
 
-    it(`${с.секция.block}: без признака — прежняя разметка байт в байт`, () => {
-      expect(безПризнака[i]).toEqual(выкл[i]);
-      for (const к of с.прежние) expect(выкл[i]).toContain(к);
-      for (const к of с.верстальщики) expect(выкл[i]).not.toContain(к);
+    it(`${с.секция.block}: одна версия — признак режима (true, false) ничего не меняет`, () => {
+      expect(вкл[i]).toEqual(html[i]);
+      expect(выкл[i]).toEqual(html[i]);
     });
 
     it(`${с.секция.block}: капс верстальщиков не добавлен`, () => {
-      const капс = (html: string) => (html.match(/\buppercase\b/g) ?? []).length;
-      expect(капс(вкл[i])).toBe(капс(выкл[i]));
+      const капс = (h: string) => (h.match(/\buppercase\b/g) ?? []).length;
+      expect(капс(html[i])).toBe(с.капс);
     });
   });
 });
 
-describe("flux: настройки, задающие размер, работают как прежде под PARITY_DESIGN", () => {
-  it("MainText «Размер текста» small/large мерчанта не зависят от признака", () => {
+describe("flux: настройки, задающие размер, работают как прежде", () => {
+  it("MainText «Размер текста» small/large — кегль мерчанта", () => {
     const база = { id: "MainText-1", heading: { text: "З" } };
-    const [smВкл, smВыкл, lgВкл, lgВыкл] = отрисовать([
-      { block: "MainText", props: { ...база, ...ВКЛ, text: { content: "Т", size: "small" } } },
+    const [sm, lg] = отрисовать([
       { block: "MainText", props: { ...база, text: { content: "Т", size: "small" } } },
-      { block: "MainText", props: { ...база, ...ВКЛ, text: { content: "Т", size: "large" } } },
       { block: "MainText", props: { ...база, text: { content: "Т", size: "large" } } },
     ]);
-    const абзац = (html: string) => классы(html, /data-puck-subsection-field="text"/);
-    expect(абзац(smВкл)).toContain("text-[14px]");
-    expect(абзац(smВкл)).toContain("md:text-[16px]");
-    expect(абзац(smВыкл)).toContain("md:text-[16px]");
-    expect(абзац(lgВкл)).toContain("md:text-[23px]");
-    expect(абзац(lgВыкл)).toContain("md:text-[23px]");
+    const абзац = (h: string) => классы(h, /data-puck-subsection-field="text"/);
+    expect(абзац(sm)).toContain("text-[14px]");
+    expect(абзац(sm)).toContain("md:text-[16px]");
+    expect(абзац(lg)).toContain("md:text-[23px]");
   });
 
-  it("Collections «Колонки» по-прежнему уходят в --cols под признаком", () => {
-    const [html] = отрисовать([
-      { block: "Collections", props: { id: "Collections-1", columns: 5, ...ВКЛ } },
-    ]);
-    expect(html).toContain('style="--cols:5"');
+  it("Collections «Колонки» по-прежнему уходят в --cols", () => {
+    const [h] = отрисовать([{ block: "Collections", props: { id: "Collections-1", columns: 5 } }]);
+    expect(h).toContain('style="--cols:5"');
   });
 
-  it("Footer: свои отступы мерчанта сохраняют инлайн-стиль под признаком", () => {
-    const [html] = отрисовать([
-      {
-        block: "Footer",
-        props: { id: "Footer-1", padding: { top: 20, bottom: 20 }, ...ВКЛ },
-      },
+  it("Footer: свои отступы мерчанта сохраняют инлайн-стиль", () => {
+    const [h] = отрисовать([
+      { block: "Footer", props: { id: "Footer-1", padding: { top: 20, bottom: 20 } } },
     ]);
-    expect(html).toContain('style="padding-top:20px;padding-bottom:20px;"');
+    expect(h).toContain('style="padding-top:20px;padding-bottom:20px;"');
   });
 });

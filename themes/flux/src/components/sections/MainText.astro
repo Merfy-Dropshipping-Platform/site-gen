@@ -58,32 +58,19 @@ const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--
 // приоритетнее СКРЫТОГО top-level textSize. У flux/bloom в defaultProps лежит
 // textSize:'medium', и при обратном порядке он глушил выбор мерчанта наглухо.
 const textSize = p.text?.size ?? p.textSize;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// геометрия CTA по актуальной вёрстке flux-theme@be32556d
-// (sections/Puk.astro): абзац max-w-[1320px] 16px leading-normal, группа
-// [заголовок+текст] gap-2 по ширине содержимого (не w-full), группа ↔ кнопка
-// gap-10, кнопка px-6. Карта
-// «верстальщики / прежнее»: меняется ТОЛЬКО ветка значения по умолчанию
-// «Размера текста» (medium/не задан) — small/large мерчанта прежние. Без
-// признака — прежние строки байт в байт. Признак ставит sites
-// (page-blocks designParityFlag).
-const DESIGN_KEY = p.__designParity === true ? "designers" : "legacy";
+// Геометрия CTA по актуальной вёрстке flux-theme@be32556d (sections/Puk.astro;
+// владелец 23-24.09: «как у верстальщиков, только стили»): абзац
+// max-w-[1320px] 16px leading-normal, группа [заголовок+текст] gap-2 по ширине
+// содержимого (не w-full), группа ↔ кнопка gap-10, кнопка px-6. Кегль
+// верстальщиков — у значения по умолчанию «Размера текста» (medium/не задан);
+// small/large мерчанта свои.
 const MAIN_TEXT_GEOMETRY = {
-	designers: {
-		textDefault: "text-[16px]",
-		textBox: "max-w-[1320px] font-roboto-flex font-light leading-normal",
-		column: "flex w-full max-w-[1320px] flex-col gap-10",
-		group: "flex flex-col gap-2",
-		btnPad: "px-6",
-	},
-	legacy: {
-		textDefault: "text-[16px] md:text-[19px]",
-		textBox: "max-w-[780px] font-roboto-flex font-light leading-relaxed",
-		column: "flex w-full max-w-[780px] flex-col gap-6 md:gap-8",
-		group: "flex w-full flex-col gap-2 md:gap-4",
-		btnPad: "px-4",
-	},
-}[DESIGN_KEY];
+	textDefault: "text-[16px]",
+	textBox: "max-w-[1320px] font-roboto-flex font-light leading-normal",
+	column: "flex w-full max-w-[1320px] flex-col gap-10",
+	group: "flex flex-col gap-2",
+	btnPad: "px-6",
+};
 const textSizeCls =
 	textSize === "small"
 		? "text-[14px] md:text-[16px]"
@@ -147,24 +134,14 @@ const paddingStyle = p.padding
 // mx-auto max-w-[1920px] px-4 md:px-20 2xl:px-80). Вертикаль py-10 md:py-16
 // (канон); при заданном padding (настройка) py-классы убираются — inline-стиль
 // ставит padding-top/bottom (паттерн Popular).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
-// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20",
-		default: "mx-auto w-full max-w-[1480px] px-4 py-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80",
-		default: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20",
+	default: "mx-auto w-full max-w-[1480px] px-4 py-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][paddingStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 
 const titleId = id ? `${id}-title` : undefined;
 

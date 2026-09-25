@@ -172,18 +172,11 @@ const contained =
 // Контейнер (§2): contained = обёртка манеры главной (max-w-1920 + поля
 // px-4 md:px-20 2xl:px-80 + вертикальное дыхание py-10 md:py-16), внутри рамка
 // max-w-1320 со скруглением медиа. fullscreen = full-bleed во всю ширину секции.
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем; fullbleed-ветка
-// (contained=false) — без изменений. Без признака — байт в байт прежняя
-// строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
-const wrapperCls = contained
-	? designParity
-		? "mx-auto w-full max-w-[1480px] px-4 py-10 md:px-10 md:py-16 lg:px-20"
-		: "mx-auto w-full max-w-[1920px] px-4 py-10 md:px-20 md:py-16 2xl:px-80"
-	: "w-full";
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем; fullbleed-ветка
+// (contained=false) — во всю ширину.
+const wrapperCls = contained ? "mx-auto w-full max-w-[1480px] px-4 py-10 md:px-10 md:py-16 lg:px-20" : "w-full";
 const frameCls = contained ? " max-w-[1320px] rounded-[var(--radius-media,8px)]" : "";
 // Поля контент-блока: fullscreen = сетка главной (Hero.astro:325); contained =
 // карточный инсет (поля внутри рамки скромнее, чем поля секции).

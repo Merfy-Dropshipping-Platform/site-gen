@@ -176,15 +176,21 @@ const soloTile = galleryTiles.length === 1;
 // sites; без него — прежние классы.
 const designParity = p.__designParity === true;
 // Две плитки у верстальщиков: колонки пополам (lg:grid-cols-2), большая —
-// квадрат по своей ширине, справа фото 652/594 с подписью, низы не тянутся
-// друг к другу (items-start). Три плитки (наш канон) — прежняя раскладка.
+// квадрат по своей ширине, справа фото 652/594 с подписью. Три плитки
+// (наш канон) — прежняя раскладка.
 const pairLikeDesigners = designParity && sideTiles.length === 1;
 const gridColsCls = mirror
 	? "lg:grid-cols-[minmax(280px,429px)_minmax(0,1fr)]"
 	: "lg:grid-cols-[minmax(0,1fr)_minmax(280px,429px)]";
+// Владелец 25.09: «выравниваем» — низы обеих плиток пары на одной линии на
+// всех ширинах, где они стоят рядом (было: items-start, боковая плитка
+// короче квадрата на 38–58px, под ней пустое место). lg:items-stretch тянет
+// боковую колонку до высоты строки (её задаёт квадрат — heroSizeCls ниже);
+// SIDE_TILE.photo ниже забирает добавленную высоту ФОТО (flex-1,
+// object-cover), а не пустотой под подписью.
 const GRID_LAYOUT = {
 	solo: { cols: "lg:grid-cols-1", stretch: " lg:items-stretch" },
-	pair: { cols: "lg:grid-cols-2", stretch: "" },
+	pair: { cols: "lg:grid-cols-2", stretch: " lg:items-stretch" },
 	legacy: { cols: gridColsCls, stretch: " lg:items-stretch" },
 }[soloTile ? "solo" : pairLikeDesigners ? "pair" : "legacy"];
 const gridLayoutCls = GRID_LAYOUT.cols;
@@ -199,6 +205,26 @@ const heroSizeCls = soloTile
 		: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0";
 // Подпись под фото плитки: у верстальщиков колонка gap-4 (16), у нас mt-5.
 const captionMtCls = designParity ? "mt-4" : "mt-5";
+
+// Боковая плитка ПАРЫ (pairLikeDesigners): низ обязан лечь на низ квадрата
+// (владелец 25.09). Ссылка становится flex-колонкой во всю высоту строки
+// (lg:h-full — высоту дал items-stretch на гриде выше), фото-бокс внутри
+// растёт (lg:flex-1 lg:min-h-0, без своего аспекта) и забирает добавленную
+// высоту ФОТО через object-cover (крой, не сплющивание) — подпись остаётся
+// своего размера. Три плитки (LEGACY) и мобильная раскладка — байт-в-байт
+// прежние: аспект-бокс 652/594, ссылка обычным block.
+const SIDE_TILE = {
+	pair: {
+		anchor: " lg:flex lg:h-full lg:flex-col",
+		photo:
+			"relative aspect-[652/594] w-full lg:aspect-auto lg:min-h-0 lg:flex-1 overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]",
+	},
+	legacy: {
+		anchor: "",
+		photo:
+			"relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]",
+	},
+}[pairLikeDesigners ? "pair" : "legacy"];
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -279,7 +305,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}
-							class="group block"
+							class={`group block${SIDE_TILE.anchor}`}
 							aria-label={tile.label || tile.alt || "Изображение"}
 							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
 							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
@@ -287,7 +313,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-index={i + 1}
 							data-puck-subsection-field="items"
 						>
-							<div class="relative aspect-[652/594] w-full overflow-hidden rounded-[var(--radius-media,12px)] bg-[rgb(var(--color-surface,245_245_245))]">
+							<div class={SIDE_TILE.photo}>
 								{(tile.url || awaitsCover(tile)) && (
 									<img
 										src={tile.url || undefined}

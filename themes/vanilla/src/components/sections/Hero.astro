@@ -17,7 +17,9 @@ import { V_IMG } from "../../data/imageAssets";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
-// Дефолтные слайды = литералы верстальщика (тексты/ссылки verbatim).
+// Дефолтные слайды = литералы верстальщика (тексты verbatim). Ссылки — исключение:
+// владелец 25.09 «страницы только магазинные, без верстальщиков» — у /catalog/textile
+// на витрине своей страницы нет, у нового магазина это «не найдено»; заменены на /catalog.
 const CANON_SLIDES = [
 	{
 		image: V_IMG.hero(1),
@@ -31,14 +33,14 @@ const CANON_SLIDES = [
 		title: "Дом, в который хочется возвращаться",
 		subtitle: "Товары, создающие атмосферу тепла и спокойствия",
 		ctaText: "Перейти к товарам",
-		ctaHref: "/catalog/textile",
+		ctaHref: "/catalog",
 	},
 	{
 		image: V_IMG.hero(3),
 		title: "Интерьер, наполненный смыслом",
 		subtitle: "коллекция текстиля и декора для тех, кто ценит красоту в деталях",
 		ctaText: "Новые поступления",
-		ctaHref: "/catalog/textile",
+		ctaHref: "/catalog",
 	},
 ];
 
@@ -416,7 +418,7 @@ const secondaryText =
 const secondaryHref =
 	p.secondaryButton?.link?.href ??
 	(typeof p.secondaryButton?.link === "string" ? p.secondaryButton.link : undefined) ??
-	"/catalog/textile";
+	"/catalog";
 const secondaryCls =
 	p.buttonStyle === "outlined"
 		? `inline-flex ${ctaSizeCls} max-w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] font-vanilla-arsenal font-normal leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`

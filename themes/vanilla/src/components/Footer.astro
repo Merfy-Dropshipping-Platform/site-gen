@@ -14,10 +14,12 @@ import PaymentMir from "../icons/PaymentMir.astro";
 
 const COPYRIGHT_YEAR = 2026;
 
+// Владелец 25.09: «страницы только магазинные, без верстальщиков» — у /catalog/textile
+// и /catalog/decor (категории верстальщика) на витрине своей страницы нет.
 const navColumnDefault = [
-	{ label: "Текстиль", href: "/catalog/textile" },
-	{ label: "Декор", href: "/catalog/decor" },
-	{ label: "Домашняя одежда", href: "/catalog/textile" },
+	{ label: "Текстиль", href: "/catalog" },
+	{ label: "Декор", href: "/catalog" },
+	{ label: "Домашняя одежда", href: "/catalog" },
 ];
 
 // Правовые ссылки футера приходят из build (site_policy) только для заполненных

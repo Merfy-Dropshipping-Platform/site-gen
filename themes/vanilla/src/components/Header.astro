@@ -30,10 +30,14 @@ function catalogNavFromProduct(url: URL): "textile" | "decor" | null {
 	return product?.collection === "Декор" ? "decor" : "textile";
 }
 
+// Владелец 25.09: «страницы только магазинные, без верстальщиков» — у /catalog/textile
+// и /catalog/decor (категории верстальщика) на витрине своей страницы нет, у нового
+// магазина это «не найдено». href обоих пунктов ведёт на /catalog; match оставлен
+// (подсветка активного пункта по товару категории и по старым адресам не ломается).
 const defaultNav: NavLink[] = [
 	{
 		label: "Текстиль",
-		href: "/catalog/textile",
+		href: "/catalog",
 		match: (url) =>
 			catalogNavFromProduct(url) === "textile" ||
 			pathnameBase(url) === "/catalog" ||
@@ -41,7 +45,7 @@ const defaultNav: NavLink[] = [
 	},
 	{
 		label: "Декор",
-		href: "/catalog/decor",
+		href: "/catalog",
 		match: (url) => catalogNavFromProduct(url) === "decor" || pathnameBase(url) === "/catalog/decor",
 	},
 	{ label: "История", href: "/about", match: (url) => pathnameBase(url).startsWith("/about") },
@@ -242,7 +246,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 		   в канон-композиции полоса = отдельная секция PromoBanner, иначе дубль. */
 		!id && (
 			<a
-				href="/catalog/textile"
+				href="/catalog"
 				data-vanilla-announcement
 				class="m-0 flex h-11 w-full shrink-0 items-center justify-center border-0 bg-[var(--vanilla-announcement-bg)] px-4 text-center font-vanilla-arsenal text-[14px] font-normal uppercase leading-none tracking-normal text-white md:h-12 md:text-base"
 			>

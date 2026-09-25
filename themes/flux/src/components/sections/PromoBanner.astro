@@ -41,12 +41,16 @@ const linkHref =
 const size = p.size;
 const heightCls =
 	size === "thin" ? "py-1" : size === "small" ? "min-h-8" : size === "medium" ? "min-h-10" : "h-12";
-const textSizeCls =
-	size === "thin" || size === "small"
-		? "text-[12px]"
-		: size === "medium"
-			? "text-[14px]"
-			: "text-[12px] md:text-[16px]";
+// Владелец 25.09: настройки значат то, что написано — «Большой» не мельче
+// «Среднего» ни на одной ширине. На телефоне «Большой» был 12px при «Среднем»
+// 14px; поднят до 14px, «Средний» не тронут.
+const TEXT_SIZE_CLS: Record<string, string> = {
+	thin: "text-[12px]",
+	small: "text-[12px]",
+	medium: "text-[14px]",
+	large: "text-[14px] md:text-[16px]",
+};
+const textSizeCls = TEXT_SIZE_CLS[size] ?? TEXT_SIZE_CLS.large;
 const ntTextSize = size === "thin" || size === "small" ? "sm" : size === "medium" ? "md" : "lg";
 // У верстальщиков дефолт Flux — фирменный navy #1e2952. Если мерчант явно
 // выбирает colorScheme в конструкторе, схема снова становится владельцем фона.

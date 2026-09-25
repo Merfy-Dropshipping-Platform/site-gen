@@ -104,7 +104,9 @@ function renderColumns(theme: string, columns: unknown[]): string {
 }
 
 /** Ссылки внутри каждой колонки (<li>): [{text, href}] по порядку колонок. */
-function columnLinks(html: string): Array<Array<{ text: string; href: string }>> {
+function columnLinks(
+  html: string,
+): Array<Array<{ text: string; href: string }>> {
   return html
     .split(/<li\b/)
     .slice(1)
@@ -140,6 +142,8 @@ describe.each(THEMES)("Мультиколонны %s: подпись кнопк�
   it("пустое состояние секции по-прежнему показывает «Кнопка» в каждой колонке", () => {
     const placeholder = columnLinks(renderColumns(theme, []));
     expect(placeholder.length).toBeGreaterThan(0);
-    placeholder.forEach((col) => expect(col.map((l) => l.text)).toEqual(["Кнопка"]));
+    placeholder.forEach((col) =>
+      expect(col.map((l) => l.text)).toEqual(["Кнопка"]),
+    );
   });
 });

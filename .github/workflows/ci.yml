@@ -1009,6 +1009,12 @@ jobs:
       # вида ссылки через живую цепочку рантайма.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/multicolumns-column-link-pick.spec.ts
+      # «Мультиколонны»: подпись кнопки колонки — только «Название ссылки»,
+      # пустое поле скрывает кнопку, имя выбранной страницы подписью не
+      # становится (владелец 26.09). Общее правило пяти портов —
+      # packages/theme-base/runtime/multicolumn-link.ts.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/multicolumns-column-link-label.spec.ts
       # Шапка bloom: размер иконок и отступы (жалоба владельца 20.09 «иконки
       # большие, отступов сверху и снизу нет»). Сверено с эталоном
       # верстальщиков canon-sections/header.html: десктопные Поиск/Корзина/

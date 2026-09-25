@@ -738,6 +738,21 @@ function собратьРассыпаннуюСтроку(obj: Record<string, un
   return текст;
 }
 
+/**
+ * Поля, из которых состоит конверт кнопки. Объект с ЛЮБЫМ другим ключом —
+ * не кнопка, а структура (колонка, ряд, слайд), и схлопывать его нельзя.
+ *
+ * Без этого списка у правила `{text, link:{href}}` колонка «Мультиколонн»
+ * стартового контента (`{id, heading, text, imageUrl, linkText, link}`) после
+ * выбора ссылки в панели (пикер пишет `link: {href, text}`) превращалась в
+ * `{text, href}`: терялись заголовок, «Название ссылки» и картинка, кнопка
+ * колонки пропадала в превью и на витрине (владелец, 26.09).
+ */
+const BUTTON_ENVELOPE_FIELDS = ["text", "link", "enabled", "href"];
+
+const hasOnlyFields = (keys: string[], allowed: readonly string[]): boolean =>
+  keys.every((k) => allowed.includes(k));
+
 function coerceLegacyValue(v: unknown): unknown {
   if (v === null || typeof v !== 'object') return v;
   if (Array.isArray(v)) return v.map(coerceLegacyValue);
@@ -768,7 +783,7 @@ function coerceLegacyValue(v: unknown): unknown {
   if (
     typeof obj.text === 'string' &&
     typeof obj.link === 'string' &&
-    keys.every((k) => ['text', 'link', 'enabled', 'href'].includes(k))
+    hasOnlyFields(keys, BUTTON_ENVELOPE_FIELDS)
   ) {
     return { text: obj.text, href: obj.link };
   }
@@ -776,7 +791,8 @@ function coerceLegacyValue(v: unknown): unknown {
   if (
     typeof obj.text === 'string' &&
     isPlainObject(obj.link) &&
-    typeof (obj.link as Record<string, unknown>).href === 'string'
+    typeof (obj.link as Record<string, unknown>).href === 'string' &&
+    hasOnlyFields(keys, BUTTON_ENVELOPE_FIELDS)
   ) {
     return {
       text: obj.text,

@@ -1800,6 +1800,10 @@ jobs:
         run: pnpm exec jest --runInBand src/themes/__tests__/maintext-heading-size.spec.ts
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/maintext-size-after-edit.spec.ts
+      # «Основной текст»: кнопка только с текстом из панели (тестировщик: «при
+      # пустом инпуте в кнопке он отображает кнопку») — пять тем, живая цепочка.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/main-text-button-empty.spec.ts
       # «Следующее фото при наведении» — путь тестера: включил переключатель,
       # больше ничего не трогал, водит мышью. bloom и vanilla листают ВСЕ фото
       # по положению курсора (как на Авито), rose/satin/flux показывают второе;

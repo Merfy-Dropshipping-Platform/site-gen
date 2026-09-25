@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Фаза B (satin): канон-секция MainText — адаптация TextBlock.astro (см.
 // themes/satin/MANNER.md §10: TextBlock = заголовок + крупный body-абзац,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — TextBlock.astro не
@@ -97,14 +98,11 @@ const alignCls = POSITION_CLS[position].align;
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// В пустом состоянии (плейсхолдер Figma 1:19335) показываем «Кнопку» по контракту.
-// С данными рендер ТОЛЬКО при непустом тексте (заданный пустой скрывает).
-// Ссылка-фоллбек /catalog (паттерн rose T15).
-const btnTextRaw =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextRaw ?? (isEmptyState ? "Кнопка" : undefined);
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

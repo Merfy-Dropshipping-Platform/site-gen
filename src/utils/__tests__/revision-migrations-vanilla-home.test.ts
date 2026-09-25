@@ -119,10 +119,13 @@ describe("packages/theme-vanilla/pages/home.json — пакетный сид г�
     expect(mainText.colorScheme).toBe("scheme-2");
     expect(mainText.textStyle).toBe("italic");
     expect(mainText.padding).toEqual({ top: 120, bottom: 120 });
-    expect(mainText.cta).toMatchObject({
+    // Кнопка — в поле панели «Кнопка», не в скрытом legacy `cta`: иначе витрина
+    // показывала кнопку при пустом инпуте (main-text-button-empty.spec.ts).
+    expect(mainText.button).toEqual({
       text: "К покупкам",
-      href: "/catalog",
+      link: { href: "/catalog" },
     });
+    expect(mainText).not.toHaveProperty("cta");
 
     // Video
     const video = blocks[5].props;

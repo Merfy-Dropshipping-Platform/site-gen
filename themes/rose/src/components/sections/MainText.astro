@@ -14,6 +14,7 @@
 // heading/text/button — рендерятся ИХ значения (ветки p.heading/p.text/p.button ниже).
 import { inlineFormat } from "../../lib/rich-text";
 import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -60,14 +61,11 @@ const alignCls =
 // Канон textStyle (hidden, 084): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta
-// {text, href|link, variant}. Мерчант задал текст — рендерим его; пусто (canon-
-// defaults кнопку не пишут) — дословный Figma-плейсхолдер «Кнопка» (1:19335).
-// Ссылка-фоллбек /catalog (паттерн T11).
-const btnText =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined) ??
-	"Кнопка";
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /catalog.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

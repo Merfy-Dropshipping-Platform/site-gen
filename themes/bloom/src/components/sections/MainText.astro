@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Фаза B (bloom): канон-секция MainText — адаптация Philosophy.astro (см.
 // themes/bloom/MANNER.md §10: Philosophy = текст-манифест + CTA без картинки,
 // аналог MainText). Тело верстальщика перенесено КОПИЕЙ — Philosophy.astro не
@@ -108,16 +109,11 @@ const textAlignCls =
 // Канон textStyle (hidden): italic → курсив заголовка и текста.
 const italicCls = p.textStyle === "italic" ? " italic" : "";
 
-// Кнопка: canon-сабпанель button {text, link} приоритетнее legacy hidden cta.
-// Пустое состояние (Figma 1:19335, секция вообще без контента) → плейсхолдер-
-// «Кнопка» контракта (не мок-CTA «Подробнее»→/about верстальщика). Когда мерчант
-// уже заполнил секцию, но кнопку не задал — кнопка СКРЫТА (плейсхолдер только в
-// полностью пустом состоянии). Заданный текст рендерится как есть; пустой —
-// СКРЫВАЕТ кнопку.
-const btnTextProp =
-	(typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : undefined) ??
-	(typeof p.cta?.text === "string" && p.cta.text.trim() ? p.cta.text : undefined);
-const btnText = btnTextProp ?? (isEmptyState ? "Кнопка" : undefined);
+// Кнопка — одно правило для всех тем (theme-base runtime/main-text-button.ts):
+// текст из поля панели «Кнопка → Текст», пусто — кнопки нет, заглушки «Кнопка»
+// нет; старое скрытое cta — только пока поля «Кнопка» в секции нет вовсе.
+// Ссылка-фоллбек /.
+const btnText = mainTextButtonText(p);
 const btnHref =
 	p.button?.link?.href ??
 	(typeof p.button?.link === "string" && p.button.link ? p.button.link : undefined) ??

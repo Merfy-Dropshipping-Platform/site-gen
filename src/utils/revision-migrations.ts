@@ -1919,6 +1919,48 @@ function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<str
 }
 
 /**
+ * «Основной текст»: кнопка из старого скрытого `cta` → в поле панели «Кнопка».
+ *
+ * Баг тестировщика: «при пустом инпуте в кнопке он отображает кнопку». Стартовое
+ * наполнение тем клало кнопку в скрытое `cta` («К покупкам» → /catalog у vanilla,
+ * «СМОТРЕТЬ КАТАЛОГ» у satin и др.), а поле панели привязано к `button.{text,link}`.
+ * Витрина кнопку показывала, инпут был пуст, и убрать кнопку мерчант не мог.
+ *
+ * Бэкфилл КОПИРУЕТ `cta.{text, href|link}` в `button.{text, link:{href}}`, только
+ * когда поля «Кнопка» в секции нет вовсе (`button` отсутствует или null). Если
+ * мерчант уже трогал поле — даже очистил его — решает его значение: очищенный
+ * инпут сильнее старого `cta` (runtime/main-text-button.ts). Legacy `cta`
+ * сохраняем 1-в-1, как у Hero. Рендер-нейтрально: порт берёт `cta`, пока поля
+ * нет, и тот же текст после переноса. Идемпотентно.
+ */
+function backfillMainTextLegacyButton(pagesData: Record<string, unknown>): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  const filled = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    const pd = page as PageData | undefined;
+    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    if (!content) continue;
+    let pageChanged = false;
+    const newContent = content.map((block) => {
+      if (block?.type !== 'MainText') return block;
+      const props = (block.props ?? {}) as Record<string, unknown>;
+      const cta = props.cta as { text?: unknown; href?: unknown; link?: unknown } | null | undefined;
+      const text = cta?.text;
+      if (props.button != null || !filled(text)) return block;
+      const href = [cta?.href, cta?.link].find((v): v is string => typeof v === 'string') ?? '';
+      pageChanged = true;
+      return { ...block, props: { ...props, button: { text, link: { href } } } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(pd as object), content: newContent };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Video «Размер» split (rose/flux/vanilla/bloom/satin parity): исторически у
  * блока Video было единственное top-level поле `size`, ошибочно подписанное
  * «Размер заголовка» и управлявшее КЕГЛЕМ <h2>. Канон (как у Hero) — два
@@ -2402,6 +2444,9 @@ export function migrateRevisionData(
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillHeroLegacyProps(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = backfillMainTextLegacyButton(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillVideoSizeSplit(out.pagesData as Record<string, unknown>);

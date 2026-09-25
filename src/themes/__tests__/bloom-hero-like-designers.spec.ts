@@ -1,6 +1,16 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 import { prepareBlockProps } from "../page-blocks";
 
+// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
+// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
+// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
+// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
+// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
+process.env.PARITY_DESIGN = "off";
+afterEach(() => {
+  process.env.PARITY_DESIGN = "off";
+});
+
 /**
  * Первый экран bloom — как в актуальной вёрстке верстальщиков.
  *

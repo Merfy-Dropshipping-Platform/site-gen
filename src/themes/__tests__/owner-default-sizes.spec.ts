@@ -64,7 +64,7 @@ const TARGETS: Target[] = [
 ];
 
 const MODES = [
-  { name: "без признака", extra: {} },
+  { name: "без признака", extra: { __designParity: false } },
   { name: "с признаком", extra: { __designParity: true } },
 ] as const;
 

@@ -1,6 +1,16 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 import { ROSE_FOOTER_DESIGNERS } from "../../../themes/rose/src/lib/design-parity";
 
+// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
+// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
+// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
+// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
+// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
+process.env.PARITY_DESIGN = "off";
+afterEach(() => {
+  process.env.PARITY_DESIGN = "off";
+});
+
 /**
  * rose — геометрия «как у верстальщиков» под PARITY_DESIGN.
  *

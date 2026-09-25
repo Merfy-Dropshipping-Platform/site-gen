@@ -14,6 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withDesignParity } from './prod-design-parity.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
@@ -37,7 +38,8 @@ async function main() {
   const container = await experimental_AstroContainer.create();
   const out = [];
   for (const props of propsList) {
-    out.push(await container.renderToString(Component, { props }));
+    // Как на проде: признак режима «как у верстальщиков» (prod-design-parity.mjs).
+    out.push(await container.renderToString(Component, { props: withDesignParity(props) }));
   }
   process.stdout.write(JSON.stringify(out));
 }

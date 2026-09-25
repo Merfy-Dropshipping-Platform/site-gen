@@ -376,19 +376,23 @@ describe("Галерея: низ большой плитки сходится с
         expect([null, "stretch", "normal"]).toContain(align);
       });
 
-      it(`${theme}: ${имя} — большая плитка берёт высоту строки`, () => {
+      // Способ выравнивания — только для прежней ветки (без режима «как у
+      // верстальщиков»): там большая плитка тянется по высоте строки. Путь прода
+      // (большая плитка — квадрат верстальщиков, тянутся боковые) проверяется
+      // РЕЗУЛЬТАТОМ в gallery-bottoms-align.spec.ts — замер низов в браузере.
+      it(`${theme}: ${имя} — большая плитка берёт высоту строки (прежняя ветка)`, () => {
         const shape = galleryShape(
           theme,
-          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
+          render(theme, "Gallery", { colorScheme: "scheme-3", items, __designParity: false }),
         );
         expect(shape).not.toBeNull();
         expect(prop(theme, shape!.hero, "height")).toBe("100%");
       });
 
-      it(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg`, () => {
+      it(`${theme}: ${имя} — аспект не держит высоту большой плитки на lg (прежняя ветка)`, () => {
         const shape = galleryShape(
           theme,
-          render(theme, "Gallery", { colorScheme: "scheme-3", items }),
+          render(theme, "Gallery", { colorScheme: "scheme-3", items, __designParity: false }),
         );
         expect(shape).not.toBeNull();
         const ar = prop(theme, shape!.hero, "aspect-ratio");

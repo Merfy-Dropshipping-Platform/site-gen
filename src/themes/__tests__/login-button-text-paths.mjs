@@ -15,6 +15,7 @@
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withDesignParity } from './prod-design-parity.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
@@ -30,7 +31,8 @@ async function renderWith(svc, theme, button) {
     ...adaptLegacyProps({ id: 'LoginSection-1', button }, null, 'LoginSection'),
     siteId: 'guard-site',
   };
-  const html = await svc.renderBlock({ blockName: 'LoginSection', props, themeId: theme });
+  // Как на проде: признак режима «как у верстальщиков» (prod-design-parity.mjs).
+  const html = await svc.renderBlock({ blockName: 'LoginSection', props: withDesignParity(props), themeId: theme });
   return String(html ?? '');
 }
 

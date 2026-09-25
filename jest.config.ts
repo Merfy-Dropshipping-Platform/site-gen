@@ -12,6 +12,8 @@ const config: Config = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
+  // Тесты рисуют как прод: режим «как у верстальщиков» включён по умолчанию.
+  setupFiles: ['<rootDir>/jest.setup-prod-parity.ts'],
   verbose: false,
 };
 

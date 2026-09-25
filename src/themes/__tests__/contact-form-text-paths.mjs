@@ -26,6 +26,7 @@
 import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withDesignParity } from './prod-design-parity.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SITES_ROOT = resolve(__dirname, '..', '..', '..');
@@ -78,7 +79,8 @@ async function renderHot(svc, theme, description, textSize) {
   };
   // Дословно ветка контроллера: adaptLegacyProps(props, null, blockType) + siteId.
   const props = { ...adaptLegacyProps(raw, null, BLOCK), siteId: 'b13-site' };
-  return svc.renderBlock({ blockName: BLOCK, props, themeId: theme });
+  // Как на проде: POST /preview/block добавляет признак режима (prod-design-parity.mjs).
+  return svc.renderBlock({ blockName: BLOCK, props: withDesignParity(props), themeId: theme });
 }
 
 async function renderComposed(svc, theme, description, { live, textSize }) {
@@ -96,7 +98,7 @@ async function renderComposed(svc, theme, description, { live, textSize }) {
     blocks.map((b) =>
       svc.renderBlock({
         blockName: b.type,
-        props: { ...b.props, siteId: 'b13-site' },
+        props: withDesignParity({ ...b.props, siteId: 'b13-site' }),
         themeId: theme,
         isPreview: !live,
       }),

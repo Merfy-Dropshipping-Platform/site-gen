@@ -225,7 +225,10 @@ function guards(hasher, mode, plan) {
 async function main() {
   const started = Date.now();
   const flags = new Set(process.argv.slice(2));
-  const mode = flags.has('--audit') ? 'audit' : flags.has('--full') ? 'full' : 'memory';
+  // В CI памяти нет никогда: перед выкаткой гоняется всё, даже если на раннере
+  // остался кэш (постоянный раннер) — CI и есть страховка от ошибки памяти.
+  const full = flags.has('--full') || process.env.CI === 'true';
+  const mode = flags.has('--audit') ? 'audit' : full ? 'full' : 'memory';
   const lock = await acquireMachineLockOrWarn({ label: `pnpm checks (${ROOT.split('/').slice(-1)[0]})`, log: say });
   // Дочерние jest видят, что очередь уже наша, и не встают в неё второй раз.
   if (!lock.disabled) process.env.MERFY_CHECKS_LOCK_HELD = '1';

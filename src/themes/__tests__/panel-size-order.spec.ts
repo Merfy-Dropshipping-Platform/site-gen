@@ -45,7 +45,7 @@
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
-import { chromium, type Browser } from "playwright";
+import { chromium, type Browser, type Page } from "playwright";
 
 import {
   renderSections,
@@ -106,17 +106,23 @@ type Deep = Record<
   string,
   { sample: Record<string, unknown>; scales: Scale[] }
 >;
-/** Вариант поля-размера в одном из режимов; `def` — значение панели по умолчанию. */
+/**
+ * Вариант поля-размера в одном из режимов; `def` — значение панели по
+ * умолчанию, `placed` — во сколько мест значение легло в пропсы.
+ */
 type Case = {
   block: string;
   scale: string;
   mode: string;
   value: string;
   def: string | null;
+  placed: number;
   props: Record<string, unknown>;
 };
 /** Кегли видимых узлов с текстом: ширина → ключ узла → px. */
 type Sizes = Record<number, Record<string, number>>;
+/** Клетка сравнения двух случаев: ширина × узел, который есть у обоих. */
+type Cell = { width: number; key: string; first: number; second: number };
 
 function readPanel(theme: Theme): Deep {
   const raw = execFileSync("node", [PANEL, theme], {
@@ -149,29 +155,37 @@ function setAt(obj: unknown, path: string[], value: string): number {
   return 1;
 }
 
+/** Все варианты поля-размера в обоих режимах. */
+function variantsOf(
+  block: string,
+  sample: Record<string, unknown>,
+  s: Scale,
+): Case[] {
+  const scale = `${block}.${s.path.filter((x) => x !== "*").join(".")}`;
+  return MODES.flatMap(({ name, extra }) =>
+    s.options.map((value) => {
+      const props = structuredClone({
+        id: `${block}-1`,
+        ...sample,
+        ...extra,
+      }) as Record<string, unknown>;
+      const placed = setAt(props, s.path, value);
+      return { block, scale, mode: name, value, def: s.def, placed, props };
+    }),
+  );
+}
+
 function casesOf(panel: Deep): { cases: Case[]; vacant: string[] } {
-  const cases: Case[] = [];
-  const vacant: string[] = [];
-  for (const [block, { sample, scales }] of Object.entries(panel)) {
-    for (const s of scales) {
-      const scale = `${block}.${s.path.filter((x) => x !== "*").join(".")}`;
-      for (const { name, extra } of MODES) {
-        for (const value of s.options) {
-          const props = structuredClone({
-            id: `${block}-1`,
-            ...sample,
-            ...extra,
-          }) as Record<string, unknown>;
-          if (setAt(props, s.path, value) === 0) {
-            vacant.push(`${scale} [${name}]`);
-            continue;
-          }
-          cases.push({ block, scale, mode: name, value, def: s.def, props });
-        }
-      }
-    }
-  }
-  return { cases, vacant: [...new Set(vacant)] };
+  const all = Object.entries(panel).flatMap(([block, { sample, scales }]) =>
+    scales.flatMap((s) => variantsOf(block, sample, s)),
+  );
+  const vacant = all
+    .filter((c) => c.placed === 0)
+    .map((c) => `${c.scale} [${c.mode}]`);
+  return {
+    cases: all.filter((c) => c.placed > 0),
+    vacant: [...new Set(vacant)],
+  };
 }
 
 let shared: Browser | null = null;
@@ -201,9 +215,80 @@ const stripScripts = (html: string): string =>
   html.replace(/<script\b[\s\S]*?<\/script>/gi, "");
 
 /**
- * Кегли всех вариантов: страница на блок (варианты одного блока рядом),
- * окно проходит по всем ширинам.
+ * Исполняется В БРАУЗЕРЕ: кегль каждого видимого узла с собственным текстом,
+ * по случаям страницы. Ключ узла — тег, начало текста и номер повтора.
  */
+function probeFontSizes(): Record<string, Record<string, number>> {
+  const ownText = (el: Element): string =>
+    Array.from(el.childNodes)
+      .filter((n) => n.nodeType === Node.TEXT_NODE)
+      .map((n) => n.textContent ?? "")
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+  const shown = (el: Element): boolean =>
+    ownText(el) !== "" &&
+    el.getClientRects().length > 0 &&
+    getComputedStyle(el).visibility !== "hidden";
+  const keyed = (els: Element[]): Record<string, number> => {
+    const seen: Record<string, number> = {};
+    return Object.fromEntries(
+      els.map((el) => {
+        const key = `${el.tagName.toLowerCase()}|${ownText(el).slice(0, 32)}`;
+        seen[key] = (seen[key] ?? 0) + 1;
+        return [
+          `${key}|${seen[key]}`,
+          parseFloat(getComputedStyle(el).fontSize),
+        ];
+      }),
+    );
+  };
+  return Object.fromEntries(
+    Array.from(document.querySelectorAll<HTMLElement>("[data-case]")).map(
+      (box) => [
+        box.dataset.case ?? "",
+        keyed(Array.from(box.querySelectorAll("*")).filter(shown)),
+      ],
+    ),
+  );
+}
+
+/** Варианты одного блока — на одной странице; окно проходит по всем ширинам. */
+async function measureBlock(
+  page: Page,
+  head: string,
+  htmls: { index: number; html: string }[],
+  sizes: Sizes[],
+): Promise<void> {
+  const body = htmls
+    .map(
+      ({ index, html }) =>
+        `<div data-case="${index}">${stripScripts(html)}</div>`,
+    )
+    .join("\n");
+  await page.setContent(
+    `<!doctype html><html lang="ru"><head>${head}</head><body>${body}</body></html>`,
+    { waitUntil: "domcontentloaded" },
+  );
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+    const got = await page.evaluate(probeFontSizes);
+    Object.entries(got).forEach(([i, map]) => {
+      sizes[Number(i)][width] = map;
+    });
+  }
+}
+
+/** Группы индексов случаев по ключу. */
+function groupBy(cases: Case[], keyOf: (c: Case) => string): number[][] {
+  const groups = new Map<string, number[]>();
+  cases.forEach((c, i) =>
+    groups.set(keyOf(c), [...(groups.get(keyOf(c)) ?? []), i]),
+  );
+  return [...groups.values()];
+}
+
+/** Кегли всех вариантов темы и ошибки рендера. */
 async function measure(
   theme: Theme,
   cases: Case[],
@@ -213,12 +298,12 @@ async function measure(
     cases.map((c) => ({ block: c.block, props: c.props })),
   );
   const errors = rows
-    .map((r, i) =>
-      r.html
-        ? null
-        : `${cases[i].scale}=${cases[i].value} [${cases[i].mode}]: ${r.error ?? (r.missing ? "нет модуля" : "нет html")}`,
-    )
-    .filter((e): e is string => e !== null);
+    .map((r, i) => ({ r, c: cases[i] }))
+    .filter(({ r }) => !r.html)
+    .map(
+      ({ r, c }) =>
+        `${c.scale}=${c.value} [${c.mode}]: ${r.error ?? (r.missing ? "нет модуля" : "нет html")}`,
+    );
   const head = `<meta charset="utf-8"><style>${themeCss(theme)}</style><style id="__merfy_tokens_css">${tokensCssFor(theme)}</style>`;
   const ctx = await (
     await browser()
@@ -231,60 +316,33 @@ async function measure(
       : route.abort(),
   );
   const sizes: Sizes[] = cases.map(() => ({}));
-  const byBlock = new Map<string, number[]>();
-  cases.forEach((c, i) =>
-    byBlock.set(c.block, [...(byBlock.get(c.block) ?? []), i]),
+  const blocks = groupBy(cases, (c) => c.block).map((ids) =>
+    ids.map((index) => ({ index, html: rows[index]?.html ?? "" })),
   );
   try {
-    for (const idx of byBlock.values()) {
-      const body = idx
-        .map(
-          (i) =>
-            `<div data-case="${i}">${stripScripts(rows[i]?.html ?? "")}</div>`,
-        )
-        .join("\n");
-      await page.setContent(
-        `<!doctype html><html lang="ru"><head>${head}</head><body>${body}</body></html>`,
-        {
-          waitUntil: "domcontentloaded",
-        },
-      );
-      for (const width of WIDTHS) {
-        await page.setViewportSize({ width, height: 900 });
-        const got = await page.evaluate(() => {
-          const out: Record<string, Record<string, number>> = {};
-          for (const box of Array.from(
-            document.querySelectorAll<HTMLElement>("[data-case]"),
-          )) {
-            const seen: Record<string, number> = {};
-            const map: Record<string, number> = {};
-            for (const el of Array.from(box.querySelectorAll("*"))) {
-              const own = Array.from(el.childNodes)
-                .filter((n) => n.nodeType === Node.TEXT_NODE)
-                .map((n) => n.textContent ?? "")
-                .join("")
-                .replace(/\s+/g, " ")
-                .trim();
-              if (!own || el.getClientRects().length === 0) continue;
-              const style = getComputedStyle(el);
-              if (style.visibility === "hidden") continue;
-              const key = `${el.tagName.toLowerCase()}|${own.slice(0, 32)}`;
-              seen[key] = (seen[key] ?? 0) + 1;
-              map[`${key}|${seen[key]}`] = parseFloat(style.fontSize);
-            }
-            out[box.dataset.case ?? ""] = map;
-          }
-          return out;
-        });
-        for (const [i, map] of Object.entries(got))
-          sizes[Number(i)][width] = map;
-      }
-    }
+    for (const htmls of blocks) await measureBlock(page, head, htmls, sizes);
   } finally {
     await ctx.close();
   }
   return { sizes, errors };
 }
+
+/** Клетки сравнения двух случаев: каждая ширина × каждый общий узел. */
+const cellsOf = (sizes: Sizes[], a: number, b: number): Cell[] =>
+  WIDTHS.flatMap((width) =>
+    Object.entries(sizes[a][width] ?? {})
+      .filter(([key]) => sizes[b][width]?.[key] !== undefined)
+      .map(([key, first]) => ({
+        width,
+        key,
+        first,
+        second: sizes[b][width][key],
+      })),
+  );
+
+/** Пары «меньший вариант, больший вариант»: индексы идут в порядке шкалы. */
+const pairsOf = (ids: number[]): [number, number][] =>
+  ids.flatMap((a, n) => ids.slice(n + 1).map((b): [number, number] => [a, b]));
 
 type Verdict = {
   violations: string[];
@@ -296,115 +354,107 @@ type Verdict = {
 
 /** Порядок вариантов каждого поля в каждом режиме: меньший вариант ≤ большего. */
 function judge(cases: Case[], sizes: Sizes[]): Verdict {
-  const groups = new Map<string, number[]>();
-  cases.forEach((c, i) => {
-    const k = `${c.scale}\u0000${c.mode}`;
-    groups.set(k, [...(groups.get(k) ?? []), i]);
-  });
-  const violations = new Set<string>();
-  const details: string[] = [];
-  const unmeasured: string[] = [];
-  let cells = 0;
-  for (const idx of groups.values()) {
-    const { scale, mode } = cases[idx[0]];
-    let compared = 0;
-    for (const [n, a] of idx.entries()) {
-      for (const b of idx.slice(n + 1)) {
-        for (const width of WIDTHS) {
-          const small = sizes[a][width] ?? {};
-          const big = sizes[b][width] ?? {};
-          for (const [key, px] of Object.entries(small)) {
-            if (big[key] === undefined) continue;
-            compared += 1;
-            if (px <= big[key] + 0.01) continue;
-            const tag = `${scale}: ${cases[a].value}>${cases[b].value} [${mode}]`;
-            if (!violations.has(tag))
-              details.push(`${tag} — ${width}px ${key}: ${px} > ${big[key]}`);
-            violations.add(tag);
-          }
-        }
-      }
-    }
-    cells += compared;
-    if (compared === 0) unmeasured.push(`${scale} [${mode}]`);
-  }
+  const groups = groupBy(cases, (c) => `${c.scale}\u0000${c.mode}`).map(
+    (ids) => ({
+      label: `${cases[ids[0]].scale} [${cases[ids[0]].mode}]`,
+      pairs: pairsOf(ids).map(([a, b]) => ({
+        tag: `${cases[a].scale}: ${cases[a].value}>${cases[b].value} [${cases[a].mode}]`,
+        cells: cellsOf(sizes, a, b),
+      })),
+    }),
+  );
+  const pairs = groups.flatMap((g) => g.pairs);
+  const broken = pairs
+    .map(({ tag, cells }) => ({
+      tag,
+      cell: cells.find((c) => c.first > c.second + 0.01),
+    }))
+    .filter((p): p is { tag: string; cell: Cell } => p.cell !== undefined);
   return {
-    violations: [...violations].sort(),
-    details,
-    unmeasured,
-    cells,
-    scales: groups.size / MODES.length,
+    violations: broken.map((p) => p.tag).sort(),
+    details: broken.map(
+      ({ tag, cell }) =>
+        `${tag} — ${cell.width}px ${cell.key}: ${cell.first} > ${cell.second}`,
+    ),
+    unmeasured: groups
+      .filter((g) => g.pairs.every((p) => p.cells.length === 0))
+      .map((g) => g.label),
+    cells: pairs.reduce((n, p) => n + p.cells.length, 0),
+    scales: groups.length / MODES.length,
   };
 }
 
-/** Индексы случаев по (поле, режим, вариант). */
-function indexOf(cases: Case[]): Map<string, number> {
-  return new Map(
-    cases.map((c, i) => [`${c.scale}\u0000${c.mode}\u0000${c.value}`, i]),
+/** Индекс случая по (поле, режим, вариант). */
+const caseKey = (scale: string, mode: string, value: string): string =>
+  `${scale}\u0000${mode}\u0000${value}`;
+
+/**
+ * Узлы, которые поле двигает: на какой-то ширине кегль узла различается
+ * между вариантами (узел есть у всех). Остальные узлы (цена карточки,
+ * соседний заголовок) полю не принадлежат, и признак законно меняет их сам.
+ */
+const movedKeys = (sizes: Sizes[], ids: number[]): string[] =>
+  WIDTHS.flatMap((width) =>
+    Object.keys(sizes[ids[0]]?.[width] ?? {}).filter((key) => {
+      const px: (number | undefined)[] = ids.map((i) => sizes[i][width]?.[key]);
+      return !px.includes(undefined) && new Set(px).size > 1;
+    }),
   );
-}
 
 /**
- * Узлы, которые поле двигает: хоть в одном режиме хоть на одной ширине кегль
- * узла различается между вариантами. Остальные узлы (цена карточки, соседний
- * заголовок) полю не принадлежат, и признак законно меняет их сам по себе.
+ * Нарушения «явный вариант рисует себя» у одного поля: вне значения по
+ * умолчанию признак не меняет кегль узлов, которые двигает поле.
  */
-function movedKeys(ids: number[], sizes: Sizes[]): Set<string> {
-  const moved = new Set<string>();
-  for (const width of WIDTHS) {
-    const maps = ids.map((i) => sizes[i][width] ?? {});
-    for (const key of Object.keys(maps[0] ?? {})) {
-      const px = new Set(maps.map((m) => m[key]));
-      if (!px.has(undefined as unknown as number) && px.size > 1)
-        moved.add(key);
-    }
-  }
-  return moved;
-}
-
-/**
- * Явный вариант рисует себя: вне значения по умолчанию признак не меняет
- * кегль узлов, которые двигает поле.
- */
-function judgeOwnVariant(cases: Case[], sizes: Sizes[]): string[] {
-  const at = indexOf(cases);
-  const out = new Set<string>();
-  const scales = new Map(cases.map((c) => [c.scale, c]));
-  for (const [scale, { def }] of scales) {
-    const values = [
-      ...new Set(cases.filter((c) => c.scale === scale).map((c) => c.value)),
-    ];
-    const byMode = MODES.map(({ name }) =>
-      values
-        .map((v) => at.get(`${scale}\u0000${name}\u0000${v}`))
-        .filter((i): i is number => i !== undefined),
+function ownVariantBreaks(
+  scale: string,
+  def: string | null,
+  cases: Case[],
+  sizes: Sizes[],
+  at: Map<string, number>,
+): string[] {
+  const values = [
+    ...new Set(cases.filter((c) => c.scale === scale).map((c) => c.value)),
+  ];
+  const idsOf = (mode: string): number[] =>
+    values
+      .map((v) => at.get(caseKey(scale, mode, v)))
+      .filter((i): i is number => i !== undefined);
+  const moved = new Set(
+    MODES.flatMap(({ name }) => movedKeys(sizes, idsOf(name))),
+  );
+  return values
+    .filter((value) => value !== def)
+    .map((value) => ({
+      value,
+      off: at.get(caseKey(scale, MODES[0].name, value)),
+      on: at.get(caseKey(scale, MODES[1].name, value)),
+    }))
+    .filter(
+      (v): v is { value: string; off: number; on: number } =>
+        v.off !== undefined && v.on !== undefined,
+    )
+    .map(({ value, off, on }) => ({
+      value,
+      cell: cellsOf(sizes, off, on).find(
+        (c) => moved.has(c.key) && Math.abs(c.first - c.second) > 0.01,
+      ),
+    }))
+    .filter((v): v is { value: string; cell: Cell } => v.cell !== undefined)
+    .map(
+      ({ value, cell }) =>
+        `${scale}: «${value}» — ${cell.width}px ${cell.key}: без признака ${cell.first}, с признаком ${cell.second}`,
     );
-    const moved = new Set([
-      ...movedKeys(byMode[0], sizes),
-      ...movedKeys(byMode[1], sizes),
-    ]);
-    for (const value of values.filter((v) => v !== def)) {
-      const off = at.get(`${scale}\u0000${MODES[0].name}\u0000${value}`);
-      const on = at.get(`${scale}\u0000${MODES[1].name}\u0000${value}`);
-      if (off === undefined || on === undefined) continue;
-      for (const width of WIDTHS) {
-        const a = sizes[off][width] ?? {};
-        const b = sizes[on][width] ?? {};
-        const key = [...moved].find(
-          (k) =>
-            a[k] !== undefined &&
-            b[k] !== undefined &&
-            Math.abs(a[k] - b[k]) > 0.01,
-        );
-        if (!key) continue;
-        out.add(
-          `${scale}: «${value}» — ${width}px ${key}: без признака ${a[key]}, с признаком ${b[key]}`,
-        );
-        break;
-      }
-    }
-  }
-  return [...out].sort();
+}
+
+/** Явный вариант рисует себя — по всем полям темы. */
+function judgeOwnVariant(cases: Case[], sizes: Sizes[]): string[] {
+  const at = new Map(
+    cases.map((c, i) => [caseKey(c.scale, c.mode, c.value), i]),
+  );
+  const scales = [...new Map(cases.map((c) => [c.scale, c.def])).entries()];
+  return scales
+    .flatMap(([scale, def]) => ownVariantBreaks(scale, def, cases, sizes, at))
+    .sort();
 }
 
 jest.setTimeout(600_000);

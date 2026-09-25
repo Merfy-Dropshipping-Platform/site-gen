@@ -181,16 +181,19 @@ type Pair = {
 
 /** Все ключи defaultProps каждого блока темы (updateProp впишет их все). */
 function defaultPairs(panel: Deep, blocks: string[]): Pair[] {
-  const out: Pair[] = [];
-  for (const [block, { defaults, types }] of Object.entries(panel)) {
-    if (!blocks.includes(block)) continue; // блока нет у темы
-    const full: Record<string, unknown> = { id: `${block}-1`, ...defaults };
-    for (const [key, value] of Object.entries(defaults)) {
-      if (!hasValue(value)) continue;
-      out.push({ block, key, style: STYLE_TYPES.has(types[key] ?? ""), full });
-    }
-  }
-  return out;
+  return Object.entries(panel)
+    .filter(([block]) => blocks.includes(block)) // блока нет у темы — мимо
+    .flatMap(([block, { defaults, types }]) => {
+      const full: Record<string, unknown> = { id: `${block}-1`, ...defaults };
+      return Object.entries(defaults)
+        .filter(([, value]) => hasValue(value))
+        .map(([key]) => ({
+          block,
+          key,
+          style: STYLE_TYPES.has(types[key] ?? ""),
+          full,
+        }));
+    });
 }
 
 /** Сравнение пары «с дефолтом / без ключа»: null — совпали или сравнивать нечего. */

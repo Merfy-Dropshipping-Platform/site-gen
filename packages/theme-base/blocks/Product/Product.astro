@@ -887,9 +887,12 @@ const cartImage = view.gallery.hero?.src ?? '';
         // Сбрасываем возможный залипший express-ключ прошлого поведения, чтобы чекаут
         // показал ВСЮ корзину, а не один товар.
         try { var __tk = (window.__MERFY_THEME__ || '').trim(); if (__tk) sessionStorage.removeItem(__tk + ':buynow'); } catch (e) {}
-        // Добавляем этот товар в nt-cart тем же путём, что «Добавить в корзину»
-        // (делегат initCartUI ловит клик по [data-add-to-cart]).
-        if (addBtn) { try { addBtn.click(); } catch (e) {} }
+        // Кладём этот товар в nt-cart той же строкой, что «Добавить в корзину», но
+        // БЕЗ отклика: клик открывал окно «Товар добавлен» или шторку, и они
+        // мелькали, пока грузится /checkout (баг тестера: «на 0.5 секунды
+        // отображается корзина»). Имя события — CART_ADD_SILENT_EVENT из
+        // runtime/nt-cart.ts; скрипт инлайн, поэтому строкой.
+        if (addBtn) { try { addBtn.dispatchEvent(new CustomEvent('nt-cart:add', { bubbles: true })); } catch (e) {} }
         // Навигация: live — полный переход; превью-iframe — postMessage (nav-агент).
         var inIframe = window.parent && window.parent !== window;
         if (inIframe) {

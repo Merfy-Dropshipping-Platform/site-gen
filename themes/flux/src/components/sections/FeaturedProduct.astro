@@ -1311,11 +1311,12 @@ const productRuns = fieldRuns(sectionFieldOrder("Product", p), ["text", "title",
 				syncQty(Number(qtyValEl?.textContent || 1) + 1);
 			});
 
-			// «Купить сейчас» — как в пине: добавляем в корзину (клик по добавить),
-			// затем переходим в /cart (упрощённый upstream-путь, НЕ express-чекаут
-			// FluxProductDetail — это ДРУГАЯ секция/страница со своим контрактом).
+			// «Купить сейчас»: кладём товар в корзину той же строкой, что «В корзину»,
+			// но без отклика (событие CART_ADD_SILENT_EVENT из theme-base
+			// runtime/nt-cart.ts), и сразу уходим в оформление. Клик по «В корзину»
+			// открывал окно «Товар добавлен», и оно мелькало, пока грузится /checkout.
 			cfg.querySelector<HTMLButtonElement>("[data-cfg-buy]")?.addEventListener("click", () => {
-				if (addBtn && !addBtn.disabled) addBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+				if (addBtn && !addBtn.disabled) addBtn.dispatchEvent(new CustomEvent("nt-cart:add", { bubbles: true }));
 				try { sessionStorage.removeItem("flux:buynow"); } catch {}
 				const inIframe = window.parent && window.parent !== window;
 				if (inIframe) {

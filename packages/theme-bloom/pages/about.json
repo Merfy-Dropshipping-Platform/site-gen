@@ -70,7 +70,7 @@
         },
         "cta": {
           "text": "К продукции",
-          "href": "/skin-care",
+          "href": "/catalog",
           "variant": "primary"
         },
         "align": "center",
@@ -97,7 +97,7 @@
         },
         "button": {
           "text": "К продукции",
-          "href": "/skin-care"
+          "href": "/catalog"
         },
         "imagePosition": "right",
         "size": "large",

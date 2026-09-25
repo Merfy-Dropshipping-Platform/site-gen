@@ -100,11 +100,11 @@
             },
             {
               "label": "Возврат",
-              "href": "/returns"
+              "href": "/legal/return"
             },
             {
               "label": "Оплата",
-              "href": "/payment"
+              "href": "/legal/terms"
             }
           ]
         },

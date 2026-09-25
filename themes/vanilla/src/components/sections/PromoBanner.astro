@@ -42,20 +42,16 @@ const linkHref =
 // каждое значение честное, как у rose; вид по умолчанию держит blockDefaults
 // темы (size: 'large').
 const size = typeof p.size === "string" ? p.size : "large";
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
 // «Большой» (дефолт темы) — адаптивная полоса по актуальной Vanilla-theme
-// @c65d9e1c (Header.astro: h-11/text-14 → md:h-12/md:text-base), а не
-// одна высота на всех ширинах. Остальные размеры («Тонкий»/«Маленький»/
-// «Средний») прежние — у верстальщиков их нет. Без признака — прежние
-// классы байт-в-байт. Признак ставит sites.
-const designParity = p.__designParity === true;
+// @c65d9e1c (Header.astro: h-11/text-14 → md:h-12/md:text-base), а не одна
+// высота на всех ширинах (владелец 23-24.09: «как у верстальщиков, только
+// стили»). Остальные размеры («Тонкий»/«Маленький»/«Средний») свои — у
+// верстальщиков их нет.
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 	thin: { mh: "min-h-6", text: "text-[11px]" },
 	small: { mh: "min-h-8", text: "text-[12px]" },
 	medium: { mh: "min-h-10", text: "text-[14px]" },
-	large: designParity
-		? { mh: "min-h-11 md:min-h-12", text: "text-[14px] md:text-[16px]" }
-		: { mh: "min-h-12", text: "text-[16px]" },
+	large: { mh: "min-h-11 md:min-h-12", text: "text-[14px] md:text-[16px]" },
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 const sizeCls = sz.mh;

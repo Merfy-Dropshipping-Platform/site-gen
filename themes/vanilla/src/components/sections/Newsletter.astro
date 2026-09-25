@@ -62,12 +62,10 @@ const descSizeCls =
 // состояния: input «email@example.com», кнопка «Кнопка» (дефолты верстальщика
 // FN:36 «E-mail» / FN:44 «ОТПРАВИТЬ» заменены на Figma-текст; эталон rose).
 // Мерчант задал свои placeholder/buttonText → рендерим ИХ (fallback лишь при пустых данных).
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
-// подзаголовок рассылки у верстальщиков — .vanilla-section-subtitle
+// Подзаголовок рассылки как у верстальщиков — .vanilla-section-subtitle
 // (Vanilla-theme @c65d9e1c, footer/FooterNewsletter.astro): колонка до 1320 и
-// одна строка с lg. Без признака — прежние классы байт-в-байт.
-const designParity = p.__designParity === true;
-const DESC_GEOMETRY_CLS = designParity ? " max-w-[1320px] lg:whitespace-nowrap" : "";
+// одна строка с lg (владелец 24.09: «как у верстальщиков, только размеры»).
+const DESC_GEOMETRY_CLS = " max-w-[1320px] lg:whitespace-nowrap";
 
 const placeholder =
 	typeof p.placeholder === "string" && p.placeholder.trim() ? p.placeholder : "email@example.com";

@@ -1,18 +1,8 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
-
 /**
  * vanilla — шапка, подвал и секции как в актуальной вёрстке верстальщиков
- * (Vanilla-theme @c65d9e1c776cc5f2a80cd2525c1fcb18a38fad9e), под PARITY_DESIGN.
+ * (Vanilla-theme @c65d9e1c776cc5f2a80cd2525c1fcb18a38fad9e).
  *
  * Владелец 23-24.09: «делать как верстальщики, актуально, в точности»,
  * «не сломай цветовые схемы, ничего не сломай, нужно только стили, базовые».
@@ -31,12 +21,14 @@ afterEach(() => {
  *   PromoBanner — «Большой» (дефолт темы) — адаптивная полоса
  *     min-h-12/text-16 везде → min-h-11/text-14 моб, md:min-h-12/md:text-16.
  *
- * Капс верстальщиков НЕ переносим (владелец 13.09 велел его убрать).
- * Без признака разметка байт в байт прежняя.
+ * Капс верстальщиков НЕ переносим (владелец 13.09 велел его убрать): число
+ * `uppercase` в разметке секции закреплено (`КАПС`).
+ * С 25.09 у секций одна версия (владелец: «стили приравнивали, секции и
+ * параметры менять не нужно было») — прежняя ветка удалена вместе с
+ * признаком режима, и признак (true/false) разметку не меняет.
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
-const ВКЛ = { __designParity: true };
 
 type Секция = { block: string; props: Record<string, unknown> };
 
@@ -157,37 +149,48 @@ const ОЖИДАНИЯ: Record<string, { есть: string[]; нет: string[] }>
   },
 };
 
-describe("vanilla: шапка, подвал и секции как у верстальщиков под PARITY_DESIGN", () => {
+/** Сколько раз в разметке секции стоит `uppercase` — больше не должно стать. */
+const КАПС: Record<string, number> = {
+  "Header-1": 1,
+  "Header-2": 1,
+  "Header-3": 1,
+  "Footer-1": 0,
+  "Collections-1": 0,
+  "Popular-1": 1,
+  "Gallery-1": 0,
+  "PromoBanner-1": 0,
+};
+
+describe("vanilla: шапка, подвал и секции как у верстальщиков", () => {
+  const html = отрисовать(СЕКЦИИ);
   const вкл = отрисовать(
-    СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, ...ВКЛ } })),
+    СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, __designParity: true } })),
   );
-  const выкл = отрисовать(СЕКЦИИ);
-  const безПризнака = отрисовать(
+  const выкл = отрисовать(
     СЕКЦИИ.map((с) => ({ ...с, props: { ...с.props, __designParity: false } })),
   );
 
   СЕКЦИИ.forEach((с, i) => {
-    it(`${с.block} (${с.props.id}): с признаком — классы верстальщиков`, () => {
-      expect(вкл[i].length).toBeGreaterThan(0);
-      for (const к of ОЖИДАНИЯ[с.block].есть) expect(вкл[i]).toContain(к);
-      for (const к of ОЖИДАНИЯ[с.block].нет) expect(вкл[i]).not.toContain(к);
+    it(`${с.block} (${с.props.id}): классы верстальщиков`, () => {
+      expect(html[i].length).toBeGreaterThan(0);
+      for (const к of ОЖИДАНИЯ[с.block].есть) expect(html[i]).toContain(к);
+      for (const к of ОЖИДАНИЯ[с.block].нет) expect(html[i]).not.toContain(к);
     });
 
-    it(`${с.block} (${с.props.id}): без признака разметка прежняя`, () => {
-      expect(безПризнака[i]).toEqual(выкл[i]);
-      expect(вкл[i]).not.toEqual(выкл[i]);
+    it(`${с.block} (${с.props.id}): одна версия — признак режима (true, false) ничего не меняет`, () => {
+      expect(вкл[i]).toEqual(html[i]);
+      expect(выкл[i]).toEqual(html[i]);
     });
 
     it(`${с.block} (${с.props.id}): капс верстальщиков не перенесён (число uppercase не растёт)`, () => {
-      const считать = (html: string) =>
-        (html.match(/\buppercase\b/g) ?? []).length;
-      expect(считать(вкл[i])).toBe(считать(выкл[i]));
+      const считать = (h: string) => (h.match(/\buppercase\b/g) ?? []).length;
+      expect(считать(html[i])).toBe(КАПС[String(с.props.id)]);
     });
   });
 
-  it("Header/Footer: без признака рисуется прежний вордмарк (одна «l»), не -designers.svg", () => {
+  it("Header/Footer: прежнего вордмарка «Vanila» (одна «l») нет", () => {
     for (const i of [0, 1, 2, 3]) {
-      expect(выкл[i]).not.toContain("Vanila-designers.svg");
+      expect(html[i]).not.toMatch(/Vanila\.svg"/);
     }
   });
 });

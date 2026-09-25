@@ -81,17 +81,15 @@ const textDefault = hasImage
 const text =
 	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() || textDefault;
 const textSize = p.textSize ?? p.text?.size;
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
-// бэнд «Ваш дом — наша забота» Vanilla-theme @c65d9e1c (sections/Gallery.astro,
-// [data-gallery-care]) — абзац под заголовком mt-3. Без признака — прежние
-// классы байт-в-байт.
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): бэнд «Ваш дом — наша забота» Vanilla-theme @c65d9e1c
+// (sections/Gallery.astro, [data-gallery-care]) — абзац под заголовком mt-3.
 // Владелец 25.09 «что в панели — то и на витрине»: не заданная «Ширина»
-// рисует значение панели по умолчанию — «Большая» — и под признаком тоже.
+// рисует значение панели по умолчанию — «Большая».
 // Раскладку верстальщиков (на lg колонка текста 352 и фото 652 по краям)
 // взять «Большой» нельзя: её колонка текста уже, чем у «Маленькой» (370) и
 // «Средней» (428–520) — порядок ширин сломался бы (замер Chromium 25.09).
-const designParity = p.__designParity === true;
-const TEXT_MT_CLS = designParity ? "mt-3" : "mt-5";
+const TEXT_MT_CLS = "mt-3";
 // Field-order: тело класса БЕЗ отступа-от-соседа — нужно custom-порядку
 // (там отступ не «text-специфичный», а позиционный, см. ниже у разметки).
 const textClsBody =

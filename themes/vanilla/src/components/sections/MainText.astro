@@ -39,23 +39,22 @@ const heading = headingProvided
 	? (typeof p.heading === "string" ? p.heading : p.heading.text)
 	: (isEmptyState ? "Расскажи о своем бренде" : "");
 const headingSize = p.heading?.size ?? p.headingSize;
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
-// промо-полоса главной Vanilla-theme @c65d9e1c (sections/Gallery.astro,
-// [data-gallery-promo]) — заголовок 16, абзац 14/1.5 в колонке 680 (с 1920 —
-// 16 в колонке 1320), кнопка h-10 px-3 14, до кнопки mt-10, полоса lg:py-20.
-// Без признака — прежние классы байт-в-байт.
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): промо-полоса главной Vanilla-theme @c65d9e1c
+// (sections/Gallery.astro, [data-gallery-promo]) — абзац 14/1.5 в колонке 680
+// (с 1920 — 16 в колонке 1320), кнопка h-10 px-3 14, до кнопки mt-10, полоса
+// lg:py-20.
 //
 // Владелец 25.09 «что в панели — то и на витрине». У секции в defaultProps
 // скрытые headingSize/textSize = 'medium', и первая же правка секции (даже
-// цвета) вписывает их — значит «Средний» и есть значение по умолчанию. Под
-// признаком «не задано» обязано рисовать то же, что «Средний»:
+// цвета) вписывает их — значит «Средний» и есть значение по умолчанию, и
+// «не задано» обязано рисовать то же, что «Средний»:
 //   • заголовок: 16px верстальщиков «Среднему» взять нельзя — он стал бы
 //     меньше «Маленького» (17), поэтому «не задано» = «Средний» 20px;
 //   • текст: 14px в колонке 680 (с 1920 — 16 в колонке 1320) порядок
-//     «Маленький 14 ≤ Средний ≤ Большой 19» не ломает, поэтому под признаком
-//     «Средний» (выбранный или не заданный) рисует вид верстальщиков.
+//     «Маленький 14 ≤ Средний ≤ Большой 19» не ломает, поэтому «Средний»
+//     (выбранный или не заданный) рисует вид верстальщиков.
 // Замер Chromium 25.09; сторожа panel-default-is-noop и panel-size-order.
-const designParity = p.__designParity === true;
 const headingCls =
 	headingSize === "small"
 		? "m-0 font-vanilla-bitter text-[17px] font-normal leading-none tracking-normal text-[rgb(var(--color-heading,255_255_255))]"
@@ -77,9 +76,7 @@ const text =
 // 16 (text-base), small 14, large 19.
 const textSize = p.textSize ?? p.text?.size;
 const TEXT_DEFAULT_CLS =
-	designParity
-		? "m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]"
-		: "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]";
+	"m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5] text-[rgb(var(--color-text,240_240_240))] min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]";
 const textCls =
 	textSize === "small"
 		? "m-0 w-full font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-text,240_240_240))] md:leading-[1.35]"
@@ -127,17 +124,15 @@ const btnHref =
 // тёмном полотне; button-2 токены, радиус 0 ≡ var(--radius-button,0px));
 // 'solid' = заливка кнопки-2 (белая кнопка, текст цвета полотна №2).
 // active:scale в манере vanilla НЕ используется (§3).
-// Размер кнопки (не стиль): с признаком — кнопка промо-полосы верстальщиков.
-const BTN = designParity
-	? { h: "h-10 min-h-10", px: "px-3", fs: "text-[14px]" }
-	: { h: "h-12 min-h-12", px: "px-4", fs: "text-base" };
+// Размер кнопки (не стиль) — кнопка промо-полосы верстальщиков.
+const BTN = { h: "h-10 min-h-10", px: "px-3", fs: "text-[14px]" };
 const btnCls =
 	p.buttonStyle === "solid"
 		? `m-0 inline-flex ${BTN.h} shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] ${BTN.px} font-vanilla-arsenal ${BTN.fs} font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-text,58_69_48))] transition-opacity hover:opacity-80`
 		: `m-0 inline-flex ${BTN.h} shrink-0 items-center justify-center rounded-[var(--radius-button,0px)] border border-[rgb(var(--color-button-2-bg,255_255_255))] bg-transparent ${BTN.px} font-vanilla-arsenal ${BTN.fs} font-normal leading-none tracking-normal text-[rgb(var(--color-button-2-bg,255_255_255))] transition-opacity hover:opacity-80`;
 // Полоса и зазор «текст → кнопка»: верстальщики py-16 lg:py-20 и mt-10.
-const SECTION_PY_LG_CLS = designParity ? "lg:py-20" : "lg:py-[120px]";
-const STACK_GAP_CLS = designParity ? "gap-10" : "gap-16";
+const SECTION_PY_LG_CLS = "lg:py-20";
+const STACK_GAP_CLS = "gap-10";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе.
 const paddingStyle = p.padding

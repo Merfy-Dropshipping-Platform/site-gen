@@ -2,7 +2,6 @@
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
 import SchemeIcon from "../../../../packages/theme-base/primitives/SchemeIcon.astro";
 import { VANILLA_ICON_SVGS } from "./icons/vanilla-icon-svgs";
-import VanilaLogo from "../icons/VanilaLogo.astro";
 import VanilaLogoDesigners from "../icons/VanilaLogoDesigners.astro";
 import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
@@ -80,20 +79,14 @@ const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
 const logoImgMobileCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[76px] object-contain";
 const logoImgDesktopCls = "h-[var(--size-logo-width,28px)] w-auto max-w-[160px] object-contain";
 
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// встроенный вордмарк — ширина и сам рисунок по актуальной Vanilla-theme
-// @c65d9e1c. У них «Vanilla» двумя «l» (другой набор путей, не только
-// размер) — рисует отдельный компонент VanilaLogoDesigners, выбор по
-// признаку. Загруженный МЕРЧАНТОМ логотип (logoImgMobileCls/DesktopCls выше)
-// не трогаем — это чужая настройка «Логотип», не вордмарк темы.
-// Без признака — прежние классы и прежний VanilaLogo байт-в-байт.
-const designParity = p.__designParity === true;
-const VANILA_LOGO_MOBILE_CLS = designParity
-	? "h-[var(--size-logo-width,24px)] w-auto max-w-[85px]"
-	: "h-[var(--size-logo-width,24px)] w-auto max-w-[76px]";
-const VANILA_LOGO_DESKTOP_CLS = designParity
-	? "h-[var(--size-logo-width,28px)] w-[98px]"
-	: "h-[var(--size-logo-width,28px)] w-auto max-w-[89px]";
+// Как у верстальщиков (владелец 23-24.09: «как у верстальщиков, только
+// стили»): встроенный вордмарк — ширина и сам рисунок по актуальной
+// Vanilla-theme @c65d9e1c. У них «Vanilla» двумя «l» (другой набор путей, не
+// только размер) — компонент VanilaLogoDesigners. Загруженный МЕРЧАНТОМ
+// логотип (logoImgMobileCls/DesktopCls выше) не трогаем — это чужая
+// настройка «Логотип», не вордмарк темы.
+const VANILA_LOGO_MOBILE_CLS = "h-[var(--size-logo-width,24px)] w-auto max-w-[85px]";
+const VANILA_LOGO_DESKTOP_CLS = "h-[var(--size-logo-width,28px)] w-[98px]";
 
 // Канон logoPosition: 'center-absolute' (canon-default из blockDefaults vanilla) И
 // отсутствие / неизвестное значение → ЛИТЕРАЛ верстальщика (лого центр абсолютом,
@@ -172,15 +165,14 @@ const headerPadStyle = headerPad
 // [1fr auto 1fr]; позиционированной строка не становится ни в одном положении —
 // иначе она перехватывает края у плашки «Расширенного» меню (см. desktopLogoCls).
 const singleRowCentered = !isTwoRow && !logoLeft;
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
-// шапка верстальщиков (Vanilla-theme @c65d9e1c, Header.astro) — ОДИН ряд h-20:
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): шапка Vanilla-theme @c65d9e1c (Header.astro) — ОДИН ряд h-20:
 // меню слева, логотип по центру, значки справа. У нас в ряду «по центру»
 // логотип стоит в колонке 2 раньше меню с колонкой 1, и авто-размещение грида
-// уводит меню и значки во второй ряд (так сейчас и на витрине). С признаком
-// все три прибиты к первому ряду. Значки — область нажатия 44×44 (min-h-11
-// min-w-11), рисунок 20px (size-5). Без признака — прежние классы байт-в-байт.
-const SINGLE_ROW_PIN_CLS = designParity && singleRowCentered ? "row-start-1" : false;
-const ACTION = designParity ? { btn: "min-h-11 min-w-11", icon: "size-5" } : { btn: "size-8", icon: "size-6" };
+// уводило меню и значки во второй ряд — все три прибиты к первому ряду.
+// Значки — область нажатия 44×44 (min-h-11 min-w-11), рисунок 20px (size-5).
+const SINGLE_ROW_PIN_CLS = singleRowCentered ? "row-start-1" : false;
+const ACTION = { btn: "min-h-11 min-w-11", icon: "size-5" };
 const desktopWrapCls = isTwoRow
 	? (headerPad
 		? "vanilla-pad mx-auto hidden w-full max-w-[1560px] flex-col md:flex min-[1920px]:max-w-[1920px] min-[1920px]:px-[300px]"
@@ -278,7 +270,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				</span>
 			</button>
 			<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_MOBILE_CLS} /> : <VanilaLogo class={VANILA_LOGO_MOBILE_CLS} />}
+				{logo ? <img src={logo} alt={siteTitle} class={logoImgMobileCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_MOBILE_CLS} />}
 			</a>
 			<div class="flex items-center gap-3">
 				<button
@@ -353,7 +345,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 									</button>
 								)}
 							<a href="/" class={`flex shrink-0 items-center ${logoInkCls}`} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+								{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} />}
 							</a>
 							</div>
 							<div class="flex items-center gap-5">
@@ -450,7 +442,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 							</div>
 							<div class="flex items-center justify-center">
 								<a href="/" class={`flex items-center ${logoInkCls}`} aria-label={siteTitle}>
-									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+									{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} />}
 								</a>
 							</div>
 							<div class="flex items-center justify-end gap-5">
@@ -545,7 +537,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						class={desktopLogoCls}
 						aria-label={siteTitle}
 					>
-						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : designParity ? <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} /> : <VanilaLogo class={VANILA_LOGO_DESKTOP_CLS} />}
+						{logo ? <img src={logo} alt={siteTitle} class={logoImgDesktopCls} /> : <VanilaLogoDesigners class={VANILA_LOGO_DESKTOP_CLS} />}
 					</a>
 					</div>
 

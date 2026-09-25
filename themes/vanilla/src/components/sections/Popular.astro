@@ -45,20 +45,19 @@ const headingCls =
 // Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок
 // верстальщика дословно (Arsenal italic 16). Лестница §9: medium 19, large 23.
 const textSize = p.textSize ?? p.text?.size;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// шапка секции — геометрия обёртки по .vanilla-section-head/.vanilla-section-
-// subtitle верстальщика (Vanilla-theme global.css @c65d9e1c): обёртка шире
-// (max-w 1320 вместо 760, gap уже 0.5rem = gap-2), подзаголовок не переносится
-// с lg. Шрифт/цвета/капс не меняются; без признака — прежние классы байт-в-байт.
-const designParity = p.__designParity === true;
-const SUBTITLE_GEOMETRY_CLS = designParity ? " w-full max-w-[1320px] lg:whitespace-nowrap" : "";
+// Шапка секции — геометрия обёртки по .vanilla-section-head/.vanilla-section-
+// subtitle верстальщика (Vanilla-theme global.css @c65d9e1c; владелец 23-24.09:
+// «как у верстальщиков, только стили»): обёртка шире (max-w 1320 вместо 760,
+// gap 0.5rem = gap-2), подзаголовок не переносится с lg. Шрифт/цвета/капс не
+// меняются.
+const SUBTITLE_GEOMETRY_CLS = " w-full max-w-[1320px] lg:whitespace-nowrap";
 const subtitleCls =
 	textSize === "medium"
 		? `font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
 		: textSize === "large"
 			? `font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
 			: `font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`;
-const HEAD_WRAP_CLS = designParity ? "flex w-full max-w-[1320px] flex-col gap-2" : "flex max-w-[760px] flex-col gap-2";
+const HEAD_WRAP_CLS = "flex w-full max-w-[1320px] flex-col gap-2";
 
 // Канон cards 2-24: лимит demo-среза и гидрации (data-cards на гриде).
 // 6 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
@@ -135,13 +134,10 @@ const quickAddMode = qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRa
 const quickAddText =
 	(typeof p.quickAddText === "string" && p.quickAddText) ||
 	(quickAddMode === "cart" ? "В КОРЗИНУ" : "В корзину");
-// PARITY_DESIGN: кнопка «В корзину» карточки верстальщиков (VanillaProductCard
-// @c65d9e1c) — h-11, px-3; у них она внутри карточки (gap-3 + mt-3 = 24px от
-// цены), у нас стоит после карточки — отсюда mt-6. Без признака — прежняя
-// mt-3 h-12 px-4.
-const QA_BTN_GEOM = designParity
-	? { mt: "mt-6", h: "h-11 min-h-11", px: "px-3" }
-	: { mt: "mt-3", h: "h-12 min-h-12", px: "px-4" };
+// Кнопка «В корзину» карточки верстальщиков (VanillaProductCard @c65d9e1c) —
+// h-11, px-3; у них она внутри карточки (gap-3 + mt-3 = 24px от цены), у нас
+// стоит после карточки — отсюда mt-6.
+const QA_BTN_GEOM = { mt: "mt-6", h: "h-11 min-h-11", px: "px-3" };
 const QA_BTN_CLS =
 	`${QA_BTN_GEOM.mt} inline-flex ${QA_BTN_GEOM.h} w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] ${QA_BTN_GEOM.px} font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
 // «Быстрое добавление → Количество» ('cart'): ПЕРЕД кнопкой встаёт счётчик

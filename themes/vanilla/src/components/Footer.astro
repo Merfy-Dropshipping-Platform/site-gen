@@ -1,6 +1,5 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
-import VanilaFooterLogo from "../icons/VanilaFooterLogo.astro";
 import VanilaFooterLogoDesigners from "../icons/VanilaFooterLogoDesigners.astro";
 import SocialTelegramWhite from "../icons/SocialTelegramWhite.astro";
 import SocialVkWhite from "../icons/SocialVkWhite.astro";
@@ -258,21 +257,15 @@ const _footerSchemeId =
 			: "";
 const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : "";
 
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// вордмарк и соцсети подвала по актуальной вёрстке Vanilla-theme @c65d9e1c.
-// Вордмарк — рисунок другой (у них «Vanilla» двумя «l», у нас «Vanila» одной,
-// не только размер — diff путей это подтвердил), поэтому под флагом рисуется
-// отдельный компонент VanilaFooterLogoDesigners. Соцсети — только зазор и
-// область клика (иконка та же). Настройки и цвета не меняются; без признака —
-// прежние классы и прежний VanilaFooterLogo байт-в-байт. Признак ставит sites.
-const designParity = p.__designParity === true;
-const FOOTER_LOGO_CLS = designParity ? "h-7 w-[98px]" : "h-7 w-[89px]";
-const SOCIAL_ROW_CLS = designParity
-	? "flex flex-wrap items-center justify-center gap-1 md:justify-end"
-	: "flex flex-wrap items-center justify-center gap-3 md:justify-end";
-const SOCIAL_LINK_CLS = designParity
-	? "flex min-h-11 min-w-11 items-center justify-center transition-opacity hover:opacity-70"
-	: "flex size-5 items-center justify-center transition-opacity hover:opacity-70";
+// Как у верстальщиков (владелец 23-24.09: «как у верстальщиков, только
+// стили»): вордмарк и соцсети подвала по актуальной вёрстке Vanilla-theme
+// @c65d9e1c. Вордмарк — их рисунок (у них «Vanilla» двумя «l», прежний «Vanila»
+// одной — другой набор путей, не только размер): компонент
+// VanilaFooterLogoDesigners. Соцсети — зазор и область клика (иконка та же).
+// Настройки и цвета не меняются.
+const FOOTER_LOGO_CLS = "h-7 w-[98px]";
+const SOCIAL_ROW_CLS = "flex flex-wrap items-center justify-center gap-1 md:justify-end";
+const SOCIAL_LINK_CLS = "flex min-h-11 min-w-11 items-center justify-center transition-opacity hover:opacity-70";
 ---
 
 <footer class:list={["flex w-full flex-col", footerSchemeClass ? "text-[rgb(var(--color-text,255_255_255))]" : "text-white", footerSchemeClass]} data-vanilla-footer data-puck-component-id={id}>
@@ -345,7 +338,7 @@ const SOCIAL_LINK_CLS = designParity
 			>
 				<div class="flex flex-col gap-8 max-sm:items-center">
 					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label={logoAriaLabel}>
-						{designParity ? <VanilaFooterLogoDesigners class={FOOTER_LOGO_CLS} /> : <VanilaFooterLogo class={FOOTER_LOGO_CLS} />}
+						<VanilaFooterLogoDesigners class={FOOTER_LOGO_CLS} />
 					</a>
 					<ul
 						class="flex flex-col gap-2"

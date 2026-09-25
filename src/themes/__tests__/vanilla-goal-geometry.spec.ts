@@ -1,25 +1,18 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
 
-// Этот файл сравнивает ДВЕ ветки кода: «как у верстальщиков» (признак
-// `__designParity: true` задаётся явно) и прежнюю. Покупатель видит первую —
-// она проверяется явным признаком. Чтобы «признак не указан» здесь значил
-// прежнюю ветку (так задуманы сравнения), выключатель в этом файле выключен;
-// остальные спеки рисуют как прод (jest.setup-prod-parity.ts).
-process.env.PARITY_DESIGN = "off";
-afterEach(() => {
-  process.env.PARITY_DESIGN = "off";
-});
-
 /**
  * vanilla — размеры и ширина «как у верстальщиков» по цели
  * (scripts/qa/designer-goal.ts vanilla, зеркало scripts/qa/designer-mirror/vanilla.ts),
- * Vanilla-theme @c65d9e1c, под PARITY_DESIGN.
+ * Vanilla-theme @c65d9e1c.
  *
  * Владелец 24.09: «нужно как у верстальщиков, но при этом не ломать структуру
- * секций, их настроек, цветовых схем». Поэтому здесь три вида проверок:
- *   - с признаком — классы верстальщиков;
+ * секций, их настроек, цветовых схем». С 25.09 у секций одна версия (владелец:
+ * «стили приравнивали, секции и параметры менять не нужно было») — прежняя
+ * ветка удалена вместе с признаком режима. Поэтому здесь три вида проверок:
+ *   - классы верстальщиков;
  *   - выбранная мерчантом настройка (размер, ширина) работает как прежде;
- *   - без признака разметка прежняя, капс не растёт.
+ *   - признак режима (true/false) ничего не меняет, капс не растёт (число
+ *     `uppercase` в разметке случая закреплено: `капс`).
  *
  * Что сделано (по полосам главной верстальщиков):
  *   Header — один ряд h-20 (меню, логотип, значки прибиты к первому ряду),
@@ -51,6 +44,8 @@ type Случай = {
   props: Record<string, unknown>;
   есть: string[];
   нет: string[];
+  /** Сколько раз в разметке стоит `uppercase` — больше не должно стать. */
+  капс: number;
 };
 
 const СЛАЙДЫ = [1, 2, 3].map((n) => ({
@@ -71,6 +66,7 @@ const СЛУЧАИ: Случай[] = [
       "relative flex min-h-11 min-w-11 items-center justify-center transition-opacity hover:opacity-80",
     ],
     нет: ["flex size-8 items-center justify-center transition-opacity hover:opacity-80"],
+    капс: 1,
   },
   {
     имя: "Header «сверху по центру»: два ряда остаются",
@@ -78,6 +74,7 @@ const СЛУЧАИ: Случай[] = [
     props: { id: "Header-2", colorScheme: "scheme-1", logoPosition: "top-center" },
     есть: ["mt-3 flex w-full items-center justify-center gap-[40px]"],
     нет: ["row-start-1"],
+    капс: 1,
   },
   {
     имя: "Slideshow: подзаголовок вплотную, полоса переключения",
@@ -92,6 +89,7 @@ const СЛУЧАИ: Случай[] = [
     // Стрелок «← →» в полосе больше нет: тестер 24.09 «убери на всех темах
     // стрелки справа и слева». Номера слайдов остаются.
     нет: ["gap-10 md:gap-12", "md:gap-14", "flex min-h-11 min-w-11 items-center justify-center text-white hover:opacity-90"],
+    капс: 3,
   },
   {
     имя: "MainText без размеров: заголовок «Средний» 20, абзац и полоса верстальщиков",
@@ -112,6 +110,7 @@ const СЛУЧАИ: Случай[] = [
       "flex-col items-center text-center gap-10",
     ],
     нет: ["m-0 font-vanilla-bitter text-[16px]", "lg:py-[120px]", "text-center gap-16"],
+    капс: 0,
   },
   {
     имя: "MainText «Средний» выбран явно: то же, что не задан",
@@ -123,6 +122,7 @@ const СЛУЧАИ: Случай[] = [
     },
     есть: ["m-0 font-vanilla-bitter text-[20px]", "m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5]"],
     нет: ["m-0 font-vanilla-bitter text-[16px]", "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45]"],
+    капс: 0,
   },
   {
     имя: "MainText с выбранным НЕ по умолчанию размером: кегль мерчанта",
@@ -134,6 +134,7 @@ const СЛУЧАИ: Случай[] = [
     },
     есть: ["m-0 font-vanilla-bitter text-[24px]", "m-0 w-full font-vanilla-arsenal text-[14px] font-normal leading-[1.45]"],
     нет: ["m-0 font-vanilla-bitter text-[16px]", "max-w-[680px]"],
+    капс: 0,
   },
   {
     имя: "ImageWithText без «Ширины»: раскладка «Большой» панели, абзац mt-3",
@@ -150,6 +151,7 @@ const СЛУЧАИ: Случай[] = [
       "lg:min-w-0 lg:shrink lg:grow-0",
     ],
     нет: ["lg:justify-between", "lg:w-[352px]", "lg:w-[652px]", "mt-5 flex w-full flex-col gap-4"],
+    капс: 0,
   },
   {
     имя: "ImageWithText с «Шириной»: раскладка мерчанта",
@@ -161,6 +163,7 @@ const СЛУЧАИ: Случай[] = [
     },
     есть: ["lg:flex-row lg:justify-center", "lg:min-w-0 lg:max-w-none lg:shrink lg:grow-0"],
     нет: ["lg:w-[652px]", "lg:justify-between"],
+    капс: 0,
   },
   {
     имя: "Newsletter: подзаголовок в одну строку с lg",
@@ -168,6 +171,7 @@ const СЛУЧАИ: Случай[] = [
     props: { id: "Newsletter-1", heading: { text: "Заголовок" }, text: { content: "Текст" } },
     есть: [" max-w-[1320px] lg:whitespace-nowrap"],
     нет: [],
+    капс: 0,
   },
   {
     имя: "PopularProducts: кнопка «В корзину» как у верстальщиков",
@@ -175,6 +179,7 @@ const СЛУЧАИ: Случай[] = [
     props: { id: "Popular-1", heading: { text: "Заголовок" }, quickAddMode: "standard" },
     есть: ["mt-6 inline-flex h-11 min-h-11 w-full items-center justify-center", " px-3 font-vanilla-arsenal text-base"],
     нет: ["mt-3 inline-flex h-12 min-h-12 w-full"],
+    капс: 2,
   },
 ];
 
@@ -188,26 +193,26 @@ function отрисовать(props: (с: Случай) => Record<string, unknow
   });
 }
 
-describe("vanilla: размеры и ширина как у верстальщиков под PARITY_DESIGN (цель)", () => {
+describe("vanilla: размеры и ширина как у верстальщиков (цель)", () => {
+  const html = отрисовать((с) => с.props);
   const вкл = отрисовать((с) => ({ ...с.props, __designParity: true }));
-  const выкл = отрисовать((с) => с.props);
-  const безПризнака = отрисовать((с) => ({ ...с.props, __designParity: false }));
+  const выкл = отрисовать((с) => ({ ...с.props, __designParity: false }));
 
   СЛУЧАИ.forEach((с, i) => {
-    it(`${с.имя}: с признаком`, () => {
-      expect(вкл[i].length).toBeGreaterThan(0);
-      for (const к of с.есть) expect(вкл[i]).toContain(к);
-      for (const к of с.нет) expect(вкл[i]).not.toContain(к);
+    it(`${с.имя}: как у верстальщиков`, () => {
+      expect(html[i].length).toBeGreaterThan(0);
+      for (const к of с.есть) expect(html[i]).toContain(к);
+      for (const к of с.нет) expect(html[i]).not.toContain(к);
     });
 
-    it(`${с.имя}: без признака разметка прежняя`, () => {
-      expect(безПризнака[i]).toEqual(выкл[i]);
-      expect(вкл[i]).not.toEqual(выкл[i]);
+    it(`${с.имя}: одна версия — признак режима (true, false) ничего не меняет`, () => {
+      expect(вкл[i]).toEqual(html[i]);
+      expect(выкл[i]).toEqual(html[i]);
     });
 
     it(`${с.имя}: капс не растёт`, () => {
-      const считать = (html: string) => (html.match(/\buppercase\b/g) ?? []).length;
-      expect(считать(вкл[i])).toBe(считать(выкл[i]));
+      const считать = (h: string) => (h.match(/\buppercase\b/g) ?? []).length;
+      expect(считать(html[i])).toBe(с.капс);
     });
   });
 });

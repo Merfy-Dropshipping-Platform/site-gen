@@ -215,23 +215,19 @@ const pagination =
 	p.pagination === "none"
 		? p.pagination
 		: "numbers";
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только размеры»):
-// первый экран Vanilla-theme @c65d9e1c (sections/Hero.astro) — заголовок и
-// подзаголовок слайда стоят плотно (их обёртка gap-[4px] внутри gap-5 → у
-// нас подзаголовок поднят на 16px), полоса цифр — gap-4, у цифр область
-// нажатия 44×44 (min-h-11 min-w-11). Цифры — только ветка
-// «Нумерация = цифры» (по умолчанию); точки/линии/счётчик как прежде.
-// Без признака — прежние классы байт-в-байт.
-const designParity = p.__designParity === true;
-const SUBTITLE_PULL_CLS = designParity ? " -mt-4" : "";
-const CONTROLS = designParity
-	? {
-			bar: "gap-4",
-			barTail: "",
-			bullets: "gap-4",
-			number: "flex min-h-11 min-w-11 items-center justify-center p-1",
-		}
-	: { bar: "gap-10", barTail: " md:gap-14", bullets: "gap-10 md:gap-12", number: "min-w-[1ch] p-1" };
+// Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
+// размеры»): первый экран Vanilla-theme @c65d9e1c (sections/Hero.astro) —
+// заголовок и подзаголовок слайда стоят плотно (их обёртка gap-[4px] внутри
+// gap-5 → у нас подзаголовок поднят на 16px), полоса цифр — gap-4, у цифр
+// область нажатия 44×44 (min-h-11 min-w-11). Цифры — только ветка
+// «Нумерация = цифры» (по умолчанию); точки/линии/счётчик свои.
+const SUBTITLE_PULL_CLS = " -mt-4";
+const CONTROLS = {
+	bar: "gap-4",
+	barTail: "",
+	bullets: "gap-4",
+	number: "flex min-h-11 min-w-11 items-center justify-center p-1",
+};
 const bulletCls = (i: number) =>
 	pagination === "dots"
 		? `h-2 w-2 rounded-full bg-current transition-opacity hover:opacity-90 ${i === 0 ? "text-white" : "text-white/45"}`

@@ -98,9 +98,10 @@ const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
  * дефолтом и без ключа уже расходится. Снимок 25.09, когда у секций осталась
  * одна версия; до этого те же ключи расходились и без признака режима, и
  * сторож их не показывал. Здесь контент-заглушки, колонки подвала, отступы и
- * известные долги: rose/vanilla `Hero.contentPosition`, bloom
- * `MainText.textSize` и `Footer.newsletter`, flux `Product.variants`. Ключ
- * отсюда уходит, когда его чинят; новый сюда сам не попадает.
+ * известные долги: bloom `MainText.textSize` и `Footer.newsletter`, flux
+ * `Product.variants`. Ключ отсюда уходит, когда его чинят; новый сюда сам не
+ * попадает. Ушли: rose/vanilla `Hero.contentPosition` (25.09 — панель больше не
+ * вписывает скрытую позицию первого экрана).
  */
 const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
   rose: [
@@ -115,7 +116,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "Footer.navigationColumn",
     "Gallery.items",
     "Header.navigationLinks",
-    "Hero.contentPosition",
     "Hero.cta",
     "Hero.padding",
     "Hero.title",
@@ -188,7 +188,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "Gallery.items",
     "Header.navigationLinks",
     "Header.siteTitle",
-    "Hero.contentPosition",
     "Hero.cta",
     "Hero.padding",
     "Hero.title",
@@ -420,6 +419,15 @@ describe.each(THEMES)("дефолт не меняет вид витрины — 
     // Правьте ДЕФОЛТ (он обязан повторять фолбэк порта) или ветку порта
     // «не задано», а не снимок.
     expect(divergentKeys((p) => p.style)).toEqual([...KNOWN_DIVERGENT[theme]].sort());
+  });
+
+  it("панель не вписывает скрытую легаси-позицию первого экрана (contentPosition)", () => {
+    if (!built) return;
+    // Владелец 25.09: у rose и vanilla первая же правка секции вписывала
+    // contentPosition:'center', и текст первого экрана уезжал с места темы в
+    // центр. Порты читают position ?? contentPosition — значение по умолчанию
+    // у скрытого поля не имеет права быть.
+    expect(panel?.Hero?.defaults).not.toHaveProperty("contentPosition");
   });
 
   it("ни один ключ defaultProps не добавляет нового расхождения", () => {

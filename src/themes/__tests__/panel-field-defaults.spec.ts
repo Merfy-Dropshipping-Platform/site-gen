@@ -182,7 +182,7 @@ const FIELD_EXCEPTIONS: Record<string, FieldException> = {
   "Hero.position": {
     themes: ["rose", "vanilla", "satin"],
     reason:
-      "порт читает p.position ?? p.contentPosition, а contentPosition — легаси-поле, которое дефолты theme-base материализуют в props ('center') при любой правке панели; статичная «Позиция» перебила бы его и сдвинула уже стоящие баннеры (проверено рендером: HTML с contentPosition:'center' и он же + position различаются во всех пяти темах). У flux и bloom значение в blockDefaults стоит ИСТОРИЧЕСКИ — расхождение зафиксировано в отчёте, снимать его отдельным решением",
+      "порт читает p.position ?? p.contentPosition, а contentPosition — легаси-поле, которое дефолты theme-base до 25.09 вписывали в props ('center') при любой правке панели, и в старых ревизиях оно так и лежит; статичная «Позиция» перебила бы его и сдвинула эти баннеры (проверено рендером: HTML с contentPosition:'center' и он же + position различаются во всех пяти темах). У flux и bloom значение в blockDefaults стоит ИСТОРИЧЕСКИ — расхождение зафиксировано в отчёте, снимать его отдельным решением",
   },
   "Hero.overlay": {
     themes: ["vanilla"],

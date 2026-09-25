@@ -242,8 +242,8 @@ const heroOverlayVisibleCls = "block";
 // поэтому берётся «оверлейный» вариант правил.
 // Без своего значения — то, что показывает панель: «Выравнивание» по центру
 // (theme.json), размеры «Большой» (прежние кегли заглушки байт-в-байт),
-// «Позиция» по центру — у свежей секции панель пишет скрытый contentPosition
-// 'center' (Hero.puckConfig defaults), заглушка стояла там же.
+// «Позиция» не задана — заглушка по центру (так она стояла и раньше, когда
+// панель вписывала скрытый contentPosition 'center'; с 25.09 не вписывает).
 const EMPTY_EDGE_PAD = "pb-10 pt-28 sm:pb-11 sm:pt-32 md:pb-14 md:pt-36 lg:pb-16 xl:pb-20";
 const EMPTY_V_CLS: Record<string, string> = {
 	top: `justify-start ${EMPTY_EDGE_PAD}`,

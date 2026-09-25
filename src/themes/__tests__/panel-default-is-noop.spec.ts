@@ -35,16 +35,38 @@
  * и вообще не знают про defaultProps — «дефолт разошёлся с портом» для них
  * выглядит нормой.
  *
+ * ДВА РЕЖИМА: без признака и с `__designParity: true`. На проде признак
+ * «как у верстальщиков» стоит у ВСЕХ сайтов (выключатель PARITY_DESIGN), и под
+ * ним в секциях бывает ветка «настройка не задана — рисуем вид верстальщиков».
+ * Прогон только без признака оставался зелёным, пока панель показывала
+ * «Квадрат», а витрина — портрет верстальщиков: первая же правка секции
+ * вписывала «Квадрат», и вид прыгал (владелец 25.09: «что в панели — то и на
+ * витрине»). Признак кладётся в пропсы ревизии — живая цепочка его не
+ * вычищает, как и page-blocks `prepareBlockProps` на витрине; отдельная
+ * проверка ниже следит, что он действительно доходит до секций.
+ *
+ * ВСЕ КЛЮЧИ, не только поля. updateProp вписывает весь defaultProps — и
+ * скрытые поля, и ключи вовсе без поля. Поэтому «полный набор» ниже — это
+ * defaultProps целиком (puck-config-deep.mjs), а вторая проверка проходит по
+ * КАЖДОМУ его ключу: признак не имеет права добавить расхождение, которого нет
+ * без признака. Так ловится vanilla «Основной текст»: скрытые
+ * headingSize/textSize='medium' вписывались первой правкой, и под признаком
+ * заголовок прыгал 16 → 20 px. Расхождения, которые есть и БЕЗ признака, —
+ * старая отдельная история (контент, колонки подвала), их сторожит не этот
+ * файл; здесь сторожится ровно класс «вид верстальщиков при незаданной
+ * настройке».
+ *
  * Требует сборки: pnpm build, pnpm build:blocks, pnpm build:theme-sections:all.
  */
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 const RENDERER = resolve(__dirname, "render-theme-sections.mjs");
-const PANEL = resolve(__dirname, "puck-config-panel.mjs");
+const PANEL = resolve(__dirname, "puck-config-deep.mjs");
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 const THEMES = ["rose", "bloom", "satin", "flux", "vanilla"] as const;
 type Theme = (typeof THEMES)[number];
@@ -60,10 +82,21 @@ const STYLE_TYPES = new Set([
 ]);
 
 /**
- * Дефолты, которые РАСХОДЯТСЯ с фолбэком порта на ЖИВОЙ цепочке.
+ * Режимы рендера. `extra` кладётся в пропсы ОБОИХ рендеров пары (с дефолтом и
+ * без него) — сравниваем только поле, режим у пары общий.
+ */
+const MODES = [
+  { name: "без признака", extra: {} },
+  { name: "с признаком __designParity", extra: { __designParity: true } },
+] as const;
+type Mode = (typeof MODES)[number]["name"];
+
+/**
+ * Дефолты оформления, которые РАСХОДЯТСЯ с фолбэком порта на ЖИВОЙ цепочке.
  *
  * Новая запись здесь НЕ появляется сама: добавили дефолт — либо он совпал с
- * портом, либо тест красный. Именно это и сторожим.
+ * портом, либо тест красный. Именно это и сторожим. Список общий для обоих
+ * режимов: на проде признак у всех, без признака — прежние сайты и превью.
  */
 const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
   rose: [],
@@ -73,7 +106,10 @@ const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
   bloom: [],
 };
 
-type PanelField = { type: string | null; hasDefault: boolean; value: unknown };
+type Deep = Record<
+  string,
+  { defaults: Record<string, unknown>; types: Record<string, string | null> }
+>;
 type Job = { block: string; props: Record<string, unknown>; live: true };
 type Row = {
   block: string;
@@ -87,6 +123,9 @@ const digest = (s: string | undefined): string =>
   createHash("sha1")
     .update(s ?? "")
     .digest("hex");
+
+const hasValue = (v: unknown): boolean =>
+  v !== undefined && v !== null && v !== "";
 
 function themeBlocks(theme: Theme): string[] | null {
   const mf = resolve(
@@ -102,9 +141,7 @@ function themeBlocks(theme: Theme): string[] | null {
   );
 }
 
-function readPanel(
-  theme: Theme,
-): Record<string, Record<string, PanelField>> | null {
+function readPanel(theme: Theme): Deep | null {
   try {
     const raw = execFileSync("node", [PANEL, theme], {
       cwd: SITES_ROOT,
@@ -112,77 +149,150 @@ function readPanel(
       maxBuffer: 64 * 1024 * 1024,
       stdio: ["ignore", "pipe", "ignore"],
     });
-    return JSON.parse(raw) as Record<string, Record<string, PanelField>>;
+    return JSON.parse(raw) as Deep;
   } catch {
     return null;
   }
+}
+
+/**
+ * Задания — ФАЙЛОМ («@путь»), не строкой аргумента: два режима дают сотни
+ * КиБ на тему, а Linux режет один аргумент на 128 КиБ (MAX_ARG_STRLEN) — на
+ * раннере проверка упала бы там, где на macOS зелёная.
+ */
+function render(theme: Theme, jobs: Job[]): Row[] {
+  const file = join(mkdtempSync(join(tmpdir(), "panel-noop-")), "jobs.json");
+  writeFileSync(file, JSON.stringify(jobs));
+  const raw = execFileSync("node", [RENDERER, theme, `@${file}`], {
+    cwd: SITES_ROOT,
+    encoding: "utf-8",
+    maxBuffer: 512 * 1024 * 1024,
+  });
+  return JSON.parse(raw) as Row[];
+}
+
+/** Ключ defaultProps с непустым значением; `style` — поле оформления. */
+type Pair = {
+  block: string;
+  key: string;
+  style: boolean;
+  full: Record<string, unknown>;
+};
+
+/** Все ключи defaultProps каждого блока темы (updateProp впишет их все). */
+function defaultPairs(panel: Deep, blocks: string[]): Pair[] {
+  const out: Pair[] = [];
+  for (const [block, { defaults, types }] of Object.entries(panel)) {
+    if (!blocks.includes(block)) continue; // блока нет у темы
+    const full: Record<string, unknown> = { id: `${block}-1`, ...defaults };
+    for (const [key, value] of Object.entries(defaults)) {
+      if (!hasValue(value)) continue;
+      out.push({ block, key, style: STYLE_TYPES.has(types[key] ?? ""), full });
+    }
+  }
+  return out;
+}
+
+/** Сравнение пары «с дефолтом / без ключа»: null — совпали или сравнивать нечего. */
+function divergence(withDef?: Row, without?: Row): string | null {
+  if (withDef?.missing || without?.missing) return null;
+  if (withDef?.error || without?.error) return null;
+  // Живая цепочка не поднялась (нет dist/src) — молчать нельзя.
+  const pipe = withDef?.pipelineError ?? without?.pipelineError;
+  if (pipe) return `живая цепочка не поднялась: ${pipe}`;
+  return digest(withDef?.html) === digest(without?.html) ? null : "разошлись";
 }
 
 describe.each(THEMES)("дефолт не меняет вид витрины — %s", (theme) => {
   const blocks = themeBlocks(theme);
   const panel = readPanel(theme);
   const built = blocks !== null && panel !== null;
+  const pairs = built ? defaultPairs(panel, blocks) : [];
+  const fullBlocks = built
+    ? Object.keys(panel).filter((b) => blocks.includes(b))
+    : [];
 
-  /** Пары (блок, поле оформления с дефолтом) + пропсы для двух рендеров. */
-  const pairs: { block: string; field: string }[] = [];
-  const jobs: Job[] = [];
-  if (built) {
-    for (const [block, fields] of Object.entries(panel)) {
-      if (!blocks.includes(block)) continue; // блока нет у темы
-      // ПОЛНЫЙ набор defaultProps — ровно то, что updateProp запишет в секцию.
-      const full: Record<string, unknown> = { id: `${block}-1` };
-      for (const [name, f] of Object.entries(fields)) {
-        if (f.value !== null && f.value !== undefined) full[name] = f.value;
-      }
-      for (const [name, f] of Object.entries(fields)) {
-        if (!STYLE_TYPES.has(f.type ?? "")) continue;
-        if (!f.hasDefault) continue;
-        const without = { ...full };
-        delete without[name];
-        pairs.push({ block, field: name });
-        jobs.push({ block, props: full, live: true });
-        jobs.push({ block, props: without, live: true });
-      }
-    }
-  }
+  /** Задания: на каждый режим — пара рендеров (с дефолтом / без ключа) на
+   *  каждый ключ, затем по одному полному рендеру на блок (проверка признака). */
+  const pairJobs: Job[] = MODES.flatMap(({ extra }) =>
+    pairs.flatMap(({ key, block, full }) => {
+      const without: Record<string, unknown> = { ...full, ...extra };
+      delete without[key];
+      return [
+        { block, props: { ...full, ...extra }, live: true as const },
+        { block, props: without, live: true as const },
+      ];
+    }),
+  );
+  const fullJobs: Job[] = MODES.flatMap(({ extra }) =>
+    fullBlocks.map((block) => ({
+      block,
+      props: { id: `${block}-1`, ...panel![block].defaults, ...extra },
+      live: true as const,
+    })),
+  );
 
   let rows: Row[] = [];
   beforeAll(() => {
-    if (!built || jobs.length === 0) return;
-    const raw = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
-      cwd: SITES_ROOT,
-      encoding: "utf-8",
-      maxBuffer: 512 * 1024 * 1024,
-    });
-    rows = JSON.parse(raw) as Row[];
-  }, 300_000);
+    if (!built || pairs.length === 0) return;
+    rows = render(theme, [...pairJobs, ...fullJobs]);
+  }, 600_000);
+
+  /** Расхождение ключа `i` в режиме `m` (индексы MODES). */
+  const verdict = (m: number, i: number): string | null => {
+    const at = (m * pairs.length + i) * 2;
+    return divergence(rows[at], rows[at + 1]);
+  };
 
   it("секции темы собраны и puck-config прочитан", () => {
     expect(built).toBe(true);
-    expect(pairs.length).toBeGreaterThan(0);
+    expect(pairs.filter((p) => p.style).length).toBeGreaterThan(0);
   });
 
-  it("каждый дефолт оформления — no-op для порта", () => {
+  it("признак __designParity доходит до секций темы", () => {
     if (!built) return;
-    const divergent: string[] = [];
-    pairs.forEach(({ block, field }, i) => {
-      const withDef = rows[i * 2];
-      const without = rows[i * 2 + 1];
-      if (withDef?.missing || without?.missing) return;
-      if (withDef?.error || without?.error) return;
-      // Живая цепочка не поднялась (нет dist/src) — молчать нельзя.
-      if (withDef?.pipelineError || without?.pipelineError) {
-        divergent.push(
-          `${block}.${field} (живая цепочка не поднялась: ${withDef?.pipelineError ?? without?.pipelineError})`,
+    // Без этой проверки режим «с признаком» мог бы молча выродиться в копию
+    // режима «без» (например, звено живой цепочки начнёт вычищать служебные
+    // ключи) — и сторож стал бы зелёным, ничего не проверяя.
+    const base = pairJobs.length;
+    const n = fullBlocks.length;
+    const changed = fullBlocks.filter(
+      (_, i) =>
+        rows[base + i]?.html !== undefined &&
+        rows[base + i]?.html !== rows[base + n + i]?.html,
+    );
+    expect(changed.length).toBeGreaterThan(0);
+  });
+
+  it.each(MODES.map((m, i) => [m.name, i] as [Mode, number]))(
+    "каждый дефолт оформления — no-op для порта (%s)",
+    (_mode, m) => {
+      if (!built) return;
+      const divergent = pairs
+        .map((p, i) => ({ p, why: verdict(m, i) }))
+        .filter(({ p, why }) => p.style && why !== null)
+        .map(({ p, why }) =>
+          why === "разошлись"
+            ? `${p.block}.${p.key}`
+            : `${p.block}.${p.key} (${why})`,
         );
-        return;
-      }
-      if (digest(withDef?.html) !== digest(without?.html)) {
-        divergent.push(`${block}.${field}`);
-      }
-    });
-    // Дефолт разошёлся с портом: рендер со значением и без него отличается.
-    // Правьте ДЕФОЛТ (он обязан повторять фолбэк порта), а не снимок.
-    expect(divergent.sort()).toEqual([...KNOWN_DIVERGENT[theme]].sort());
+      // Дефолт разошёлся с портом: рендер со значением и без него отличается.
+      // Правьте ДЕФОЛТ (он обязан повторять фолбэк порта) или ветку порта
+      // «не задано», а не снимок.
+      expect(divergent.sort()).toEqual([...KNOWN_DIVERGENT[theme]].sort());
+    },
+  );
+
+  it("признак не добавляет расхождений ни одному ключу defaultProps", () => {
+    if (!built) return;
+    // Любой ключ, который БЕЗ признака впишется незаметно, обязан вписываться
+    // незаметно и С признаком. Иначе под признаком живёт ветка «не задано —
+    // рисуем вид верстальщиков», и первая правка секции (даже цвета) меняет
+    // ей вид: панель вписывает свой дефолт, в том числе скрытый.
+    const added = pairs
+      .map((p, i) => ({ p, off: verdict(0, i), on: verdict(1, i) }))
+      .filter(({ off, on }) => off === null && on !== null)
+      .map(({ p }) => `${p.block}.${p.key}`);
+    expect(added.sort()).toEqual([]);
   });
 });

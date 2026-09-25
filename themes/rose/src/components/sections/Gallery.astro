@@ -199,6 +199,16 @@ const mediaFitCls = (t: GalleryTile) =>
 const awaitsCover = (t: GalleryTile) => t.kind === "collection" && Boolean(t.ref) && !t.url;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
+// Владелец: низы колонок «Галереи» сходятся. Под признаком большая плитка —
+// квадрат верстальщиков и задаёт высоту строки; при ТРЁХ плитках две боковые
+// сходятся с ним по пропорциям, а ОДНА боковая со своей пропорцией короче —
+// под ней оставалась дыра (до 375px на 1440). Пара: боковая плитка тянется на
+// высоту строки с планшета (там колонки уже стоят рядом), фото кадрируется
+// (object-cover), подпись своего размера. Прочие раскладки — прежние классы.
+const SIDE_FILL = {
+	pair: { anchor: " md:flex-1", collection: "aspect-square md:aspect-auto md:flex-1", product: "aspect-square md:aspect-auto md:flex-1" },
+	rest: { anchor: "", collection: sideCollectionAspectCls, product: sideProductAspectCls },
+}[designParity && sideTiles.length === 1 ? "pair" : "rest"];
 
 // Одна видимая плитка — одна колонка на всю ширину; высоту задаёт соотношение
 // сторон, потому что брать её от соседней колонки больше не у кого.
@@ -279,14 +289,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						tile.kind === "collection" ? (
 							<a
 								href={tile.href}
-								class={`group flex min-w-0 flex-col items-start ${sideTileGapCls}`}
+								class={`group flex min-w-0 flex-col items-start ${sideTileGapCls}${SIDE_FILL.anchor}`}
 								aria-label={tile.label || tile.alt}
 								data-gallery-collection={tile.ref ?? undefined}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index={i + 1}
 								data-puck-subsection-field="items"
 							>
-								<div class={`${sideCollectionAspectCls} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]`} aria-hidden={tile.url ? undefined : "true"}>
+								<div class={`${SIDE_FILL.collection} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))]`} aria-hidden={tile.url ? undefined : "true"}>
 									{(tile.url || awaitsCover(tile)) && (
 										<img
 											src={tile.url || undefined}
@@ -306,7 +316,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						) : (
 							<a
 								href={tile.href}
-								class={`group flex flex-col items-start ${sideTileGapCls}`}
+								class={`group flex flex-col items-start ${sideTileGapCls}${SIDE_FILL.anchor}`}
 								aria-label={tile.label || tile.alt || "Изображение"}
 								data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
 								data-puck-subsection-parent={id}
@@ -314,7 +324,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								data-puck-subsection-field="items"
 							>
 								<div
-									class={`gallery-bag-media relative ${sideProductAspectCls} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none`}
+									class={`gallery-bag-media relative ${SIDE_FILL.product} w-full min-h-0 overflow-hidden rounded-[var(--radius-media,8px)] bg-[rgb(var(--color-surface,245_245_245))] leading-none`}
 									aria-hidden={tile.url ? undefined : "true"}
 								>
 									{(tile.url || awaitsCover(tile)) && (

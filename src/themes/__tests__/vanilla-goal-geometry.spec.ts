@@ -16,10 +16,19 @@ import { renderSections } from "../../../scripts/qa/lib/render";
  *     значки 44×44 с рисунком 20px;
  *   Slideshow — подзаголовок вплотную к заголовку, полоса номеров «1 2 3» gap-4,
  *     область нажатия 44×44 (стрелки убраны 24.09 по просьбе тестера);
- *   MainText — заголовок 16, абзац 14/1.5 в колонке 680, кнопка h-10 px-3 14,
- *     до кнопки 40, полоса lg:py-20 (только при незаданных размерах);
- *   ImageWithText — абзац mt-3; на lg колонка текста 352 и фото 652 по краям
- *     (только при незаданной «Ширине»);
+ *   MainText — абзац 14/1.5 в колонке 680 (размер текста «Средний» — значение
+ *     по умолчанию, и не заданный, и выбранный), кнопка h-10 px-3 14, до кнопки
+ *     40, полоса lg:py-20;
+ *   ImageWithText — абзац mt-3;
+ *
+ * Владелец 25.09 «что в панели — то и на витрине»: у «Основного текста» в
+ * defaultProps скрытые headingSize/textSize = 'medium', их вписывает первая же
+ * правка — значит, «не задано» обязано рисовать «Средний». Заголовок
+ * верстальщиков 16px «Средний» взять не может (меньше «Маленького» 17) — не
+ * заданный заголовок теперь 20px; абзац верстальщиков порядок не ломает — его
+ * рисует «Средний». У «Изображения с текстом» раскладка верстальщиков (текст
+ * 352 и фото 652 по краям) уже «Маленькой» по колонке текста — не заданная
+ * «Ширина» рисует «Большую» панели.
  *   Newsletter — подзаголовок в одну строку с lg, колонка до 1320;
  *   PopularProducts — кнопка «В корзину» h-11 px-3 и 24px от цены.
  */
@@ -75,7 +84,7 @@ const СЛУЧАИ: Случай[] = [
     нет: ["gap-10 md:gap-12", "md:gap-14", "flex min-h-11 min-w-11 items-center justify-center text-white hover:opacity-90"],
   },
   {
-    имя: "MainText без размеров: промо-полоса верстальщиков",
+    имя: "MainText без размеров: заголовок «Средний» 20, абзац и полоса верстальщиков",
     block: "MainText",
     props: {
       id: "MainText-1",
@@ -84,7 +93,7 @@ const СЛУЧАИ: Случай[] = [
       button: { text: "Кнопка", link: "/catalog" },
     },
     есть: [
-      "m-0 font-vanilla-bitter text-[16px]",
+      "m-0 font-vanilla-bitter text-[20px]",
       "m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5]",
       "min-[1920px]:max-w-[1320px] min-[1920px]:text-[16px]",
       "inline-flex h-10 min-h-10 shrink-0",
@@ -92,21 +101,32 @@ const СЛУЧАИ: Случай[] = [
       "py-16 text-[rgb(var(--color-text,255_255_255))] lg:py-20",
       "flex-col items-center text-center gap-10",
     ],
-    нет: ["lg:py-[120px]", "text-center gap-16"],
+    нет: ["m-0 font-vanilla-bitter text-[16px]", "lg:py-[120px]", "text-center gap-16"],
   },
   {
-    имя: "MainText с выбранным размером: кегль мерчанта",
+    имя: "MainText «Средний» выбран явно: то же, что не задан",
     block: "MainText",
     props: {
       id: "MainText-2",
       heading: { text: "Заголовок", size: "medium" },
       text: { content: "Текст", size: "medium" },
     },
-    есть: ["m-0 font-vanilla-bitter text-[20px]", "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45]"],
+    есть: ["m-0 font-vanilla-bitter text-[20px]", "m-0 w-full max-w-[680px] font-vanilla-arsenal text-[14px] font-normal leading-[1.5]"],
+    нет: ["m-0 font-vanilla-bitter text-[16px]", "m-0 w-full font-vanilla-arsenal text-base font-normal leading-[1.45]"],
+  },
+  {
+    имя: "MainText с выбранным НЕ по умолчанию размером: кегль мерчанта",
+    block: "MainText",
+    props: {
+      id: "MainText-3",
+      heading: { text: "Заголовок", size: "large" },
+      text: { content: "Текст", size: "small" },
+    },
+    есть: ["m-0 font-vanilla-bitter text-[24px]", "m-0 w-full font-vanilla-arsenal text-[14px] font-normal leading-[1.45]"],
     нет: ["m-0 font-vanilla-bitter text-[16px]", "max-w-[680px]"],
   },
   {
-    имя: "ImageWithText без «Ширины»: 352 + 652 по краям",
+    имя: "ImageWithText без «Ширины»: раскладка «Большой» панели, абзац mt-3",
     block: "ImageWithText",
     props: {
       id: "ImageWithText-1",
@@ -116,11 +136,10 @@ const СЛУЧАИ: Случай[] = [
     },
     есть: [
       "mt-3 flex w-full flex-col gap-4",
-      "lg:flex-row lg:items-start lg:justify-between lg:gap-10",
-      "lg:w-[352px] lg:shrink-0",
-      "lg:w-[652px] lg:shrink-0",
+      "lg:flex-row lg:justify-center lg:gap-10",
+      "lg:min-w-0 lg:shrink lg:grow-0",
     ],
-    нет: ["lg:justify-center", "mt-5 flex w-full flex-col gap-4"],
+    нет: ["lg:justify-between", "lg:w-[352px]", "lg:w-[652px]", "mt-5 flex w-full flex-col gap-4"],
   },
   {
     имя: "ImageWithText с «Шириной»: раскладка мерчанта",

@@ -75,14 +75,18 @@ const text =
 // Видимое поле панели — `text.size` (сабпанель), top-level `textSize` скрыт:
 // читаем nested ПЕРВЫМ, иначе дефолт скрытого поля глушит живой селект.
 const textSize = p.text?.size ?? p.textSize;
-const textCls =
-	textSize === "small"
-		? "w-full max-w-[1320px] font-urbanist text-[17px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]"
-		: textSize === "medium"
-			? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]"
-			: designParity
-				? "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[24px]"
-				: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]";
+// Владелец 25.09: явно выбранный размер всегда рисует СВОЙ вариант. Раньше
+// «Большой» падал в ветку «не задано» и под признаком получал вид
+// верстальщиков — 20px на телефоне, как «Средний». Теперь «Большой» — прежние
+// 24px в обоих режимах; вид верстальщиков остаётся только у «не задано»
+// (сторож panel-size-order.spec.ts).
+const TEXT_CLS: Record<string, string> = {
+	small: "w-full max-w-[1320px] font-urbanist text-[17px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]",
+	medium: "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]",
+	large: "w-full max-w-[1320px] font-urbanist text-[24px] font-normal leading-none text-[rgb(var(--color-text,255_255_255))]",
+	designers: "w-full max-w-[1320px] font-urbanist text-[20px] font-normal leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[24px]",
+};
+const textCls = TEXT_CLS[textSize] ?? TEXT_CLS[designParity ? "designers" : "large"];
 
 // Канон position — позиция контент-колонки; alignment — выравнивание внутри.
 // canon-default обоих = 'center' = литерал верстальщика (всё по центру,

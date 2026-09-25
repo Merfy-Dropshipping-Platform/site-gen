@@ -131,10 +131,12 @@ const backgroundImage2 = heroSlots.secondary || undefined;
 // PARITY_DESIGN: признак ставит sites (page-blocks `designParityFlag`). Объявлен
 // здесь — от него зависят кегли по умолчанию ниже.
 const designParity = p.__designParity === true;
-// Кегль и высота строки, когда «Размер заголовка»/«Размер текста» не заданы.
+// Кегль и высота строки, когда «Размер заголовка»/«Размер текста» НЕ заданы
+// (в панели у них нет значения по умолчанию — панель их не вписывает).
 // Верстальщики (Bloom-theme @5aae2ad6, Hero.astro): заголовок 14 → md 20, текст
-// 12 → md 16, обе строки leading-normal. Прежние значения — ветка legacy.
-const HERO_TYPE_DEFAULT = {
+// 12 → md 16, обе строки leading-normal. Прежние значения — ветка legacy, она же
+// вариант «Большой».
+const HERO_TYPE = {
 	designers: {
 		heading: "hero-animate-1 font-urbanist text-[14px] font-normal leading-normal hero-over-photo-heading md:text-[20px]",
 		text: "hero-animate-2 font-inter text-[12px] font-light leading-normal hero-over-photo-text md:text-[16px]",
@@ -143,7 +145,8 @@ const HERO_TYPE_DEFAULT = {
 		heading: "hero-animate-1 font-urbanist text-[18px] font-normal leading-none hero-over-photo-heading md:text-[20px]",
 		text: "hero-animate-2 font-inter text-[14px] font-light leading-[1.2] hero-over-photo-text md:text-[16px]",
 	},
-}[designParity ? "designers" : "legacy"];
+};
+const HERO_TYPE_DEFAULT = HERO_TYPE[designParity ? "designers" : "legacy"];
 const headingSize = p.heading?.size;
 // Канал var(--size-hero-heading) СНЯТ (владелец, 16.09 — «верни типографику»,
 // сверка с состоянием до 21473d98). 21473d98 подключил ползунок «Кегль
@@ -153,19 +156,24 @@ const headingSize = p.heading?.size;
 // эту настройку (48px вместо 20px), хотя дефолт-ветка сама по себе не
 // затронута. Заголовок снова читает ТОЛЬКО литерал вёрстки (18px/md:20px), как
 // у flux/satin/vanilla — их «Кегль заголовка Hero» тоже не подключён к рендеру.
-const headingCls =
-	headingSize === "small"
-		? "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]"
-		: headingSize === "medium"
-			? "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]"
-			: HERO_TYPE_DEFAULT.heading;
+// Владелец 25.09: явно выбранный размер всегда рисует СВОЙ вариант. Раньше
+// «Большой» падал в ветку «не задано» и под признаком получал кегли
+// верстальщиков: заголовок на телефоне 14px — меньше «Среднего» (15), текст
+// 12px — равен «Среднему». Теперь «Большой» — прежние 18/20 и 14/16 в обоих
+// режимах (сторож panel-size-order.spec.ts).
+const HEADING_CLS: Record<string, string> = {
+	small: "hero-animate-1 font-urbanist text-[13px] font-normal leading-none hero-over-photo-heading md:text-[14px]",
+	medium: "hero-animate-1 font-urbanist text-[15px] font-normal leading-none hero-over-photo-heading md:text-[17px]",
+	large: HERO_TYPE.legacy.heading,
+};
+const headingCls = HEADING_CLS[headingSize] ?? HERO_TYPE_DEFAULT.heading;
 const textSize = p.text?.size;
-const subtitleCls =
-	textSize === "small"
-		? "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] hero-over-photo-text md:text-[11px]"
-		: textSize === "medium"
-			? "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] hero-over-photo-text md:text-[14px]"
-			: HERO_TYPE_DEFAULT.text;
+const SUBTITLE_CLS: Record<string, string> = {
+	small: "hero-animate-2 font-inter text-[10px] font-light leading-[1.2] hero-over-photo-text md:text-[11px]",
+	medium: "hero-animate-2 font-inter text-[12px] font-light leading-[1.2] hero-over-photo-text md:text-[14px]",
+	large: HERO_TYPE.legacy.text,
+};
+const subtitleCls = SUBTITLE_CLS[textSize] ?? HERO_TYPE_DEFAULT.text;
 // «Размер» → высота секции (вьюпорт). Раньше высоту Hero диктовал aspect-[...] на
 // height-div'е, перебивая min-h от size → регулятор «Размер» не влиял (паритет бага
 // rose). Фикс: aspect убран с обоих height-div'ов (empty + filled), высоту ведёт

@@ -50,18 +50,17 @@ const linkHref =
 // small → min-h-8 (32px), medium → min-h-10 (40px), large → min-h-12 (48px).
 // Цвета чёрной полосы → токены с пиксель-фоллбеком §7: bg 0_0_0, text 255_255_255.
 //
-// PARITY_DESIGN (владелец 24.09: «как у верстальщиков, только стили»): полоса
-// верстальщика (Satin-theme @cb548963, Header.astro:50) — py-2, текст 11px и
-// md:14px, высота ≈33/37 вместо нашей 48. Под признаком ТОЛЬКО ветка «размер
-// не задан» (нетронутый сид) рисуется так; выбранный мерчантом размер — как раньше.
-const designParity = p.__designParity === true;
-const size = typeof p.size === "string" ? p.size : designParity ? "designers" : "large";
+// Владелец 25.09 «что в панели — то и на витрине»: не заданный «Размер» рисует
+// значение панели по умолчанию — «Большой» — и под признаком PARITY_DESIGN
+// тоже. Полосу верстальщика (Satin-theme @cb548963, Header.astro:50: py-2,
+// текст 11px и md:14px) взять «Большому» нельзя: на телефоне её 11px меньше
+// «Маленького» (12) — порядок размеров сломался бы (замер Chromium 25.09).
+const size = typeof p.size === "string" ? p.size : "large";
 const SIZE_MAP: Record<string, { mh: string; text: string }> = {
 	thin: { mh: "min-h-6", text: "text-[11px]" },
 	small: { mh: "min-h-8", text: "text-[12px]" },
 	medium: { mh: "min-h-10", text: "text-[14px]" },
 	large: { mh: "min-h-12", text: "text-[16px]" },
-	designers: { mh: "py-2", text: "text-[11px] md:text-[14px]" },
 };
 const sz = SIZE_MAP[size] ?? SIZE_MAP.large;
 const rootCls = `flex ${sz.mh} w-full items-center justify-center bg-[rgb(var(--color-bg,0_0_0))] text-center`;

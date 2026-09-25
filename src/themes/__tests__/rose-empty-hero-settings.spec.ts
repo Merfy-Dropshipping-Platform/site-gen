@@ -104,23 +104,25 @@ describe("rose: пустая секция «Изображение» прини�
 
   it("Без своего значения — то, что показывает панель", () => {
     // Дефолты панели rose: Выравнивание по центру (theme.json), Затемнение 0,
-    // Размер «Большой», Контейнер выкл., скрытая позиция contentPosition
-    // 'center' (Hero.puckConfig defaults); размеры шрифтов — «Большой».
-    const [нет, панель, крупные, поЦентру] = рендер(
+    // Размер «Большой», Контейнер выкл.; размеры шрифтов — «Большой».
+    // Скрытую позицию contentPosition панель с 25.09 не вписывает, но в
+    // старых ревизиях лежит 'center' — заглушка с ним стоит там же.
+    const [нет, панель, крупные, поЦентру, старая] = рендер(
       {},
       {
         alignment: "center",
         overlay: 0,
         size: "large",
         container: "false",
-        contentPosition: "center",
       },
       { heading: { size: "large" }, text: { size: "large" } },
       { position: "center" },
+      { contentPosition: "center" },
     );
     expect(панель).toBe(нет);
     expect(крупные).toBe(нет);
     expect(поЦентру).toBe(нет);
+    expect(старая).toBe(нет);
     const слой = внешний(нет);
     expect(слой).toMatch(/\bjustify-center\b/);
     expect(слой).toMatch(/\bitems-center\b/);

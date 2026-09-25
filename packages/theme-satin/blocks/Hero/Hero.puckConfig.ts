@@ -321,10 +321,11 @@ export const HeroPuckConfig: BlockPuckConfig<HeroProps> = {
     container: 'false',
     overlay: 0,
     // «Позиция» НЕ задаём: порт читает p.position ?? p.contentPosition, а
-    // contentPosition — легаси-поле, которое дефолты theme-base материализуют
-    // в props ('center') при любой правке панели. Статичная «Позиция» перебила
-    // бы его и сдвинула уже стоящие баннеры (проверено рендером: HTML с
-    // contentPosition:'center' и он же + position:'center-left' различаются).
+    // contentPosition — легаси-поле, которое дефолты theme-base до 25.09
+    // вписывали в props ('center') при любой правке панели; в старых ревизиях
+    // оно так и лежит. Статичная «Позиция» перебила бы его и сдвинула уже
+    // стоящие баннеры (проверено рендером: HTML с contentPosition:'center' и
+    // он же + position:'center-left' различаются).
     // «Выравнивание» НЕ задаём: satin Hero.astro без значения оставляет
     // alignItemsCls/textAlignCls ПУСТЫМИ (четвёртая ветка), и ни left, ни
     // center, ни right этого не повторяют — дефолт изменил бы вид витрины.

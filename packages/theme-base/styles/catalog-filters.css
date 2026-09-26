@@ -319,4 +319,77 @@
     font-family: var(--font-body);
     font-weight: var(--weight-body);
   }
+
+  /* ── Чипы выбранных фильтров ──────────────────────────────────────────────
+   *
+   * Владелец: выбрал параметр — над товарами чип «Фильтр: значение ⊗»,
+   * нажатие снимает его, «Очистить всё» — все. Ряд стоит над сеткой в обеих
+   * раскладках. Разметку рисует общий скрипт портов (__merfyFilterChips),
+   * классы — здесь: живая сборка не сканирует строки скриптов и классы портов.
+   *
+   * Цвета — роли схемы секции (текст и приглушённый), скругление — «Кнопки» из
+   * настроек темы (--radius-button), шрифт — текста из настроек темы. Высота
+   * под палец — 44px, как у триггеров фильтров выше. */
+  [data-nt="catalog-chips"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-weight: var(--weight-body);
+  }
+
+  [data-nt="catalog-chips"][hidden] {
+    display: none;
+  }
+
+  .nt-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 10px 6px 14px;
+    border: 0;
+    border-radius: var(--radius-button, 999px);
+    background-color: rgb(var(--color-text, 0 0 0) / 0.06);
+    color: rgb(var(--color-text, 0 0 0));
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .nt-filter-chip:hover {
+    background-color: rgb(var(--color-text, 0 0 0) / 0.12);
+  }
+
+  .nt-filter-chip:focus-visible {
+    outline: 2px solid rgb(var(--color-text, 0 0 0));
+    outline-offset: 2px;
+  }
+
+  .nt-filter-chip > svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+  }
+
+  .nt-filter-chip--clear {
+    background-color: transparent;
+    color: rgb(var(--color-muted, 153 153 153));
+  }
+
+  .nt-filter-chip--clear:hover {
+    background-color: transparent;
+    color: rgb(var(--color-text, 0 0 0));
+  }
+
+  @media (max-width: 767.98px), (pointer: coarse) {
+    .nt-filter-chip {
+      min-height: 44px;
+    }
+  }
 }

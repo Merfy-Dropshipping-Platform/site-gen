@@ -832,16 +832,33 @@ const skeletons = Array.from({ length: skeletonCount });
   // Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug на секции —
   // приходит из prop collectionSlug на page-collection), ИНАЧЕ ?collection= из URL
   // (ссылки тайлов Collections/Gallery + клики по фильтру коллекций).
-  function currentCollectionRef() {
+  // Выбранные коллекции. Настройка секции и путь /collections/<slug> дают одну,
+  // закреплённую; ?collection=a&collection=b — выбор покупателя в фильтре, их
+  // может быть несколько (сервер показывает товары хоть в одной).
+  function currentCollectionRefs() {
     const root = document.querySelector('[data-catalog-layout]');
     const fromSetting = root && root.getAttribute("data-collection-slug");
-    if (fromSetting && fromSetting.trim()) return fromSetting.trim();
-    const fromQuery = new URLSearchParams(window.location.search).get("collection");
-    if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+    if (fromSetting && fromSetting.trim()) return [fromSetting.trim()];
+    const fromQuery = new URLSearchParams(window.location.search)
+      .getAll("collection")
+      .filter((ref) => ref && ref.trim())
+      .map((ref) => ref.trim());
+    if (fromQuery.length > 0) return fromQuery;
     const fromPath = window.location.pathname.match(/\/collections\/([^/?#]+)/);
-    if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return decodeURIComponent(fromPath[1]);
-    return null;
+    if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return [decodeURIComponent(fromPath[1])];
+    return [];
   }
+
+  // Выбранные коллекции объектами из списка магазина — для отметок и подписи.
+  function selectedCollections() {
+    return currentCollectionRefs()
+      .map((ref) => findCollection(catalogCollections, ref))
+      .filter(Boolean);
+  }
+
+  // Отметить значение фильтра или снять отметку — выбор нескольких значений.
+  const toggleValue = (list, value) =>
+    list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
   // Каталог коллекции, у которого коллекция ещё НЕ выбрана: страница
   // /collections/<slug> с плейсхолдерным slug и без настройки в секции. До
@@ -939,17 +956,18 @@ const skeletons = Array.from({ length: skeletonCount });
     if (filters.stock === "in") qp.set("availability", "in_stock");
     else if (filters.stock === "out") qp.set("availability", "sold_out");
 
-    // Цвет: один value на группу (multi-цвет API не поддерживает → берём первый).
-    if (Array.isArray(filters.colors) && filters.colors.length > 0) {
-      qp.set(COLOR_GROUP_NAME, filters.colors[0]);
+    // Цвет: несколько значений — ключ на каждое (`Цвет=A&Цвет=B`), сервер
+    // показывает товары с любым из них.
+    for (const color of Array.isArray(filters.colors) ? filters.colors : []) {
+      qp.append(COLOR_GROUP_NAME, color);
     }
 
-    // Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
+    // Коллекции: slug/id из настройки или ?collection= → серверный collection_id,
+    // ключ на каждую выбранную (сервер: товар хоть в одной).
     // Резолвим slug→id через кэш коллекций; если резолва нет — передаём ref как есть.
-    const ref = currentCollectionRef();
-    if (ref) {
+    for (const ref of currentCollectionRefs()) {
       const col = findCollection(catalogCollections, ref);
-      qp.set("collection_id", col && col.id ? col.id : ref);
+      qp.append("collection_id", col && col.id ? col.id : ref);
     }
     return qp.toString();
   }
@@ -1262,11 +1280,9 @@ const skeletons = Array.from({ length: skeletonCount });
     if (!btn) return;
     const value = btn.getAttribute("data-color-option") ?? "";
     if (!value) return;
-    // Цвет выбирается ОДИН: сервер фильтрует по одному значению группы
-    // (variantFilters: Record<string, string>). Раньше можно было отметить
-    // два цвета, а в запрос уходил первый — второй «выбран», но не работал.
-    // Нажатие на выбранный цвет снимает выбор.
-    filters.colors = filters.colors.includes(value) ? [] : [value];
+    // Несколько цветов (владелец): нажатие отмечает цвет или снимает отметку, в
+    // запрос уходят все (`Цвет=A&Цвет=B`), сервер показывает товары с любым.
+    filters.colors = toggleValue(filters.colors, value);
     syncColorUi();
     resetPageAndRender();
   }
@@ -1466,7 +1482,7 @@ const skeletons = Array.from({ length: skeletonCount });
   }
 
   // Перерисовывает опции и активное состояние во ВСЕХ контейнерах фильтра коллекций
-  function syncCollectionsUi(current) {
+  function syncCollectionsUi(selected) {
     const cols = catalogCollections;
     if (!cols) return;
     for (const box of Array.from(
@@ -1476,19 +1492,19 @@ const skeletons = Array.from({ length: skeletonCount });
       if (!list) continue;
       const sidebar = box.getAttribute("data-collections-style") === "sidebar";
       list.innerHTML =
-        collectionOptionHtml("", "Все", !current, sidebar) +
+        collectionOptionHtml("", "Все", selected.length === 0, sidebar) +
         cols
           .map((c) =>
             collectionOptionHtml(
               c.slug ?? c.id,
               c.name ?? "Коллекция",
-              !!current && current.id === c.id,
+              selected.some((s) => s.id === c.id),
               sidebar,
             ),
           )
           .join("");
       const label = box.querySelector("[data-collections-label]");
-      if (label) label.textContent = (current && current.name) ?? "Коллекции";
+      if (label) label.textContent = selected.length > 0 ? selected.map((s) => s.name ?? "Коллекция").join(", ") : "Коллекции";
     }
   }
 
@@ -1497,17 +1513,21 @@ const skeletons = Array.from({ length: skeletonCount });
     if (!btn) return;
     const value = btn.getAttribute("data-collection-option") ?? "";
     const params = new URLSearchParams(window.location.search);
-    if (value) params.set("collection", value);
-    else params.delete("collection");
+    // Несколько коллекций: нажатие отмечает коллекцию или снимает отметку, «Все» —
+    // снимает все.
+    const picked = value ? toggleValue(params.getAll("collection"), value) : [];
+    params.delete("collection");
+    for (const ref of picked) params.append("collection", ref);
     const qs = params.toString();
     window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-    const col = (catalogCollections && catalogCollections.find((c) => (c.slug ?? c.id) === value)) ?? null;
-    syncCollectionsUi(col); // активное состояние синхронно в обоих контейнерах
-    syncCatalogHeading(col);
+    const selected = selectedCollections();
+    syncCollectionsUi(selected);
+    // Заголовок — имя коллекции, только когда выбрана одна.
+    syncCatalogHeading(selected.length === 1 ? selected[0] : null);
     syncMobileFilterCount();
-    // details-дропдаун top-раскладки закрываем; для секции сайдбара — безвредный no-op
+    // Список остаётся открытым, чтобы отметить ещё; «Все» его закрывает.
     const box = btn.closest('[data-nt="catalog-collections-filter"]');
-    if (box) box.removeAttribute("open");
+    if (box && !value) box.removeAttribute("open");
     resetPageAndRender();
   }
 
@@ -1519,12 +1539,9 @@ const skeletons = Array.from({ length: skeletonCount });
     if (boxes.length === 0) return;
     catalogCollections = await loadRealCollections();
     if (!catalogCollections || catalogCollections.length === 0) return;
-    const ref = currentCollectionRef();
-    const current = ref
-      ? (catalogCollections.find((c) => c.id === ref || c.slug === ref || c.name === ref) ?? null)
-      : null;
-    syncCollectionsUi(current);
-    syncCatalogHeading(current);
+    const selected = selectedCollections();
+    syncCollectionsUi(selected);
+    syncCatalogHeading(selected.length === 1 ? selected[0] : null);
     for (const box of boxes) {
       if (box.getAttribute("data-cf-hydrated") === "true") continue; // идемпотентность astro:page-load
       box.setAttribute("data-cf-hydrated", "true");

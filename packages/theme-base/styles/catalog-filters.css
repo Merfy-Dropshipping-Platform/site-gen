@@ -248,13 +248,14 @@
    * витрины не попадают (замер 23.09, витрина bloom: нет `border-[…--color-muted…]`
    * и `after:opacity-100`) — невыбранный цвет обводился цветом текста, а не
    * серым, как на макете, у выбранного не было точки. Кольцо и точка — по
-   * данным кнопки (`data-color-option` / `data-collection-option` +
-   * `aria-pressed`), в цветах схемы, как у радио DS. Блок коллекций раскладки
+   * данным кнопки (`data-color-option` / `data-collection-option` /
+   * `data-variant-option` — остальные параметры товара + `aria-pressed`), в
+   * цветах схемы, как у радио DS. Блок коллекций раскладки
    * «Сбоку» стоит рядом с панелью, а не в ней, — его узнаём по
    * `data-collections-style="sidebar"`. Кнопки строки top (`<p>`, `<button>`
    * без кольца) сюда не попадают: у них нет `span[aria-hidden]`. */
   :is([data-nt="filter-sidebar"], [data-collections-style="sidebar"])
-    :is([data-color-option], [data-collection-option])
+    :is([data-color-option], [data-collection-option], [data-variant-option])
     > span[aria-hidden="true"] {
     border-color: rgb(var(--color-muted, 153 153 153));
   }
@@ -264,10 +265,10 @@
    * нет ни `h-[10px]`/`w-[10px]` вложенной точки, ни `after:opacity-0`: у
    * выбранного цвета и коллекции точки не было вовсе (локальная сцена 23.09). */
   :is([data-nt="filter-sidebar"], [data-collections-style="sidebar"])
-    :is([data-color-option], [data-collection-option])
+    :is([data-color-option], [data-collection-option], [data-variant-option])
     > span[aria-hidden="true"]::after,
   :is([data-nt="filter-sidebar"], [data-collections-style="sidebar"])
-    :is([data-color-option], [data-collection-option])
+    :is([data-color-option], [data-collection-option], [data-variant-option])
     > span[aria-hidden="true"]
     > span {
     width: 10px;
@@ -277,16 +278,16 @@
   }
 
   :is([data-nt="filter-sidebar"], [data-collections-style="sidebar"])
-    :is([data-color-option], [data-collection-option])[aria-pressed="true"]
+    :is([data-color-option], [data-collection-option], [data-variant-option])[aria-pressed="true"]
     > span[aria-hidden="true"] {
     border-color: rgb(var(--color-text, 0 0 0));
   }
 
   :is([data-nt="filter-sidebar"], [data-collections-style="sidebar"])
-    :is([data-color-option], [data-collection-option])[aria-pressed="true"]
+    :is([data-color-option], [data-collection-option], [data-variant-option])[aria-pressed="true"]
     > span[aria-hidden="true"]::after,
   :is([data-nt="filter-sidebar"], [data-collections-style="sidebar"])
-    :is([data-color-option], [data-collection-option])[aria-pressed="true"]
+    :is([data-color-option], [data-collection-option], [data-variant-option])[aria-pressed="true"]
     > span[aria-hidden="true"]
     > span {
     opacity: 1;

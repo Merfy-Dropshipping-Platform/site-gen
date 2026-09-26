@@ -575,7 +575,8 @@ const skeletons = Array.from({ length: skeletonCount });
       if (min != null && max != null) return "от " + rub(min) + " до " + rub(max) + " ₽";
       return min != null ? "от " + rub(min) + " ₽" : "до " + rub(max) + " ₽";
     };
-    // Порядок — как фильтры в строке: наличие, стоимость, цвет, коллекции.
+    // Порядок — как фильтры в строке: наличие, стоимость, цвет, остальные
+    // параметры товара, коллекции.
     function chips(state) {
       var list = [];
       if (STOCK[state.stock]) list.push({ kind: "stock", value: state.stock, label: "Наличие: " + STOCK[state.stock] });
@@ -583,6 +584,11 @@ const skeletons = Array.from({ length: skeletonCount });
         list.push({ kind: "price", value: "", label: "Стоимость: " + price(state.priceMin, state.priceMax) });
       (state.colors || []).forEach(function (color) {
         list.push({ kind: "color", value: color, label: "Цвет: " + color });
+      });
+      (state.groups || []).forEach(function (group) {
+        group.values.forEach(function (value) {
+          list.push({ kind: "variant", group: group.name, value: value, label: group.name + ": " + value });
+        });
       });
       (state.collections || []).forEach(function (col) {
         list.push({ kind: "collection", value: col.ref, label: "Коллекция: " + col.name });
@@ -595,6 +601,8 @@ const skeletons = Array.from({ length: skeletonCount });
         esc(chip.kind) +
         '" data-chip-value="' +
         esc(chip.value) +
+        '" data-chip-group="' +
+        esc(chip.group || "") +
         '" aria-label="Убрать фильтр ' +
         esc(chip.label) +
         '"><span>' +
@@ -605,7 +613,7 @@ const skeletons = Array.from({ length: skeletonCount });
       );
     }
     // Рисует чипы во все контейнеры каталога (раскладки «сверху» и «сбоку»);
-    // нажатие — remove({ kind, value }), «Очистить всё» — kind "all".
+    // нажатие — remove({ kind, value, group }), «Очистить всё» — kind "all".
     function render(boxes, state, remove) {
       var list = chips(state);
       var html = list.length ? list.map(chipHtml).join("") + CLEAR_ALL : "";
@@ -618,7 +626,11 @@ const skeletons = Array.from({ length: skeletonCount });
         box.addEventListener("click", function (ev) {
           var btn = ev.target.closest("[data-chip-kind]");
           if (!btn || !box.__merfyChipsRemove) return;
-          box.__merfyChipsRemove({ kind: btn.getAttribute("data-chip-kind"), value: btn.getAttribute("data-chip-value") || "" });
+          box.__merfyChipsRemove({
+            kind: btn.getAttribute("data-chip-kind"),
+            value: btn.getAttribute("data-chip-value") || "",
+            group: btn.getAttribute("data-chip-group") || "",
+          });
         });
       });
     }
@@ -1099,6 +1111,8 @@ const skeletons = Array.from({ length: skeletonCount });
   // /api/store/products?page=N с серверными фильтрами. Клиент НЕ держит весь каталог.
   let catalogCollections = null;
   let availableColors = [];
+  // Остальные параметры товара из /api/store/filters: [{ name, values }] без «Цвета».
+  let variantGroups = [];
   let cachedPriceRange = null; // { min, max } в рублях из /store/filters; не пишем в filters.*
   let seenRealProducts = false;
 
@@ -1113,6 +1127,8 @@ const skeletons = Array.from({ length: skeletonCount });
     priceMin: null,
     priceMax: null,
     colors: [],
+    // Остальные параметры товара: { «Размер»: ["M", "L"] } — несколько значений в группе.
+    variants: {},
     sort: "popularity",
     page: 1,
   };
@@ -1254,6 +1270,11 @@ const skeletons = Array.from({ length: skeletonCount });
     // показывает товары с любым из них.
     for (const color of Array.isArray(filters.colors) ? filters.colors : []) {
       qp.append(COLOR_GROUP_NAME, color);
+    }
+
+    // Остальные параметры товара — так же: ключ группы на каждое значение.
+    for (const [group, values] of Object.entries(filters.variants)) {
+      for (const value of values) qp.append(group, value);
     }
 
     // Коллекции: slug/id из настройки или ?collection= → серверный collection_id,
@@ -1417,7 +1438,8 @@ const skeletons = Array.from({ length: skeletonCount });
     applyPricePlaceholders();
   }
 
-  // Вид фильтра → как снять значение (undefined — все значения вида).
+  // Вид фильтра → как снять значение (undefined — все значения вида;
+  // у параметров товара вторым — имя группы).
   const CHIP_REMOVERS = {
     stock: () => {
       filters.stock = "all";
@@ -1432,6 +1454,11 @@ const skeletons = Array.from({ length: skeletonCount });
       filters.colors = value === undefined ? [] : filters.colors.filter((color) => color !== value);
       syncColorUi();
     },
+    variant: (value, group) => {
+      filters.variants =
+        value === undefined ? {} : { ...filters.variants, [group]: variantValues(group).filter((v) => v !== value) };
+      syncVariantUi();
+    },
     collection: (value) =>
       pickCollections(value === undefined ? [] : buyerCollectionRefs().filter((ref) => ref !== value)),
   };
@@ -1439,7 +1466,7 @@ const skeletons = Array.from({ length: skeletonCount });
   function removeFilterChip(chip) {
     const kinds = chip.kind === "all" ? Object.keys(CHIP_REMOVERS) : [chip.kind];
     for (const kind of kinds) {
-      if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](chip.kind === "all" ? undefined : chip.value);
+      if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](chip.kind === "all" ? undefined : chip.value, chip.group);
     }
     resetPageAndRender();
   }
@@ -1453,6 +1480,7 @@ const skeletons = Array.from({ length: skeletonCount });
         priceMin: filters.priceMin,
         priceMax: filters.priceMax,
         colors: filters.colors,
+        groups: Object.entries(filters.variants).map(([name, values]) => ({ name, values })),
         collections: buyerCollectionRefs().map((ref) => {
           const col = findCollection(catalogCollections, ref);
           return { ref, name: (col && col.name) || ref };
@@ -1579,13 +1607,112 @@ const skeletons = Array.from({ length: skeletonCount });
     applyPricePlaceholders();
   }
 
+  // ─────────── Остальные параметры товара (Размер, Формат, Оттенок…) ───────────
+  // Владелец: чипы «Формат: …» над товарами — значит, и фильтр по каждому
+  // параметру товара, не только по «Цвету». Группы — из /api/store/filters
+  // (loadAvailableColors), фильтр каждой — копия «Цвета» с именем группы: в
+  // строке, в сайдбаре и в шторке. В группе можно отметить несколько значений
+  // (товары с любым), разные группы — через И. Текст блока один у rose, satin,
+  // bloom и flux (сторож no-second-implementation.spec.ts).
+  const groupsFrom = (groups) =>
+    groups
+      .map((g) => ({
+        name: g && typeof g.name === "string" ? g.name.trim() : "",
+        values: (g && Array.isArray(g.values) ? g.values : [])
+          .map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
+          .filter((v) => typeof v === "string" && v),
+      }))
+      .filter((g) => g.name && g.name !== COLOR_GROUP_NAME && g.values.length > 0);
+
+  const variantValues = (group) => filters.variants[group] || [];
+
+  function variantOptionHtml(group, value, active, sidebar) {
+    return choiceOptionHtml(
+      `data-variant-group="${escapeHtml(group)}" data-variant-option="${escapeHtml(value)}"`,
+      value,
+      active,
+      sidebar,
+    );
+  }
+
+  function syncVariantUi() {
+    for (const list of Array.from(document.querySelectorAll("[data-variant-list]"))) {
+      const name = list.getAttribute("data-variant-list");
+      const group = variantGroups.find((g) => g.name === name);
+      const sidebar = list.hasAttribute("data-variant-side");
+      list.innerHTML = (group ? group.values : [])
+        .map((value) => variantOptionHtml(name, value, variantValues(name).includes(value), sidebar))
+        .join("");
+    }
+  }
+
+  function onVariantOptionClick(ev) {
+    const btn = ev.target.closest("[data-variant-option]");
+    const group = btn && btn.getAttribute("data-variant-group");
+    const value = btn && btn.getAttribute("data-variant-option");
+    if (!group || !value) return;
+    filters.variants = { ...filters.variants, [group]: toggleValue(variantValues(group), value) };
+    syncVariantUi();
+    resetPageAndRender();
+  }
+
+  // Копия фильтра «Цвет» под группу: подпись — имя группы, список значений —
+  // контейнер группы (его наполняет syncVariantUi). Слушатели цвета копия не
+  // несёт: cloneNode их не копирует, свой вешаем здесь.
+  function cloneColorFilter(template, listSelector, group, sidebar) {
+    const clone = template.cloneNode(true);
+    clone.setAttribute("data-variant-clone", "");
+    clone.removeAttribute("open");
+    clone.style.display = "";
+    const label = Array.from(clone.querySelectorAll("span, p")).find(
+      (el) => el.children.length === 0 && (el.textContent || "").trim() === COLOR_GROUP_NAME,
+    );
+    if (label) label.textContent = group;
+    const list = clone.querySelector(listSelector);
+    if (!list) return null;
+    list.removeAttribute("data-cf-color");
+    list.removeAttribute("data-cf-color-side");
+    list.setAttribute("data-nt-panel", "variant");
+    list.setAttribute("data-variant-list", group);
+    list.toggleAttribute("data-variant-side", sidebar);
+    list.addEventListener("click", onVariantOptionClick);
+    return clone;
+  }
+
+  // Фильтр каждой группы — сразу за «Цветом» (строка, сайдбар, шторка).
+  // Прежние копии убираем: гидрация повторяется при навигации.
+  function bindVariants() {
+    for (const old of Array.from(document.querySelectorAll("[data-variant-clone]"))) old.remove();
+    const places = [
+      ...Array.from(document.querySelectorAll('[data-nt="filter-panel"][data-nt-panel="color"]')).map((panel) => ({
+        template: panel.closest("details"),
+        list: '[data-nt="filter-panel"]',
+        sidebar: false,
+      })),
+      ...Array.from(document.querySelectorAll("[data-cf-color-side]")).map((list) => ({
+        template: list.parentElement,
+        list: "[data-cf-color-side]",
+        sidebar: true,
+      })),
+    ];
+    for (const { template, list, sidebar } of places.filter((place) => place.template)) {
+      template.after(...variantGroups.map((g) => cloneColorFilter(template, list, g.name, sidebar)).filter(Boolean));
+    }
+    syncVariantUi();
+  }
+
   // ─────────── Цвет (data-driven; нет данных → секция скрыта) ───────────
-  function colorOptionHtml(value, active, sidebar) {
+  // Вариант фильтра: attrs — атрибуты данных (цвет или параметр товара).
+  function choiceOptionHtml(attrs, value, active, sidebar) {
     if (sidebar) {
       const ring = `relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${active ? "border-[rgb(var(--color-text,0_0_0))]" : "border-[rgb(var(--color-muted,153_153_153))]"} after:pointer-events-none after:absolute after:h-[10px] after:w-[10px] after:rounded-full after:bg-black after:content-[''] ${active ? "after:opacity-100" : "after:opacity-0"}`;
-      return `<button type="button" data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left text-[16px] leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(value)}</span></button>`;
+      return `<button type="button" ${attrs} aria-pressed="${active}" class="flex w-full cursor-pointer items-center gap-2 text-left text-[16px] leading-normal"><span aria-hidden="true" class="${ring}"></span><span class="${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))]"}">${escapeHtml(value)}</span></button>`;
     }
-    return `<p data-color-option="${escapeHtml(value)}" aria-pressed="${active}" class="cursor-pointer transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(value)}</p>`;
+    return `<p ${attrs} aria-pressed="${active}" class="cursor-pointer transition-colors ${active ? "text-[rgb(var(--color-text,0_0_0))]" : "text-[rgb(var(--color-muted,153_153_153))] hover:text-[rgb(var(--color-text,0_0_0))]"}">${escapeHtml(value)}</p>`;
+  }
+
+  function colorOptionHtml(value, active, sidebar) {
+    return choiceOptionHtml(`data-color-option="${escapeHtml(value)}"`, value, active, sidebar);
   }
 
   function syncColorUi() {
@@ -1986,6 +2113,7 @@ const skeletons = Array.from({ length: skeletonCount });
           (json && json.data && Array.isArray(json.data.groups) && json.data.groups) ||
           (Array.isArray(json && json.groups) && json.groups) ||
           [];
+        variantGroups = groupsFrom(groups);
         const group = groups.find(
           (g) => g && typeof g.name === "string" && g.name.trim() === COLOR_GROUP_NAME,
         );
@@ -2065,6 +2193,7 @@ const skeletons = Array.from({ length: skeletonCount });
       bindStock();
       bindPrice();
       bindColors();
+      bindVariants();
       bindSort();
       bindLoadMore();
       bindFilterDropdowns();

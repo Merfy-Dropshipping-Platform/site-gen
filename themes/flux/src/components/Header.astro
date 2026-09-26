@@ -7,6 +7,7 @@ import { SITE_TITLE } from "../consts";
 import FluxNavItem from "./FluxNavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import FluxWishlistLink from "./FluxWishlistLink.astro";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
 	label: string;
@@ -776,8 +777,8 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
 	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
 	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
-	<script is:inline define:vars={{ shopId }}>
-		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: apiUrl || "https://gateway.merfy.ru/api" };
 		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
 	</script>
 </div>

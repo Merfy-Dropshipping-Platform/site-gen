@@ -769,7 +769,7 @@ const skeletons = Array.from({ length: skeletonCount });
     // «Следующее фото при наведении»: второе фото товара (images[1]); hover-обработчик
     // ниже свапит src между data-img-primary и data-img-secondary.
     const image2 =
-      (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+      (Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
     const imgDataAttrs =
       ` data-img-primary="${image}"` + (image2 ? ` data-img-secondary="${escapeHtml(image2)}"` : "");
     const price = escapeHtml(formatPrice(p.price));
@@ -1776,13 +1776,13 @@ const skeletons = Array.from({ length: skeletonCount });
   // у <img> нет data-img-secondary, и swap — no-op.
   if (nextPhotoOn) {
     document.addEventListener("mouseover", (event) => {
-      const img = event.target && event.target.closest && event.target.closest("img[data-img-secondary]");
+      const img = event.target && event.target.closest && event.target.closest('[data-next-photo="true"] [data-nt="catalog-grid"] img[data-img-secondary]');
       if (!img) return;
       const sec = img.getAttribute("data-img-secondary");
       if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
     });
     document.addEventListener("mouseout", (event) => {
-      const img = event.target && event.target.closest && event.target.closest("img[data-img-primary]");
+      const img = event.target && event.target.closest && event.target.closest('[data-next-photo="true"] [data-nt="catalog-grid"] img[data-img-primary]');
       if (!img) return;
       const prim = img.getAttribute("data-img-primary");
       if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);

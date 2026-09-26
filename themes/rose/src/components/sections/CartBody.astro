@@ -18,7 +18,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 const deleteIconSrc = withBase("/icons/delete.svg");
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 // Отступы из конструктора (px, 0..160). Дефолт «Корзина»: сверху 80, снизу 40.
 const pad = padding ?? { top: 80, bottom: 40 };
 const padStyle = `padding-top:${Math.min(Number(pad.top) || 0, 160)}px;padding-bottom:${Math.min(Number(pad.bottom) || 0, 160)}px;`;

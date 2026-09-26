@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // Канон ContactForm (bloom). Секция рендерит форму обратной связи.
 // Манера bloom сохранена: розовая pill-кнопка §3, радиус полей --radius-input,
@@ -31,12 +32,10 @@ const toBool = (v: any, fb: boolean): boolean =>
 	typeof v === "boolean" ? v : v === "true" ? true : v === "false" ? false : fb;
 
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер ПУСТОГО состояния ContactForm: заголовок
-// «Контактная форма». Заголовок берём из пропса (heading), если мерчант задал свой,
-// иначе — дословный Figma-литерал.
-const placeholderHeading =
-	(typeof p.heading?.text === "string" && p.heading.text) ||
-	(typeof p.heading === "string" && p.heading) ||
-	"Контактная форма";
+// «Контактная форма». Панельное поле (heading) пришло строкой, в т.ч. пустой ""
+// (мерчант стёр вручную) → рендерим как есть. Литерал темы — только когда поля
+// вовсе нет (undefined, старые ревизии).
+const placeholderHeading = pickText(p.heading, "Контактная форма");
 
 // «Текст» панели (`description`) — просьба владельца 2026-09-15. Порт его НЕ
 // рендерил вовсе: замер живой цепочкой 2026-09-15 давал `absent` у bloom и
@@ -129,7 +128,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-8 md:gap-10">
 		{/* Figma 1:19335: дословный заголовок секции «Контактная форма» (раньше шапки
 		    не было). Мерчант задал свой heading → рендерим ЕГО (placeholderHeading). */}
-		{!isFieldHidden('heading') && (
+		{!isFieldHidden('heading') && placeholderHeading && (
 		<div
 			class="flex w-full justify-center text-center"
 			data-puck-subsection-parent={id}

@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { schemeIdOf } from "../../lib/color-scheme";
+import { textOf, pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (satin, группа content): канон-секция MultiRows — адаптация
 // src/components/sections/CollectionRows.astro (тело КОПИЕЙ; оригинал не
 // тронут — index.astro:26 и about.astro:62 его используют, включая
@@ -48,20 +49,19 @@ function slotSet(raw: unknown): boolean {
 const hasRealRows =
 	Array.isArray(p.rows) &&
 	p.rows.some((r: any) => {
-		const heading = (typeof r?.heading === "string" && r.heading) || (typeof r?.title === "string" && r.title) || "";
+		// Канонический ключ (title) читается ПЕРВЫМ и как есть — стёртое мерчантом
+		// поле не проваливается в легаси heading (SECTION-CONTRACT.md §2).
+		const heading = textOf(r?.title) ?? textOf(r?.heading) ?? "";
 		const image = (typeof r?.imageUrl === "string" && r.imageUrl) || (typeof r?.image === "string" && r.image) || "";
 		const btn = typeof r?.button?.text === "string" ? r.button.text : typeof r?.ctaLabel === "string" ? r.ctaLabel : "";
 		return !!slotImage(image) || slotSet(heading) || slotSet(btn);
 	});
-const headingRaw =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy ?? "";
+const headingRaw = textOf(p.heading) ?? textOf(p._headingLegacy);
 const heading = hasRealRows
 	? contentSet("heading", headingRaw)
-		? headingRaw
+		? (headingRaw ?? "")
 		: ""
-	: contentSet("heading", headingRaw) && headingRaw.trim()
-		? headingRaw
-		: headingRaw || "Мультиряды";
+	: pickText(contentSet("heading", headingRaw) && hasText(headingRaw) ? headingRaw : undefined, "Мультиряды");
 // Панель пишет размер в top-level `headingSize` (select), `heading` = aiText-строка.
 // Читаем top-level ПЕРВЫМ — иначе легаси-объект heading.size из старых ревизий
 // перебивает выбор мерчанта и настройка выглядит мёртвой. Тот же механизм, что
@@ -192,12 +192,10 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 				.split(/\n\n+/)
 				.map((x) => x.trim())
 				.filter(Boolean);
-	const headingText =
-		// §11 Контракта секции: панель ряда показывает и пишет title/description/image,
-		// а heading/text/imageUrl — legacy из сидов и старых ревизий. Читать legacy
-		// ПЕРВЫМ нельзя: он есть почти в каждой ревизии и наглухо глушит правки
-		// мерчанта — заголовок ряда меняешь, на превью остаётся старый.
-		(typeof r.title === "string" && r.title) || (typeof r.heading === "string" && r.heading) || "";
+	// §11 Контракта секции: панель ряда показывает и пишет title/description/image,
+	// а heading/text/imageUrl — legacy из сидов и старых ревизий. Канон читаем
+	// как есть — стёртое title не проваливается в легаси heading (§2).
+	const headingText = textOf(r.title) ?? textOf(r.heading) ?? "";
 	const btnText =
 		(typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined) ??
 		(typeof r.ctaLabel === "string" && r.ctaLabel.trim() ? r.ctaLabel : undefined);

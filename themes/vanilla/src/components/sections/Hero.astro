@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import VanillaPicture from "../img/VanillaPicture.astro";
 import { V_IMG } from "../../data/imageAssets";
@@ -348,17 +349,22 @@ const heroSlots = resolveHeroMediaSlots(
 		"",
 );
 const heroBgRaw = heroSlots.primary;
-const heroHeadingRaw =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "";
-const heroSubtitleRaw =
-	(typeof p.text === "string" ? p.text : p.text?.content) ?? p.subtitle ?? "";
+// heroHeadingRaw/heroSubtitleRaw — строка панели (heading.text/text.content) с
+// легаси-фоллбеком на p.title/p.subtitle, СОХРАНЯЯ различие «строка (в т.ч.
+// пустая — мерчант стёр)» vs undefined («поле не задано вовсе», §2 контракта):
+// pick-выбор ниже (singleTitle/singleSubtitle) отдаёт стёртое "" как есть и
+// легаси-копию верстальщика — только при undefined.
+const heroHeadingRaw = textOf(p.heading) ?? textOf(p.title);
+const heroSubtitleRaw = textOf(p.text) ?? textOf(p.subtitle);
 const heroCtaRaw = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText ?? "";
 const hasHeroSlides = Array.isArray(p.slides) && p.slides.length > 0;
+// hasText вместо `.trim()` на truthy-проверке — строка из пробелов не в счёт
+// (§2 контракта): иначе " " считался бы контентом мерчанта.
 const hasHeroData =
-	!!heroBgRaw.trim() ||
-	!!String(heroHeadingRaw).trim() ||
-	!!String(heroSubtitleRaw).trim() ||
-	!!String(heroCtaRaw).trim() ||
+	hasText(heroBgRaw) ||
+	hasText(heroHeadingRaw) ||
+	hasText(heroSubtitleRaw) ||
+	hasText(heroCtaRaw) ||
 	hasHeroSlides;
 
 // Контракт-лейблы плейсхолдера (тип «Изображение», Figma 1:19335): overlay
@@ -371,9 +377,14 @@ const PLACEHOLDER_HEADING = "Изображение";
 const PLACEHOLDER_TEXT = "Покажи и расскажи о своем товаре в одном блоке";
 const PLACEHOLDER_CTA = "Кнопка";
 
-const singleTitle = hasHeroData ? (heroHeadingRaw || CANON_SLIDES[0].title) : PLACEHOLDER_HEADING;
+// Стёртое "" рендерим КАК ЕСТЬ — без легаси-копии верстальщика; на литерал
+// CANON_SLIDES фоллбечим (pickText) ТОЛЬКО когда поле не задано вовсе
+// (undefined). Было `heroHeadingRaw || CANON_SLIDES[0].title` — пустая строка
+// такая же falsy, как отсутствие поля, и стёртый заголовок подменялся копией
+// верстальщика «Искусство жить уютно».
+const singleTitle = hasHeroData ? pickText(heroHeadingRaw, CANON_SLIDES[0].title) : PLACEHOLDER_HEADING;
 const singleSubtitle = hasHeroData
-	? (heroSubtitleRaw || CANON_SLIDES[0].subtitle)
+	? pickText(heroSubtitleRaw, CANON_SLIDES[0].subtitle)
 	: PLACEHOLDER_TEXT;
 const singleCtaText = hasHeroData
 	? (heroCtaRaw || CANON_SLIDES[0].ctaText)
@@ -426,6 +437,10 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта); отсюда же берёт
+// aria-labelledby секции, чтобы не ссылаться на нерисуемый `<h1 id="hero-title">`.
+const showHeroTitle = hasText(singleTitle) && !isFieldHidden('heading');
+const showHeroSubtitle = hasText(singleSubtitle) && !isFieldHidden('text');
 // Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
 // (props.fieldOrder, packages/theme-base/runtime/field-order.ts). У vanilla Hero
 // заголовок/текст/кнопка — плоские соседи ОДНОГО родителя (copyWrapCls) и в
@@ -590,7 +605,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 	) : (
 		<section
 			class="relative w-full overflow-hidden bg-[rgb(var(--color-bg,20_37_15))]"
-			aria-labelledby="hero-title"
+			aria-labelledby={showHeroTitle ? "hero-title" : undefined}
 			data-puck-component-id={id}
 			style={paddingStyle}
 		>
@@ -671,7 +686,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 						<div class={`${singleLayout.copyWrapCls}${heroBoxedCls}`}>
 							{heroOrder.map((field) => (
 							<Fragment>
-							{field === 'heading' && !isFieldHidden('heading') && (
+							{field === 'heading' && showHeroTitle && (
 								<h1
 									id="hero-title"
 									class={singleTitleCls}
@@ -682,7 +697,7 @@ const heroOrder = sectionFieldOrder("Hero", p);
 									<Fragment set:html={inlineFormat(singleTitle)} />
 								</h1>
 							)}
-							{field === 'text' && !isFieldHidden('text') && (
+							{field === 'text' && showHeroSubtitle && (
 								<p
 									class={singleSubtitleCls}
 									data-puck-subsection-parent={id}

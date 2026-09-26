@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Канон-секция Newsletter в манере flux. Схема полей = packages/theme-base/blocks/
 // Newsletter/Newsletter.puckConfig.ts; настройки применяются КАК rose T17
 // (heading/headingSize · text/textSize · position-«Выравнивание» · formLayout ·
@@ -25,10 +26,10 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
 
 // Канон heading: string | { text, alignment, size }; canon-default = «Подпишитесь
 // на нашу рассылку» (Figma 1:19335 / Footer flux). Роль flux рассылки — roboto-flex
-// uppercase, цвет — токен heading (на scheme-1 = белый). Заданный мерчантом
-// heading рендерим (?? срабатывает лишь при пустых данных).
-const heading =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Подпишитесь на нашу рассылку");
+// uppercase, цвет — токен heading (на scheme-1 = белый). Стёртое мерчантом поле
+// (в т.ч. "") рендерим как есть — заглушка только когда heading не задан вовсе
+// (`pickText`, packages/theme-base/runtime/merchant-text).
+const heading = pickText(p.heading, "Подпишитесь на нашу рассылку");
 // Лестница headingSize (дефолт роли — medium = текст секции рассылки flux
 // 19/md:23): отсутствие пропа и medium = 19/23; small 15/18, large 24/30.
 const headingSize = p.heading?.size ?? p.headingSize;
@@ -54,23 +55,22 @@ const alignCls =
 			: "items-start text-left";
 const selfCls = position === "center" ? "self-center" : position === "right" ? "self-end" : "self-start";
 
-// Канон description (string) + text {content, size} (pupa-дубль). ПУСТОЕ состояние:
-// дословный Figma-плейсхолдер 1:19335 «Узнавайте первыми о новых коллекциях и
-// эксклюзивных предложениях.». Когда мерчант задал description/text.content —
-// рендерим ЕГО (?? fallback срабатывает только при пустых данных). Роль flux —
-// roboto-flex font-light, цвет токен muted (на scheme-1 = #ccc). Лестница textSize:
+// Канон description (string) + text {content, size} (pupa-дубль). ПУСТОЕ состояние
+// (поле НЕ задано вовсе) — дословный Figma-плейсхолдер 1:19335 «Узнавайте первыми
+// о новых коллекциях и эксклюзивных предложениях.». Мерчант ЗАДАЛ text/description
+// строкой (в т.ч. пустой — стёр в панели) → рендерим её как есть, секция должна
+// очищаться, а не вернуть плейсхолдер (было `.trim() ? … : undefined` — пустая
+// строка неотличима от «не задано», владелец 26.09). Роль flux — roboto-flex
+// font-light, цвет токен muted (на scheme-1 = #ccc). Лестница textSize:
 // small 14, medium/отсутствие = 16, large 18/20.
 // §11 Контракта секции: видимое поле панели «Текст» (text.content) приоритетнее
 // СКРЫТОГО legacy `description` — оно глушило ввод мерчанта. Паритет satin/bloom.
 // `p.text` приходит СТРОКОЙ: adaptLegacyProps разворачивает конверт
 // {content,size} (page-blocks.ts unwrapEnvelopes) ещё до рендера, поэтому
-// ветка `p.text?.content` на живом сайте не срабатывала никогда и «Текст»
-// секции молча показывал дефолт вместо ввода мерчанта.
+// ветка `p.text?.content` — фолбэк для путей, где конверт доезжает целым
+// (пробы qa/probe-cleared-text.mjs собирают именно такую форму).
 const description =
-	(typeof p.text === "string" && p.text.trim() ? p.text : undefined) ??
-	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
-	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
+	textOf(p.text) ?? textOf(p.description) ?? "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
 // Размер берётся из top-level `textSize`, а конверт — только фолбэк. Конвейер
 // разворачивает `text: {content, size}` в строку ещё до рендера и поднимает
 // размер в `textSize` (page-blocks: TEXT_SIZE_ENVELOPES), поэтому `p.text?.size`
@@ -119,8 +119,6 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && !hideTitle ? `${id}-title` : undefined;
-
 // Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
 // .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
 // 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
@@ -134,6 +132,12 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртое поле (heading/description = "") не рисуется — §2 контракта секции;
+// обёртка heading+text (gap-2) тоже пропадает, если внутри неё не осталось
+// ничего видимого — иначе её отступ сдвигает форму подписки.
+const showHeading = !hideTitle && !isFieldHidden("heading") && hasText(heading);
+const showDescription = !hideTitle && !isFieldHidden("text") && hasText(description);
+const titleId = id && showHeading ? `${id}-title` : undefined;
 // Порядок из перетаскивания в конструкторе (props.fieldOrder,
 // packages/theme-base/runtime/field-order.ts): `heading` — блок заголовка с
 // текстом, `buttonText` — форма подписки вместе с согласием под ней. Строка
@@ -161,9 +165,9 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 			{newsletterOrder.map((field) => (
 			<Fragment>
 			{
-				field === 'heading' && !hideTitle && (
+				field === 'heading' && (showHeading || showDescription) && (
 					<div class="flex w-full flex-col gap-2">
-						{!isFieldHidden('heading') && (
+						{showHeading && (
 							<h2
 								id={titleId}
 								class={headingCls}
@@ -174,7 +178,7 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 								<Fragment set:html={inlineFormat(heading)} />
 							</h2>
 						)}
-						{!isFieldHidden('text') && (
+						{showDescription && (
 							<p
 								class={`font-roboto-flex ${descSizeCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 								data-puck-subsection-parent={id}

@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { textOf, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // НОВАЯ канон-секция Gallery (Фаза B, рецепт bloom Gallery): у верстальщика
 // satin секции «Галерея» НЕТ; components/gallery/* — legacy клона rose со
 // скруглениями rounded-[8px]/gray-100, его НЕ переиспользуем (MANNER.md, шапка).
@@ -53,13 +54,11 @@ function formatCatalogPrice(value: number | null | undefined): string {
 	return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
-// Канон heading {text,size}: дефолт «Галерея» (пустой текст конструктора →
-// тоже «Галерея» — «добавил секцию → сразу красиво»).
-const rawTitle = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title;
-const sectionTitle =
-	contentSet(["heading", "title"], rawTitle) && typeof rawTitle === "string" && rawTitle.trim()
-		? rawTitle
-		: "Галерея";
+// Канон heading {text,size}: заглушка «Галерея» — только когда поле вовсе не
+// задано (§2). Легаси `title` считаем ТОЛЬКО когда в нём реально есть текст —
+// иначе пустой-по-умолчанию легаси-проп неотличим от «поле не задано».
+const legacyTitle = typeof p.title === "string" && p.title.trim() ? p.title : undefined;
+const sectionTitle = textOf(p.heading) ?? legacyTitle ?? "Галерея";
 // Текст секции — рендер ТОЛЬКО при непустом (body-роль Arsenal 16 light muted §1).
 const rawText =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
@@ -311,15 +310,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class="satin-container flex flex-col gap-8">
-		{!isFieldHidden('heading') && (
+		{!isFieldHidden('heading') && (hasText(sectionTitle) || hasText(sectionText)) && (
 		<div
 			class="flex flex-col gap-2"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 class={headingCls} set:html={inlineFormat(sectionTitle)} />
-			{sectionText && <p class={textCls} set:html={inlineFormat(sectionText)} />}
+			{hasText(sectionTitle) && <h2 class={headingCls} set:html={inlineFormat(sectionTitle)} />}
+			{hasText(sectionText) && <p class={textCls} set:html={inlineFormat(sectionText)} />}
 		</div>
 		)}
 

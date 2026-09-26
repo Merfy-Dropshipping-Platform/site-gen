@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import SatinPicture from "../img/SatinPicture.astro";
 import { SITE_TITLE } from "../../consts";
@@ -34,7 +35,6 @@ function merchantImage(keys: string | string[], url: unknown): string {
 	if (!u || u.includes("/placeholders/") || u.includes("/images/4x/")) return "";
 	return u;
 }
-
 // ── Пустое состояние (Figma 1:19335) ────────────────────────────────────────
 // Контракт плейсхолдеров: когда мерчант НИЧЕГО не настроил (секция в дефолте),
 // рендерим нейтральный ПЛЕЙСХОЛДЕР (пустой image-rect surface-тона + заголовок
@@ -50,18 +50,15 @@ const rawBackgroundImage =
 		: undefined) ??
 	(typeof p.backgroundImage === "string" && p.backgroundImage.trim() ? p.backgroundImage : undefined) ??
 	(typeof p.image?.url === "string" && p.image.url.trim() ? p.image.url : undefined);
-const rawHeadingText =
-	typeof p.heading?.text === "string"
-		? p.heading.text
-		: typeof p.title === "string"
-			? p.title
-			: "";
-const rawSubtitleText =
-	typeof p.text?.content === "string"
-		? p.text.content
-		: typeof p.subtitle === "string"
-			? p.subtitle
-			: "";
+// Легаси-поля (title/subtitle) считаем ТОЛЬКО когда в них реально есть текст:
+// у satin оба дефолтятся пустой строкой (не undefined) с рождения секции, и
+// сравнивать их наравне с "поле не задано" нельзя — иначе свежая пустая
+// секция и стёртая мерчантом становятся неотличимы. heading.text/text.content
+// (видимые поля панели) приходят строкой как есть — пустая тоже считается.
+const legacyTitle = typeof p.title === "string" && p.title.trim() ? p.title : undefined;
+const rawHeadingText = textOf(p.heading) ?? legacyTitle;
+const legacySubtitle = typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : undefined;
+const rawSubtitleText = textOf(p.text) ?? legacySubtitle;
 const rawPrimaryText =
 	typeof p.primaryButton?.text === "string"
 		? p.primaryButton.text
@@ -133,13 +130,13 @@ const hasMerchantCta = !!rawPrimaryText.trim() && rawPrimaryText.trim() !== VERS
 // как условие ветки — теперь совпадает с rose (rose.isEmpty включает и cta).
 const hasMerchantText = hasMerchantTitle || hasMerchantSubtitle || hasMerchantCta;
 
-// Лейблы заданного состояния (рендер мерчанта — НЕ трогаем при наличии данных).
-const title = hasMerchantTitle
-	? (p.heading?.text ?? p.title)
-	: VERSTKA_TITLE;
-const subtitle = hasMerchantSubtitle
-	? (p.text?.content ?? p.subtitle)
-	: VERSTKA_SUB;
+// Рендер-значения поверх rawHeadingText/rawSubtitleText (§2): стёртая
+// мерчантом строка ("") рендерится пустой (элемент затем не рисуется — гейт
+// ниже через hasText), заглушка — только когда значения нет вовсе (undefined).
+// hasMerchantTitle/hasMerchantSubtitle остаются gate'ом РАСКЛАДКИ
+// (full-bleed/сплит) — их семантика не меняется.
+const title = pickText(rawHeadingText, VERSTKA_TITLE);
+const subtitle = pickText(rawSubtitleText, VERSTKA_SUB);
 const ctaRaw = p.primaryButton?.text ?? p.cta?.text ?? p.ctaText;
 const ctaText = hasMerchantCta && typeof ctaRaw === "string" && ctaRaw.trim() ? ctaRaw : VERSTKA_CTA;
 const ctaLink =
@@ -350,6 +347,14 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// §2 Контракта секции: aria-labelledby не должен ссылаться на несуществующий
+// id — h1#hero-title рисуется только при этом условии (обе ветки ниже).
+const showTitle = hasText(title) && !isFieldHidden('heading');
+// Обёртка заголовок+текст (heroEmptyRuns/heroFilledRuns ниже) не рисуется,
+// если в ней не остаётся ничего видимого — иначе стёртые оба поля оставляют
+// пустой gap (§2).
+const runHasText = (run: { fields: readonly string[] }) =>
+	run.fields.some((field) => (field === 'heading' && showTitle) || (field === 'text' && hasText(subtitle)));
 // Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
 // (props.fieldOrder, packages/theme-base/runtime/field-order.ts). ПУСТАЯ секция —
 // обычный реестр (heading выше text — Figma-плейсхолдер). ЗАПОЛНЕННАЯ секция
@@ -380,7 +385,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 		   primaryButton=102) — блок остаётся выделяемым/редактируемым в конструкторе. */
 		<section
 			class={`relative w-full overflow-hidden bg-[#111111]${selfSchemeClass}`}
-			aria-labelledby="hero-title"
+			aria-labelledby={showTitle ? "hero-title" : undefined}
 			data-puck-component-id={id}
 			style={paddingStyle}
 		>
@@ -451,10 +456,11 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 					    прежний вид сохраняется байт-в-байт. */}
 					<div class:list={[boxed ? `${emptyBoxCls}${boxedCls}` : emptyWrapCls]}>
 					{heroEmptyRuns.map((run) => run.grouped ? (
+					runHasText(run) && (
 					<div class={emptyInnerCls}>
 						{run.fields.map((field) => (
 						<Fragment>
-						{field === 'heading' && !isFieldHidden('heading') && (
+						{field === 'heading' && showTitle && (
 							<h1
 								id="hero-title"
 								class={emptyHeadingCls}
@@ -462,22 +468,23 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
 							>
-								{PH_LABEL}
+								{title}
 							</h1>
 						)}
-						{field === 'text' && !isFieldHidden('text') && (
+						{field === 'text' && hasText(subtitle) && !isFieldHidden('text') && (
 							<p
 								class={emptyTextCls}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
 							>
-								{PH_HELPER}
+								{subtitle}
 							</p>
 						)}
 						</Fragment>
 						))}
 					</div>
+					)
 					) : !isFieldHidden('buttons') && (
 					/* Кнопки пустого состояния красятся ролью схемы (data-scheme-button),
 					   как у заполненной ветки. Заголовок и текст поверх фото остаются на
@@ -514,7 +521,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 	) : (
 <section
 	class={`relative w-full bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={showTitle ? "hero-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
@@ -522,10 +529,11 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 		<div class={textColCls}>
 			<div class={blockCls}>
 				{heroFilledRuns.map((run) => run.grouped ? (
+				runHasText(run) && (
 				<div class="flex flex-col gap-4">
 					{run.fields.map((field) => (
 					<Fragment>
-					{field === 'text' && !isFieldHidden('text') && (
+					{field === 'text' && hasText(subtitle) && !isFieldHidden('text') && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -534,7 +542,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 							set:html={inlineFormat(subtitle)}
 						/>
 					)}
-					{field === 'heading' && !isFieldHidden('heading') && (
+					{field === 'heading' && showTitle && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -547,6 +555,7 @@ const heroFilledRuns = fieldRuns(orderFields(p, SATIN_HERO_ORDER), ["heading", "
 					</Fragment>
 					))}
 				</div>
+				)
 				) : (
 					!isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`flex w-full flex-row flex-wrap items-center gap-3 ${rowJustifyCls}`}>

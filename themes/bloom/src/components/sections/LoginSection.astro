@@ -59,6 +59,7 @@ import { schemeIdOf } from "../../lib/color-scheme";
 // значит в значении может прийти <strong>/<em> от кнопок «Ж»/«К». Без разбора
 // они напечатались бы тегами — тот же класс бага, что сторожит test:rich-text-fields.
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 interface Props {
 	id?: string;
@@ -82,6 +83,12 @@ const shopId = "";
 const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 const schemeClass = `color-scheme-${schemeIdOf(colorScheme) || "2"}`;
 const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padding?.bottom ?? 80}px;`;
+// §2 контракта секции: "" от мерчанта (стёрто вручную) — не рисуем совсем, и
+// обёртку вокруг заголовка/текста тоже, если внутри не осталось ничего
+// видимого. undefined (поле вовсе не задано) уже даёт литерал верстальщика —
+// см. деструктуризацию heading/text выше.
+const showHeading = hasText(heading);
+const showText = hasText(text);
 
 // Кнопка: канон button {text, href|link}, дословно как в ImageWithText —
 // пустой текст скрывает кнопку (нет регрессии на сайтах без настройки).
@@ -117,15 +124,19 @@ const btnText =
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			{(showHeading || showText) && (
 			<div class="flex flex-col items-center gap-2 text-center">
+				{showHeading && (
 				<h1
 					class="font-heading text-xl uppercase font-normal"
 					style="color: rgb(var(--color-heading, 0 0 0));"
 				><Fragment set:html={inlineFormat(heading)} /></h1>
-				{text && (
+				)}
+				{showText && (
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
+			)}
 
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>

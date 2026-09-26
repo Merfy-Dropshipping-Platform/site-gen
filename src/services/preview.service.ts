@@ -28,6 +28,13 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c]!);
 }
 
+/**
+ * Текстовые поля мерчанта: "" в них — это стёртый текст, а не «возьми дефолт
+ * темы» (владелец 26.09). Кнопки, картинки и подсказки полей сюда не входят —
+ * у них "" по-прежнему значит «как в теме».
+ */
+const MERCHANT_TEXT_KEYS = new Set(['heading', 'title', 'subtitle', 'text', 'content', 'description']);
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
   const proto = Object.getPrototypeOf(v);
@@ -52,7 +59,8 @@ export function deepMergeBlockProps(
     } else if (
       value === '' &&
       typeof defaultValue === 'string' &&
-      defaultValue.length > 0
+      defaultValue.length > 0 &&
+      !MERCHANT_TEXT_KEYS.has(key)
     ) {
       // Seed/revision `logo: ""` means "use theme default" (blockDefaults),
       // same as designer headers that fall back to `/icons/*.svg`.

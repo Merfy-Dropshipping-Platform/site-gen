@@ -1,6 +1,7 @@
 ---
 import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Секция MultiColumns («Мультиколонны») в манере flux. Донора-секции у
 // верстальщика flux НЕТ (секций всего 4, MANNER §10) — секция собрана в ЕДИНОМ
 // flux-языке: ВСЯ секция = font-roboto-flex (заголовок секции / заголовок колонки /
@@ -33,12 +34,14 @@ const id = p.id;
 const hasColumns = Array.isArray(p.columns) && p.columns.length > 0;
 
 // Канон heading: string | { text, alignment, size }. С данными мерчанта — его
-// заголовок (пусто → без шапки). В пустом состоянии — Figma-лейбл «Мультиколонны».
-// Роль = заголовок секции flux: roboto-flex uppercase, токен color-heading.
-// Лестница flux (паритет MainText, ступени rose small/medium/large): medium
-// (canon-default) и отсутствие = 19/md:23 (база), small ступень ниже, large выше.
-const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
-const heading = hasColumns ? headingRaw : (headingRaw || "Мультиколонны");
+// заголовок (стёртое поле, в т.ч. "", рисуем как есть — без шапки). В пустом
+// состоянии секции (нет колонок) заглушка «Мультиколонны» — ТОЛЬКО когда
+// heading не задан вовсе (`pickText`, packages/theme-base/runtime/merchant-text),
+// стёртое поле остаётся пустым и там же. Роль = заголовок секции flux:
+// roboto-flex uppercase, токен color-heading. Лестница flux (паритет MainText,
+// ступени rose small/medium/large): medium (canon-default) и отсутствие =
+// 19/md:23 (база), small ступень ниже, large выше.
+const heading = hasColumns ? (textOf(p.heading) ?? "") : pickText(p.heading, "Мультиколонны");
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"
@@ -234,7 +237,6 @@ const CONTAINER_CLS = {
 };
 const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 
-const titleId = id && heading ? `${id}-title` : undefined;
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -244,6 +246,10 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртый заголовок (§2 контракта секции) не рисуется — id тогда не нужен,
+// aria-labelledby не должен ссылаться на несуществующий <h2>.
+const showHeading = hasText(heading) && !isFieldHidden('heading');
+const titleId = id && showHeading ? `${id}-title` : undefined;
 
 ---
 
@@ -255,7 +261,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	<div class={containerCls} style={paddingStyle}>
 		<div class={`mx-auto flex w-full ${widthCls} flex-col gap-8 md:gap-12`}>
 			{
-				heading && !isFieldHidden('heading') && (
+				showHeading && (
 					<h2
 						id={titleId}
 						class={headingCls}

@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (bloom, группа misc): канон-секция Newsletter в манере bloom
 // (см. themes/bloom/MANNER.md; процесс-эталон — rose T17 Newsletter). Схема
 // полей = packages/theme-base/blocks/Newsletter/Newsletter.puckConfig.ts.
@@ -28,14 +29,12 @@ const _schemeId =
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Канон heading: string | { text, alignment, size }. Пустое состояние секции
-// (мерчант не задал заголовок) = Figma-плейсхолдер 1:19335 «Подпишитесь на нашу
-// рассылку» — НЕ мок-демо подвала верстальщика «ПОДПИШИТЕСЬ НА РАССЫЛКУ» (F:46).
-// Когда мерчант вводит свой заголовок — он выигрывает (фоллбек ниже не используется).
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() ||
-	"Подпишитесь на нашу рассылку";
+// (поле вовсе не задано, undefined) = Figma-плейсхолдер 1:19335 «Подпишитесь на
+// нашу рассылку» — НЕ мок-демо подвала верстальщика «ПОДПИШИТЕСЬ НА РАССЫЛКУ»
+// (F:46). Панельное поле пришло строкой (в т.ч. пустой "" — мерчант стёр
+// вручную) → рендерим как есть. Заглушка темы — только когда поля вовсе нет
+// (контракт §2, packages/theme-base/runtime/merchant-text.ts).
+const heading = pickText(p.heading, "Подпишитесь на нашу рассылку");
 // Лестница §9 от базы-литерала 20 (medium): small ≈0.7× = 14, large ≈1.2× = 24.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
@@ -57,11 +56,13 @@ const headingCls =
 // {content,size} (page-blocks.ts unwrapEnvelopes) ещё до рендера, поэтому
 // ветка `p.text?.content` на живом сайте не срабатывала никогда и «Текст»
 // секции молча показывал дефолт вместо ввода мерчанта.
-const description =
-	(typeof p.text === "string" && p.text.trim() ? p.text : undefined) ??
-	(typeof p.text?.content === "string" && p.text.content.trim() ? p.text.content : undefined) ??
-	(typeof p.description === "string" && p.description.trim() ? p.description : undefined) ??
-	"Узнавайте первыми о новых коллекциях и эксклюзивных предложениях.";
+// Панельное поле «Текст» пришло строкой (в т.ч. пустой "" — мерчант стёр
+// вручную) → рендерим как есть; на legacy `description` падаем ТОЛЬКО когда
+// панельного поля вовсе нет (undefined, старые ревизии).
+const description = pickText(
+	p.text,
+	pickText(p.description, "Узнавайте первыми о новых коллекциях и эксклюзивных предложениях."),
+);
 // Размер берётся из top-level `textSize`, а конверт — только фолбэк. Конвейер
 // разворачивает `text: {content, size}` в строку ещё до рендера и поднимает
 // размер в `textSize` (page-blocks: TEXT_SIZE_ENVELOPES), поэтому `p.text?.size`
@@ -137,8 +138,6 @@ const paddingStyle = p.padding
 // применения — как у rose/flux/satin/vanilla.
 const hideTitle = p.hideTitle === "true";
 
-const titleId = id && !hideTitle ? `${id}-title` : undefined;
-
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -146,6 +145,13 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+
+// §2 контракта: обёртка заголовка/текста не рисуется, если внутри не осталось
+// ничего видимого (иначе на месте стёртых полей висит gap-отступ формы).
+const showHeading = hasText(heading) && !isFieldHidden("heading");
+const showDescription = hasText(description);
+
+const titleId = id && !hideTitle && showHeading ? `${id}-title` : undefined;
 // Порядок из перетаскивания в конструкторе (props.fieldOrder,
 // packages/theme-base/runtime/field-order.ts): `heading` — блок заголовка с
 // текстом, `buttonText` — форма подписки вместе с согласием и строкой статуса
@@ -171,9 +177,9 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 		<div class={wrapCls}>
 			{newsletterOrder.map((field) => (
 			<Fragment>
-			{field === 'heading' && !hideTitle && (
+			{field === 'heading' && !hideTitle && (showHeading || showDescription) && (
 				<div class={textBlockCls}>
-					{!isFieldHidden('heading') && (
+					{showHeading && (
 						<h2
 							id={titleId}
 							class={headingCls}
@@ -183,6 +189,7 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 							set:html={inlineFormat(heading)}
 						></h2>
 					)}
+					{showDescription && (
 					<p
 						class={`font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]${descSizeCls}`}
 						data-puck-subsection-parent={id}
@@ -190,6 +197,7 @@ const newsletterOrder = sectionFieldOrder("Newsletter", p);
 						data-puck-subsection-field="text"
 						set:html={inlineFormat(description)}
 					></p>
+					)}
 				</div>
 			)}
 

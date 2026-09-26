@@ -32,26 +32,23 @@ const _schemeId =
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Пустое состояние (Figma 1:19335): секция БЕЗ выбранного контента мерчанта.
-// Гейт = ни одно из contentful-полей (heading/text/button|cta) не задано. В
-// этом случае рендерим полный плейсхолдер контракта (заголовок + текст + кнопка),
-// НЕ мок-манифест верстальщика. Любой заданный проп = реальные данные → рендер
-// как есть (заголовок только при непустом, кнопка только при непустой).
-const headingProvided =
-	(typeof p.heading === "string" && p.heading.trim()) ||
-	(typeof p.heading?.text === "string" && p.heading.text.trim());
-const textProvided =
-	(typeof p.text === "string" && p.text.trim()) ||
-	(typeof p.text?.content === "string" && p.text.content.trim());
+// Гейт = ни одно из contentful-полей (heading/text/button|cta) не ЗАДАНО
+// (undefined — старая ревизия). Панельное поле пришло строкой, в т.ч. пустой
+// "" (мерчант стёр вручную), — это «задано», просто пусто: рендерим как есть,
+// заглушку контракта НЕ включаем. Раньше здесь стоял `.trim()`-чек, который
+// путал «стёрто» с «не задано вовсе» (владелец 26.09).
+const headingRaw = typeof p.heading === "string" ? p.heading : p.heading?.text;
+const headingSet = typeof headingRaw === "string";
+const textRaw = typeof p.text === "string" ? p.text : p.text?.content;
+const textSet = typeof textRaw === "string";
 const buttonProvided = p.button !== undefined || p.cta !== undefined;
-const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
+const isEmptyState = !headingSet && !textSet && !buttonProvided;
 
 // Канон heading: string | { text, size }. Роль = заголовок секции (Urbanist
 // uppercase, МАННЕРА §1), на розовом полотне — белый. Лестница §9: medium/
 // отсутствие = литерал роли 18/md:20, small 15/17, large 22/24. Пустое
 // состояние → плейсхолдер-заголовок контракта; иначе рендер ТОЛЬКО при заданном.
-const heading = headingProvided
-	? (typeof p.heading === "string" ? p.heading : p.heading.text)
-	: (isEmptyState ? "Расскажи о своем бренде" : "");
+const heading = headingSet ? headingRaw : (isEmptyState ? "Расскажи о своем бренде" : "");
 // Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): отступы,
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
 // цвета не меняются. Владелец 25.09: одна версия секции — прежняя ветка удалена.
@@ -63,12 +60,12 @@ const headingCls =
 			? "font-urbanist text-[22px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
 			: "font-urbanist text-[18px] font-normal leading-none text-[rgb(var(--color-heading,255_255_255))] md:text-[20px]";
 
-// Канон text: string | { content, size }. Пустое состояние (Figma 1:19335) →
-// плейсхолдер-подсказка контракта, НЕ манифест Philosophy верстальщика.
-const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ?? "Расскажи подробнее о своем онлайн-магазине в этом блоке");
+// Канон text: string | { content, size }. Один разбор — textRaw/textSet выше
+// (были посчитаны и брошены: text пересчитывался заново отдельным typeof-
+// разбором того же p.text). Заглушка контракта — как в HEAD, при textSet=false
+// (поле вовсе не задано); стёртая "" — уже строка (textSet=true) и рендерится
+// пустой, гейт `text &&` на рендере ниже скрывает элемент.
+const text = textSet ? textRaw : "Расскажи подробнее о своем онлайн-магазине в этом блоке";
 
 // Канон textSize (top-level hidden приоритетнее text.size сабпанели). Лестница
 // §9 «Манифест 24»: large/отсутствие = литерал 24px, medium 20, small 17.
@@ -174,7 +171,7 @@ const textOrder = sectionFieldOrder("MainText", p);
 				></h2>
 			)
 		}
-		{field === 'text' && !isFieldHidden('text') && (
+		{field === 'text' && text && !isFieldHidden('text') && (
 			<p
 				id={textId}
 				data-animate

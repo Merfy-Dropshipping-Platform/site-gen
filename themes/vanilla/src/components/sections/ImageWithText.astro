@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/runtime/field-order";
 // Фаза B (vanilla): канон-секция ImageWithText — адаптация care-бэнда
 // sections/Gallery.astro:82-123 («Ваш дом — наша забота», см. themes/vanilla/
@@ -42,8 +43,9 @@ const hasImage = typeof p.image?.url === "string" && p.image.url.trim().length >
 // (Bitter italic 20 white на полотне №2, Gal:92). Лестница §9: medium/отсутствие
 // = литерал 20, small 17, large 24.
 const headingDefault = hasImage ? "Ваш дом — наша забота" : "Изображение с текстом";
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || headingDefault;
+// pickText: строка панели (в т.ч. пустая — мерчант стёр) рендерится КАК ЕСТЬ;
+// headingDefault подставляется ТОЛЬКО когда поле не задано вовсе (§2 контракта).
+const heading = pickText(p.heading, headingDefault);
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingCls =
 	headingSize === "small"
@@ -78,8 +80,7 @@ const selfCls =
 const textDefault = hasImage
 	? "<p>Мы уверены: дом должен быть красивым не только на фотографиях, но и на ощупь. Бренд Vanila создан для тех, кто ценит эстетику и качество в каждом квадратном метре своего пространства. Мы собираем для вас самые вдохновляющие предметы текстиля и декора, чтобы ваш интерьер обрел индивидуальность.</p><p>В ассортименте Vanila вы не найдете случайных вещей. Только то, что действительно достойно стать частью вашего дома</p>"
 	: "<p>Покажи и расскажи о своем товаре в одном блоке</p>";
-const text =
-	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() || textDefault;
+const text = pickText(p.text, textDefault);
 const textSize = p.textSize ?? p.text?.size;
 // Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
 // размеры»): бэнд «Ваш дом — наша забота» Vanilla-theme @c65d9e1c
@@ -173,9 +174,6 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-// Фон секции — токен с фоллбеком родного полотна №2 (#3A4530, МАННЕРА §7).
-const titleId = id && heading ? `${id}-title` : undefined;
-
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -183,6 +181,13 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта); titleId ставим ТОЛЬКО
+// когда заголовок реально рисуется — иначе aria-labelledby секции сослался бы
+// на несуществующий id.
+const showHeading = hasText(heading) && !isFieldHidden('heading');
+const showText = hasText(text) && !isFieldHidden('text');
+// Фон секции — токен с фоллбеком родного полотна №2 (#3A4530, МАННЕРА §7).
+const titleId = id && showHeading ? `${id}-title` : undefined;
 ---
 
 <section
@@ -210,8 +215,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		   (в бандле ноль вхождений «basis») — на них опираться нельзя. */}
 		<div class={`flex w-full flex-col ${itemsCls}${imageLeft ? " lg:order-2" : ""} lg:min-w-0 lg:shrink lg:grow-0`}>
 		<div class={`flex w-full max-w-[352px] flex-col ${itemsCls}`}>
-			{isDefaultOrder && (
-				heading && !isFieldHidden('heading') && (
+			{isDefaultOrder && showHeading && (
 					<h2
 						id={titleId}
 						class={headingCls + alignCls + italicCls}
@@ -221,9 +225,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					>
 						<Fragment set:html={inlineFormat(heading)} />
 					</h2>
-				)
 			)}
-			{isDefaultOrder && !isFieldHidden('text') && (
+			{isDefaultOrder && showText && (
 				<div
 					class={textCls + italicCls + alignCls}
 					data-puck-subsection-parent={id}
@@ -256,7 +259,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона Astro
 				// читает как открывающий тег и рвёт разметку молча.
 				const nodes = {
-					heading: heading && !isFieldHidden('heading') && (
+					heading: showHeading && (
 						<h2
 							id={titleId}
 							class={`${gapCls} ${headingCls}${alignCls}${italicCls}`}
@@ -267,7 +270,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<Fragment set:html={inlineFormat(heading)} />
 						</h2>
 					),
-					text: !isFieldHidden('text') && (
+					text: showText && (
 						<div
 							class={`${gapCls} ${textClsBody}${italicCls}${alignCls}`}
 							data-puck-subsection-parent={id}

@@ -106,7 +106,9 @@ const KNOWN_DIVERGENT: Record<Theme, readonly string[]> = {
  * больше не вписывает скрытый размер текста), bloom `Footer.newsletter` (25.09 —
  * «Рассылка» по умолчанию «Показать», как тема и рисует без настройки), flux
  * `Product.variants` (25.09 — «Вариации» по умолчанию «Нет», как рисует
- * страница товара).
+ * страница товара), rose/bloom/flux `MainText.heading`/`MainText.text` (26.09 —
+ * нормализация больше не превращает «поле не задано» в "", и секция без поля
+ * рисует тот же текст, что стоит в панели по умолчанию).
  */
 const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
   rose: [
@@ -125,8 +127,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "Hero.padding",
     "Hero.title",
     "ImageWithText.button",
-    "MainText.heading",
-    "MainText.text",
     "MultiColumns.columns",
     "MultiColumns.heading",
     "MultiRows.rows",
@@ -159,8 +159,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "ImageWithText.button",
     "ImageWithText.heading",
     "ImageWithText.text",
-    "MainText.heading",
-    "MainText.text",
     "MultiColumns.columns",
     "MultiColumns.heading",
     "MultiRows.rows",
@@ -259,8 +257,6 @@ const KNOWN_ANY_KEY: Record<Theme, readonly string[]> = {
     "Hero.cta",
     "Hero.padding",
     "ImageWithText.button",
-    "MainText.heading",
-    "MainText.text",
     "MultiColumns.columns",
     "MultiRows.rows",
     "Newsletter.buttonText",

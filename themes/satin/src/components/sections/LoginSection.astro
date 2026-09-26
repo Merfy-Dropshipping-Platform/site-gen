@@ -117,15 +117,19 @@ const btnText =
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			{(heading || text) && (
 			<div class="flex flex-col items-center gap-2 text-center">
+				{heading && (
 				<h1
 					class="font-heading text-xl uppercase font-normal"
 					style="color: rgb(var(--color-heading, 0 0 0));"
 				><Fragment set:html={inlineFormat(heading)} /></h1>
+				)}
 				{text && (
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
+			)}
 
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>

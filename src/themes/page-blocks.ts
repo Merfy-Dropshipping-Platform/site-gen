@@ -821,6 +821,17 @@ function unwrapTextSize(
   return { value: '', present: false };
 }
 
+/**
+ * Конверт `{text}` / `{content}` → строка. Текста нет вовсе — поле убираем, а не
+ * ставим "": пустая строка значит «мерчант стёр» (секция рисует пусто),
+ * отсутствие — «не задано» (дефолт темы или заглушка порта). Владелец 26.09.
+ */
+function flattenTextField(out: Record<string, unknown>, key: 'heading' | 'text'): void {
+  const field = unwrapTextSize(out[key]);
+  if (field.present) out[key] = field.value;
+  else delete out[key];
+}
+
 function coerceSchemeNumber(v: unknown, fallback = 1): number {
   if (typeof v === 'number' && v >= 1 && v <= 5) return v;
   if (typeof v === 'string') {
@@ -1032,14 +1043,8 @@ function coerceImageWithTextProps(
   if (isHeadingSize(textEnvelope?.size) && !isHeadingSize(out.textSize)) {
     out.textSize = textEnvelope!.size;
   }
-  // heading: {text, enabled} → flat string
-  const h = unwrapTextSize(out.heading);
-  if (h.present) out.heading = h.value;
-  else if (typeof out.heading !== 'string') out.heading = '';
-  // text: {content, enabled} → flat string
-  const t = unwrapTextSize(out.text);
-  if (t.present) out.text = t.value;
-  else if (typeof out.text !== 'string') out.text = '';
+  flattenTextField(out, 'heading');
+  flattenTextField(out, 'text');
   // image: "" (legacy) → undefined, so Astro renders placeholder SVG
   if (typeof out.image === 'string') {
     out.image = out.image
@@ -1098,12 +1103,8 @@ function coerceMainTextProps(out: Record<string, unknown>): void {
   if (isHeadingSize(textEnvelope?.size)) {
     out.textSize = textEnvelope!.size;
   }
-  const h = unwrapTextSize(out.heading);
-  if (h.present) out.heading = h.value;
-  else if (typeof out.heading !== 'string') out.heading = '';
-  const t = unwrapTextSize(out.text);
-  if (t.present) out.text = t.value;
-  else if (typeof out.text !== 'string') out.text = '';
+  flattenTextField(out, 'heading');
+  flattenTextField(out, 'text');
   if (out.colorScheme !== undefined) out.colorScheme = coerceSchemeNumber(out.colorScheme);
   // align, padding: absent → undefined lets blockDefaults win.
 }

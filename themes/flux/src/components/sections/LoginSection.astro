@@ -59,6 +59,7 @@ import { schemeIdOf } from "../../lib/color-scheme";
 // значит в значении может прийти <strong>/<em> от кнопок «Ж»/«К». Без разбора
 // они напечатались бы тегами — тот же класс бага, что сторожит test:rich-text-fields.
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 interface Props {
 	id?: string;
@@ -117,15 +118,21 @@ const btnText =
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			{/* Стёртые heading+text (§2 контракта секции) → обёртка не рисуется вовсе,
+			    иначе её gap-2 остаётся пустым отступом над формой входа. */}
+			{(hasText(heading) || hasText(text)) && (
 			<div class="flex flex-col items-center gap-2 text-center">
-				<h1
-					class="font-heading text-xl uppercase font-normal"
-					style="color: rgb(var(--color-heading, 0 0 0));"
-				><Fragment set:html={inlineFormat(heading)} /></h1>
-				{text && (
+				{hasText(heading) && (
+					<h1
+						class="font-heading text-xl uppercase font-normal"
+						style="color: rgb(var(--color-heading, 0 0 0));"
+					><Fragment set:html={inlineFormat(heading)} /></h1>
+				)}
+				{hasText(text) && (
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
+			)}
 
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>

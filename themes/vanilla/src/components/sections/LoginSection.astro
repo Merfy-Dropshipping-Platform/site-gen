@@ -59,6 +59,7 @@ import { schemeIdOf } from "../../lib/color-scheme";
 // значит в значении может прийти <strong>/<em> от кнопок «Ж»/«К». Без разбора
 // они напечатались бы тегами — тот же класс бага, что сторожит test:rich-text-fields.
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 interface Props {
 	id?: string;
@@ -76,6 +77,11 @@ const {
 	padding,
 	button,
 } = Astro.props as Props;
+
+// hasText — строка из пробелов не в счёт (§2 контракта): стёртые заголовок и
+// текст не рисуют пустые теги, а вместе — не оставляют пустую обёртку gap-2.
+const showHeading = hasText(heading);
+const showText = hasText(text);
 
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
@@ -117,15 +123,19 @@ const btnText =
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			{(showHeading || showText) && (
 			<div class="flex flex-col items-center gap-2 text-center">
-				<h1
-					class="font-heading text-xl uppercase font-normal"
-					style="color: rgb(var(--color-heading, 0 0 0));"
-				><Fragment set:html={inlineFormat(heading)} /></h1>
-				{text && (
+				{showHeading && (
+					<h1
+						class="font-heading text-xl uppercase font-normal"
+						style="color: rgb(var(--color-heading, 0 0 0));"
+					><Fragment set:html={inlineFormat(heading)} /></h1>
+				)}
+				{showText && (
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
+			)}
 
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>

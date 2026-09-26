@@ -1,6 +1,7 @@
 ---
 import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
+import { textOf, pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (satin, группа content): канон-секция MultiColumns — адаптация
 // src/components/sections/Features.astro (тело КОПИЕЙ; оригинал не тронут —
 // index.astro:31 его использует). Схема полей = packages/theme-base/blocks/
@@ -49,12 +50,10 @@ function slotSet(raw: unknown): boolean {
 // flat-проп items[] {title, body, icon} поддержан алиасами.
 const rawColumnSource = Array.isArray(p.columns) && p.columns.length ? p.columns : Array.isArray(p.items) ? p.items : [];
 const hasManualColumns = rawColumnSource.some((c: any) => {
-	const heading = (typeof c?.title === "string" && c.title) || (typeof c?.heading === "string" && c.heading) || "";
-	const text =
-		(typeof c?.description === "string" && c.description) ||
-		(typeof c?.text === "string" && c.text) ||
-		(typeof c?.body === "string" && c.body) ||
-		"";
+	// Канонический ключ (title/description) читается ПЕРВЫМ и как есть — стёртое
+	// мерчантом поле не проваливается в легаси (SECTION-CONTRACT.md §2).
+	const heading = textOf(c?.title) ?? textOf(c?.heading) ?? "";
+	const text = textOf(c?.description) ?? textOf(c?.text) ?? textOf(c?.body) ?? "";
 	const image =
 		(typeof c?.image === "string" && c.image) ||
 		(typeof c?.imageUrl === "string" && c.imageUrl) ||
@@ -69,14 +68,12 @@ const hasManualColumns = rawColumnSource.some((c: any) => {
 // литерал 20, small 17, large 24. В ПУСТОМ состоянии — дословный Figma-лейбл
 // «Мультиколонны» (контракт 1:19335, эталон rose MultiColumns.astro), а не
 // отсутствие шапки. С данными мерчанта — его заголовок (пусто → без шапки).
-const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
+const headingRaw = textOf(p.heading);
 const heading = hasManualColumns
 	? contentSet("heading", headingRaw)
-		? headingRaw
+		? (headingRaw ?? "")
 		: ""
-	: contentSet("heading", headingRaw) && headingRaw.trim()
-		? headingRaw
-		: headingRaw || "Мультиколонны";
+	: pickText(contentSet("heading", headingRaw) && hasText(headingRaw) ? headingRaw : undefined, "Мультиколонны");
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small" ? "text-[17px]" : headingSize === "large" ? "text-[24px]" : "text-[20px]";
@@ -104,18 +101,13 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 	// Кнопка колонки — общее правило пяти тем: подпись только из «Названия
 	// ссылки», пустое поле = кнопки нет (packages/theme-base/runtime/multicolumn-link.ts).
 	const link = multiColumnLink(c);
-	// CANONICAL-FIRST (фикс alias-precedence, эталон theme-base MultiColumns.astro:80-81):
-	// canon-ключи title/description/image читаются РАНЬШЕ legacy heading/text/imageUrl —
-	// именно их пишет FieldRenderer (defaultItemProps: title/description/image), и рендер
-	// больше не «угадывает» при коэксистенции алиасов.
+	// CANONICAL-FIRST (эталон theme-base MultiColumns.astro:80-81): canon-ключи
+	// title/description читаются РАНЬШЕ legacy heading/text/body — именно их
+	// пишет FieldRenderer (defaultItemProps: title/description/image). Стёртое
+	// канон-поле ("") — как есть, легаси только когда его вовсе нет (§2).
 	return {
-		heading:
-			(typeof c.title === "string" && c.title) || (typeof c.heading === "string" && c.heading) || "",
-		text:
-			(typeof c.description === "string" && c.description) ||
-			(typeof c.text === "string" && c.text) ||
-			(typeof c.body === "string" && c.body) ||
-			"",
+		heading: textOf(c.title) ?? textOf(c.heading) ?? "",
+		text: textOf(c.description) ?? textOf(c.text) ?? textOf(c.body) ?? "",
 		image:
 			(typeof c.image === "string" && c.image.trim()) ||
 			(typeof c.imageUrl === "string" && c.imageUrl.trim()) ||

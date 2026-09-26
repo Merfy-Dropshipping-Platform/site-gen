@@ -494,7 +494,11 @@ const pdpHeartSvg =
 		// apiBase: на live (*.merfy.ru) cross-origin к gateway (CORS пропускает
 		// *.merfy.ru); в превью iframe на gateway-origin → тот же URL same-origin.
 		var apiBase =
-			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) ||
+			(typeof window !== "undefined" && window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl
+				? String(window.__MERFY_CONFIG__.apiUrl).replace(/\/+$/, "").replace(/\/api$/, "")
+				: "") ||
+			"https://gateway.merfy.ru";
 		// store_id (shopId) = siteId. На live build сам siteId инжектится в <head>
 		// глобалом __MERFY_SITE_ID__ (build.service) ИЛИ на секцию (data-site-id).
 		function resolveSiteId() {

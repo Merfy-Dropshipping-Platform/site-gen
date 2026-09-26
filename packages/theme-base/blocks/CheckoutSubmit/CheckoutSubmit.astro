@@ -542,6 +542,16 @@ const schemeClass = schemeClassOf(colorScheme);
 
         try {
           localStorage.setItem('merfy:lastOrderId', orderId);
+          // Заказ ушёл на оплату. Корзину покупателя (<тема>:cart:v1) здесь НЕ
+          // трогаем: оплату могут отменить. Её сведёт ядро корзины на следующей
+          // странице по статусу оплаты — runtime/paid-order-cart.ts (ключ тот же).
+          localStorage.setItem('merfy:pendingOrder', JSON.stringify({
+            orderId: orderId,
+            apiBase: apiBase,
+            items: getCartItems().map(function (it) {
+              return { productId: it.productId, variantCombinationId: it.variantCombinationId || null };
+            }),
+          }));
           // Удаляем оба ключа — иначе stale items без cartId создают
           // зомби-cart на /checkout (сводка показывает item, но
           // delivery quote видит cartId=null → 'Добавьте товар').

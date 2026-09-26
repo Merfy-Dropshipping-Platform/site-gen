@@ -446,6 +446,7 @@ const rowStockOptions: RadioOption[] = [
 				</div>
 
 				<div class="flex flex-col gap-8">
+					<div data-nt="catalog-chips" role="group" aria-label="Выбранные фильтры" hidden></div>
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
 						{skeletons.map(() => (
 							<li data-nt="catalog-skeleton" aria-hidden="true">
@@ -472,6 +473,7 @@ const rowStockOptions: RadioOption[] = [
 				{filterVisible && <VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />}
 
 				<div class="flex min-w-0 flex-1 flex-col gap-8">
+					<div data-nt="catalog-chips" role="group" aria-label="Выбранные фильтры" hidden></div>
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
 						{skeletons.map(() => (
 							<li data-nt="catalog-skeleton" aria-hidden="true">
@@ -512,6 +514,84 @@ const rowStockOptions: RadioOption[] = [
 	   вредна: у портов тем лежала вторая, без @media, и на узком экране
 	   обе вместе прятали ОБА варианта — каталог был пустой. */
 </style>
+
+<script is:inline>
+	// Чипы выбранных фильтров над товарами — один текст на пять тем (сторож:
+	// no-second-implementation.spec.ts, «чипы фильтров»). Владелец: выбрал
+	// параметр — над товарами чип «Фильтр: значение ⊗», нажатие снимает его,
+	// «Очистить всё» — все. Порт отдаёт снимок выбранного и функцию снятия,
+	// здесь — подписи, разметка и нажатия. Классы — в общем catalog-filters.css:
+	// сборка витрины не видит классов из строк скрипта.
+	window.__merfyFilterChips = (function () {
+		var STOCK = { in: "В наличии", out: "Распродано" };
+		var ICON =
+			'<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="8" cy="8" r="7.2"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8"/></svg>';
+		var CLEAR_ALL =
+			'<button type="button" class="nt-filter-chip nt-filter-chip--clear" data-chip-kind="all" data-chip-value=""><span>Очистить всё</span>' +
+			ICON +
+			"</button>";
+		var rub = function (n) {
+			return new Intl.NumberFormat("ru-RU").format(n);
+		};
+		var esc = function (s) {
+			return String(s).replace(/[&<>"']/g, function (c) {
+				return "&#" + c.charCodeAt(0) + ";";
+			});
+		};
+		var price = function (min, max) {
+			if (min != null && max != null) return "от " + rub(min) + " до " + rub(max) + " ₽";
+			return min != null ? "от " + rub(min) + " ₽" : "до " + rub(max) + " ₽";
+		};
+		// Порядок — как фильтры в строке: наличие, стоимость, цвет, коллекции.
+		function chips(state) {
+			var list = [];
+			if (STOCK[state.stock]) list.push({ kind: "stock", value: state.stock, label: "Наличие: " + STOCK[state.stock] });
+			if (state.priceMin != null || state.priceMax != null)
+				list.push({ kind: "price", value: "", label: "Стоимость: " + price(state.priceMin, state.priceMax) });
+			(state.colors || []).forEach(function (color) {
+				list.push({ kind: "color", value: color, label: "Цвет: " + color });
+			});
+			(state.collections || []).forEach(function (col) {
+				list.push({ kind: "collection", value: col.ref, label: "Коллекция: " + col.name });
+			});
+			return list;
+		}
+		function chipHtml(chip) {
+			return (
+				'<button type="button" class="nt-filter-chip" data-chip-kind="' +
+				esc(chip.kind) +
+				'" data-chip-value="' +
+				esc(chip.value) +
+				'" aria-label="Убрать фильтр ' +
+				esc(chip.label) +
+				'"><span>' +
+				esc(chip.label) +
+				"</span>" +
+				ICON +
+				"</button>"
+			);
+		}
+		// Рисует чипы во все контейнеры каталога (раскладки «сверху» и «сбоку»);
+		// нажатие — remove({ kind, value }), «Очистить всё» — kind "all".
+		function render(boxes, state, remove) {
+			var list = chips(state);
+			var html = list.length ? list.map(chipHtml).join("") + CLEAR_ALL : "";
+			Array.prototype.forEach.call(boxes, function (box) {
+				box.innerHTML = html;
+				box.hidden = list.length === 0;
+				box.__merfyChipsRemove = remove;
+				if (box.hasAttribute("data-chips-bound")) return;
+				box.setAttribute("data-chips-bound", "");
+				box.addEventListener("click", function (ev) {
+					var btn = ev.target.closest("[data-chip-kind]");
+					if (!btn || !box.__merfyChipsRemove) return;
+					box.__merfyChipsRemove({ kind: btn.getAttribute("data-chip-kind"), value: btn.getAttribute("data-chip-value") || "" });
+				});
+			});
+		}
+		return { chips: chips, render: render };
+	})();
+</script>
 
 <script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass, nextPhotoOn }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
@@ -1065,7 +1145,75 @@ const rowStockOptions: RadioOption[] = [
 
 		function resetPageAndRender() {
 			filters.page = 1;
+			syncFilterChips(); // чипы выбранного — до рендера, не ждут товаров
 			renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
+		}
+
+		// ─────────── Чипы выбранных фильтров ───────────
+		// Над товарами — чип на каждое выбранное значение («Цвет: Синий ⊗»), нажатие
+		// снимает его, «Очистить всё» — все (владелец). Подписи, разметка и нажатия —
+		// общий __merfyFilterChips (один текст на пять тем); здесь — что выбрано и как
+		// это снять: то же состояние, что после снятия отметки в самом фильтре.
+		// Сортировка и поиск из шапки — не фильтры, остаются.
+
+		// Коллекции, которые отметил покупатель (?collection=) и каталог применил.
+		// Коллекция из настройки секции или из адреса /collections/<slug>
+		// закреплена страницей — её не снять, чипа нет.
+		function buyerCollectionRefs() {
+			const applied = currentCollectionRefs();
+			return new URLSearchParams(window.location.search)
+				.getAll("collection")
+				.map((ref) => ref.trim())
+				.filter((ref) => ref && applied.includes(ref));
+		}
+
+		function clearPriceInputs() {
+			for (const input of Array.from(document.querySelectorAll("[data-price-input]"))) input.value = "";
+		}
+
+		// Вид фильтра → как снять значение (undefined — все значения вида).
+		const CHIP_REMOVERS = {
+			stock: () => {
+				filters.stock = "all";
+				syncStockUi();
+			},
+			price: () => {
+				filters.priceMin = null;
+				filters.priceMax = null;
+				clearPriceInputs();
+			},
+			color: (value) => {
+				filters.colors = value === undefined ? [] : filters.colors.filter((color) => color !== value);
+				rerenderChoice(COLOR_BOX, renderColorBox, true);
+			},
+			collection: (value) =>
+				pickCollections(value === undefined ? [] : buyerCollectionRefs().filter((ref) => ref !== value), true),
+		};
+
+		function removeFilterChip(chip) {
+			const kinds = chip.kind === "all" ? Object.keys(CHIP_REMOVERS) : [chip.kind];
+			for (const kind of kinds) {
+				if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](chip.kind === "all" ? undefined : chip.value);
+			}
+			resetPageAndRender();
+		}
+
+		function syncFilterChips() {
+			if (!window.__merfyFilterChips) return;
+			window.__merfyFilterChips.render(
+				document.querySelectorAll('[data-nt="catalog-chips"]'),
+				{
+					stock: filters.stock,
+					priceMin: filters.priceMin,
+					priceMax: filters.priceMax,
+					colors: filters.colors,
+					collections: buyerCollectionRefs().map((ref) => {
+						const col = findCollection(catalogCollections, ref);
+						return { ref, name: (col && col.name) || ref };
+					}),
+				},
+				removeFilterChip,
+			);
 		}
 
 		// ─────────── Наличие (top: vanilla-top-stock; side: vanilla-stock; шторка: vanilla-sheet-stock) ───────────
@@ -1249,15 +1397,20 @@ const rowStockOptions: RadioOption[] = [
 				...options.map((o) => ({ value: o.value, label: o.label, active: selected.some((c) => c.id === o.id) })),
 			], names.join(", "));
 		}
-		function applyCollectionSelection(value) {
+		// Записать отмеченные коллекции в адрес (?collection=a&collection=b) и
+		// показать выбор во всех местах фильтра — из списка и из чипа.
+		function pickCollections(refs, keepOpen) {
 			const params = new URLSearchParams(window.location.search);
-			// Несколько коллекций: нажатие отмечает коллекцию или снимает отметку, «Все» — все.
-			const picked = value ? toggleValue(params.getAll("collection"), value) : [];
 			params.delete("collection");
-			for (const ref of picked) params.append("collection", ref);
+			for (const ref of refs) params.append("collection", ref);
 			const qs = params.toString();
 			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox, !!value);
+			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox, keepOpen);
+		}
+		function applyCollectionSelection(value) {
+			// Несколько коллекций: нажатие отмечает коллекцию или снимает отметку, «Все» — все.
+			const picked = new URLSearchParams(window.location.search).getAll("collection");
+			pickCollections(value ? toggleValue(picked, value) : [], !!value);
 			resetPageAndRender();
 		}
 		async function initCollectionsFilter() {
@@ -1382,6 +1535,7 @@ const rowStockOptions: RadioOption[] = [
 				syncSortUi();
 				initColorFilter();
 				// Первая страница товаров (REPLACE) — реальный fetch /api/store/products.
+				syncFilterChips();
 				await renderCatalog(false);
 				// UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).
 				await initCollectionsFilter();

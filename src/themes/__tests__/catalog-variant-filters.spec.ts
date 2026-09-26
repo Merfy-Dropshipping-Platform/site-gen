@@ -43,10 +43,12 @@ const PRODUCT = {
 };
 
 const productRequests: string[] = [];
+/** Группы, которые отдаёт /api/store/filters в текущем тесте. */
+let storeGroups: { name: string; key: string; values: string[] }[] = GROUPS;
 const respond = (body: unknown) =>
   ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) }) as unknown as Response;
 const API: [RegExp, () => unknown][] = [
-  [/\/api\/store\/filters/, () => ({ success: true, data: { groups: GROUPS, priceRange: { min: 100, max: 5000 }, totalProducts: 1 } })],
+  [/\/api\/store\/filters/, () => ({ success: true, data: { groups: storeGroups, priceRange: { min: 100, max: 5000 }, totalProducts: 1 } })],
   [/\/api\/store\/collections/, () => ({ collections: [], total: 0 })],
   [/\/api\/store\/products/, () => ({ products: [PRODUCT], data: [PRODUCT], total: 1, pagination: { page: 1, limit: 12, total: 1, totalPages: 1 } })],
   [/products\.json/, () => [PRODUCT]],
@@ -92,8 +94,9 @@ async function settle(n = 30) {
   for (let i = 0; i < n; i++) await tick();
 }
 
-async function mount(theme: string, layout: string) {
+async function mount(theme: string, layout: string, groups = GROUPS) {
   resetPage();
+  storeGroups = groups;
   (0, eval)(BLOCK_ROOT_INLINE.replace(/^<script>|<\/script>$/g, ""));
   const [r] = renderSections(theme, [
     {
@@ -155,11 +158,26 @@ function pickedInFilters(group: string): string[] {
   );
 }
 
-/** Подписи фильтров, что видит покупатель в раскладке. */
-function filterTitles(layout: string): string[] {
+/** Спрятан ли узел в разметке (display:none у него или у предка внутри корня). */
+const hiddenWithin = (el: Element, root: Element) => {
+  for (let node: Element | null = el; node && node !== root; node = node.parentElement) {
+    if ((node as HTMLElement).style?.display === "none") return true;
+  }
+  return false;
+};
+
+/**
+ * Подписи фильтров, что видит покупатель: в строке или сайдбаре раскладки
+ * (без шторки телефона) либо в самой шторке. Спрятанные — не в счёт.
+ */
+function filterTitles(layout: string, place: "раскладка" | "шторка" = "раскладка"): string[] {
   const root = document.querySelector(`[data-catalog-variant="${layout}"]`);
-  return Array.from(root?.querySelectorAll("span, p") ?? [])
+  const scope = place === "шторка" ? root?.querySelector("[data-filters-sheet]") : root;
+  if (!scope) throw new Error(`нет места «${place}» в раскладке ${layout}`);
+  return Array.from(scope.querySelectorAll("span, p"))
     .filter((el) => el.children.length === 0)
+    .filter((el) => place === "шторка" || !el.closest("[data-filters-sheet]"))
+    .filter((el) => !hiddenWithin(el, scope))
     .map((el) => (el.textContent ?? "").trim())
     .filter((text) => GROUPS.some((g) => g.name === text));
 }
@@ -182,6 +200,27 @@ async function clickChip(layout: string, label: string) {
   await settle();
 }
 
+describe.each(THEMES)("фильтры по параметрам товара в шторке телефона %s", (theme) => {
+  it("в шторке у каждой группы свой фильтр, выбор в шторке — в запрос и чипом", async () => {
+    await mount(theme, "top");
+    const titles = [...new Set(filterTitles("top", "шторка"))];
+    const inSheet = optionsOf("Размер", "S").find((el) => el.closest("[data-filters-sheet]"));
+    if (!inSheet) throw new Error("в шторке нет варианта «Размер: S»");
+    inSheet.click();
+    await settle();
+    expect({ titles, запрос: variantParams(), чипы: chipLabels("top") }).toEqual({
+      titles: ["Цвет", "Размер", "Формат"],
+      запрос: { размер: ["S"], формат: [] },
+      чипы: ["Размер: S", "Очистить всё"],
+    });
+  }, 180_000);
+
+  it("группа со служебным именем (q, tags, sort…) — не фильтр и не в запросе", async () => {
+    await mount(theme, "top", [...GROUPS, { name: "q", key: "q", values: ["x"] }]);
+    expect({ пунктов: optionsOf("q", "x").length, q: lastQuery().getAll("q") }).toEqual({ пунктов: 0, q: [] });
+  }, 180_000);
+});
+
 describe.each(THEMES)("фильтры по параметрам товара %s", (theme) => {
   describe.each(LAYOUTS)("раскладка %s", (layout) => {
     beforeEach(async () => {
@@ -190,6 +229,11 @@ describe.each(THEMES)("фильтры по параметрам товара %s"
 
     it("у каждой группы свой фильтр рядом с «Цветом»", () => {
       expect([...new Set(filterTitles(layout))]).toEqual(["Цвет", "Размер", "Формат"]);
+    });
+
+    it("у магазина без «Цвета» фильтры параметров видны", async () => {
+      await mount(theme, layout, GROUPS.filter((g) => g.name !== "Цвет"));
+      expect([...new Set(filterTitles(layout))]).toEqual(["Размер", "Формат"]);
     });
 
     it("несколько значений в группе и разные группы — в запросе, в фильтре и чипами", async () => {

@@ -1503,6 +1503,13 @@ const rowStockOptions: RadioOption[] = [
 		// (fetchAvailableColors); фильтр каждой — копия «Цвета» с именем группы во
 		// всех его местах (строка, сайдбар, шторка), та же обвязка выбора. В группе
 		// несколько значений (товары с любым), разные группы — через И.
+		// Служебные ключи запроса товаров (api-gateway store.controller): группа с
+		// таким именем ушла бы в запрос поиском, тегами или страницей, а не
+		// фильтром, — её не показываем.
+		const QUERY_KEYS = new Set([
+			"store_id", "collection_id", "sort", "page", "limit", "offset",
+			"min_price", "max_price", "tags", "availability", "q",
+		]);
 		const groupsFrom = (groups) =>
 			groups
 				.map((g) => ({
@@ -1511,7 +1518,7 @@ const rowStockOptions: RadioOption[] = [
 						.map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
 						.filter((v) => typeof v === "string" && v),
 				}))
-				.filter((g) => g.name && g.name !== COLOR_GROUP_NAME && g.values.length > 0);
+				.filter((g) => g.name && g.name !== COLOR_GROUP_NAME && !QUERY_KEYS.has(g.name) && g.values.length > 0);
 		const variantValues = (group) => filters.variants[group] || [];
 		const VARIANT_BOX = '[data-nt="catalog-variant-filter"]';
 		const variantKind = (group) => ({
@@ -1546,6 +1553,8 @@ const rowStockOptions: RadioOption[] = [
 				(el) => el.children.length === 0 && (el.textContent || "").trim() === COLOR_GROUP_NAME,
 			);
 			if (title) title.textContent = group;
+			// Пункты цвета из копии убираем сразу: их наполнит renderVariantBox.
+			for (const list of Array.from(clone.querySelectorAll("[data-variant-options]"))) list.innerHTML = "";
 			return clone;
 		}
 		function variantBoxes(group) {

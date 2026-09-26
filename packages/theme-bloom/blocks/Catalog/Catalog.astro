@@ -1378,6 +1378,13 @@ const skeletons = Array.from({ length: skeletonCount });
   // строке, в сайдбаре и в шторке. В группе можно отметить несколько значений
   // (товары с любым), разные группы — через И. Текст блока один у rose, satin,
   // bloom и flux (сторож no-second-implementation.spec.ts).
+  // Служебные ключи запроса товаров (api-gateway store.controller): группа с
+  // таким именем ушла бы в запрос поиском, тегами или страницей, а не
+  // фильтром, — её не показываем.
+  const QUERY_KEYS = new Set([
+    "store_id", "collection_id", "sort", "page", "limit", "offset",
+    "min_price", "max_price", "tags", "availability", "q",
+  ]);
   const groupsFrom = (groups) =>
     groups
       .map((g) => ({
@@ -1386,7 +1393,7 @@ const skeletons = Array.from({ length: skeletonCount });
           .map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
           .filter((v) => typeof v === "string" && v),
       }))
-      .filter((g) => g.name && g.name !== COLOR_GROUP_NAME && g.values.length > 0);
+      .filter((g) => g.name && g.name !== COLOR_GROUP_NAME && !QUERY_KEYS.has(g.name) && g.values.length > 0);
 
   const variantValues = (group) => filters.variants[group] || [];
 

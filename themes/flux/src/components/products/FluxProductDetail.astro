@@ -499,7 +499,11 @@ const pdpHeartSvg =
 	(function () {
 		// ─── Источник данных: ЖИВОЙ storefront API (спек 098 — «не products.json»). ───
 		var apiBase =
-			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) ||
+			(typeof window !== "undefined" && window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl
+				? String(window.__MERFY_CONFIG__.apiUrl).replace(/\/+$/, "").replace(/\/api$/, "")
+				: "") ||
+			"https://gateway.merfy.ru";
 		// store_id (shopId) = siteId. На live build сам siteId инжектится на секцию
 		// (data-site-id) консьюмером ИЛИ глобалом превью __MERFY_SITE_ID__.
 		function resolveSiteId() {

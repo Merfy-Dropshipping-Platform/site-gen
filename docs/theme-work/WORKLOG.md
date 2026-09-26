@@ -10399,3 +10399,14 @@ ILIKE, через product-service и gateway, на всех пяти темах,
   из 75. Сравнение «поля нет» с деревом до правки: 210 из 220 совпадают, 10 — намеренные выше.
 - Хвост: flux `ImageWithText.astro` — мёртвый файл (секцию рисует `Puk.astro`), §2 в нём не
   чинили. Инвентарь satin пересчитать после коммита (`pnpm conformance:satin:refresh-inventory`).
+
+## 2026-09-26 — все темы: инлайн-скрипты каталога и карточки товара берут адрес API из конфига страницы (spec 116)
+
+- Симптом на dev-контуре: опубликованная витрина `2d416baaa98c.dev.merfy.ru/catalog` слала `/api/store/products` на
+  `gateway.merfy.ru` (прод) и показывала «0 товаров», хотя Header уже клал `__MERFY_CONFIG__.apiUrl = gateway.dev`.
+- Причина: в `is:inline`-скриптах нет `import.meta.env`; каталог пяти тем (`packages/theme-*/blocks/Catalog/Catalog.astro`) и
+  карточки товара bloom/flux/satin/vanilla брали `window.__MERFY_API_BASE__ || "https://gateway.merfy.ru"` — конфиг страницы
+  не читался; гард `no-literal-gateway` пропускает литерал после `||`.
+- Правка: во всех девяти скриптах адрес = `__MERFY_API_BASE__` (превью) → `__MERFY_CONFIG__.apiUrl` без `/api` → литерал прода.
+  Сторож `src/themes/__tests__/storefront-api-base.spec.ts`: прямой фолбэк запрещён, у каждого скрипта с `__MERFY_API_BASE__`
+  есть чтение конфига, выражение проверено на dev/превью/пустом конфиге. Дизайн и настройки секций не тронуты.

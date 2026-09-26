@@ -172,6 +172,13 @@ async function walkAstroFiles(dir, pkg, category, entries, prefix) {
  * ts.transpileModule which erases types/interfaces/as-casts but leaves
  * runtime code intact.
  */
+// Vite define-инлайны, которые astro build делает сам, а bare-Node рендер блоков — нет (spec 116):
+// адрес API тем берётся из PUBLIC_MERFY_API_URL процесса, без него — `undefined`, чтобы сработал запасной литерал `?? "…"`.
+function inlineViteEnv(code) {
+  const apiUrl = process.env.PUBLIC_MERFY_API_URL ? JSON.stringify(process.env.PUBLIC_MERFY_API_URL) : 'undefined';
+  return code.split('import.meta.env.PUBLIC_MERFY_API_URL').join(apiUrl);
+}
+
 function stripTypes(source, filename) {
   const out = ts.transpileModule(source, {
     compilerOptions: {
@@ -335,7 +342,7 @@ async function compileSiblingTs(pkg, blockName, blockDirPath, tsFileName) {
   const baseName = blockArtifactBaseName(tsFileName);
   const outName = flatArtifactName(pkg, blockName, baseName);
   const outPath = path.join(DIST_DIR, outName);
-  await fs.writeFile(outPath, rewritten, 'utf-8');
+  await fs.writeFile(outPath, inlineViteEnv(rewritten), 'utf-8');
   return outPath;
 }
 
@@ -374,7 +381,7 @@ async function compileOne(entry) {
     : `${entry.pkg}__${entry.blockName}.mjs`;
   const outPath = path.join(DIST_DIR, outName);
   await fs.mkdir(DIST_DIR, { recursive: true });
-  await fs.writeFile(outPath, rewritten, 'utf-8');
+  await fs.writeFile(outPath, inlineViteEnv(rewritten), 'utf-8');
 
   // Also compile all sibling .ts files (Hero.classes.ts, etc.) so the
   // rewritten relative imports resolve. Only for block entries — layouts/seo
@@ -442,7 +449,7 @@ async function compileRuntimeFiles() {
     const baseName = f.replace(/\.ts$/, '');
     const outName = `runtime__${baseName}.mjs`;
     const outPath = path.join(DIST_DIR, outName);
-    await fs.writeFile(outPath, stripped, 'utf-8');
+    await fs.writeFile(outPath, inlineViteEnv(stripped), 'utf-8');
     compiled.push(outName);
   }
   return compiled;

@@ -155,7 +155,7 @@ const INFO_FIELDS = ['text', 'title'] as const;
 const productRuns = fieldRuns(sectionFieldOrder('Product', Astro.props), HEAD_FIELDS);
 
 // — Authored prop fallbacks. —
-const apiBase = 'https://gateway.merfy.ru/api';
+const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 const photoOnLeft = photoPosition !== 'right';
 const priceVisible =
   priceProp?.show !== 'false' && priceProp?.show !== false && !isFieldHidden('price');

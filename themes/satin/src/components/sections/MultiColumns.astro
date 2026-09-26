@@ -1,4 +1,5 @@
 ---
+import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (satin, группа content): канон-секция MultiColumns — адаптация
 // src/components/sections/Features.astro (тело КОПИЕЙ; оригинал не тронут —
@@ -100,20 +101,9 @@ const rawColumns = hasManualColumns
 		: p.items
 	: [];
 const columns = rawColumns.slice(0, 10).map((c: any) => {
-	// Ссылка карточки — КАНОН (Figma 314:34941): flat-пара linkText + link(string href),
-	// эталон theme-base resolveMultiColumnLink. Legacy link:{text,href} — fallback.
-	// Рендер ТОЛЬКО при непустом тексте.
-	const linkText =
-		(typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined) ??
-		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
-			? c.link.text
-			: undefined);
-	const linkHref =
-		(typeof c.link === "string" && c.link ? c.link : undefined) ??
-		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
-			? c.link.href
-			: undefined) ??
-		"/catalog";
+	// Кнопка колонки — общее правило пяти тем: подпись только из «Названия
+	// ссылки», пустое поле = кнопки нет (packages/theme-base/runtime/multicolumn-link.ts).
+	const link = multiColumnLink(c);
 	// CANONICAL-FIRST (фикс alias-precedence, эталон theme-base MultiColumns.astro:80-81):
 	// canon-ключи title/description/image читаются РАНЬШЕ legacy heading/text/imageUrl —
 	// именно их пишет FieldRenderer (defaultItemProps: title/description/image), и рендер
@@ -134,7 +124,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		headingSize: c.headingSize,
 		textSize: c.textSize,
 		imageSize: c.imageSize,
-		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		link,
 	};
 });
 

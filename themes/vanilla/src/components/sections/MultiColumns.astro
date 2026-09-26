@@ -1,4 +1,5 @@
 ---
+import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
 // Фаза B (vanilla): новая канон-секция MultiColumns в манере vanilla (см.
 // themes/vanilla/MANNER.md §10: карточек-фич у верстальщика нет — композиция
@@ -41,9 +42,9 @@ const headingCls = `font-vanilla-bitter ${headingSizeCls} font-normal italic lea
 // «Сочетай текст…» + Кнопка.
 const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
 const PLACEHOLDER_COLUMNS = [
-	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
-	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
-	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", linkText: "Кнопка", link: "/catalog" },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", linkText: "Кнопка", link: "/catalog" },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", linkText: "Кнопка", link: "/catalog" },
 ];
 // hasManualColumns: мерчант явно добавил хотя бы одну колонку (Shopify-модель).
 const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
@@ -53,18 +54,9 @@ const hasManualColumns = Array.isArray(p.columns) && p.columns.length > 0;
 const heading = rawHeading || (hasManualColumns ? "" : "Мультиколонны");
 const rawColumns = hasManualColumns ? p.columns : PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
-	// Ссылка колонки: canon link {text,href} ИЛИ flat-пара linkText + link
-	// (string из arrayFields конструктора). Рендер при непустом тексте.
-	const linkText =
-		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
-			? c.link.text
-			: undefined) ?? (typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined);
-	const linkHref =
-		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
-			? c.link.href
-			: undefined) ??
-		(typeof c.link === "string" && c.link ? c.link : undefined) ??
-		"/catalog";
+	// Кнопка колонки — общее правило пяти тем: подпись только из «Названия
+	// ссылки», пустое поле = кнопки нет (packages/theme-base/runtime/multicolumn-link.ts).
+	const link = multiColumnLink(c);
 	return {
 		heading:
 			// Канон панели («Заголовок»/«Текст» пишутся в title/description) ПЕРВЫМ,
@@ -82,7 +74,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
-		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		link,
 		// Пустое состояние: рисуем нейтральный rect-плейсхолдер вместо иконки.
 		isPlaceholder: !hasManualColumns,
 	};

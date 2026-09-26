@@ -22,6 +22,7 @@
  */
 
 import { createCartAddedModal } from "./cart-added-modal";
+import { ORDER_STATUS_EVENT, settlePaidOrder } from "./paid-order-cart";
 // Тот же разбор «название → цвет», что рисует образцы на странице товара
 // (ProductVariants.astro). Модуль без зависимостей.
 import { resolveVariantColor } from "../blocks/Product/variantColor";
@@ -942,10 +943,31 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		// скрыт) на КАЖДОЙ не-перезагруженной странице, и счётчик «живёт» лишь на той
 		// странице, что грузилась полностью. Бейдж избранного переживает навигацию именно
 		// потому, что initWishlistUI слушает astro:page-load — зеркалим это здесь.
+		// Заказ, ушедший на оплату: оплачен — заказанное уходит из корзины, отменён —
+		// корзина остаётся (runtime/paid-order-cart.ts). Страница «Спасибо за заказ»
+		// сообщает статус сама — тогда без запроса.
+		const settleOrder = (known?: { orderId?: string; paymentStatus?: string }) =>
+			void settlePaidOrder(
+				{
+					storage: window.localStorage,
+					fetch: (...args) => window.fetch(...args),
+					getCart,
+					saveCart,
+					defaultApiBase:
+						(window as unknown as { __MERFY_CONFIG__?: { apiUrl?: string } }).__MERFY_CONFIG__?.apiUrl ||
+						"https://gateway.merfy.ru/api",
+				},
+				known,
+			);
+		window.addEventListener(ORDER_STATUS_EVENT, (event) =>
+			settleOrder((event as CustomEvent<{ orderId?: string; paymentStatus?: string }>).detail),
+		);
+
 		document.addEventListener("astro:page-load", () => {
 			renderBadges();
 			renderDrawer();
 			syncProductCards();
+			settleOrder();
 			// Само-лечение при client-side навигации (VT не перезапускает init-модуль).
 			if (catalogUrl) void reconcileCart(catalogUrl);
 			else void labelCart();
@@ -954,6 +976,7 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 		renderBadges();
 		renderDrawer();
 		syncProductCards();
+		settleOrder();
 		// Само-лечение цен/наличия из каталога → корзина всегда актуальна (= оформлению).
 		// Без catalogUrl — только подпись вариантов (строки и цены не трогаем).
 		if (catalogUrl) void reconcileCart(catalogUrl);

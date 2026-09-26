@@ -804,9 +804,10 @@ const skeletons = Array.from({ length: skeletonCount });
     const href = escapeHtml(productHref(p));
     const name = escapeHtml(p.name);
     const rawImage = productImageRaw(p);
-    // Второе фото (настройка «Следующее фото при наведении») — images[1].
+    // Второе фото — images[1], всегда: по нему листает свайп на телефоне при любой
+    // настройке; наведение мышью — только в секции с «Следующим фото» (bindNextPhoto).
     const rawImage2 =
-      (nextPhotoOn && Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
+      (Array.isArray(p.images) && typeof p.images[1] === "string" && p.images[1]) || "";
     // data-img-primary всегда; data-img-secondary только если есть второе фото —
     // hover-обработчик (ниже) свапит src между ними.
     const imgDataAttrs =
@@ -1742,13 +1743,13 @@ const skeletons = Array.from({ length: skeletonCount });
     // нет data-img-secondary и swap — no-op).
     document.addEventListener("mouseover", (event) => {
       const img = event.target.closest("img[data-img-secondary]");
-      if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+      if (!img || !img.closest('[data-next-photo="true"] [data-nt="catalog-grid"]')) return;
       const sec = img.getAttribute("data-img-secondary");
       if (sec && img.getAttribute("src") !== sec) img.setAttribute("src", sec);
     });
     document.addEventListener("mouseout", (event) => {
       const img = event.target.closest("img[data-img-primary]");
-      if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+      if (!img || !img.closest('[data-next-photo="true"] [data-nt="catalog-grid"]')) return;
       const prim = img.getAttribute("data-img-primary");
       if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
     });

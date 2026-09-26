@@ -12,6 +12,11 @@
  * satin и flux не листали фото ни в «Группе товаров», ни в «Коллекции товаров».
  * Лечение — `touch-action: pan-y` на фото (runtime/card-photo-swipe.ts).
  *
+ * Свайп не зависит от «Следующего фото при наведении» (владелец: «чтобы свайпы
+ * работали», без условий), поэтому секции здесь — с ВЫКЛЮЧЕННОЙ настройкой:
+ * листать должно и так. Наведение мышью без настройки выключено — это сторожит
+ * catalog-next-photo-by-theme.spec.ts.
+ *
  * Здесь всё как у покупателя: секция темы нарисована тем же рендером, что
  * витрина, со стилями темы и товарами на три фото; Chromium в режиме телефона;
  * палец — касаниями по координатам (протокол браузера). На каждый случай:
@@ -80,14 +85,14 @@ const PROPS: Record<(typeof BLOCKS)[number], Record<string, unknown>> = {
     columns: 2,
     showFilter: "false",
     showSort: "false",
-    productCard: { quickAdd: "none", nextPhoto: "true" },
+    productCard: { quickAdd: "none", nextPhoto: "false" },
   },
-  PopularProducts: { id: "Pop-1", colorScheme: "scheme-1", cards: 4, columns: 2, collection: "col-1", nextPhotoOnHover: true },
+  PopularProducts: { id: "Pop-1", colorScheme: "scheme-1", cards: 4, columns: 2, collection: "col-1", nextPhotoOnHover: false },
 };
 /** Фото, которое листается, в каждой секции (первое видимое берём в браузере). */
 const PHOTO: Record<(typeof BLOCKS)[number], string> = {
   Catalog: '[data-nt="catalog-grid"] img[data-img-2], [data-nt="catalog-grid"] img[data-img-secondary]',
-  PopularProducts: '[data-nt="popular-grid"][data-next-photo] li[data-image-2] img',
+  PopularProducts: '[data-nt="popular-grid"] li[data-image-2] img',
 };
 /** У vanilla и flux ячейки «Коллекции товаров» дорисовывает модульный скрипт — повторяем его вывод. */
 const HYDRATED_BY_MODULE = new Set(["vanilla", "flux"]);
@@ -142,7 +147,7 @@ async function stand(theme: string, block: (typeof BLOCKS)[number], v: Variant):
     const { renderCardHtml } = require(`../../../themes/${theme}/src/lib/storefront-hydrate`) as { renderCardHtml: (p: unknown) => string };
     const cells = PRODUCTS.map((p) => `<li data-product-id="${p.id}" data-image-2="${p.images[1]}">${renderCardHtml(p)}</li>`).join("");
     await page.evaluate((markup) => {
-      const grid = document.querySelector('[data-nt="popular-grid"][data-next-photo]');
+      const grid = document.querySelector('[data-nt="popular-grid"]');
       if (grid) grid.innerHTML = markup;
     }, cells);
   }

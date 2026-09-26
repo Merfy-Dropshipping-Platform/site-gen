@@ -166,6 +166,20 @@ async function typeMinPrice(value: string) {
 const chip = (layout: string, label: string) =>
   Array.from(chipsBox(layout).querySelectorAll("[data-chip-kind]")).find((b) => (b.textContent ?? "").trim() === label) ?? null;
 
+/** Отмечено ли значение в самом фильтре — хоть в одном месте (строка, сайдбар, шторка). */
+const pressed = (attr: string, value: string) =>
+  Array.from(document.querySelectorAll<HTMLElement>(`[${attr}]`)).some(
+    (el) =>
+      el.getAttribute(attr) === value &&
+      (el.getAttribute("aria-pressed") === "true" || (el as HTMLInputElement).checked === true),
+  );
+
+/** Радио наличия во всех местах: какие значения отмечены. */
+const stockChecked = () =>
+  [...new Set(Array.from(document.querySelectorAll<HTMLInputElement>('input[type="radio"][name*="stock"]')).filter((i) => i.checked).map((i) => i.value))];
+
+const priceInputs = () => [...new Set(Array.from(document.querySelectorAll<HTMLInputElement>("[data-price-input]")).map((i) => i.value))];
+
 /** Параметры последнего запроса товаров. */
 const lastQuery = () => new URLSearchParams((productRequests[productRequests.length - 1] ?? "").split("?")[1] ?? "");
 const filterParams = () => {
@@ -212,10 +226,41 @@ describe.each(THEMES)("чипы фильтров каталога %s", (theme) =
         чипы: chipLabels(layout),
         запрос: filterParams(),
         адрес: new URLSearchParams(window.location.search).getAll("collection"),
+        вФильтре: {
+          синий: pressed("data-color-option", "Синий"),
+          красный: pressed("data-color-option", "Красный"),
+          один: pressed("data-collection-option", "odin"),
+          два: pressed("data-collection-option", "dva"),
+        },
       }).toEqual({
         чипы: ["Цвет: Красный", "Коллекция: Два", "Очистить всё"],
         запрос: { цвет: ["Красный"], коллекции: ["c-2"], наличие: null, от: null },
         адрес: ["dva"],
+        вФильтре: { синий: false, красный: true, один: false, два: true },
+      });
+    });
+
+    it("чипы «Наличие» и «Стоимость» снимают только себя — и в самом фильтре", async () => {
+      await pickInStock();
+      await typeMinPrice("100");
+      await pick("data-color-option", "Синий");
+      await click(chip(layout, "Наличие: В наличии"), "чипа «Наличие: В наличии»");
+      const afterStock = { чипы: chipLabels(layout), запрос: filterParams(), наличие: stockChecked() };
+      await click(chip(layout, "Стоимость: от 100 ₽"), "чипа «Стоимость: от 100 ₽»");
+      expect({
+        послеНаличия: afterStock,
+        послеСтоимости: { чипы: chipLabels(layout), запрос: filterParams(), поляСтоимости: priceInputs() },
+      }).toEqual({
+        послеНаличия: {
+          чипы: ["Стоимость: от 100 ₽", "Цвет: Синий", "Очистить всё"],
+          запрос: { цвет: ["Синий"], коллекции: [], наличие: null, от: "100" },
+          наличие: ["all"],
+        },
+        послеСтоимости: {
+          чипы: ["Цвет: Синий", "Очистить всё"],
+          запрос: { цвет: ["Синий"], коллекции: [], наличие: null, от: null },
+          поляСтоимости: [""],
+        },
       });
     });
 
@@ -231,11 +276,17 @@ describe.each(THEMES)("чипы фильтров каталога %s", (theme) =
         запрос: filterParams(),
         адрес: window.location.search,
         поляСтоимости: [...new Set(prices)],
+        вФильтре: {
+          наличие: stockChecked(),
+          синий: pressed("data-color-option", "Синий"),
+          один: pressed("data-collection-option", "odin"),
+        },
       }).toEqual({
         чипы: [],
         запрос: { цвет: [], коллекции: [], наличие: null, от: null },
         адрес: "",
         поляСтоимости: [""],
+        вФильтре: { наличие: ["all"], синий: false, один: false },
       });
     });
   });

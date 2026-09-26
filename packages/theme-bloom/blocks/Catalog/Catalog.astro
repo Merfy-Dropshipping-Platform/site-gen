@@ -646,7 +646,11 @@ const skeletons = Array.from({ length: skeletonCount });
   // apiBase: на live (*.merfy.ru) cross-origin к gateway (CORS пропускает *.merfy.ru);
   // в превью iframe на gateway-origin → тот же URL same-origin.
   const apiBase =
-    (typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+    (typeof window !== "undefined" && window.__MERFY_API_BASE__) ||
+    (typeof window !== "undefined" && window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl
+    	? String(window.__MERFY_CONFIG__.apiUrl).replace(/\/+$/, "").replace(/\/api$/, "")
+    	: "") ||
+    "https://gateway.merfy.ru";
   const storeId =
     (typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
 

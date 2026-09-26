@@ -402,8 +402,11 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
               return;
             }
             fillContent(json.data);
-            // Если платёж ещё в обработке — поллим до 30с и обновляем.
             var ps = json.data.paymentStatus;
+            // Статус оплаты — ядру корзины: оплачен → заказанное уходит из
+            // корзины сразу (runtime/paid-order-cart.ts, ORDER_STATUS_EVENT).
+            window.dispatchEvent(new CustomEvent('merfy:order-status', { detail: { orderId: orderId, paymentStatus: ps } }));
+            // Если платёж ещё в обработке — поллим до 30с и обновляем.
             if ((ps === 'pending' || ps === 'processing') && attempts < 15) {
               attempts++;
               setTimeout(fetchSummary, 2000);

@@ -8,8 +8,11 @@
  * фотки товара или скролле не переключается», и в конструкторе, и в магазине.
  * Листание было только от мыши. Решение владельца: свайп, как на Авито и WB.
  *
- * Путь тестировщика: в секции включено «Следующее фото», больше ничего; секция
- * нарисована тем же рендером, что витрина, её скрипты исполнены в jsdom на
+ * Владелец после: «чтобы свайпы работали», без условий — свайп листает фото
+ * при любой настройке, «Следующее фото при наведении» включает только наведение
+ * мышью. Поэтому каждый случай — дважды: настройка включена и выключена.
+ *
+ * Путь тестировщика: секция нарисована тем же рендером, что витрина, её скрипты исполнены в jsdom на
  * подложенном каталоге; палец — событиями касания. Рантайм страницы темы
  * (Layout / StorefrontRuntime) здесь не рисуется, поэтому его привязку
  * `initCardPhotoSwipe()` вызываем сами, а то, что каждая тема её подключает,
@@ -36,6 +39,11 @@ const THEMES = ["rose", "vanilla", "satin", "bloom", "flux"] as const;
 /** Темы, у которых «Группа товаров» листает все фото («как на Авито»). */
 const ALL_PHOTOS = new Set(["bloom", "vanilla"]);
 const PHOTOS = ["/f0.jpg", "/f1.jpg", "/f2.jpg", "/f3.jpg", "/f4.jpg"];
+/** «Следующее фото при наведении»: свайп обязан работать при обоих значениях. */
+const SETTING = [
+  ["настройка включена", true],
+  ["настройка выключена", false],
+] as const;
 const SITES_ROOT = resolve(__dirname, "..", "..", "..");
 
 const product = (id: string, images: string[]) => ({
@@ -153,6 +161,7 @@ describe("правило свайпа", () => {
 });
 
 describe.each(THEMES)("«Группа товаров» %s: свайп по фото", (theme) => {
+ describe.each(SETTING)("%s", (_name, on) => {
   let img: HTMLImageElement;
   beforeAll(async () => {
     PRODUCTS = [product("p-1", PHOTOS)];
@@ -164,7 +173,7 @@ describe.each(THEMES)("«Группа товаров» %s: свайп по фо�
       columns: 3,
       showFilter: "false",
       showSort: "false",
-      productCard: { quickAdd: "none", nextPhoto: "true" },
+      productCard: { quickAdd: "none", nextPhoto: on ? "true" : "false" },
     });
     const found = document.querySelector<HTMLImageElement>('[data-nt="catalog-grid"] img[data-img-primary]');
     if (!found) throw new Error(`${theme}: в сетке нет карточки с фото`);
@@ -199,6 +208,7 @@ describe.each(THEMES)("«Группа товаров» %s: свайп по фо�
     touch(img, "touchend", 202, 300);
     expect(clickBlocked(img)).toBe(false);
   });
+ });
 });
 
 /**
@@ -213,14 +223,15 @@ function hydrateLikeStorefront(theme: string) {
   const { renderCardHtml } = require(`../../../themes/${theme}/src/lib/storefront-hydrate`) as {
     renderCardHtml: (p: unknown) => string;
   };
-  const grid = document.querySelector('[data-nt="popular-grid"][data-next-photo]');
-  if (!grid) throw new Error(`${theme}: нет сетки «Коллекции товаров» с «Следующим фото»`);
+  const grid = document.querySelector('[data-nt="popular-grid"]');
+  if (!grid) throw new Error(`${theme}: нет сетки «Коллекции товаров»`);
   grid.innerHTML = PRODUCTS.map(
     (p) => `<li data-product-id="${p.id}" data-image-2="${p.images[1]}">${renderCardHtml(p)}</li>`,
   ).join("");
 }
 
 describe.each(THEMES)("«Коллекция товаров» %s: свайп по фото", (theme) => {
+ describe.each(SETTING)("%s", (_name, on) => {
   let cell: HTMLElement;
   beforeAll(async () => {
     PRODUCTS = [product("p-1", ["/a1.jpg", "/a2.jpg"]), product("p-2", ["/b1.jpg", "/b2.jpg"])];
@@ -230,10 +241,10 @@ describe.each(THEMES)("«Коллекция товаров» %s: свайп по
       cards: 2,
       columns: 2,
       collection: "col-1",
-      nextPhotoOnHover: true,
+      nextPhotoOnHover: on,
     });
     if (HYDRATED_BY_MODULE.has(theme)) hydrateLikeStorefront(theme);
-    const found = document.querySelector<HTMLElement>('[data-nt="popular-grid"][data-next-photo] li[data-image-2]');
+    const found = document.querySelector<HTMLElement>('[data-nt="popular-grid"] li[data-image-2]');
     if (!found) throw new Error(`${theme}: в сетке нет ячейки со вторым фото`);
     cell = found;
   }, 180_000);
@@ -249,13 +260,15 @@ describe.each(THEMES)("«Коллекция товаров» %s: свайп по
     swipe(photo(), RIGHT);
     expect(photo().getAttribute("src")).toBe(first);
   });
+ });
 });
 
-describe("дорисовка «Коллекции товаров» кладёт второе фото на <li>", () => {
-  it.each([...HYDRATED_BY_MODULE])("%s", (theme) => {
+describe("дорисовка «Коллекции товаров» кладёт второе фото на <li> при любой настройке", () => {
+  it.each(THEMES)("%s", (theme) => {
     const src = readFileSync(resolve(SITES_ROOT, `themes/${theme}/src/components/sections/Popular.astro`), "utf-8");
-    expect(src).toMatch(/wantNextPhoto && Array\.isArray\(\w+\.images\) && \w+\.images\[1\]/);
-    expect(src).toMatch(/`<li data-product-id="\$\{escapeHtml\(\w+\.id\)\}"\$\{img2\}>/);
+    expect(src).toMatch(/const img2 =\s*Array\.isArray\(\w+\.images\) && \w+\.images\[1\]/);
+    expect(src).not.toMatch(/wantNextPhoto/);
+    expect(src).toMatch(/`<li data-product-id="\$\{escapeHtml\(\w+\.id\)\}"(\$\{\w+\})*\$\{img2\}/);
   });
 });
 

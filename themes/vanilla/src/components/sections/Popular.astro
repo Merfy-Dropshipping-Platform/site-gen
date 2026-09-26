@@ -161,9 +161,12 @@ const btnStyle =
 	p.buttonStyle === "secondary" || p.buttonStyle === "link" ? p.buttonStyle : undefined;
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo —
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo —
 // gallery[1] верстальщика, если есть; реальные товары — images[1], ставит
-// гидрация ниже).
+// гидрация ниже.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op.
@@ -523,7 +526,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 6;
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const wantQuickAdd = grid.hasAttribute("data-quick-add");
 			const qaCls = grid.getAttribute("data-qa-cls") || "";
 			const collectionRef = grid.getAttribute("data-collection");
@@ -536,7 +538,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			grid.innerHTML = items
 				.map((prod) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(prod.images) && prod.images[1]
+						Array.isArray(prod.images) && prod.images[1]
 							? ` data-image-2="${escapeHtml(prod.images[1])}"`
 							: "";
 					// Решение владельца: карточная «В корзину» для товара с вариантами

@@ -8,17 +8,16 @@
  * провёл пальцем по фото влево или вправо, фото сменилось. Тап по-прежнему
  * открывает товар, прокрутка страницы вверх-вниз не мешает.
  *
- * Какие фото листать, карточка говорит сама — атрибутами, которые кладёт
- * включённая настройка:
+ * Какие фото листать, карточка говорит сама — атрибутами фото товара:
  *   • «Группа товаров»: img[data-img-primary] + data-img-2…N — все фото (bloom,
  *     vanilla, «как на Авито») или data-img-secondary — первое и второе (rose,
  *     satin, flux);
- *   • «Коллекция товаров»: ячейка li[data-image-2] сетки с data-next-photo —
- *     первое и второе.
- * Настройка выключена — атрибутов нет, и свайп ничего не делает. Поэтому
- * привязка одна на документ, в рантайме страницы каждой темы: она переживает
- * перерисовку секций в конструкторе и не зависит от того, в какой момент
- * включили настройку.
+ *   • «Коллекция товаров»: ячейка li[data-image-2] сетки — первое и второе.
+ * Атрибуты есть у каждой карточки, где у товара больше одного фото, при любой
+ * настройке: владелец — «чтобы свайпы работали», без условий. «Следующее фото
+ * при наведении» включает только наведение мышью на компьютере. Привязка одна на
+ * документ, в рантайме страницы каждой темы: она переживает перерисовку секций в
+ * конструкторе.
  *
  * Горизонтальный жест по фото закреплён за страницей: `touch-action: pan-y`
  * (так делают все карусели — Swiper, Embla). Без этого настоящий телефон сам
@@ -92,15 +91,15 @@ const showPopular = (li: HTMLElement, photos: string[], index: number): void => 
 const CARDS: CardKind[] = [
 	{
 		selector: "img[data-img-primary]",
-		// Только фото, которые листаются: у избранного и при выключенной настройке фото одно.
+		// Только фото, которые листаются: у избранного и у товара с одним фото второго нет.
 		photo: "img[data-img-primary][data-img-2], img[data-img-primary][data-img-secondary]",
 		photos: catalogPhotos,
 		shown: (img) => img.getAttribute("src"),
 		show: (img, photos, index) => img.setAttribute("src", photos[index]),
 	},
 	{
-		selector: '[data-nt="popular-grid"][data-next-photo] li[data-image-2]',
-		photo: '[data-nt="popular-grid"][data-next-photo] li[data-image-2] img',
+		selector: '[data-nt="popular-grid"] li[data-image-2]',
+		photo: '[data-nt="popular-grid"] li[data-image-2] img',
 		photos: popularPhotos,
 		shown: (li) => li.querySelector("img")?.getAttribute("src") ?? null,
 		show: showPopular,

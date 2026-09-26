@@ -1014,8 +1014,8 @@ function themeHasCheckoutResultPage(themeId: string | null | undefined): boolean
  * Вызывающая сторона (`migrateRevisionData`) решает, звать ли эту функцию,
  * по МАНИФЕСТУ темы (`theme.json.pages` содержит `page-checkout-result`?),
  * а не по имени темы — состав страниц темы это данные пакета, не код. Сейчас
- * страница есть у rose/flux/bloom/satin; vanilla её не заявляет — для vanilla
- * функция просто не вызывается, `pages/checkout-result.json` у неё нет.
+ * страница есть у всех пяти тем (vanilla — с 26.09: без неё после оплаты
+ * покупатель попадал на пустоту или на страницу прошлой темы магазина).
  */
 function seedCheckoutResultPage(
   out: Record<string, unknown>,

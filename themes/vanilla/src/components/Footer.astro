@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
 import VanilaFooterLogoDesigners from "../icons/VanilaFooterLogoDesigners.astro";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
 import SocialTelegramWhite from "../icons/SocialTelegramWhite.astro";
 import SocialVkWhite from "../icons/SocialVkWhite.astro";
 import SocialTiktokWhite from "../icons/SocialTiktokWhite.astro";
@@ -264,6 +265,11 @@ const footerSchemeClass = _footerSchemeId ? `color-scheme-${_footerSchemeId}` : 
 // VanilaFooterLogoDesigners. Соцсети — зазор и область клика (иконка та же).
 // Настройки и цвета не меняются.
 const FOOTER_LOGO_CLS = "h-7 w-[98px]";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+const ownLogo = footerOwnLogo(p);
+const OWN_LOGO_CLS = "block h-[var(--size-logo-width,28px)] w-auto max-w-[160px] object-contain";
 const SOCIAL_ROW_CLS = "flex flex-wrap items-center justify-center gap-1 md:justify-end";
 const SOCIAL_LINK_CLS = "flex min-h-11 min-w-11 items-center justify-center transition-opacity hover:opacity-70";
 ---
@@ -338,7 +344,7 @@ const SOCIAL_LINK_CLS = "flex min-h-11 min-w-11 items-center justify-center tran
 			>
 				<div class="flex flex-col gap-8 max-sm:items-center">
 					<a href="/" class="inline-flex w-fit transition-opacity hover:opacity-80" aria-label={logoAriaLabel}>
-						<VanilaFooterLogoDesigners class={FOOTER_LOGO_CLS} />
+						{ownLogo ? <img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" /> : <VanilaFooterLogoDesigners class={FOOTER_LOGO_CLS} />}
 					</a>
 					<ul
 						class="flex flex-col gap-2"

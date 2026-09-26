@@ -21,6 +21,12 @@ const SocialLinkSchema = z.object({
 
 export const FooterSchema = z.object({
   siteTitle: z.string().optional(),
+  /**
+   * «Логотип» подвала — картинка, загруженная мерчантом в панели секции
+   * (владелец 26.09). Пусто — подвал рисует то же, что и без поля.
+   * Правило и поле — packages/theme-base/runtime/footer-logo.ts.
+   */
+  customLogo: z.string().optional(),
   /** Theme-level layout switch (set via theme.json → blockDefaults.Footer.variant). */
   variant: z.enum(['3-col', '2-part', '2-part-asymmetric', 'minimal']).optional(),
   /** Optional bottom strip rendered below the main footer ("Powered by …" bar). */
@@ -102,6 +108,11 @@ export const FooterPuckConfig = {
   // Канон theme-base/rose: Рассылка / Заголовок / Текст / Выравнивание /
   // Навигация / Информация / Соцсети / Копирайт / Цветовая схема / Отступы.
   fields: {
+    // «Логотип» — первым, как в «Настройках темы» (владелец 26.09: «такую же
+    // секцию, чтобы можно было там менять логотип»). Та же строка, что в
+    // theme-base/blocks/Footer/Footer.puckConfig.ts; совпадение сторожат
+    // satin-sidebar-canon.spec и footer-logo.spec.
+    customLogo: { type: 'image', label: 'Логотип', maxSizeKb: 500 },
     newsletter: {
       type: 'object',
       label: 'Рассылка',

@@ -35,6 +35,7 @@ import {
 } from "./bulk.dto";
 import { SiteGeneratorService } from "../../generator/generator.service";
 import { TraefikRouterService } from "../../deployments/traefik-router.service";
+import { isStoreVersion } from "../../content/revision-kinds";
 
 type SiteRow = typeof schema.site.$inferSelect;
 type SiteDomainRow = typeof schema.siteDomain.$inferSelect;
@@ -685,6 +686,8 @@ export class BulkOperationsService {
       }
 
       if (params.includeRevisions) {
+        // Снимки документа клиента (этап 2) — не версии магазина: ни в
+        // счётчик, ни в «последнюю ревизию» не входят.
         revisions = await this.db
           .select({
             siteId: schema.siteRevision.siteId,
@@ -692,7 +695,9 @@ export class BulkOperationsService {
             latestRevision: schema.siteRevision.createdAt,
           })
           .from(schema.siteRevision)
-          .where(inArray(schema.siteRevision.siteId, ids));
+          .where(
+            and(inArray(schema.siteRevision.siteId, ids), isStoreVersion()),
+          );
       }
 
       if (params.includeDeployments) {

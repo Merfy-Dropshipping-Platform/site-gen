@@ -85,8 +85,11 @@ const ALLOWANCES: Allowance[] = [
   {
     path: 'pages/pages.service.ts',
     literalData: 0,
-    bareSelect: 4,
-    reason: 'из брифа: "pages.service" — CRUD пользовательских страниц (create/rename/reorder/delete).',
+    bareSelect: 2,
+    reason:
+      'из брифа: "pages.service" — CRUD пользовательских страниц. Этап 2: запись ' +
+      'идёт через порт, три одинаковых чтения create/update/delete сведены в ' +
+      'readCurrent() (сырые данные — основа правки, без шагов чтения); второе — listPages().',
   },
   {
     path: 'admin/bulk/bulk.service.ts',

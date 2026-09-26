@@ -117,6 +117,26 @@ jobs:
       - name: Тесты миграций ревизий
         run: pnpm exec jest --runInBand src/utils/__tests__/
 
+      # Порт контента и безопасная запись ревизий (этап 2): движок операций
+      # (генеративно на золотых документах пяти тем), запись с базой и
+      # слиянием, «две вкладки», страница из кабинета во время автосейва,
+      # откат со сверкой, публикация не откатывает автосейв, сторожа «одна
+      # дверь» на чтение и на запись (запись в site_revision и перестановка
+      # указателя текущей ревизии мимо порта — красный). Раньше ни один из
+      # этих наборов CI не гонял — сторож, которого не запускают, ничего не
+      # сторожит. Артефакты тем не нужны, ~30 с.
+      - name: Тесты порта контента и записи ревизий
+        run: >-
+          pnpm exec jest --runInBand
+          src/content
+          src/__tests__/revision-save-merge.spec.ts
+          src/__tests__/revision-rollback.spec.ts
+          src/__tests__/pages-service-through-port.spec.ts
+          src/__tests__/publish-keeps-concurrent-save.spec.ts
+          src/__tests__/revision-create-cas.spec.ts
+          src/__tests__/pages-service-delete.spec.ts
+          src/pages/pages.service.update.spec.ts
+
       # Корневые адреса превью получают префикс `/__theme/<тема>` ОДИН раз.
       # Регулярку делят сборка шелла темы, пересадка блоков и хром превью;
       # второй префикс = 404 на картинках в конструкторе (bloom «О нас», 23.09).
@@ -2059,6 +2079,13 @@ jobs:
         run: pnpm build:theme-sections:all
       - if: steps.dist-cache.outputs.cache-hit != 'true'
         run: pnpm build:preview-tailwind
+      # Боевой источник значений по умолчанию панели (этап 2, запись с базой
+      # отличает по ним автозначения конструктора от правок): в jest
+      # контроллер артефактов блоков не видит, поэтому проверяем здесь, на
+      # собранном dist — getPuckConfig отдаёт defaultProps секции Hero для
+      # всех тем. Без условия: dist есть и при сборке, и из кэша.
+      - name: Дымовая проверка значений по умолчанию панели на собранном dist
+        run: node scripts/smoke-panel-defaults.mjs
       # include-hidden-files: true — ОБЯЗАТЕЛЕН. По умолчанию (false)
       # actions/upload-artifact молча вырезает из архива любой путь с
       # dot-компонентом — themes/satin/.astro целиком, без единого

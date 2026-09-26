@@ -187,7 +187,8 @@
     },
     "Video": {
       "colorScheme": "scheme-2",
-      "size": "medium"
+      "size": "medium",
+      "heading": "Видео"
     }
   },
   "colorSchemes": [

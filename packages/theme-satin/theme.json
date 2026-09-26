@@ -51,7 +51,8 @@
     },
     "Video": {
       "padded": true,
-      "align": "container"
+      "align": "container",
+      "heading": "Видео"
     },
     "PopularProducts": {
       "productCard": {
@@ -70,7 +71,9 @@
     },
     "Hero": {},
     "ImageWithText": {},
-    "Gallery": {},
+    "Gallery": {
+      "heading": "Галерея"
+    },
     "Slideshow": {
       "colorScheme": "scheme-4"
     },

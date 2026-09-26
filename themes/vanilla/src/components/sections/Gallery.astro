@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Figma 1:19335 — ПУСТОЕ СОСТОЯНИЕ секции «Галерея» (заменяет мок-демо
 // верстальщика). Гейт = наличие выбранных в конструкторе плиток `p.items[]`
 // (товар/коллекция/изображение).
@@ -25,16 +26,13 @@ const PLACEHOLDER_GALLERY_IMAGE = "/placeholders/landscape-gallery.png";
 
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния Gallery: заголовок
 // «Галерея» (раньше пустое состояние шло БЕЗ заголовка — контракт требует его).
-// Заданный мерчантом heading рендерится как есть; пустой → дефолт «Галерея».
+// Заданный мерчантом heading рендерится КАК ЕСТЬ (в т.ч. пустой — мерчант
+// стёр, ниже `showHeading` уже прячет пустой узел); дефолт «Галерея» —
+// ТОЛЬКО когда поле не задано вовсе (§2 контракта, pickText).
 // Текст-подзаголовок в контракте Gallery отсутствует → дефолт пуст (мок-копирайт
 // верстальщика не возвращаем).
-const sectionTitle =
-	(typeof p.heading === "string" && p.heading.trim() ? p.heading : p.heading?.text) ||
-	"Галерея";
-const rawText =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : undefined);
-const sectionText = typeof rawText === "string" && rawText.trim() ? rawText : "";
+const sectionTitle = pickText(p.heading, "Галерея");
+const sectionText = textOf(p.text) ?? textOf(p.subtitle) ?? "";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default) и отсутствие = УЗКАЯ роль верстальщика дословно (Bitter
@@ -238,6 +236,11 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Строка из пробелов — не текст (§2 контракта, hasText): без него пустой
+// заголовок/подзаголовок рисовался бы пустым тегом. Те же флаги решают, ставить
+// ли грид-плиткам `mt-10`: без шапки сверху осиротевший отступ не нужен.
+const showHeading = hasText(sectionTitle) && !isFieldHidden('heading');
+const showText = hasText(sectionText);
 
 ---
 
@@ -254,7 +257,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 <section
 	id="gallery"
 	class="w-full bg-[rgb(var(--color-bg,58_69_48))] text-[rgb(var(--color-text,255_255_255))]"
-	aria-labelledby="gallery-title"
+	aria-labelledby={showHeading ? "gallery-title" : undefined}
 	data-vanilla-gallery
 	data-vanilla-stack
 	data-puck-component-id={id}
@@ -269,7 +272,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		<div
 			class="mx-auto flex w-full max-w-[1280px] min-[1920px]:max-w-[1320px] flex-col items-center text-center"
 		>
-			{sectionTitle && !isFieldHidden('heading') && (
+			{showHeading && (
 				<h2
 					id="gallery-title"
 					class={headingCls}
@@ -280,12 +283,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<Fragment set:html={inlineFormat(sectionTitle)} />
 				</h2>
 			)}
-			{sectionText && (
+			{showText && (
 				<p class={textCls}>
 					<Fragment set:html={inlineFormat(sectionText)} />
 				</p>
 			)}
-			<div class={`mt-10 grid w-full grid-cols-1 gap-4 text-left ${gridLayoutCls}`} role="list">
+			<div class={`${showHeading || showText ? "mt-10 " : ""}grid w-full grid-cols-1 gap-4 text-left ${gridLayoutCls}`} role="list">
 				{heroTile && (
 					<a
 						href={heroTile.href}

@@ -5,6 +5,7 @@
 // gap-8 md:gap-10, поверхность контейнера #F5F5F5 §4, типографика §1, кнопка §3.
 import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -18,10 +19,11 @@ const id = p.id;
 const hasColumns = Array.isArray(p.columns) && p.columns.length > 0;
 
 // Канон heading: string | { text, alignment, size }. С данными мерчанта — его
-// заголовок (пусто → без шапки). В пустом состоянии — Figma-лейбл «Мультиколонны».
-const headingRaw =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
-const heading = hasColumns ? headingRaw : (headingRaw || "Мультиколонны");
+// заголовок (стёртый → пусто, без шапки, SECTION-CONTRACT.md §2). В пустом
+// состоянии секции (нет колонок) — pickText: заглушка-лейбл «Мультиколонны»
+// только когда поле не задано вовсе, стёртое мерчантом остаётся пустым и там.
+const headingRaw = textOf(p.heading) ?? "";
+const heading = hasColumns ? headingRaw : pickText(p.heading, "Мультиколонны");
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
 	headingSize === "small"

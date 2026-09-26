@@ -5,6 +5,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { ROSE_HERO_DESIGNERS, designersWhenUnset } from "../../lib/design-parity";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ: читаем существующую конструкторную Hero-схему (theme-base
 // Hero.puckConfig) и раскладываем по переменным разметки верстальщика. Тело
@@ -326,6 +327,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // заголовок и текст остаются в общей колонке (emptyCopyCls / копи-обёртка),
 // кнопки — отдельным звеном. Без fieldOrder — прежняя разметка.
 const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+// SECTION-CONTRACT.md §2: стёртый заголовок/текст (title/subtitle = "") не рисует
+// пустой <h1>/<p>, а колонка-обёртка заголовок+текст не рисуется вовсе, если в
+// ней не осталось ничего видимого (иначе на её месте остаётся heroCopyGapCls).
+const headingWillRender = hasText(title) && !isFieldHidden("heading");
+const textWillRender = hasText(subtitle) && !isFieldHidden("text");
+const copyRunHasContent = (fields: string[]) =>
+	fields.some((f) => (f === "heading" && headingWillRender) || (f === "text" && textWillRender));
 ---
 
 {
@@ -435,7 +443,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 	) : (
 <section
 	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))] pb-[var(--hero-pb,0px)] md:pt-[var(--hero-pt,0px)] ${HERO_HEIGHT_DESIGNERS_CLS}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={headingWillRender ? "hero-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingVars}
 >
@@ -496,10 +504,11 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 	>
 			<div class={`flex w-full ${panelMaxWCls} flex-col ${alignItemsCls} ${panelGapCls}${boxedCls}`}>
 				{heroRuns.map((run) => run.grouped ? (
+				copyRunHasContent(run.fields) && (
 				<div class={`flex flex-col ${alignItemsCls} ${heroCopyGapCls} ${textAlignCls}`}>
 					{run.fields.map((field) => (
 					<Fragment>
-					{field === 'heading' && !isFieldHidden('heading') && (
+					{field === 'heading' && headingWillRender && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -510,7 +519,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 							<Fragment set:html={inlineFormat(title)} />
 						</h1>
 					)}
-					{field === 'text' && !isFieldHidden('text') && (
+					{field === 'text' && textWillRender && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -523,6 +532,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 					</Fragment>
 					))}
 				</div>
+				)
 				) : !isFieldHidden('buttons') && (
 				<div class={buttonsCls}>
 					<a

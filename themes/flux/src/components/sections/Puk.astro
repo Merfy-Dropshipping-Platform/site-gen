@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Секция «Puk» = «Основной текст» / CTA верстальщиков flux (репо flux-theme
 // src/components/sections/Puk.astro, Figma 905:19320). ВЁРСТКА (текст/CTA) —
 // дословный канон репо: заголовок Roboto Flex uppercase 19/md:23 #000, абзац
@@ -74,17 +75,17 @@ const id = p.id;
 const fieldOrder = orderTextFields(p);
 const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 
-// Заголовок: string | { text, size } (канон-union). Пусто → дефолт верстальщика.
-//
-// Фолбэк идёт через nonEmpty, а не через `??`: адаптер пропов
-// (page-blocks.ts coerceImageWithTextProps) принудительно ставит heading = ''
-// когда мерчант ничего не задал, а `??` пустую строку пропускает — дефолт
-// вёрстки не срабатывал и секция рендерила пустые <h2>/<p>.
-const nonEmpty = (v: unknown): string | undefined =>
-	typeof v === "string" && v.trim() ? v : undefined;
-const heading =
-	nonEmpty(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
-	"Следующее поколение уже с вами!";
+// Заголовок: string | { text, size } (канон-union). Панельное поле (в т.ч.
+// СТЁРТОЕ мерчантом до "") рендерим как есть — секция должна очищаться, а не
+// вернуть дефолт вёрстки (владелец 26.09) — читает это `pickText`
+// (packages/theme-base/runtime/merchant-text): фолбэк срабатывает только
+// когда поле НЕ строка вовсе (undefined/старая ревизия без поля). Дефолт
+// puckConfig/blockDefaults для НЕТРОНУТОЙ секции здесь — непустая строка
+// «Изображение с текстом» (packages/theme-base/blocks/ImageWithText/
+// ImageWithText.puckConfig.ts), а адаптер (page-blocks.ts
+// coerceImageWithTextProps) флэттенит и {text:''} панели, и пустую легаси-
+// строку — пустая строка сюда доходит ТОЛЬКО когда мерчант реально стёр поле.
+const heading = pickText(p.heading, "Следующее поколение уже с вами!");
 // Ступени headingSize (эталон 19/md:23; паритет Collections.astro): medium/
 // отсутствие = эталон, small меньше, large крупнее. top-level hidden приоритетнее
 // heading.size сабпанели.
@@ -97,10 +98,13 @@ const headingSizeCls =
 			: "text-[19px] md:text-[23px]"; // medium (эталон) + absent
 const headingCls = `font-roboto-flex font-normal leading-normal text-[rgb(var(--color-heading,0_0_0))] ${headingSizeCls}`;
 
-// Текст-абзац: string | { content, size }. Пусто → дефолт верстальщика.
-const text =
-	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
-	"Они здесь. Устройства, которые изменят завтра, уже сегодня в нашем потоке новинок. Смотрите, тестируйте, погружайтесь в будущее, которое стало реальностью. Только в Flux.";
+// Текст-абзац: string | { content, size }. Панельное поле, стёртое до "" —
+// как есть (тот же разбор, что у heading выше); дефолт вёрстки — только когда
+// text не строка вовсе.
+const text = pickText(
+	p.text,
+	"Они здесь. Устройства, которые изменят завтра, уже сегодня в нашем потоке новинок. Смотрите, тестируйте, погружайтесь в будущее, которое стало реальностью. Только в Flux.",
+);
 // Ступени textSize (эталон 16; паритет rose MainText): medium/отсутствие = 16,
 // small 14, large 19. Тело — Roboto Flex light, #999 фоллбек-пиксель без
 // схемы. b74: роль ПЕРЕВЕДЕНА с `--color-muted` на `--color-text` (эталон rose
@@ -233,6 +237,11 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртое поле (heading/text = "") не рисуется — §2 контракта секции; общая
+// обёртка группы («Заголовок»+«Текст», gap-2) тоже пропадает, если внутри неё
+// не осталось видимого поля, иначе её отступ двигает картинку/кнопку.
+const showHeading = !isFieldHidden("heading") && hasText(heading);
+const showText = !isFieldHidden("text") && hasText(text);
 ---
 
 {/* ФОН СЕКЦИИ — «Фон» СХЕМЫ, как у rose/bloom/satin/vanilla.
@@ -248,7 +257,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
     поверхность. Сторож: pnpm test:scheme-targets. */}
 <section
 	class="w-full bg-[rgb(var(--color-bg,251_251_251))]"
-	aria-labelledby={titleId}
+	aria-labelledby={showHeading ? titleId : undefined}
 	data-puck-component-id={id}
 >
 	<div class={containerCls} data-reveal style={paddingStyle}>
@@ -274,8 +283,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			<div class={`flex w-full flex-col items-start gap-10${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
 				{isDefaultOrder && (
 					<>
+					{(showHeading || showText) && (
 					<div class="flex flex-col gap-2">
-						{!isFieldHidden('heading') && (
+						{showHeading && (
 							<h2
 								id={titleId}
 								class={headingCls + alignCls + italicCls}
@@ -286,7 +296,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<Fragment set:html={inlineFormat(heading)} />
 							</h2>
 						)}
-						{!isFieldHidden('text') && (
+						{showText && (
 							<p
 								class={textCls + alignCls + italicCls}
 								data-puck-subsection-parent={id}
@@ -296,7 +306,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							/>
 						)}
 					</div>
-
+					)}
+					{" "}
 					{
 						btnText && (
 							<div
@@ -332,7 +343,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона
 					// Astro читает как открывающий тег и рвёт разметку молча.
 					const nodes = {
-						heading: !isFieldHidden('heading') && (
+						heading: showHeading && (
 							<h2
 								id={titleId}
 								class={headingCls + alignCls + italicCls}
@@ -343,7 +354,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								<Fragment set:html={inlineFormat(heading)} />
 							</h2>
 						),
-						text: !isFieldHidden('text') && (
+						text: showText && (
 							<p
 								class={textCls + alignCls + italicCls}
 								data-puck-subsection-parent={id}

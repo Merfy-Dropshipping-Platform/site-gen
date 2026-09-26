@@ -4,6 +4,7 @@ import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtim
 import BloomPicture from "../img/BloomPicture.astro";
 import { DEFAULT_CATEGORY_HREF } from "../../data/categories";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim,
@@ -26,20 +27,27 @@ const _schemeId =
 			? String(_rawScheme).replace("scheme-", "")
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
-// Пустая строка после coerce/adapt ≠ «не задано» для ?? — trim → фолбэк верстальщика.
-const pickText = (...vals: unknown[]) => {
+// §2 контракта секции (packages/theme-base/runtime/merchant-text.ts): панельное
+// поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) → рендерим как
+// есть. Легаси-поле/заглушка темы — ТОЛЬКО когда поля вовсе нет (undefined,
+// старые ревизии).
+const title = pickText(p.heading, pickText(p.title, "Искусство заботы о себе"));
+const subtitle = pickText(
+	p.text,
+	pickText(p.subtitle, "Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам"),
+);
+// Кнопка — вне задачи (общий бриф §14: «кнопки не входят в задачу»). Поведение
+// дословно HEAD: "" считается «не задано» и падает в дефолт темы, кнопка
+// никогда не рисуется пустой плашкой (в отличие от заголовка/текста выше).
+// Нормализация coerceHeroProps (page-blocks.ts) подставляет ревизиям без
+// кнопки cta:{text:''} — trim-фолбэк ниже к этому не чувствителен.
+const pickButtonText = (...vals: unknown[]) => {
 	for (const v of vals) {
 		if (typeof v === "string" && v.trim()) return v;
 	}
 	return undefined;
 };
-const title =
-	pickText(p.heading?.text, p.title) ?? "Искусство заботы о себе";
-const subtitle =
-	pickText(p.text?.content, p.subtitle) ??
-	"Уходовая косметика, которая дарит здоровье и сияние вашей коже и волосам";
-const ctaText =
-	pickText(p.primaryButton?.text, p.cta?.text, p.ctaText) ?? "Начать ритуал";
+const ctaText = pickButtonText(p.primaryButton?.text, p.cta?.text, p.ctaText) ?? "Начать ритуал";
 const ctaLink =
 	p.primaryButton?.link?.href ??
 	p.primaryButton?.link ??
@@ -319,6 +327,11 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // заголовок и текст остаются в общей колонке (gap-2), кнопка(и) — отдельным
 // звеном. Без fieldOrder — прежняя разметка.
 const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+// §2 контракта: стёртая строка не рисуется вовсе, обёртка вокруг заголовка/
+// текста — тоже, если внутри не осталось ничего видимого (иначе на месте
+// текста остаётся gap-отступ).
+const showHeading = hasText(title) && !isFieldHidden("heading");
+const showText = hasText(subtitle) && !isFieldHidden("text");
 ---
 
 {
@@ -395,7 +408,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 	) : (
 <section
 	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,255_255_255))]${selfSchemeClass}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={showHeading ? "hero-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
@@ -453,10 +466,11 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 		<div class={containerCls}>
 			<div class={`flex w-full ${HERO_BOX.box} flex-col ${alignItemsCls} ${HERO_BOX.gap}${boxedCls}`}>
 				{heroRuns.map((run) => run.grouped ? (
+				(showHeading || showText) && (
 				<div class={`flex flex-col ${alignItemsCls} gap-2${textAlignCls}`}>
 					{run.fields.map((field) => (
 					<Fragment>
-					{field === 'heading' && !isFieldHidden('heading') && (
+					{field === 'heading' && showHeading && (
 						<h1
 							id="hero-title"
 							class={headingCls}
@@ -466,7 +480,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 							set:html={inlineFormat(title)}
 						></h1>
 					)}
-					{field === 'text' && !isFieldHidden('text') && (
+					{field === 'text' && showText && (
 						<p
 							class={subtitleCls}
 							data-puck-subsection-parent={id}
@@ -478,6 +492,7 @@ const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
 					</Fragment>
 					))}
 				</div>
+				)
 				) : !isFieldHidden('buttons') && (secondaryText ? (
 						<div class={`hero-animate-3 flex w-full flex-row flex-wrap items-center gap-3 ${buttonsJustifyCls}`}>
 							<a

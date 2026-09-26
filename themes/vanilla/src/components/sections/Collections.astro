@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // ПЛЕЙСХОЛДЕР пустого состояния (контракт Figma 1:19335 / theme-base
 // Collections 1:33070): когда у секции НЕТ ручного выбора коллекций —
 // рендерим N пустых квадратных карточек (rounded-rect bg surface) с подписью
@@ -22,14 +23,10 @@ const id = p.id;
 // коллекций» (тип Collections): заголовок «Список коллекций» БЕЗ подзаголовка,
 // а НЕ дефолт-копирайт верстальщика («Коллекции, которые становятся любимыми» /
 // «Вдохновение для каждого дня…»). Эталон — rose Collections.astro.
-// Мерчант задал свой heading/subtitle → рендерим ЕГО (?? срабатывает только при
-// пустых данных).
-const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
-	p.title ??
-	"Список коллекций";
-const sectionSubtitle =
-	typeof p.subtitle === "string" && p.subtitle.trim() ? p.subtitle : "";
+// Мерчант задал свой heading (в т.ч. пустой — стёр, §2 контракта) → рендерим
+// ЕГО; заглушка/легаси title — только когда поля нет вовсе.
+const sectionTitle = pickText(p.heading, textOf(p.title) ?? "Список коллекций");
+const sectionSubtitle = textOf(p.subtitle) ?? "";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium'
 // (canon-default, MANNER §9) и отсутствие = роль «заголовок секции»
@@ -206,18 +203,24 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта). showHeadWrap решает,
+// рисовать ли всю шапку: иначе стёртые заголовок+подзаголовок оставляют
+// пустой `<div class="flex ... gap-2">` над сеткой коллекций.
+const showHeading = hasText(sectionTitle);
+const showSubtitle = hasText(sectionSubtitle);
+const showHeadWrap = !isFieldHidden('heading') && (showHeading || showSubtitle);
 
 ---
 
 <section
 	id="collections"
 	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-20 md:py-28"
-	aria-labelledby="collections-title"
+	aria-labelledby={showHeading && !isFieldHidden('heading') ? "collections-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
-		{!isFieldHidden('heading') && (
+		{showHeadWrap && (
 		<div
 			class={headWrapCls}
 			data-animate
@@ -225,10 +228,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="collections-title" class={headingCls}>
-				<Fragment set:html={inlineFormat(sectionTitle)} />
-			</h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{showHeading && (
+				<h2 id="collections-title" class={headingCls}>
+					<Fragment set:html={inlineFormat(sectionTitle)} />
+				</h2>
+			)}
+			{showSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 		)}
 

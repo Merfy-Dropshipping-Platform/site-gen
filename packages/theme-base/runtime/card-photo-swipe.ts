@@ -20,7 +20,14 @@
  * перерисовку секций в конструкторе и не зависит от того, в какой момент
  * включили настройку.
  *
- * Сторож: src/themes/__tests__/card-photo-swipe.spec.ts.
+ * Горизонтальный жест по фото закреплён за страницей: `touch-action: pan-y`
+ * (так делают все карусели — Swiper, Embla). Без этого настоящий телефон сам
+ * решает, чей жест: может прокрутить страницу вбок или отдать свайп своему
+ * жесту «назад» (Яндекс.Браузер, Samsung Internet), и фото не листается.
+ * Вертикальная прокрутка остаётся за браузером.
+ *
+ * Сторожа: src/themes/__tests__/card-photo-swipe.spec.ts (jsdom, логика) и
+ * card-photo-swipe-touch.spec.ts (Chromium, касания пальцем по координатам).
  */
 
 /** Короче — это тап или дрожание пальца, а не свайп. */
@@ -43,6 +50,8 @@ export function stepIndex(current: number, step: number, count: number): number 
 
 type CardKind = {
 	selector: string;
+	/** Само фото — ему отдаётся горизонтальный жест. */
+	photo: string;
 	photos: (el: HTMLElement) => string[];
 	shown: (el: HTMLElement) => string | null;
 	show: (el: HTMLElement, photos: string[], index: number) => void;
@@ -83,12 +92,15 @@ const showPopular = (li: HTMLElement, photos: string[], index: number): void => 
 const CARDS: CardKind[] = [
 	{
 		selector: "img[data-img-primary]",
+		// Только фото, которые листаются: у избранного и при выключенной настройке фото одно.
+		photo: "img[data-img-primary][data-img-2], img[data-img-primary][data-img-secondary]",
 		photos: catalogPhotos,
 		shown: (img) => img.getAttribute("src"),
 		show: (img, photos, index) => img.setAttribute("src", photos[index]),
 	},
 	{
 		selector: '[data-nt="popular-grid"][data-next-photo] li[data-image-2]',
+		photo: '[data-nt="popular-grid"][data-next-photo] li[data-image-2] img',
 		photos: popularPhotos,
 		shown: (li) => li.querySelector("img")?.getAttribute("src") ?? null,
 		show: showPopular,
@@ -104,6 +116,14 @@ const cardAt = (target: EventTarget | null) => {
 	return null;
 };
 
+/** Горизонтальный жест по фото — странице, вертикальный — браузеру. */
+function lockHorizontalGesture(): void {
+	const style = document.createElement("style");
+	style.setAttribute("data-merfy-card-photo-swipe", "");
+	style.textContent = `${CARDS.map((kind) => kind.photo).join(",\n")} {\n\ttouch-action: pan-y;\n}`;
+	document.head.appendChild(style);
+}
+
 type SwipeStart = { el: HTMLElement; kind: CardKind; photos: string[]; x: number; y: number };
 type ClickGuard = { el: HTMLElement; until: number };
 
@@ -113,6 +133,7 @@ export function initCardPhotoSwipe(): void {
 	const flags = window as unknown as { __merfyCardPhotoSwipe?: boolean };
 	if (flags.__merfyCardPhotoSwipe) return;
 	flags.__merfyCardPhotoSwipe = true;
+	lockHorizontalGesture();
 
 	let start: SwipeStart | null = null;
 	let guard: ClickGuard | null = null;

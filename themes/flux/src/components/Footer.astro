@@ -6,6 +6,7 @@ import { inlineFormat } from "../lib/rich-text";
 // не меняется.
 import FluxNtIcon from "./icons/FluxNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
 import { schemeIdOf } from "../lib/color-scheme";
 
 // Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
@@ -46,6 +47,13 @@ const id = p.id;
 // сборка (build.service) и миграция ревизии; сюда управление доходит, только
 // если магазин безымянный.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+// В вёрстке flux логотипа в подвале нет: он встаёт над колонкой навигации,
+// как у satin/vanilla/bloom (32px до ссылок), только когда загружен.
+const ownLogo = footerOwnLogo(p);
+const OWN_LOGO_CLS = "block h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
@@ -356,7 +364,11 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 					data-puck-subsection-index="996"
 					data-puck-subsection-field="navigationColumn"
 				>
-					{navColTitle && <h3 class={columnTitleCls}>{navColTitle}</h3>}
+					{ownLogo && (
+						<a href="/" class="mb-4 inline-flex w-fit transition-opacity hover:opacity-80">
+							<img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" />
+						</a>
+					)}{navColTitle && <h3 class={columnTitleCls}>{navColTitle}</h3>}
 					<ul class="flex flex-col gap-3" role="list">
 						{navLinks.map((link) => (
 							<li>

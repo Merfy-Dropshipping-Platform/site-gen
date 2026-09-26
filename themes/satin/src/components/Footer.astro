@@ -5,6 +5,7 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // MAX (просьба владельца 14.09) лежит только в themes/satin/public/icons.
 import SatinNtIcon from "./icons/SatinNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
 
 const today = new Date();
 const leftCol = [
@@ -54,6 +55,11 @@ const id = p.id;
 // сборка (build.service) и миграция ревизии; сюда управление доходит, только
 // если магазин безымянный.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+const ownLogo = footerOwnLogo(p);
+const OWN_LOGO_CLS = "block h-[var(--size-logo-width,22px)] w-auto max-w-[160px] object-contain";
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
@@ -281,7 +287,7 @@ const linkClassSm =
 				<div class={["flex items-start", topRowGapCls, topRowJustifyCls].filter(Boolean).join(" ")}>
 					<!-- Left: logo + navigation (40px gap between logo and menu) -->
 					<div class="flex flex-col gap-10">
-						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
+						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{ownLogo ? <img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" /> : siteTitle}</a>
 						<div class="flex gap-16">
 							<ul
 								class="flex flex-col gap-2.5"
@@ -411,7 +417,7 @@ const linkClassSm =
 	<div class={mobileWrapCls} style={footerPadStyle}>
 		<!-- Logo + socials -->
 		<div class="flex items-center justify-between">
-			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
+			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{ownLogo ? <img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" /> : siteTitle}</a>
 			{socials.length > 0 && (
 				<div class="flex items-center gap-2">
 					{socials.map((s) => (

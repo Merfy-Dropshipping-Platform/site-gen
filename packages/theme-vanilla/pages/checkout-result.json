@@ -1,0 +1,96 @@
+{
+  "content": [
+    {
+      "type": "PromoBanner",
+      "props": {
+        "id": "PromoBanner-page-checkout-result",
+        "text": "СКИДКА 10% НА ПЕРВЫЙ ЗАКАЗ — ПРОМОКОД WELCOME10",
+        "link": {
+          "text": "В каталог",
+          "href": "/catalog"
+        },
+        "size": "large",
+        "textTransform": "uppercase",
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 12,
+          "bottom": 12
+        }
+      }
+    },
+    {
+      "type": "Header",
+      "props": {
+        "id": "Header-page-checkout-result",
+        "siteTitle": "Vanilla Pilot",
+        "logo": "",
+        "logoPosition": "center-absolute",
+        "activeLinkIndicator": "underline",
+        "stickiness": "scroll-up",
+        "menuType": "dropdown",
+        "navigationLinks": [
+          {
+            "label": "Каталог",
+            "href": "/catalog"
+          }
+        ],
+        "actionButtons": {
+          "showSearch": true,
+          "showCart": true,
+          "showProfile": true
+        },
+        "colorScheme": "scheme-1",
+        "padding": {
+          "top": 32,
+          "bottom": 32
+        }
+      }
+    },
+    {
+      "type": "OrderConfirmation",
+      "props": {
+        "id": "OrderConfirmation-1",
+        "banner": {
+          "enabled": false,
+          "src": "",
+          "placement": "order",
+          "align": "center",
+          "width": 580
+        },
+        "orderBg": "",
+        "summaryBg": "",
+        "accentColor": "",
+        "buttonColor": "",
+        "errorColor": "",
+        "headingFont": "",
+        "headingWeight": "",
+        "bodyFont": "",
+        "bodyWeight": "",
+        "greetingTemplate": "Спасибо за заказ, {name}!",
+        "confirmedTitle": "Ваш заказ подтверждён",
+        "confirmedNote": "Скоро вы получите электронное письмо с подтверждением и номером вашего заказа.",
+        "detailsTitle": "Детали заказа",
+        "helpText": "Нужна помощь? Обратитесь к нам",
+        "returnButtonText": "Вернуться к магазину",
+        "returnButtonHref": "/",
+        "legalText": "Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.",
+        "padding": {
+          "top": 0,
+          "bottom": 0
+        }
+      }
+    },
+    {
+      "type": "Footer",
+      "props": {
+        "id": "Footer-page-checkout-result"
+      }
+    }
+  ],
+  "root": {
+    "props": {
+      "title": "Спасибо за заказ"
+    }
+  },
+  "zones": {}
+}

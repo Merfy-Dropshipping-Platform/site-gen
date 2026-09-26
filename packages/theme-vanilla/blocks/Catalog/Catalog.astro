@@ -542,7 +542,8 @@ const rowStockOptions: RadioOption[] = [
 			if (min != null && max != null) return "от " + rub(min) + " до " + rub(max) + " ₽";
 			return min != null ? "от " + rub(min) + " ₽" : "до " + rub(max) + " ₽";
 		};
-		// Порядок — как фильтры в строке: наличие, стоимость, цвет, коллекции.
+		// Порядок — как фильтры в строке: наличие, стоимость, цвет, остальные
+		// параметры товара, коллекции.
 		function chips(state) {
 			var list = [];
 			if (STOCK[state.stock]) list.push({ kind: "stock", value: state.stock, label: "Наличие: " + STOCK[state.stock] });
@@ -550,6 +551,11 @@ const rowStockOptions: RadioOption[] = [
 				list.push({ kind: "price", value: "", label: "Стоимость: " + price(state.priceMin, state.priceMax) });
 			(state.colors || []).forEach(function (color) {
 				list.push({ kind: "color", value: color, label: "Цвет: " + color });
+			});
+			(state.groups || []).forEach(function (group) {
+				group.values.forEach(function (value) {
+					list.push({ kind: "variant", group: group.name, value: value, label: group.name + ": " + value });
+				});
 			});
 			(state.collections || []).forEach(function (col) {
 				list.push({ kind: "collection", value: col.ref, label: "Коллекция: " + col.name });
@@ -562,6 +568,8 @@ const rowStockOptions: RadioOption[] = [
 				esc(chip.kind) +
 				'" data-chip-value="' +
 				esc(chip.value) +
+				'" data-chip-group="' +
+				esc(chip.group || "") +
 				'" aria-label="Убрать фильтр ' +
 				esc(chip.label) +
 				'"><span>' +
@@ -572,7 +580,7 @@ const rowStockOptions: RadioOption[] = [
 			);
 		}
 		// Рисует чипы во все контейнеры каталога (раскладки «сверху» и «сбоку»);
-		// нажатие — remove({ kind, value }), «Очистить всё» — kind "all".
+		// нажатие — remove({ kind, value, group }), «Очистить всё» — kind "all".
 		function render(boxes, state, remove) {
 			var list = chips(state);
 			var html = list.length ? list.map(chipHtml).join("") + CLEAR_ALL : "";
@@ -585,7 +593,11 @@ const rowStockOptions: RadioOption[] = [
 				box.addEventListener("click", function (ev) {
 					var btn = ev.target.closest("[data-chip-kind]");
 					if (!btn || !box.__merfyChipsRemove) return;
-					box.__merfyChipsRemove({ kind: btn.getAttribute("data-chip-kind"), value: btn.getAttribute("data-chip-value") || "" });
+					box.__merfyChipsRemove({
+						kind: btn.getAttribute("data-chip-kind"),
+						value: btn.getAttribute("data-chip-value") || "",
+						group: btn.getAttribute("data-chip-group") || "",
+					});
 				});
 			});
 		}
@@ -984,6 +996,8 @@ const rowStockOptions: RadioOption[] = [
 			priceMax: null,
 			// Выбранные цвета ([] — все). Несколько: сервер показывает товары с любым из них.
 			colors: [],
+			// Остальные параметры товара: { «Размер»: ["M", "L"] } — несколько значений в группе.
+			variants: {},
 			sort: "popularity",
 			page: 1,
 		};
@@ -1055,6 +1069,11 @@ const rowStockOptions: RadioOption[] = [
 
 			// Цвет: ключ на каждое значение (`Цвет=A&Цвет=B`), сервер — товары с любым.
 			for (const color of filters.colors) qp.append(COLOR_GROUP_NAME, color);
+
+			// Остальные параметры товара — так же: ключ группы на каждое значение.
+			for (const [group, values] of Object.entries(filters.variants)) {
+				for (const value of values) qp.append(group, value);
+			}
 
 			// Коллекции: slug/id из настройки или ?collection= → серверный collection_id,
 			// ключ на каждую выбранную. Резолвим slug→id через кэш; нет резолва — ref как есть.
@@ -1171,7 +1190,8 @@ const rowStockOptions: RadioOption[] = [
 			for (const input of Array.from(document.querySelectorAll("[data-price-input]"))) input.value = "";
 		}
 
-		// Вид фильтра → как снять значение (undefined — все значения вида).
+		// Вид фильтра → как снять значение (undefined — все значения вида;
+		// у параметров товара вторым — имя группы).
 		const CHIP_REMOVERS = {
 			stock: () => {
 				filters.stock = "all";
@@ -1186,14 +1206,19 @@ const rowStockOptions: RadioOption[] = [
 				filters.colors = value === undefined ? [] : filters.colors.filter((color) => color !== value);
 				rerenderChoice(COLOR_BOX, renderColorBox, true);
 			},
+			variant: (value, group) => {
+				filters.variants =
+					value === undefined ? {} : { ...filters.variants, [group]: variantValues(group).filter((v) => v !== value) };
+				rerenderVariantBoxes(value === undefined ? null : group, true);
+			},
 			collection: (value) =>
 				pickCollections(value === undefined ? [] : buyerCollectionRefs().filter((ref) => ref !== value), true),
 		};
 
 		function removeFilterChip(chip) {
-			const kinds = chip.kind === "all" ? Object.keys(CHIP_REMOVERS) : [chip.kind];
-			for (const kind of kinds) {
-				if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](chip.kind === "all" ? undefined : chip.value);
+			const isAll = chip.kind === "all";
+			for (const kind of isAll ? Object.keys(CHIP_REMOVERS) : [chip.kind]) {
+				if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](isAll ? undefined : chip.value, chip.group);
 			}
 			resetPageAndRender();
 		}
@@ -1207,6 +1232,7 @@ const rowStockOptions: RadioOption[] = [
 					priceMin: filters.priceMin,
 					priceMax: filters.priceMax,
 					colors: filters.colors,
+					groups: Object.entries(filters.variants).map(([name, values]) => ({ name, values })),
 					collections: buyerCollectionRefs().map((ref) => {
 						const col = findCollection(catalogCollections, ref);
 						return { ref, name: (col && col.name) || ref };
@@ -1428,6 +1454,8 @@ const rowStockOptions: RadioOption[] = [
 		const COLOR_GROUP_NAME = "Цвет";
 		const COLOR_BOX = '[data-nt="catalog-color-filter"]';
 		let availableColors = [];
+		// Остальные параметры товара из /api/store/filters: [{ name, values }] без «Цвета».
+		let variantGroups = [];
 		let colorsRequest = null;
 		async function fetchAvailableColors() {
 			if (!storeId) return [];
@@ -1439,6 +1467,7 @@ const rowStockOptions: RadioOption[] = [
 					(json && json.data && Array.isArray(json.data.groups) && json.data.groups) ||
 					(json && Array.isArray(json.groups) && json.groups) ||
 					[];
+				variantGroups = groupsFrom(groups);
 				const group = groups.find((g) => g && typeof g.name === "string" && g.name.trim() === COLOR_GROUP_NAME);
 				const values = group && Array.isArray(group.values) ? group.values : [];
 				return values
@@ -1466,6 +1495,109 @@ const rowStockOptions: RadioOption[] = [
 		function initColorFilter() {
 			if (availableColors.length === 0) return;
 			hydrateChoice(COLOR_BOX, CHOICE.color, renderColorBox, applyColorSelection);
+		}
+
+		// ─────────── Остальные параметры товара (Размер, Формат, Оттенок…) ───────────
+		// Владелец: чипы «Формат: …» над товарами — значит, и фильтр по каждому
+		// параметру товара, не только по «Цвету». Группы — из /api/store/filters
+		// (fetchAvailableColors); фильтр каждой — копия «Цвета» с именем группы во
+		// всех его местах (строка, сайдбар, шторка), та же обвязка выбора. В группе
+		// несколько значений (товары с любым), разные группы — через И.
+		// Служебные ключи запроса товаров (api-gateway store.controller): группа с
+		// таким именем ушла бы в запрос поиском, тегами или страницей, а не
+		// фильтром, — её не показываем.
+		const QUERY_KEYS = new Set([
+			"store_id", "collection_id", "sort", "page", "limit", "offset",
+			"min_price", "max_price", "tags", "availability", "q",
+		]);
+		const groupsFrom = (groups) =>
+			groups
+				.map((g) => ({
+					name: g && typeof g.name === "string" ? g.name.trim() : "",
+					values: (g && Array.isArray(g.values) ? g.values : [])
+						.map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
+						.filter((v) => typeof v === "string" && v),
+				}))
+				.filter((g) => g.name && g.name !== COLOR_GROUP_NAME && !QUERY_KEYS.has(g.name) && g.values.length > 0);
+		const variantValues = (group) => filters.variants[group] || [];
+		const VARIANT_BOX = '[data-nt="catalog-variant-filter"]';
+		const variantKind = (group) => ({
+			list: "[data-variant-options]",
+			label: "[data-variant-label]",
+			dropdown: "data-variant-dropdown",
+			attr: "data-variant-option",
+			radio: "vanilla-variant",
+			title: group,
+		});
+		// Атрибуты цвета в копии → атрибуты параметра.
+		const COLOR_TO_VARIANT = [
+			["data-color-options", "data-variant-options"],
+			["data-color-label", "data-variant-label"],
+			["data-color-dropdown", "data-variant-dropdown"],
+		];
+		function cloneColorBox(template, group) {
+			const clone = template.cloneNode(true);
+			clone.setAttribute("data-nt", "catalog-variant-filter");
+			clone.setAttribute("data-variant-group", group);
+			clone.removeAttribute("data-cf-hydrated");
+			clone.removeAttribute("data-cf-radio-name");
+			clone.removeAttribute("open");
+			for (const [from, to] of COLOR_TO_VARIANT) {
+				for (const el of [clone, ...Array.from(clone.querySelectorAll(`[${from}]`))]) {
+					if (!el.hasAttribute(from)) continue;
+					el.setAttribute(to, el.getAttribute(from));
+					el.removeAttribute(from);
+				}
+			}
+			const title = Array.from(clone.querySelectorAll("span, p")).find(
+				(el) => el.children.length === 0 && (el.textContent || "").trim() === COLOR_GROUP_NAME,
+			);
+			if (title) title.textContent = group;
+			// Пункты цвета из копии убираем сразу: их наполнит renderVariantBox.
+			for (const list of Array.from(clone.querySelectorAll("[data-variant-options]"))) list.innerHTML = "";
+			return clone;
+		}
+		function variantBoxes(group) {
+			return Array.from(document.querySelectorAll(VARIANT_BOX)).filter(
+				(box) => group === null || box.getAttribute("data-variant-group") === group,
+			);
+		}
+		function renderVariantBox(box) {
+			const name = box.getAttribute("data-variant-group");
+			const group = variantGroups.find((g) => g.name === name);
+			const values = variantValues(name);
+			renderChoice(box, variantKind(name), [
+				{ value: "", label: "Все", active: values.length === 0 },
+				...(group ? group.values : []).map((v) => ({ value: v, label: v, active: values.includes(v) })),
+			], values.join(", "));
+		}
+		// После выбора: все места группы (null — всех групп) показывают новое значение.
+		function rerenderVariantBoxes(group, keepOpen) {
+			for (const box of variantBoxes(group).filter((b) => b.getAttribute("data-cf-hydrated") === "true")) {
+				renderVariantBox(box);
+				if (!keepOpen) box.removeAttribute("open");
+			}
+		}
+		function applyVariantSelection(group, value) {
+			filters.variants = { ...filters.variants, [group]: value ? toggleValue(variantValues(group), value) : [] };
+			rerenderVariantBoxes(group, !!value);
+			resetPageAndRender();
+		}
+		// Фильтр каждой группы — сразу за «Цветом»; прежние копии убираем:
+		// гидрация повторяется при навигации.
+		function initVariantFilters() {
+			for (const old of variantBoxes(null)) old.remove();
+			for (const template of Array.from(document.querySelectorAll(COLOR_BOX))) {
+				template.after(...variantGroups.map((g) => cloneColorBox(template, g.name)));
+			}
+			for (const box of variantBoxes(null)) {
+				if (!box.querySelector("[data-variant-options]")) continue;
+				const group = box.getAttribute("data-variant-group");
+				box.setAttribute("data-cf-hydrated", "true");
+				box.style.display = "";
+				renderVariantBox(box);
+				bindChoice(box, variantKind(group), (value) => applyVariantSelection(group, value));
+			}
 		}
 
 		// ─────────── Дропдауны верхних (top) фильтров ───────────
@@ -1534,6 +1666,7 @@ const rowStockOptions: RadioOption[] = [
 				syncStockUi();
 				syncSortUi();
 				initColorFilter();
+				initVariantFilters();
 				// Первая страница товаров (REPLACE) — реальный fetch /api/store/products.
 				syncFilterChips();
 				await renderCatalog(false);

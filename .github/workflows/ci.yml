@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", 'production']
   pull_request:
     branches: ["main"]
   # Ручной запуск для замера времени джоб на ЛЮБОЙ ветке без PR и без пуша
@@ -2176,7 +2176,9 @@ jobs:
           retention-days: 14
 
   deploy-to-coolify:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Прод живёт на ветке production (spec 116, 26.09.2026). main выкатывается в dev вебхуком
+    # Coolify сам; ручной вызов /deploy на main дал бы дубль в очереди.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/production'
     needs:
       - build-and-test
       - satin-build

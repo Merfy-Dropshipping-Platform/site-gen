@@ -7,6 +7,7 @@ import NavItem from "./NavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import { SITE_TITLE } from "../consts";
 import { getProductById } from "../data/products";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
 	label: string;
@@ -885,8 +886,8 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
 	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
 	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
-	<script is:inline define:vars={{ shopId }}>
-		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: apiUrl || "https://gateway.merfy.ru/api" };
 		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
 	</script>
 </div>

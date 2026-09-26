@@ -116,7 +116,10 @@ function flatName(abs) {
 // Без этого `import.meta.env.BASE_URL` (themes/*/src/lib/with-base.ts) в рантайме
 // undefined.BASE_URL → TypeError при рендере секции через Container API.
 function inlineViteEnv(code) {
-  return code.split('import.meta.env.BASE_URL').join('"/"');
+  // Адрес API для тем (spec 116): при сборке витрины его инлайнит Vite из PUBLIC_MERFY_API_URL;
+  // здесь — из окружения процесса, а без него `undefined`, чтобы сработал запасной литерал `?? "…"`.
+  const apiUrl = process.env.PUBLIC_MERFY_API_URL ? JSON.stringify(process.env.PUBLIC_MERFY_API_URL) : 'undefined';
+  return code.split('import.meta.env.BASE_URL').join('"/"').split('import.meta.env.PUBLIC_MERFY_API_URL').join(apiUrl);
 }
 
 const compiled = new Set();

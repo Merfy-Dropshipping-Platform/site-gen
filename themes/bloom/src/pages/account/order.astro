@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 ---
 <Layout title="Заказ">
   <script is:inline define:vars={{ shopId, apiUrl }}>

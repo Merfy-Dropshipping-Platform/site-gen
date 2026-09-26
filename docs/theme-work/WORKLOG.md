@@ -10300,3 +10300,12 @@ ILIKE, через product-service и gateway, на всех пяти темах,
 - Гард: `src/themes/__tests__/multicolumns-column-link-label.spec.ts` (+ шаг в ci.yml) — правило
   и порт каждой темы × 8 случаев + пустое состояние. На старых портах 24 из 58 красные, с правкой
   58 из 58. Снимки секций не изменились.
+
+## 2026-09-26 — все темы: адрес API из сборки (spec 116, контур dev)
+
+- Литерал `https://gateway.merfy.ru/api` в rose, bloom, flux, satin, vanilla, `templates/astro` и `theme-base` заменён на
+  `import.meta.env.PUBLIC_MERFY_API_URL ?? <литерал>` (кодмод `scripts/codemods/api-url-from-env.mjs`, 87 файлов + 9 вручную: Header.astro ×5,
+  PopularProducts, extension-points, header-search). В проде значение то же (переменная не задана → литерал), в dev витрины ходят в `gateway.dev.merfy.ru`.
+- Гард `src/themes/__tests__/no-literal-gateway.spec.ts`: литерал допустим только после `??`/`||`.
+- Инлайн `import.meta.env.PUBLIC_MERFY_API_URL` в `compile-theme-sections.mjs` и `compile-astro-blocks.mjs` (иначе bare-Node рендер секций/блоков падал).
+- Поведение тем не менялось: ни одной правки разметки или стилей. Ветка `feat/116-contour-env`.

@@ -35,7 +35,7 @@ const { id, colorScheme } = Astro.props as Props;
 
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
 ---
 

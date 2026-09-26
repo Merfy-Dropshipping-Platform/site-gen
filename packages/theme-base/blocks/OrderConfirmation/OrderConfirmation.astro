@@ -93,7 +93,7 @@ const bannerWrapStyle = `max-width:${banner.width}px;${bannerAlignStyle}`;
 const showBannerLeft = banner.enabled && (banner.placement === 'order' || banner.placement === 'full');
 const showBannerSummary = banner.enabled && banner.placement === 'summary';
 
-const apiBase = 'https://gateway.merfy.ru/api';
+const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 ---
 <section
   class:list={[C.root, schemeClass]}

@@ -75,7 +75,7 @@ const {
 
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 const schemeClass = `color-scheme-${schemeIdOf(colorScheme) || "2"}`;
 const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padding?.bottom ?? 80}px;`;
 

@@ -6,6 +6,7 @@
 // типографика §1, кнопка §3 (solid чёрная, габариты Contacts CTA).
 import { inlineFormat } from "../../lib/rich-text";
 import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
 
@@ -24,11 +25,10 @@ const isDefaultOrder = fieldOrder.every((f, i) => f === TEXT_COLUMN_FIELDS[i]);
 // блоке» / кнопка «Кнопка» (НЕ дефолт-копирайт верстальщика «Расскажите о товаре» /
 // «Опишите преимущества продукта…»). Мерчант задал свой heading/text/button → его
 // и рендерим (ветки union ниже сохраняются).
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || "Изображение с текстом";
-const text =
-	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() ||
-	"Покажи и расскажи о своем товаре в одном блоке";
+// pickText: строка панели (в т.ч. пустая — мерчант стёр) рендерится КАК ЕСТЬ;
+// заглушка подставляется ТОЛЬКО когда поле не задано вовсе (undefined).
+const heading = pickText(p.heading, "Изображение с текстом");
+const text = pickText(p.text, "Покажи и расскажи о своем товаре в одном блоке");
 
 // Канон heading.size: 'medium'/отсутствие = .rose-title дословно (20/14).
 // small 17/12, large 24/17 — шкала T14.
@@ -154,7 +154,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 
 		{/* h-full только при bottom-pinned (иначе ломает lg:items-center грида) */}
 		<div class={`flex w-full flex-col gap-6${bottomPinned ? " h-full" : ""}${imageRight ? " lg:order-1" : ""}`}>
-			{isDefaultOrder && !isFieldHidden('heading') && (
+			{isDefaultOrder && heading && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls + italicCls}
@@ -165,7 +165,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					<Fragment set:html={inlineFormat(heading)} />
 				</h2>
 			)}
-			{isDefaultOrder && !isFieldHidden('text') && (
+			{isDefaultOrder && text && !isFieldHidden('text') && (
 				<div
 					class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
 					data-puck-subsection-parent={id}
@@ -203,7 +203,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				// разметка после нее рвётся молча (см. field-order-astro-generics в
 				// журнале). Тип объекта тут и не нужен, ключи буквальные.
 				const nodes = {
-					heading: !isFieldHidden('heading') && (
+					heading: heading && !isFieldHidden('heading') && (
 						<h2
 							id={titleId}
 							class={headingCls + italicCls}
@@ -214,7 +214,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<Fragment set:html={inlineFormat(heading)} />
 						</h2>
 					),
-					text: !isFieldHidden('text') && (
+					text: text && !isFieldHidden('text') && (
 						<div
 							class={`font-manrope text-[16px] font-normal leading-[1.6] text-[rgb(var(--color-text,0_0_0))]${textSizeCls}${italicCls}${headingAlignCls}`}
 							data-puck-subsection-parent={id}

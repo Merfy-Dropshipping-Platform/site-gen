@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Канон-секция Video в чистой манере flux (см. themes/flux/MANNER.md; эталон
 // чистого стиля — Collections.astro). Шапка font-roboto-flex uppercase (дефолт
 // 19/23), подзаголовок font-roboto-flex font-light muted; медиа aspect-video в
@@ -50,13 +51,19 @@ const poster =
 const posterFallback = poster ?? "/placeholders/landscape-video.png";
 
 // Канон heading (как rose): string | {text, alignment, enabled, size} +
-// content.heading-конверт. Пустое состояние = Figma-плейсхолдер «Видео» НАД медиа
-// (мерчант задал свой heading → рендерим его; fallback только при пустом тексте).
+// content.heading-конверт. Панельное поле «Заголовок» — flat aiText
+// (Video.puckConfig.ts), пришло строкой (в т.ч. ПУСТОЙ — мерчант стёр) →
+// рендерим её как есть, элемент прячется (владелец 26.09). Новая секция «Видео»
+// получает заголовок «Видео» из blockDefaults темы (packages/theme-flux/
+// theme.json, §3 контракта — текст в поле, не в рендере); фолбэк-литерал ниже
+// остаётся ТОЛЬКО для старых ревизий без blockDefault (heading вовсе не строка
+// — undefined). Было `.trim() ? … : "Видео"` — пустая строка неотличима от
+// «не задано», заглушка подставлялась даже после явной очистки.
 // Роль — шапка секции flux: font-roboto-flex uppercase (эталон Collections.astro).
 const headingRaw = p.heading ?? p.content?.heading;
 const headingRawText =
-	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
-const headingText = headingRawText.trim() ? headingRawText : "Видео";
+	typeof headingRaw === "string" ? headingRaw : (typeof headingRaw?.text === "string" ? headingRaw.text : undefined);
+const headingText = headingRawText ?? "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = headingEnabled;
 // Канон headingSize («Размер заголовка», кегль <h2>; дубли heading.size /
@@ -171,7 +178,6 @@ const mediaHeightStyle = mediaEmpty
 			? "aspect-ratio:4/3"
 			: undefined;
 
-const titleId = id && showHeading ? `${id}-title` : undefined;
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -181,6 +187,10 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртое поле (heading = "") не рисуется — §2 контракта секции; строка
+// пробелов тоже считается пустой (hasText, а не голая истинность строки).
+const showHeadingText = showHeading && !isFieldHidden('heading') && hasText(headingText);
+const titleId = id && showHeadingText ? `${id}-title` : undefined;
 
 ---
 
@@ -191,9 +201,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class={containerCls} style={paddingStyle}>
 		{
-			(showHeading || subheadingText) && (
+			(showHeadingText || hasText(subheadingText)) && (
 				<div class={`flex flex-col gap-2${headingAlignCls}${headingWrapPx}`}>
-					{showHeading && !isFieldHidden('heading') && (
+					{showHeadingText && (
 						<h2
 							id={titleId}
 							class={headingCls}
@@ -204,7 +214,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							<Fragment set:html={inlineFormat(headingText)} />
 						</h2>
 					)}
-					{subheadingText && <p class={subheadingCls}><Fragment set:html={inlineFormat(subheadingText)} /></p>}
+					{hasText(subheadingText) && <p class={subheadingCls}><Fragment set:html={inlineFormat(subheadingText)} /></p>}
 				</div>
 			)
 		}

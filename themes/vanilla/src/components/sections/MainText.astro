@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
 import { mainTextButtonText } from "../../../../../packages/theme-base/runtime/main-text-button";
 // Фаза B (vanilla): канон-секция MainText — адаптация welcome-полотна
@@ -22,12 +23,17 @@ const id = p.id;
 // sibling-темы satin/bloom MainText.astro (тот же Figma-контракт). Любой
 // заданный проп = реальные данные мерчанта → рендер БЕЗ изменений (заголовок
 // только при непустом, кнопка только при непустой).
-const headingProvided =
-	(typeof p.heading === "string" && p.heading.trim()) ||
-	(typeof p.heading?.text === "string" && p.heading.text.trim());
-const textProvided =
-	(typeof p.text === "string" && p.text.trim()) ||
-	(typeof p.text?.content === "string" && p.text.content.trim());
+// headingProvided/textProvided = «поле панели пришло СТРОКОЙ» (в т.ч. пустой —
+// мерчант стёр), а не «значение истинное» (§2 контракта). textOf возвращает
+// undefined только когда поля нет вовсе — тогда секция считается ПУСТОЙ
+// ЦЕЛИКОМ (isEmptyState) и подставляет плейсхолдер-бренд; стёртое "" от
+// «не задано» отличается и плейсхолдер не подставляет (владелец 26.09). Гейт
+// isEmptyState/buttonProvided НЕ трогаем — «пусто целиком» рассчитывается
+// корректно, просто не должно путать «стёрли» с «не задано».
+const headingField = textOf(p.heading);
+const headingProvided = headingField !== undefined;
+const textField = textOf(p.text);
+const textProvided = textField !== undefined;
 const buttonProvided = p.button !== undefined || p.cta !== undefined;
 const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 
@@ -35,9 +41,10 @@ const isEmptyState = !headingProvided && !textProvided && !buttonProvided;
 // italic 20, МАННЕРА §1), на тёмном полотне — белый. Лестница §9: medium/
 // отсутствие = литерал 20, small 17, large 24. Курсив вынесен в italicCls
 // (textStyle ниже). Пустое состояние → плейсхолдер-заголовок контракта; иначе
-// рендер ТОЛЬКО при заданном (пустой проп заголовок скрывает).
+// рендер ТОЛЬКО при заданном (пустой проп заголовок скрывает — heading="" ниже,
+// а `heading &&` у разметки уже прячет пустой узел).
 const heading = headingProvided
-	? (typeof p.heading === "string" ? p.heading : p.heading.text)
+	? headingField
 	: (isEmptyState ? "Расскажи о своем бренде" : "");
 const headingSize = p.heading?.size ?? p.headingSize;
 // Как у верстальщиков (владелец 24.09: «как у верстальщиков, только
@@ -66,12 +73,12 @@ const headingCls =
 
 // Канон text: string | { content, size }. set:html — базовая HTML-разметка.
 // Пустое состояние (Figma 1:19335) → контрактный поясняющий текст плейсхолдера,
-// НЕ длинная welcome-копия верстальщика (бренд-абзацы про Vanila).
-const text =
-	typeof p.text === "string"
-		? p.text
-		: (p.text?.content ??
-			(isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : ""));
+// НЕ длинная welcome-копия верстальщика (бренд-абзацы про Vanila). textField/
+// textProvided уже разобраны выше (isEmptyState) — второй разбор того же поля
+// не нужен, значение либо готовой строкой, либо falls back тем же путём, что heading.
+const text = textProvided
+	? textField
+	: (isEmptyState ? "Расскажи подробнее о своем онлайн-магазине в этом блоке" : "");
 
 // Канон textSize. Роль = body-текст полотна 16 (about:153; лестница §9):
 // medium/отсутствие = литерал 16 (text-base), small 14, large 19.
@@ -146,6 +153,10 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта); отсюда же берёт
+// aria-labelledby секции, чтобы не ссылаться на нерисуемый `<h2 id={headingId}>`.
+const showHeading = hasText(heading) && !isFieldHidden('heading');
+const showText = hasText(text) && !isFieldHidden('text');
 // Порядок заголовка/текста/кнопки из перетаскивания в конструкторе
 // (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
 // заголовок и текст остаются в общей колонке (gap-3), кнопка — отдельным
@@ -155,7 +166,7 @@ const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]
 
 <section
 	class={`vanilla-pad w-full bg-[rgb(var(--color-bg,58_69_48))] py-16 text-[rgb(var(--color-text,255_255_255))] ${SECTION_PY_LG_CLS}`}
-	aria-labelledby={heading ? headingId : undefined}
+	aria-labelledby={showHeading ? headingId : undefined}
 	data-welcome-section
 	data-puck-component-id={id}
 	style={paddingStyle}
@@ -168,7 +179,7 @@ const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]
 			{run.fields.map((field) => (
 			<Fragment>
 			{
-				field === 'heading' && heading && !isFieldHidden('heading') && (
+				field === 'heading' && showHeading && (
 					<h2
 						id={headingId}
 						class={headingCls + italicCls}
@@ -181,7 +192,7 @@ const textRuns = fieldRuns(sectionFieldOrder("MainText", p), ["heading", "text"]
 					</h2>
 				)
 			}
-			{field === 'text' && !isFieldHidden('text') && (
+			{field === 'text' && showText && (
 				<p
 					class={textCls + italicCls}
 					data-animate

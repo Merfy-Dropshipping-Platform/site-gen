@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import VanillaProductCard from "../products/VanillaProductCard.astro";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular T13): полная конструкторная схема
@@ -19,18 +20,14 @@ const id = p.id;
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки, паритет эталона rose Popular). Дефолт-текст верстальщика
-// («Популярные товары» + длинный подзаголовок) заменён на Figma-текст. Когда
-// мерчант задал свой heading/text/subtitle — рендерим ЕГО (?? fallback
-// срабатывает только при пустых данных).
-const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Коллекция товаров";
+// («Популярные товары» + длинный подзаголовок) заменён на Figma-текст. Мерчант
+// задал свой heading (в т.ч. пустой — стёр, §2 контракта) → рендерим ЕГО;
+// заглушка/легаси title — только когда поля нет вовсе.
+const sectionTitle = pickText(p.heading, textOf(p.title) ?? "Коллекция товаров");
 // Подзаголовок: рендерится ТОЛЬКО если мерчант его задал. По Figma-контракту
 // пустое состояние PopularProducts — лишь заголовок «Коллекция товаров» +
 // карточки (как в rose), без хелпер-текста верстальщика.
-const rawSubtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content);
-const sectionSubtitle = typeof rawSubtitle === "string" && rawSubtitle.trim() ? rawSubtitle : "";
+const sectionSubtitle = textOf(p.text) ?? textOf(p.subtitle) ?? "";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium' и
 // отсутствие = роль «заголовок секции» верстальщика дословно (Bitter italic
@@ -340,18 +337,24 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта). showHeadWrap решает,
+// рисовать ли всю шапку: иначе стёртые заголовок+подзаголовок оставляют
+// пустой `<div class="flex ... gap-2">` над сеткой товаров.
+const showHeading = hasText(sectionTitle);
+const showSubtitle = hasText(sectionSubtitle);
+const showHeadWrap = !isFieldHidden('heading') && (showHeading || showSubtitle);
 
 ---
 
 <section
 	id="popular"
 	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-20 md:py-28"
-	aria-labelledby="popular-title"
+	aria-labelledby={showHeading && !isFieldHidden('heading') ? "popular-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
-		{!isFieldHidden('heading') && (
+		{showHeadWrap && (
 		<div
 			class={HEAD_WRAP_CLS}
 			data-animate
@@ -359,10 +362,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="popular-title" class={headingCls}>
-				<Fragment set:html={inlineFormat(sectionTitle)} />
-			</h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{showHeading && (
+				<h2 id="popular-title" class={headingCls}>
+					<Fragment set:html={inlineFormat(sectionTitle)} />
+				</h2>
+			)}
+			{showSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 		)}
 

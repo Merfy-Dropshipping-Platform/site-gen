@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { orderTextFields, TEXT_COLUMN_FIELDS } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (bloom): новая канон-секция ImageWithText в манере bloom (см.
 // themes/bloom/MANNER.md). Секции нет у верстальщика — композиция из манеры:
 // сетка секций §2 (поля px-4 md:px-20 2xl:px-[300px], вертикаль 80/120),
@@ -36,13 +37,11 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 // Figma 1:19335 — ПУСТОЕ состояние секции «Изображение с текстом»: дословные
 // плейсхолдеры «Изображение с текстом» / «Покажи и расскажи о своем товаре в одном
 // блоке» / кнопка «Кнопка» (НЕ дефолт-копирайт верстальщика «Расскажите о товаре» /
-// «Опишите преимущества продукта…»). Мерчант задал свой heading/text/button → его
-// и рендерим (ветки union ниже сохраняются).
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || "Изображение с текстом";
-const text =
-	(typeof p.text === "string" ? p.text : p.text?.content)?.trim() ||
-	"Покажи и расскажи о своем товаре в одном блоке";
+// «Опишите преимущества продукта…»). Панельное поле пришло строкой (в т.ч.
+// пустой "" — мерчант стёр вручную) → рендерим как есть. Заглушка контракта —
+// только когда поля вовсе нет (undefined, старые ревизии).
+const heading = pickText(p.heading, "Изображение с текстом");
+const text = pickText(p.text, "Покажи и расскажи о своем товаре в одном блоке");
 
 // Канон heading.size — роль «заголовок секции» (Urbanist uppercase, розовый на
 // белом, МАННЕРА §1). Лестница §9: medium/отсутствие = литерал роли 18/md:20,
@@ -257,10 +256,10 @@ const seamCardCls = isOverlap
 		? " rounded-t-none lg:rounded-tr-[var(--radius-card,12px)] lg:rounded-l-none"
 		: " rounded-t-none lg:rounded-tl-[var(--radius-card,12px)] lg:rounded-r-none";
 
-// Кнопка: canon button {text, href|link} — розовый pill манеры §3. Мерчант задал
-// текст → его; пусто → дословный Figma-плейсхолдер «Кнопка» (1:19335). Кнопка
-// рендерится всегда (часть дизайна пустого состояния), как «Кнопка» в
-// MainText/Slideshow/Hero плейсхолдерах (паритет rose ImageWithText).
+// Кнопка: canon button {text, href|link} — розовый pill манеры §3. Вне задачи
+// (общий бриф §14: «кнопки не входят в задачу»). Поведение дословно HEAD:
+// кнопка рендерится всегда (часть дизайна пустого состояния), "" считается
+// «не задано» и падает в дословный Figma-плейсхолдер «Кнопка» (1:19335).
 const btnText =
 	typeof p.button?.text === "string" && p.button.text.trim() ? p.button.text : "Кнопка";
 // §11 Контракта секции: ссылку пишет ВИДИМОЕ поле панели «Кнопка → Ссылка»
@@ -352,7 +351,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					: `flex w-full flex-col gap-6 ${positionJustifyCls} lg:h-full${imageLeft ? "" : " lg:order-1"}${containerSurfaceCls}${seamCardCls}${containerSchemeCls}`
 			}
 		>
-			{isDefaultOrder && !isFieldHidden('heading') && (
+			{isDefaultOrder && heading && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls + headingAlignCls + italicCls}
@@ -362,7 +361,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					set:html={inlineFormat(heading)}
 				></h2>
 			)}
-			{isDefaultOrder && !isFieldHidden('text') && (
+			{isDefaultOrder && text && !isFieldHidden('text') && (
 				<div
 					class={textCls + italicCls + headingAlignCls}
 					data-puck-subsection-parent={id}
@@ -396,7 +395,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				// Без TS-аннотации типа объекта: `Record<...>` в теле шаблона Astro
 				// читает как открывающий тег и рвёт разметку молча.
 				const nodes = {
-					heading: !isFieldHidden('heading') && (
+					heading: heading && !isFieldHidden('heading') && (
 						<h2
 							id={titleId}
 							class={headingCls + headingAlignCls + italicCls}
@@ -406,7 +405,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							set:html={inlineFormat(heading)}
 						></h2>
 					),
-					text: !isFieldHidden('text') && (
+					text: text && !isFieldHidden('text') && (
 						<div
 							class={textCls + italicCls + headingAlignCls}
 							data-puck-subsection-parent={id}

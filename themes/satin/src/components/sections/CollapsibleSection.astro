@@ -2,6 +2,7 @@
 import { inlineFormat } from "../../lib/rich-text";
 import { schemeIdOf } from "../../lib/color-scheme";
 import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtIcon.astro";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // Фаза B (satin, группа misc): канон-секция CollapsibleSection — адаптация
 // src/components/sections/Faq.astro (тело КОПИЕЙ; оригинал не тронут —
@@ -13,18 +14,6 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // 0.3/0.35s); без скрипта работает нативный <details>.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
-function contentSet(keys: string | string[], raw: unknown): boolean {
-	const ks = Array.isArray(keys) ? keys : [keys];
-	for (const key of ks) {
-		const f = merfy?.fields?.[key];
-		if (f && typeof f.set === "boolean") return f.set;
-	}
-	if (typeof raw !== "string") return false;
-	const t = raw.trim();
-	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
-	return true;
-}
 function slotSet(raw: unknown): boolean {
 	if (typeof raw !== "string") return false;
 	const t = raw.trim();
@@ -32,18 +21,12 @@ function slotSet(raw: unknown): boolean {
 	return true;
 }
 
-// Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
-// состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
-// «Сворачиваемый раздел» (а НЕ дефолт-копирайт коэрсера/верстальщика «Часто
-// задаваемые вопросы»). Роль = заголовок секции §1 (font-logo 20 uppercase
-// leading-[1.15], TextBlock.astro:15), токен heading с фоллбеком 0_0_0. Мерчант
-// задал свой heading → его и рендерим (?? срабатывает только при пустых данных).
-const headingRaw =
-	typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
-// §3 Контракта секции: заглушка = ровно тот текст, что показывает панель темы
-// (defaultProps satin «ВОПРОСЫ И ОТВЕТЫ»). Раньше порт рисовал общее служебное
-// имя блока, и мерчант видел в поле одно, а на превью другое.
-const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "ВОПРОСЫ И ОТВЕТЫ";
+// Канон heading: string | { text, alignment, size }. Роль = заголовок секции
+// §1 (font-logo 20 uppercase leading-[1.15], TextBlock.astro:15), токен heading
+// с фоллбеком 0_0_0. §3 Контракта секции: заглушка «ВОПРОСЫ И ОТВЕТЫ» — ровно
+// тот текст, что показывает панель темы (defaultProps satin), и только когда
+// поле вовсе не задано; стёртое мерчантом — пусто (§2).
+const heading = pickText(p.heading, "ВОПРОСЫ И ОТВЕТЫ");
 // Лестница §9 «Заголовок секции» (база-литерал 20 = canon-default medium): small 17, large 24.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
@@ -103,7 +86,7 @@ const listedSections =
 const realSections =
 	listedSections &&
 	listedSections.some((s: any) => {
-		const heading = (typeof s?.heading === "string" && s.heading) || (typeof s?.title === "string" && s.title) || "";
+		const heading = textOf(s?.heading) ?? textOf(s?.title) ?? "";
 		const content = typeof s?.content === "string" ? s.content : "";
 		return slotSet(heading) || slotSet(content);
 	})
@@ -113,8 +96,7 @@ const hasRealSections = realSections !== null;
 const isPlaceholder = !hasRealSections;
 const rawSections = hasRealSections ? realSections : PLACEHOLDER_SECTIONS;
 const sections = rawSections.slice(0, 10).map((s: any) => ({
-	heading:
-		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
+	heading: textOf(s.heading) ?? textOf(s.title) ?? "",
 	content: typeof s.content === "string" ? s.content : "",
 	headingCls: sizeOf(ITEM_HEADING_SIZE, s.headingSize),
 	textCls: sizeOf(ITEM_TEXT_SIZE, s.textSize),
@@ -151,7 +133,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && heading ? `${id}-title` : undefined;
+const titleId = id && hasText(heading) ? `${id}-title` : undefined;
 
 // §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
 // конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
@@ -183,13 +165,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 <section
 	class={`satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-10 md:py-14${selfSchemeClass}`}
 	aria-labelledby={titleId}
-	aria-label={heading ? undefined : "Частые вопросы"}
+	aria-label={hasText(heading) ? undefined : "Частые вопросы"}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class="satin-container flex flex-col gap-8">
 		{
-			heading && !isFieldHidden('heading') && (
+			hasText(heading) && !isFieldHidden('heading') && (
 				<h2
 					id={titleId}
 					class={headingCls}

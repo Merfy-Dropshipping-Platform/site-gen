@@ -4,6 +4,7 @@
 // Паритет rose (ui/RoseSectionHeading.astro импортируется тем же приёмом).
 import NtSectionHeading from "../ui/BloomSectionHeading.astro";
 import BloomProductCard from "../products/BloomProductCard.astro";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Popular T13): полная конструкторная схема
 // theme-base PopularProducts.puckConfig поверх разметки верстальщика. Тело +
@@ -32,18 +33,16 @@ const _schemeId =
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
-// карточки). Дефолт-текст верстальщика («Главные хиты» + длинный подзаголовок)
-// заменён на Figma-текст. Когда мерчант задал свой heading/text/subtitle —
-// рендерим ЕГО (?? fallback срабатывает только при пустых данных).
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const sectionTitle =
-	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
-	"Коллекция товаров";
-const sectionSubtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content) ??
-	"";
+// карточки). Панельное поле (heading/text), пришедшее строкой — в т.ч.
+// пустой "" (мерчант стёр вручную) — рендерим как есть. Легаси title/subtitle
+// и заглушка темы — только когда поля вовсе нет (undefined, старые ревизии).
+// Раньше `?.trim() || "…"` трактовал "" как «не задано» и подставлял литерал
+// темы обратно (владелец 26.09). Общий помощник контракта §2 —
+// packages/theme-base/runtime/merchant-text.ts.
+const sectionTitle = pickText(p.heading, pickText(p.title, "Коллекция товаров"));
+const sectionSubtitle = pickText(p.text, pickText(p.subtitle, ""));
+// Оба поля стёрты — шапки нет вовсе, без пустой обёртки с отступом до карточек.
+const hasHead = hasText(sectionTitle) || hasText(sectionSubtitle);
 
 // Канон cards 2-24: лимит среза demo-витрины и гидрации (data-cards на гриде).
 // 4 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
@@ -395,7 +394,7 @@ const viewAllEmptyRow = isFieldHidden("viewAll");
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		{!isFieldHidden('heading') && (
+		{!isFieldHidden('heading') && hasHead && (
 		<div
 			data-animate
 			class={headWrapCls}

@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { schemeIdOf } from "../../lib/color-scheme";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (bloom): новая канон-секция MultiRows в манере bloom (см.
 // themes/bloom/MANNER.md). Секции нет у верстальщика — ряды «картинка + текст»
 // в чередующейся раскладке по паттерну ImageWithText (медиа галереи §4,
@@ -25,15 +26,13 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Канон top-heading: string | { text, alignment, size } (+ legacy _headingLegacy).
 // Figma 1:19335 — ПУСТОЕ состояние секции «Мультиряды»: дословный заголовок
-// «Мультиряды» (а НЕ отсутствие шапки/дефолт-копирайт верстальщика). Мерчант задал
-// свой heading → его и рендерим. Роль = заголовок секции на белом (Urbanist
+// «Мультиряды» — ТОЛЬКО когда поля вовсе нет (undefined, старые ревизии).
+// Панельное поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) →
+// рендерим как есть, `heading &&` ниже скрывает пустой заголовок целиком.
+// Роль = заголовок секции на белом (Urbanist
 // uppercase, розовый токен, МАННЕРА §1). Лестница §9: medium/отсутствие = 18/md:20,
 // small 15/17, large 22/24.
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const heading =
-	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p._headingLegacy)?.trim() ||
-	"Мультиряды";
+const heading = pickText(p.heading, pickText(p._headingLegacy, "Мультиряды"));
 // Панель пишет размер в top-level `headingSize` (select), поле `heading` = aiText-строка.
 // Читаем top-level ПЕРВЫМ: в старых ревизиях мог остаться legacy-объект heading.size,
 // и nested-first молча глушил живой селект панели. Паритет rose (precedence "top-level").
@@ -125,16 +124,14 @@ const rows = rawRows.slice(0, 10).map((r: any, i: number) => {
 	const btnText =
 		typeof r.button?.text === "string" && r.button.text.trim() ? r.button.text : undefined;
 	return {
-		heading:
 		// §11 Контракта секции: панель ряда показывает и пишет title/description/image,
-		// а heading/text/imageUrl — legacy из сидов и старых ревизий. Читать legacy
-		// ПЕРВЫМ нельзя: он есть почти в каждой ревизии и наглухо глушит правки
-		// мерчанта — заголовок ряда меняешь, на превью остаётся старый.
-			(typeof r.title === "string" && r.title) || (typeof r.heading === "string" && r.heading) || "",
-		text:
-			(typeof r.description === "string" && r.description) ||
-			(typeof r.text === "string" && r.text) ||
-			"",
+		// а heading/text/imageUrl — legacy из сидов и старых ревизий. Панельное
+		// поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) → рендерим
+		// как есть; на legacy-поле падаем ТОЛЬКО когда панельного вовсе нет
+		// (undefined). Раньше `||`-цепочка трактовала "" как «нет данных» и
+		// глушила очистку старым legacy-значением.
+		heading: pickText(r.title, pickText(r.heading, "")),
+		text: pickText(r.description, pickText(r.text, "")),
 		image:
 			(typeof r.image === "string" && r.image.trim()) ||
 			(typeof r.imageUrl === "string" && r.imageUrl.trim()) ||

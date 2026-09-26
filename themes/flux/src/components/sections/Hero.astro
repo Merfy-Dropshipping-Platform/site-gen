@@ -4,6 +4,7 @@ import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtim
 import FluxPicture from "../img/FluxPicture.astro";
 import { SITE_TITLE } from "../../consts";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim;
@@ -16,32 +17,25 @@ const id = p.id;
 const nonEmpty = (v: unknown): string | undefined =>
 	typeof v === "string" && v.trim() ? v : undefined;
 // heading/text принимают И канон-объект ({text}/{content}), И плоскую строку
-// (паритет с Collections/Gallery/Popular/Puk/MainText/Newsletter в этой же теме —
-// везде `typeof p.heading === "string" ? p.heading : p.heading?.text`). Раньше
-// Hero проверял ТОЛЬКО p.heading?.text — плоская строка тихо терялась (rawHeadingText
-// ниже её тоже не видел → секция с реальным заголовком мерчанта ошибочно считалась
-// isEmpty и рисовала плейсхолдер «Изображение» вместо заданного текста).
-// Дефолтное состояние Hero = контент вёрстки дословно (flux-theme Hero.astro:14-18).
-// Фолбэк идёт через nonEmpty, а не через `??`: сид и миграции ревизий кладут в эти
-// поля ПУСТЫЕ СТРОКИ, а `??` пропускает только null/undefined — из-за этого секция
-// рендерилась с пустыми <h1>/<p>/<a> вместо дефолтного текста оригинала.
+// (паритет с Collections/Gallery/Popular/Puk/MainText/Newsletter в этой же теме).
+// Панельное поле (в т.ч. СТЁРТОЕ мерчантом до "") рендерим как есть — секция
+// должна очищаться, а не вернуть дефолт вёрстки (владелец 26.09) — читает это
+// `pickText` (packages/theme-base/runtime/merchant-text): фолбэк срабатывает
+// только когда поле НЕ строка вовсе (undefined/старая ревизия). Легаси-флэт
+// p.title/p.subtitle (до heading/text-объектов) — через `nonEmpty`, а не `??`:
+// сид и миграции ревизий кладут в НИХ пустые строки, и `??` их не отсекал —
+// секция рисовала пустой <h1>/<p> вместо REF_TITLE/REF_SUBTITLE.
 const REF_TITLE = "Технологии без паузы";
 const REF_SUBTITLE = "Будущее — в режиме онлайн.\nВаш новый гаджет — уже в наличии.";
 const REF_CTA_TEXT = "Новинки 2026";
 const REF_CTA_LINK = "/catalog";
 // Вёрстка разбивает подзаголовок по \n на строки через <br> (Hero.astro:20,55).
 
-const title =
-	nonEmpty(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
-	nonEmpty(p.title) ??
-	REF_TITLE;
+const title = pickText(p.heading, nonEmpty(p.title) ?? REF_TITLE);
 // alt= уходит в АТРИБУТ: там нужен чистый текст. Начертания «Ж»/«К» (<strong>/<em>
 // вокруг всего значения) скринридер прочитал бы как «меньше strong больше».
 const titleAlt = String(title).replace(/<\/?(?:em|strong|b|i|u|s)>/g, "");
-const subtitle =
-	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
-	nonEmpty(p.subtitle) ??
-	REF_SUBTITLE;
+const subtitle = pickText(p.text, nonEmpty(p.subtitle) ?? REF_SUBTITLE);
 const ctaText =
 	nonEmpty(p.primaryButton?.text) ??
 	nonEmpty(p.cta?.text) ??
@@ -341,6 +335,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 // заголовок и текст остаются в общей колонке со своим ритмом (gap-2), кнопки
 // — отдельным звеном (gap-8 колонки контента). Без fieldOrder — прежняя разметка.
 const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+// Стёртое поле (title/subtitle = "") не рисуется вовсе — §2 контракта секции;
+// обёртка группы (`heroRuns` grouped-run) тоже пропадает, если внутри неё не
+// осталось ни одного видимого поля, иначе её gap двигает соседей.
+const heroFieldVisible = (field: string): boolean =>
+	field === "heading" ? !isFieldHidden("heading") && hasText(title)
+	: field === "text" ? !isFieldHidden("text") && hasText(subtitle)
+	: false;
 
 // ПУСТАЯ секция (заглушка до своих фото и текста) слушает панель так же, как
 // заполненная. Тестер 24.09: «Изображение по всем настройкам сломалась, не
@@ -480,7 +481,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 	) : (
 <section
 	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] ${heroHeightMdCls}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={heroFieldVisible("heading") ? "hero-title" : undefined}
 	data-puck-component-id={id}
 >
 	{/* Канон верстальщиков: медиа = absolute-оверлей полотна на ВСЕХ вьюпортах
@@ -544,10 +545,11 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 	>
 		<div class={contentCls} data-reveal>
 			{heroRuns.map((run) => run.grouped ? (
+			run.fields.some(heroFieldVisible) && (
 			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
 				{run.fields.map((field) => (
 				<Fragment>
-				{field === 'heading' && !isFieldHidden('heading') && (
+				{field === 'heading' && heroFieldVisible('heading') && (
 					<h1
 						id="hero-title"
 						class={headingCls}
@@ -558,7 +560,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 						<Fragment set:html={inlineFormat(title)} />
 					</h1>
 				)}
-				{field === 'text' && !isFieldHidden('text') && (
+				{field === 'text' && heroFieldVisible('text') && (
 					<p
 						class={subtitleCls}
 						data-puck-subsection-parent={id}
@@ -572,6 +574,7 @@ const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${te
 				</Fragment>
 				))}
 			</div>
+			)
 			) : !isFieldHidden('buttons') && (
 			<div class={buttonsCls}>
 				<a

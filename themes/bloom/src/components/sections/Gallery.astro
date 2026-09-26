@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // ОЖИВЛЕНИЕ (Фаза B, контракт rose Gallery T13): конструкторная схема
 // theme-base Gallery.puckConfig поверх разметки верстальщика. Тело + канон-
 // дефолты (headingSize/textSize medium, imagePosition left) → пиксель
@@ -24,11 +25,10 @@ const _schemeId =
 			? String(_rawScheme).replace("scheme-", "")
 			: "";
 const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const sectionTitle =
-	((typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title)?.trim() ||
-	"Галерея";
+// Панельное поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) →
+// рендерим как есть. Легаси title и заглушка темы — только когда поля вовсе
+// нет (undefined, старые ревизии).
+const sectionTitle = pickText(p.heading, pickText(p.title, "Галерея"));
 // Подзаголовка у верстальщика НЕТ — рендер ТОЛЬКО при непустом пропе.
 const rawSubtitle =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
@@ -249,7 +249,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
-		{!isFieldHidden('heading') && (sectionSubtitle ? (
+		{!isFieldHidden('heading') && (sectionTitle && sectionSubtitle ? (
 			<div
 				data-animate
 				class="flex flex-col gap-2"
@@ -260,7 +260,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				<h2 id="gallery-title" class={headingCls} set:html={inlineFormat(sectionTitle)}></h2>
 				<p class={subtitleCls} set:html={inlineFormat(sectionSubtitle)} />
 			</div>
-		) : (
+		) : sectionTitle ? (
 			<h2
 				id="gallery-title"
 				data-animate
@@ -270,7 +270,18 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				data-puck-subsection-field="heading"
 				set:html={inlineFormat(sectionTitle)}
 			></h2>
-		))}
+		) : sectionSubtitle ? (
+			// Заголовок стёрт, текст остался — рисуем только его, без пустого <h2>.
+			<p
+				id="gallery-title"
+				data-animate
+				class={subtitleCls}
+				data-puck-subsection-parent={id}
+				data-puck-subsection-index="100"
+				data-puck-subsection-field="heading"
+				set:html={inlineFormat(sectionSubtitle)}
+			></p>
+		) : null)}
 
 		<div class={`grid min-h-0 min-w-0 grid-cols-1 items-start gap-4${GRID_LAYOUT.stretch} ${gridLayoutCls}`} data-animate data-animate-delay="0.1s">
 			{heroTile && (

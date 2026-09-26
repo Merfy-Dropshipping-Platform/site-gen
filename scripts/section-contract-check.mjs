@@ -87,11 +87,12 @@ function checkStatic() {
       }
     }
 
-    // §2 — пустая строка = «не задано»
-    const headingExpr = src.match(/const\s+(?:sectionTitle|heading|headingText|rawHeading|placeholderHeading)\s*=\s*[\s\S]{0,300}?;\n/g) ?? [];
-    for (const expr of headingExpr) {
-      if (/\?\?\s*"[^"]{2,}"\s*;/.test(expr) && !/\)\s*\?\.\s*trim\(\)\s*\|\||\|\|\s*"/.test(expr)) {
-        add("§2 пустая строка", rel, "заголовок читается через `?? \"Заглушка\"` — очищенное мерчантом поле даст пустой заголовок вместо заглушки; нужно `(...)?.trim() || \"Заглушка\"`");
+    // §2 — стёртое поле = пусто, заглушка только без поля
+    const textExpr =
+      src.match(/const\s+(?:sectionTitle|sectionSubtitle|heading|headingText|rawHeading|placeholderHeading|title|subtitle|description)\s*=\s*[\s\S]{0,300}?;\n/g) ?? [];
+    for (const expr of textExpr) {
+      if (/trim\(\)\s*\|\|\s*["'][^"']{2,}["']|\|\|\s*["'][А-ЯЁ][^"']+["']/.test(expr)) {
+        add("§2 стёртое поле", rel, "текст читается через `|| \"Заглушка\"` — стёртое мерчантом поле вернёт текст темы; нужно `pickText(поле, \"Заглушка\")` из runtime/merchant-text");
         break;
       }
     }

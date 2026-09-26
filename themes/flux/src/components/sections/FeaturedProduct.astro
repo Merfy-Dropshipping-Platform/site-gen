@@ -66,6 +66,7 @@ import { inlineFormat } from "../../lib/rich-text";
 import { VARIANT_CHIP_EQUALIZE_SOURCE } from "../../../../../packages/theme-base/runtime/variant-chip-equalize";
 import { resolveVariantDisplay } from "../../../../../packages/theme-base/runtime/variant-display";
 import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import FluxPicture from "../img/FluxPicture.astro";
 import {
 	deriveVariantGroups,
@@ -111,7 +112,6 @@ const siteId = typeof p.siteId === "string" ? p.siteId : "";
 // (PDP). Товар не выбран мерчантом / не резолвится → рендерим ЭТОТ дизайн, а не
 // upstream demo-товар верстальщиков.
 const PLACEHOLDER_IMAGE = "/placeholders/sweater-blue-large.svg";
-const PLACEHOLDER_BRAND = "Новая коллекция!";
 const PLACEHOLDER_NAME = "Товар";
 const PLACEHOLDER_PRICE = "2 500 ₽";
 
@@ -185,12 +185,14 @@ if (productIdRef && siteId) {
 }
 const isPlaceholder = !realProduct;
 
-// — Текст (canon "text" — брендлайн над названием). Мерчантский текст ВСЕГДА
-//   приоритетнее плейсхолдера/реального brand (паритет theme-base Product.astro
-//   textContent ?? badge?.text, brandText = textContent || view.brand). —
-const textContent = (typeof p.text === "string" ? p.text : p.text?.content) ?? p.badge?.text ?? "";
-const displayBrand =
-	textContent || (isPlaceholder ? PLACEHOLDER_BRAND : realProduct.collection || realProduct.brand || realProduct.vendor || "");
+// — Текст (canon "text" — брендлайн над названием). Товар не выбран — только
+//   текст мерчанта, без заглушки: дефолт панели "" вписывается любой правкой,
+//   поэтому «поля нет» и «стёрто» обязаны выглядеть одинаково (владелец 26.09,
+//   «пусто везде»). Товар выбран: пустое поле — бренд/коллекция товара. —
+const textContent = textOf(p.text) ?? p.badge?.text ?? "";
+const displayBrand = isPlaceholder
+	? textContent
+	: textContent || realProduct.collection || realProduct.brand || realProduct.vendor || "";
 
 const displayName = isPlaceholder ? PLACEHOLDER_NAME : realProduct.name || realProduct.title || PLACEHOLDER_NAME;
 

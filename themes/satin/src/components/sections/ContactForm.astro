@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import NtTextField from "@merfy-dropshipping-platform/design-systems-theme/components/ui/NtTextField.astro";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // Фаза B (satin, группа misc): новая канон-секция ContactForm — разметка
 // секции «Обратная связь» pages/contacts.astro:46-77 (страница остаётся inline
@@ -21,15 +22,11 @@ function contentSet(keys: string | string[], raw: unknown): boolean {
 	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
 	return true;
 }
-
-// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния ContactForm/Contacts:
-// заголовок «Контактная форма» (без хелпер-описания). Дефолт-текст верстальщика
-// («Обратная связь» contacts.astro:49) заменён на Figma-текст. Когда мерчант
-// задал свой heading — рендерим ЕГО (?? fallback срабатывает только при пустых
-// данных). font-logo 20 uppercase leading-[1.15], токен heading 0_0_0.
-const headingRaw = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "");
-// §3 Контракта секции: заглушка = текст панели темы («Связаться с нами»).
-const heading = contentSet("heading", headingRaw) && headingRaw.trim() ? headingRaw : "Связаться с нами";
+// Figma 1:19335 — заголовок-плейсхолдер «Контактная форма» ТОЛЬКО когда поле
+// вовсе не задано; стёртое мерчантом — пусто (SECTION-CONTRACT.md §2). §3:
+// заглушка = текст панели темы («Связаться с нами»). font-logo 20 uppercase
+// leading-[1.15], токен heading 0_0_0.
+const heading = pickText(p.heading, "Связаться с нами");
 // Лестница §9 «ContactForm заголовок» (база-литерал 20 = medium): small 17, large 24.
 const headingSize = p.heading?.size ?? p.headingSize;
 const headingSizeCls =
@@ -45,12 +42,11 @@ const headingAlignCls =
 const headingCls = `font-logo ${headingSizeCls} font-normal leading-[1.15] text-[rgb(var(--color-heading,0_0_0))]${headingAlignCls}`;
 
 // Figma 1:19335 — пустое состояние ContactForm НЕ содержит хелпер-описания
-// (только заголовок + поля + кнопка). Дефолт-литерал верстальщика («Оставьте
-// контакты...» contacts.astro:50) убран → абзац рендерится ТОЛЬКО когда мерчант
-// задал непустой description (Arsenal 16 light muted). Явная пустая строка тоже
-// скрывает абзац.
-const descriptionRaw = typeof p.description === "string" && p.description.trim() ? p.description : undefined;
-const description = contentSet("description", descriptionRaw) ? descriptionRaw : undefined;
+// (только заголовок + поля + кнопка): абзац рендерится ТОЛЬКО когда мерчант
+// задал непустой description (Arsenal 16 light muted); стёртая строка тоже
+// скрывает абзац (§2).
+const descriptionText = textOf(p.description) ?? "";
+const description = contentSet("description", descriptionText) && hasText(descriptionText) ? descriptionText : undefined;
 
 // «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
 // добавить список размер текста, как сверху с размером заголовка». Ступени
@@ -142,7 +138,7 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && heading ? `${id}-title` : undefined;
+const titleId = id && hasText(heading) ? `${id}-title` : undefined;
 
 // §4 Контракта секции: секция сама ставит свою цветовую схему. В превью
 // конструктора блок перерисовывается БЕЗ обёртки композитора и иначе берёт
@@ -174,14 +170,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 <section
 	class={`satin-pad w-full bg-[rgb(var(--color-bg,255_255_255))] py-12 md:py-16${selfSchemeClass}`}
 	aria-labelledby={titleId}
-	aria-label={heading ? undefined : "Обратная связь"}
+	aria-label={hasText(heading) ? undefined : "Обратная связь"}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class="satin-container flex flex-col gap-8">
+		{(hasText(heading) || description) && (
 		<div class="flex flex-col gap-2">
 			{
-				heading && !isFieldHidden('heading') && (
+				hasText(heading) && !isFieldHidden('heading') && (
 					<h2
 						id={titleId}
 						class={headingCls}
@@ -204,6 +201,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 		</div>
+		)}
 
 		{
 			hasContacts && (

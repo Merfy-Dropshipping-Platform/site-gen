@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (vanilla, группа misc): канон-секция ContactForm — адаптация формы
 // «Свяжитесь с нами» pages/about.astro:64-136 (страница НЕ меняется, разметка
 // перенесена КОПИЕЙ; pages/contacts.astro — клон rose с Manrope/.vanilla-button,
@@ -10,11 +11,11 @@ const id = p.id;
 
 // Канон heading: string | {text, alignment, size}. Figma 1:19335 — ДОСЛОВНЫЙ
 // плейсхолдер пустого состояния ContactForm = «Контактная форма» (НЕ литерал
-// верстальщика about:73 «Свяжитесь с нами»). Когда мерчант задал свой heading —
-// рендерим ЕГО (?? fallback срабатывает только при пустых данных). Роль about:71
-// — Arsenal 20 UPPERCASE прямой (единственное Arsenal-исключение из Bitter-
-// правила §1), токен heading с пиксель-фоллбеком #0A0A0A.
-const heading = typeof p.heading === "string" ? p.heading : (p.heading?.text ?? "Контактная форма");
+// верстальщика about:73 «Свяжитесь с нами»). Мерчант задал свой heading (в т.ч.
+// пустой — стёр, §2 контракта) → рендерим ЕГО; заглушка — только когда поля нет
+// вовсе. Роль about:71 — Arsenal 20 UPPERCASE прямой (единственное
+// Arsenal-исключение из Bitter-правила §1), токен heading с пиксель-фоллбеком #0A0A0A.
+const heading = pickText(p.heading, "Контактная форма");
 // Лестница §9 (about-литерал 20 = large/canon-default): small 14, medium 17.
 // headingSize/headingAlignment top-level приоритетнее legacy heading.*.
 const headingSize = p.heading?.size ?? p.headingSize;
@@ -29,10 +30,10 @@ const headingAlignCls =
 			: "";
 const headingCls = `font-vanilla-arsenal ${headingSizeCls} font-normal leading-none tracking-normal text-[rgb(var(--color-heading,10_10_10))]${headingAlignCls}`;
 
-// Канон description — <p> ТОЛЬКО при непустом пропе (у формы верстальщика
-// описания нет → дефолт-ветка пуста). Манера подписей: Arsenal 16 muted.
-const description =
-	typeof p.description === "string" && p.description.trim() ? p.description : undefined;
+// Канон description: строка панели (в т.ч. пустая — мерчант стёр) как есть,
+// у формы верстальщика описания нет → дефолт-ветки нет вовсе. Манера подписей:
+// Arsenal 16 muted. Пустая/из пробелов строка не рисуется (hasText в рендере).
+const description = textOf(p.description) ?? "";
 
 // «Размер текста» (`textSize`) — просьба владельца 2026-09-16: «под инпутом
 // добавить список размер текста, как сверху с размером заголовка». Ступени
@@ -113,7 +114,6 @@ const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
 
-const titleId = id && heading ? `${id}-title` : undefined;
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -123,6 +123,14 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта). showHead решает,
+// рисовать ли обёртку «Заголовок+Текст+Контакты»: иначе стёртые заголовок и
+// текст без указанных телефона/email оставляют пустой `<div class="gap-4">`.
+const showHeading = hasText(heading) && !isFieldHidden('heading');
+const showDescription = hasText(description);
+const showContacts = !!(phone || email);
+const showHead = showHeading || showDescription || showContacts;
+const titleId = id && showHeading ? `${id}-title` : undefined;
 
 ---
 
@@ -133,9 +141,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class="mx-auto flex w-full max-w-[1320px] flex-col gap-10">
+		{showHead && (
 		<div class="flex flex-col gap-4">
 			{
-				heading && !isFieldHidden('heading') && (
+				showHeading && (
 					<h2
 						id={titleId}
 						class={headingCls}
@@ -148,14 +157,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 			{
-				description && (
+				showDescription && (
 					<p class={`font-vanilla-arsenal ${textSizeCls} font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))]`}>
 						<Fragment set:html={inlineFormat(description)} />
 					</p>
 				)
 			}
 			{
-				(phone || email) && (
+				showContacts && (
 					<dl class="flex flex-col gap-3 font-vanilla-arsenal text-base font-normal leading-normal">
 						{phone && (
 							<div class="flex flex-col gap-1 md:flex-row md:gap-16">
@@ -181,6 +190,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				)
 			}
 		</div>
+		)}
 
 		<form
 			class="grid grid-cols-1 gap-6 lg:grid-cols-[430px_1fr] lg:items-stretch lg:gap-x-10 lg:gap-y-6"

@@ -55,6 +55,7 @@ import { schemeIdOf } from "../../lib/color-scheme";
 // значит в значении может прийти <strong>/<em> от кнопок «Ж»/«К». Без разбора
 // они напечатались бы тегами — тот же класс бага, что сторожит test:rich-text-fields.
 import { inlineFormat } from "../../lib/rich-text";
+import { hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 interface Props {
 	id?: string;
@@ -90,6 +91,11 @@ const paddingStyle = `padding-top:${padding?.top ?? 80}px; padding-bottom:${padd
 const SUBMIT_FALLBACK = "Получить ссылку для входа";
 const btnText =
 	typeof button?.text === "string" && button.text.trim() ? button.text.trim() : SUBMIT_FALLBACK;
+// SECTION-CONTRACT.md §2: стёртый заголовок не рисует пустой <h1>, а обёртка
+// заголовок+текст не рисуется вовсе, если в ней не осталось ничего видимого
+// (иначе на её месте остаётся gap-2).
+const headingWillRender = hasText(heading);
+const textWillRender = hasText(text);
 ---
 
 <section
@@ -113,15 +119,19 @@ const btnText =
 		"
 	>
 		<div class="w-96 max-w-full flex flex-col items-center gap-20">
+			{(headingWillRender || textWillRender) && (
 			<div class="flex flex-col items-center gap-2 text-center">
+				{headingWillRender && (
 				<h1
 					class="font-heading text-xl uppercase font-normal"
 					style="color: rgb(var(--color-heading, 0 0 0));"
 				><Fragment set:html={inlineFormat(heading)} /></h1>
-				{text && (
+				)}
+				{textWillRender && (
 					<p class="text-base font-normal" style="color: rgb(var(--color-muted, 163 163 163));"><Fragment set:html={inlineFormat(text)} /></p>
 				)}
 			</div>
+			)}
 
 
 			<form id="magic-form" class="w-full flex flex-col gap-6" novalidate>

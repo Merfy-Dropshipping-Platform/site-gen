@@ -147,7 +147,9 @@
         "text": "© 2025 Vanilla Theme. Powered by Merfy"
       }
     },
-    "Gallery": {},
+    "Gallery": {
+      "heading": "Галерея"
+    },
     "MultiRows": {},
     "MultiColumns": {},
     "Product": {

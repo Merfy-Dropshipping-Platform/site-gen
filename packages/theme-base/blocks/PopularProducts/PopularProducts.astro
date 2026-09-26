@@ -488,7 +488,7 @@ const viewAllCtaClass = (C as Record<string, string>).viewAllCta;
   is:inline
   define:vars={{
     siteId: siteId ?? '',
-    apiBase: 'https://gateway.merfy.ru/api',
+    apiBase: import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api",
     cardCount: Math.max(1, Math.min(24, Number(cards) || 4)),
     collection: collectionRef ?? null,
     quickAdd,

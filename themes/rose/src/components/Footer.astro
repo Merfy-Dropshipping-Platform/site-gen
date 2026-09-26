@@ -2,6 +2,7 @@
 import { inlineFormat } from "../lib/rich-text";
 import RoseNtIcon from "./icons/RoseNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
 import { ROSE_FOOTER_DESIGNERS, designersWhenUnset } from "../lib/design-parity";
 import { schemeIdOf } from "../lib/color-scheme";
 import { SITE_TITLE } from "../consts";
@@ -15,7 +16,7 @@ const today = new Date();
 // Live-конфиг подписки: shopId патчит build.service (patchShopIdInDist) → siteId
 // на деплое (заменяет `const shopId = ""` в HTML); apiUrl — публичный gateway.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 const navColumn = [
 	{ label: "Главная", href: "/" },
@@ -42,6 +43,13 @@ const id = p.id;
 // сборка (build.service) и миграция ревизии; сюда управление доходит, только
 // если магазин безымянный.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+// В вёрстке rose логотипа в подвале нет: он встаёт над колонкой навигации,
+// как у satin/vanilla/bloom (32px до ссылок), только когда загружен.
+const ownLogo = footerOwnLogo(p);
+const OWN_LOGO_CLS = "block h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
 // Телефон/почта футера — ТОЛЬКО при настроенных контактах (build пишет их из
 // «Информация о компании»). Без данных — пусто, ссылки tel:/mailto: не рендерятся.
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
@@ -322,7 +330,13 @@ const footerSchemeClass = footerSchemeId ? `color-scheme-${footerSchemeId}` : ""
 						data-puck-subsection-index="996"
 						data-puck-subsection-field="navigationColumn"
 					>
-						{navColTitle && (
+						{ownLogo && (
+							<li class="mb-5">
+								<a href="/" class="inline-flex transition-opacity hover:opacity-80">
+									<img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" />
+								</a>
+							</li>
+						)}{navColTitle && (
 							<li>
 								<h3 class={columnTitleCls}>{navColTitle}</h3>
 							</li>

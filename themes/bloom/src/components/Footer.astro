@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../lib/rich-text";
 import SocialIcon from "./footer/SocialIcon.astro";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
 import { categoryPages } from "../data/categories";
 
 const today = new Date();
@@ -42,6 +43,16 @@ const footerLogo =
 	_rawFooterLogo && _footerLogoPath !== "/logo.svg" && !_footerLogoPath.startsWith("/icons/")
 		? _rawFooterLogo
 		: "";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+// Своя картинка подвала — первой; без неё — прежняя лестница (брендинг → название).
+const ownLogo = footerOwnLogo(p);
+const logoImg =
+	[
+		{ src: ownLogo, cls: "h-[var(--size-logo-width,19px)] w-auto max-w-[160px] object-contain" },
+		{ src: footerLogo, cls: "h-[19px] w-auto max-w-[160px] object-contain" },
+	].find((c) => c.src) ?? null;
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
@@ -314,13 +325,14 @@ const footerContainerCls = footerPadStyle
 			>
 				<div class="flex flex-col items-start">
 					<a href="/" class="inline-flex transition-opacity hover:opacity-80" aria-label={siteTitle}>
-						{/* Логотип магазина, а не картинка темы: файл берём из брендинга
-						    (p.logo), без него — название магазина текстом, как в шапке. */}
-						{footerLogo ? (
+						{/* Логотип магазина, а не картинка темы: своя картинка подвала
+						    (поле «Логотип»), без неё — файл из брендинга (p.logo), без
+						    него — название магазина текстом, как в шапке. */}
+						{logoImg ? (
 							<img
-								src={footerLogo}
+								src={logoImg.src}
 								alt={siteTitle}
-								class="h-[19px] w-auto max-w-[160px] object-contain"
+								class={logoImg.cls}
 								decoding="async"
 							/>
 						) : (

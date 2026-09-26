@@ -12,6 +12,7 @@
  *
  * Each stage updates site_build.status and emits progress events via RabbitMQ.
  */
+import { buildEnvForThemes } from "./api-url";
 import { Logger } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
@@ -741,7 +742,7 @@ export function runCommand(
     const proc = spawn(cmd, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, NODE_ENV: "production", ...extraEnv },
+      env: { ...process.env, NODE_ENV: "production", ...buildEnvForThemes(), ...extraEnv },
       timeout: timeoutMs,
     });
 

@@ -120,10 +120,13 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<script is:inline type="module" src="/scripts/cart-store.js"></script>
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initCardPhotoSwipe } from "../../../../packages/theme-base/runtime/card-photo-swipe";
 			import { initAnimations } from "../lib/animations";
 			import { initWishlistUI } from "../lib/wishlist";
 			import { initAuthUI } from "../lib/auth";
 			initCartUI();
+			// «Следующее фото» на телефоне: свайп по фото карточки листает фото.
+			initCardPhotoSwipe();
 			initAnimations();
 			// B3: превью-конструктор подменяет секции через hot-replace (update-block/
 			// reconcile) — свежие [data-reveal]-узлы не попадают в исходный

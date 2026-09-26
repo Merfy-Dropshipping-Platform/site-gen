@@ -114,9 +114,12 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		<CartAddedModal />
 		<script>
 			import { initCartUI } from "../lib/cart";
+			import { initCardPhotoSwipe } from "../../../../packages/theme-base/runtime/card-photo-swipe";
 			import { initWishlistUI } from "../lib/wishlist";
 			import { initAuthUI } from "../lib/auth";
 			initCartUI();
+			// «Следующее фото» на телефоне: свайп по фото карточки листает фото.
+			initCardPhotoSwipe();
 			// Избранное (wishlist) — глобальный делегат сердец/бейджей, зеркало корзины.
 			initWishlistUI();
 			// Аккаунт покупателя — красит [data-auth-link] и грузит профиль.

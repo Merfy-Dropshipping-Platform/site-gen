@@ -1216,9 +1216,9 @@ const rowStockOptions: RadioOption[] = [
 		};
 
 		function removeFilterChip(chip) {
-			const kinds = chip.kind === "all" ? Object.keys(CHIP_REMOVERS) : [chip.kind];
-			for (const kind of kinds) {
-				if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](chip.kind === "all" ? undefined : chip.value, chip.group);
+			const isAll = chip.kind === "all";
+			for (const kind of isAll ? Object.keys(CHIP_REMOVERS) : [chip.kind]) {
+				if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](isAll ? undefined : chip.value, chip.group);
 			}
 			resetPageAndRender();
 		}

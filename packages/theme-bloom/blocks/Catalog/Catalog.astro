@@ -810,10 +810,12 @@ const skeletons = Array.from({ length: skeletonCount });
     const href = escapeHtml(productHref(p));
     const name = escapeHtml(p.name);
     const rawImage = productImageRaw(p);
+    // Кладём всегда: свайп на телефоне листает их при любой настройке, наведение —
+    // только в секции с «Следующим фото» (bindNextPhoto).
     // Листанию нужны ВСЕ остальные фото товара — data-img-2, data-img-3, … без
     // потолка: сколько фото, столько полос по ширине картинки.
     const zoneImgs =
-      nextPhotoOn && Array.isArray(p.images)
+      Array.isArray(p.images)
         ? p.images.slice(1).filter((src) => typeof src === "string" && src)
         : [];
     const imgDataAttrs =
@@ -1698,7 +1700,7 @@ const skeletons = Array.from({ length: skeletonCount });
     const preloaded = new WeakSet();
     document.addEventListener("mousemove", (event) => {
       const img = event.target.closest("img[data-img-primary]");
-      if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+      if (!img || !img.closest('[data-next-photo="true"] [data-nt="catalog-grid"]')) return;
       const photos = cardPhotos(img);
       if (photos.length < 2) return;
       if (!preloaded.has(img)) {
@@ -1712,7 +1714,7 @@ const skeletons = Array.from({ length: skeletonCount });
     });
     document.addEventListener("mouseout", (event) => {
       const img = event.target.closest("img[data-img-primary]");
-      if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+      if (!img || !img.closest('[data-next-photo="true"] [data-nt="catalog-grid"]')) return;
       const prim = img.getAttribute("data-img-primary");
       if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
     });

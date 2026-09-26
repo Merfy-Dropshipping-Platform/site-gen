@@ -266,8 +266,11 @@ const cardAlignCls =
 			: "text-left";
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo —
-// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация).
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo —
+// gallery[1] верстальщика; реальные товары — images[1], ставит гидрация.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
@@ -433,7 +436,7 @@ const viewAllEmptyRow = isFieldHidden("viewAll");
 			    live освежает данные. */}
 			{realProducts.length > 0
 				? realProducts.map((product: any) => (
-						<li data-product-id={product.id} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
+						<li data-product-id={product.id} data-image-2={product.gallery?.[1]}>
 							<BloomProductCard
 								product={product}
 								aspectRatio={cardAspectRatio}
@@ -533,7 +536,6 @@ const viewAllEmptyRow = isFieldHidden("viewAll");
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 4;
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const collectionRef = grid.getAttribute("data-collection");
 			// Коллекция выбрана → её товары; не выбрана → первые N товаров магазина.
 			// Оставлять заглушки при наличии товаров нельзя (правило владельца).
@@ -551,7 +553,7 @@ const viewAllEmptyRow = isFieldHidden("viewAll");
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(p.images) && p.images[1]
+						Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
 					return `<li data-product-id="${escapeHtml(p.id)}"${img2}>${renderCardHtml(p, cardAspect, qaMode, qaText)}</li>`;

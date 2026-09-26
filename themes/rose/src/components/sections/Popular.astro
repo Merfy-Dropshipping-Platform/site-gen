@@ -166,8 +166,11 @@ const qaQtyCls =
 	"min-w-[28px] flex-1 text-center font-manrope text-[14px] leading-none text-[rgb(var(--color-text,0_0_0))]";
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo — gallery[1]
-// верстальщика; реальные товары — images[1] из products.json, ставит гидрация).
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo — gallery[1]
+// верстальщика; реальные товары — images[1] из products.json, ставит гидрация.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op без ошибок.
@@ -376,7 +379,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			    плейсхолдер-куртки. data-collection остаётся → клиентская гидрация на
 			    live освежает данные. */}
 			{realProducts.length > 0 ? realProducts.map((product: any) => (
-				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={nextPhoto ? product.gallery?.[1] : undefined}>
+				<li data-product-id={product.id} class:list={quickAddMode ? ["group"] : undefined} data-image-2={product.gallery?.[1]}>
 					<RoseProductCard product={product} aspectRatio={cardAspectRatio} />{showStepper && (
 						<div class={qaStepperCls} data-qa-stepper>
 							<button type="button" data-qa-dec class={qaStepBtnCls} aria-label="Уменьшить">−</button>
@@ -488,14 +491,13 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const qaStepperCls = grid.getAttribute("data-qa-step-class") || "";
 			const qaStepBtnCls = grid.getAttribute("data-qa-step-btn-class") || "";
 			const qaQtyCls = grid.getAttribute("data-qa-qty-class") || "";
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			// «Вид изображения» переживает подмену innerHTML: носитель — атрибут грида.
 			const cardAspect = grid.getAttribute("data-card-aspect") || "1/1";
 			const items = matched.slice(0, limit);
 			grid.innerHTML = items
 				.map((p) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(p.images) && p.images[1]
+						Array.isArray(p.images) && p.images[1]
 							? ` data-image-2="${escapeHtml(p.images[1])}"`
 							: "";
 					const liClass = quickAdd ? ' class="group"' : "";

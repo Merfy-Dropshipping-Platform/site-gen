@@ -902,8 +902,8 @@ const rowStockOptions: RadioOption[] = [
 			stock: "all",
 			priceMin: null,
 			priceMax: null,
-			// Выбранный цвет ("" — все). Один: сервер фильтрует по одному значению группы.
-			color: "",
+			// Выбранные цвета ([] — все). Несколько: сервер показывает товары с любым из них.
+			colors: [],
 			sort: "popularity",
 			page: 1,
 		};
@@ -914,17 +914,31 @@ const rowStockOptions: RadioOption[] = [
 			if (Number.isFinite(n) && n > 0) return n;
 			return Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 12;
 		}
-		// Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug), ИНАЧЕ ?collection=.
-		function currentCollectionRef() {
+		// Коллекции: СНАЧАЛА настройка конструктора (data-collection-slug) — одна,
+		// закреплённая; ИНАЧЕ ?collection=a&collection=b — выбор покупателя, их может
+		// быть несколько (сервер показывает товары хоть в одной).
+		function currentCollectionRefs() {
 			const root = document.querySelector("[data-catalog-layout]");
 			const fromSetting = root && root.getAttribute("data-collection-slug");
-			if (fromSetting && fromSetting.trim()) return fromSetting.trim();
-			const fromQuery = new URLSearchParams(window.location.search).get("collection");
-			if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+			if (fromSetting && fromSetting.trim()) return [fromSetting.trim()];
+			const fromQuery = new URLSearchParams(window.location.search)
+				.getAll("collection")
+				.map((ref) => ref.trim())
+				.filter(Boolean);
+			if (fromQuery.length > 0) return fromQuery;
 			const fromPath = window.location.pathname.match(/\/collections\/([^/?#]+)/);
-			if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return decodeURIComponent(fromPath[1]);
-			return null;
+			if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return [decodeURIComponent(fromPath[1])];
+			return [];
 		}
+		// Выбранные коллекции объектами из списка магазина — для отметок и подписи.
+		function selectedCollections() {
+			return currentCollectionRefs()
+				.map((ref) => findCollection(catalogCollections, ref))
+				.filter(Boolean);
+		}
+		// Отметить значение фильтра или снять отметку — выбор нескольких значений.
+		const toggleValue = (list, value) =>
+			list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
 		// buildProductsQuery: query-строка /api/store/products из текущего filters
 		// (rose-канон). min_price/max_price API сравнивает с basePrice в КОПЕЙКАХ →
@@ -959,14 +973,14 @@ const rowStockOptions: RadioOption[] = [
 			if (filters.stock === "in") qp.set("availability", "in_stock");
 			else if (filters.stock === "out") qp.set("availability", "sold_out");
 
-			if (filters.color) qp.set(COLOR_GROUP_NAME, filters.color);
+			// Цвет: ключ на каждое значение (`Цвет=A&Цвет=B`), сервер — товары с любым.
+			for (const color of filters.colors) qp.append(COLOR_GROUP_NAME, color);
 
-			// Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
-			// Резолвим slug→id через кэш; если резолва нет — передаём ref как есть.
-			const ref = currentCollectionRef();
-			if (ref) {
+			// Коллекции: slug/id из настройки или ?collection= → серверный collection_id,
+			// ключ на каждую выбранную. Резолвим slug→id через кэш; нет резолва — ref как есть.
+			for (const ref of currentCollectionRefs()) {
 				const col = findCollection(catalogCollections, ref);
-				qp.set("collection_id", col && col.id ? col.id : ref);
+				qp.append("collection_id", col && col.id ? col.id : ref);
 			}
 			return qp.toString();
 		}
@@ -1161,7 +1175,7 @@ const rowStockOptions: RadioOption[] = [
 		const choiceButtonHtml = (kind, o) =>
 			`<button type="button" ${kind.attr}="${escapeHtml(o.value)}" class="cursor-pointer text-left text-base leading-none transition-colors ${o.active ? OPT_ACTIVE : OPT_IDLE}">${escapeHtml(o.label)}</button>`;
 		const choiceRadioHtml = (kind, name, o) =>
-			`<label class="group flex cursor-pointer items-center gap-2"><input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(o.value)}" ${kind.attr}="${escapeHtml(o.value)}"${o.active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(o.label)}</span></label>`;
+			`<label class="group flex cursor-pointer items-center gap-2"><input type="checkbox" name="${escapeHtml(name)}" value="${escapeHtml(o.value)}" ${kind.attr}="${escapeHtml(o.value)}"${o.active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(o.label)}</span></label>`;
 		// Своё имя группы радио у каждого места (сайдбар, шторка): иначе выбор в
 		// одном снимал бы выбор в другом.
 		function radioNameOf(box, kind) {
@@ -1204,11 +1218,12 @@ const rowStockOptions: RadioOption[] = [
 				bindChoice(box, kind, pick);
 			}
 		}
-		// После выбора: все места показывают новое значение, выпадашка закрыта.
-		function rerenderChoice(selector, render) {
+		// После выбора: все места показывают новое значение. Выпадашка остаётся
+		// открытой, чтобы отметить ещё (несколько значений), закрывает её «Все».
+		function rerenderChoice(selector, render, keepOpen) {
 			for (const box of Array.from(document.querySelectorAll(`${selector}[data-cf-hydrated="true"]`))) {
 				render(box);
-				box.removeAttribute("open");
+				if (!keepOpen) box.removeAttribute("open");
 			}
 		}
 
@@ -1227,19 +1242,22 @@ const rowStockOptions: RadioOption[] = [
 		function renderCollectionsBox(box) {
 			const options = collectionOptions();
 			if (options.length === 0) return;
-			const current = findCollection(catalogCollections, currentCollectionRef());
-			const currentName = typeof (current && current.name) === "string" ? current.name.trim() : "";
+			const selected = selectedCollections();
+			const names = selected.map((c) => (typeof c.name === "string" ? c.name.trim() : "")).filter(Boolean);
 			renderChoice(box, CHOICE.collection, [
-				{ value: "", label: "Все", active: !current },
-				...options.map((o) => ({ value: o.value, label: o.label, active: !!current && current.id === o.id })),
-			], currentName);
+				{ value: "", label: "Все", active: selected.length === 0 },
+				...options.map((o) => ({ value: o.value, label: o.label, active: selected.some((c) => c.id === o.id) })),
+			], names.join(", "));
 		}
 		function applyCollectionSelection(value) {
 			const params = new URLSearchParams(window.location.search);
-			if (value) params.set("collection", value); else params.delete("collection");
+			// Несколько коллекций: нажатие отмечает коллекцию или снимает отметку, «Все» — все.
+			const picked = value ? toggleValue(params.getAll("collection"), value) : [];
+			params.delete("collection");
+			for (const ref of picked) params.append("collection", ref);
 			const qs = params.toString();
 			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox);
+			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox, !!value);
 			resetPageAndRender();
 		}
 		async function initCollectionsFilter() {
@@ -1252,9 +1270,8 @@ const rowStockOptions: RadioOption[] = [
 		// ─────────── Цвет ───────────
 		// Значения — из ЖИВОГО /api/store/filters (группа «Цвет»), как у rose:
 		// товары грузятся постранично, собрать цвета каталога на клиенте нельзя.
-		// Нет группы или сеть упала — фильтр остаётся скрытым. Сервер фильтрует по
-		// ОДНОМУ значению группы (variantFilters: Record<string, string>), поэтому
-		// выбор одиночный: «Все» или один цвет.
+		// Нет группы или сеть упала — фильтр остаётся скрытым. Можно отметить
+		// несколько цветов: сервер показывает товары с любым из них; «Все» — сброс.
 		const COLOR_GROUP_NAME = "Цвет";
 		const COLOR_BOX = '[data-nt="catalog-color-filter"]';
 		let availableColors = [];
@@ -1284,13 +1301,13 @@ const rowStockOptions: RadioOption[] = [
 		}
 		function renderColorBox(box) {
 			renderChoice(box, CHOICE.color, [
-				{ value: "", label: "Все", active: !filters.color },
-				...availableColors.map((c) => ({ value: c, label: c, active: c === filters.color })),
-			], filters.color);
+				{ value: "", label: "Все", active: filters.colors.length === 0 },
+				...availableColors.map((c) => ({ value: c, label: c, active: filters.colors.includes(c) })),
+			], filters.colors.join(", "));
 		}
 		function applyColorSelection(value) {
-			filters.color = availableColors.includes(value) ? value : "";
-			rerenderChoice(COLOR_BOX, renderColorBox);
+			filters.colors = availableColors.includes(value) ? toggleValue(filters.colors, value) : [];
+			rerenderChoice(COLOR_BOX, renderColorBox, !!value);
 			resetPageAndRender();
 		}
 		function initColorFilter() {

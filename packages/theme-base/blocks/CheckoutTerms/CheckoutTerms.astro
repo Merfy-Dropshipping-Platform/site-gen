@@ -2,6 +2,12 @@
 import type { CheckoutTermsProps } from './CheckoutTerms.puckConfig';
 import { CheckoutTermsClasses as C } from './CheckoutTerms.classes';
 import { sanitizeInlineWithLinks } from '../../runtime/rich-text';
+import {
+  LEGAL_LINK_CLASS_ATTR,
+  LEGAL_LINKS_SOURCE,
+  LEGAL_PHRASES,
+  LEGAL_TEXT_ATTR,
+} from '../../runtime/legal-links';
 
 interface Props extends CheckoutTermsProps { id?: string; }
 const { id, text, padding } = Astro.props as Props;
@@ -31,10 +37,30 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
 const attrEscape = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/**
+ * Ссылки на документы продавца ставит ПРАВИЛО (runtime/legal-links.ts), а не
+ * разметка текста. Старые ревизии и прежний дефолт несли
+ * `[Условиями обслуживания](/legal/terms)`, `…(/legal/cookies)` — ссылки
+ * на демо-текст темы и на несуществующую страницу. Такая разметка
+ * «разворачивается» в текст подписи, дальше правило само ставит ссылку, если
+ * политика заполнена:
+ *   • подпись — фраза из таблицы правила (ею владеет правило);
+ *   • адрес — страница, которой нет ни у одной темы (`/legal/cookies`).
+ * Остальные ссылки продавца `[текст](url)` остаются как были.
+ */
+const RULE_PHRASES = new Set(LEGAL_PHRASES.map((p) => p.phrase));
+const DEAD_LEGAL_URLS = new Set(['/legal/cookies', '/cookies']);
+const ownedByRule = (label: string, url: string): boolean =>
+  RULE_PHRASES.has(label.trim()) || DEAD_LEGAL_URLS.has(url.trim());
+
+// Строка под правило ссылок на политики (runtime/legal-links.ts).
+const legalAttrs = { [LEGAL_TEXT_ATTR]: '', [LEGAL_LINK_CLASS_ATTR]: C.link };
+
 const html = sanitizeInlineWithLinks(
   (text ?? '').replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_match, label, url) => `<a href="${attrEscape(url)}">${label}</a>`,
+    (_match, label, url) =>
+      ownedByRule(label, url) ? label : `<a href="${attrEscape(url)}">${label}</a>`,
   ),
   C.link,
 );
@@ -59,5 +85,8 @@ const html = sanitizeInlineWithLinks(
   data-block="checkout-terms"
   style={paddingStyle}
 >
-  <p class={C.text} set:html={html}></p>
+  <p class={C.text} {...legalAttrs} set:html={html}></p>
 </section>
+{/* Ссылки на политики продавца (runtime/legal-links.ts) — тем же правилом,
+    что строка «Спасибо за заказ». */}
+<script is:inline set:html={LEGAL_LINKS_SOURCE}></script>

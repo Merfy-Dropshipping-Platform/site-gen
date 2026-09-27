@@ -18,6 +18,7 @@ import CheckoutDeliveryMethod from '../CheckoutDeliveryMethod/CheckoutDeliveryMe
 import CheckoutPayment from '../CheckoutPayment/CheckoutPayment.astro';
 import CheckoutSubmit from '../CheckoutSubmit/CheckoutSubmit.astro';
 import CheckoutTerms from '../CheckoutTerms/CheckoutTerms.astro';
+import { DEFAULT_LEGAL_TEXT } from '../../runtime/legal-links';
 
 interface Props extends CheckoutFormProps {
   id?: string;
@@ -133,13 +134,16 @@ const paddingStyle = padding
     padding={{ top: 0, bottom: 0 }}
   />
 
+  {/*
+    Юридическая строка — БЕЗ разметки ссылок: названия документов становятся
+    ссылками на ЗАПОЛНЕННЫЕ политики продавца по общему правилу
+    (runtime/legal-links.ts), как на «Спасибо за заказ». Раньше здесь стояли
+    `/legal/terms`, `/legal/privacy`, `/legal/cookies` — демо-текст темы и
+    несуществующая страница (владелец 28.09).
+  */}
   <CheckoutTerms
-    text="Размещая заказ, вы соглашаетесь с [Условиями обслуживания](/legal/terms), [Политикой конфиденциальности](/legal/privacy) и [Политикой использования файлов cookie](/legal/cookies)."
-    links={[
-      { label: 'Условия обслуживания', url: '/legal/terms' },
-      { label: 'Политика конфиденциальности', url: '/legal/privacy' },
-      { label: 'Политика использования файлов cookie', url: '/legal/cookies' },
-    ]}
+    text={DEFAULT_LEGAL_TEXT}
+    links={[]}
     padding={{ top: 0, bottom: 0 }}
   />
 </section>

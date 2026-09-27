@@ -1974,6 +1974,16 @@ jobs:
       # пяти тем. Помощник runtime/gift-lines.ts + настоящие скрипты блоков, jsdom.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/gift-one-line.spec.ts
+      # Названия документов в юридической строке «Спасибо за заказ» и чекаута —
+      # ссылки на ЗАПОЛНЕННЫЕ политики продавца (владелец 28.09). Настоящий
+      # рендер блоков пяти тем + скрипт правила runtime/legal-links.ts в jsdom:
+      # три ссылки / ни одной / переписанный текст / XSS / клик в превью.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/legal-text-links.dom.spec.ts
+      # Откуда адреса: policyUrlsFor (одна функция с подвалом и баннером
+      # cookie), глобал __MERFY_POLICY_URLS__ на трёх путях превью и в сборке.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/legal-text-links.spec.ts
       # Иконка корзины в шапке — <button data-cart-open> во всех пяти темах:
       # по этому договору «Корзина → Сайдбар/Страница» решают шторка, перехватчик
       # Layout и nav-агент превью. У vanilla была <a href="/cart"> — в

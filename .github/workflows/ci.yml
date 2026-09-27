@@ -1946,6 +1946,12 @@ jobs:
       # корзины, ключи пяти тем, jsdom.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-cleared-after-paid-order.spec.ts
+      # Чекаут показывает скидку, посчитанную сервером, — и автоматическую, не
+      # только промокод (владелец 27.09: «автоматические скидки не отображаются
+      # в чекауте»; заказ списывал 891 ₽, а «Итого» и «Оплатить» — 990 ₽).
+      # Стор корзины пяти тем + скрипты CheckoutTotals/CheckoutSubmit, jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/checkout-server-discount.spec.ts
       # Иконка корзины в шапке — <button data-cart-open> во всех пяти темах:
       # по этому договору «Корзина → Сайдбар/Страница» решают шторка, перехватчик
       # Layout и nav-агент превью. У vanilla была <a href="/cart"> — в

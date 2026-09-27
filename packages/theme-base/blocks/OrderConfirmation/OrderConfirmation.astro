@@ -42,12 +42,10 @@ const p = {
     'Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.',
 };
 
-// Нет своей схемы — светлая платформенная, как у страницы оформления заказа
-// (`.color-scheme-checkout`, sites/src/themes/tokens-css.ts CHECKOUT_SCHEME_CSS).
-// Без неё секция брала схему магазина по умолчанию с белой страницы: у bloom это
-// розовая Схема 1 — белый текст сводки на белом фоне (владелец 26.09).
-const ownScheme = schemeClassOf(p.colorScheme);
-const schemeClass = ownScheme || 'color-scheme-checkout';
+// Схема секции — как у любой секции: выбранная в панели, иначе схема темы по
+// умолчанию (её же показывает панель). Светлый вариант для темы с цветной
+// схемой по умолчанию задаётся данными темы (`blockDefaults.OrderConfirmation`).
+const schemeClass = schemeClassOf(p.colorScheme);
 
 // hex (#rrggbb) → "R G B" триплет (для rgb(var(--...))). Пусто/невалид → ''.
 // Живёт во frontmatter (validateBlock не сканирует frontmatter на hex).
@@ -61,9 +59,7 @@ function hexTriplet(hex: string): string {
   return `${r} ${g} ${b}`;
 }
 
-// Свои цвета мерчанта — триплет; иначе токены схемы секции. Кнопка схемы в
-// светлой платформенной схеме не определена (наследуется от :root магазина и
-// может совпасть с фоном), поэтому там кнопка — цветом заголовка.
+// Свои цвета мерчанта — триплет; иначе токены схемы секции.
 const merchant = {
   orderBg: hexTriplet(p.orderBg),
   summaryBg: hexTriplet(p.summaryBg),
@@ -71,8 +67,8 @@ const merchant = {
   button: hexTriplet(p.buttonColor),
   error: hexTriplet(p.errorColor),
 };
-const buttonBg = merchant.button || (ownScheme ? 'var(--color-button-bg)' : 'var(--color-heading)');
-const buttonText = ownScheme ? 'var(--color-button-text)' : 'var(--color-bg)';
+const buttonBg = merchant.button || 'var(--color-button-bg)';
+const buttonText = 'var(--color-button-text)';
 const styleParts: string[] = [
   `--oc-order-bg:${merchant.orderBg || 'var(--color-bg)'}`,
   `--oc-order-alpha:${merchant.orderBg ? 1 : 0}`,

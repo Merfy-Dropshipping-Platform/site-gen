@@ -868,6 +868,7 @@ export class PreviewService {
 
     const previewTailwind = await loadPreviewTailwindCss();
     const themeCss = await loadThemeCss(input.themeId ?? null);
+    const cookieConsent = await renderCookieConsentChrome(await this.getContainer());
 
     // Safety net для **hardcoded** absolute-paths в скомпилированном HTML
     // (placeholder PNGs из `.astro`, runtime JS innerHTML). Основной путь
@@ -913,6 +914,7 @@ export class PreviewService {
 </head>
 <body>
   ${bodyHtml}
+  ${cookieConsent}
   <script>
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
@@ -1090,6 +1092,54 @@ async function loadPreviewTailwindCss(): Promise<string> {
  * Cached per themeId; '' when absent (legacy themes have no bundle → no-op).
  */
 const _cachedThemeCss = new Map<string, string>();
+/**
+ * Баннер согласия на cookie для СИНТЕТИЧЕСКОГО шелла превью
+ * (`renderPreviewPage` — страница из блоков, когда у темы нет своей собранной
+ * страницы для маршрута). Шелл темы несёт баннер сам (CookieConsent.astro в
+ * макете + скрипт в бандле Vite), а здесь Vite нет. Поэтому тот же компонент,
+ * скомпилированный `pnpm build:blocks` (theme-base__primitives__CookieConsent.mjs),
+ * рисуется тем же контейнером, что блоки, а его рантайм — тот же модуль
+ * `runtime/cookie-consent.ts`, скомпилированный тем же шагом
+ * (runtime__cookie-consent.mjs), — встраивается модульным скриптом.
+ * Ссылку «Политике конфиденциальности» открывает глобал политики, который
+ * ставит preview.controller (withPrivacyPolicyGlobal).
+ *
+ * Сбой (нет dist/astro-blocks) — баннера нет, превью не падает.
+ */
+const COOKIE_CONSENT_MODULE = 'theme-base__primitives__CookieConsent.mjs';
+const COOKIE_CONSENT_RUNTIME = 'runtime__cookie-consent.mjs';
+/** Ссылка компилятора Astro на обрабатываемый скрипт — в превью её отдать некому. */
+const ASTRO_PROCESSED_SCRIPT_RE =
+  /<script\b[^>]*\bsrc="[^"]*\?astro&(?:amp;)?type=script[^"]*"[^>]*><\/script>/g;
+
+export async function renderCookieConsentChrome(
+  container: IAstroContainer,
+): Promise<string> {
+  const { resolve } = await import('node:path');
+  const { readFile } = await import('node:fs/promises');
+  const roots = [
+    resolve(process.cwd(), 'dist', 'astro-blocks'),
+    resolve(process.cwd(), 'backend', 'services', 'sites', 'dist', 'astro-blocks'),
+  ];
+  for (const root of roots) {
+    try {
+      const mod = (await importCompiled(resolve(root, COOKIE_CONSENT_MODULE))) as {
+        default?: unknown;
+      };
+      const runtime = await readFile(resolve(root, COOKIE_CONSENT_RUNTIME), 'utf-8');
+      const markup = await container.renderToString(mod.default, { props: {} });
+      return (
+        markup.replace(ASTRO_PROCESSED_SCRIPT_RE, '') +
+        `<script type="module">${runtime}\ninitCookieConsent();</script>`
+      );
+    } catch {
+      // следующий корень
+    }
+  }
+  console.warn('[preview] cookie consent chrome unavailable (dist/astro-blocks not built)');
+  return '';
+}
+
 async function loadThemeCss(themeId: string | null): Promise<string> {
   if (!themeId) return '';
   const cached = _cachedThemeCss.get(themeId);

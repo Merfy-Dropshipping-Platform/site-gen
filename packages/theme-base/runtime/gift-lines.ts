@@ -36,7 +36,7 @@ export function mergeGiftLines(items: unknown): GiftLine[] {
   var sameGoods = function (a: GiftLine, b: GiftLine) {
     return a.productId === b.productId && (a.variantCombinationId || null) === (b.variantCombinationId || null);
   };
-  var shown = list
+  var shown: GiftLine[] = list
     .filter(function (line) { return line && !line.isBonus; })
     .map(function (line) { return Object.assign({}, line, { quantity: qtyOf(line), giftQuantity: 0 }); });
   var ownerOf = function (gift: GiftLine) {

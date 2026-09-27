@@ -52,6 +52,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
   </div>
 
   <script>
+    import { deliveryMethodLabel, deliveryPeriodLabel } from '../../../../../packages/theme-base/runtime/order-delivery';
     import { navTo, fetchOrder, cancelOrder, getToken } from '../../lib/auth';
 
     const STATUS_LABELS: Record<string, string> = {
@@ -122,11 +123,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
       });
 
       const status = STATUS_LABELS[order.status] || order.status;
-      let deliveryMethod = '—';
-      if (order.deliveryType === 'pickup') deliveryMethod = 'Самовывоз';
-      else if (order.deliveryType && order.deliveryType.includes('cdek')) deliveryMethod = 'СДЭК';
-      else if (order.deliveryProfileName) deliveryMethod = order.deliveryProfileName;
-      else if (order.deliveryType) deliveryMethod = order.deliveryType;
+      const deliveryMethod = deliveryMethodLabel(order);
       let address = '—';
       if (order.shippingAddress) {
         const a = order.shippingAddress;
@@ -134,7 +131,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
         if (parts.length) address = parts.join(', ');
       }
       if (order.deliveryType === 'pickup' && order.pickupAddress) address = order.pickupAddress;
-      const deliveryDate = (order.deliveryPeriodMin && order.deliveryPeriodMax) ? order.deliveryPeriodMin + '–' + order.deliveryPeriodMax + ' дней' : '—';
+      const deliveryDate = deliveryPeriodLabel(order);
 
       infoEl.innerHTML =
         '<div class="account-info-grid">' +
@@ -142,7 +139,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
           '<div class="account-info-cell"><span class="info-label">Номер заказа</span><span class="info-value">№' + order.orderNumber + '</span></div>' +
           '<div class="account-info-cell"><span class="info-label">Способ доставки</span><span class="info-value">' + deliveryMethod + '</span></div>' +
           '<div class="account-info-cell"><span class="info-label">Адрес доставки</span><span class="info-value">' + address + '</span></div>' +
-          '<div class="account-info-cell"><span class="info-label">Дата доставки</span><span class="info-value">' + deliveryDate + '</span></div>' +
+          (deliveryDate ? '<div class="account-info-cell"><span class="info-label">Срок доставки</span><span class="info-value">' + deliveryDate + '</span></div>' : '') +
           '<div class="account-info-cell"><span class="info-label">Способ оплаты</span><span class="info-value">Онлайн</span></div>' +
         '</div>' +
         '<div class="account-info-cell"><span class="info-label">Итоговая стоимость</span><span class="info-value">' + formatPrice(order.totalCents) + '</span></div>';

@@ -3,6 +3,8 @@ import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import NtCartDrawer from "../../../../packages/theme-base/primitives/SchemeCartDrawer.astro";
+// Баннер согласия на cookie — ОБЩИЙ компонент theme-base (владелец 27.09).
+import CookieConsent from "../../../../packages/theme-base/primitives/CookieConsent.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 
 interface Props {
@@ -57,6 +59,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 	    секций корзины, и в превью конструктора — оно само приклеит свою
 	    приставку темы, как делает со всеми внутренними ссылками. */}
 	<NtCartDrawer rootId="satin-cart-drawer-root" eventPrefix="satin:cart" cartHref="/checkout" />
+		{/* Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro) —
+		    на каждой странице, включая чекаут; строго ПОСЛЕ подвала, иначе сборка
+		    страниц из секций (composeV2Page) его срежет. */}
+		<CookieConsent />
 		{/* Окно «Товар добавлен в корзину» (theme-base/primitives/CartAddedModal.astro)
 		    СНЯТО у satin (владелец, 16.09 — «работать только в bloom и flux должно»).
 		    Без разметки окна `addedModal.exists()` в nt-cart.ts возвращает false, и

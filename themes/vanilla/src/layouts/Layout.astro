@@ -5,6 +5,8 @@ import Footer from "../components/Footer.astro";
 import FooterNewsletter from "../components/footer/FooterNewsletter.astro";
 import LoginDrawer from "../components/LoginDrawer.astro";
 import VanillaCartDrawer from "../components/VanillaCartDrawer.astro";
+// Баннер согласия на cookie — ОБЩИЙ компонент theme-base (владелец 27.09).
+import CookieConsent from "../../../../packages/theme-base/primitives/CookieConsent.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 import { ViewTransitions } from "astro:transitions";
 
@@ -56,6 +58,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 		{header !== "checkout" && <Footer />}
 		<LoginDrawer />
 		<VanillaCartDrawer rootId="vanilla-cart-drawer-root" eventPrefix="vanilla:cart" />
+		{/* Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro) —
+		    на каждой странице, включая чекаут; строго ПОСЛЕ подвала, иначе сборка
+		    страниц из секций (composeV2Page) его срежет. */}
+		<CookieConsent />
 		{/* Окно «Товар добавлен в корзину» (theme-base/primitives/CartAddedModal.astro)
 		    СНЯТО у vanilla (владелец, 16.09 — «работать только в bloom и flux
 		    должно»). Без разметки окна `addedModal.exists()` в nt-cart.ts

@@ -38,6 +38,8 @@ import { writeCatalogRedirects } from "./catalog-redirects";
 import { DocumentAdapter } from "../content/document.adapter";
 import { StoreContentService } from "../content/store-content.service";
 import { applyFooterData } from "../utils/footer-data";
+import { privacyPolicyUrlFor } from "../utils/footer-data";
+import { PRIVACY_POLICY_URL_GLOBAL } from "../../packages/theme-base/runtime/cookie-consent";
 import { applyPageBinding } from "../render/page-transclude";
 import {
   buildScaffold,
@@ -1207,11 +1209,14 @@ export async function runBuildPipeline(
       // Spec 101: legal-страницы (/legal/<slug>) рендерятся блоком «Страница» с
       // живым контентом мерчанта из site_policy (вместо статичного плейсхолдера
       // темы). Изолировано: сбой не валит билд — страница остаётся как в дисте.
+      // Те же строки нужны баннеру cookie (признак политики) — держим их ниже.
+      let sitePolicies: Array<{ type: string; content: string | null }> = [];
       try {
         const legalPolicies = await deps.db
           .select()
           .from(deps.schema.sitePolicy)
           .where(eq(deps.schema.sitePolicy.siteId, ctx.siteId));
+        sitePolicies = legalPolicies;
         const legalCount = await composeLegalPagesIntoDist(ctx, bareTheme, legalPolicies);
         logger.log(
           `[themes-v2] Composed ${legalCount} legal page(s) via «Страница» for site ${params.siteId}`,
@@ -1303,6 +1308,20 @@ export async function runBuildPipeline(
         logger.log(`[themes-v2] Injected __MERFY_THEME__="${bareTheme}", __MERFY_VARIANT_SWATCH__="${variantSwatch ?? "-"}" into ${themeGlobals} HTML files for site ${params.siteId}`);
       } catch (thErr) {
         logger.warn(`[themes-v2] theme global inject failed: ${(thErr as Error)?.message ?? thErr}`);
+      }
+      // Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro):
+      // ссылка «Политике конфиденциальности» — только если продавец написал
+      // политику. Адрес — тем же правилом, что ссылка подвала; нет политики —
+      // глобала нет, и рантайм баннера убирает фразу со ссылкой. Зеркало —
+      // injectPreviewGlobals в превью конструктора.
+      try {
+        const privacyUrl = privacyPolicyUrlFor(sitePolicies, bareTheme);
+        if (privacyUrl) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { [PRIVACY_POLICY_URL_GLOBAL]: privacyUrl });
+          logger.log(`[themes-v2] Injected ${PRIVACY_POLICY_URL_GLOBAL}="${privacyUrl}" into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (ppErr) {
+        logger.warn(`[themes-v2] privacy policy global inject failed: ${(ppErr as Error)?.message ?? ppErr}`);
       }
       // Штамп сборки: из какого коммита sites и когда собрана эта витрина.
       try {

@@ -134,8 +134,26 @@ const schemeClass = schemeClassOf(colorScheme);
     function getDeliveryCents() {
       return state.deliveryMethod ? (state.deliveryMethod.costCents || 0) : 0;
     }
+    // Скидку считает только сервер (orders): промокод ИЛИ автоматическая скидка
+    // магазина — одна сумма discountCents корзины; заказ спишет именно её.
+    // Раньше кнопка знала лишь скидку из события промокода, и с автоматической
+    // скидкой обещала «Оплатить» полную сумму (баг владельца 27.09). Сумма
+    // сервера верна, пока состав корзины тот же, для которого она посчитана.
+    // Держать ИДЕНТИЧНО CheckoutTotals.serverDiscountCents.
+    function signatureOf(items) {
+      return (items || []).filter(function (it) { return !it.isBonus; }).map(function (it) {
+        return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
+      }).sort().join('|');
+    }
+    function serverDiscountCents() {
+      var store = window.cartStore;
+      var server = store && typeof store.getServerCart === 'function' ? store.getServerCart() : null;
+      if (!server || signatureOf(server.items) !== signatureOf(getCartItems())) return null;
+      return server.discountCents || 0;
+    }
     function getDiscountCents() {
-      return state.discountCents || 0;
+      var server = serverDiscountCents();
+      return server === null ? (state.discountCents || 0) : server;
     }
     function getExtensionDiscountCents() {
       return state.extensionDiscountCents || 0;

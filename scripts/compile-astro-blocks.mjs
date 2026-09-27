@@ -131,12 +131,16 @@ async function findAstroNonBlocks() {
   const locations = [
     { subdir: 'layouts', category: 'layouts' },
     { subdir: 'seo', category: 'seo' },
+    // Хром, который превью конструктора дорисовывает в СИНТЕТИЧЕСКИЙ шелл
+    // (preview.service.renderPreviewPage — страница из блоков без шелла темы).
+    // Только поимённо: остальные примитивы живут внутри блоков и тем.
+    { subdir: 'primitives', category: 'primitives', only: new Set(['CookieConsent.astro']) },
   ];
 
   for (const loc of locations) {
     const dir = path.join(basePath, loc.subdir);
     try {
-      await walkAstroFiles(dir, basePkg, loc.category, entries, '');
+      await walkAstroFiles(dir, basePkg, loc.category, entries, '', loc.only);
     } catch {
       // skip missing dir
     }
@@ -145,13 +149,14 @@ async function findAstroNonBlocks() {
   return entries;
 }
 
-async function walkAstroFiles(dir, pkg, category, entries, prefix) {
+async function walkAstroFiles(dir, pkg, category, entries, prefix, only) {
   const items = await fs.readdir(dir, { withFileTypes: true });
   for (const item of items) {
     const itemPath = path.join(dir, item.name);
     if (item.isDirectory()) {
+      if (only) continue;
       await walkAstroFiles(itemPath, pkg, category, entries, `${prefix}${item.name}__`);
-    } else if (item.name.endsWith('.astro')) {
+    } else if (item.name.endsWith('.astro') && (!only || only.has(item.name))) {
       const baseName = item.name.replace(/\.astro$/, '');
       // blockName here is used purely for output naming + manifest identity.
       const blockName = `${category}__${prefix}${baseName}`;

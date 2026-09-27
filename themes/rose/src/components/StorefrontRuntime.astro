@@ -6,6 +6,8 @@
 // этот блок жил только в Layout.astro → страницы на BlogPost (например /about
 // до миграции, посты блога) оставались без скриптов витрины.
 import NtCartDrawer from "../../../../packages/theme-base/primitives/SchemeCartDrawer.astro";
+// Баннер согласия на cookie — ОБЩИЙ компонент theme-base (владелец 27.09).
+import CookieConsent from "../../../../packages/theme-base/primitives/CookieConsent.astro";
 // Окно «Товар добавлен в корзину» (packages/theme-base/primitives/CartAddedModal.astro)
 // СНЯТО у rose (владелец, 16.09 — «работать только в bloom и flux должно»).
 // Без разметки окна `addedModal.exists()` в nt-cart.ts возвращает false, и клик
@@ -22,6 +24,10 @@ import NtCartDrawer from "../../../../packages/theme-base/primitives/SchemeCartD
 	    секций корзины, и в превью конструктора — оно само приклеит свою
 	    приставку темы, как делает со всеми внутренними ссылками. */}
 	<NtCartDrawer rootId="cart-drawer-root" eventPrefix="rose:cart" cartHref="/checkout" />
+{/* Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro) — на
+    каждой странице, включая чекаут; рантайм вшит всеми макетами rose, стоит
+    ПОСЛЕ подвала (composeV2Page срезает всё до последнего </footer>). */}
+<CookieConsent />
 {/* Тексты панели корзины из настроек темы («Заголовок панели», «Текст кнопки
     оформления», «Текст пустой корзины»). У настроек не было ни одного читателя:
     панель сохраняла значения, витрина показывала литералы дизайн-пакета.

@@ -9,6 +9,8 @@ import NtCartDrawer from "../../../../packages/theme-base/primitives/SchemeCartD
 // дровера). Разметка/механика общие; вид идёт за схемой/шрифтами/скруглениями
 // этой темы.
 import CartAddedModal from "../../../../packages/theme-base/primitives/CartAddedModal.astro";
+// Баннер согласия на cookie — ОБЩИЙ компонент theme-base (владелец 27.09).
+import CookieConsent from "../../../../packages/theme-base/primitives/CookieConsent.astro";
 import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 
 interface Props {
@@ -67,6 +69,10 @@ const pageTitle = title ? `${title} — ${SITE_TITLE}` : SITE_TITLE;
 	    приставку темы, как делает со всеми внутренними ссылками. */}
 	<NtCartDrawer rootId="flux-cart-drawer-root" eventPrefix="flux:cart" cartHref="/checkout" />
 		<CartAddedModal />
+		{/* Баннер согласия на cookie (theme-base/primitives/CookieConsent.astro) —
+		    на каждой странице, включая чекаут; строго ПОСЛЕ подвала, иначе сборка
+		    страниц из секций (composeV2Page) его срежет. */}
+		<CookieConsent />
 		{/* Тексты панели корзины из настроек темы («Заголовок панели», «Текст
 		    кнопки оформления», «Текст пустой корзины»). До этого у настроек не
 		    было ни одного читателя: панель сохраняла значения, витрина

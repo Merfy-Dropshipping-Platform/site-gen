@@ -10511,3 +10511,12 @@ ILIKE, через product-service и gateway, на всех пяти темах,
   платформенную — расхождение панель ≠ экран. Блок теперь без особой подмены (схема темы по
   умолчанию, как у любой секции), а bloom задаёт `blockDefaults.OrderConfirmation.colorScheme =
   scheme-3` (белая, кнопка розовая) — панель и экран совпадают. Одобрено владельцем.
+
+## 2026-09-27 — Личный кабинет → заказ: название и цена позиции (все пять тем)
+
+- Владелец: у товара в заказе «Товар» вместо названия и «—» вместо цены. Страница читала
+  `productName` / `priceCents` / `comparePriceCents`, а у позиции заказа (orders `order_items`) поля
+  `name`, `unitPriceCents`, `discountCents`, `totalCents` (`totalCents` = цена × кол-во без скидки,
+  скидка строки — отдельно). Общий помощник `packages/theme-base/runtime/order-item.ts`
+  (`orderItemView`) во всех пяти `account/order.astro`: цена за штуку = цена − доля скидки строки,
+  обычная цена — зачёркнутая; старые поля по-прежнему понимаются. Тест `order-item-view.spec.ts`.

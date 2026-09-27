@@ -53,6 +53,7 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
 
   <script>
     import { deliveryMethodLabel, deliveryPeriodLabel } from '../../../../../packages/theme-base/runtime/order-delivery';
+    import { orderItemView } from '../../../../../packages/theme-base/runtime/order-item';
     import { navTo, fetchOrder, cancelOrder, getToken } from '../../lib/auth';
 
     const STATUS_LABELS: Record<string, string> = {
@@ -107,8 +108,9 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
         const imgHtml = item.imageUrl
           ? '<img src="' + item.imageUrl + '" alt="" loading="lazy">'
           : '<div style="width: 5rem; height: 5rem; background: rgb(var(--color-surface-muted)); border-radius: var(--radius-field); flex-shrink: 0;"></div>';
-        const oldPrice = (item.comparePriceCents && item.comparePriceCents > item.priceCents)
-          ? '<span class="product-price-old">' + formatPrice(item.comparePriceCents) + '</span>' : '';
+        const view = orderItemView(item);
+        const oldPrice = view.oldPriceCents !== null
+          ? '<span class="product-price-old">' + formatPrice(view.oldPriceCents) + '</span>' : '';
         let variant = '';
         if (item.variantLabel || (item.options && Object.keys(item.options).length)) {
           variant = '<span class="product-variant">' + (item.variantLabel || Object.values(item.options || {}).join(', ')) + '</span>';
@@ -116,9 +118,9 @@ const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru
         const card = document.createElement('div');
         card.className = 'account-product-card';
         card.innerHTML = imgHtml +
-          '<div class="product-info"><span class="product-name">' + (item.productName || 'Товар') + '</span>' +
-          '<span class="product-prices"><span class="product-price">' + formatPrice(item.priceCents) + '</span>' + oldPrice + '</span>' + variant + '</div>' +
-          '<span class="product-qty">' + item.quantity + ' шт.</span>';
+          '<div class="product-info"><span class="product-name">' + view.name + '</span>' +
+          '<span class="product-prices"><span class="product-price">' + formatPrice(view.priceCents ?? undefined) + '</span>' + oldPrice + '</span>' + variant + '</div>' +
+          '<span class="product-qty">' + view.quantity + ' шт.</span>';
         productsEl.appendChild(card);
       });
 

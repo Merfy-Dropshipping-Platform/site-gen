@@ -1936,6 +1936,10 @@ jobs:
       # у rose обход в теме потерялся — иконка не открывала корзину (прод 23.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-svg-click.spec.ts
+      # «Основные данные» кабинета без поля «Пароль» — вход по Magic Link, пароля
+      # у покупателя нет (владелец 27.09). Рендер AccountSection пяти тем.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/account-no-password-field.spec.ts
       # После оплаты заказанное уходит из корзины (счётчик, выдвижная, страница
       # корзины), после отмены оплаты корзина остаётся (владелец 26.09: «после
       # оплаты корзина не сбрасывается»). «Оплатить» → статус оплаты → ядро

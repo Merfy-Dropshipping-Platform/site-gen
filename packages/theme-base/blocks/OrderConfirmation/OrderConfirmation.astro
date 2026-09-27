@@ -10,6 +10,12 @@ import type { OrderConfirmationProps } from './OrderConfirmation.puckConfig';
 import { OrderConfirmationClasses as C } from './OrderConfirmation.classes';
 import { schemeClassOf } from '../../runtime/color-scheme';
 import { GIFT_LINES_SOURCE } from '../../runtime/gift-lines';
+import {
+  DEFAULT_LEGAL_TEXT,
+  LEGAL_LINK_CLASS_ATTR,
+  LEGAL_LINKS_SOURCE,
+  LEGAL_TEXT_ATTR,
+} from '../../runtime/legal-links';
 
 interface Props extends OrderConfirmationProps {
   id?: string;
@@ -38,9 +44,8 @@ const p = {
   helpText: raw.helpText ?? 'Нужна помощь? Обратитесь к нам',
   returnButtonText: raw.returnButtonText ?? 'Вернуться к магазину',
   returnButtonHref: raw.returnButtonHref || '/',
-  legalText:
-    raw.legalText ??
-    'Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.',
+  // Пустая строка — выбор продавца («стёр текст = пусто»), дефолт только без поля.
+  legalText: raw.legalText ?? DEFAULT_LEGAL_TEXT,
 };
 
 // Схема секции — как у любой секции: выбранная в панели, иначе схема темы по
@@ -120,6 +125,9 @@ const itemCls = {
   old: C.itemPriceOld,
 };
 
+// Юридическая строка под правило ссылок на политики (runtime/legal-links.ts).
+const legalAttrs = { [LEGAL_TEXT_ATTR]: '', [LEGAL_LINK_CLASS_ATTR]: C.legalLink };
+
 const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 ---
 <section
@@ -188,7 +196,10 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
         <a href={p.returnButtonHref || '/'} class={C.returnBtn}>{p.returnButtonText}</a>
       </div>
 
-      <p class={C.legal}>{p.legalText}</p>
+      {/* Юридическая строка: текст продавца экранирован разметкой, названия
+          документов становятся ссылками на ЗАПОЛНЕННЫЕ политики продавца
+          рантаймом runtime/legal-links.ts (скрипт в конце блока). */}
+      <p class={C.legal} {...legalAttrs}>{p.legalText}</p>
     </div>
 
     {/* ============ ПРАВО: Сводка заказа ============ */}
@@ -438,3 +449,7 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
 {/* Склейка подарка «1+1=3» со своей строкой (runtime/gift-lines.ts). После
     основного скрипта: DOM-тесты блока исполняют первый <script>. */}
 <script is:inline set:html={GIFT_LINES_SOURCE}></script>
+
+{/* Ссылки на политики продавца в юридической строке (runtime/legal-links.ts).
+    Последним: DOM-тесты блока исполняют первый <script>. */}
+<script is:inline set:html={LEGAL_LINKS_SOURCE}></script>

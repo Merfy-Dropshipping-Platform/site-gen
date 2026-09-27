@@ -39,6 +39,9 @@ export const OrderConfirmationClasses = {
   returnBtn:
     'inline-flex h-[50px] items-center justify-center rounded-[var(--radius-button)] bg-[rgb(var(--oc-button-bg))] px-7 text-[length:var(--size-body)] text-[rgb(var(--oc-button-text))] transition-opacity hover:opacity-85',
   legal: `text-[length:var(--size-tiny)] leading-relaxed text-[rgb(var(--color-text)/0.5)]`,
+  // Ссылка на политику в юридической строке — цветом самой строки, с
+  // подчёркиванием (как ссылка политики в баннере cookie).
+  legalLink: 'text-inherit underline underline-offset-2 transition-opacity hover:opacity-70',
 
   // ---------- RIGHT: «Сводка заказа» ----------
   summaryCol:

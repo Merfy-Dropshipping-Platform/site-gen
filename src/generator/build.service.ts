@@ -38,8 +38,10 @@ import { writeCatalogRedirects } from "./catalog-redirects";
 import { DocumentAdapter } from "../content/document.adapter";
 import { StoreContentService } from "../content/store-content.service";
 import { applyFooterData } from "../utils/footer-data";
-import { privacyPolicyUrlFor } from "../utils/footer-data";
+import { policyUrlsFor, privacyPolicyUrlFor } from "../utils/footer-data";
 import { PRIVACY_POLICY_URL_GLOBAL } from "../../packages/theme-base/runtime/cookie-consent";
+import { POLICY_URLS_GLOBAL } from "../../packages/theme-base/runtime/legal-links";
+import { inlineScriptJson } from "../common/inline-script-json";
 import { applyPageBinding } from "../render/page-transclude";
 import {
   buildScaffold,
@@ -278,12 +280,12 @@ export async function writeBuildStamp(
 
 export async function injectGlobalsIntoDist(
   distDir: string,
-  globals: Record<string, string>,
+  globals: Record<string, unknown>,
 ): Promise<number> {
   const entries2 = Object.entries(globals);
   if (entries2.length === 0) return 0;
   const script = entries2
-    .map(([k, v]) => `window.${k} = ${JSON.stringify(v)};`)
+    .map(([k, v]) => `window.${k} = ${inlineScriptJson(v)};`)
     .join("");
   const htmlFiles: string[] = [];
   async function findHtml(dir: string) {
@@ -1322,6 +1324,19 @@ export async function runBuildPipeline(
         }
       } catch (ppErr) {
         logger.warn(`[themes-v2] privacy policy global inject failed: ${(ppErr as Error)?.message ?? ppErr}`);
+      }
+      // Ссылки юридической строки «Спасибо за заказ» и чекаута
+      // (runtime/legal-links.ts): адреса ЗАПОЛНЕННЫХ политик тем же правилом,
+      // что подвал и баннер выше. Ни одной политики — глобала нет, фразы
+      // остаются текстом. Зеркало — withPolicyGlobals в превью конструктора.
+      try {
+        const policyUrls = policyUrlsFor(sitePolicies, bareTheme);
+        if (Object.keys(policyUrls).length > 0) {
+          const n = await injectGlobalsIntoDist(ctx.distDir, { [POLICY_URLS_GLOBAL]: policyUrls });
+          logger.log(`[themes-v2] Injected ${POLICY_URLS_GLOBAL}=${JSON.stringify(policyUrls)} into ${n} HTML files for site ${params.siteId}`);
+        }
+      } catch (puErr) {
+        logger.warn(`[themes-v2] policy urls global inject failed: ${(puErr as Error)?.message ?? puErr}`);
       }
       // Штамп сборки: из какого коммита sites и когда собрана эта витрина.
       try {

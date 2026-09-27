@@ -25,6 +25,8 @@ import {
   type CollectionContext,
 } from '../themes/collection-context';
 import { applyFooterData } from '../utils/footer-data';
+import { privacyPolicyUrlFor } from '../utils/footer-data';
+import { PRIVACY_POLICY_URL_GLOBAL } from '../../packages/theme-base/runtime/cookie-consent';
 import { googleFontHead } from '../themes/theme-manifest-loader';
 import { getPageResolver } from '../themes/page-resolver-instance';
 import { buildTokensCss, siteTokensCss } from '../themes/tokens-css';
@@ -151,6 +153,23 @@ interface RenderBlockBody {
 interface RenderTokensCssBody {
   themeSettings: Record<string, unknown>;
   themeId?: string | null;
+}
+
+/**
+ * Глобал ссылки баннера cookie (packages/theme-base/runtime/cookie-consent.ts):
+ * адрес политики конфиденциальности продавца — только если она написана
+ * (`privacyPolicyUrlFor`). Все пути превью зовут эту функцию; сборка витрины
+ * ставит тот же глобал через `injectGlobalsIntoDist` (build.service, themes-v2).
+ */
+export function withPrivacyPolicyGlobal(
+  html: string,
+  privacyPolicyUrl: string | null | undefined,
+): string {
+  if (!privacyPolicyUrl) return html;
+  return html.replace(
+    /<head(\s[^>]*)?>/i,
+    (m) => `${m}<script>window.${PRIVACY_POLICY_URL_GLOBAL} = ${JSON.stringify(privacyPolicyUrl)};</script>`,
+  );
 }
 
 /**
@@ -426,6 +445,10 @@ export class PreviewController {
             collectionNameOverride,
           )
         : undefined;
+    // Политики магазина — текст секции «Страница» (v2-путь) и признак ссылки
+    // баннера cookie (оба пути). Один запрос на страницу превью.
+    const policies = await this.loadPolicies(siteId);
+    const privacyUrl = privacyPolicyUrlFor(policies, loaded.themeId);
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
@@ -443,7 +466,7 @@ export class PreviewController {
           productIdOverride,
           this.logger,
           collectionContext,
-          await this.loadPolicies(siteId),
+          policies,
         );
         if (v2Blocks && v2Blocks.length > 0) {
           const pageTitle =
@@ -505,6 +528,7 @@ export class PreviewController {
               route.split('/')[0] === 'checkout'
                 ? checkoutConfigFromSettings(loaded.settings)
                 : null,
+              privacyUrl,
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -707,6 +731,7 @@ export class PreviewController {
         route.split('/')[0] === 'checkout'
           ? checkoutConfigFromSettings(loaded.settings)
           : null,
+        privacyUrl,
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -759,7 +784,7 @@ export class PreviewController {
       productIdOverride,
       this.logger,
       undefined,
-      await this.loadPolicies(siteId),
+      policies,
     );
     if (!blocks) {
       res
@@ -806,6 +831,11 @@ export class PreviewController {
           },
         );
       }
+      // Баннер cookie рисует сам синтетический шелл (renderPreviewPage), ссылку
+      // на политику открывает тот же глобал, что на остальных путях превью.
+      // Ключ кэша несёт footerFp (время и число политик) — смена политики
+      // даёт новый ключ.
+      html = withPrivacyPolicyGlobal(html, privacyUrl);
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый
       // на свежий код мог отдавать stale HTML из browser cache (etag 304),
@@ -1287,6 +1317,7 @@ export class PreviewController {
     collectionContext?: PreviewCollectionContext | undefined,
     variantSwatch?: VariantSwatchShape | null,
     checkoutConfig?: CheckoutRuntimeConfig | null,
+    privacyPolicyUrl?: string | null,
   ): string {
     let html = withPreviewShopId(htmlIn, siteId);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
@@ -1436,6 +1467,7 @@ export class PreviewController {
           `if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',f);}else{f();}})();</script>`,
       );
     }
+    html = withPrivacyPolicyGlobal(html, privacyPolicyUrl);
     // Агент конструктора (hover/select → postMessage). На секционном пути его
     // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
     // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет

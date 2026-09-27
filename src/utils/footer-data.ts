@@ -48,6 +48,31 @@ const POLICY_TITLE_MAP: Record<string, string> = {
 };
 
 /**
+ * Адрес политики конфиденциальности продавца — или null, если её нет.
+ *
+ * Признак «политика есть» для баннера согласия на cookie
+ * (packages/theme-base/runtime/cookie-consent.ts): запись site_policy с
+ * type `privacy` и непустым (не из одних пробелов) content. Адрес — по тому
+ * же правилу, что ссылка в подвале (`legalBaseFor`): у мигрированных тем
+ * страницу политики собирает `composeLegalPagesIntoDist` → `/legal/privacy`,
+ * у legacy-скаффолда — `/privacy`. Пустая политика страницы продавца не
+ * даёт: у мигрированных тем по этому адресу остаётся демо-текст темы, поэтому
+ * null, а не адрес.
+ *
+ * Зовут оба пути: сборка витрины (build.service, themes-v2) и превью
+ * конструктора (preview.controller) — поведение баннера одинаковое.
+ */
+export function privacyPolicyUrlFor(
+  policies: ReadonlyArray<{ type: string; content: string | null }>,
+  themeId: string | null | undefined,
+): string | null {
+  const hasPrivacy = policies.some(
+    (p) => p.type === "privacy" && typeof p.content === "string" && p.content.trim() !== "",
+  );
+  return hasPrivacy ? `${legalBaseFor(themeId)}/${POLICY_SLUG_MAP.privacy}` : null;
+}
+
+/**
  * Мутирует Footer-блоки `revisionData.pagesData[*].content` (+ legacy `content`)
  * реальными данными магазина — элемент футера показывается ТОЛЬКО при настроенных
  * данных:

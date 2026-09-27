@@ -35,8 +35,21 @@ import {
   POLICY_URLS_GLOBAL,
   legalLinker,
 } from "../../../packages/theme-base/runtime/legal-links";
-import { OrderConfirmationPuckConfig } from "../../../packages/theme-base/blocks/OrderConfirmation/OrderConfirmation.puckConfig";
-import { CheckoutTermsPuckConfig } from "../../../packages/theme-base/blocks/CheckoutTerms/CheckoutTerms.puckConfig";
+import { execFileSync } from "node:child_process";
+
+/**
+ * Дефолты панели блока — из отдельного процесса tsx, а не импортом: puckConfig
+ * тянет типы `@merfy/theme-contract`, которые jest в CI (`CI=true` → проверка
+ * типов в jest.config.ts) не находит, и весь файл не загружался («0 проверок»).
+ */
+const panelDefaults = (file: string, name: string): Record<string, unknown> =>
+  JSON.parse(
+    execFileSync(
+      "pnpm",
+      ["exec", "tsx", "-e", `import(${JSON.stringify(resolve(__dirname, "../../..", file))}).then((m) => console.log(JSON.stringify(m.${name}.defaults)))`],
+      { encoding: "utf8" },
+    ).trim().split("\n").pop() ?? "{}",
+  );
 import { extractPageBlocks } from "../page-blocks";
 
 jest.mock("../page-blocks", () => ({ extractPageBlocks: jest.fn() }));
@@ -244,9 +257,11 @@ describe("4. таблица фраз и стандартные строки", ()
 
   it("стандартная строка содержит все фразы и совпадает с дефолтами панели", () => {
     LEGAL_PHRASES.forEach((p) => expect(DEFAULT_LEGAL_TEXT).toContain(p.phrase));
-    expect(OrderConfirmationPuckConfig.defaults.legalText).toBe(DEFAULT_LEGAL_TEXT);
-    expect(CheckoutTermsPuckConfig.defaults.text).toBe(DEFAULT_LEGAL_TEXT);
-    expect(JSON.stringify(CheckoutTermsPuckConfig.defaults)).not.toContain("/legal/");
+    const orderDefaults = panelDefaults("packages/theme-base/blocks/OrderConfirmation/OrderConfirmation.puckConfig.ts", "OrderConfirmationPuckConfig");
+    const termsDefaults = panelDefaults("packages/theme-base/blocks/CheckoutTerms/CheckoutTerms.puckConfig.ts", "CheckoutTermsPuckConfig");
+    expect(orderDefaults.legalText).toBe(DEFAULT_LEGAL_TEXT);
+    expect(termsDefaults.text).toBe(DEFAULT_LEGAL_TEXT);
+    expect(JSON.stringify(termsDefaults)).not.toContain("/legal/");
   });
 
   it("разбор строки: адрес только у фраз с заполненной политикой, текст не теряется", () => {

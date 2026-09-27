@@ -18,6 +18,7 @@ import CheckoutDeliveryMethod from '../CheckoutDeliveryMethod/CheckoutDeliveryMe
 import CheckoutPayment from '../CheckoutPayment/CheckoutPayment.astro';
 import CheckoutSubmit from '../CheckoutSubmit/CheckoutSubmit.astro';
 import CheckoutTerms from '../CheckoutTerms/CheckoutTerms.astro';
+import { CHECKOUT_START_ANALYTICS_SOURCE } from '../../runtime/checkout-start-analytics';
 import { DEFAULT_LEGAL_TEXT } from '../../runtime/legal-links';
 
 interface Props extends CheckoutFormProps {
@@ -147,3 +148,5 @@ const paddingStyle = padding
     padding={{ top: 0, bottom: 0 }}
   />
 </section>
+
+<script is:inline set:html={CHECKOUT_START_ANALYTICS_SOURCE}></script>

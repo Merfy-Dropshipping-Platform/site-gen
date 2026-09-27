@@ -39,6 +39,9 @@
     "--product-card-padding": "0px"
   },
   "blockDefaults": {
+    "OrderConfirmation": {
+      "colorScheme": "scheme-3"
+    },
     "PromoBanner": {
       "size": "medium",
       "textTransform": "none",

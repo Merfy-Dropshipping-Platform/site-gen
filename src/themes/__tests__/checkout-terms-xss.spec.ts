@@ -81,8 +81,21 @@ function renderBaseBlock(block: string, props: Record<string, unknown>): string 
   return rows[0]?.html ?? '';
 }
 
-const terms = (text: string) =>
-  renderBaseBlock('CheckoutTerms', { id: 'CheckoutTerms-1', text, links: [], padding: { top: 0, bottom: 0 } });
+// Только разметка секции: за ней блок ставит НАШ скрипт правила ссылок на
+// политики (runtime/legal-links.ts) — в нём свои `<script>` и слова вроде
+// «javascript», это не текст мерчанта. Его безопасность сторожит
+// legal-text-links.dom.spec.ts.
+const terms = (text: string) => {
+  const html = renderBaseBlock('CheckoutTerms', {
+    id: 'CheckoutTerms-1',
+    text,
+    links: [],
+    padding: { top: 0, bottom: 0 },
+  });
+  const end = html.indexOf('</section>');
+  if (end < 0) throw new Error('CheckoutTerms: нет </section>');
+  return html.slice(0, end + '</section>'.length);
+};
 
 // ── 1. Векторы через markdown-ссылку ──────────────────────────────────────
 
@@ -132,14 +145,21 @@ describe('«Условия» чекаута: markdown-ссылка мерчан�
     expect(html).toContain('оферта');
   });
 
-  it('дефолтный текст блока рендерится тремя ссылками, как и раньше', () => {
+  it('прежний дефолт с разметкой ссылок: ссылки на документы ставит правило, не разметка', () => {
+    // Владелец 28.09: названия документов ведут на ЗАПОЛНЕННЫЕ политики
+    // продавца (runtime/legal-links.ts). Разметка старых ревизий вела на
+    // демо-текст темы и на несуществующую /legal/cookies — она
+    // разворачивается в текст, ссылку ставит правило (legal-text-links.dom.spec).
     const html = terms(
       'Размещая заказ, вы соглашаетесь с [Условиями обслуживания](/legal/terms), ' +
         '[Политикой конфиденциальности](/legal/privacy) и ' +
         '[Политикой использования файлов cookie](/legal/cookies).',
     );
-    expect((html.match(/<a\b/g) ?? []).length).toBe(3);
-    expect(html).toContain('Размещая заказ');
+    expect((html.match(/<a\b/g) ?? []).length).toBe(0);
+    expect(html).not.toContain('/legal/cookies');
+    expect(html).toContain(
+      'Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.',
+    );
   });
 });
 

@@ -1936,12 +1936,22 @@ jobs:
       # у rose обход в теме потерялся — иконка не открывала корзину (прод 23.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-svg-click.spec.ts
+      # «Основные данные» кабинета без поля «Пароль» — вход по Magic Link, пароля
+      # у покупателя нет (владелец 27.09). Рендер AccountSection пяти тем.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/account-no-password-field.spec.ts
       # После оплаты заказанное уходит из корзины (счётчик, выдвижная, страница
       # корзины), после отмены оплаты корзина остаётся (владелец 26.09: «после
       # оплаты корзина не сбрасывается»). «Оплатить» → статус оплаты → ядро
       # корзины, ключи пяти тем, jsdom.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-cleared-after-paid-order.spec.ts
+      # Иконка корзины в шапке — <button data-cart-open> во всех пяти темах:
+      # по этому договору «Корзина → Сайдбар/Страница» решают шторка, перехватчик
+      # Layout и nav-агент превью. У vanilla была <a href="/cart"> — в
+      # конструкторе при «Сайдбар» открывалась ещё и страница (тестер 26.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/header-cart-icon-contract.spec.ts
       # Меню шапки на компьютере раскрывается НАЖАТИЕМ, не наведением (владелец
       # 24.09): «Выпадающее», «Расширенное», третий уровень — пять тем.
       # Настоящий рендер шапки + общий обработчик nav-submenu-toggle в jsdom.

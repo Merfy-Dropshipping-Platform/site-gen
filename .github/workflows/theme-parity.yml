@@ -7,7 +7,7 @@ name: theme-parity
 # Список путей продублирован: YAML-якоря в workflow GitHub Actions не работают.
 on:
   push:
-    branches: ["main"]
+    branches: ["dev"]
     paths:
       - 'themes/**'
       - 'packages/theme-**'

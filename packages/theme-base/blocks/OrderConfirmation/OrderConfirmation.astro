@@ -9,6 +9,7 @@
 import type { OrderConfirmationProps } from './OrderConfirmation.puckConfig';
 import { OrderConfirmationClasses as C } from './OrderConfirmation.classes';
 import { schemeClassOf } from '../../runtime/color-scheme';
+import { GIFT_LINES_SOURCE } from '../../runtime/gift-lines';
 
 interface Props extends OrderConfirmationProps {
   id?: string;
@@ -271,13 +272,20 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
       var name = it.name || 'Товар';
       var qty = it.quantity || 1;
       var unit = it.unitPriceCents || 0;
-      var line = it.totalCents || unit * qty;
+      // Подарок «1+1=3», склеенный со своей строкой (runtime/gift-lines.ts):
+      // сумма — за оплаченные штуки (totalCents строки), зачёркнутая — за все.
+      var gift = it.isBonus ? 0 : (it.giftQuantity || 0);
+      var paidQty = qty - gift;
+      var line = it.totalCents || unit * paidQty;
       var disc = it.discountCents || 0;
       // Старая цена: compare-at из карточки товара (приоритет), иначе деривация из скидки.
       var oldUnit = (it.compareAtPriceCents && it.compareAtPriceCents > unit)
         ? it.compareAtPriceCents
-        : (disc > 0 ? unit + Math.round(disc / qty) : null);
-      var oldLine = oldUnit ? oldUnit * qty : null;
+        : (disc > 0 ? unit + Math.round(disc / paidQty) : null);
+      var oldLine = gift > 0 ? (oldUnit || unit) * qty : (oldUnit ? oldUnit * qty : null);
+      var countText = gift > 0
+        ? paidQty + ' × ' + fmt(unit) + ' · ' + gift + ' в подарок'
+        : (qty > 1 ? qty + ' × ' + fmt(unit) : '');
       var descr = String(it.description || '').replace(/\s+/g, ' ').trim();
 
       var media = '<div class="' + itemCls.media + '">'
@@ -291,7 +299,7 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
         + metaDiv(itemCls.meta, variantLine(it.options))
         + metaDiv(itemCls.descr, descr)
         + metaDiv(itemCls.meta, it.sku ? 'Артикул: ' + it.sku : '')
-        + metaDiv(itemCls.meta, qty > 1 ? qty + ' × ' + fmt(unit) : '')
+        + metaDiv(itemCls.meta, countText)
         + '</div>';
       var price = '<div class="' + itemCls.price + '">'
         + '<div class="' + itemCls.now + '">' + fmt(line) + '</div>'
@@ -345,7 +353,9 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
       setText('[data-oc-delivery]', d.deliveryLabel || d.deliveryType || '—');
 
       var itemsEl = q('[data-oc-items]');
-      if (itemsEl) itemsEl.innerHTML = (d.items || []).map(renderItem).join('');
+      var merge = window.__merfyMergeGiftLines;
+      var items = typeof merge === 'function' ? merge(d.items || []) : (d.items || []);
+      if (itemsEl) itemsEl.innerHTML = items.map(renderItem).join('');
 
       var discount = (d.discountCents || 0) + (d.promoDiscountCents || 0);
       var delivery = d.deliveryCostCents || 0;
@@ -424,3 +434,7 @@ const apiBase = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.r
     }
   })();
 </script>
+
+{/* Склейка подарка «1+1=3» со своей строкой (runtime/gift-lines.ts). После
+    основного скрипта: DOM-тесты блока исполняют первый <script>. */}
+<script is:inline set:html={GIFT_LINES_SOURCE}></script>

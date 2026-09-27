@@ -9,21 +9,21 @@ import { orderItemView } from '../../../packages/theme-base/runtime/order-item';
 describe('позиция заказа в личном кабинете', () => {
   it('название и цена из полей позиции заказа', () => {
     expect(orderItemView({ name: 'Футболка', quantity: 1, unitPriceCents: 250000, totalCents: 250000, discountCents: 0 }))
-      .toEqual({ name: 'Футболка', quantity: 1, priceCents: 250000, oldPriceCents: null });
+      .toEqual({ name: 'Футболка', quantity: 1, priceCents: 250000, oldPriceCents: null, quantityLabel: '1 шт.' });
   });
 
   it('скидка на строку: цена за штуку со скидкой, обычная — зачёркнутая', () => {
     expect(orderItemView({ name: 'Футболка', quantity: 2, unitPriceCents: 250000, totalCents: 500000, discountCents: 100000 }))
-      .toEqual({ name: 'Футболка', quantity: 2, priceCents: 200000, oldPriceCents: 250000 });
+      .toEqual({ name: 'Футболка', quantity: 2, priceCents: 200000, oldPriceCents: 250000, quantityLabel: '2 шт.' });
   });
 
   it('старые поля (productName / priceCents / comparePriceCents) по-прежнему понимаются', () => {
     expect(orderItemView({ productName: 'Сумка', quantity: 1, priceCents: 549000, comparePriceCents: 899000 }))
-      .toEqual({ name: 'Сумка', quantity: 1, priceCents: 549000, oldPriceCents: 899000 });
+      .toEqual({ name: 'Сумка', quantity: 1, priceCents: 549000, oldPriceCents: 899000, quantityLabel: '1 шт.' });
   });
 
   it('цены нет вовсе — null (страница покажет «—»), название — «Товар»', () => {
-    expect(orderItemView({})).toEqual({ name: 'Товар', quantity: 1, priceCents: null, oldPriceCents: null });
+    expect(orderItemView({})).toEqual({ name: 'Товар', quantity: 1, priceCents: null, oldPriceCents: null, quantityLabel: '1 шт.' });
   });
 
   it.each(['rose', 'vanilla', 'bloom', 'satin', 'flux'])('%s: страница заказа берёт позицию из общего помощника', (theme) => {

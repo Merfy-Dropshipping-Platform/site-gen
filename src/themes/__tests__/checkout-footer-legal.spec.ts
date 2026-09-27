@@ -67,11 +67,15 @@ describe('подвал чекаута = блок условий (пункт 2 в
     );
   });
 
-  it('«Оформление заказа» несёт блок условий с тремя правовыми ссылками', () => {
+  it('«Оформление заказа» несёт блок условий с правовой строкой под правило ссылок', () => {
     const html = renderBaseBlock('CheckoutForm', { id: 'CheckoutForm-1' });
     expect(html).toContain('data-checkout-slot="terms"');
-    const links = [...html.matchAll(/href="(\/legal\/[a-z-]+)"/g)].map((m) => m[1]);
-    expect(links).toEqual(['/legal/terms', '/legal/privacy', '/legal/cookies']);
+    // С 28.09 ссылки на документы — только на ЗАПОЛНЕННЫЕ политики продавца,
+    // их ставит правило (runtime/legal-links.ts; legal-text-links.dom.spec.ts).
+    // Фиксированных /legal/* (демо-текст темы, несуществующий /legal/cookies)
+    // в разметке больше нет.
+    expect(html).toMatch(/<p\b[^>]*data-legal-text/);
+    expect([...html.matchAll(/href="(\/legal\/[a-z-]+)"/g)]).toHaveLength(0);
     // Дословно то, что владелец обвёл как «Подвал в чекауте».
     expect(html).toContain('Размещая заказ, вы соглашаетесь с');
     expect(html).toContain('Условиями обслуживания');

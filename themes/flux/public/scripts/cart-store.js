@@ -24,6 +24,7 @@ const state = {
   cartId: null,
   loading: false,
   syncPromise: null,
+  serverCart: null,
 };
 
 function saveCartId() {
@@ -45,6 +46,21 @@ function notify(eventName, detail) {
   document.dispatchEvent(new CustomEvent(eventName, { detail }));
 }
 
+// Что посчитал сервер (orders) для последнего известного ему состава корзины:
+// скидку корзины — промокод или автоматическую, orders кладёт их в одно поле
+// `discountCents` — и позиции, для которых она посчитана. Чекаут показывает
+// скидку, только пока состав тот же (CheckoutTotals / CheckoutSubmit), поэтому
+// снимок не нужно сбрасывать на каждой локальной правке. Ответ GET корзины —
+// `{ cart, items }`, ответ промокода — плоский заказ с `items`.
+function serverCartOf(data) {
+  if (!data || !Array.isArray(data.items)) return null;
+  const money = data.cart || data;
+  // Копии позиций: оптимистичная правка количества меняет объекты state.items
+  // на месте — снимок сервера должен остаться тем, что ответил сервер.
+  const items = data.items.map((item) => ({ ...item }));
+  return { discountCents: Number(money.discountCents) || 0, items };
+}
+
 function applyCartData(cartData) {
   // Backend возвращает items с актуальной ценой (joined с product
   // на стороне cart.service для status=cart). Frontend просто принимает.
@@ -53,6 +69,7 @@ function applyCartData(cartData) {
   } else {
     state.items = [];
   }
+  state.serverCart = serverCartOf(cartData);
   notify('cart:updated', { items: state.items });
 }
 
@@ -230,6 +247,14 @@ export const cartStore = {
     }, 0);
   },
 
+  /**
+   * Снимок сервера: скидка корзины и позиции, для которых она посчитана.
+   * @returns {{ discountCents: number, items: Array<any> }|null}
+   */
+  getServerCart() {
+    return state.serverCart;
+  },
+
   /** @returns {string|null} */
   getCartId() {
     return state.cartId;
@@ -239,6 +264,7 @@ export const cartStore = {
   clear() {
     state.cartId = null;
     state.items = [];
+    state.serverCart = null;
     saveCartId();
     notify('cart:updated', { items: [] });
   },
@@ -296,6 +322,7 @@ export const cartStore = {
         const res = await CartAPI.getCart(cartId);
         if (res && res.success && res.data && Array.isArray(res.data.items)) {
           state.items = res.data.items;
+          state.serverCart = serverCartOf(res.data);
         }
       } catch (e) {}
       return cartId;

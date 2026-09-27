@@ -57,6 +57,8 @@ const paddingStyle = padding
     var totalEl = section.querySelector('[data-totals-total]');
     var freeText = section.getAttribute('data-free-text') || 'Бесплатно';
 
+    // Скидка из события промокода (checkout:discount-applied) — запасной путь,
+    // когда стор корзины не отдаёт снимок сервера (см. currentDiscountCents).
     var discountCents = 0;
     var deliveryCents = 0;
     // PR-19 — скидка точки расширений «Оформление заказа» (например,
@@ -113,13 +115,34 @@ const paddingStyle = padding
         return sum + (it.unitPriceCents || it.priceCents || 0) * (it.quantity || 1);
       }, 0);
     }
-    function cartSignature() {
-      var items = checkoutItems();
-      return items.filter(function (it) { return !it.isBonus; }).map(function (it) {
+    // Ключи отсортированы: сервер отдаёт позиции в своём порядке, не в порядке
+    // локальной корзины.
+    function signatureOf(items) {
+      return (items || []).filter(function (it) { return !it.isBonus; }).map(function (it) {
         return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
-      }).join('|');
+      }).sort().join('|');
+    }
+    function cartSignature() {
+      return signatureOf(checkoutItems());
     }
     var lastCartSig = cartSignature();
+
+    // Скидку считает только сервер (orders): промокод ИЛИ автоматическая
+    // скидка магазина — одна сумма discountCents корзины. Раньше строка
+    // «Скидка» слушала лишь событие промокода, и автоматическая скидка до
+    // покупателя не доходила вовсе, хотя заказ списывал сумму со скидкой
+    // (баг владельца 27.09). Сумма сервера верна, пока состав корзины тот же,
+    // для которого она посчитана; состав поменялся — ждём новый ответ.
+    function serverDiscountCents() {
+      var store = window.cartStore;
+      var server = store && typeof store.getServerCart === 'function' ? store.getServerCart() : null;
+      if (!server || signatureOf(server.items) !== cartSignature()) return null;
+      return server.discountCents || 0;
+    }
+    function currentDiscountCents() {
+      var server = serverDiscountCents();
+      return server === null ? discountCents : server;
+    }
 
     function refresh() {
       var items = checkoutItems();
@@ -132,10 +155,11 @@ const paddingStyle = padding
       var subtotal = checkoutTotal();
       if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
 
+      var discount = currentDiscountCents();
       if (discountEl && discountRow) {
-        if (discountCents > 0) {
+        if (discount > 0) {
           discountRow.hidden = false;
-          discountEl.textContent = '−' + fmt(discountCents);
+          discountEl.textContent = '−' + fmt(discount);
         } else {
           discountRow.hidden = true;
           discountEl.textContent = '0 ₽';
@@ -146,7 +170,7 @@ const paddingStyle = padding
         deliveryEl.textContent = deliveryCents > 0 ? fmt(deliveryCents) : freeText;
       }
 
-      var total = Math.max(0, subtotal - discountCents - extensionDiscountCents + deliveryCents);
+      var total = Math.max(0, subtotal - discount - extensionDiscountCents + deliveryCents);
       if (totalEl) totalEl.textContent = fmt(total);
     }
 

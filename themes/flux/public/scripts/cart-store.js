@@ -46,6 +46,14 @@ function notify(eventName, detail) {
   document.dispatchEvent(new CustomEvent(eventName, { detail }));
 }
 
+// Подарок акции «1+1=3» (`isBonus`) кладёт в корзину сервер при пересчёте.
+// Отправить его обратно — значит купить: сервер посчитает ещё одну штуку по
+// полной цене и снова подарит (замер 27.09: 2 970 ₽ вместо 1 980 ₽). Поэтому
+// при пересборке серверной корзины уходят только оплачиваемые позиции.
+function paidLines(lines) {
+  return (Array.isArray(lines) ? lines : []).filter((line) => line && !line.isBonus);
+}
+
 // Что посчитал сервер (orders) для последнего известного ему состава корзины:
 // скидку корзины — промокод или автоматическую, orders кладёт их в одно поле
 // `discountCents` — и позиции, для которых она посчитана. Чекаут показывает
@@ -300,7 +308,7 @@ export const cartStore = {
       if (notify_ && existing) notify('cart:updated', { items: state.items });
       return existing;
     }
-    const lines = state.items || [];
+    const lines = paidLines(state.items);
     if (!lines.length) return null;
 
     const run = (async () => {

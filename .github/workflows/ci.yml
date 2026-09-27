@@ -1969,6 +1969,11 @@ jobs:
       # вместо 1 980 ₽ за две кружки). Стор корзины пяти тем, jsdom.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-gift-not-resent.spec.ts
+      # Подарок «1+1=3» одной позицией «×3, 1 в подарок», цена за две (владелец
+      # 27.09, вариант А): сводка чекаута, «Спасибо за заказ», заказ в кабинете
+      # пяти тем. Помощник runtime/gift-lines.ts + настоящие скрипты блоков, jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/gift-one-line.spec.ts
       # Иконка корзины в шапке — <button data-cart-open> во всех пяти темах:
       # по этому договору «Корзина → Сайдбар/Страница» решают шторка, перехватчик
       # Layout и nav-агент превью. У vanilla была <a href="/cart"> — в

@@ -428,6 +428,20 @@ async function compileTsOnlyBlock(entry) {
 }
 
 /**
+ * Runtime-модули лежат в dist плоско (`runtime__X.mjs`), поэтому импорт соседа
+ * `./X` из runtime-файла (например, `legal-links` → `./preview-click-guard`)
+ * переписывается в `./runtime__X.mjs` — тем же правилом, что блочные
+ * `../../runtime/X`. Без этого модуль падал при загрузке: «Cannot find module
+ * dist/astro-blocks/X».
+ */
+function rewriteRuntimeSiblingImports(code) {
+  return code.replace(
+    /(\b(?:from|import)\s*['"])\.\/([\w-]+)(?:\.(?:ts|js|mjs))?(['"])/g,
+    (_m, prefix, modName, suffix) => `${prefix}./runtime__${modName}.mjs${suffix}`,
+  );
+}
+
+/**
  * Compile theme-base/runtime/*.ts → dist/astro-blocks/runtime__*.mjs
  *
  * Hero/Slideshow/Gallery/etc import `../../runtime/placeholders` (shared
@@ -454,7 +468,7 @@ async function compileRuntimeFiles() {
     const baseName = f.replace(/\.ts$/, '');
     const outName = `runtime__${baseName}.mjs`;
     const outPath = path.join(DIST_DIR, outName);
-    await fs.writeFile(outPath, inlineViteEnv(stripped), 'utf-8');
+    await fs.writeFile(outPath, inlineViteEnv(rewriteRuntimeSiblingImports(stripped)), 'utf-8');
     compiled.push(outName);
   }
   return compiled;

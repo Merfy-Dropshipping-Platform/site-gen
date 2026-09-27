@@ -14,8 +14,11 @@ export const CheckoutTermsSchema = z.object({
 
 export type CheckoutTermsProps = z.infer<typeof CheckoutTermsSchema>;
 
+// Без разметки ссылок: названия документов становятся ссылками на
+// заполненные политики продавца по общему правилу (runtime/legal-links.ts).
+// Та же строка, что DEFAULT_LEGAL_TEXT правила (сторож — legal-text-links.spec).
 const defaultText =
-  'Размещая заказ, вы соглашаетесь с [Условиями обслуживания](/legal/terms), [Политикой конфиденциальности](/legal/privacy) и [Политикой использования файлов cookie](/legal/cookies).';
+  'Размещая заказ, вы соглашаетесь с Условиями обслуживания, Политикой конфиденциальности и Политикой использования файлов cookie.';
 
 export const CheckoutTermsPuckConfig: BlockPuckConfig<CheckoutTermsProps> = {
   label: 'Условия',
@@ -34,11 +37,9 @@ export const CheckoutTermsPuckConfig: BlockPuckConfig<CheckoutTermsProps> = {
   },
   defaults: {
     text: defaultText,
-    links: [
-      { label: 'Условия обслуживания', url: '/legal/terms' },
-      { label: 'Политика конфиденциальности', url: '/legal/privacy' },
-      { label: 'Политика использования файлов cookie', url: '/legal/cookies' },
-    ],
+    // Поле «Дополнительные ссылки» остаётся; документы продавца сюда больше
+    // не кладём (их ставит правило), `/legal/cookies` не существует.
+    links: [],
     padding: { top: 0, bottom: 0 },
   },
   schema: CheckoutTermsSchema,

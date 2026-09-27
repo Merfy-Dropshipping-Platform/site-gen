@@ -16,17 +16,16 @@
  *     одной функции `privacyPolicyUrl` (src/utils/footer-data.ts) — тем же
  *     правилом, что ссылки политик в подвале. Нет глобала — ссылки нет
  *     (удаляется из DOM), а не «ссылка на демо-текст темы»;
- *   • в превью конструктора (iframe) нажатие на ссылку политики гасится:
- *     навигация конструктора по неизвестному адресу АВТОСОЗДАЁТ страницу
- *     (SiteConstructor.autoCreatePageFromPath), а мусорная страница в сайте
- *     продавца хуже, чем ссылка без перехода в режиме редактирования.
- *     Слушатель стоит на window в фазе захвата — раньше агента превью,
- *     который слушает document.
+ *   • в превью конструктора (iframe) нажатие на ссылку политики гасится —
+ *     общая функция `guardPreviewClicks` (runtime/preview-click-guard.ts):
+ *     навигация конструктора по неизвестному адресу АВТОСОЗДАЁТ страницу.
  *
  * Мягкая навигация Astro (ViewTransitions у rose/vanilla/bloom) подменяет
  * <body> — новый баннер приходит скрытым, поэтому состояние сверяется заново
  * на `astro:page-load`. Слушатели вешаются один раз на окно.
  */
+
+import { guardPreviewClicks } from "./preview-click-guard";
 
 export const COOKIE_CONSENT_STORAGE_KEY = "merfy:cookie-consent:v1";
 export const PRIVACY_POLICY_URL_GLOBAL = "__MERFY_PRIVACY_POLICY_URL__";
@@ -97,25 +96,12 @@ export function syncCookieConsent(doc: Document = document): void {
 	});
 }
 
-function isPreviewFrame(): boolean {
-	try {
-		return window.self !== window.top;
-	} catch {
-		return true;
-	}
-}
-
 function onClick(event: Event): void {
 	const target = event.target instanceof Element ? event.target : null;
-	if (target?.closest(SELECTOR.accept)) {
-		acceptedThisVisit = true;
-		storeConsent();
-		syncCookieConsent();
-		return;
-	}
-	if (!target?.closest(SELECTOR.policyLink) || !isPreviewFrame()) return;
-	event.preventDefault();
-	event.stopPropagation();
+	if (!target?.closest(SELECTOR.accept)) return;
+	acceptedThisVisit = true;
+	storeConsent();
+	syncCookieConsent();
 }
 
 export function initCookieConsent(): void {
@@ -124,5 +110,6 @@ export function initCookieConsent(): void {
 	if (win.__merfyCookieConsentBound) return;
 	win.__merfyCookieConsentBound = true;
 	window.addEventListener("click", onClick, true);
+	guardPreviewClicks(window, SELECTOR.policyLink);
 	document.addEventListener("astro:page-load", () => syncCookieConsent());
 }

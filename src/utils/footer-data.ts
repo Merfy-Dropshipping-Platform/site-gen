@@ -47,29 +47,50 @@ const POLICY_TITLE_MAP: Record<string, string> = {
   shipping: "Политика доставки",
 };
 
+type PolicyRow = { type: string; content: string | null };
+
+const isFilled = (p: PolicyRow): boolean =>
+  typeof p.content === "string" && p.content.trim() !== "";
+
+/**
+ * Адреса ЗАПОЛНЕННЫХ политик продавца: тип site_policy → адрес страницы.
+ *
+ * Признак «политика есть» — запись site_policy с непустым (не из одних
+ * пробелов) content. Адрес — по тому же правилу, что ссылка в подвале
+ * (`legalBaseFor` + `POLICY_SLUG_MAP`): у мигрированных тем страницу собирает
+ * `composeLegalPagesIntoDist` → `/legal/terms`, `/legal/privacy`, у
+ * legacy-скаффолда — `/terms`, `/privacy`. Пустая политика страницы продавца
+ * не даёт: у мигрированных тем по этому адресу остаётся демо-текст темы,
+ * поэтому такой политики в карте нет.
+ *
+ * Потребители — глобал `__MERFY_POLICY_URLS__` (ссылки юридической строки
+ * «Спасибо за заказ» и чекаута, packages/theme-base/runtime/legal-links.ts) и
+ * `privacyPolicyUrlFor` (баннер cookie). Зовут оба пути: сборка витрины
+ * (build.service, themes-v2) и превью конструктора (preview.controller).
+ */
+export function policyUrlsFor(
+  policies: ReadonlyArray<PolicyRow>,
+  themeId: string | null | undefined,
+): Record<string, string> {
+  const base = legalBaseFor(themeId);
+  return Object.fromEntries(
+    policies
+      .filter(isFilled)
+      .map((p) => [p.type, `${base}/${POLICY_SLUG_MAP[p.type] ?? p.type}`]),
+  );
+}
+
 /**
  * Адрес политики конфиденциальности продавца — или null, если её нет.
- *
- * Признак «политика есть» для баннера согласия на cookie
- * (packages/theme-base/runtime/cookie-consent.ts): запись site_policy с
- * type `privacy` и непустым (не из одних пробелов) content. Адрес — по тому
- * же правилу, что ссылка в подвале (`legalBaseFor`): у мигрированных тем
- * страницу политики собирает `composeLegalPagesIntoDist` → `/legal/privacy`,
- * у legacy-скаффолда — `/privacy`. Пустая политика страницы продавца не
- * даёт: у мигрированных тем по этому адресу остаётся демо-текст темы, поэтому
- * null, а не адрес.
- *
- * Зовут оба пути: сборка витрины (build.service, themes-v2) и превью
- * конструктора (preview.controller) — поведение баннера одинаковое.
+ * Признак для баннера согласия на cookie
+ * (packages/theme-base/runtime/cookie-consent.ts) — частный случай
+ * `policyUrlsFor`, поведение баннера то же.
  */
 export function privacyPolicyUrlFor(
-  policies: ReadonlyArray<{ type: string; content: string | null }>,
+  policies: ReadonlyArray<PolicyRow>,
   themeId: string | null | undefined,
 ): string | null {
-  const hasPrivacy = policies.some(
-    (p) => p.type === "privacy" && typeof p.content === "string" && p.content.trim() !== "",
-  );
-  return hasPrivacy ? `${legalBaseFor(themeId)}/${POLICY_SLUG_MAP.privacy}` : null;
+  return policyUrlsFor(policies, themeId).privacy ?? null;
 }
 
 /**

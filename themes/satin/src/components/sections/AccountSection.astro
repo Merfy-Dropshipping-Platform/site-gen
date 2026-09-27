@@ -75,13 +75,6 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				<label for="profile-phone">Телефон</label>
 				<input type="tel" id="profile-phone" class="auth-input" placeholder="+7 (000) 000-00-00" autocomplete="tel" />
 			</div>
-			<div class="account-field">
-				<label>Пароль</label>
-				<div class="auth-input" style="display: flex; align-items: center; justify-content: space-between; cursor: default;">
-					<span style="letter-spacing: 0.2em; color: rgb(var(--color-muted, 153 153 153));">••••••••••••</span>
-				</div>
-				<a href="/reset-password" class="account-text-link" style="font-size: 0.875rem;">Изменить</a>
-			</div>
 		</form>
 
 		<div id="profile-status" class="hidden" style="font-family: var(--font-body); font-size: 0.875rem;"></div>

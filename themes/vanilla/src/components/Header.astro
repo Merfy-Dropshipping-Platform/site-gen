@@ -296,8 +296,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 					>0</span>
 				</a>
-				<a
-					href="/cart"
+				<button
+					type="button"
+					data-cart-open
 					class="relative flex size-6 items-center justify-center"
 					aria-label="Корзина"
 				>
@@ -307,7 +308,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						data-empty="true"
 						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 					>0</span>
-				</a>
+				</button>
 				<button
 					type="button"
 					data-login-open
@@ -372,8 +373,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
 								</a>
-								<a
-									href="/cart"
+								<button
+									type="button"
+									data-cart-open
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
@@ -383,7 +385,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										data-empty="true"
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
-								</a>
+								</button>
 								<button
 									type="button"
 									data-login-open
@@ -469,8 +471,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
 								</a>
-								<a
-									href="/cart"
+								<button
+									type="button"
+									data-cart-open
 									class="relative flex size-8 items-center justify-center transition-opacity hover:opacity-80"
 									aria-label="Корзина"
 								>
@@ -480,7 +483,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 										data-empty="true"
 										class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 									>0</span>
-								</a>
+								</button>
 								<button
 									type="button"
 									data-login-open
@@ -589,8 +592,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 							>0</span>
 						</a>
-						<a
-							href="/cart"
+						<button
+							type="button"
+							data-cart-open
 							class={`relative flex ${ACTION.btn} items-center justify-center transition-opacity hover:opacity-80`}
 							aria-label="Корзина"
 						>
@@ -600,7 +604,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 								data-empty="true"
 								class="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white px-1.5 font-manrope text-[10px] font-bold leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 							>0</span>
-						</a>
+						</button>
 						<button
 							type="button"
 							data-login-open
@@ -726,8 +730,9 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 				>
 					<SchemeIcon svgs={VANILLA_ICON_SVGS} name="menu-close" sizeClass="size-6" />
 				</button>
-				<a
-					href="/cart"
+				<button
+					type="button"
+					data-cart-open
 					class="relative flex size-6 shrink-0 items-center justify-center transition-opacity hover:opacity-80"
 					aria-label="Корзина"
 				>
@@ -737,7 +742,7 @@ const isActive = (link: NavLink) => (link.match ? link.match(Astro.url) : Astro.
 						data-empty="true"
 						class="absolute -right-2 -top-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-white px-1 font-manrope text-[10px] font-normal leading-none text-[var(--vanilla-dark)] data-[empty=true]:hidden"
 					>0</span>
-				</a>
+				</button>
 			</div>
 		) : (
 			/* Mobile drawer: search + profile. Строка поиска — по макету «Бургер» 375:

@@ -27,13 +27,14 @@ const poster =
 // Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
 // при enabled !== 'false'. Роль = заголовок секции §1 (Urbanist 18/20 uppercase,
 // акцент-токен #E38E9F). Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния
-// Video: заголовок «Видео» НАД медиа-блоком. Дефолт = «Видео» (паттерн bloom
-// Gallery/Collections/MultiRows `?? "<Figma>"`); мерчант задал свой heading →
-// рендерим ЕГО (fallback срабатывает только при пустом тексте).
+// Video: заголовок «Видео» НАД медиа-блоком — ТОЛЬКО когда поля вовсе нет
+// (undefined, старые ревизии). Панельное поле пришло строкой (в т.ч. пустой ""
+// — мерчант стёр вручную) → рендерим как есть.
 const headingRaw = p.heading ?? p.content?.heading;
+const headingSet = typeof headingRaw === "string" || typeof headingRaw?.text === "string";
 const headingRawText =
 	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
-const headingText = headingRawText.trim() ? headingRawText : "Видео";
+const headingText = headingSet ? headingRawText : "Видео";
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
 const showHeading = headingEnabled;
 // Канон headingSize («Размер заголовка», кегль <h2>) + дубли heading.size /
@@ -159,9 +160,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 >
 	<div class={containerCls}>
 		{
-			(showHeading || subheading) && (
+			((showHeading && headingText) || subheading) && (
 				<div class={headingWrapCls} data-animate>
-					{showHeading && !isFieldHidden('heading') && (
+					{showHeading && headingText && !isFieldHidden('heading') && (
 						<h2
 							id={titleId}
 							class={headingCls}
@@ -172,7 +173,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						></h2>
 					)}
 					{subheading && (
-						<p class={`${showHeading ? "mt-3 " : ""}${subheadingCls}`} set:html={inlineFormat(subheading)} />
+						<p class={`${showHeading && headingText ? "mt-3 " : ""}${subheadingCls}`} set:html={inlineFormat(subheading)} />
 					)}
 				</div>
 			)

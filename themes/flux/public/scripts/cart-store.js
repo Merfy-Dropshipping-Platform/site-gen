@@ -24,6 +24,7 @@ const state = {
   cartId: null,
   loading: false,
   syncPromise: null,
+  serverCart: null,
 };
 
 function saveCartId() {
@@ -45,6 +46,29 @@ function notify(eventName, detail) {
   document.dispatchEvent(new CustomEvent(eventName, { detail }));
 }
 
+// Подарок акции «1+1=3» (`isBonus`) кладёт в корзину сервер при пересчёте.
+// Отправить его обратно — значит купить: сервер посчитает ещё одну штуку по
+// полной цене и снова подарит (замер 27.09: 2 970 ₽ вместо 1 980 ₽). Поэтому
+// при пересборке серверной корзины уходят только оплачиваемые позиции.
+function paidLines(lines) {
+  return (Array.isArray(lines) ? lines : []).filter((line) => line && !line.isBonus);
+}
+
+// Что посчитал сервер (orders) для последнего известного ему состава корзины:
+// скидку корзины — промокод или автоматическую, orders кладёт их в одно поле
+// `discountCents` — и позиции, для которых она посчитана. Чекаут показывает
+// скидку, только пока состав тот же (CheckoutTotals / CheckoutSubmit), поэтому
+// снимок не нужно сбрасывать на каждой локальной правке. Ответ GET корзины —
+// `{ cart, items }`, ответ промокода — плоский заказ с `items`.
+function serverCartOf(data) {
+  if (!data || !Array.isArray(data.items)) return null;
+  const money = data.cart || data;
+  // Копии позиций: оптимистичная правка количества меняет объекты state.items
+  // на месте — снимок сервера должен остаться тем, что ответил сервер.
+  const items = data.items.map((item) => ({ ...item }));
+  return { discountCents: Number(money.discountCents) || 0, items };
+}
+
 function applyCartData(cartData) {
   // Backend возвращает items с актуальной ценой (joined с product
   // на стороне cart.service для status=cart). Frontend просто принимает.
@@ -53,6 +77,7 @@ function applyCartData(cartData) {
   } else {
     state.items = [];
   }
+  state.serverCart = serverCartOf(cartData);
   notify('cart:updated', { items: state.items });
 }
 
@@ -230,6 +255,14 @@ export const cartStore = {
     }, 0);
   },
 
+  /**
+   * Снимок сервера: скидка корзины и позиции, для которых она посчитана.
+   * @returns {{ discountCents: number, items: Array<any> }|null}
+   */
+  getServerCart() {
+    return state.serverCart;
+  },
+
   /** @returns {string|null} */
   getCartId() {
     return state.cartId;
@@ -239,6 +272,7 @@ export const cartStore = {
   clear() {
     state.cartId = null;
     state.items = [];
+    state.serverCart = null;
     saveCartId();
     notify('cart:updated', { items: [] });
   },
@@ -274,7 +308,7 @@ export const cartStore = {
       if (notify_ && existing) notify('cart:updated', { items: state.items });
       return existing;
     }
-    const lines = state.items || [];
+    const lines = paidLines(state.items);
     if (!lines.length) return null;
 
     const run = (async () => {
@@ -296,6 +330,7 @@ export const cartStore = {
         const res = await CartAPI.getCart(cartId);
         if (res && res.success && res.data && Array.isArray(res.data.items)) {
           state.items = res.data.items;
+          state.serverCart = serverCartOf(res.data);
         }
       } catch (e) {}
       return cartId;

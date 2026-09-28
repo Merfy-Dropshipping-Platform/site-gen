@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 import VanillaProductCard from "../products/VanillaProductCard.astro";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Popular T13): полная конструкторная схема
@@ -19,18 +20,14 @@ const id = p.id;
 // Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния PopularProducts:
 // заголовок «Коллекция товаров», без хелпер-подзаголовка (только заголовок +
 // карточки, паритет эталона rose Popular). Дефолт-текст верстальщика
-// («Популярные товары» + длинный подзаголовок) заменён на Figma-текст. Когда
-// мерчант задал свой heading/text/subtitle — рендерим ЕГО (?? fallback
-// срабатывает только при пустых данных).
-const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Коллекция товаров";
+// («Популярные товары» + длинный подзаголовок) заменён на Figma-текст. Мерчант
+// задал свой heading (в т.ч. пустой — стёр, §2 контракта) → рендерим ЕГО;
+// заглушка/легаси title — только когда поля нет вовсе.
+const sectionTitle = pickText(p.heading, textOf(p.title) ?? "Коллекция товаров");
 // Подзаголовок: рендерится ТОЛЬКО если мерчант его задал. По Figma-контракту
 // пустое состояние PopularProducts — лишь заголовок «Коллекция товаров» +
 // карточки (как в rose), без хелпер-текста верстальщика.
-const rawSubtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : p.subtitle?.content);
-const sectionSubtitle = typeof rawSubtitle === "string" && rawSubtitle.trim() ? rawSubtitle : "";
+const sectionSubtitle = textOf(p.text) ?? textOf(p.subtitle) ?? "";
 
 // Канон headingSize (top-level приоритетнее legacy heading.size): 'medium' и
 // отсутствие = роль «заголовок секции» верстальщика дословно (Bitter italic
@@ -45,20 +42,19 @@ const headingCls =
 // Канон textSize: 'small' (canon-default) и отсутствие = подзаголовок
 // верстальщика дословно (Arsenal italic 16). Лестница §9: medium 19, large 23.
 const textSize = p.textSize ?? p.text?.size;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// шапка секции — геометрия обёртки по .vanilla-section-head/.vanilla-section-
-// subtitle верстальщика (Vanilla-theme global.css @c65d9e1c): обёртка шире
-// (max-w 1320 вместо 760, gap уже 0.5rem = gap-2), подзаголовок не переносится
-// с lg. Шрифт/цвета/капс не меняются; без признака — прежние классы байт-в-байт.
-const designParity = p.__designParity === true;
-const SUBTITLE_GEOMETRY_CLS = designParity ? " w-full max-w-[1320px] lg:whitespace-nowrap" : "";
+// Шапка секции — геометрия обёртки по .vanilla-section-head/.vanilla-section-
+// subtitle верстальщика (Vanilla-theme global.css @c65d9e1c; владелец 23-24.09:
+// «как у верстальщиков, только стили»): обёртка шире (max-w 1320 вместо 760,
+// gap 0.5rem = gap-2), подзаголовок не переносится с lg. Шрифт/цвета/капс не
+// меняются.
+const SUBTITLE_GEOMETRY_CLS = " w-full max-w-[1320px] lg:whitespace-nowrap";
 const subtitleCls =
 	textSize === "medium"
 		? `font-vanilla-arsenal text-[19px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
 		: textSize === "large"
 			? `font-vanilla-arsenal text-[23px] font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`
 			: `font-vanilla-arsenal text-base font-normal italic leading-none text-[rgb(var(--color-muted,68_68_68))]${SUBTITLE_GEOMETRY_CLS}`;
-const HEAD_WRAP_CLS = designParity ? "flex w-full max-w-[1320px] flex-col gap-2" : "flex max-w-[760px] flex-col gap-2";
+const HEAD_WRAP_CLS = "flex w-full max-w-[1320px] flex-col gap-2";
 
 // Канон cards 2-24: лимит demo-среза и гидрации (data-cards на гриде).
 // 6 = срез верстальщика (и отсутствие пропа) → дефолт-ветка.
@@ -135,8 +131,12 @@ const quickAddMode = qaModeRaw === "standard" || qaModeRaw === "cart" ? qaModeRa
 const quickAddText =
 	(typeof p.quickAddText === "string" && p.quickAddText) ||
 	(quickAddMode === "cart" ? "В КОРЗИНУ" : "В корзину");
+// Кнопка «В корзину» карточки верстальщиков (VanillaProductCard @c65d9e1c) —
+// h-11, px-3; у них она внутри карточки (gap-3 + mt-3 = 24px от цены), у нас
+// стоит после карточки — отсюда mt-6.
+const QA_BTN_GEOM = { mt: "mt-6", h: "h-11 min-h-11", px: "px-3" };
 const QA_BTN_CLS =
-	"mt-3 inline-flex h-12 min-h-12 w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] px-4 font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
+	`${QA_BTN_GEOM.mt} inline-flex ${QA_BTN_GEOM.h} w-full items-center justify-center bg-[rgb(var(--color-button-bg,58_69_48))] ${QA_BTN_GEOM.px} font-vanilla-arsenal text-base font-normal uppercase leading-none tracking-normal text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90`;
 // «Быстрое добавление → Количество» ('cart'): ПЕРЕД кнопкой встаёт счётчик
 // − N + (паритет flux/bloom, где он уже работает). Кнопка несёт data-quantity,
 // счётчик его правит, делегат корзины (`Number(addBtn.dataset.quantity ?? "1")`)
@@ -158,9 +158,12 @@ const btnStyle =
 	p.buttonStyle === "secondary" || p.buttonStyle === "link" ? p.buttonStyle : undefined;
 
 // Канон nextPhotoOnHover (toggle, true/'true'): смена фото на вторую картинку
-// товара при наведении. Носитель данных: data-image-2 на <li> (demo —
+// товара при наведении. Носитель данных: data-image-2 на <li> — всегда, если у
+// товара есть второе фото: по нему листает свайп на телефоне (runtime/
+// card-photo-swipe.ts) при любой настройке, а наведение — только с настройкой
+// (атрибут data-next-photo на сетке). Demo —
 // gallery[1] верстальщика, если есть; реальные товары — images[1], ставит
-// гидрация ниже).
+// гидрация ниже.
 const nextPhoto = p.nextPhotoOnHover === true || p.nextPhotoOnHover === "true";
 // is:inline + set:html (без define:vars — компилятор секций его не умеет);
 // идемпотентность data-np-hydrated; без data-image-2 скрипт — no-op.
@@ -337,18 +340,24 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// hasText — строка из пробелов не в счёт (§2 контракта). showHeadWrap решает,
+// рисовать ли всю шапку: иначе стёртые заголовок+подзаголовок оставляют
+// пустой `<div class="flex ... gap-2">` над сеткой товаров.
+const showHeading = hasText(sectionTitle);
+const showSubtitle = hasText(sectionSubtitle);
+const showHeadWrap = !isFieldHidden('heading') && (showHeading || showSubtitle);
 
 ---
 
 <section
 	id="popular"
 	class="vanilla-pad w-full bg-[rgb(var(--color-bg,238_238_238))] py-20 md:py-28"
-	aria-labelledby="popular-title"
+	aria-labelledby={showHeading && !isFieldHidden('heading') ? "popular-title" : undefined}
 	data-puck-component-id={id}
 	style={paddingStyle}
 >
 	<div class="vanilla-container flex max-w-[1180px] flex-col gap-8">
-		{!isFieldHidden('heading') && (
+		{showHeadWrap && (
 		<div
 			class={HEAD_WRAP_CLS}
 			data-animate
@@ -356,10 +365,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 id="popular-title" class={headingCls}>
-				<Fragment set:html={inlineFormat(sectionTitle)} />
-			</h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{showHeading && (
+				<h2 id="popular-title" class={headingCls}>
+					<Fragment set:html={inlineFormat(sectionTitle)} />
+				</h2>
+			)}
+			{showSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 		)}
 
@@ -520,7 +531,6 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		for (const grid of grids) {
 			const limitRaw = Number(grid.getAttribute("data-cards"));
 			const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 6;
-			const wantNextPhoto = grid.hasAttribute("data-next-photo");
 			const wantQuickAdd = grid.hasAttribute("data-quick-add");
 			const qaCls = grid.getAttribute("data-qa-cls") || "";
 			const collectionRef = grid.getAttribute("data-collection");
@@ -533,7 +543,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			grid.innerHTML = items
 				.map((prod) => {
 					const img2 =
-						wantNextPhoto && Array.isArray(prod.images) && prod.images[1]
+						Array.isArray(prod.images) && prod.images[1]
 							? ` data-image-2="${escapeHtml(prod.images[1])}"`
 							: "";
 					// Решение владельца: карточная «В корзину» для товара с вариантами

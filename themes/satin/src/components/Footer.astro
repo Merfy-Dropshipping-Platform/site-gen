@@ -5,6 +5,7 @@ import NtIcon from "@merfy-dropshipping-platform/design-systems-theme/components
 // MAX (просьба владельца 14.09) лежит только в themes/satin/public/icons.
 import SatinNtIcon from "./icons/SatinNtIcon.astro";
 import { withBase } from "../lib/with-base";
+import { footerOwnLogo } from "../../../../packages/theme-base/runtime/footer-logo";
 
 const today = new Date();
 const leftCol = [
@@ -34,17 +35,16 @@ const payments = [
 // var(--satin-surface) #F5F5F5, F:44).
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): подвал
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): подвал
 // Satin-theme @cb548963 — верхний ряд десктопа (при выравнивании по умолчанию,
 // «слева») держит только justify-between, без общего gap-10 (см.
 // topRowJustifyCls/topRowGapCls); подпись платформы в чёрной полосе — md:16px
-// (у нас md:14px — решение тестера 15.09, чтобы подпись не была крупнее
-// копирайта рядом; под признаком уступает вёрстке верстальщиков). Остальная
+// (было md:14px — решение тестера 15.09, чтобы подпись не была крупнее
+// копирайта рядом; уступило вёрстке верстальщиков). Остальная
 // геометрия (мобильная раскладка, отступы контейнеров, зазоры колонок) уже
 // совпадает byte-в-byte и не трогается. Настройки (contentAlign, padding,
-// newsletter, bottomStrip) и цвета не меняются; без признака — прежние
-// классы. Признак ставит sites.
-const designParity = p.__designParity === true;
+// newsletter, bottomStrip) и цвета не меняются. Владелец 25.09: одна версия
+// секции — вид верстальщиков стал единственным (прежняя ветка удалена).
 // Пустая строка (canon default Puck / коэрсер) не должна ронять «Satin».
 // Запасное имя магазина — нейтральное, НЕ название темы. Владелец 18.09: «в
 // подвал должна идти лого из настроек темы, если загружена, или, если нет, то
@@ -55,6 +55,11 @@ const designParity = p.__designParity === true;
 // сборка (build.service) и миграция ревизии; сюда управление доходит, только
 // если магазин безымянный.
 const siteTitle = typeof p.siteTitle === "string" && p.siteTitle.trim() ? p.siteTitle : "Мой магазин";
+// «Логотип» подвала — своя картинка из панели секции (владелец 26.09).
+// Пусто — подвал как был. Правило: packages/theme-base/runtime/footer-logo.ts.
+// Высота — настройка «Размер» логотипа, тем же классом, что у картинки в шапке.
+const ownLogo = footerOwnLogo(p);
+const OWN_LOGO_CLS = "block h-[var(--size-logo-width,22px)] w-auto max-w-[160px] object-contain";
 const phone = typeof p.phone === "string" && p.phone.trim() ? p.phone.trim() : "";
 const rawEmail = p.socialColumn?.email ?? p.email ?? "";
 const email = typeof rawEmail === "string" ? rawEmail.trim() : "";
@@ -116,12 +121,12 @@ const _ca = ["left", "center", "right"].includes(p.contentAlign) ? p.contentAlig
 // center = группа по центру; right = к правому краю.
 const topRowJustifyCls =
 	_ca === "center" ? "md:justify-center md:gap-24" : _ca === "right" ? "md:justify-end" : "md:justify-between";
-// PARITY_DESIGN: у верстальщика этот ряд держит только justify-between, без
+// У верстальщика этот ряд держит только justify-between, без
 // gap-10 (при 2 детях и justify-between зазор и так растягивается до края;
 // gap-10 — наш лишний токен). Трогаем ТОЛЬКО ветку по умолчанию («слева») —
 // у center/right свой явный зазор (md:gap-24 / унаследованный gap-10), их не
 // касаемся.
-const topRowGapCls = designParity && _ca === "left" ? "" : "gap-10";
+const topRowGapCls = _ca === "left" ? "" : "gap-10";
 // Правая колонка (рассылка+контакты): left = прижата вправо (items-end, текущее);
 // center = по центру; right = вправо.
 const rightColAlignCls =
@@ -236,10 +241,9 @@ const stripText =
 		// перебивает дефолт полосы; ссылку с него тема снимает (stripIsDefault).
 		: poweredByTail || "Разработано на Merfy";
 const stripIsDefault = stripText === "Разработано на Merfy";
-// PARITY_DESIGN: у верстальщика подпись платформы md:16px; у нас md:14px —
-// решение тестера 15.09 (см. комментарий у <p> ниже). Под признаком уступает
-// вёрстке верстальщиков, без признака — прежний размер.
-const stripTextSizeCls = designParity ? "md:text-[16px]" : "md:text-[14px]";
+// Подпись платформы md:16px, как у верстальщиков (владелец 25.09: «размеры
+// задаём мы, меняется только если капс»).
+const stripTextSizeCls = "md:text-[16px]";
 // Копирайт рисуем, только если мерчант его сам задал (пустая строка —
 // дефолт после 20.09), иначе в подвале оставался бы пустой абзац.
 const showCopyright = copyrightText.trim().length > 0;
@@ -283,7 +287,7 @@ const linkClassSm =
 				<div class={["flex items-start", topRowGapCls, topRowJustifyCls].filter(Boolean).join(" ")}>
 					<!-- Left: logo + navigation (40px gap between logo and menu) -->
 					<div class="flex flex-col gap-10">
-						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
+						<a href="/" class="font-logo text-xl font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{ownLogo ? <img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" /> : siteTitle}</a>
 						<div class="flex gap-16">
 							<ul
 								class="flex flex-col gap-2.5"
@@ -413,7 +417,7 @@ const linkClassSm =
 	<div class={mobileWrapCls} style={footerPadStyle}>
 		<!-- Logo + socials -->
 		<div class="flex items-center justify-between">
-			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{siteTitle}</a>
+			<a href="/" class="font-logo text-lg font-normal uppercase leading-none text-[rgb(var(--color-heading,0_0_0))] transition-opacity hover:opacity-80">{ownLogo ? <img src={ownLogo} alt={siteTitle} class={OWN_LOGO_CLS} decoding="async" /> : siteTitle}</a>
 			{socials.length > 0 && (
 				<div class="flex items-center gap-2">
 					{socials.map((s) => (

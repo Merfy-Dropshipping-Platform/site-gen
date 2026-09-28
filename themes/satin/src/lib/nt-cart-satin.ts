@@ -150,10 +150,18 @@ export const createNtCart = (opts: NtCartCreateOptions) => {
 
 		const renderDrawer = () => {
 			const lines = getCart();
-			const empty = document.querySelector<HTMLElement>("[data-cart-empty]");
-			const items = document.querySelector<HTMLElement>("[data-cart-items]");
-			const summary = document.querySelector<HTMLElement>("[data-cart-summary]");
-			const total = document.querySelector<HTMLElement>("[data-cart-total]");
+			// Узлы ШТОРКИ, а не одноимённые узлы секций страницы корзины: «Промежуточный
+			// итог» и др. несут те же data-cart-* атрибуты и стоят в DOM раньше шторки,
+			// поэтому первый querySelector по странице находил секцию, и при пустой
+			// корзине шторка прятала её (тестер 24.09: схема «Промежуточного итога»
+			// «не применяется» — секция невидима в конструкторе). Секции страницы
+			// всегда внутри [data-puck-component-id], шторка — вне их.
+			const drawerNode = (sel: string) =>
+				Array.from(document.querySelectorAll<HTMLElement>(sel)).find((el) => !el.closest("[data-puck-component-id]")) ?? null;
+			const empty = drawerNode("[data-cart-empty]");
+			const items = drawerNode("[data-cart-items]");
+			const summary = drawerNode("[data-cart-summary]");
+			const total = drawerNode("[data-cart-total]");
 			if (!empty || !items || !summary || !total) return;
 
 			if (lines.length === 0) {

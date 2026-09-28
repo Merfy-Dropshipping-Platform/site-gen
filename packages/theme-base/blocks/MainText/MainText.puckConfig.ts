@@ -53,6 +53,13 @@ export const MainTextSchema = z.object({
    */
   textStyle: z.enum(['normal', 'italic']).optional(),
   colorScheme: z.string().optional(),
+  /**
+   * Порядок параметров из перетаскивания в дереве конструктора (владелец
+   * 25.09: «не работает drag and drop в параметрах»). Имена — реестр
+   * SECTION_FIELDS (packages/theme-base/runtime/field-order.ts); порт темы рисует
+   * параметры в этом порядке.
+   */
+  fieldOrder: z.array(z.string()).optional(),
   padding: z.object({
     top: z.number().int().min(0).max(160),
     bottom: z.number().int().min(0).max(160),
@@ -133,13 +140,20 @@ export const MainTextPuckConfig: BlockPuckConfig<MainTextProps> = {
     cta: { type: 'hidden', label: '' },
     buttonStyle: { type: 'hidden', label: '' },
     textStyle: { type: 'hidden', label: '' },
+    // Скрытое поле включает ручки перетаскивания параметров в дереве
+    // конструктора (без него ручек нет). Значение пишет конструктор —
+    // `defaults` не задаём: без пропа порт рисует прежний порядок темы.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     heading: 'Расскажи о своем бренде',
     text: 'Расскажи подробнее о своем онлайн-магазине в этом блоке',
     position: 'center',
     headingSize: 'medium',
-    textSize: 'medium',
+    // Скрытый top-level `textSize` здесь НЕ задаём (владелец 25.09): первая же
+    // правка секции вписывала его, и у bloom «не задано» (вид верстальщиков
+    // 20/24) сменялось «Средним» (20 плотно). Видимый размер живёт в
+    // «Текст → Размер» (`text.size`), порты читают его первым (§11 контракта).
     // 80/80 снят: инлайн-стиль отступа ПЕРЕБИВАЕТ классную лесенку порта
     // (замер рендером: с пропом `style="padding-top:80px"`, без пропа —
     // стиля нет и работают классы темы: rose 56→140px, vanilla 80→112,

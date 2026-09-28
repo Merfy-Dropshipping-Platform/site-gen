@@ -1,6 +1,7 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
 import { schemeIdOf } from "../../lib/color-scheme";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (bloom, группа misc): новая канон-секция CollapsibleSection в манере
 // bloom (см. themes/bloom/MANNER.md; процесс-эталон — rose T16). Схема полей =
 // packages/theme-base/blocks/CollapsibleSection/CollapsibleSection.puckConfig.ts.
@@ -28,14 +29,12 @@ const selfSchemeClass = _schemeId ? ` color-scheme-${_schemeId}` : "";
 
 // Канон heading: string | { text, alignment, size }. Figma 1:19335 — ПУСТОЕ
 // состояние секции «Сворачиваемый раздел»: дословный заголовок-плейсхолдер
-// «Сворачиваемый раздел» (а НЕ дефолт-копирайт верстальщика «Часто задаваемые
-// вопросы»). Роль = заголовок секции (Collections.astro:18), цвет — токен с
-// пиксель-фоллбеком акцента #E38E9F. Мерчант задал свой heading → его и рендерим.
-// Пустая строка = «мерчант не задал» (так же трактует платформа,
-// render/empty-state.ts) → показываем заглушку, а не пустой заголовок.
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() ||
-	"Сворачиваемый раздел";
+// «Сворачиваемый раздел» — ТОЛЬКО когда поля вовсе нет (undefined, старые
+// ревизии). Роль = заголовок секции (Collections.astro:18), цвет — токен с
+// пиксель-фоллбеком акцента #E38E9F. Панельное поле пришло строкой (в т.ч.
+// пустой "" — мерчант стёр вручную) → рендерим как есть, `heading &&` ниже
+// скрывает пустой заголовок целиком.
+const heading = pickText(p.heading, "Сворачиваемый раздел");
 // Лестница §9 (база-литерал 18/md:20 = canon-default medium): small 15/17, large 22/24.
 // Панель пишет размер в top-level `headingSize` (select), поле `heading` = aiText-строка.
 // Читаем top-level ПЕРВЫМ: в старых ревизиях мог остаться legacy-объект heading.size,
@@ -75,10 +74,30 @@ const realSections =
 const hasRealSections = realSections !== null;
 const isPlaceholder = !hasRealSections;
 const rawSections = hasRealSections ? realSections : PLACEHOLDER_SECTIONS;
+// «Раздел» ▸ «Размер заголовка» / «Размер текста» (тестер 24.09) — свои у
+// каждого пункта. medium и отсутствие значения = прежний вид темы байт-в-байт;
+// small ≈0.85×, large ≈1.2× (шаг лестниц рядов MultiRows). Ряд-плейсхолдер
+// пустого состояния размеров не несёт и остаётся на medium.
+const ITEM_HEADING_SIZE: Record<string, string> = {
+	small: "text-[14px]",
+	medium: "text-[16px]",
+	large: "text-[19px]",
+};
+const ITEM_TEXT_SIZE: Record<string, string> = {
+	small: "text-[14px]",
+	medium: "text-[16px]",
+	large: "text-[19px]",
+};
+const sizeOf = <T,>(map: Record<string, T>, v: unknown): T =>
+	map[typeof v === "string" && Object.hasOwn(map, v) ? v : "medium"];
 const sections = rawSections.slice(0, 10).map((s: any) => ({
-	heading:
-		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
+	// Панельное поле (heading) пришло строкой (в т.ч. пустой "" — мерчант стёр
+	// вручную) → рендерим как есть; на legacy `title` падаем ТОЛЬКО когда
+	// панельного поля вовсе нет.
+	heading: pickText(s.heading, pickText(s.title, "")),
 	content: typeof s.content === "string" ? s.content : "",
+	headingCls: sizeOf(ITEM_HEADING_SIZE, s.headingSize),
+	textCls: sizeOf(ITEM_TEXT_SIZE, s.textSize),
 }));
 
 // Канон containerEnabled (toggle; legacy container.enabled). ИСПРАВЛЕНИЕ канона
@@ -157,7 +176,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								   реального ответа нет, помощь видна сразу (паттерн пустого
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]">
+									<div class={`flex w-full items-center justify-between gap-4 font-inter ${s.headingCls} font-normal leading-normal text-[rgb(var(--color-text,0_0_0))]`}>
 										<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 										<img
 											src="/icons/dropdown-chevron.svg"
@@ -168,12 +187,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 											class="shrink-0 rotate-180"
 										/>
 									</div>
-									<p class="font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]" set:html={inlineFormat(s.content)} />
+									<p class={`font-inter ${s.textCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`} set:html={inlineFormat(s.content)} />
 								</div>
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-inter text-[16px] font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">
+										<div class={`flex w-full items-center justify-between gap-4 font-inter ${s.headingCls} font-normal leading-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70`}>
 											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<img
 												src="/icons/dropdown-chevron.svg"
@@ -186,7 +205,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										</div>
 									</summary>
 									<div
-										class="pb-5 font-inter text-[16px] font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]"
+										class={`pb-5 font-inter ${s.textCls} font-light leading-normal text-[rgb(var(--color-muted,153_153_153))]`}
 										set:html={inlineFormat(s.content)}
 									/>
 								</details>

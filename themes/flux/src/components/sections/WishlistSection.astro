@@ -24,7 +24,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое
 // (тот же приём, что cart.astro). apiBase — gateway (CORS пропускает *.merfy.ru).
 const shopId = "";
-const apiBase = "https://gateway.merfy.ru";
+const apiBase = (import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api").replace(/\/api$/, "");
 // Проп «Отступы» из конструктора (px). Не задан — дефолтные адаптивные классы.
 const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`

@@ -4,7 +4,9 @@
 // orders релеит ответ as-is):
 //   POST /api/store/carts/<cartId>/delivery/calculate?store_id=<shopId>
 //   body: { cityFiasId, postalCode? }
-//   → { deliveryOptions[], pickupPoints[] }
+//   → { deliveryOptions[], pickupPoints[], unavailableProducts? }
+//   unavailableProducts — товары вне профиля доставки магазина: блок сразу
+//   называет их покупателю (без повторов запроса).
 // Слушает событие `checkout:address-changed` из CheckoutDeliveryForm.
 import type { CheckoutDeliveryMethodProps } from './CheckoutDeliveryMethod.puckConfig';
 import { CheckoutDeliveryMethodClasses as C } from './CheckoutDeliveryMethod.classes';
@@ -186,6 +188,44 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
         return window.cartStore.getTotal();
       }
       return 0;
+    }
+
+    // Товары, которые магазин не доставляет: логистика отдаёт их в
+    // `unavailableProducts` (товара нет в профиле доставки магазина). Такой ответ
+    // окончательный — повтор запроса его не изменит. Имена берём из корзины на
+    // странице: серверная (cartStore) или локальная корзина темы.
+    var CART_KEYS = ['flux', 'rose', 'vanilla', 'bloom', 'satin'];
+    function undeliverableIds(data) {
+      var list = (data && Array.isArray(data.unavailableProducts)) ? data.unavailableProducts : [];
+      return list.map(function (u) { return u && u.productId; }).filter(Boolean);
+    }
+    function cartLines() {
+      var items = (window.cartStore && typeof window.cartStore.getItems === 'function') ? window.cartStore.getItems() : [];
+      if (items && items.length) return items;
+      for (var i = 0; i < CART_KEYS.length; i++) {
+        try {
+          var lines = JSON.parse(localStorage.getItem(CART_KEYS[i] + ':cart:v1') || '[]');
+          if (Array.isArray(lines) && lines.length) return lines;
+        } catch (e) {}
+      }
+      return [];
+    }
+    function productName(productId, lines) {
+      var line = lines.find(function (l) { return l && l.productId === productId; });
+      return (line && (line.name || line.productName)) || '';
+    }
+    function undeliverableMessage(ids) {
+      var lines = cartLines();
+      var names = ids.map(function (id) { return productName(id, lines); });
+      var quoted = names.filter(Boolean).map(function (n) { return '«' + n + '»'; });
+      if (quoted.length !== names.length) {
+        return names.length > 1
+          ? 'Некоторые товары в корзине пока нельзя доставить. Уберите их, чтобы оформить заказ.'
+          : 'Один из товаров в корзине пока нельзя доставить. Уберите его, чтобы оформить заказ.';
+      }
+      return quoted.length > 1
+        ? 'Эти товары пока нельзя доставить: ' + quoted.join(', ') + '. Уберите их из корзины, чтобы оформить заказ.'
+        : quoted[0] + ' пока нельзя доставить. Уберите его из корзины, чтобы оформить заказ.';
     }
 
     function showEmpty(reason) {
@@ -561,6 +601,11 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
     function render(data, addressKnown) {
       var options = buildOptions(data, addressKnown);
       if (options.length === 0) {
+        var undeliverable = undeliverableIds(data);
+        if (undeliverable.length) {
+          showError(undeliverableMessage(undeliverable));
+          return;
+        }
         if (!addressKnown) {
           // Без адреса показывать нечего (у магазина нет OWN-тарифов) — оставшиеся
           // методы адрес-зависимы и появятся после ввода адреса. Block-level empty.
@@ -798,7 +843,9 @@ const paddingStyle = padding ? `padding-top:${padding.top}px; padding-bottom:${p
             }
             // Если что-то пришло — отрисуем; иначе — следующая попытка.
             // Без адреса достаточно дождаться OWN (deliveryOptions).
-            if (options > 0 || points > 0) {
+            // Недоставляемые товары — ответ окончательный: повтор его не
+            // изменит, а покупатель ждал бы 17 секунд «Считаем варианты…».
+            if (options > 0 || points > 0 || undeliverableIds(data).length > 0) {
               render(data, addressKnown);
               return;
             }

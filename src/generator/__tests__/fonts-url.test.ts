@@ -42,4 +42,10 @@ describe('google fonts url', () => {
     expect(googleFontsHref([])).toBe('');
     expect(googleFontsHref(['', '  '])).toBe('');
   });
+
+  it('Roboto Flex — с осью opsz, как у верстальщиков flux (иначе буквы шире)', () => {
+    const url = googleFontsHref(['Roboto Flex']);
+    expect(url).toMatch(/family=Roboto\+Flex:opsz,wght@8\.\.144,\d+(;8\.\.144,\d+)*&/);
+    expect(url).not.toContain('Roboto+Flex:wght@');
+  });
 });

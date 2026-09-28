@@ -59,10 +59,28 @@ const rawSections = hasManualSections
 		? p.sections
 		: p.items
 	: PLACEHOLDER_SECTIONS;
+// «Раздел» ▸ «Размер заголовка» / «Размер текста» (тестер 24.09) — свои у
+// каждого пункта. medium и отсутствие значения = прежний вид темы байт-в-байт;
+// small ≈0.85×, large ≈1.2× (шаг лестниц рядов MultiRows). Ряд-плейсхолдер
+// пустого состояния размеров не несёт и остаётся на medium.
+const ITEM_HEADING_SIZE: Record<string, string> = {
+	small: "text-[14px]",
+	medium: "text-base",
+	large: "text-[19px]",
+};
+const ITEM_TEXT_SIZE: Record<string, { base: string; lg: string }> = {
+	small: { base: "text-[12px]", lg: "lg:text-[14px]" },
+	medium: { base: "text-[14px]", lg: "lg:text-base" },
+	large: { base: "text-[17px]", lg: "lg:text-[19px]" },
+};
+const sizeOf = <T,>(map: Record<string, T>, v: unknown): T =>
+	map[typeof v === "string" && Object.hasOwn(map, v) ? v : "medium"];
 const sections = rawSections.slice(0, 10).map((s: any) => ({
 	heading:
 		(typeof s.heading === "string" && s.heading) || (typeof s.title === "string" && s.title) || "",
 	content: typeof s.content === "string" ? s.content : "",
+	headingCls: sizeOf(ITEM_HEADING_SIZE, s.headingSize),
+	textCls: sizeOf(ITEM_TEXT_SIZE, s.textSize),
 }));
 
 // Канон containerEnabled (toggle; legacy container.enabled) — подложка манеры §4
@@ -146,7 +164,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								   реального ответа нет, помощь видна сразу (паттерн пустого
 								   состояния Collections/MultiRows). Шеврон сохранён для вида. */
 								<div class="flex w-full flex-col gap-2 py-5">
-									<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal leading-snug text-[rgb(var(--color-text,10_10_10))]">
+									<div class={`flex w-full items-center justify-between gap-4 font-vanilla-arsenal ${s.headingCls} font-normal leading-snug text-[rgb(var(--color-text,10_10_10))]`}>
 										<span class="min-w-0 flex-1 break-words">{s.heading}</span>
 										<svg
 											aria-hidden="true"
@@ -157,14 +175,14 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 											<path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" />
 										</svg>
 									</div>
-									<p class="font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base">
+									<p class={`font-vanilla-arsenal ${s.textCls.base} font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] ${s.textCls.lg}`}>
 										{s.content}
 									</p>
 								</div>
 							) : (
 								<details class="group">
 									<summary class="cursor-pointer list-none py-5 [&::-webkit-details-marker]:hidden">
-										<div class="flex w-full items-center justify-between gap-4 font-vanilla-arsenal text-base font-normal leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70">
+										<div class={`flex w-full items-center justify-between gap-4 font-vanilla-arsenal ${s.headingCls} font-normal leading-snug text-[rgb(var(--color-text,10_10_10))] transition-opacity hover:opacity-70`}>
 											<span class="min-w-0 flex-1 break-words" set:html={inlineFormat(s.heading)} />
 											<svg
 												aria-hidden="true"
@@ -177,7 +195,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 										</div>
 									</summary>
 									<div
-										class="pb-5 font-vanilla-arsenal text-[14px] font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] lg:text-base"
+										class={`pb-5 font-vanilla-arsenal ${s.textCls.base} font-normal leading-[1.45] text-[rgb(var(--color-muted,68_68_68))] ${s.textCls.lg}`}
 										set:html={inlineFormat(s.content)}
 									/>
 								</details>

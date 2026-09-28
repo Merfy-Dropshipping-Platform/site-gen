@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // ОЖИВЛЕНИЕ (контракт rose Gallery / flux Popular,Collections): полная
 // конструкторная схема theme-base Gallery.puckConfig поверх ВЁРСТКИ
 // ВЕРСТАЛЬЩИКОВ (репо flux-theme Gallery.astro: крупная плитка слева
@@ -26,15 +27,11 @@ const p = Astro.props as Record<string, any>;
 const id = p.id;
 // Пустое состояние (Figma 1:19335, контракт Gallery) — ДОСЛОВНЫЙ плейсхолдер:
 // заголовок «Галерея», БЕЗ подзаголовка (в контракте Gallery подзаголовка нет →
-// дефолт пуст). Заданный мерчантом heading/text/subtitle рендерится как есть
-// (?? fallback срабатывает только при пустых данных); пустой subtitle →
-// блок <p> не выводится.
-const sectionTitle =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title ?? "Галерея";
-const sectionSubtitle =
-	(typeof p.text === "string" ? p.text : p.text?.content) ??
-	(typeof p.subtitle === "string" ? p.subtitle : undefined) ??
-	"";
+// дефолт пуст). Стёртое мерчантом поле (в т.ч. "") рендерим как есть — заглушка
+// только когда поле не задано вовсе (`pickText`, packages/theme-base/runtime/
+// merchant-text); пустой subtitle → блок <p> не выводится.
+const sectionTitle = pickText(p.heading, pickText(p.title, "Галерея"));
+const sectionSubtitle = textOf(p.text) ?? textOf(p.subtitle) ?? "";
 
 // Шапка секции = простой <h2> font-roboto-flex uppercase (манера flux,
 // как Popular/Collections), ЦЕНТРИРОВАНА (эталон rose Gallery + текущий flux).
@@ -183,18 +180,34 @@ const heroSizeCls = soloTile ? "lg:aspect-[16/9]" : "lg:aspect-auto lg:h-full";
 // Task 8 note в шапке файла): плитка 1 (карточка товара, FluxProductCard media
 // — aspect-square) — aspect-square (scale-105 300ms), плитка 2 (карточка
 // коллекции) — aspect-[429/269] (scale-[1.03] 500ms ease-out).
-const SIDE_ASPECTS = ["aspect-square", "aspect-[429/269]"];
+// Боковые плитки по актуальной вёрстке flux-theme@be32556d
+// (sections/Gallery.astro + components/ProductCard.astro; владелец 23-24.09:
+// «как у верстальщиков, только стили»):
+//   • товар — карточка с полями p-3 и скруглением 12 (фото 402 при колонке
+//     426, как в сетке «Популярных»), подпись и цена 14 → md:16;
+//   • вторая плитка (коллекция) до lg тянется на высоту ряда (flex-1), с lg —
+//     пропорция 429/269;
+//   • ссылки плиток занимают всю ячейку (h-full).
+const GALLERY_TILES = {
+	aspects: ["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-[429/269]"],
+	tile: {
+		product: "group flex h-full min-w-0 flex-col gap-4 rounded-[12px] p-3",
+		collection: "group flex h-full min-w-0 flex-col gap-4",
+		image: "group flex h-full min-w-0 flex-col gap-4",
+	},
+};
+const sideAspects = GALLERY_TILES.aspects;
 const SIDE_HOVERS = [
 	"transition-transform duration-300 group-hover:scale-105",
 	"transition-transform duration-500 ease-out group-hover:scale-[1.03]",
 ];
-// Подписи карточек = эталон верстальщика: товар text-[18px] md:text-[20px],
+// Подписи карточек = эталон верстальщика: товар text-[14px] md:text-[16px],
 // коллекция text-[16px], ВСЁ font-roboto-flex font-light. Хук-классы гидрации
 // (gallery-product-title / -price, gallery-collection-title) сохранены.
 const productTitleCls =
-	"gallery-product-title font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]";
+	"gallery-product-title font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]";
 const productPriceCls =
-	"gallery-product-price font-roboto-flex text-[18px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[20px]";
+	"gallery-product-price font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))] md:text-[16px]";
 const collectionTitleCls =
 	"gallery-collection-title font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]";
 
@@ -206,24 +219,14 @@ const collectionTitleCls =
 const paddingStyle = p.padding
 	? `padding-top:${p.padding.top}px;padding-bottom:${p.padding.bottom}px;`
 	: undefined;
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Вертикаль py-10 md:py-16 не трогаем. Без признака —
-// байт в байт прежняя строка. Признак ставит sites (page-blocks designParityFlag).
-const designParity = p.__designParity === true;
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem. Вертикаль py-10 md:py-16 не трогаем.
 const CONTAINER_CLS = {
-	designers: {
-		custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
-		default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
-	},
-	legacy: {
-		custom: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 md:px-20 2xl:px-80",
-		default: "mx-auto flex w-full max-w-[1920px] flex-col gap-8 px-4 py-10 md:px-20 md:py-16 2xl:px-80",
-	},
+	custom: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 md:px-10 lg:px-20",
+	default: "mx-auto flex w-full max-w-[1480px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16 lg:px-20",
 };
-const containerCls =
-	CONTAINER_CLS[designParity ? "designers" : "legacy"][paddingStyle ? "custom" : "default"];
+const containerCls = CONTAINER_CLS[paddingStyle ? "custom" : "default"];
 // Скрытый «глазом» именованный параметр не рендерится вовсе — ни своим
 // значением, ни дефолтом-плейсхолдером. Список скрытых полей кладёт
 // конструктор (props.hiddenFields), общий для всех тем.
@@ -233,17 +236,20 @@ const hiddenFields: string[] = Array.isArray((Astro.props as any).hiddenFields)
 		)
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Стёртые heading+subtitle (§2 контракта секции) → шапка не рисуется вовсе,
+// иначе её gap-2 остаётся пустым отступом над плитками.
+const showHeader = !isFieldHidden('heading') && (hasText(sectionTitle) || hasText(sectionSubtitle));
 
 ---
 
 <section
 	id="gallery"
 	class="w-full bg-[rgb(var(--color-bg,255_255_255))]"
-	aria-labelledby="gallery-title"
+	aria-labelledby={hasText(sectionTitle) && !isFieldHidden('heading') ? "gallery-title" : undefined}
 	data-puck-component-id={id}
 >
 	<div class={containerCls} style={paddingStyle}>
-		{!isFieldHidden('heading') && (
+		{showHeader && (
 		<div
 			class={headWrapCls}
 			data-puck-subsection-parent={id}
@@ -251,8 +257,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			data-puck-subsection-field="heading"
 			data-reveal
 		>
-			<h2 id="gallery-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>
-			{sectionSubtitle && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
+			{hasText(sectionTitle) && <h2 id="gallery-title" class={headingCls}><Fragment set:html={inlineFormat(sectionTitle)} /></h2>}
+			{hasText(sectionSubtitle) && <p class={subtitleCls}><Fragment set:html={inlineFormat(sectionSubtitle)} /></p>}
 		</div>
 		)}
 
@@ -284,7 +290,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{sideTiles.map((tile, i) => (
 						<a
 							href={tile.href}
-							class="group flex min-w-0 flex-col gap-4"
+							class={GALLERY_TILES.tile[tile.kind]}
 							aria-label={tile.label || tile.alt || "Изображение"}
 							data-gallery-product={tile.kind === "product" ? (tile.ref ?? undefined) : undefined}
 							data-gallery-collection={tile.kind === "collection" ? (tile.ref ?? undefined) : undefined}
@@ -293,7 +299,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							data-puck-subsection-field="items"
 						>
 							<div
-								class={`relative ${SIDE_ASPECTS[i] ?? SIDE_ASPECTS[0]} w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`}
+								class={`relative ${sideAspects[i] ?? sideAspects[0]} w-full min-h-0 overflow-hidden rounded-[12px] bg-[rgb(var(--color-surface,245_245_245))]`}
 							>
 								{tile.url && (
 									<img

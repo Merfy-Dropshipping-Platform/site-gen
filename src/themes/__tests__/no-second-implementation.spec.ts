@@ -278,3 +278,77 @@ describe("скрипт шторки фильтров в портах не рас
     }
   });
 });
+
+/**
+ * Чипы выбранных фильтров над товарами — один код на пять тем (владелец:
+ * «сделай для каждой темы»). Порт не может импортировать общий модуль (см.
+ * выше), поэтому подписи, разметка и нажатия чипов лежат отдельным
+ * `<script is:inline>` в каталоге каждой темы, и здесь сторожится, что текст
+ * ОДИН: поправили подпись или нажатие в одной теме — правим во всех.
+ */
+describe("чипы фильтров в портах не расходятся", () => {
+  const ПОРТЫ = ["rose", "vanilla", "satin", "bloom", "flux"].map(
+    (t) => `packages/theme-${t}/blocks/Catalog/Catalog.astro`,
+  );
+
+  const тело = (rel: string): string => {
+    const src = readFileSync(resolve(SITES_ROOT, rel), "utf-8");
+    const i = src.indexOf("window.__merfyFilterChips = (function");
+    expect({ порт: rel, найдено: i > -1 }).toEqual({ порт: rel, найдено: true });
+    return src
+      .slice(i, src.indexOf("</script>", i))
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  it("у всех пяти портов один и тот же текст", () => {
+    const эталон = тело(ПОРТЫ[0]);
+    for (const порт of ПОРТЫ.slice(1)) {
+      expect({ порт, совпадает: тело(порт) === эталон }).toEqual({ порт, совпадает: true });
+    }
+  });
+
+  it("каждый порт рисует чипы и держит для них место над сеткой в обеих раскладках", () => {
+    for (const порт of ПОРТЫ) {
+      const src = код(порт);
+      expect({
+        порт,
+        рисует: src.includes("window.__merfyFilterChips.render("),
+        мест: (src.match(/<div data-nt="catalog-chips"/g) ?? []).length,
+      }).toEqual({ порт, рисует: true, мест: 2 });
+    }
+  });
+});
+
+/**
+ * Фильтры по остальным параметрам товара (Размер, Формат, Оттенок…) — один
+ * блок у rose, satin, bloom и flux: копия «Цвета» под каждую группу из
+ * /api/store/filters. У vanilla своя обвязка выбора (CHOICE), её блок —
+ * отдельный. Разойдётся текст у четырёх — проверка красная.
+ */
+describe("фильтры параметров товара в портах rose-семейства не расходятся", () => {
+  const ПОРТЫ = ["rose", "satin", "bloom", "flux"].map((t) => `packages/theme-${t}/blocks/Catalog/Catalog.astro`);
+  const НАЧАЛО = "// ─────────── Остальные параметры товара (Размер, Формат, Оттенок…) ───────────";
+  const КОНЕЦ = "// ─────────── Цвет (data-driven; нет данных → секция скрыта) ───────────";
+
+  const блок = (rel: string): string => {
+    const src = readFileSync(resolve(SITES_ROOT, rel), "utf-8");
+    const i = src.indexOf(НАЧАЛО);
+    const j = src.indexOf(КОНЕЦ, i);
+    expect({ порт: rel, найдено: i > -1 && j > i }).toEqual({ порт: rel, найдено: true });
+    return src.slice(i, j).replace(/\s+/g, " ").trim();
+  };
+
+  it("у четырёх портов один и тот же текст", () => {
+    const эталон = блок(ПОРТЫ[0]);
+    for (const порт of ПОРТЫ.slice(1)) {
+      expect({ порт, совпадает: блок(порт) === эталон }).toEqual({ порт, совпадает: true });
+    }
+  });
+
+  it("каждый порт строит фильтры параметров при гидрации", () => {
+    for (const порт of ПОРТЫ) {
+      expect({ порт, зовёт: код(порт).includes("bindVariants();") }).toEqual({ порт, зовёт: true });
+    }
+  });
+});

@@ -596,7 +596,7 @@ test('Hero (src/components/sections/Hero.astro): heading/text принимают
   await t.test('heading: typeof p.heading === "string" учитывается ДО/наравне с p.heading?.text', () => {
     assert.match(
       content,
-      /typeof\s+p\.heading\s*===\s*["']string["']/,
+      /typeof\s+p\.heading\s*===\s*["']string["']|(?:textOf|pickText)\(\s*p\.heading\b/,
       'ожидалась проверка typeof p.heading === "string" (плоская строка heading не должна ' +
         'молча теряться и не должна ошибочно детектироваться как isEmpty)',
     );
@@ -605,7 +605,7 @@ test('Hero (src/components/sections/Hero.astro): heading/text принимают
   await t.test('text: typeof p.text === "string" учитывается ДО/наравне с p.text?.content', () => {
     assert.match(
       content,
-      /typeof\s+p\.text\s*===\s*["']string["']/,
+      /typeof\s+p\.text\s*===\s*["']string["']|(?:textOf|pickText)\(\s*p\.text\b/,
       'ожидалась проверка typeof p.text === "string" (плоская строка text/subtitle не должна ' +
         'молча теряться и не должна ошибочно детектироваться как isEmpty)',
     );
@@ -803,7 +803,7 @@ test('Gallery (src/components/sections/Gallery.astro): heading/text, 3 items, pr
   await t.test('heading: принимает и канон-объект (p.heading?.text), и плоскую строку (typeof p.heading === "string")', () => {
     assert.match(
       content,
-      /typeof\s+p\.heading\s*===\s*["']string["']/,
+      /typeof\s+p\.heading\s*===\s*["']string["']|(?:textOf|pickText)\(\s*p\.heading\b/,
       'ожидалась проверка typeof p.heading === "string" (паритет с Hero/Collections/Popular — плоская строка heading не теряется молча)',
     );
   });
@@ -811,7 +811,7 @@ test('Gallery (src/components/sections/Gallery.astro): heading/text, 3 items, pr
   await t.test('text: принимает и канон-объект (p.text?.content), и плоскую строку (typeof p.text === "string")', () => {
     assert.match(
       content,
-      /typeof\s+p\.text\s*===\s*["']string["']/,
+      /typeof\s+p\.text\s*===\s*["']string["']|(?:textOf|pickText)\(\s*p\.text\b/,
       'ожидалась проверка typeof p.text === "string" — text ("Текст"/aiText поле GallerySchema) не покрыт generic BLOCKS-матрицей отдельно от heading',
     );
   });
@@ -976,10 +976,13 @@ test('Gallery (src/components/sections/Gallery.astro): upstream tile geometry (a
   });
 
   await t.test('side tile 0 (позиция "товар"): aspect-square + hover scale-105 duration-300 (паритет FluxProductCard media)', () => {
+    // Одна версия секции (владелец 25.09): аспекты боковых плиток — вёрстки
+    // flux-theme@be32556d; вторая плитка до lg тянется на высоту ряда, с lg —
+    // пропорция 429/269.
     assert.match(
       content,
-      /const SIDE_ASPECTS = \["aspect-square", "aspect-\[429\/269\]"\];/,
-      'ожидался SIDE_ASPECTS = ["aspect-square", "aspect-[429/269]"]',
+      /aspects: \["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-\[429\/269\]"\],/,
+      'ожидались аспекты ["aspect-square", "min-h-0 flex-1 lg:flex-none lg:aspect-[429/269]"]',
     );
     assert.match(
       content,

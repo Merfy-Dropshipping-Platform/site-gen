@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { textOf, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // НОВАЯ канон-секция Gallery (Фаза B, рецепт bloom Gallery): у верстальщика
 // satin секции «Галерея» НЕТ; components/gallery/* — legacy клона rose со
 // скруглениями rounded-[8px]/gray-100, его НЕ переиспользуем (MANNER.md, шапка).
@@ -53,13 +54,11 @@ function formatCatalogPrice(value: number | null | undefined): string {
 	return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
-// Канон heading {text,size}: дефолт «Галерея» (пустой текст конструктора →
-// тоже «Галерея» — «добавил секцию → сразу красиво»).
-const rawTitle = (typeof p.heading === "string" ? p.heading : p.heading?.text) ?? p.title;
-const sectionTitle =
-	contentSet(["heading", "title"], rawTitle) && typeof rawTitle === "string" && rawTitle.trim()
-		? rawTitle
-		: "Галерея";
+// Канон heading {text,size}: заглушка «Галерея» — только когда поле вовсе не
+// задано (§2). Легаси `title` считаем ТОЛЬКО когда в нём реально есть текст —
+// иначе пустой-по-умолчанию легаси-проп неотличим от «поле не задано».
+const legacyTitle = typeof p.title === "string" && p.title.trim() ? p.title : undefined;
+const sectionTitle = textOf(p.heading) ?? legacyTitle ?? "Галерея";
 // Текст секции — рендер ТОЛЬКО при непустом (body-роль Arsenal 16 light muted §1).
 const rawText =
 	(typeof p.text === "string" ? p.text : p.text?.content) ??
@@ -226,6 +225,10 @@ const fitCls = (t: GalleryTile) =>
 	t.placeholder && t.kind === "product"
 		? "object-contain p-[15%]"
 		: "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]";
+// Плитка с выбранной коллекцией: адрес фото приходит только с гидрацией
+// (data-gallery-collection), поэтому <img> рисуется заранее скрытым — гидрации
+// есть куда положить фото. Без него фото коллекции не вставало (тестер 24.09).
+const awaitsCover = (t: GalleryTile) => t.kind === "collection" && Boolean(t.ref) && !t.url;
 const heroTile = galleryTiles[0];
 const sideTiles = galleryTiles.slice(1);
 // Одна видимая плитка занимает всю ширину секции — иначе она жмётся в свою
@@ -258,14 +261,16 @@ const heroSizeCls = soloTile
 	: "aspect-square lg:aspect-auto lg:h-full lg:min-h-0 lg:flex-1";
 
 // Подписи плиток — манера карточек satin (PC:48-62 / CC:31-35): имя Arsenal 16
-// 400 uppercase leading-tight; цена 16 400; старая цена 14 light muted
-// line-through (SSR-пустышка скрыта, открывает гидрация при oldPrice).
+// 400 uppercase leading-tight; цена 16 400; старая цена 14 light, цвет ТЕКСТА
+// схемы (решение владельца 19.09, 5e9201a4 — без приглушения), а не серым
+// (SSR-пустышка скрыта, открывает гидрация при oldPrice — script.ts:461 меняет
+// только "hidden", цвет остаётся этот же).
 const captionNameCls =
 	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
 const captionPriceCls =
 	"font-manrope text-[16px] font-normal leading-tight text-[rgb(var(--color-text,0_0_0))]";
 const captionOldPriceCls =
-	"hidden font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-muted,153_153_153))] line-through";
+	"hidden font-manrope text-[14px] font-light leading-tight text-[rgb(var(--color-text,0_0_0))] line-through";
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose T11).
 const paddingStyle = p.padding
@@ -305,15 +310,15 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	style={paddingStyle}
 >
 	<div class="satin-container flex flex-col gap-8">
-		{!isFieldHidden('heading') && (
+		{!isFieldHidden('heading') && (hasText(sectionTitle) || hasText(sectionText)) && (
 		<div
 			class="flex flex-col gap-2"
 			data-puck-subsection-parent={id}
 			data-puck-subsection-index="100"
 			data-puck-subsection-field="heading"
 		>
-			<h2 class={headingCls} set:html={inlineFormat(sectionTitle)} />
-			{sectionText && <p class={textCls} set:html={inlineFormat(sectionText)} />}
+			{hasText(sectionTitle) && <h2 class={headingCls} set:html={inlineFormat(sectionTitle)} />}
+			{hasText(sectionText) && <p class={textCls} set:html={inlineFormat(sectionText)} />}
 		</div>
 		)}
 
@@ -338,9 +343,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					    возвращал плитке 592×592 и оставлял под парой карточек ту же
 					    пустоту, хотя обёртки формально сходились низами. */}
 					<div class={`relative ${heroSizeCls} w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]`}>
-						{heroTile.url && (
+						{(heroTile.url || awaitsCover(heroTile)) && (
 							<img
-								src={heroTile.url}
+								src={heroTile.url || undefined}
+								hidden={!heroTile.url}
 								alt={heroTile.alt}
 								loading="lazy"
 								class={`absolute inset-0 !h-full !w-full ${fitCls(heroTile)}`}
@@ -387,9 +393,10 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 							    (minmax(280px,429px)) — почти квадрат, паритет bloom (652/594),
 							    чтобы стопка из двух плиток не выходила вдвое выше большой. */}
 							<div class="aspect-square w-full overflow-hidden rounded-[var(--radius-media,0px)] bg-[rgb(var(--color-surface,245_245_245))]">
-								{tile.url && (
+								{(tile.url || awaitsCover(tile)) && (
 									<img
-										src={tile.url}
+										src={tile.url || undefined}
+										hidden={!tile.url}
 										alt={tile.alt}
 										loading="lazy"
 										class={`!h-full !w-full ${fitCls(tile)}`}
@@ -458,6 +465,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const cover = productImage(product);
 			if (img && cover) {
 				img.setAttribute("src", cover);
+				img.removeAttribute("hidden");
+				img.parentElement?.removeAttribute("aria-hidden");
 				if (product.name) img.setAttribute("alt", product.name);
 			}
 			tile.setAttribute("href", productHref(product));
@@ -472,6 +481,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 			const img = tile.querySelector("img");
 			if (img && cover) {
 				img.setAttribute("src", cover);
+				img.removeAttribute("hidden");
+				img.parentElement?.removeAttribute("aria-hidden");
 				if (col.name) img.setAttribute("alt", col.name);
 			}
 			if (col.name) tile.setAttribute("aria-label", col.name);

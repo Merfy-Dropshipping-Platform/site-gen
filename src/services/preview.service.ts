@@ -28,6 +28,13 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c]!);
 }
 
+/**
+ * Текстовые поля мерчанта: "" в них — это стёртый текст, а не «возьми дефолт
+ * темы» (владелец 26.09). Кнопки, картинки и подсказки полей сюда не входят —
+ * у них "" по-прежнему значит «как в теме».
+ */
+const MERCHANT_TEXT_KEYS = new Set(['heading', 'title', 'subtitle', 'text', 'content', 'description']);
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return false;
   const proto = Object.getPrototypeOf(v);
@@ -52,7 +59,8 @@ export function deepMergeBlockProps(
     } else if (
       value === '' &&
       typeof defaultValue === 'string' &&
-      defaultValue.length > 0
+      defaultValue.length > 0 &&
+      !MERCHANT_TEXT_KEYS.has(key)
     ) {
       // Seed/revision `logo: ""` means "use theme default" (blockDefaults),
       // same as designer headers that fall back to `/icons/*.svg`.
@@ -860,6 +868,7 @@ export class PreviewService {
 
     const previewTailwind = await loadPreviewTailwindCss();
     const themeCss = await loadThemeCss(input.themeId ?? null);
+    const cookieConsent = await renderCookieConsentChrome(await this.getContainer());
 
     // Safety net для **hardcoded** absolute-paths в скомпилированном HTML
     // (placeholder PNGs из `.astro`, runtime JS innerHTML). Основной путь
@@ -905,6 +914,7 @@ export class PreviewService {
 </head>
 <body>
   ${bodyHtml}
+  ${cookieConsent}
   <script>
     ${process.env.DADATA_API_KEY ? `window.__DADATA_TOKEN__ = ${JSON.stringify(process.env.DADATA_API_KEY)};` : ''}
   </script>
@@ -1082,6 +1092,54 @@ async function loadPreviewTailwindCss(): Promise<string> {
  * Cached per themeId; '' when absent (legacy themes have no bundle → no-op).
  */
 const _cachedThemeCss = new Map<string, string>();
+/**
+ * Баннер согласия на cookie для СИНТЕТИЧЕСКОГО шелла превью
+ * (`renderPreviewPage` — страница из блоков, когда у темы нет своей собранной
+ * страницы для маршрута). Шелл темы несёт баннер сам (CookieConsent.astro в
+ * макете + скрипт в бандле Vite), а здесь Vite нет. Поэтому тот же компонент,
+ * скомпилированный `pnpm build:blocks` (theme-base__primitives__CookieConsent.mjs),
+ * рисуется тем же контейнером, что блоки, а его рантайм — тот же модуль
+ * `runtime/cookie-consent.ts`, скомпилированный тем же шагом
+ * (runtime__cookie-consent.mjs), — встраивается модульным скриптом.
+ * Ссылку «Политике конфиденциальности» открывает глобал политики, который
+ * ставит preview.controller (withPrivacyPolicyGlobal).
+ *
+ * Сбой (нет dist/astro-blocks) — баннера нет, превью не падает.
+ */
+const COOKIE_CONSENT_MODULE = 'theme-base__primitives__CookieConsent.mjs';
+const COOKIE_CONSENT_RUNTIME = 'runtime__cookie-consent.mjs';
+/** Ссылка компилятора Astro на обрабатываемый скрипт — в превью её отдать некому. */
+const ASTRO_PROCESSED_SCRIPT_RE =
+  /<script\b[^>]*\bsrc="[^"]*\?astro&(?:amp;)?type=script[^"]*"[^>]*><\/script>/g;
+
+export async function renderCookieConsentChrome(
+  container: IAstroContainer,
+): Promise<string> {
+  const { resolve } = await import('node:path');
+  const { readFile } = await import('node:fs/promises');
+  const roots = [
+    resolve(process.cwd(), 'dist', 'astro-blocks'),
+    resolve(process.cwd(), 'backend', 'services', 'sites', 'dist', 'astro-blocks'),
+  ];
+  for (const root of roots) {
+    try {
+      const mod = (await importCompiled(resolve(root, COOKIE_CONSENT_MODULE))) as {
+        default?: unknown;
+      };
+      const runtime = await readFile(resolve(root, COOKIE_CONSENT_RUNTIME), 'utf-8');
+      const markup = await container.renderToString(mod.default, { props: {} });
+      return (
+        markup.replace(ASTRO_PROCESSED_SCRIPT_RE, '') +
+        `<script type="module">${runtime}\ninitCookieConsent();</script>`
+      );
+    } catch {
+      // следующий корень
+    }
+  }
+  console.warn('[preview] cookie consent chrome unavailable (dist/astro-blocks not built)');
+  return '';
+}
+
 async function loadThemeCss(themeId: string | null): Promise<string> {
   if (!themeId) return '';
   const cached = _cachedThemeCss.get(themeId);
@@ -1224,11 +1282,14 @@ function scrollSelfTo(el, mode) {
  *     { type: 'ready' }
  *     { type: 'navigate',  path: string }
  *     { type: 'select-block', blockId: string }
+ *     { type: 'select-cookie-banner' }   — нажали на баннер cookie
  *     { type: 'form-submit-blocked', formId: string }
  *     { type: 'render-error', message: string }
  *   parent → iframe:
  *     { type: 'init', siteId, themeId, pageId, data }
  *     { type: 'update-block', blockId, props }
+ *     { type: 'update-tokens', themeSettings }   — и тексты баннера cookie
+ *     { type: 'set-selection', …, cookieBanner?: boolean }
  *
  * Design notes:
  *  - postMessage origin is `*` for now; tightening it requires the parent to
@@ -1331,6 +1392,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // и мешала оценивать цвета секции под курсором.
       '[data-puck-section-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
       '[data-puck-section-selected="true"]{outline:2px solid #88b0da !important;outline-offset:-2px}',
+      // Баннер cookie («Настройки темы» → «Баннер»): не секция страницы, но
+      // выделяется так же — рамка наведения, клик открывает его настройки.
+      '[data-cookie-consent]{cursor:pointer}',
+      '[data-cookie-consent]:hover{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
       // NB (тот же урок, что строкой выше, но для ПОДСЕКЦИИ): z-index не ставим.
       // position:relative + z-index = контекст наложения на КАЖДОЙ обёртке
       // параметра; у соседних обёрток он такой же, при равном z-index порядок
@@ -1414,19 +1479,25 @@ const PREVIEW_NAV_AGENT_INLINE = `
       askInit();
     }, 300);
   }
-  /** Отложить сообщение, пришедшее до 'init'. На блок держим только последнее. */
+  /**
+   * Какие отложенные сообщения — «одно и то же»: из них нужно только последнее.
+   * Правка блока — по блоку; токены темы (цвета/шрифты/радиусы) — одни на страницу.
+   */
+  function pendingKey(msg) {
+    if (!msg) return '';
+    if (msg.type === 'update-block') return msg.blockId ? 'update-block:' + msg.blockId : '';
+    if (msg.type === 'update-tokens') return 'update-tokens';
+    return '';
+  }
+  /** Отложить сообщение, пришедшее до 'init'. Из одинаковых держим только последнее. */
   function deferUntilInit(msg) {
-    if (msg && msg.type === 'update-block' && msg.blockId) {
-      for (var qi = 0; qi < PENDING_BEFORE_INIT.length; qi++) {
-        var q = PENDING_BEFORE_INIT[qi];
-        if (q && q.type === 'update-block' && q.blockId === msg.blockId) {
-          PENDING_BEFORE_INIT[qi] = msg;
-          startReadyRetry();
-          return;
-        }
-      }
+    var key = pendingKey(msg);
+    var same = -1;
+    for (var qi = 0; key && qi < PENDING_BEFORE_INIT.length; qi++) {
+      if (pendingKey(PENDING_BEFORE_INIT[qi]) === key) same = qi;
     }
-    if (PENDING_BEFORE_INIT.length < 50) PENDING_BEFORE_INIT.push(msg);
+    if (same >= 0) PENDING_BEFORE_INIT[same] = msg;
+    else if (PENDING_BEFORE_INIT.length < 50) PENDING_BEFORE_INIT.push(msg);
     startReadyRetry();
   }
   // Контекст коллекции страницы page-collection. Его кладёт в <head> GET-превью
@@ -1718,18 +1789,27 @@ const PREVIEW_NAV_AGENT_INLINE = `
       },
       stickiness: function (el, _oldVal, newVal) {
         var wrap = el.closest('[data-header-wrapper]') || el;
-        wrap.className = wrap.className
-          .replace(/sticky\\s+top-0\\s+z-50(\\s+transition-transform\\s+duration-300)?/g, '')
-          .replace(/relative\\s+z-50/g, '')
-          .replace(/\\s+/g, ' ')
-          .trim();
-        var classToAdd = newVal === 'scroll-up' ? 'sticky top-0 z-50 transition-transform duration-300'
-          : newVal === 'always' ? 'sticky top-0 z-50'
-          : 'relative z-50';
-        var parts = classToAdd.split(' ');
-        for (var pi = 0; pi < parts.length; pi++) {
-          if (parts[pi]) wrap.classList.add(parts[pi]);
+        // Классы снимаются поштучно: у bloom/satin порядок в class другой
+        // («w-full transition-transform duration-300 color-scheme-3 …»), и
+        // прежняя замена одной строкой их не находила — хвост scroll-up
+        // оставался после выбора «Всегда».
+        var MODE_CLASSES = {
+          'scroll-up': 'sticky top-0 z-50 transition-transform duration-300',
+          always: 'sticky top-0 z-50'
+        };
+        var OWN_CLASSES = ['sticky', 'top-0', 'z-50', 'transition-transform', 'duration-300', 'relative'];
+        for (var ci = 0; ci < OWN_CLASSES.length; ci++) wrap.classList.remove(OWN_CLASSES[ci]);
+        var parts = (MODE_CLASSES[newVal] || 'relative z-50').split(' ');
+        for (var pi = 0; pi < parts.length; pi++) wrap.classList.add(parts[pi]);
+        // Режим для скрипта темы: data-<тема>-sticky читается на каждой прокрутке
+        // (themes/<тема>/Header.astro, SCROLL_UP_JS). Без этого слушатель,
+        // повешенный при первом рендере в режиме scroll-up, продолжал прятать
+        // шапку и после «Всегда» (баг 25.09, bloom и satin).
+        var attrs = wrap.attributes;
+        for (var ai = 0; ai < attrs.length; ai++) {
+          if (/^data-[a-z]+-sticky$/.test(attrs[ai].name)) wrap.setAttribute(attrs[ai].name, newVal || 'none');
         }
+        wrap.style.transform = '';
         // Некоторые темы (vanilla) задают sticky inline-стилем, а не классом —
         // class-замена выше их не трогает. Синхронизируем inline position, иначе
         // «Статичность» не применяется в превью для этих тем (баг тестера).
@@ -2250,6 +2330,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (e.target && e.target.closest && e.target.closest('[data-merfy-pill]')) {
       return;
     }
+    // Баннер cookie: любое нажатие по нему (текст, «Принять», «Отклонить»)
+    // выделяет баннер и открывает его настройки в конструкторе, а не отвечает
+    // на баннер — рантайм баннера в превью ответы не принимает
+    // (packages/theme-base/runtime/cookie-consent.ts). Не data-puck-component-id
+    // намеренно: reconcile прячет хром, которого нет в дереве страницы.
+    var cookieBanner = e.target && e.target.closest ? e.target.closest('[data-cookie-consent]') : null;
+    if (cookieBanner) {
+      e.preventDefault();
+      e.stopPropagation();
+      post({ type: 'select-cookie-banner' });
+      return;
+    }
     // Storefront-кнопки с hard-навигацией внутри iframe конструктора дают 404
     // (origin = gateway, нет маршрутов /checkout, /cart):
     //   • «Оформить» корзины = <button data-action="checkout"> → location='/checkout'
@@ -2434,6 +2526,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
           // выбрана вложенная подсекция (её точечный доскролл ниже).
           if (!subParent) scrollSelfTo(sectionEl, 'start');
         }
+      }
+      if (ev.data.cookieBanner) {
+        var bannerEl = document.querySelector('[data-cookie-consent]');
+        if (bannerEl) bannerEl.setAttribute('data-puck-section-selected', 'true');
       }
       if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {
         var resolvedParent = selectedSectionEl
@@ -2697,10 +2793,24 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // (add/remove/hide/show/reorder) идут единым каналом reconcile (idiomorph).
       // Конструктор их больше не шлёт (PreviewFrame.test.tsx проверяет length 0).
     } else if (ev.data.type === 'update-tokens') {
+      // Тексты и кнопки баннера cookie — глобалом рантайма баннера (вкл/выкл,
+      // схема и расположение приедут tokens.css ниже). Сразу, без init: баннеру
+      // не нужны ни тема, ни сайт. Рантайм перерисует баннер по событию.
+      var bannerSettings = ev.data.themeSettings && ev.data.themeSettings.cookieBanner;
+      // Имена — COOKIE_BANNER_GLOBAL / COOKIE_BANNER_UPDATE_EVENT рантайма баннера
+      // (литералами: тесты агента исполняют шаблон без подстановок; сверку имён
+      // держит cookie-banner-settings.spec.ts).
+      window.__MERFY_COOKIE_BANNER__ = bannerSettings && typeof bannerSettings === 'object' ? bannerSettings : null;
+      try { document.dispatchEvent(new CustomEvent('merfy:cookie-banner')); } catch (e) {}
       // Hot-replace tokens.css включён для всех тем после консолидации
       // на packages/theme-base (2026-05-10). До этого был allowlist
       // [rose, vanilla] — symmetric to update-block fix.
-      if (!currentThemeId) return;
+      // 'init' ещё не пришёл — откладываем, как update-block. Раньше здесь был
+      // молчаливый выход: цвет/шрифт, поменянный в первые секунды после
+      // открытия конструктора, сохранялся, но в превью появлялся только после
+      // перезагрузки (баг владельца 26.09, замер на bloom: update-tokens
+      // пришёл за 0,5 с до init).
+      if (!currentThemeId) { deferUntilInit(ev.data); return; }
       if (!currentSiteId) return;
       fetch('/api/sites/' + currentSiteId + '/preview/tokens-css', {
         method: 'POST',

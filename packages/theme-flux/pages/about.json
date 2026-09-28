@@ -34,19 +34,19 @@
           },
           {
             "label": "Полноразмерные наушники",
-            "href": "/catalog/naushniki"
+            "href": "/catalog"
           },
           {
             "label": "TWS-наушники с кейсом",
-            "href": "/catalog/tws"
+            "href": "/catalog"
           },
           {
             "label": "Портативные колонки",
-            "href": "/catalog/kolonki"
+            "href": "/catalog"
           },
           {
             "label": "Саундбары",
-            "href": "/catalog/saundbary"
+            "href": "/catalog"
           }
         ],
         "actionButtons": {

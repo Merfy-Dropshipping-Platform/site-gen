@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["dev", 'prod']
   pull_request:
-    branches: ["main"]
+    branches: ["dev"]
   # Ручной запуск для замера времени джоб на ЛЮБОЙ ветке без PR и без пуша
   # в main (задача b48: «замерь на живом прогоне», но «PR не создавать»).
   # Ничего не меняет в push/pull_request-поведении — только добавляет кнопку
@@ -137,6 +137,17 @@ jobs:
           src/__tests__/preview-block-hidden-items.spec.ts
           src/themes/__tests__/asset-resolver-relativize.spec.ts
 
+      # «Галерея» на главной — состав и порядок плиток как у новой секции из
+      # каталога (задача 25.09, BURGER-GALLERY-BRIEF.md п.2). Владелец: было
+      # «три Изображения» из старого сида, стало image→product→collection —
+      # как в defaultProps панели. Гард читает исходники (home.json пакета
+      # темы + Gallery.puckConfig.ts текстом, тот же приём что у
+      # header-burger-position.spec.ts) — без артефактов тем, секунды.
+      - name: Тесты состава плиток «Галереи» на главной
+        run: >-
+          pnpm exec jest --runInBand
+          src/themes/__tests__/gallery-home-seed-tile-types.spec.ts
+
       # Контракт тем: схема манифеста, реестр токенов, резолвер страниц,
       # конформанс-движок. Джоба satin гоняла отсюда только conformance-*
       # (9 сьютов из 40). 39 сьютов, 418 проверок, ~3 c.
@@ -206,6 +217,20 @@ jobs:
           src/scheduler/site-provisioning.can-create.spec.ts
           src/modules/theme-preset/theme-catalog-seed.spec.ts
           src/pages
+
+      # Инструменты самих проверок (spec 115): очередь на машину (flock через
+      # perl — ubuntu-раннер его имеет), поток тёплого рендера секций, разбор
+      # ci.yml поездом, запись входов и память результатов `pnpm checks`. Без артефактов тем, секунды. Раньше эти node:test
+      # не гонялись нигде — сторожили только машину автора.
+      - name: Тесты инструментов проверок (node:test)
+        run: >-
+          node --test
+          scripts/release/__tests__/machine-lock.test.mjs
+          scripts/release/__tests__/ci-guards.test.mjs
+          scripts/release/__tests__/trace.test.mjs
+          scripts/release/__tests__/result-cache.test.mjs
+          scripts/release/__tests__/guard-runner.test.mjs
+          src/themes/__tests__/render-worker.test.mjs
 
   satin-structural-conformance:
     needs: satin-build
@@ -388,10 +413,24 @@ jobs:
       # Item-уровневый «глаз» в дереве и дефолты контролов сайдбара: оба теста
       # лежали в репозитории и не гонялись ни одной джобой — значит не
       # сторожили ничего (та же болезнь, что у rich-text-bold-italic).
+      # panel-default-is-noop (внутри test:panel-defaults) с 25.09 сверяет и
+      # каждый ключ defaultProps: владелец 25.09 «что в панели — то и на витрине».
       - if: false
         run: pnpm test:hidden-list-items
       - if: false
         run: pnpm test:panel-defaults
+      # Порядок размеров (владелец 25.09): каждое поле-размер пяти тем, оба
+      # режима признака, 29 ширин окна — «Маленький ≤ Средний ≤ Большой», и
+      # явный вариант рисует себя. Кегль меряет браузер: встроенный Chromium
+      # Playwright, а на раннере без него — предустановленный Google Chrome
+      # (channel: chrome); нет ни того, ни другого — сторож красный.
+      - if: false
+        run: pnpm test:size-order
+      # Числа владельца для размеров по умолчанию (25.09): rose полоса объявлений
+      # 11–13px на телефоне, заголовки «Коллекций»/«Галереи» 14–16. Замер в
+      # браузере, как у test:size-order.
+      - if: false
+        run: pnpm test:owner-sizes
       # Баг владельца (16.09, п.4): «все темы кроме Rose при изменениях в
       # секция или параметрах требуют перезагрузки страницы». Расследование
       # прошло весь update-block путь вручную в браузере (postMessage → POST
@@ -907,6 +946,15 @@ jobs:
       # зелёными.
       - if: false
         run: pnpm test:media-columns
+      # «Галерея»: низы колонок сходятся — замер в браузере, путь прода и
+      # прежняя ветка (владелец: «выравниваем»).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/gallery-bottoms-align.spec.ts
+      # Заголовок секции и подзаголовок на одной линии — замер в браузере
+      # (владелец, bloom «Коллекция товаров»: «текст не прижат к левому блоку» —
+      # подзаголовок стоял на 8px правее заголовка и карточек).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/section-heading-alignment.spec.ts
       # Название коллекции обязано доезжать до секции «Группа товаров» ВО ВСЕХ
       # путях рендера. Жалоба владельца 15.09: «Баг в секции Группа товаров,
       # тема Flux. При смене коллекции или когда не выбрана коллекция — ошибка
@@ -980,6 +1028,18 @@ jobs:
         run: pnpm exec jest --runInBand src/utils/__tests__/revision-migrations-header-unify.test.ts src/themes/__tests__/page-blocks-header-unify.spec.ts src/themes/__tests__/page-seed-header-parity.spec.ts src/utils/__tests__/revision-migrations-profile.test.ts
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-scheme-notation.spec.ts
+      # «Мультиколонны»: выбор ссылки колонки схлопывал колонку в {text, href}
+      # (общая развёртка конвертов в page-blocks.ts), кнопка и заголовок колонки
+      # пропадали у rose/vanilla/flux/bloom (владелец 26.09). Пять тем × три
+      # вида ссылки через живую цепочку рантайма.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/multicolumns-column-link-pick.spec.ts
+      # «Мультиколонны»: подпись кнопки колонки — только «Название ссылки»,
+      # пустое поле скрывает кнопку, имя выбранной страницы подписью не
+      # становится (владелец 26.09). Общее правило пяти портов —
+      # packages/theme-base/runtime/multicolumn-link.ts.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/multicolumns-column-link-label.spec.ts
       # Шапка bloom: размер иконок и отступы (жалоба владельца 20.09 «иконки
       # большие, отступов сверху и снизу нет»). Сверено с эталоном
       # верстальщиков canon-sections/header.html: десктопные Поиск/Корзина/
@@ -1393,6 +1453,22 @@ jobs:
       # packages/theme-base/__tests__, но оттуда CI не гоняет ни одного теста.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/checkout-cart-single-action.spec.ts
+      # Чекаут сразу называет товар, который магазин не доставляет (его нет в
+      # профиле доставки: логистика отдаёт unavailableProducts). Владелец 26.09:
+      # «Оплатить» серая, блок 17 с «Считаем варианты…», потом «нет вариантов
+      # для этого адреса» — хотя адрес ни при чём. Настоящий скрипт блока в jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/checkout-undeliverable-product.spec.ts
+      # Владелец 28.09: при необязательной регистрации клиента (requireCustomerAuth
+      # !== true) телефона на чекауте нет — почта остаётся. Телефон спрашивается
+      # и обязателен ТОЛЬКО когда requireCustomerAuth===true И contactMethod!=='email'.
+      # Настоящие inline-скрипты CheckoutContactForm (видимость поля) и
+      # CheckoutSubmit (гейт кнопки + payload) в jsdom. Более детальные dom-тесты
+      # для тех же двух блоков лежат в packages/theme-base/__tests__ (их гоняет
+      # отдельный именованный шаг «Тесты настроек чекаута магазина» выше), этот
+      # гард — поведенческое покрытие самого правила в src/themes/__tests__.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/checkout-required-auth-phone-gate.spec.ts
       # Кнопка «Оформить заказ» в панели корзины (формат «Сайдбар») ведёт в
       # чекаут, а не на страницу корзины. Жалоба владельца 20.09: «это и есть
       # корзина, но в другом её формате». Разметку панели отдаёт внешний пакет
@@ -1615,50 +1691,122 @@ jobs:
       # расхождение 3 к 2 заметили только на satin (баг тестера 22.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/hero-container-empty-state.spec.ts
-      # Первый экран bloom под PARITY_DESIGN — как в актуальной вёрстке
-      # верстальщиков: пропорция блока по ширине экрана и фото, вписанное по
-      # высоте (у нас оно заливало блок и было в 2,3 раза крупнее, 23.09).
-      # «Размер» и остальные настройки продолжают работать, без выключателя
-      # разметка байт в байт прежняя.
+      # Первый экран bloom — как в актуальной вёрстке верстальщиков: пропорция
+      # блока по ширине экрана и фото, вписанное по высоте (у нас оно заливало
+      # блок и было в 2,3 раза крупнее, 23.09). «Размер» и остальные настройки
+      # продолжают работать.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-hero-like-designers.spec.ts
-      # Секции bloom под PARITY_DESIGN — отступы, зазоры и высота строк как в
-      # актуальной вёрстке верстальщиков: «Основной текст», «Мультиколонны»,
-      # «Галерея», «Подвал» (владелец 23.09 «пройтись по всем секциям»). Капс
-      # не переносится; без выключателя разметка байт в байт прежняя.
+      # «Затемнение» первого экрана bloom по умолчанию 0, как у верстальщиков
+      # (владелец 24.09: серый слой 40% во всю ширину). Своё значение мерчанта
+      # остаётся.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/bloom-hero-overlay-default.spec.ts
+      # bloom по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): первый
+      # экран, «Сейчас в тренде», галерея, подвал — классы верстальщиков, выбор
+      # мерчанта цел.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/bloom-goal-like-designers.spec.ts
+      # «Галерея» всех тем: плитка с выбранной коллекцией несёт <img>, куда
+      # гидрация кладёт фото коллекции (тестер 24.09: фото коллекции не вставало).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/gallery-collection-tile-hydrates.spec.ts
+      # Подсказка в поле рассылки следует схеме (тестер 24.09): без вшитых цветов.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/newsletter-placeholder-follows-scheme.spec.ts
+      # Шторка корзины не прячет секции страницы корзины (тестер 24.09:
+      # «Промежуточный итог» пропадал при пустой корзине).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-ignores-page-sections.spec.ts
+      # satin: пустое «Изображение» слушает все настройки, шапка с отступами не
+      # сжимается (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/satin-empty-hero-and-header-padding.spec.ts
+      # rose и flux: пустое «Изображение» слушает все настройки (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/rose-empty-hero-settings.spec.ts
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/flux-empty-hero-settings.spec.ts
+      # satin: заголовок над текстом в «Изображении с текстом» и слайде, пустая
+      # «Кнопка» слайда скрыта, «Выбор кнопки» «Мультирядов» из схемы (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/satin-tester-batch.spec.ts
+      # Все темы: у слайд-шоу нет стрелок (нумерация на месте); размеры заголовка и
+      # текста у «Раздела» сворачиваемого раздела (тестер 24.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/slideshow-no-arrows-and-collapsible-sizes.spec.ts
+      # flux по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
+      # секций главной, выбор мерчанта цел.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/flux-goal-geometry.spec.ts
+      # vanilla по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
+      # секций главной, выбор мерчанта цел.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/vanilla-goal-geometry.spec.ts
+      # rose по цели «как у верстальщиков» (scripts/qa/designer-goal.ts): размеры
+      # секций главной, выбор мерчанта цел.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/rose-goal-sizes.spec.ts
+      # Секции bloom — отступы, зазоры и высота строк как в актуальной вёрстке
+      # верстальщиков: «Основной текст», «Мультиколонны», «Галерея», «Подвал»
+      # (владелец 23.09 «пройтись по всем секциям»). Капс не переносится.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/bloom-sections-like-designers.spec.ts
-      # flux под PARITY_DESIGN — контейнер (главная/Header/Footer/FluxNavItem
-      # mega-menu) 1480+поля и первый экран (Hero, «Большой») как в актуальной
-      # вёрстке верстальщиков (flux-theme@be32556d). Подвал: py-12 md:py-[80px],
-      # gap-10 md:gap-[80px] в ветке значения по умолчанию «Отступов». Без
-      # выключателя разметка байт в байт прежняя.
+      # flux — контейнер (главная/Header/Footer/FluxNavItem mega-menu)
+      # 1480+поля и первый экран (Hero, «Большой») как в актуальной вёрстке
+      # верстальщиков (flux-theme@be32556d). Подвал: py-12 md:py-[80px],
+      # gap-10 md:gap-[80px] в ветке значения по умолчанию «Отступов».
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/flux-like-designers.spec.ts
-      # Секции и первый экран rose под PARITY_DESIGN — отступы, зазоры и раскладка
-      # как в актуальной вёрстке верстальщиков: «Список коллекций», «Популярное»,
-      # «Галерея», иконка бургера шапки, переход подвала в 2 колонки с планшета,
-      # первый экран оверлеем на всех ширинах (24.09). Капс не переносится; без
-      # выключателя разметка байт в байт прежняя.
+      # Секции и первый экран rose — отступы, зазоры и раскладка как в актуальной
+      # вёрстке верстальщиков: «Список коллекций», «Популярное», «Галерея»,
+      # иконка бургера шапки, переход подвала в 2 колонки с планшета, первый
+      # экран оверлеем на всех ширинах (24.09). Капс не переносится.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/rose-like-designers.spec.ts
-      # vanilla под PARITY_DESIGN — вордмарк шапки/подвала (у них «Vanilla»
+      # vanilla — вордмарк шапки/подвала (у них «Vanilla»
       # двумя «l», у нас была «Vanila» одной — другой рисунок, не только
       # размер), шапка секций «Список коллекций»/«Популярные товары» (обёртка
       # 760→1320px, подзаголовок не переносится с lg), отступ абзаца «Галереи»
       # (mt-10→mt-3), соцсети подвала (область клика, зазор) и адаптивная
       # полоса «Панели объявлений» размера «Большой» (владелец 23-24.09).
-      # Без выключателя разметка байт в байт прежняя.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/vanilla-like-designers.spec.ts
-      # Satin под PARITY_DESIGN — переход шапки мобильная↔десктопная строка на
+      # Satin — переход шапки мобильная↔десктопная строка на
       # md вместо lg, подвал без лишнего gap-10 в верхнем ряду и подпись
       # платформы 16px, карточка «Популярного» без явного «Вид изображения» —
       # родная пропорция 430/564 (владелец 23–24.09 «делать как верстальщики,
       # в точности»). Настройки (логотип, меню, липкость, отступы, выравнивание)
-      # продолжают работать; без выключателя разметка байт в байт прежняя.
+      # продолжают работать.
+      # ИСКЛЮЧЕНИЕ (25.09, партия тестера №3) — «Мультиряды»: геометрия
+      # верстальщика была регрессом решений владельца 17–20.09 (7c87010e);
+      # геометрия ряда — решения владельца при любой «Ширине».
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/satin-like-designers.spec.ts
+      # Старая цена ВЕЗДЕ (корзина, каталоги, карточки, избранное, дорисовка,
+      # секция «Товар») — цвет ТЕКСТА схемы, без приглушения (владелец 19.09).
+      # Сплошной обход исходников пяти тем — не список файлов; гард ловит и
+      # приглушение той же переменной (]/NN, /0.NN, opacity-), и карты классов
+      # без слова class в строке (25.09 — обе дыры пропускали реальные находки:
+      # ProductPrice.astro /60, PopularProducts.classes.ts /75 и --color-muted,
+      # CartBody/CartSection --color-muted). Не было шагом CI до 25.09.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/old-price-follows-text.spec.ts
+      # Название и НОВАЯ цена карточки товара — тем же правилом, что старая
+      # цена рядом (--color-text, без литералов text-[#000000]/text-black).
+      # 25.09: дорисовка (storefront-hydrate.ts) и SSR-карточка satin красили
+      # название/цену чёрным литералом, пока старая цена уже была --color-text —
+      # на тёмной схеме разъезд виден сразу. Список шаблонов, не сплошной обход.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/card-name-price-follows-text.spec.ts
+      # Владелец 25.09: «страницы только магазинные, без верстальщиков» — ни одна
+      # ссылка по умолчанию не ведёт на демо-страницы верстальщиков.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/default-links-shop-pages-only.spec.ts
+      # Владелец 25.09: подпись «Разработано на Merfy» — «размеры задаём мы,
+      # меняется только если капс»: проверяется только отсутствие капса.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/footer-powered-by-size.spec.ts
       # Заголовок, рассыпанный по буквам, собирается обратно на чтении. Панель
       # до 22.09 спредила СТРОКУ заголовка ради размера и превращала её в
       # объект с числовыми ключами; панель починена, но испорченные ревизии
@@ -1683,10 +1831,21 @@ jobs:
       # отдаётся другой — ровно как на живом сайте 22.09 (пункт 26, повтор).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/pdp-adds-visible-variant.spec.ts
+      # «Купить сейчас» кладёт товар без отклика корзины — окно «Товар добавлен»
+      # и шторка не мелькают перед переходом в оформление (тестировщик: «на 0.5
+      # секунды отображается корзина»). Пять тем, jsdom, с окном и без.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/buy-now-no-cart-flash.spec.ts
       # Подпись строки корзины — из комбинации (что уйдёт в заказ), цвет — кружком
       # (владелец 23.09: «цвет не надо словами писать»), название экранируется.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-variant-from-catalog.spec.ts
+      # flux, «Коллекция товаров»: квадратик цвета на карточке — один на каждый
+      # настоящий цвет товара, нажатие ставит фото цвета и переключает «В корзину»
+      # на вариант этого цвета (владелец 28.09: «не выбирается вариант, моканые
+      # цвета без нажатия»). jsdom, разметка гидрации renderCardHtml.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/flux-card-swatch-selects-variant.spec.ts
       # Цвет варианта в корзине — той же формы, что на странице товара («Вариации»:
       # круг / квадрат / словом). Сравнивается НАСТОЯЩИЙ рендер страницы товара
       # (theme-base и порт flux) с тем, что нарисует корзина при глобале из той
@@ -1698,12 +1857,37 @@ jobs:
       # их растягивала, владелец 23.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/collapsible-heading-size-scope.spec.ts
+      # «Основной текст»: размер из «Заголовок → Размер заголовка» / «Текст →
+      # Размер текста» главнее скрытых headingSize/textSize, которые вписывала
+      # первая правка секции (владелец 25.09): нормализатор и сквозной рендер.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/maintext-heading-size.spec.ts
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/maintext-size-after-edit.spec.ts
+      # «Основной текст»: кнопка только с текстом из панели (тестировщик: «при
+      # пустом инпуте в кнопке он отображает кнопку») — пять тем, живая цепочка.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/main-text-button-empty.spec.ts
       # «Следующее фото при наведении» — путь тестера: включил переключатель,
       # больше ничего не трогал, водит мышью. bloom и vanilla листают ВСЕ фото
       # по положению курсора (как на Авито), rose/satin/flux показывают второе;
       # сохранённый в ревизии «режим» на это не влияет (владелец 23.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/catalog-next-photo-by-theme.spec.ts
+      # «Следующее фото» на телефоне: свайп по фото карточки листает фото
+      # (тестировщик: «при тапе, зажатии или скролле не переключается»;
+      # владелец: свайп, как на Авито). «Группа товаров» и «Коллекция товаров»,
+      # пять тем, плюс подключение в рантайме страницы каждой темы.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/card-photo-swipe.spec.ts
+      # Тот же свайп пальцем в настоящем Chromium-телефоне: касания по
+      # координатам, со стилями темы. Вбок и дугой — листает фото, страница
+      # стоит (и когда страница шире экрана: там браузер забирал жест себе,
+      # rose/satin/flux не листали); вверх — прокручивает, фото не трогает;
+      # тап доходит до карточки (владелец: «сейчас не работает вообще…
+      # скроллится оно или не скроллится»).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/card-photo-swipe-touch.spec.ts
       # Страница коллекции в конструкторе: сетка «Группы товаров» берёт
       # коллекцию страницы (контекст), а не служебный слаг «preview» и не проп
       # ревизии — было «0 ТОВАРОВ» на открытии и все товары после правки.
@@ -1742,6 +1926,26 @@ jobs:
       # выбирается один — сервер фильтрует по одному значению группы.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filters-sheet-choices.spec.ts
+      # Фильтры каталога: в одном фильтре несколько значений (цвет, коллекции) —
+      # все уходят в запрос товаров, повторный клик снимает одно (владелец:
+      # «можно выбирать несколько, а не по одному»). Пять тем, обе раскладки.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-multi-select-filters.spec.ts
+      # Чипы выбранных фильтров над товарами (владелец: «когда человек
+      # выбирает какой-то параметр, у него вверху должны быть вот эти
+      # чипчики… может их удалять»): чип на каждое значение наличия,
+      # стоимости, цвета и коллекций, нажатие снимает его из запроса и
+      # адреса, «Очистить всё» — все; коллекция, закреплённая страницей, — не
+      # чип. Пять тем × обе раскладки.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-filter-chips.spec.ts
+      # Фильтры по всем параметрам товара, не только по «Цвету» (Размер,
+      # Формат, Оттенок… из /api/store/filters): у каждой группы свой фильтр
+      # рядом с «Цветом» в строке, сайдбаре и шторке; несколько значений в
+      # группе — ИЛИ, разные группы — И; чипы «Размер: M». Пять тем × обе
+      # раскладки.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/catalog-variant-filters.spec.ts
       # Шрифт «Группы товаров» — из «Настроек темы» (владелец 23.09: «надо
       # нормально сделать как в настройках темы сделано», «надо из настроек
       # темы»): каждая надпись секции — шрифтом текста, заголовок — шрифтом
@@ -1773,11 +1977,92 @@ jobs:
       # у rose обход в теме потерялся — иконка не открывала корзину (прод 23.09).
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/cart-drawer-svg-click.spec.ts
+      # «Основные данные» кабинета без поля «Пароль» — вход по Magic Link, пароля
+      # у покупателя нет (владелец 27.09). Рендер AccountSection пяти тем.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/account-no-password-field.spec.ts
+      # Баннер согласия на cookie во всех пяти темах (владелец 27.09): общий
+      # CookieConsent после подвала во ВСЕХ витринных макетах и страницах тем,
+      # ссылка на политику продавца только при написанной политике (одно
+      # правило для сборки и трёх путей превью), баннер в синтетическом шелле
+      # превью. Рендер компилятором Astro + Container API; нужны build:blocks.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cookie-consent.spec.ts
+      # Рантайм баннера cookie на настоящей разметке, jsdom: показ, «Принять»,
+      # localStorage, повторная загрузка, ошибки хранилища, ссылка по глобалу,
+      # превью-iframe гасит переход по ссылке раньше агента превью.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cookie-consent-runtime.dom.spec.ts
+      # Настройки баннера cookie («Настройки темы» → «Баннер», владелец 28.09):
+      # по умолчанию — баннер 27.09; tokens.css пяти тем (вкл/выкл, схема,
+      # расположение); глобал текстов на трёх путях превью и в сборке.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cookie-banner-settings.spec.ts
+      # Агент превью: нажатие на баннер выделяет его (а не отвечает), рамка
+      # выделения, update-tokens меняет тексты без перезагрузки. jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/services/__tests__/preview-agent-cookie-banner.spec.ts
+      # После оплаты заказанное уходит из корзины (счётчик, выдвижная, страница
+      # корзины), после отмены оплаты корзина остаётся (владелец 26.09: «после
+      # оплаты корзина не сбрасывается»). «Оплатить» → статус оплаты → ядро
+      # корзины, ключи пяти тем, jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-cleared-after-paid-order.spec.ts
+      # Чекаут показывает скидку, посчитанную сервером, — и автоматическую, не
+      # только промокод (владелец 27.09: «автоматические скидки не отображаются
+      # в чекауте»; заказ списывал 891 ₽, а «Итого» и «Оплатить» — 990 ₽).
+      # Стор корзины пяти тем + скрипты CheckoutTotals/CheckoutSubmit, jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/checkout-server-discount.spec.ts
+      # Подарок «1+1=3» (isBonus) не уходит на сервер при пересборке корзины:
+      # иначе сервер считал его покупкой и дарил снова (dev 27.09, flux: 2 970 ₽
+      # вместо 1 980 ₽ за две кружки). Стор корзины пяти тем, jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/cart-gift-not-resent.spec.ts
+      # Подарок «1+1=3» одной позицией «×3, 1 в подарок», цена за две (владелец
+      # 27.09, вариант А): сводка чекаута, «Спасибо за заказ», заказ в кабинете
+      # пяти тем. Помощник runtime/gift-lines.ts + настоящие скрипты блоков, jsdom.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/gift-one-line.spec.ts
+      # Названия документов в юридической строке «Спасибо за заказ» и чекаута —
+      # ссылки на ЗАПОЛНЕННЫЕ политики продавца (владелец 28.09). Настоящий
+      # рендер блоков пяти тем + скрипт правила runtime/legal-links.ts в jsdom:
+      # три ссылки / ни одной / переписанный текст / XSS / клик в превью.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/legal-text-links.dom.spec.ts
+      # Откуда адреса: policyUrlsFor (одна функция с подвалом и баннером
+      # cookie), глобал __MERFY_POLICY_URLS__ на трёх путях превью и в сборке.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/legal-text-links.spec.ts
+      # Иконка корзины в шапке — <button data-cart-open> во всех пяти темах:
+      # по этому договору «Корзина → Сайдбар/Страница» решают шторка, перехватчик
+      # Layout и nav-агент превью. У vanilla была <a href="/cart"> — в
+      # конструкторе при «Сайдбар» открывалась ещё и страница (тестер 26.09).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/header-cart-icon-contract.spec.ts
       # Меню шапки на компьютере раскрывается НАЖАТИЕМ, не наведением (владелец
       # 24.09): «Выпадающее», «Расширенное», третий уровень — пять тем.
       # Настоящий рендер шапки + общий обработчик nav-submenu-toggle в jsdom.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/header-menu-click.spec.ts
+      # Порядок заголовка/текста/кнопки «Изображения с текстом» из
+      # перетаскивания в конструкторе (тестер 24.09: «слетели дрэг-н-дропы»).
+      # Помощник packages/theme-base/runtime/field-order.ts + рендер пяти тем:
+      # порядок по умолчанию — прежняя разметка, custom-порядок — узлы в
+      # заданной последовательности, «глаз» прячет поле независимо от порядка.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/image-with-text-field-order.spec.ts
+      # Перетаскивание параметров «Изображения», «Основного текста» и «Подписки
+      # на рассылку» (владелец 25.09: «не работает drag and drop в параметрах»):
+      # puck-config пяти тем объявляет fieldOrder (без него в дереве нет ручек),
+      # порт рисует заголовок/текст/кнопки в порядке fieldOrder.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/section-field-order.spec.ts
+      # То же для «Товара»: восемь строк колонки информации в порядке
+      # fieldOrder — общий блок theme-base (rose/vanilla/satin/bloom) и порт
+      # flux FeaturedProduct (десктоп и мобила).
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/product-field-order.spec.ts
       # conformance:satin / check:css-layers / validate:page-seeds и загрузка
       # улик конформанса при падении переехали в satin-dictated-conformance —
       # они генерируют conformance-results/satin/report.json, и правильное
@@ -2001,7 +2286,9 @@ jobs:
           retention-days: 14
 
   deploy-to-coolify:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Прод живёт на ветке production (spec 116, 26.09.2026). main выкатывается в dev вебхуком
+    # Coolify сам; ручной вызов /deploy на main дал бы дубль в очереди.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     needs:
       - build-and-test
       - satin-build

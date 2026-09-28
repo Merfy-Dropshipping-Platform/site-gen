@@ -3,6 +3,8 @@ import { inlineFormat } from "../../lib/rich-text";
 import { resolveHeroMediaSlots } from "../../../../../packages/theme-base/runtime/hero-media-slots";
 import FluxPicture from "../img/FluxPicture.astro";
 import { SITE_TITLE } from "../../consts";
+import { fieldRuns, sectionFieldOrder } from "../../../../../packages/theme-base/runtime/field-order";
+import { pickText, hasText } from "../../../../../packages/theme-base/runtime/merchant-text";
 
 // ОЖИВЛЕНИЕ (Фаза B, контракт bloom Hero): читаем канон-схему theme-base
 // Hero.puckConfig и раскладываем по разметке верстальщика. Тело ниже — verbatim;
@@ -15,32 +17,25 @@ const id = p.id;
 const nonEmpty = (v: unknown): string | undefined =>
 	typeof v === "string" && v.trim() ? v : undefined;
 // heading/text принимают И канон-объект ({text}/{content}), И плоскую строку
-// (паритет с Collections/Gallery/Popular/Puk/MainText/Newsletter в этой же теме —
-// везде `typeof p.heading === "string" ? p.heading : p.heading?.text`). Раньше
-// Hero проверял ТОЛЬКО p.heading?.text — плоская строка тихо терялась (rawHeadingText
-// ниже её тоже не видел → секция с реальным заголовком мерчанта ошибочно считалась
-// isEmpty и рисовала плейсхолдер «Изображение» вместо заданного текста).
-// Дефолтное состояние Hero = контент вёрстки дословно (flux-theme Hero.astro:14-18).
-// Фолбэк идёт через nonEmpty, а не через `??`: сид и миграции ревизий кладут в эти
-// поля ПУСТЫЕ СТРОКИ, а `??` пропускает только null/undefined — из-за этого секция
-// рендерилась с пустыми <h1>/<p>/<a> вместо дефолтного текста оригинала.
+// (паритет с Collections/Gallery/Popular/Puk/MainText/Newsletter в этой же теме).
+// Панельное поле (в т.ч. СТЁРТОЕ мерчантом до "") рендерим как есть — секция
+// должна очищаться, а не вернуть дефолт вёрстки (владелец 26.09) — читает это
+// `pickText` (packages/theme-base/runtime/merchant-text): фолбэк срабатывает
+// только когда поле НЕ строка вовсе (undefined/старая ревизия). Легаси-флэт
+// p.title/p.subtitle (до heading/text-объектов) — через `nonEmpty`, а не `??`:
+// сид и миграции ревизий кладут в НИХ пустые строки, и `??` их не отсекал —
+// секция рисовала пустой <h1>/<p> вместо REF_TITLE/REF_SUBTITLE.
 const REF_TITLE = "Технологии без паузы";
 const REF_SUBTITLE = "Будущее — в режиме онлайн.\nВаш новый гаджет — уже в наличии.";
 const REF_CTA_TEXT = "Новинки 2026";
 const REF_CTA_LINK = "/catalog";
 // Вёрстка разбивает подзаголовок по \n на строки через <br> (Hero.astro:20,55).
 
-const title =
-	nonEmpty(typeof p.heading === "string" ? p.heading : p.heading?.text) ??
-	nonEmpty(p.title) ??
-	REF_TITLE;
+const title = pickText(p.heading, nonEmpty(p.title) ?? REF_TITLE);
 // alt= уходит в АТРИБУТ: там нужен чистый текст. Начертания «Ж»/«К» (<strong>/<em>
 // вокруг всего значения) скринридер прочитал бы как «меньше strong больше».
 const titleAlt = String(title).replace(/<\/?(?:em|strong|b|i|u|s)>/g, "");
-const subtitle =
-	nonEmpty(typeof p.text === "string" ? p.text : p.text?.content) ??
-	nonEmpty(p.subtitle) ??
-	REF_SUBTITLE;
+const subtitle = pickText(p.text, nonEmpty(p.subtitle) ?? REF_SUBTITLE);
 const ctaText =
 	nonEmpty(p.primaryButton?.text) ??
 	nonEmpty(p.cta?.text) ??
@@ -175,19 +170,13 @@ const heroHeightCls = {
 // Мобильные высоты — КАНОН верстальщиков: полотно 380px с контентом-оверлеем
 // (мобстек «медиа сверху, контент ниже» был перенесён из rose и канону
 // противоречил — юзер-репорт 2026-08-08, скрин эталона localhost:4321@390).
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// первая ступень «Размера» ПО УМОЛЧАНИЮ (large) — как в актуальной вёрстке
+// Первая ступень «Размера» ПО УМОЛЧАНИЮ (large) — как в актуальной вёрстке
 // flux-theme@be32556d (src/components/sections/Hero.astro:26 `h-[380px]
-// sm:h-[480px] lg:aspect-[1920/810] lg:h-auto`): у нас первая ступень стояла
-// на md:, а не на sm:. «Средний»/«Маленький» не трогаем — у верстальщиков
-// контрола «Размер» нет вовсе, эти ступени изобретены конструктором. Без
-// признака — байт в байт прежняя строка. Признак ставит sites (page-blocks
-// designParityFlag).
-const designParity = p.__designParity === true;
+// sm:h-[480px] lg:aspect-[1920/810] lg:h-auto`; владелец 23-24.09: «как у
+// верстальщиков, только стили»). «Средний»/«Маленький» — у верстальщиков
+// контрола «Размер» нет вовсе, эти ступени изобретены конструктором.
 const heroHeightMdCls = {
-	large: designParity
-		? "h-[380px] sm:h-[480px] lg:aspect-[1920/810] lg:h-auto"
-		: "h-[380px] md:h-[480px] lg:aspect-[1920/810] lg:h-auto",
+	large: "h-[380px] sm:h-[480px] lg:aspect-[1920/810] lg:h-auto",
 	medium: "h-[315px] md:h-[395px] lg:h-[445px]",
 	small: "h-[245px] md:h-[305px] lg:h-[345px]",
 }[heroSize];
@@ -202,26 +191,13 @@ const heroHeightMdCls = {
 // не пропорционально высоте. Для large крой НЕ трогаем (пиксель-в-пиксель
 // эталон); medium/small — паттерн Rose (inset-0 size-full object-cover): сам
 // пересчитывается под любую высоту контейнера, без ручной калибровки под каждую.
-// #7 (июльский аудит паритета, мобстек): на мобиле картинка теперь ЖИВЁТ ВНУТРИ
-// aspect-[4/3]-коробки в потоке (см. imageWrapCls ниже) — калиброванный крой
-// «large» (top-[-10.8%]/w-[200%]/…) считался под ЦЕЛИКОМ ДРУГОЙ, широкую
-// desktop-пропорцию (1920×810) — внутри 4:3 он даёт мимо. На мобиле просто
-// object-cover (сам вписывается в коробку); калиброванный крой включается
-// ТОЛЬКО с md: (там картинка снова становится absolute-оверлеем на всю секцию,
-// прежняя вёрстка не трогается). Старое sm:w-[160%] переехало на md: (это и
-// была первая ступень calibrated-crop, теперь она начинается сразу с md:).
-// PARITY_DESIGN: кадрирование одного фото у верстальщиков (Hero.astro:29,35)
-// вне md-гейта — <640 absolute left-1/2 top-[-10.8%] h-auto w-[200%]
-// max-w-none -translate-x-1/2; 640-1023 (sm) w-[160%]; ≥1024 (lg) left-0
-// w-full translate-x-0 (как сейчас, не трогаем). У нас та же калибровка
-// включалась только с md: (на мобиле фото просто заливало блок). «Средний»/
-// «Маленький» — не трогаем (ветка ниже, паттерн Rose). Без признака — байт в
-// байт прежняя строка.
+// Кадрирование одного фото «Большого» — как у верстальщиков (Hero.astro:29,35):
+// <640 absolute left-1/2 top-[-10.8%] h-auto w-[200%] max-w-none
+// -translate-x-1/2; 640-1023 (sm) w-[160%]; ≥1024 (lg) left-0 w-full
+// translate-x-0. «Средний»/«Маленький» — своя ветка (паттерн Rose).
 const singleImageCropCls =
 	heroSize === "large"
-		? designParity
-			? "absolute left-1/2 top-[-10.8%] h-auto w-[200%] max-w-none -translate-x-1/2 object-cover object-center sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
-			: "size-full object-cover object-center md:absolute md:left-1/2 md:top-[-10.8%] md:h-auto md:w-[160%] md:max-w-none md:-translate-x-1/2 md:object-cover lg:left-0 lg:w-full lg:translate-x-0"
+		? "absolute left-1/2 top-[-10.8%] h-auto w-[200%] max-w-none -translate-x-1/2 object-cover object-center sm:w-[160%] lg:left-0 lg:w-full lg:translate-x-0"
 		: "size-full object-cover object-center md:absolute md:inset-0";
 
 // Вторая кнопка — ТОЛЬКО если мерчант задал (паритет с rose, FR-010): не
@@ -317,27 +293,17 @@ const buttonsCls = secondaryText
 // планшете контент стоял плотнее эталона.
 const contentCls = `flex max-w-[520px] flex-col gap-8 lg:gap-10 ${alignItemsCls}${boxedCls}`;
 
-// Кнопка вёрстки (Hero.astro:64): h-12 (48px), rounded-[4px], bg-[#1e2952],
-// белый текст, font-light, uppercase, px-4, text-[16px], leading-none.
-// Высота и радиус берутся ТОКЕНАМИ темы — `--size-hero-button-h` уже объявлен в
-// theme.json со значением 48px, но раньше не потреблялся (стоял хардкод h-14=56px),
-// т.е. у свойства было два владельца и живым был неверный.
-// Цвет — токен цветосхемы с фолбэком на литерал вёрстки: пока схема не выбрана,
-// кнопка тёмно-синяя как в оригинале.
+// Кнопка вёрстки (Hero.astro:64): h-12 (48px), rounded-[4px], font-light,
+// uppercase, px-4, text-[16px], leading-none. Высота и радиус — токены темы
+// (`--size-hero-button-h` = 48px в theme.json).
+// Цвета обеих кнопок — поля схемы своей роли (атрибут data-scheme-button,
+// src/themes/scheme-buttons.ts): Основная ← «Основная кнопка», Дополнительная ←
+// «Дополнительная кнопка»; Фон → фон, Текст → буквы, Обводка → рамка. Задача
+// владельца 25.09: раньше вторая кнопка была контуром цвета Фона ОСНОВНОЙ, а
+// скрытый buttonStyle=outlined менял кнопки местами.
 const ctaBtnCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90";
-// Вторая кнопка — согласованная ПАРА с «Стилем кнопки» (паритет rose): solid
-// (дефолт) → primary залитая / secondary контурная; outlined → НАОБОРОТ
-// (primary контурная / secondary залитая). Раньше secondaryBtnCls был
-// фиксированной строкой (всегда контур) — «Стиль кнопки»=outlined на вторую
-// кнопку не действовал. Рендерится ТОЛЬКО когда мерчант задал secondaryButton
-// (условие ниже).
-const secondaryBtnCls =
-	p.buttonStyle === "outlined"
-		? "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid border-[rgb(var(--color-button-border,var(--color-button-bg,30_41_82)))] bg-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
-		: "inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-[rgb(var(--color-button-bg,30_41_82))] px-4 font-roboto-flex text-[16px] font-light leading-none text-[rgb(var(--color-button-bg,30_41_82))] transition-colors hover:bg-black/5";
+	"inline-flex h-[var(--size-hero-button-h,48px)] w-auto items-center justify-center rounded-[var(--radius-button,4px)] border border-solid px-4 font-roboto-flex text-[16px] font-light leading-none transition-opacity hover:opacity-90";
+const secondaryBtnCls = ctaBtnCls;
 
 // Канон padding {top,bottom} — inline-стиль ТОЛЬКО при заданном пропе (паттерн rose
 // T14 / bloom Hero). Высота полотна теперь = фикс-классы heroHeightCls на div-полотне
@@ -364,6 +330,51 @@ const hiddenFields: string[] = Array.isArray((p as any).hiddenFields)
 	? ((p as any).hiddenFields as unknown[]).filter((x): x is string => typeof x === 'string')
 	: [];
 const isFieldHidden = (f: string) => hiddenFields.includes(f);
+// Порядок заголовка/текста/кнопок из перетаскивания в конструкторе
+// (props.fieldOrder, packages/theme-base/runtime/field-order.ts). Соседние
+// заголовок и текст остаются в общей колонке со своим ритмом (gap-2), кнопки
+// — отдельным звеном (gap-8 колонки контента). Без fieldOrder — прежняя разметка.
+const heroRuns = fieldRuns(sectionFieldOrder("Hero", p), ["heading", "text"]);
+// Стёртое поле (title/subtitle = "") не рисуется вовсе — §2 контракта секции;
+// обёртка группы (`heroRuns` grouped-run) тоже пропадает, если внутри неё не
+// осталось ни одного видимого поля, иначе её gap двигает соседей.
+const heroFieldVisible = (field: string): boolean =>
+	field === "heading" ? !isFieldHidden("heading") && hasText(title)
+	: field === "text" ? !isFieldHidden("text") && hasText(subtitle)
+	: false;
+
+// ПУСТАЯ секция (заглушка до своих фото и текста) слушает панель так же, как
+// заполненная. Тестер 24.09: «Изображение по всем настройкам сломалась, не
+// принимает изменения» — заглушка стояла по центру с фиксированными кеглями,
+// а Затемнение/Позиция/Выравнивание/Размеры/вторая кнопка до неё не доходили.
+// Позиция и Выравнивание — ТЕ ЖЕ классы, что выше у заполненной ветки
+// (hItemsCls/vJustifyCls/alignItemsCls/textAlignCls/buttonsCls); без своего
+// значения — как показывает панель: «По центру слева» (blockDefaults темы),
+// выравнивание слева, затемнение 0. Кегли — ступени headingCls/subtitleCls
+// выше (без своего значения — «Большой»); цвет заглушки свой (белый поверх
+// фото), поэтому здесь только размер.
+const EMPTY_HEADING_SIZE: Record<string, string> = {
+	small: "text-[14px] md:text-[17px] lg:text-[length:var(--merchant-hero-heading,17px)]",
+	medium: "text-[17px] md:text-[20px] lg:text-[length:var(--merchant-hero-heading,20px)]",
+	large: "text-[20px] md:text-[24px] lg:text-[length:var(--merchant-hero-heading,24px)]",
+};
+const EMPTY_TEXT_SIZE: Record<string, string> = {
+	small: "text-[10px] md:text-[11px]",
+	medium: "text-[11px] md:text-[12px]",
+	large: "text-[12px] md:text-[14px]",
+};
+const emptyHeadingSizeCls = EMPTY_HEADING_SIZE[headingSize] ?? EMPTY_HEADING_SIZE.large;
+const emptyTextSizeCls = EMPTY_TEXT_SIZE[textSize] ?? EMPTY_TEXT_SIZE.large;
+// Кнопки заглушки — её же рамка (h-14, радиус 6px); цвета — роль схемы, как у
+// заполненной ветки. При двух кнопках обе тянутся в свою колонку buttonsCls
+// (w-auto), одна — по содержимому (w-fit).
+const emptyBtnWidthCls = secondaryText ? "w-auto" : "w-fit";
+const emptyBtnCls = `inline-flex h-14 ${emptyBtnWidthCls} items-center justify-center rounded-[var(--radius-button,6px)] border border-solid px-4 font-roboto-flex text-[16px] font-normal leading-none transition-opacity hover:opacity-90`;
+const emptyOuterCls = `absolute inset-0 z-10 flex w-full flex-col ${hItemsCls} ${vJustifyCls} px-4 py-8 md:px-20 md:py-10 2xl:px-80`;
+// Заголовок, текст и кнопки — одна колонка (как contentCls заполненной ветки),
+// чтобы «Выравнивание» двигало и кнопку, а не только текст.
+const emptyBlockCls = `flex flex-col ${alignItemsCls} gap-6 md:gap-10${boxedCls}`;
+const emptyTextColCls = `flex max-w-[432px] flex-col ${alignItemsCls} gap-2 ${textAlignCls}`;
 ---
 
 {
@@ -371,7 +382,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		/* Пустое состояние (Figma 1:19335, тип «Изображение», контракт картиночных
 		   секций): фон секции = дизайн-ассет /placeholders/landscape-image.png
 		   (картинка показывается ВСЕГДА, НЕ пустой surface и НЕ мок верстальщика) +
-		   лёгкий тёмный overlay для читаемости + overlay-лейбл «Изображение» +
+		   «Затемнение» из панели (по умолчанию 0) + overlay-лейбл «Изображение» +
 		   хелпер-текст + кнопка «Кнопка». Без дефолт-контента верстальщика (SITE_TITLE
 		   / «Там, где классика…» / «В каталог» / «О нас»). Манера flux: Roboto Flex
 		   uppercase-заголовок и Roboto Flex-хелпер белым на фото (как обычный Hero на
@@ -389,22 +400,29 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 				loading="eager"
 				class="absolute inset-0 z-0 size-full object-cover object-center"
 			/>
-			<div class="pointer-events-none absolute inset-0 z-[1] bg-black/30" aria-hidden="true" />
+			{/* Затемнение — тот же слой, что у заполненной ветки, и только при
+			    значении больше 0 (панель по умолчанию показывает 0). */}
+			{
+				overlayN > 0 && (
+					<div
+						class="pointer-events-none absolute inset-0 z-[2] bg-black"
+						style={`opacity:${overlayN / 100}`}
+					/>
+				)
+			}
 			<div class={`relative w-full ${heroHeightCls}`}>
-				<div class="absolute inset-0 z-10 flex w-full flex-col items-center justify-center gap-6 px-4 py-8 text-center md:gap-10 md:px-20 md:py-10 2xl:px-80">
-					{/* «Контейнер» работает и на ПУСТОЙ секции. Свежедобавленный герой
-					    рисуется этой веткой, и плашка до неё не доходила: мерчант щёлкал
-					    переключателем и не видел ничего (баг тестера 22.09, satin; замер
-					    прода — разметка байт-в-байт). bloom и vanilla пустую секцию
-					    рисуют обычной веткой, поэтому у них работало — расхождение 3 к 2.
-					    Выключенный контейнер = `contents`: обёртка исчезает из раскладки
-					    целиком, прежний вид сохраняется байт-в-байт. */}
-					<div class:list={[boxed ? `flex flex-col items-center gap-6 md:gap-10${boxedCls}` : "contents"]}>
-					<div class="flex max-w-[432px] flex-col items-center gap-2 text-center">
-						{!isFieldHidden('heading') && (
+				<div class={emptyOuterCls}>
+					{/* «Контейнер» работает и на ПУСТОЙ секции (баг тестера 22.09, satin):
+					    включённый — плашка boxedCls на колонке заголовка, текста и кнопок. */}
+					<div class={emptyBlockCls}>
+					{heroRuns.map((run) => run.grouped ? (
+					<div class={emptyTextColCls}>
+						{run.fields.map((field) => (
+						<Fragment>
+						{field === 'heading' && !isFieldHidden('heading') && (
 							<h1
 								id="hero-title"
-								class="font-roboto-flex text-[20px] font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))] md:text-[24px]"
+								class={`font-roboto-flex ${emptyHeadingSizeCls} font-normal leading-normal text-[rgb(var(--color-heading,255_255_255))]`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="100"
 								data-puck-subsection-field="heading"
@@ -412,9 +430,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_LABEL}
 							</h1>
 						)}
-						{!isFieldHidden('text') && (
+						{field === 'text' && !isFieldHidden('text') && (
 							<p
-								class="font-roboto-flex text-[14px] font-light leading-normal text-[rgb(var(--color-text,255_255_255))] md:text-[16px]"
+								class={`font-roboto-flex ${emptyTextSizeCls} font-light leading-normal text-[rgb(var(--color-text,255_255_255))]`}
 								data-puck-subsection-parent={id}
 								data-puck-subsection-index="101"
 								data-puck-subsection-field="text"
@@ -422,29 +440,40 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 								{PH_HELPER}
 							</p>
 						)}
+						</Fragment>
+						))}
 					</div>
-					{!isFieldHidden('buttons') && (
-					<div class="flex flex-wrap justify-center gap-3">
-						{/* Кнопка пустого состояния — «Кнопка» СХЕМЫ (эталон rose, Hero.astro
-						    isEmpty-ветка: !bg-[rgb(var(--color-button-bg,255_255_255))] +
-						    токен текста). Было `bg-black` + `text-white`: Tailwind 4 печатает
-						    их как var(--color-black)/var(--color-white) — переменные ЕСТЬ, а
-						    схемы в них нет, и кнопка замирала (замер матрицы, схемы-зонды
-						    1 → 4: #000 → #000 и #fff → #fff), при том что рабочая кнопка
-						    ниже по файлу на токенах уже едет. Заголовок и текст поверх фото
-						    остаются белыми намеренно (hero-over-photo). Фолбэки = прежний
-						    вид. Сторож: pnpm test:scheme-targets. */}
+					) : !isFieldHidden('buttons') && (
+					<div class={buttonsCls}>
+						{/* Кнопки пустого состояния красятся ролью схемы (data-scheme-button),
+						    как у заполненной ветки. Заголовок и текст поверх фото остаются
+						    белыми намеренно (hero-over-photo). */}
 						<a
 							href={ctaLink}
-							class="inline-flex h-14 w-fit items-center justify-center rounded-[var(--radius-button,6px)] bg-[rgb(var(--color-button-bg,0_0_0))] px-4 font-roboto-flex text-[16px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] transition-opacity hover:opacity-90"
+							class={emptyBtnCls}
+							data-scheme-button="primary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="102"
 							data-puck-subsection-field="primaryButton"
 						>
 							{PH_BUTTON}
 						</a>
+						{
+							secondaryText && (
+								<a
+									href={secondaryLink}
+									class={emptyBtnCls}
+									data-scheme-button="secondary"
+									data-puck-subsection-parent={id}
+									data-puck-subsection-index="103"
+									data-puck-subsection-field="secondaryButton"
+								>
+									{secondaryText}
+								</a>
+							)
+						}
 					</div>
-					)}
+					))}
 					</div>
 				</div>
 			</div>
@@ -452,7 +481,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 	) : (
 <section
 	class={`relative w-full overflow-hidden bg-[rgb(var(--color-bg,245_245_245))] ${heroHeightMdCls}`}
-	aria-labelledby="hero-title"
+	aria-labelledby={heroFieldVisible("heading") ? "hero-title" : undefined}
 	data-puck-component-id={id}
 >
 	{/* Канон верстальщиков: медиа = absolute-оверлей полотна на ВСЕХ вьюпортах
@@ -515,8 +544,12 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 		style={overlayPadStyle}
 	>
 		<div class={contentCls} data-reveal>
+			{heroRuns.map((run) => run.grouped ? (
+			run.fields.some(heroFieldVisible) && (
 			<div class={`flex flex-col gap-2 ${alignItemsCls} ${textAlignCls}`}>
-				{!isFieldHidden('heading') && (
+				{run.fields.map((field) => (
+				<Fragment>
+				{field === 'heading' && heroFieldVisible('heading') && (
 					<h1
 						id="hero-title"
 						class={headingCls}
@@ -527,7 +560,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<Fragment set:html={inlineFormat(title)} />
 					</h1>
 				)}
-				{!isFieldHidden('text') && (
+				{field === 'text' && heroFieldVisible('text') && (
 					<p
 						class={subtitleCls}
 						data-puck-subsection-parent={id}
@@ -538,13 +571,16 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<Fragment set:html={inlineFormat(subtitle).replace(/\n/g, "<br>")} />
 					</p>
 				)}
+				</Fragment>
+				))}
 			</div>
-
-			{!isFieldHidden('buttons') && (
+			)
+			) : !isFieldHidden('buttons') && (
 			<div class={buttonsCls}>
 				<a
 					href={ctaLink}
 					class={ctaBtnCls}
+					data-scheme-button="primary"
 					data-puck-subsection-parent={id}
 					data-puck-subsection-index="102"
 					data-puck-subsection-field="primaryButton"
@@ -556,6 +592,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						<a
 							href={secondaryLink}
 							class={secondaryBtnCls}
+							data-scheme-button="secondary"
 							data-puck-subsection-parent={id}
 							data-puck-subsection-index="103"
 							data-puck-subsection-field="secondaryButton"
@@ -565,7 +602,7 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					)
 				}
 			</div>
-			)}
+			))}
 		</div>
 	</div>
 </section>

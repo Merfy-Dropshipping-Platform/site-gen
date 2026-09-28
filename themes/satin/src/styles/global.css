@@ -183,18 +183,6 @@ main {
   border-color: rgb(var(--color-button-2-text-hover, var(--color-button-2-text, 0 0 0)));
 }
 
-/* CTA слайда («Слайд-шоу», стиль кнопки «контур»). В ПОКОЕ она белая — кнопка
-   лежит на затемнённой фотографии, и это санкционированный дизайн (белый список
-   матрицы схем `slide-over-photo`). А наведение до сих пор не читало схему
-   вообще: `.satin-button:hover` гасит только прозрачность, и поле «Цветовая
-   схема → Дополнительная кнопка → Текст при наведении» на эту кнопку не влияло.
-   Фолбэк 255 255 255 — та же белая: пока мерчант цвет наведения не задал, вид
-   прежний. Правило unlayered намеренно: базовый белый даёт утилита `.text-white`
-   из @layer utilities, а utilities бьёт @layer base. */
-.satin-slide-cta:hover {
-  color: rgb(var(--color-button-2-text-hover, 255 255 255));
-  border-color: rgb(var(--color-button-2-text-hover, 255 255 255));
-}
 @layer base {
 
 /* Full-bleed split sections (hero, image banner): the text half is padded by
@@ -1033,8 +1021,8 @@ blockquote {
      а не -text-hover. У ContactForm/MainText/Hero/ImageWithText/MultiRows/
      Newsletter/TextBlock рамка/текст оставались на hover:opacity-* и не
      меняли цвет при наведении вовсе (тот же дефект, что владелец поймал у
-     секции «Слайд-шоу» 18.09, п.5 — satin-CTA слайд-шоу его не несёт, у неё
-     свой `.satin-slide-cta:hover`, но остальные секции идут этим же паттерном).
+     секции «Слайд-шоу» 18.09, п.5; кнопка слайда теперь красится ролью схемы,
+     data-scheme-button, src/themes/scheme-buttons.ts).
      Тот же приём подстроки класса, что у пары правил выше. */
   [class*="border-[rgb(var(--color-button-bg"]:hover {
     border-color: rgb(var(--color-button-bg-hover, var(--color-button-bg, 0 0 0))) !important;

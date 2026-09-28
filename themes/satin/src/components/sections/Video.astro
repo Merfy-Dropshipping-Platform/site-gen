@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText, hasText, textOf } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (satin, группа misc): новая канон-секция Video в манере satin
 // (themes/satin/MANNER.md §2/§4; у верстальщика секции нет — процесс-прецедент
 // bloom Video). Схема полей = packages/theme-base/blocks/Video/Video.puckConfig.ts.
@@ -7,18 +8,6 @@ import { inlineFormat } from "../../lib/rich-text";
 // с нулевым фоллбеком); только utility-классы с токенами.
 const p = Astro.props as Record<string, any>;
 const id = p.id;
-const merfy = p.__merfy as { fields?: Record<string, { set?: boolean }> } | undefined;
-function contentSet(keys: string | string[], raw: unknown): boolean {
-	const ks = Array.isArray(keys) ? keys : [keys];
-	for (const key of ks) {
-		const f = merfy?.fields?.[key];
-		if (f && typeof f.set === "boolean") return f.set;
-	}
-	if (typeof raw !== "string") return false;
-	const t = raw.trim();
-	if (!t || t.includes("/placeholders/") || t.includes("/images/4x/")) return false;
-	return true;
-}
 
 // Канон videoUrl + pupa video{url, coverImage}. blob:-URL — временные ObjectURL
 // вкладки конструктора, на live дадут 404 — отбрасываем (паттерн theme-base/bloom).
@@ -43,28 +32,20 @@ const poster =
 const isPlaceholder = !videoUrl;
 const PLACEHOLDER_VIDEO_IMAGE = "/placeholders/landscape-video.png";
 
-// Канон heading + pupa content.heading{text, alignment, enabled, size} — рендер
-// при непустом тексте и enabled !== 'false'. Роль = заголовок секции §1
-// (font-logo 20 uppercase leading-[1.15], токен heading 0_0_0).
+// Канон heading + pupa content.heading{text, alignment, enabled, size}. Роль =
+// заголовок секции §1 (font-logo 20 uppercase leading-[1.15], токен heading
+// 0_0_0). Figma 1:19335 — заголовок-плейсхолдер «Видео» ТОЛЬКО когда поле
+// вовсе не задано; стёртое мерчантом — пусто (SECTION-CONTRACT.md §2).
 const headingRaw = p.heading ?? p.content?.heading;
-const headingTextRaw =
-	typeof headingRaw === "string" ? headingRaw : ((headingRaw?.text as string | undefined) ?? "");
-// Figma 1:19335 — ДОСЛОВНЫЙ плейсхолдер пустого состояния секции «Видео»:
-// заголовок «Видео» (+ пустой image-rect с Play-иконкой ниже). Дефолт-заголовок
-// показываем, когда мерчант НЕ задал свой текст (паритет эталона rose Popular —
-// ?? fallback срабатывает только при пустых данных). Свой заголовок мерчанта
-// рендерим как есть. Явно отключённый заголовок (enabled === 'false') скрывает
-// его даже в пустом состоянии.
-const headingText = contentSet("heading", headingTextRaw) && headingTextRaw.trim() ? headingTextRaw : "Видео";
+const headingText = pickText(headingRaw, "Видео");
 const headingEnabled = String(p.content?.heading?.enabled ?? "true") !== "false";
-const showHeading = Boolean(headingText.trim()) && headingEnabled;
-const subheadingRaw =
-	(typeof p.subheading === "string" && p.subheading.trim() ? p.subheading : undefined) ??
-	(typeof p.content?.subheading?.text === "string" &&
-	p.content.subheading.text.trim() &&
-	String(p.content.subheading.enabled ?? "true") !== "false"
-		? p.content.subheading.text
-		: undefined);
+const showHeading = hasText(headingText) && headingEnabled;
+// Подзаголовок — своя видимость, НЕ зависит от showHeading (баг владельца
+// 26.09: стёртый заголовок гасил и подзаголовок).
+const subheadingEnabled = String(p.content?.subheading?.enabled ?? "true") !== "false";
+const legacySubheading = subheadingEnabled ? textOf(p.content?.subheading) : undefined;
+const subheadingText = textOf(p.subheading) ?? legacySubheading ?? "";
+const showSubheading = hasText(subheadingText);
 // Канон headingSize («Размер заголовка», кегль <h2>) + дубли heading.size /
 // content.heading.size. Секционный `size` теперь = ВЫСОТА блока (не кегль) —
 // исключён из цепочки. Лестница §9 «Заголовок секции»: small 17,
@@ -168,9 +149,9 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 <section class={`${sectionCls}${selfSchemeClass}`} aria-labelledby={titleId} data-puck-component-id={id} style={paddingStyle}>
 	<div class={containerCls}>
 		{
-			showHeading && (
+			(showHeading || showSubheading) && (
 				<div class={headingWrapCls}>
-					{!isFieldHidden('heading') && (
+					{showHeading && !isFieldHidden('heading') && (
 					<h2
 						id={titleId}
 						class={headingCls}
@@ -180,8 +161,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 						set:html={inlineFormat(headingText)}
 					/>
 					)}
-					{subheadingRaw && (
-						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`} set:html={inlineFormat(subheadingRaw)}></p>
+					{showSubheading && (
+						<p class={`font-manrope text-[16px] font-light leading-[1.5] text-[rgb(var(--color-muted,153_153_153))]${headingAlignCls}`} set:html={inlineFormat(subheadingText)}></p>
 					)}
 				</div>
 			)

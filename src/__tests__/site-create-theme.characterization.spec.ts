@@ -309,7 +309,7 @@ describe("reserve(): создание магазина (sites.service.ts:~463-57
 // ---------------------------------------------------------------------------
 
 describe("buildInitialRevision(): источник стартового контента (sites.service.ts:~1616)", () => {
-  it.each(["rose", "flux", "bloom", "satin"])(
+  it.each(["rose", "flux", "bloom", "satin", "vanilla"])(
     "РАСХОЖДЕНИЕ С БРИФОМ: тема %s строит ревизию через PageResolver (14 страниц манифеста, не legacy defaults/<t>.json)",
     async (theme) => {
       const service = makeBareService();
@@ -323,16 +323,6 @@ describe("buildInitialRevision(): источник стартового конт
       expect(Object.keys(revision.pagesData)).toHaveLength(14);
     },
   );
-
-  it("текущее поведение: vanilla тоже строит ревизию через PageResolver, но с 13 страницами (нет page-checkout-result)", async () => {
-    const service = makeBareService();
-    const revision = await service.buildInitialRevision("vanilla");
-
-    expect(revision.pages).toHaveLength(13);
-    expect(revision.pages.map((p: any) => p.id)).not.toContain(
-      "page-checkout-result",
-    );
-  });
 
   it("текущее поведение: неизвестная тема падает в легаси getDefaultContent → rose.json (одна страница home, без manifestVersion)", async () => {
     const service = makeBareService();

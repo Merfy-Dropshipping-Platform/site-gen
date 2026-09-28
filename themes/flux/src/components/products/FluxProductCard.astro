@@ -81,18 +81,20 @@ const wishlistOutlineSvg =
 			)}
 			{showBadges && (
 				<div class="absolute left-2 top-2 flex flex-col items-start gap-1">
+					{/* Цвет — роль схемы «Кнопка» (класс merfy-badge, base.css), не хардкод
+					    верстальщика bg #FA5109/text-white (владелец 28.09). */}
 					{product.isNew && (
-						<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+						<span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">
 							Новинка
 						</span>
 					)}
 					{product.salePercent && (
-						<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+						<span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">
 							{product.salePercent}
 						</span>
 					)}
 					{!product.isNew && !product.salePercent && product.discount && (
-						<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+						<span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">
 							Скидка
 						</span>
 					)}

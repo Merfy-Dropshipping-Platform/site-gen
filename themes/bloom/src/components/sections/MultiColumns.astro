@@ -10,6 +10,7 @@
 // «Кнопка»), НЕ мок-демо верстальщика. Когда мерчант добавил columns[] — рендер
 // реальных данных без изменений (Shopify-модель, как theme-base PopularProducts/
 // Collections).
+import { multiColumnLink } from "../../../../../packages/theme-base/runtime/multicolumn-link";
 import { inlineFormat } from "../../lib/rich-text";
 const p = Astro.props as Record<string, any>;
 const id = p.id;
@@ -70,24 +71,15 @@ const headingCls = `w-full font-urbanist ${headingSizeCls} font-normal leading-n
 // «Сочетай текст…» + Кнопка.
 const PLACEHOLDER_TEXT = "Сочетай текст, чтобы подчеркнуть плюсы товара или коллекции.";
 const PLACEHOLDER_COLUMNS = [
-	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
-	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
-	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", link: { text: "Кнопка", href: "/catalog" } },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", linkText: "Кнопка", link: "/catalog" },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", linkText: "Кнопка", link: "/catalog" },
+	{ heading: "Колонна", text: PLACEHOLDER_TEXT, imageUrl: "", linkText: "Кнопка", link: "/catalog" },
 ];
 const rawColumns = hasManualColumns ? p.columns : PLACEHOLDER_COLUMNS;
 const columns = rawColumns.slice(0, 10).map((c: any) => {
-	// Ссылка карточки: canon link {text,href} ИЛИ flat-пара linkText + link
-	// (string из arrayFields конструктора). Рендер при непустом тексте.
-	const linkText =
-		(c.link && typeof c.link === "object" && typeof c.link.text === "string" && c.link.text.trim()
-			? c.link.text
-			: undefined) ?? (typeof c.linkText === "string" && c.linkText.trim() ? c.linkText : undefined);
-	const linkHref =
-		(c.link && typeof c.link === "object" && typeof c.link.href === "string" && c.link.href
-			? c.link.href
-			: undefined) ??
-		(typeof c.link === "string" && c.link ? c.link : undefined) ??
-		"/catalog";
+	// Кнопка колонки — общее правило пяти тем: подпись только из «Названия
+	// ссылки», пустое поле = кнопки нет (packages/theme-base/runtime/multicolumn-link.ts).
+	const link = multiColumnLink(c);
 	return {
 		heading:
 			// Канон панели («Заголовок»/«Текст» пишутся в title/description) ПЕРВЫМ,
@@ -105,7 +97,7 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 		imageSize: c.imageSize,
 		headingSize: c.headingSize,
 		textSize: c.textSize,
-		link: linkText ? { text: linkText, href: linkHref } : undefined,
+		link,
 		// Пустое состояние: рисуем нейтральный rect-плейсхолдер вместо иконки.
 		isPlaceholder: !hasManualColumns,
 	};
@@ -114,10 +106,9 @@ const columns = rawColumns.slice(0, 10).map((c: any) => {
 // Канон displayColumns 1-4: canon-default 3 и отсутствие = литерал верстальщика
 // (md:grid-cols-2 xl:grid-cols-3 байт-в-байт); иное значение — мобильная
 // лестница 1 → md:2 фиксирована, xl — через CSS-var.
-// PARITY_DESIGN (владелец 23.09: «как у верстальщиков, только стили»): отступы,
+// Как у верстальщиков (владелец 23.09: «как у верстальщиков, только стили»): отступы,
 // зазоры и высота строк по актуальной вёрстке Bloom-theme @5aae2ad6. Настройки и
-// цвета не меняются; без признака — прежние классы. Признак ставит sites.
-const designParity = p.__designParity === true;
+// цвета не меняются. Владелец 25.09: одна версия секции — прежняя ветка удалена.
 const displayColumnsRaw = Number(p.displayColumns);
 const displayColumns =
 	Number.isFinite(displayColumnsRaw) && displayColumnsRaw >= 1 && displayColumnsRaw <= 4
@@ -126,9 +117,7 @@ const displayColumns =
 // Benefits: сетка gap-4, карточка gap-8 между иконкой и текстом и gap-3 внутри
 // текста, min-h только с md, строки leading-normal. Разметка карточки плоская,
 // поэтому 8 = gap-3 + mb-5 у медиа.
-const MC = designParity
-	? { gridGap: "gap-4", cardMinH: "md:min-h-[252px]", cardGap: "gap-3", mediaMb: " mb-5", leading: "leading-normal" }
-	: { gridGap: "gap-10", cardMinH: "min-h-[252px]", cardGap: "gap-6", mediaMb: "", leading: "leading-none" };
+const MC = { gridGap: "gap-4", cardMinH: "md:min-h-[252px]", cardGap: "gap-3", mediaMb: " mb-5", leading: "leading-normal" };
 const gridCls =
 	displayColumns === 3
 		? `grid w-full grid-cols-1 justify-items-center ${MC.gridGap} md:grid-cols-2 xl:grid-cols-3`
@@ -312,7 +301,8 @@ const isFieldHidden = (f: string) => hiddenFields.includes(f);
 					{!isFieldHidden('buttonText') && (
 					<a
 						href={btnHref}
-						class="inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] bg-[rgb(var(--color-button-2-bg,255_255_255))] px-6 font-inter text-[16px] font-light leading-none text-[rgb(var(--color-button-2-text,0_0_0))] transition-opacity hover:opacity-90 active:scale-95"
+						class="border border-solid inline-flex h-12 items-center justify-center rounded-[var(--radius-button,100px)] px-6 font-inter text-[16px] font-light leading-none transition-opacity hover:opacity-90 active:scale-95"
+						data-scheme-button="primary"
 						data-puck-subsection-parent={id}
 						data-puck-subsection-index="102"
 						data-puck-subsection-field="buttonText"

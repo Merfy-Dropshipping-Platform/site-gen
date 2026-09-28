@@ -210,3 +210,28 @@
     display: none;
   }
 }
+
+/* Бейдж карточки/товара (скидка «-N%»/«Скидка», «Новинка» и т.п.) — роль
+   схемы СЕКЦИИ «Кнопка»: фон = --color-button-bg, текст = --color-button-text,
+   та же роль, что у CTA «Добавить в корзину» (.color-scheme-N объявляет обе
+   переменные на контейнере секции — src/themes/tokens-css.ts schemeToVars).
+   Требование владельца 28.09: бейдж скидки на карточке flux красился
+   хардкодом верстальщика (#FA5109 фон / белый текст) мимо схемы; у satin —
+   тоже хардкод (#000000); у rose/bloom — своя переменная `--color-accent`
+   (другая роль схемы, не «Кнопка») + принудительный `!text-white`. git log -S
+   подтверждает: это designer-порт (7d086c2a, c58b4922), не осознанный токен
+   `--color-sale`.
+   Класс, а не Tailwind bg-[...]/text-[...] в порте темы: живая сборка CSS
+   витрины НЕ сканирует `packages/theme-<t>/blocks/**` (только узкие @source
+   строки в themes/<t>/src/styles/global.css — reference_live_css_skips_port_blocks),
+   поэтому произвольный класс, объявленный только в порте, был бы мёртв на
+   витрине. Этот файл (base.css) темы подключают через `@import` (не
+   `@source`) — правило доезжает всегда, без Tailwind-скана.
+   Класс, а не [data-атрибут]: `scripts/check-css-layers.mjs` форсит
+   атрибут-селекторы этого файла в `@layer base` (ниже `@layer utilities` —
+   утилита победила бы), а класс остаётся unlayered и гарантированно
+   перебивает утилиты. Не в @layer base выше — сознательно unlayered. */
+.merfy-badge {
+  background-color: rgb(var(--color-button-bg, 17 17 17));
+  color: rgb(var(--color-button-text, 255 255 255));
+}

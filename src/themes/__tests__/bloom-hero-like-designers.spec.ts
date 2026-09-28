@@ -1,5 +1,4 @@
 import { renderSections } from "../../../scripts/qa/lib/render";
-import { prepareBlockProps } from "../page-blocks";
 
 /**
  * Первый экран bloom — как в актуальной вёрстке верстальщиков.
@@ -23,8 +22,8 @@ import { prepareBlockProps } from "../page-blocks";
  *     «Средний» и «Маленький» — та же пропорция, ниже в 0,8 и 0,6 раза
  *     (как соотносились прежние высоты 620 / 500 / 380);
  *   - два фото, пустое состояние, затемнение, положение, выравнивание,
- *     контейнер, кнопки и цвета из схемы — без изменений;
- *   - без выключателя PARITY_DESIGN разметка байт в байт прежняя.
+ *     контейнер, кнопки и цвета из схемы — без изменений.
+ * С 25.09 у секции одна версия — прежняя ветка удалена.
  */
 
 const КАТАЛОГ = { products: [], collections: [], publications: [] };
@@ -37,7 +36,6 @@ const ПОЛНАЯ = {
   text: { content: "Текст" },
   backgroundImages: { url1: ФОТО },
 };
-const КАК_У_ВЕРСТАЛЬЩИКОВ = { __designParity: true };
 
 function отрисовать(props: Record<string, unknown>[]): string[] {
   return renderSections(
@@ -87,9 +85,9 @@ const МАЛЕНЬКИЙ = [
   "xl:aspect-[1920/555]",
 ];
 
-describe("bloom, первый экран: как у верстальщиков под PARITY_DESIGN", () => {
+describe("bloom, первый экран: как у верстальщиков", () => {
   it("фото вписано по высоте, а не заливает блок", () => {
-    const [html] = отрисовать([{ ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ }]);
+    const [html] = отрисовать([ПОЛНАЯ]);
     const фото = классыФото(html).split(/\s+/);
     for (const к of [
       "absolute",
@@ -108,10 +106,22 @@ describe("bloom, первый экран: как у верстальщиков �
     expect(фото).not.toContain("size-full");
   });
 
+  it("своё фото мерчанта заполняет блок (тестер 24.09: полосы по бокам)", () => {
+    const [html] = отрисовать([
+      { ...ПОЛНАЯ, backgroundImages: { url1: "https://minio.merfy.ru/media/own-photo.jpg" } },
+    ]);
+    const фото = классыФото(html, "https://minio.merfy.ru/media/own-photo.jpg").split(/\s+/);
+    expect(фото).toContain("object-cover");
+    expect(фото).toContain("size-full");
+    expect(фото).not.toContain("h-[122%]");
+    // Высота блока — верстальщиков и со своим фото.
+    expect(классыБлока(html)).toContain("aspect-[375/716]");
+  });
+
   it("«Размер» по умолчанию и «Большой» — пропорция верстальщиков", () => {
     const [поУмолчанию, большой] = отрисовать([
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ },
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, size: "large" },
+      ПОЛНАЯ,
+      { ...ПОЛНАЯ, size: "large" },
     ]);
     for (const html of [поУмолчанию, большой]) {
       const блок = классыБлока(html).split(/\s+/);
@@ -121,8 +131,8 @@ describe("bloom, первый экран: как у верстальщиков �
 
   it("«Средний» и «Маленький» — та же пропорция, ниже в 0,8 и 0,6 раза", () => {
     const [средний, маленький] = отрисовать([
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, size: "medium" },
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, size: "small" },
+      { ...ПОЛНАЯ, size: "medium" },
+      { ...ПОЛНАЯ, size: "small" },
     ]);
     const с = классыБлока(средний).split(/\s+/);
     const м = классыБлока(маленький).split(/\s+/);
@@ -131,7 +141,7 @@ describe("bloom, первый экран: как у верстальщиков �
   });
 
   it("остальные настройки по-прежнему меняют секцию", () => {
-    const база = { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ };
+    const база = ПОЛНАЯ;
     const [исходная, ...варианты] = отрисовать([
       база,
       { ...база, position: "top-right" },
@@ -143,102 +153,41 @@ describe("bloom, первый экран: как у верстальщиков �
     for (const v of варианты) expect(v).not.toEqual(исходная);
   });
 
-  it("два фото и пустое состояние не меняются", () => {
-    const дваФото = {
-      ...ПОЛНАЯ,
-      backgroundImages: { url1: ФОТО, url2: ФОТО2 },
-    };
-    const пусто = { id: "Hero-1", colorScheme: "scheme-1" };
-    const [дваВкл, дваВыкл, пустоВкл, пустоВыкл] = отрисовать([
-      { ...дваФото, ...КАК_У_ВЕРСТАЛЬЩИКОВ },
-      дваФото,
-      { ...пусто, ...КАК_У_ВЕРСТАЛЬЩИКОВ },
-      пусто,
-    ]);
-    // Две половины заливают свои колонки, как раньше.
-    expect(классыФото(дваВкл, ФОТО)).toContain("object-cover");
-    expect(классыФото(дваВкл, ФОТО2)).toContain("object-cover");
-    // Отличаются только высота блока («Размер») и подложка для читаемости:
-    // её затемнение с признаком — как у верстальщиков, только на телефоне.
-    const безПодложки = (html: string) =>
-      html
-        .replace(
-          "from-black/75 via-black/40 via-40% to-transparent md:hidden",
-          "",
-        )
-        .replace("from-black/45 to-black/10", "");
-    expect(безПодложки(дваВкл.replace(классыБлока(дваВкл), ""))).toEqual(
-      безПодложки(дваВыкл.replace(классыБлока(дваВыкл), "")),
-    );
-    expect(пустоВкл.replace(классыБлока(пустоВкл), "")).toEqual(
-      пустоВыкл.replace(классыБлока(пустоВыкл), ""),
-    );
+  it("два фото: половины заливают свои колонки", () => {
+    const [два] = отрисовать([{ ...ПОЛНАЯ, backgroundImages: { url1: ФОТО, url2: ФОТО2 } }]);
+    expect(классыФото(два, ФОТО)).toContain("object-cover");
+    expect(классыФото(два, ФОТО2)).toContain("object-cover");
   });
 
-  it("без выключателя разметка прежняя: фото заливает блок, высота лестницей", () => {
-    const [безПризнака, признакВыкл] = отрисовать([
-      ПОЛНАЯ,
-      { ...ПОЛНАЯ, __designParity: false },
-    ]);
-    expect(признакВыкл).toEqual(безПризнака);
-    expect(классыФото(безПризнака)).toContain("object-cover");
-    expect(классыБлока(безПризнака)).toContain("min-h-[min(80svh,620px)]");
-    expect(классыБлока(безПризнака)).not.toContain("aspect-");
+  it("на мониторах шире 1920 текст в колонке 1320 по центру, как остальные секции", () => {
+    const [html] = отрисовать([ПОЛНАЯ]);
+    expect(html).toContain("2xl:px-[max(300px,calc(50%_-_660px))]");
+    expect(html).not.toContain("2xl:px-[300px]");
+  });
+
+  it("высота — пропорция верстальщиков, прежней лестницы min-h нет", () => {
+    const [html] = отрисовать([ПОЛНАЯ]);
+    expect(классыБлока(html)).toContain("aspect-[375/716]");
+    expect(классыБлока(html)).not.toContain("min-h-[min(80svh,620px)]");
   });
 });
 
-describe("PARITY_DESIGN доходит до секции через общую подготовку пропсов", () => {
-  const ctx = { publicUrl: null, siteId: "site-A", themeBlocks: {} };
-  const было = process.env.PARITY_DESIGN;
-  afterEach(() => {
-    if (было === undefined) delete process.env.PARITY_DESIGN;
-    else process.env.PARITY_DESIGN = было;
+describe("bloom, первый экран: затемнение только из ползунка", () => {
+  // Владелец 25.09: «в зависимости от настройки затемнения, если 0 — то и там и
+  // там светло». Постоянной подложки (раньше: градиент на весь блок или только
+  // на телефоне) больше нет — затемнение даёт только ползунок «Затемнение»,
+  // одинаково на всех ширинах.
+  it("постоянного градиента нет", () => {
+    const [html] = отрисовать([ПОЛНАЯ]);
+    expect(html).not.toContain("from-black/75 via-black/40");
+    expect(html).not.toContain("from-black/45 to-black/10");
   });
 
-  it("сайт из списка получает признак", () => {
-    process.env.PARITY_DESIGN = "site-B,site-A";
-    expect(prepareBlockProps("Hero", {}, ctx).__designParity).toBe(true);
-  });
-
-  it("сайт вне списка и выключенный выключатель признака не получают", () => {
-    process.env.PARITY_DESIGN = "site-B";
-    expect(prepareBlockProps("Hero", {}, ctx)).not.toHaveProperty(
-      "__designParity",
-    );
-    process.env.PARITY_DESIGN = "off";
-    expect(prepareBlockProps("Hero", {}, ctx)).not.toHaveProperty(
-      "__designParity",
-    );
-    delete process.env.PARITY_DESIGN;
-    expect(prepareBlockProps("Hero", {}, ctx)).not.toHaveProperty(
-      "__designParity",
-    );
-  });
-
-  it("«*» — для всех", () => {
-    process.env.PARITY_DESIGN = "*";
-    expect(prepareBlockProps("Hero", {}, ctx).__designParity).toBe(true);
-  });
-});
-
-describe("bloom, первый экран: затемнение как у верстальщиков", () => {
-  it("с признаком — их градиент и только на телефоне; без — прежний на весь блок", () => {
-    const [вкл, выкл] = отрисовать([
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ },
-      ПОЛНАЯ,
-    ]);
-    expect(вкл).toContain(
-      "bg-gradient-to-t from-black/75 via-black/40 via-40% to-transparent md:hidden",
-    );
-    expect(вкл).not.toContain("from-black/45 to-black/10");
-    expect(выкл).toContain("from-black/45 to-black/10");
-  });
-
-  it("ползунок «Затемнение» по-прежнему работает с признаком", () => {
+  it("ползунок «Затемнение» по-прежнему работает", () => {
     // У bloom «Затемнение» по умолчанию уже задано темой — сравниваем два значения.
     const [ноль, семьдесят] = отрисовать([
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, overlay: 0 },
-      { ...ПОЛНАЯ, ...КАК_У_ВЕРСТАЛЬЩИКОВ, overlay: 70 },
+      { ...ПОЛНАЯ, overlay: 0 },
+      { ...ПОЛНАЯ, overlay: 70 },
     ]);
     expect(семьдесят).toContain("opacity:0.7");
     expect(ноль).not.toContain("opacity:0.7");

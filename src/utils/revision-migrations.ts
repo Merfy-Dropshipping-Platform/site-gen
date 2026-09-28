@@ -195,6 +195,57 @@ function sameContentShallow(a: Block[], b: Block[]): boolean {
 }
 
 /**
+ * «Спасибо за заказ» — обычная страница магазина: шапка и подвал главной, как
+ * на «О нас» (владелец 26.09: «обычную шапку, шрифты и цветовые схемы брать из
+ * настройки темы»). Витрина так и рисовала (реестр страниц: `chrome: 'full'`),
+ * а в ревизии страницы лежала «Шапка оформления» без подвала — конструктор
+ * показывал её и расходился с витриной.
+ *
+ * «Шапку оформления» заменяем группой «Шапка» главной, подвал главной
+ * добавляем в конец, если его нет. id блоков — детерминированные
+ * `<Тип>-<страница>` (идемпотентно). Дальше страницу держат в синхроне
+ * общие unifyHeaderWithHome / unifyFooterWithHome.
+ */
+const CHECKOUT_RESULT_PAGE_IDS = ['page-checkout-result', 'checkout-result'] as const;
+
+export function storeChromeOnCheckoutResult(
+  pagesData: Record<string, unknown>,
+): Record<string, unknown> {
+  const homeContent = (pagesData['home'] as PageData | undefined)?.content;
+  const home: Block[] = Array.isArray(homeContent) ? (homeContent as Block[]) : [];
+  const headerGroup = home.filter((b) => isHeaderGroup(b?.type));
+  const footer = home.find((b) => b?.type === 'Footer');
+  if (!headerGroup.some((b) => b?.type === 'Header')) return pagesData;
+
+  const copyFor = (pageId: string) => (b: Block): Block => ({
+    ...b,
+    props: { ...(b.props ?? {}), id: `${String(b.type)}-${pageId}` },
+  });
+
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  for (const pageId of CHECKOUT_RESULT_PAGE_IDS) {
+    const page = pagesData[pageId] as PageData | undefined;
+    const content = Array.isArray(page?.content) ? (page!.content as Block[]) : null;
+    if (!content) continue;
+    const ownHeader = content.filter((b) => isHeaderGroup(b?.type));
+    const ownFooter = content.filter((b) => b?.type === 'Footer');
+    const body = content.filter(
+      (b) => b?.type !== 'CheckoutHeader' && b?.type !== 'Footer' && !isHeaderGroup(b?.type),
+    );
+    const next = [
+      ...(ownHeader.some((b) => b?.type === 'Header') ? ownHeader : headerGroup.map(copyFor(pageId))),
+      ...body,
+      ...(ownFooter.length > 0 ? ownFooter : footer ? [copyFor(pageId)(footer)] : []),
+    ];
+    if (sameContentShallow(content, next)) continue;
+    out[pageId] = { ...(page as PageData), content: next };
+    changed = true;
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Подвал на ВСЕХ страницах = подвал ГЛАВНОЙ. Пункт 3б сближения «витрина =
  * конструктор»: владелец 23.09 выбрал общий хром, как в Shopify. Зеркало
  * {@link unifyHeaderWithHome} для подвала.
@@ -963,8 +1014,8 @@ function themeHasCheckoutResultPage(themeId: string | null | undefined): boolean
  * Вызывающая сторона (`migrateRevisionData`) решает, звать ли эту функцию,
  * по МАНИФЕСТУ темы (`theme.json.pages` содержит `page-checkout-result`?),
  * а не по имени темы — состав страниц темы это данные пакета, не код. Сейчас
- * страница есть у rose/flux/bloom/satin; vanilla её не заявляет — для vanilla
- * функция просто не вызывается, `pages/checkout-result.json` у неё нет.
+ * страница есть у всех пяти тем (vanilla — с 26.09: без неё после оплаты
+ * покупатель попадал на пустоту или на страницу прошлой темы магазина).
  */
 function seedCheckoutResultPage(
   out: Record<string, unknown>,
@@ -984,27 +1035,16 @@ function seedCheckoutResultPage(
 
   // b45-fix: детерминированные id (не Date.now()) — см. коммент у
   // getHomeChrome. Совпадает с сидом theme.json (`CheckoutHeader-1` и т.д.).
+  // Только тело страницы: шапку и подвал магазина кладёт
+  // storeChromeOnCheckoutResult (они берутся с главной). Схему не задаём —
+  // прежняя константа `scheme-2` у bloom/vanilla означала цветную акцентную
+  // схему, а не «светлую» (тот же класс ошибки, что b35 на чекауте).
   const seedPage: PageData = {
     content: [
-      {
-        type: 'CheckoutHeader',
-        props: {
-          id: 'CheckoutHeader-1',
-          siteTitle: 'Мой магазин',
-          logoMode: 'text',
-          logoImage: null,
-          rightIcon: 'cart',
-          accountLink: '/account',
-          backLink: '/cart',
-          cartLink: '/cart',
-          padding: { top: 24, bottom: 24 },
-        } as Record<string, unknown>,
-      },
       {
         type: 'OrderConfirmation',
         props: {
           id: 'OrderConfirmation-1',
-          colorScheme: 'scheme-2',
           padding: { top: 0, bottom: 0 },
         } as Record<string, unknown>,
       },
@@ -1919,6 +1959,48 @@ function backfillHeroLegacyProps(pagesData: Record<string, unknown>): Record<str
 }
 
 /**
+ * «Основной текст»: кнопка из старого скрытого `cta` → в поле панели «Кнопка».
+ *
+ * Баг тестировщика: «при пустом инпуте в кнопке он отображает кнопку». Стартовое
+ * наполнение тем клало кнопку в скрытое `cta` («К покупкам» → /catalog у vanilla,
+ * «СМОТРЕТЬ КАТАЛОГ» у satin и др.), а поле панели привязано к `button.{text,link}`.
+ * Витрина кнопку показывала, инпут был пуст, и убрать кнопку мерчант не мог.
+ *
+ * Бэкфилл КОПИРУЕТ `cta.{text, href|link}` в `button.{text, link:{href}}`, только
+ * когда поля «Кнопка» в секции нет вовсе (`button` отсутствует или null). Если
+ * мерчант уже трогал поле — даже очистил его — решает его значение: очищенный
+ * инпут сильнее старого `cta` (runtime/main-text-button.ts). Legacy `cta`
+ * сохраняем 1-в-1, как у Hero. Рендер-нейтрально: порт берёт `cta`, пока поля
+ * нет, и тот же текст после переноса. Идемпотентно.
+ */
+function backfillMainTextLegacyButton(pagesData: Record<string, unknown>): Record<string, unknown> {
+  let changed = false;
+  const out: Record<string, unknown> = { ...pagesData };
+  const filled = (v: unknown): v is string => typeof v === 'string' && v.trim() !== '';
+  for (const [pageId, page] of Object.entries(pagesData)) {
+    const pd = page as PageData | undefined;
+    const content = Array.isArray(pd?.content) ? (pd!.content as Block[]) : null;
+    if (!content) continue;
+    let pageChanged = false;
+    const newContent = content.map((block) => {
+      if (block?.type !== 'MainText') return block;
+      const props = (block.props ?? {}) as Record<string, unknown>;
+      const cta = props.cta as { text?: unknown; href?: unknown; link?: unknown } | null | undefined;
+      const text = cta?.text;
+      if (props.button != null || !filled(text)) return block;
+      const href = [cta?.href, cta?.link].find((v): v is string => typeof v === 'string') ?? '';
+      pageChanged = true;
+      return { ...block, props: { ...props, button: { text, link: { href } } } };
+    });
+    if (pageChanged) {
+      out[pageId] = { ...(pd as object), content: newContent };
+      changed = true;
+    }
+  }
+  return changed ? out : pagesData;
+}
+
+/**
  * Video «Размер» split (rose/flux/vanilla/bloom/satin parity): исторически у
  * блока Video было единственное top-level поле `size`, ошибочно подписанное
  * «Размер заголовка» и управлявшее КЕГЛЕМ <h2>. Канон (как у Hero) — два
@@ -2404,6 +2486,9 @@ export function migrateRevisionData(
     out.pagesData = backfillHeroLegacyProps(out.pagesData as Record<string, unknown>);
   }
   if (out.pagesData && typeof out.pagesData === 'object') {
+    out.pagesData = backfillMainTextLegacyButton(out.pagesData as Record<string, unknown>);
+  }
+  if (out.pagesData && typeof out.pagesData === 'object') {
     out.pagesData = backfillVideoSizeSplit(out.pagesData as Record<string, unknown>);
   }
   // Spec 103/109: thank-you `/checkout-result`. Оперирует полной ревизией
@@ -2435,7 +2520,7 @@ export function migrateRevisionData(
   // checkout-result), значит унификация накрывает и их тоже.
   if (withLogin.pagesData && typeof withLogin.pagesData === 'object') {
     withLogin.pagesData = unifyHeaderWithHome(
-      withLogin.pagesData as Record<string, unknown>,
+      storeChromeOnCheckoutResult(withLogin.pagesData as Record<string, unknown>),
     );
     if (options.unifyFooter) {
       withLogin.pagesData = unifyFooterWithHome(

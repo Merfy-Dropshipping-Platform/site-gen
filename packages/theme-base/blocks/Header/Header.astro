@@ -3,6 +3,7 @@ import type { HeaderProps } from './Header.puckConfig';
 import { HeaderClasses as C } from './Header.classes';
 import NavLinkItem from './NavLinkItem.astro';
 import MobileMenuItem from './MobileMenuItem.astro';
+import { headerOwnLogo } from '../../runtime/header-logo';
 
 const MENU_MAX_DEPTH = 3;
 
@@ -90,7 +91,9 @@ const hamburgerOverrideClass = isSidebar ? 'md:!flex' : '';
 // Раньше здесь стоял безусловный <img src={logo}>: пустое значение давало
 // `<img src="">`, то есть битую картинку вместо названия. siteTitle в шапку
 // кладёт конструктор из настроек админки (site.name).
-const hasLogo = typeof logo === 'string' && logo.trim().length > 0;
+// Плейсхолдер /logo.svg и картинки темы (/icons/…, дефолт blockDefaults) — не
+// логотип магазина: правило общее для пяти тем, runtime/header-logo.ts.
+const hasLogo = headerOwnLogo(logo) !== '';
 ---
 <div class:list={[C.wrapper, C.sticky[stickiness], schemeClass]} data-header-wrapper data-header-variant={variant ?? 'standard'} data-puck-component-id={id}>
   {promoEnabled && promoText && (

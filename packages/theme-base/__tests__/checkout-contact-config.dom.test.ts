@@ -1,12 +1,21 @@
 /**
  * @jest-environment jsdom
  *
- * CheckoutContactForm — рантайм-конфиг чекаута (Фаза 4a), слой рендер/раскладка:
- *  - contactMethod="email"      → телефон скрыт, email растянут (md:col-span-2);
- *  - contactMethod="email-phone"/дефолт → оба поля видны, без растяжки;
- *  - обратимость (email → email-phone возвращает исходное состояние);
- *  - обе точки применения: сразу на init (конфиг уже есть) и по событию
- *    'checkout:config-ready'.
+ * CheckoutContactForm — рантайм-конфиг чекаута (Фаза 4a), слой рендер/раскладка.
+ *
+ * Правило владельца 28.09: при необязательной регистрации телефона на
+ * чекауте нет, почта остаётся. Телефон виден и обязателен ТОЛЬКО когда
+ * requireCustomerAuth===true И contactMethod!=='email'. Во всех остальных
+ * случаях (регистрация необязательна ИЛИ contactMethod='email') работает
+ * режим «только почта»: телефон скрыт, email растянут (md:col-span-2).
+ *
+ * Покрывает:
+ *  - дефолт (нет .checkout вовсе) → email-only (новый дефолт, не регрессия);
+ *  - requireCustomerAuth=true + contactMethod (не задан / 'email-phone') → оба поля видны;
+ *  - requireCustomerAuth=true + contactMethod='email' → email-only (регистрация не отменяет email-only режим);
+ *  - requireCustomerAuth=false/не задан + contactMethod='email-phone' → email-only (регистрация решает, не contactMethod);
+ *  - обратимость по событию 'checkout:config-ready';
+ *  - идемпотентность повторного применения.
  * Конфиг-скрипт извлекается из .astro и исполняется в jsdom.
  */
 import { readFileSync } from 'fs';
@@ -66,7 +75,7 @@ function fireConfigReady() {
   document.dispatchEvent(new CustomEvent('checkout:config-ready'));
 }
 
-describe('CheckoutContactForm — runtime config (contactMethod)', () => {
+describe('CheckoutContactForm — runtime config (requireCustomerAuth × contactMethod, владелец 28.09)', () => {
   let email: HTMLElement;
   let phone: HTMLElement;
 
@@ -80,29 +89,8 @@ describe('CheckoutContactForm — runtime config (contactMethod)', () => {
     delete (window as any).__MERFY_CONFIG__;
   });
 
-  it('дефолт (нет .checkout) → оба поля видны, email без растяжки (нулевая регрессия)', () => {
+  it('дефолт (нет .checkout) → email-only: телефон скрыт, email растянут (новый дефолт владельца 28.09, не регрессия)', () => {
     setConfig(null);
-    const section = mountDom();
-    runConfigScript(section);
-    els(section);
-
-    expect(phone.hidden).toBe(false);
-    expect(email.hidden).toBe(false);
-    expect(email.classList.contains(FIELD_FULL)).toBe(false);
-  });
-
-  it('contactMethod="email-phone" явно → оба видны, без растяжки', () => {
-    setConfig({ contactMethod: 'email-phone' });
-    const section = mountDom();
-    runConfigScript(section);
-    els(section);
-
-    expect(phone.hidden).toBe(false);
-    expect(email.classList.contains(FIELD_FULL)).toBe(false);
-  });
-
-  it('contactMethod="email" (конфиг уже есть на init) → телефон скрыт, email на всю ширину', () => {
-    setConfig({ contactMethod: 'email' });
     const section = mountDom();
     runConfigScript(section);
     els(section);
@@ -111,39 +99,89 @@ describe('CheckoutContactForm — runtime config (contactMethod)', () => {
     expect(email.classList.contains(FIELD_FULL)).toBe(true);
   });
 
-  it('contactMethod="email" по событию checkout:config-ready → телефон скрыт, email растянут', () => {
-    setConfig(null);
+  it("requireCustomerAuth не задан + contactMethod='email-phone' → всё равно email-only (регистрация необязательна)", () => {
+    setConfig({ contactMethod: 'email-phone' });
     const section = mountDom();
-    runConfigScript(section); // init без конфига — оба видны
+    runConfigScript(section);
     els(section);
+
+    expect(phone.hidden).toBe(true);
+    expect(email.classList.contains(FIELD_FULL)).toBe(true);
+  });
+
+  it("requireCustomerAuth=false + contactMethod='email-phone' → email-only (флаг явно выключен)", () => {
+    setConfig({ requireCustomerAuth: false, contactMethod: 'email-phone' });
+    const section = mountDom();
+    runConfigScript(section);
+    els(section);
+
+    expect(phone.hidden).toBe(true);
+    expect(email.classList.contains(FIELD_FULL)).toBe(true);
+  });
+
+  it('requireCustomerAuth=true, contactMethod не задан (дефолт email-phone) → оба поля видны, без растяжки', () => {
+    setConfig({ requireCustomerAuth: true });
+    const section = mountDom();
+    runConfigScript(section);
+    els(section);
+
     expect(phone.hidden).toBe(false);
     expect(email.classList.contains(FIELD_FULL)).toBe(false);
+  });
+
+  it("requireCustomerAuth=true + contactMethod='email-phone' явно → оба видны, без растяжки", () => {
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' });
+    const section = mountDom();
+    runConfigScript(section);
+    els(section);
+
+    expect(phone.hidden).toBe(false);
+    expect(email.classList.contains(FIELD_FULL)).toBe(false);
+  });
+
+  it("requireCustomerAuth=true + contactMethod='email' → email-only (регистрация обязательна, но канал контакта — только почта)", () => {
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email' });
+    const section = mountDom();
+    runConfigScript(section);
+    els(section);
+
+    expect(phone.hidden).toBe(true);
+    expect(email.classList.contains(FIELD_FULL)).toBe(true);
+  });
+
+  it('requireCustomerAuth=true по событию checkout:config-ready → телефон появляется', () => {
+    setConfig(null);
+    const section = mountDom();
+    runConfigScript(section); // init без конфига — email-only
+    els(section);
+    expect(phone.hidden).toBe(true);
+    expect(email.classList.contains(FIELD_FULL)).toBe(true);
 
     // Продюсер выставил конфиг позже и диспатчнул событие.
-    setConfig({ contactMethod: 'email' });
-    fireConfigReady();
-
-    expect(phone.hidden).toBe(true);
-    expect(email.classList.contains(FIELD_FULL)).toBe(true);
-  });
-
-  it('обратимость: email → email-phone возвращает телефон и снимает растяжку', () => {
-    setConfig({ contactMethod: 'email' });
-    const section = mountDom();
-    runConfigScript(section);
-    els(section);
-    expect(phone.hidden).toBe(true);
-    expect(email.classList.contains(FIELD_FULL)).toBe(true);
-
-    setConfig({ contactMethod: 'email-phone' });
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' });
     fireConfigReady();
 
     expect(phone.hidden).toBe(false);
     expect(email.classList.contains(FIELD_FULL)).toBe(false);
   });
 
-  it('идемпотентность: повторный config-ready с тем же email не ломает состояние', () => {
-    setConfig({ contactMethod: 'email' });
+  it('обратимость: requireCustomerAuth true→false возвращает email-only (телефон скрывается обратно)', () => {
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' });
+    const section = mountDom();
+    runConfigScript(section);
+    els(section);
+    expect(phone.hidden).toBe(false);
+    expect(email.classList.contains(FIELD_FULL)).toBe(false);
+
+    setConfig({ requireCustomerAuth: false, contactMethod: 'email-phone' });
+    fireConfigReady();
+
+    expect(phone.hidden).toBe(true);
+    expect(email.classList.contains(FIELD_FULL)).toBe(true);
+  });
+
+  it('идемпотентность: повторный config-ready с тем же конфигом не ломает состояние', () => {
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' });
     const section = mountDom();
     runConfigScript(section);
     els(section);
@@ -151,8 +189,8 @@ describe('CheckoutContactForm — runtime config (contactMethod)', () => {
     fireConfigReady();
     fireConfigReady();
 
-    expect(phone.hidden).toBe(true);
-    // classList.add идемпотентен — токен ровно один.
-    expect(email.className.split(/\s+/).filter((c) => c === FIELD_FULL).length).toBe(1);
+    expect(phone.hidden).toBe(false);
+    // classList.remove идемпотентен — токена нет ни разу лишний раз не добавлен.
+    expect(email.className.split(/\s+/).filter((c) => c === FIELD_FULL).length).toBe(0);
   });
 });

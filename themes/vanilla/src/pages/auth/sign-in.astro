@@ -6,7 +6,7 @@ import { V_IMG } from "../../data/imageAssets";
 
 // Конфиг auth-стора: shopId патчит build.service (patchShopIdInDist) → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 ---
 
 <Layout title="Вход" description="Войдите в аккаунт Vanilla">

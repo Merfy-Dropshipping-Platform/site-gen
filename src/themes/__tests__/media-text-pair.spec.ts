@@ -65,6 +65,10 @@
  * собранных бандлах для реальных узлов реального рендера. Проверка «есть класс»
  * слепа: и утилиты Tailwind, и классы темы лежат рядом, и решают слой/порядок.
  *
+ * Раздел 7 (25.09) — «Мультиряды» при НЕЗАДАННОЙ «Ширине»: зазор пары и поля
+ * текстовой колонки (владелец 19.09) — ровно тот случай, который сломал
+ * регресс 7c87010e у satin и который разделы выше не покрывали.
+ *
  * Требует сборки (тот же порядок, что в CI):
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
  *   && pnpm build:preview-tailwind
@@ -543,6 +547,81 @@ describe("пара «медиа + текст»: зазор, доли колон�
         const seamTop = seamPx("border-top-right-radius");
         const seamBottom = seamPx("border-bottom-right-radius");
         expect({ theme, seamTop, seamBottom }).toEqual({ theme, seamTop: 0, seamBottom: 0 });
+      });
+    }
+  });
+
+  describe("7) MultiRows при незаданной «Ширине» (25.09)", () => {
+    /**
+     * Регресс 24.09 (7c87010e, satin) ломал ровно этот случай: НЕЗАДАННАЯ
+     * «Ширина» — единственная развилка, которую задевала испорченная
+     * ROWS_GEOMETRY. Раздел 1 выше (зазор пары) покрывает только явные
+     * small/medium/large; здесь — тот же зазор пары (владелец 2026-09-17) и
+     * проверка «поля текстовой колонки» (владелец 19.09, ebd40ea0: 32px на
+     * брейкпоинте, где ряд становится двухколоночным) через каскад — саботаж
+     * §"что сделать" брифа 25.09 (убрать md:p-8) остался бы незамеченным.
+     */
+    const props = {
+      id: "MultiRows-parity-guard",
+      colorScheme: "1",
+      padding: { top: 40, bottom: 40 },
+      size: "small",
+      heading: "Мультиряды",
+      alignment: "left",
+      rows: [
+        {
+          id: "row-1",
+          title: "Ряд 1",
+          description: "Текст ряда",
+          image: "",
+          size: "small",
+          headingSize: "small",
+          button: { text: "Кнопка", link: "/catalog" },
+        },
+      ],
+    };
+
+    const cache = new Map<string, string>();
+    const render = (theme: Theme): string => {
+      const ready = cache.get(theme);
+      if (ready !== undefined) return ready;
+      const jobs = [{ block: "MultiRows", cascade: true, live: true, props }];
+      const raw = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
+        cwd: SITES_ROOT,
+        encoding: "utf-8",
+        maxBuffer: 64 * 1024 * 1024,
+      });
+      const row = (JSON.parse(raw) as Record<string, string>[])[0];
+      if (row.html === undefined) {
+        throw new Error(
+          `рендер MultiRows (${theme}, ширина не задана) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`,
+        );
+      }
+      cache.set(theme, row.html);
+      return row.html;
+    };
+
+    const parts = (theme: Theme) => {
+      const section = parse(render(theme));
+      const root = section.querySelector("[data-puck-component-id]") ?? (section.firstChild as HTMLElement);
+      const pair = findPair(root);
+      const kids = elementChildren(pair);
+      const media = kids.find(looksLikeMedia) ?? kids[0];
+      const text = kids.find((k) => k !== media) as HTMLElement;
+      return { pair, text };
+    };
+
+    for (const theme of THEMES) {
+      it(`${theme}: зазор пары РОВНО ноль`, () => {
+        const { pair } = parts(theme);
+        const gap = gapPx(theme, pair);
+        expect({ theme, gap }).toEqual({ theme, gap: 0 });
+      });
+
+      it(`${theme}: у текстовой колонки свои поля — РОВНО 32px (решение владельца 19.09, ebd40ea0)`, () => {
+        const { text } = parts(theme);
+        const padding = pxOf(bundleOf(theme, false), text, ["padding"], DESKTOP_PX);
+        expect({ theme, padding }).toEqual({ theme, padding: 32 });
       });
     }
   });

@@ -33,7 +33,7 @@ pnpm qa:probe phantom  --theme bloom --block CartBody --marker block:cart-body
 
 # геометрия (+ сравнение той же клетки с эталоном rose)
 pnpm qa:probe geometry --url https://<стенд>.merfy.ru --marker css:.flux-container
-pnpm qa:probe geometry --theme flux --block Product --marker css:.flux-container --vs rose
+pnpm qa:probe geometry --theme flux --block Product --marker css:.flux-container-designers --vs rose
 
 # открыть скрытое и ПРОВЕРИТЬ, что открылось
 pnpm qa:probe reveal   --url https://<стенд>.merfy.ru --what search
@@ -41,7 +41,7 @@ pnpm qa:probe reveal   --url https://<стенд>.merfy.ru --what menu --width 3
 ```
 
 Маркер мишени: `block:cart-body` · `attr:data-cfg-name` · `attr:data-nt=promo-banner` ·
-`#cart-title` · `css:.flux-container`. Старые формы из гардов (`data-block="cart-body"`,
+`#cart-title` · `css:.flux-container-designers`. Старые формы из гардов (`data-block="cart-body"`,
 `id="cart-title"`) тоже понимаются.
 
 ---

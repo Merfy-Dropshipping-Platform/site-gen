@@ -17,7 +17,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 const deleteIconSrc = withBase("/icons/delete.svg");
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 // Проп «Отступы» из конструктора (px). Если не задан — дефолтные адаптивные классы.
 const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`

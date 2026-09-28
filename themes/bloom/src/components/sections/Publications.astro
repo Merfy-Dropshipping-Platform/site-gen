@@ -1,5 +1,6 @@
 ---
 import { inlineFormat } from "../../lib/rich-text";
+import { pickText } from "../../../../../packages/theme-base/runtime/merchant-text";
 // Фаза B (bloom, группа misc): новая канон-секция Publications в манере bloom
 // (см. themes/bloom/MANNER.md §4/§9/§11; rose-эталона НЕТ — в карте rose 15
 // позиций без Publications). Схема полей = packages/theme-base/blocks/
@@ -29,8 +30,10 @@ const pubSchemeClass = (() => {
 				: "";
 	return id ? ` color-scheme-${id}` : "";
 })();
-const heading =
-	(typeof p.heading === "string" ? p.heading : p.heading?.text)?.trim() || "Публикации";
+// Панельное поле пришло строкой (в т.ч. пустой "" — мерчант стёр вручную) →
+// рендерим как есть, `heading && (...)` ниже скрывает пустой заголовок целиком.
+// Заглушка «Публикации» — только когда поля вовсе нет (undefined).
+const heading = pickText(p.heading, "Публикации");
 // Лестница §9 (база-литерал 18/md:20 = canon-default medium): small 15/17, large 22/24.
 // Панель пишет размер в top-level `headingSize` (select), поле `heading` = aiText-строка.
 // Читаем top-level ПЕРВЫМ: в старых ревизиях мог остаться legacy-объект heading.size,

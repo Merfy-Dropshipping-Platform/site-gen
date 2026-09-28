@@ -33,6 +33,10 @@
  * ищется как ОБЩИЙ РОДИТЕЛЬ узлов `[data-puck-subsection-field="rows"]` —
  * тот самый <ul>/<div>, на который навешан gap.
  *
+ * 25.09 (регресс 7c87010e у satin): каждая проверка ниже прогоняется и при
+ * незаданной, и при заданной «Ширине». Десктопный зазор ужесточён до РОВНО
+ * 32px (gap-8) — не просто «> 0»: другое число тоже значило бы регресс.
+ *
  * Требует сборки (тот же порядок, что в CI):
  *   pnpm build && pnpm build:blocks && pnpm build:theme-sections:all
  */
@@ -53,12 +57,18 @@ type Theme = (typeof THEMES)[number];
 const DESKTOP_PX = 1440;
 const MOBILE_PX = 375;
 
-function multiRowsProps() {
+/** «Незаданная» и «заданная» «Ширина» — оба случая из брифа 25.09. `undefined`
+ *  не пишем в props вовсе (как реально приходит с незаполненной панели). */
+const WIDTHS = [undefined, "small"] as const;
+type Width = (typeof WIDTHS)[number];
+
+function multiRowsProps(width: Width) {
   return {
     id: "MultiRows-rowgap-guard",
     colorScheme: "1",
     padding: { top: 40, bottom: 40 },
     heading: "Мультиряды",
+    ...(width ? { width } : {}),
     rows: [
       {
         id: "row-1",
@@ -80,12 +90,13 @@ function multiRowsProps() {
   };
 }
 
-const htmlCache = new Map<Theme, string>();
+const htmlCache = new Map<string, string>();
 
-function render(theme: Theme): string {
-  const ready = htmlCache.get(theme);
+function render(theme: Theme, width: Width): string {
+  const key = `${theme}/${width}`;
+  const ready = htmlCache.get(key);
   if (ready !== undefined) return ready;
-  const jobs = [{ block: "MultiRows", cascade: true, live: true, props: multiRowsProps() }];
+  const jobs = [{ block: "MultiRows", cascade: true, live: true, props: multiRowsProps(width) }];
   const raw = execFileSync("node", [RENDERER, theme, JSON.stringify(jobs)], {
     cwd: SITES_ROOT,
     encoding: "utf-8",
@@ -94,10 +105,10 @@ function render(theme: Theme): string {
   const row = (JSON.parse(raw) as Record<string, unknown>[])[0];
   if (typeof row.html !== "string") {
     throw new Error(
-      `рендер MultiRows (${theme}) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`,
+      `рендер MultiRows (${theme}, width=${width}) не дал HTML: ${JSON.stringify(row).slice(0, 300)}`,
     );
   }
-  htmlCache.set(theme, row.html);
+  htmlCache.set(key, row.html);
   return row.html;
 }
 
@@ -129,26 +140,36 @@ const rowGapPx = (theme: Theme, el: HTMLElement, widthPx: number): number | null
   pxOf(loadBundle(theme, { withPreview: false }), el, ["row-gap", "gap"], widthPx);
 
 describe.each(THEMES)("MultiRows — зазор МЕЖДУ рядами — %s", (theme) => {
-  it("на десктопе ряды РАЗДЕЛЕНЫ полосой — не путать с зазором ПАРЫ внутри ряда", () => {
-    // Владелец 20.09, после того как ряд стал сплошным: «между рядами самими
-    // должен быть горизонтальный отступ». Речь именно о промежутке МЕЖДУ
-    // рядами — внутри ряда медиа и текст остаются сомкнутыми, это отдельно
-    // сторожит media-text-pair.spec.ts (зазор пары = 0).
-    //
-    // История требования по этому файлу: 17.09 — вплотную; 20.09 утром я
-    // ошибочно развёл и пару, и ряды; 20.09 днём владелец уточнил — ряд
-    // сплошной, а ряды друг от друга отделены. Если проверка покраснела,
-    // сначала выясни, не вернули ли `lg:gap-0` на КОНТЕЙНЕР рядов «заодно».
-    const wrapper = rowsWrapper(render(theme));
-    const gap = rowGapPx(theme, wrapper, DESKTOP_PX);
-    expect(gap).not.toBeNull();
-    expect({ theme, положительный: (gap as number) > 0 }).toEqual({ theme, положительный: true });
-  });
+  for (const width of WIDTHS) {
+    const метка = `width=${width ?? "не задана"}`;
 
-  it("на мобильном (одна колонка) зазор МЕЖДУ рядами НЕ ноль — иначе ряды сливаются в кашу", () => {
-    const wrapper = rowsWrapper(render(theme));
-    const gap = rowGapPx(theme, wrapper, MOBILE_PX);
-    expect(gap).not.toBeNull();
-    expect(gap as number).toBeGreaterThan(0);
-  });
+    it(`на десктопе ряды РАЗДЕЛЕНЫ РОВНО 32px (${метка}) — не путать с зазором ПАРЫ внутри ряда`, () => {
+      // Владелец 20.09, после того как ряд стал сплошным: «между рядами самими
+      // должен быть горизонтальный отступ». Речь именно о промежутке МЕЖДУ
+      // рядами — внутри ряда медиа и текст остаются сомкнутыми, это отдельно
+      // сторожит media-text-pair.spec.ts (зазор пары = 0).
+      //
+      // История требования по этому файлу: 17.09 — вплотную; 20.09 утром я
+      // ошибочно развёл и пару, и ряды; 20.09 днём владелец уточнил — ряд
+      // сплошной, а ряды друг от друга отделены. Если проверка покраснела,
+      // сначала выясни, не вернули ли `lg:gap-0` на КОНТЕЙНЕР рядов «заодно».
+      //
+      // 25.09: РОВНО 32 (не «> 0») — регресс 7c87010e вернул бы здесь
+      // gap-12/md:gap-20 = 48/80.
+      const wrapper = rowsWrapper(render(theme, width));
+      const gap = rowGapPx(theme, wrapper, DESKTOP_PX);
+      expect({ theme, width: width ?? "не задана", gap }).toEqual({
+        theme,
+        width: width ?? "не задана",
+        gap: 32,
+      });
+    });
+
+    it(`на мобильном (одна колонка) зазор МЕЖДУ рядами НЕ ноль (${метка}) — иначе ряды сливаются в кашу`, () => {
+      const wrapper = rowsWrapper(render(theme, width));
+      const gap = rowGapPx(theme, wrapper, MOBILE_PX);
+      expect(gap).not.toBeNull();
+      expect(gap as number).toBeGreaterThan(0);
+    });
+  }
 });

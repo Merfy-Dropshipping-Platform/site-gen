@@ -1,6 +1,7 @@
 ---
 import type { FooterProps } from './Footer.puckConfig';
 import { FooterClasses as C } from './Footer.classes';
+import { footerOwnLogo } from '../../runtime/footer-logo';
 
 interface Props extends FooterProps {
   id?: string;
@@ -56,7 +57,8 @@ const brandName =
 // Теперь: есть логотип — показываем картинку; нет — название магазина
 // (`siteTitle` приходит из брендинга/названия сайта), и только потом запасное
 // «Мой магазин». Имя ТЕМЫ в подвал не попадает ниоткуда.
-const logoSrc = typeof logo === 'string' ? logo.trim() : '';
+// Свой логотип подвала (поле «Логотип» панели, владелец 26.09) — первым.
+const logoSrc = footerOwnLogo(Astro.props) || (typeof logo === 'string' ? logo.trim() : '');
 /**
  * Подпись платформы под подвалом. Владелец 20.09: во всех темах по умолчанию
  * «Разработано на Merfy», текст задаёт мерчант в админке (карточка темы →

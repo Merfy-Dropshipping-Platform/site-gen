@@ -1,4 +1,5 @@
 ---
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 import type { NewsletterProps } from './Newsletter.puckConfig';
 import { NewsletterClasses as C } from './Newsletter.classes';
 import { sanitizeInline } from '../../runtime/rich-text';
@@ -126,7 +127,7 @@ const innerOverrideClass =
       <form
         class={formClass}
         method="POST"
-        action="https://gateway.merfy.ru/api/storefront/newsletter/subscribe"
+        action={`${apiUrl}/storefront/newsletter/subscribe`}
         data-newsletter-form
         data-puck-subsection-parent={id}
         data-puck-subsection-index="102"

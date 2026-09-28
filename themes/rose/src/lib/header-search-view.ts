@@ -30,8 +30,11 @@ const photo = (hit: HeaderSearchHit, ctx: HeaderSearchRenderContext, cls: string
 		: "";
 
 function panelCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
+	// Цвет бейджа — роль схемы «Кнопка» (merfy-badge, base.css), не «Акцент»
+	// (владелец 28.09). Не путать с «Схема 1 всегда» (15.09) — то правило про
+	// поле/кнопку поиска, не про карточки выдачи.
 	const badge = hit.onSale
-		? `<span class="absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-2 font-manrope text-[12px] font-normal leading-none !text-white">Скидка</span>`
+		? `<span class="merfy-badge absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] px-2 font-manrope text-[12px] font-normal leading-none">Скидка</span>`
 		: "";
 	const oldPrice = hit.oldPrice
 		? `<span class="font-manrope text-[14px] font-normal leading-none text-[rgb(var(--color-text,0_0_0))] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
@@ -53,11 +56,12 @@ function panelCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string
 }
 
 function drawerCard(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
+	// Цвет — та же роль «Кнопка», что и panelCard выше.
 	const badge = hit.onSale
-		? `<span class="absolute left-2 top-2 z-10 flex h-5 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-1 font-manrope text-[10px] font-normal leading-[14px] !text-white">Скидка</span>`
+		? `<span class="merfy-badge absolute left-2 top-2 z-10 flex h-5 items-center justify-center rounded-[4px] px-1 font-manrope text-[10px] font-normal leading-[14px]">Скидка</span>`
 		: "";
 	const oldPrice = hit.oldPrice
-		? `<span class="text-[10px] leading-[14px] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
+		? `<span class="text-[10px] leading-[14px] text-[rgb(var(--color-text,0_0_0))] line-through">${ctx.escapeHtml(ctx.formatPrice(hit.oldPrice))}</span>`
 		: "";
 	return (
 		`<li data-search-hit data-product-id="${ctx.escapeHtml(hit.id)}" class="min-w-0">` +

@@ -5,6 +5,7 @@
 // cart:updated / checkout:discount-applied.
 import type { CheckoutOrderSummaryProps } from './CheckoutOrderSummary.puckConfig';
 import { CheckoutOrderSummaryClasses as C } from './CheckoutOrderSummary.classes';
+import { GIFT_LINES_SOURCE } from '../../runtime/gift-lines';
 
 interface Props extends CheckoutOrderSummaryProps { id?: string; }
 const {
@@ -148,6 +149,9 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       var compareAt = item.compareAtPriceCents;
       var qty = item.quantity || 1;
       var isBonus = !!item.isBonus;
+      // Подарок «1+1=3», склеенный со своей строкой (runtime/gift-lines.ts):
+      // «×3», подпись «1 в подарок», цена — за оплаченные штуки, зачёркнутая — за все.
+      var gift = isBonus ? 0 : (item.giftQuantity || 0);
 
       // overflow-hidden только на внутренней обёртке картинки.
       // Бейдж количества — сибилинг, не клипится при выходе за пределы.
@@ -165,12 +169,15 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
           + '<span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[rgb(var(--color-text))] text-[rgb(var(--color-bg))] text-[10px] flex items-center justify-center [font-family:var(--font-body)] z-10">' + qty + '</span>'
           + '</div>';
 
-      var badge = (bogoBadge && isBonus)
-        ? ' <span class="inline-block px-2 py-0.5 rounded-full bg-[rgb(var(--color-text)/.08)] text-[rgb(var(--color-text))] text-[length:var(--size-tiny)] align-middle">Подарок</span>'
+      var badgeText = gift > 0 ? gift + ' в подарок' : (isBonus ? 'Подарок' : '');
+      var badge = (bogoBadge && badgeText)
+        ? ' <span class="inline-block px-2 py-0.5 rounded-full bg-[rgb(var(--color-text)/.08)] text-[rgb(var(--color-text))] text-[length:var(--size-tiny)] align-middle">' + badgeText + '</span>'
         : '';
 
-      var compareHtml = (showComparePrice && compareAt && !isBonus)
-        ? '<div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">' + fmt(compareAt) + '</div>'
+      var priceText = isBonus ? '0 ₽' : fmt(gift > 0 ? price * (qty - gift) : price);
+      var struck = gift > 0 ? price * qty : ((showComparePrice && !isBonus) ? compareAt : 0);
+      var compareHtml = struck
+        ? '<div class="[font-family:var(--font-body)] text-[length:var(--size-tiny)] text-[rgb(var(--color-muted))] line-through">' + fmt(struck) + '</div>'
         : '';
 
       return '<div class="flex gap-4 items-start">'
@@ -180,7 +187,7 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
           + variantLines(item.options)
         + '</div>'
         + '<div class="text-right flex-shrink-0">'
-          + '<div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">' + (isBonus ? '0 ₽' : fmt(price)) + '</div>'
+          + '<div class="[font-family:var(--font-body)] text-[length:var(--size-small)] text-[rgb(var(--color-heading))]">' + priceText + '</div>'
           + compareHtml
         + '</div>'
       + '</div>';
@@ -284,6 +291,8 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
       if (emptyEl) emptyEl.hidden = true;
       if (itemsEl) {
         itemsEl.hidden = false;
+        var merge = window.__merfyMergeGiftLines;
+        if (typeof merge === 'function') items = merge(items);
         var html = items.map(renderItem).join('');
         if (html !== itemsEl.innerHTML) itemsEl.innerHTML = html;
       }
@@ -455,3 +464,8 @@ const imageSize = itemImageSize === 'expanded' ? 120 : 80;
     }
   })();
 </script>
+
+{/* Склейка подарка «1+1=3» со своей строкой (runtime/gift-lines.ts). Идёт ПОСЛЕ
+    основного скрипта: DOM-тесты блока исполняют первый <script>; основной
+    берёт функцию при отрисовке, без неё рисует строки как есть. */}
+<script is:inline set:html={GIFT_LINES_SOURCE}></script>

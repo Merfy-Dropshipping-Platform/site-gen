@@ -299,6 +299,7 @@ const rowStockOptions: RadioOption[] = [
 	aria-labelledby="catalog-title"
 	data-catalog-layout={defaultLayout}
 	data-card-bg={cardContainerOn ? "true" : "false"}
+	data-next-photo={nextPhotoOn ? "true" : "false"}
 	data-next-photo-mode={nextPhotoMode}
 	data-collection-slug={collectionSlug ?? ""}
 	data-page-size={pageSize}
@@ -446,6 +447,7 @@ const rowStockOptions: RadioOption[] = [
 				</div>
 
 				<div class="flex flex-col gap-8">
+					<div data-nt="catalog-chips" role="group" aria-label="Выбранные фильтры" hidden></div>
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:grid-cols-3 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
 						{skeletons.map(() => (
 							<li data-nt="catalog-skeleton" aria-hidden="true">
@@ -472,6 +474,7 @@ const rowStockOptions: RadioOption[] = [
 				{filterVisible && <VanillaCatalogFilterSidebar class="w-full lg:shrink-0" />}
 
 				<div class="flex min-w-0 flex-1 flex-col gap-8">
+					<div data-nt="catalog-chips" role="group" aria-label="Выбранные фильтры" hidden></div>
 					<ul class="grid grid-cols-1 gap-x-3 gap-y-9 sm:grid-cols-2 md:gap-x-4 md:gap-y-12" role="list" data-nt="catalog-grid" style="opacity:0;transition:opacity .15s ease">
 						{skeletons.map(() => (
 							<li data-nt="catalog-skeleton" aria-hidden="true">
@@ -513,6 +516,128 @@ const rowStockOptions: RadioOption[] = [
 	   обе вместе прятали ОБА варианта — каталог был пустой. */
 </style>
 
+<script is:inline>
+	// Чипы выбранных фильтров над товарами — один текст на пять тем (сторож:
+	// no-second-implementation.spec.ts, «чипы фильтров»). Владелец: выбрал
+	// параметр — над товарами чип «Фильтр: значение ⊗», нажатие снимает его,
+	// «Очистить всё» — все. Порт отдаёт снимок выбранного и функцию снятия,
+	// здесь — подписи, разметка и нажатия. Классы — в общем catalog-filters.css:
+	// сборка витрины не видит классов из строк скрипта.
+	window.__merfyFilterChips = (function () {
+		var STOCK = { in: "В наличии", out: "Распродано" };
+		var ICON =
+			'<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><circle cx="8" cy="8" r="7.2"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8"/></svg>';
+		var CLEAR_ALL =
+			'<button type="button" class="nt-filter-chip nt-filter-chip--clear" data-chip-kind="all" data-chip-value=""><span>Очистить всё</span>' +
+			ICON +
+			"</button>";
+		var rub = function (n) {
+			return new Intl.NumberFormat("ru-RU").format(n);
+		};
+		var esc = function (s) {
+			return String(s).replace(/[&<>"']/g, function (c) {
+				return "&#" + c.charCodeAt(0) + ";";
+			});
+		};
+		var price = function (min, max) {
+			if (min != null && max != null) return "от " + rub(min) + " до " + rub(max) + " ₽";
+			return min != null ? "от " + rub(min) + " ₽" : "до " + rub(max) + " ₽";
+		};
+		// Порядок — как фильтры в строке: наличие, стоимость, цвет, остальные
+		// параметры товара, коллекции.
+		function chips(state) {
+			var list = [];
+			if (STOCK[state.stock]) list.push({ kind: "stock", value: state.stock, label: "Наличие: " + STOCK[state.stock] });
+			if (state.priceMin != null || state.priceMax != null)
+				list.push({ kind: "price", value: "", label: "Стоимость: " + price(state.priceMin, state.priceMax) });
+			(state.colors || []).forEach(function (color) {
+				list.push({ kind: "color", value: color, label: "Цвет: " + color });
+			});
+			(state.groups || []).forEach(function (group) {
+				group.values.forEach(function (value) {
+					list.push({ kind: "variant", group: group.name, value: value, label: group.name + ": " + value });
+				});
+			});
+			(state.collections || []).forEach(function (col) {
+				list.push({ kind: "collection", value: col.ref, label: "Коллекция: " + col.name });
+			});
+			return list;
+		}
+		function chipHtml(chip) {
+			return (
+				'<button type="button" class="nt-filter-chip" data-chip-kind="' +
+				esc(chip.kind) +
+				'" data-chip-value="' +
+				esc(chip.value) +
+				'" data-chip-group="' +
+				esc(chip.group || "") +
+				'" aria-label="Убрать фильтр ' +
+				esc(chip.label) +
+				'"><span>' +
+				esc(chip.label) +
+				"</span>" +
+				ICON +
+				"</button>"
+			);
+		}
+		// Рисует чипы во все контейнеры каталога (раскладки «сверху» и «сбоку»);
+		// нажатие — remove({ kind, value, group }), «Очистить всё» — kind "all".
+		function render(boxes, state, remove) {
+			var list = chips(state);
+			var html = list.length ? list.map(chipHtml).join("") + CLEAR_ALL : "";
+			Array.prototype.forEach.call(boxes, function (box) {
+				box.innerHTML = html;
+				box.hidden = list.length === 0;
+				box.__merfyChipsRemove = remove;
+				if (box.hasAttribute("data-chips-bound")) return;
+				box.setAttribute("data-chips-bound", "");
+				box.addEventListener("click", function (ev) {
+					var btn = ev.target.closest("[data-chip-kind]");
+					if (!btn || !box.__merfyChipsRemove) return;
+					box.__merfyChipsRemove({
+						kind: btn.getAttribute("data-chip-kind"),
+						value: btn.getAttribute("data-chip-value") || "",
+						group: btn.getAttribute("data-chip-group") || "",
+					});
+				});
+			});
+		}
+		return { chips: chips, render: render };
+	})();
+</script>
+
+<script is:inline>
+	// Сворачивание группы фильтров («Наличие», «Стоимость», «Цвет», «Сортировать»,
+	// «Коллекции» и клонированные группы параметров товара — «Оттенок», «Размер»…)
+	// в боковой панели и в шторке телефона — один текст на пять тем (сторож:
+	// no-second-implementation.spec.ts, «сворачивание группы фильтров»). Владелец:
+	// «возможность скрывать и раскрывать список фильтров, все темы». Заголовок
+	// группы — <button data-nt="filter-group-toggle" aria-expanded>, тело —
+	// следующий элемент с data-filter-group-body (неизменно и в клонах
+	// групп параметров товара — Catalog.astro cloneColorBox). Один делегированный
+	// обработчик на document — переживает перерисовку и клоны, добавленные
+	// скриптом каталога ПОСЛЕ первого рендера. Не гейтится «Фильтрами»/
+	// «Сортировкой»: блок «Коллекции» рисуется независимо от них, поэтому
+	// слушатель живёт здесь, а не в VanillaCatalogFilterSidebar. Старт — всегда
+	// развёрнуто, между заходами состояние не хранится. Видимость тела —
+	// атрибут hidden, правило [data-filter-group-body][hidden] лежит в
+	// общем packages/theme-base/styles/catalog-filters.css.
+	(function () {
+		if (window.__merfyFilterGroups) return;
+		window.__merfyFilterGroups = true;
+		document.addEventListener("click", function (event) {
+			var target = event.target instanceof Element ? event.target : null;
+			var toggle = target && target.closest('[data-nt="filter-group-toggle"]');
+			if (!toggle) return;
+			var body = toggle.nextElementSibling;
+			if (!body) return;
+			var expanded = toggle.getAttribute("aria-expanded") !== "false";
+			toggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+			body.hidden = expanded;
+		});
+	})();
+</script>
+
 <script is:inline define:vars={{ siteId, pageSize, cardContainerOn, cardThemeChromeStyle, cardMediaRadiusStyle, cardAspectClass, quickAddOn, quickAddLabel, quickAddClass, nextPhotoOn }}>
 	// is:inline (НЕ module-script): module client-<script> блока НЕ компилится в live
 	// build → 404 на проде. Поэтому весь клиент инлайн: функции storefront-hydrate.ts
@@ -539,7 +664,11 @@ const rowStockOptions: RadioOption[] = [
 		// shopId = siteId»). apiBase: на live (*.merfy.ru) cross-origin к gateway
 		// (CORS пропускает *.merfy.ru); в превью iframe на gateway-origin → same-origin.
 		const apiBase =
-			(typeof window !== "undefined" && window.__MERFY_API_BASE__) || "https://gateway.merfy.ru";
+			(typeof window !== "undefined" && window.__MERFY_API_BASE__) ||
+			(typeof window !== "undefined" && window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.apiUrl
+				? String(window.__MERFY_CONFIG__.apiUrl).replace(/\/+$/, "").replace(/\/api$/, "")
+				: "") ||
+			"https://gateway.merfy.ru";
 		const storeId =
 			(typeof window !== "undefined" && window.__MERFY_SITE_ID__) || siteId || undefined;
 
@@ -759,7 +888,7 @@ const rowStockOptions: RadioOption[] = [
 			const preloaded = new WeakSet();
 			document.addEventListener("mousemove", (event) => {
 				const img = event.target.closest("img[data-img-primary]");
-				if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+				if (!img || !img.closest('[data-next-photo="true"] [data-nt="catalog-grid"]')) return;
 				const photos = cardPhotos(img);
 				if (photos.length < 2) return;
 				if (!preloaded.has(img)) {
@@ -773,7 +902,7 @@ const rowStockOptions: RadioOption[] = [
 			});
 			document.addEventListener("mouseout", (event) => {
 				const img = event.target.closest("img[data-img-primary]");
-				if (!img || !img.closest('[data-nt="catalog-grid"]')) return;
+				if (!img || !img.closest('[data-next-photo="true"] [data-nt="catalog-grid"]')) return;
 				const prim = img.getAttribute("data-img-primary");
 				if (prim && img.getAttribute("src") !== prim) img.setAttribute("src", prim);
 			});
@@ -785,10 +914,12 @@ const rowStockOptions: RadioOption[] = [
 			const href = escapeHtml(productHref(p));
 			const name = escapeHtml(p.name);
 			const rawImage = productImageRaw(p);
+			// Кладём всегда: свайп на телефоне листает их при любой настройке, наведение —
+			// только в секции с «Следующим фото» (bindNextPhoto).
 			// Листанию нужны ВСЕ остальные фото товара — data-img-2, data-img-3, …
 			// без потолка: сколько фото, столько полос по ширине картинки.
 			const zoneImgs =
-				nextPhotoOn && Array.isArray(p.images)
+				Array.isArray(p.images)
 					? p.images.slice(1).filter((src) => typeof src === "string" && src)
 					: [];
 			const imgDataAttrs =
@@ -902,8 +1033,10 @@ const rowStockOptions: RadioOption[] = [
 			stock: "all",
 			priceMin: null,
 			priceMax: null,
-			// Выбранный цвет ("" — все). Один: сервер фильтрует по одному значению группы.
-			color: "",
+			// Выбранные цвета ([] — все). Несколько: сервер показывает товары с любым из них.
+			colors: [],
+			// Остальные параметры товара: { «Размер»: ["M", "L"] } — несколько значений в группе.
+			variants: {},
 			sort: "popularity",
 			page: 1,
 		};
@@ -914,17 +1047,31 @@ const rowStockOptions: RadioOption[] = [
 			if (Number.isFinite(n) && n > 0) return n;
 			return Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 12;
 		}
-		// Коллекция: СНАЧАЛА настройка конструктора (data-collection-slug), ИНАЧЕ ?collection=.
-		function currentCollectionRef() {
+		// Коллекции: СНАЧАЛА настройка конструктора (data-collection-slug) — одна,
+		// закреплённая; ИНАЧЕ ?collection=a&collection=b — выбор покупателя, их может
+		// быть несколько (сервер показывает товары хоть в одной).
+		function currentCollectionRefs() {
 			const root = document.querySelector("[data-catalog-layout]");
 			const fromSetting = root && root.getAttribute("data-collection-slug");
-			if (fromSetting && fromSetting.trim()) return fromSetting.trim();
-			const fromQuery = new URLSearchParams(window.location.search).get("collection");
-			if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+			if (fromSetting && fromSetting.trim()) return [fromSetting.trim()];
+			const fromQuery = new URLSearchParams(window.location.search)
+				.getAll("collection")
+				.map((ref) => ref.trim())
+				.filter(Boolean);
+			if (fromQuery.length > 0) return fromQuery;
 			const fromPath = window.location.pathname.match(/\/collections\/([^/?#]+)/);
-			if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return decodeURIComponent(fromPath[1]);
-			return null;
+			if (fromPath && fromPath[1] && fromPath[1] !== "_placeholder") return [decodeURIComponent(fromPath[1])];
+			return [];
 		}
+		// Выбранные коллекции объектами из списка магазина — для отметок и подписи.
+		function selectedCollections() {
+			return currentCollectionRefs()
+				.map((ref) => findCollection(catalogCollections, ref))
+				.filter(Boolean);
+		}
+		// Отметить значение фильтра или снять отметку — выбор нескольких значений.
+		const toggleValue = (list, value) =>
+			list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 
 		// buildProductsQuery: query-строка /api/store/products из текущего filters
 		// (rose-канон). min_price/max_price API сравнивает с basePrice в КОПЕЙКАХ →
@@ -959,14 +1106,19 @@ const rowStockOptions: RadioOption[] = [
 			if (filters.stock === "in") qp.set("availability", "in_stock");
 			else if (filters.stock === "out") qp.set("availability", "sold_out");
 
-			if (filters.color) qp.set(COLOR_GROUP_NAME, filters.color);
+			// Цвет: ключ на каждое значение (`Цвет=A&Цвет=B`), сервер — товары с любым.
+			for (const color of filters.colors) qp.append(COLOR_GROUP_NAME, color);
 
-			// Коллекция: slug/id из настройки или ?collection= → серверный collection_id.
-			// Резолвим slug→id через кэш; если резолва нет — передаём ref как есть.
-			const ref = currentCollectionRef();
-			if (ref) {
+			// Остальные параметры товара — так же: ключ группы на каждое значение.
+			for (const [group, values] of Object.entries(filters.variants)) {
+				for (const value of values) qp.append(group, value);
+			}
+
+			// Коллекции: slug/id из настройки или ?collection= → серверный collection_id,
+			// ключ на каждую выбранную. Резолвим slug→id через кэш; нет резолва — ref как есть.
+			for (const ref of currentCollectionRefs()) {
 				const col = findCollection(catalogCollections, ref);
-				qp.set("collection_id", col && col.id ? col.id : ref);
+				qp.append("collection_id", col && col.id ? col.id : ref);
 			}
 			return qp.toString();
 		}
@@ -1051,7 +1203,82 @@ const rowStockOptions: RadioOption[] = [
 
 		function resetPageAndRender() {
 			filters.page = 1;
+			syncFilterChips(); // чипы выбранного — до рендера, не ждут товаров
 			renderCatalog(false); // REPLACE — смена фильтра/сортировки начинает с 1-й страницы
+		}
+
+		// ─────────── Чипы выбранных фильтров ───────────
+		// Над товарами — чип на каждое выбранное значение («Цвет: Синий ⊗»), нажатие
+		// снимает его, «Очистить всё» — все (владелец). Подписи, разметка и нажатия —
+		// общий __merfyFilterChips (один текст на пять тем); здесь — что выбрано и как
+		// это снять: то же состояние, что после снятия отметки в самом фильтре.
+		// Сортировка и поиск из шапки — не фильтры, остаются.
+
+		// Коллекции, которые отметил покупатель (?collection=) и каталог применил.
+		// Коллекция из настройки секции или из адреса /collections/<slug>
+		// закреплена страницей — её не снять, чипа нет.
+		function buyerCollectionRefs() {
+			const applied = currentCollectionRefs();
+			return new URLSearchParams(window.location.search)
+				.getAll("collection")
+				.map((ref) => ref.trim())
+				.filter((ref) => ref && applied.includes(ref));
+		}
+
+		function clearPriceInputs() {
+			for (const input of Array.from(document.querySelectorAll("[data-price-input]"))) input.value = "";
+		}
+
+		// Вид фильтра → как снять значение (undefined — все значения вида;
+		// у параметров товара вторым — имя группы).
+		const CHIP_REMOVERS = {
+			stock: () => {
+				filters.stock = "all";
+				syncStockUi();
+			},
+			price: () => {
+				filters.priceMin = null;
+				filters.priceMax = null;
+				clearPriceInputs();
+			},
+			color: (value) => {
+				filters.colors = value === undefined ? [] : filters.colors.filter((color) => color !== value);
+				rerenderChoice(COLOR_BOX, renderColorBox, true);
+			},
+			variant: (value, group) => {
+				filters.variants =
+					value === undefined ? {} : { ...filters.variants, [group]: variantValues(group).filter((v) => v !== value) };
+				rerenderVariantBoxes(value === undefined ? null : group, true);
+			},
+			collection: (value) =>
+				pickCollections(value === undefined ? [] : buyerCollectionRefs().filter((ref) => ref !== value), true),
+		};
+
+		function removeFilterChip(chip) {
+			const isAll = chip.kind === "all";
+			for (const kind of isAll ? Object.keys(CHIP_REMOVERS) : [chip.kind]) {
+				if (CHIP_REMOVERS[kind]) CHIP_REMOVERS[kind](isAll ? undefined : chip.value, chip.group);
+			}
+			resetPageAndRender();
+		}
+
+		function syncFilterChips() {
+			if (!window.__merfyFilterChips) return;
+			window.__merfyFilterChips.render(
+				document.querySelectorAll('[data-nt="catalog-chips"]'),
+				{
+					stock: filters.stock,
+					priceMin: filters.priceMin,
+					priceMax: filters.priceMax,
+					colors: filters.colors,
+					groups: Object.entries(filters.variants).map(([name, values]) => ({ name, values })),
+					collections: buyerCollectionRefs().map((ref) => {
+						const col = findCollection(catalogCollections, ref);
+						return { ref, name: (col && col.name) || ref };
+					}),
+				},
+				removeFilterChip,
+			);
 		}
 
 		// ─────────── Наличие (top: vanilla-top-stock; side: vanilla-stock; шторка: vanilla-sheet-stock) ───────────
@@ -1161,7 +1388,7 @@ const rowStockOptions: RadioOption[] = [
 		const choiceButtonHtml = (kind, o) =>
 			`<button type="button" ${kind.attr}="${escapeHtml(o.value)}" class="cursor-pointer text-left text-base leading-none transition-colors ${o.active ? OPT_ACTIVE : OPT_IDLE}">${escapeHtml(o.label)}</button>`;
 		const choiceRadioHtml = (kind, name, o) =>
-			`<label class="group flex cursor-pointer items-center gap-2"><input type="radio" name="${escapeHtml(name)}" value="${escapeHtml(o.value)}" ${kind.attr}="${escapeHtml(o.value)}"${o.active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(o.label)}</span></label>`;
+			`<label class="group flex cursor-pointer items-center gap-2"><input type="checkbox" name="${escapeHtml(name)}" value="${escapeHtml(o.value)}" ${kind.attr}="${escapeHtml(o.value)}"${o.active ? " checked" : ""} class="peer sr-only" /><span aria-hidden="true" class="${RADIO_CIRCLE}"></span><span class="${RADIO_TEXT}">${escapeHtml(o.label)}</span></label>`;
 		// Своё имя группы радио у каждого места (сайдбар, шторка): иначе выбор в
 		// одном снимал бы выбор в другом.
 		function radioNameOf(box, kind) {
@@ -1204,11 +1431,12 @@ const rowStockOptions: RadioOption[] = [
 				bindChoice(box, kind, pick);
 			}
 		}
-		// После выбора: все места показывают новое значение, выпадашка закрыта.
-		function rerenderChoice(selector, render) {
+		// После выбора: все места показывают новое значение. Выпадашка остаётся
+		// открытой, чтобы отметить ещё (несколько значений), закрывает её «Все».
+		function rerenderChoice(selector, render, keepOpen) {
 			for (const box of Array.from(document.querySelectorAll(`${selector}[data-cf-hydrated="true"]`))) {
 				render(box);
-				box.removeAttribute("open");
+				if (!keepOpen) box.removeAttribute("open");
 			}
 		}
 
@@ -1227,19 +1455,27 @@ const rowStockOptions: RadioOption[] = [
 		function renderCollectionsBox(box) {
 			const options = collectionOptions();
 			if (options.length === 0) return;
-			const current = findCollection(catalogCollections, currentCollectionRef());
-			const currentName = typeof (current && current.name) === "string" ? current.name.trim() : "";
+			const selected = selectedCollections();
+			const names = selected.map((c) => (typeof c.name === "string" ? c.name.trim() : "")).filter(Boolean);
 			renderChoice(box, CHOICE.collection, [
-				{ value: "", label: "Все", active: !current },
-				...options.map((o) => ({ value: o.value, label: o.label, active: !!current && current.id === o.id })),
-			], currentName);
+				{ value: "", label: "Все", active: selected.length === 0 },
+				...options.map((o) => ({ value: o.value, label: o.label, active: selected.some((c) => c.id === o.id) })),
+			], names.join(", "));
 		}
-		function applyCollectionSelection(value) {
+		// Записать отмеченные коллекции в адрес (?collection=a&collection=b) и
+		// показать выбор во всех местах фильтра — из списка и из чипа.
+		function pickCollections(refs, keepOpen) {
 			const params = new URLSearchParams(window.location.search);
-			if (value) params.set("collection", value); else params.delete("collection");
+			params.delete("collection");
+			for (const ref of refs) params.append("collection", ref);
 			const qs = params.toString();
 			window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
-			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox);
+			rerenderChoice(COLLECTIONS_BOX, renderCollectionsBox, keepOpen);
+		}
+		function applyCollectionSelection(value) {
+			// Несколько коллекций: нажатие отмечает коллекцию или снимает отметку, «Все» — все.
+			const picked = new URLSearchParams(window.location.search).getAll("collection");
+			pickCollections(value ? toggleValue(picked, value) : [], !!value);
 			resetPageAndRender();
 		}
 		async function initCollectionsFilter() {
@@ -1252,12 +1488,13 @@ const rowStockOptions: RadioOption[] = [
 		// ─────────── Цвет ───────────
 		// Значения — из ЖИВОГО /api/store/filters (группа «Цвет»), как у rose:
 		// товары грузятся постранично, собрать цвета каталога на клиенте нельзя.
-		// Нет группы или сеть упала — фильтр остаётся скрытым. Сервер фильтрует по
-		// ОДНОМУ значению группы (variantFilters: Record<string, string>), поэтому
-		// выбор одиночный: «Все» или один цвет.
+		// Нет группы или сеть упала — фильтр остаётся скрытым. Можно отметить
+		// несколько цветов: сервер показывает товары с любым из них; «Все» — сброс.
 		const COLOR_GROUP_NAME = "Цвет";
 		const COLOR_BOX = '[data-nt="catalog-color-filter"]';
 		let availableColors = [];
+		// Остальные параметры товара из /api/store/filters: [{ name, values }] без «Цвета».
+		let variantGroups = [];
 		let colorsRequest = null;
 		async function fetchAvailableColors() {
 			if (!storeId) return [];
@@ -1269,6 +1506,7 @@ const rowStockOptions: RadioOption[] = [
 					(json && json.data && Array.isArray(json.data.groups) && json.data.groups) ||
 					(json && Array.isArray(json.groups) && json.groups) ||
 					[];
+				variantGroups = groupsFrom(groups);
 				const group = groups.find((g) => g && typeof g.name === "string" && g.name.trim() === COLOR_GROUP_NAME);
 				const values = group && Array.isArray(group.values) ? group.values : [];
 				return values
@@ -1284,18 +1522,138 @@ const rowStockOptions: RadioOption[] = [
 		}
 		function renderColorBox(box) {
 			renderChoice(box, CHOICE.color, [
-				{ value: "", label: "Все", active: !filters.color },
-				...availableColors.map((c) => ({ value: c, label: c, active: c === filters.color })),
-			], filters.color);
+				{ value: "", label: "Все", active: filters.colors.length === 0 },
+				...availableColors.map((c) => ({ value: c, label: c, active: filters.colors.includes(c) })),
+			], filters.colors.join(", "));
 		}
 		function applyColorSelection(value) {
-			filters.color = availableColors.includes(value) ? value : "";
-			rerenderChoice(COLOR_BOX, renderColorBox);
+			filters.colors = availableColors.includes(value) ? toggleValue(filters.colors, value) : [];
+			rerenderChoice(COLOR_BOX, renderColorBox, !!value);
 			resetPageAndRender();
 		}
 		function initColorFilter() {
 			if (availableColors.length === 0) return;
 			hydrateChoice(COLOR_BOX, CHOICE.color, renderColorBox, applyColorSelection);
+		}
+
+		// ─────────── Остальные параметры товара (Размер, Формат, Оттенок…) ───────────
+		// Владелец: чипы «Формат: …» над товарами — значит, и фильтр по каждому
+		// параметру товара, не только по «Цвету». Группы — из /api/store/filters
+		// (fetchAvailableColors); фильтр каждой — копия «Цвета» с именем группы во
+		// всех его местах (строка, сайдбар, шторка), та же обвязка выбора. В группе
+		// несколько значений (товары с любым), разные группы — через И.
+		// Служебные ключи запроса товаров (api-gateway store.controller): группа с
+		// таким именем ушла бы в запрос поиском, тегами или страницей, а не
+		// фильтром, — её не показываем.
+		const QUERY_KEYS = new Set([
+			"store_id", "collection_id", "sort", "page", "limit", "offset",
+			"min_price", "max_price", "tags", "availability", "q",
+		]);
+		const groupsFrom = (groups) =>
+			groups
+				.map((g) => ({
+					name: g && typeof g.name === "string" ? g.name.trim() : "",
+					values: (g && Array.isArray(g.values) ? g.values : [])
+						.map((v) => (typeof v === "string" ? v : v && (v.value ?? v.name)))
+						.filter((v) => typeof v === "string" && v),
+				}))
+				.filter((g) => g.name && g.name !== COLOR_GROUP_NAME && !QUERY_KEYS.has(g.name) && g.values.length > 0);
+		const variantValues = (group) => filters.variants[group] || [];
+		const VARIANT_BOX = '[data-nt="catalog-variant-filter"]';
+		const variantKind = (group) => ({
+			list: "[data-variant-options]",
+			label: "[data-variant-label]",
+			dropdown: "data-variant-dropdown",
+			attr: "data-variant-option",
+			radio: "vanilla-variant",
+			title: group,
+		});
+		// Атрибуты цвета в копии → атрибуты параметра.
+		const COLOR_TO_VARIANT = [
+			["data-color-options", "data-variant-options"],
+			["data-color-label", "data-variant-label"],
+			["data-color-dropdown", "data-variant-dropdown"],
+		];
+		function cloneColorBox(template, group) {
+			const clone = template.cloneNode(true);
+			clone.setAttribute("data-nt", "catalog-variant-filter");
+			clone.setAttribute("data-variant-group", group);
+			clone.removeAttribute("data-cf-hydrated");
+			clone.removeAttribute("data-cf-radio-name");
+			clone.removeAttribute("open");
+			for (const [from, to] of COLOR_TO_VARIANT) {
+				for (const el of [clone, ...Array.from(clone.querySelectorAll(`[${from}]`))]) {
+					if (!el.hasAttribute(from)) continue;
+					el.setAttribute(to, el.getAttribute(from));
+					el.removeAttribute(from);
+				}
+			}
+			const title = Array.from(clone.querySelectorAll("span, p")).find(
+				(el) => el.children.length === 0 && (el.textContent || "").trim() === COLOR_GROUP_NAME,
+			);
+			if (title) title.textContent = group;
+			// Сворачивание (владелец: «скрывать и раскрывать список фильтров»):
+			// клон несёт aria-controls/id секции «Цвет» — снимаем, чтобы не
+			// дублировались на странице. cloneNode копирует и ТЕКУЩЕЕ состояние
+			// сворачивания «Цвета» (покупатель свернул его до ответа
+			// /api/store/filters или до повторной гидрации) — клон обязан
+			// начинать развёрнутым, как любая свежая группа, поэтому
+			// aria-expanded/hidden переставляются явно, а не «остаются как есть».
+			const clonedToggle = clone.querySelector('[data-nt="filter-group-toggle"]');
+			if (clonedToggle) {
+				clonedToggle.removeAttribute("aria-controls");
+				clonedToggle.setAttribute("aria-expanded", "true");
+			}
+			const clonedBody = clone.querySelector("[data-filter-group-body]");
+			if (clonedBody) {
+				clonedBody.removeAttribute("id");
+				clonedBody.hidden = false;
+			}
+			// Пункты цвета из копии убираем сразу: их наполнит renderVariantBox.
+			for (const list of Array.from(clone.querySelectorAll("[data-variant-options]"))) list.innerHTML = "";
+			return clone;
+		}
+		function variantBoxes(group) {
+			return Array.from(document.querySelectorAll(VARIANT_BOX)).filter(
+				(box) => group === null || box.getAttribute("data-variant-group") === group,
+			);
+		}
+		function renderVariantBox(box) {
+			const name = box.getAttribute("data-variant-group");
+			const group = variantGroups.find((g) => g.name === name);
+			const values = variantValues(name);
+			renderChoice(box, variantKind(name), [
+				{ value: "", label: "Все", active: values.length === 0 },
+				...(group ? group.values : []).map((v) => ({ value: v, label: v, active: values.includes(v) })),
+			], values.join(", "));
+		}
+		// После выбора: все места группы (null — всех групп) показывают новое значение.
+		function rerenderVariantBoxes(group, keepOpen) {
+			for (const box of variantBoxes(group).filter((b) => b.getAttribute("data-cf-hydrated") === "true")) {
+				renderVariantBox(box);
+				if (!keepOpen) box.removeAttribute("open");
+			}
+		}
+		function applyVariantSelection(group, value) {
+			filters.variants = { ...filters.variants, [group]: value ? toggleValue(variantValues(group), value) : [] };
+			rerenderVariantBoxes(group, !!value);
+			resetPageAndRender();
+		}
+		// Фильтр каждой группы — сразу за «Цветом»; прежние копии убираем:
+		// гидрация повторяется при навигации.
+		function initVariantFilters() {
+			for (const old of variantBoxes(null)) old.remove();
+			for (const template of Array.from(document.querySelectorAll(COLOR_BOX))) {
+				template.after(...variantGroups.map((g) => cloneColorBox(template, g.name)));
+			}
+			for (const box of variantBoxes(null)) {
+				if (!box.querySelector("[data-variant-options]")) continue;
+				const group = box.getAttribute("data-variant-group");
+				box.setAttribute("data-cf-hydrated", "true");
+				box.style.display = "";
+				renderVariantBox(box);
+				bindChoice(box, variantKind(group), (value) => applyVariantSelection(group, value));
+			}
 		}
 
 		// ─────────── Дропдауны верхних (top) фильтров ───────────
@@ -1364,7 +1722,9 @@ const rowStockOptions: RadioOption[] = [
 				syncStockUi();
 				syncSortUi();
 				initColorFilter();
+				initVariantFilters();
 				// Первая страница товаров (REPLACE) — реальный fetch /api/store/products.
+				syncFilterChips();
 				await renderCatalog(false);
 				// UI фильтра коллекций — после товаров (collections уже в кэше, без fetch).
 				await initCollectionsFilter();

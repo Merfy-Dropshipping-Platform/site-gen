@@ -39,7 +39,7 @@ const { id, colorScheme } = Astro.props as Props;
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое
 // (тот же приём, что cart.astro и WishlistSection.astro).
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 // Цветовая схема секции (как CartSection/WishlistSection): класс ставим ВСЕГДА —
 // composeV2Page оборачивает только при заданном props.colorScheme, а дефолт
 // blockDefaults он не читает.
@@ -74,13 +74,6 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 			<div class="account-field">
 				<label for="profile-phone">Телефон</label>
 				<input type="tel" id="profile-phone" class="auth-input" placeholder="+7 (000) 000-00-00" autocomplete="tel" />
-			</div>
-			<div class="account-field">
-				<label>Пароль</label>
-				<div class="auth-input" style="display: flex; align-items: center; justify-content: space-between; cursor: default;">
-					<span style="letter-spacing: 0.2em; color: rgb(var(--color-muted, 153 153 153));">••••••••••••</span>
-				</div>
-				<a href="/reset-password" class="account-text-link" style="font-size: 0.875rem;">Изменить</a>
 			</div>
 		</form>
 

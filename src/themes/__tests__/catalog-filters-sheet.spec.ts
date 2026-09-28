@@ -112,9 +112,9 @@ describe.each(ТЕМЫ)("«Фильтры и сортировка» на тел�
   it("«Сортировать» — четыре пункта, как на макете, «По популярности» выбрано", async () => {
     const корень = await показать(тема);
     const шторка = корень.querySelector("[data-filters-sheet]")!;
-    const заголовок = [...шторка.querySelectorAll("p")].find(
-      (p) => (p.textContent ?? "").trim() === "Сортировать",
-    );
+    const заголовок = [
+      ...шторка.querySelectorAll('[data-nt="filter-group-toggle"]'),
+    ].find((p) => (p.textContent ?? "").trim() === "Сортировать");
     const радио = [
       ...(заголовок?.parentElement?.querySelectorAll<HTMLInputElement>(
         'input[type="radio"]',

@@ -24,7 +24,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 // Мост к API: build.service.ts патчит `const shopId = ""` → siteId на деплое
 // (тот же приём, что cart.astro). apiBase — gateway (CORS пропускает *.merfy.ru).
 const shopId = "";
-const apiBase = "https://gateway.merfy.ru";
+const apiBase = (import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api").replace(/\/api$/, "");
 // Проп «Отступы» из конструктора (px). Не задан — дефолтные адаптивные классы.
 const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
@@ -247,9 +247,9 @@ const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", 
 				heartBtn +
 				"</div>" +
 				'<div class="flex w-full flex-col gap-1 text-left">' +
-				'<a href="' + href + '" class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[#000000] transition-opacity hover:opacity-70">' + name + "</a>" +
+				'<a href="' + href + '" class="rose-product-name block w-full font-manrope text-[14px] font-normal leading-none tracking-normal text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">' + name + "</a>" +
 				'<div class="flex w-full flex-wrap items-baseline gap-2">' +
-				'<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[#000000]">' + price + "</span>" + oldPrice +
+				'<span class="rose-product-price font-manrope !text-[16px] font-normal !leading-none text-[rgb(var(--color-text,0_0_0))]">' + price + "</span>" + oldPrice +
 				"</div></div></article>";
 		}
 

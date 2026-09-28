@@ -34,19 +34,19 @@
           },
           {
             "label": "Полноразмерные наушники",
-            "href": "/catalog/naushniki"
+            "href": "/catalog"
           },
           {
             "label": "TWS-наушники с кейсом",
-            "href": "/catalog/tws"
+            "href": "/catalog"
           },
           {
             "label": "Портативные колонки",
-            "href": "/catalog/kolonki"
+            "href": "/catalog"
           },
           {
             "label": "Саундбары",
-            "href": "/catalog/saundbary"
+            "href": "/catalog"
           }
         ],
         "actionButtons": {
@@ -74,6 +74,7 @@
     {
       "type": "Product",
       "props": {
+        "colorScheme": "scheme-5",
         "id": "Product-home"
       }
     },
@@ -102,15 +103,13 @@
           },
           {
             "id": "item-2",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/cdc1fcbd-6e1e-4ac6-b734-5978ce57e2f5.png?e2eSeed=2",
-            "alt": "Изображение"
+            "type": "product",
+            "productId": null
           },
           {
             "id": "item-3",
-            "type": "image",
-            "url": "https://minio.merfy.ru/product-images/113f237c-bc9d-4026-940f-362c34d5edef.png?e2eSeed=3",
-            "alt": "Изображение"
+            "type": "collection",
+            "collectionId": null
           }
         ]
       }

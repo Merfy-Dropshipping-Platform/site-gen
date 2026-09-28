@@ -193,9 +193,11 @@ const paddingStyle = padding
 </script>
 
 <script is:inline define:vars={{ blockId: id, fieldFullClass: C.fieldFull }}>
-  // Рантайм-конфиг чекаута (Фаза 4a): contactMethod управляет видимостью телефона.
-  //  "email-phone" (дефолт) → email + телефон в 2 колонки (текущее поведение).
-  //  "email"                → телефон скрыт, email растянут на всю ширину.
+  // Рантайм-конфиг чекаута (Фаза 4a, правило владельца 28.09): видимость
+  // телефона решают ДВЕ настройки вместе — requireCustomerAuth И contactMethod.
+  //  requireCustomerAuth===true И contactMethod!=='email' → email + телефон в 2 колонки.
+  //  Во всех остальных случаях (регистрация необязательна ИЛИ contactMethod='email')
+  //  → телефон скрыт, email растянут на всю ширину (режим «только почта»).
   // Консюмер конфига: применяем ДВУМЯ путями (гонка с продюсером в checkout.astro):
   //  (1) сразу на init, если window.__MERFY_CONFIG__.checkout уже есть;
   //  (2) по событию document 'checkout:config-ready'. Идемпотентно.
@@ -205,7 +207,10 @@ const paddingStyle = padding
 
     function apply() {
       var cfg = (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
-      var emailOnly = cfg.contactMethod === 'email';
+      // Владелец 28.09: при необязательной регистрации телефона нет — поле
+      // видно и обязательно ТОЛЬКО когда регистрация обязательна
+      // (requireCustomerAuth===true) И режим контакта не 'email'.
+      var emailOnly = !(cfg.requireCustomerAuth === true && cfg.contactMethod !== 'email');
       var emailWrap = root.querySelector('[data-checkout-field="email"]');
       var phoneWrap = root.querySelector('[data-checkout-field="phone"]');
       // Скрытие через DOM-атрибут hidden (не Tailwind-строку) — скрытый input

@@ -18,7 +18,7 @@ const { id, padding, colorScheme } = Astro.props as Props;
 
 // Мост корзины → checkout: build.service.ts патчит `const shopId = ""` → siteId на деплое.
 const shopId = "";
-const apiUrl = "https://gateway.merfy.ru/api";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 // Проп «Отступы» из конструктора (px). Если не задан — дефолтные адаптивные классы.
 const padStyle = padding
 	? `padding-top:${Math.min(Number(padding.top) || 0, 160)}px;padding-bottom:${Math.min(Number(padding.bottom) || 0, 160)}px;`
@@ -26,15 +26,10 @@ const padStyle = padding
 // Цветовая схема секции: пусто → наследует :root сайта.
 const schemeClass = `color-scheme-${String(colorScheme ?? 2).replace("scheme-", "")}`;
 
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Без признака — байт в байт прежняя строка. Признак
-// ставит sites (page-blocks designParityFlag).
-const designParity = (Astro.props as any).__designParity === true;
-const cartContainerCls = designParity
-	? "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20"
-	: "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80";
+// Контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
+// .flux-container; владелец 23-24.09: «как у верстальщиков, только стили») —
+// 1480 и поля 1/2.5/5rem.
+const cartContainerCls = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 ---
 
 <section
@@ -168,6 +163,10 @@ const cartContainerCls = designParity
 				// NtCartLine его не несёт; бейдж скидки берётся из реального oldPrice.
 				// Все выбранные опции, а не только Цвет/Размер: произвольные группы
 				// («Оттенок», «Объём») иначе не показывались (баг тестера).
+				// Цвет значка скидки — merfy-badge (роль схемы «Кнопка», base.css),
+				// не --color-accent (владелец 28.09: «в корзине — так же с бейджом»;
+				// SSR-версия cart-thumb-html.ts thumbHtml уже на merfy-badge —
+				// обязано совпадать, иначе моргает цветом при перерисовке).
 				const variantPairsList = variantParts(line.variant);
 				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
 				const oldPrice = hasSale ? formatCartPrice(line.oldPrice as number) : "";
@@ -175,7 +174,7 @@ const cartContainerCls = designParity
 					? `-${Math.round((1 - line.price / (line.oldPrice as number)) * 100)}%`
 					: "";
 				const badges = discountPercent
-					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))]">${discountPercent}</span></div>`
+					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="merfy-badge flex items-center justify-center rounded-[2px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal">${discountPercent}</span></div>`
 					: "";
 				const varInfo = variantPairsList.length
 					? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${variantPairsList

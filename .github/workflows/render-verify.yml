@@ -1,0 +1,57 @@
+name: render-verify
+
+# Тёплый рендер секций (spec 115, часть 2) держит Astro, модули тем и конвейер
+# dist/src загруженными между вызовами. Если какой-то модуль начнёт копить
+# состояние, HTML разойдётся с отдельным процессом — а CI этого не увидит: он
+# тоже рендерит тёпло. Здесь весь набор гардов идёт режимом verify: каждый
+# рендер обоими путями, расхождение HTML — красный прогон с местом расхождения.
+#
+# Раз в сутки и на PR, которые трогают сам рендер. На push в main — нет:
+# поезд ждёт ВСЕ прогоны своего SHA, и долгий verify держал бы каждую выкатку.
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  pull_request:
+    paths:
+      - 'src/themes/__tests__/render-theme-sections.mjs'
+      - 'src/themes/__tests__/render-bridge*.cjs'
+      - 'src/themes/__tests__/render-worker.mjs'
+      - 'src/themes/__tests__/*-stub.mjs'
+      - 'scripts/qa/*-stub.mjs'
+      - 'jest.config.ts'
+      - '.github/workflows/render-verify.yml'
+      # Конвейер dist/src, который поток держит загруженным (render-theme-sections.mjs).
+      - 'src/render/**'
+      - 'src/services/preview.service.ts'
+      - 'src/themes/page-blocks.ts'
+      - 'src/themes/theme-manifest-loader.ts'
+      - 'src/generator/legacy-prop-normalizer.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.19.0"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack prepare pnpm@10.14.0 --activate
+      - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+      - name: Весь набор гардов, каждый рендер обоими путями
+        env:
+          MERFY_RENDER_BRIDGE: verify
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || github.token }}
+        run: pnpm checks

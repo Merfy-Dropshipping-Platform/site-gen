@@ -56,6 +56,11 @@ export const ImageWithTextSchema = z.object({
   alignment: z.enum(['left', 'center', 'right']).optional(),
   ctaPosition: z.enum(['inline', 'bottom-pinned']).optional(),
   textStyle: z.enum(['normal', 'italic']).optional(),
+  /**
+   * Field-order 24.09 — порядок drag-n-drop заголовка/текста/кнопки (канон
+   * packages/theme-base/blocks/ImageWithText/ImageWithText.puckConfig.ts).
+   */
+  fieldOrder: z.array(z.string()).optional(),
   size: z.enum(['small', 'medium', 'large']).optional(),
   width: z.enum(['small', 'medium', 'large', 'full']).optional(),
   colorScheme: z.string().optional(),
@@ -200,6 +205,9 @@ export const ImageWithTextPuckConfig: BlockPuckConfig<ImageWithTextProps> = {
     } as any,
     ctaPosition: { type: 'hidden', label: '' },
     textStyle: { type: 'hidden', label: '' },
+    // Field-order 24.09: включает ручку drag-n-drop заголовка/текста/кнопки в
+    // дереве конструктора. Значение пишет конструктор — `defaults` не задаём.
+    fieldOrder: { type: 'hidden', label: '' },
   },
   defaults: {
     image: { url: '', alt: '' },

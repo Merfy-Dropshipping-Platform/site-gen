@@ -77,8 +77,13 @@ const schemeClass = schemeClassOf(colorScheme);
     function getCheckoutConfig() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
     }
+    // Владелец 28.09: при необязательной регистрации телефона нет — режим
+    // 'email-phone' (телефон обязателен) действует ТОЛЬКО когда регистрация
+    // обязательна (requireCustomerAuth===true) И явно выбран режим не 'email'.
+    // Во всех остальных случаях — 'email' (режим «только почта»).
     function getContactMethod() {
-      return getCheckoutConfig().contactMethod === 'email' ? 'email' : 'email-phone';
+      var cfg = getCheckoutConfig();
+      return (getRequireCustomerAuth() && cfg.contactMethod !== 'email') ? 'email-phone' : 'email';
     }
     function getCustomerNameMode() {
       var m = getCheckoutConfig().customerNameMode;
@@ -134,8 +139,26 @@ const schemeClass = schemeClassOf(colorScheme);
     function getDeliveryCents() {
       return state.deliveryMethod ? (state.deliveryMethod.costCents || 0) : 0;
     }
+    // Скидку считает только сервер (orders): промокод ИЛИ автоматическая скидка
+    // магазина — одна сумма discountCents корзины; заказ спишет именно её.
+    // Раньше кнопка знала лишь скидку из события промокода, и с автоматической
+    // скидкой обещала «Оплатить» полную сумму (баг владельца 27.09). Сумма
+    // сервера верна, пока состав корзины тот же, для которого она посчитана.
+    // Держать ИДЕНТИЧНО CheckoutTotals.serverDiscountCents.
+    function signatureOf(items) {
+      return (items || []).filter(function (it) { return !it.isBonus; }).map(function (it) {
+        return (it.productId || it.id || '') + ':' + (it.variantCombinationId || '') + ':' + (it.quantity || 1);
+      }).sort().join('|');
+    }
+    function serverDiscountCents() {
+      var store = window.cartStore;
+      var server = store && typeof store.getServerCart === 'function' ? store.getServerCart() : null;
+      if (!server || signatureOf(server.items) !== signatureOf(getCartItems())) return null;
+      return server.discountCents || 0;
+    }
     function getDiscountCents() {
-      return state.discountCents || 0;
+      var server = serverDiscountCents();
+      return server === null ? (state.discountCents || 0) : server;
     }
     function getExtensionDiscountCents() {
       return state.extensionDiscountCents || 0;
@@ -542,6 +565,16 @@ const schemeClass = schemeClassOf(colorScheme);
 
         try {
           localStorage.setItem('merfy:lastOrderId', orderId);
+          // Заказ ушёл на оплату. Корзину покупателя (<тема>:cart:v1) здесь НЕ
+          // трогаем: оплату могут отменить. Её сведёт ядро корзины на следующей
+          // странице по статусу оплаты — runtime/paid-order-cart.ts (ключ тот же).
+          localStorage.setItem('merfy:pendingOrder', JSON.stringify({
+            orderId: orderId,
+            apiBase: apiBase,
+            items: getCartItems().map(function (it) {
+              return { productId: it.productId, variantCombinationId: it.variantCombinationId || null };
+            }),
+          }));
           // Удаляем оба ключа — иначе stale items без cartId создают
           // зомби-cart на /checkout (сводка показывает item, но
           // delivery quote видит cartId=null → 'Добавьте товар').

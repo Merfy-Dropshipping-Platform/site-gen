@@ -303,6 +303,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -952,6 +957,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -1065,6 +1075,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -1207,6 +1222,11 @@
             "visibility": "off"
           },
           "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -1830,10 +1850,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -1947,6 +1987,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -2844,6 +2889,11 @@
       "Footer": {
         "label": "Подвал",
         "fields": {
+          "customLogo": {
+            "type": "image",
+            "label": "Логотип",
+            "visibility": "panel"
+          },
           "newsletter": {
             "type": "object",
             "label": "Рассылка",
@@ -3444,6 +3494,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -4093,6 +4148,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -4206,6 +4266,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -4367,6 +4432,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -4990,10 +5060,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -5107,6 +5197,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -6004,6 +6099,11 @@
       "Footer": {
         "label": "Подвал",
         "fields": {
+          "customLogo": {
+            "type": "image",
+            "label": "Логотип",
+            "visibility": "panel"
+          },
           "newsletter": {
             "type": "object",
             "label": "Рассылка",
@@ -6601,6 +6701,11 @@
             "visibility": "off"
           },
           "padding": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -7253,6 +7358,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -7366,6 +7476,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -7508,6 +7623,11 @@
             "visibility": "off"
           },
           "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -8141,10 +8261,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -8258,6 +8398,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -9155,6 +9300,11 @@
       "Footer": {
         "label": "Подвал",
         "fields": {
+          "customLogo": {
+            "type": "image",
+            "label": "Логотип",
+            "visibility": "panel"
+          },
           "newsletter": {
             "type": "object",
             "label": "Рассылка",
@@ -9755,6 +9905,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -10404,6 +10559,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -10517,6 +10677,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -10659,6 +10824,11 @@
             "visibility": "off"
           },
           "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -11282,10 +11452,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -11399,6 +11589,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -12296,6 +12491,11 @@
       "Footer": {
         "label": "Подвал",
         "fields": {
+          "customLogo": {
+            "type": "image",
+            "label": "Логотип",
+            "visibility": "panel"
+          },
           "newsletter": {
             "type": "object",
             "label": "Рассылка",
@@ -12896,6 +13096,11 @@
             "type": "padding",
             "label": "Отступы",
             "visibility": "panel"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -13545,6 +13750,11 @@
             "type": "hidden",
             "label": "",
             "visibility": "off"
+          },
+          "fieldOrder": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
           }
         }
       },
@@ -13658,6 +13868,11 @@
             "visibility": "off"
           },
           "textStyle": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -13800,6 +14015,11 @@
             "visibility": "off"
           },
           "containerColorScheme": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -14423,10 +14643,30 @@
                 "label": "Заголовок",
                 "visibility": "panel"
               },
+              "headingSize": {
+                "type": "select",
+                "label": "Размер заголовка",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
+              },
               "content": {
                 "type": "aiText",
                 "label": "Текст",
                 "visibility": "panel"
+              },
+              "textSize": {
+                "type": "select",
+                "label": "Размер текста",
+                "visibility": "panel",
+                "options": [
+                  "small=Маленький",
+                  "medium=Средний",
+                  "large=Большой"
+                ]
               }
             }
           },
@@ -14540,6 +14780,11 @@
             "visibility": "off"
           },
           "alignment": {
+            "type": "hidden",
+            "label": "",
+            "visibility": "off"
+          },
+          "fieldOrder": {
             "type": "hidden",
             "label": "",
             "visibility": "off"
@@ -15437,6 +15682,11 @@
       "Footer": {
         "label": "Подвал",
         "fields": {
+          "customLogo": {
+            "type": "image",
+            "label": "Логотип",
+            "visibility": "panel"
+          },
           "newsletter": {
             "type": "object",
             "label": "Рассылка",

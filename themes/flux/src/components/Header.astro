@@ -7,6 +7,9 @@ import { SITE_TITLE } from "../consts";
 import FluxNavItem from "./FluxNavItem.astro";
 import { NAV_SUBMENU_TOGGLE_SOURCE } from "../../../../packages/theme-base/runtime/nav-submenu-toggle";
 import FluxWishlistLink from "./FluxWishlistLink.astro";
+import FluxLogo from "./FluxLogo.astro";
+import { headerOwnLogo } from "../../../../packages/theme-base/runtime/header-logo";
+const apiUrl = import.meta.env.PUBLIC_MERFY_API_URL ?? "https://gateway.merfy.ru/api";
 
 interface NavLink {
 	label: string;
@@ -57,13 +60,16 @@ const nav: NavLink[] =
 		? p.navigationLinks.map((l: any) => mapNavLink(l))
 		: defaultNav;
 
-// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): непустая строка →
-// <img src={logo}> высотой var(--size-logo-width) в mobile И desktop. Дефолт flux
-// (мерчант НЕ задал logo) = барчарт-SVG `/icons/logo-flux.svg` (эталон верстальщиков,
-// 81×24, рендер h-6/24px). Текст-лого {siteTitle} остаётся ТОЛЬКО крайним фоллбэком —
-// через alt дефолтного img (ассет не загрузился → браузер покажет alt = название).
-const logo = typeof p.logo === "string" && p.logo.trim() ? p.logo : undefined;
-const logoImgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+// Канон logo (URL картинки; панель «Логотип» пишет в props.logo): загруженный
+// мерчантом файл → <img> высотой var(--size-logo-width) в mobile И desktop; без
+// файла → название магазина текстом (FluxLogo). Плейсхолдер /logo.svg и картинки
+// темы (/icons/logo-flux.svg — вордмарк верстальщиков) логотипом магазина не
+// считаются: с 27.07 до 28.09 вордмарк «ılıl FLUX» стоял у любого магазина без
+// своего файла (баг владельца 28.09). Правило — packages/theme-base/runtime/header-logo.ts.
+const logo = headerOwnLogo(p.logo);
+// Мобильный ряд: текст по центру между бургером (слева 16+44) и избранным+корзиной
+// (справа 44+12+44+16) — длинное название обрезается многоточием, не наезжает на кнопки.
+const mobileLogoTextCls = "block max-w-[calc(100vw-15rem)] truncate";
 
 // Канон actionButtons {showCart, showSearch, showProfile} (строки "true"/"false";
 // панель «Кнопки действий»): show/hide трёх иконок шапки. Отсутствие/иное → показаны
@@ -105,6 +111,10 @@ const SCROLL_UP_JS = [
 	"var last=window.scrollY;",
 	"window.addEventListener('scroll',function(){",
 	"var y=window.scrollY;",
+	// Режим читается на КАЖДОЙ прокрутке: в конструкторе «Статичность» меняют без
+	// перезагрузки превью, и слушатель, повешенный для scroll-up, иначе прятал
+	// шапку и после выбора «Всегда» (баг 25.09). Превью переписывает атрибут.
+	"if(root.getAttribute('data-flux-sticky')!=='scroll-up'){root.style.transform='';last=y;return;}",
 	"if(y>last&&y>root.offsetHeight){root.style.transform='translateY(-100%)';}else{root.style.transform='';}",
 	"last=y;",
 	"},{passive:true});",
@@ -151,17 +161,23 @@ const isActive = (link: NavLink) => (link.match ? link.match(pathname) : pathnam
 const shopId = "";
 
 // Бейдж счётчика (корзина и избранное) — эталон верстальщика: -right-1 -top-1,
-// h-[18px] min-w-[18px], bg-[#1e2952], Roboto Flex 11px.
-// ЦИФРА — роль схемы «Текст кнопки», а не `text-white`: белым списком матрицы
-// прикрыта только ПЛАШКА (фирменный #1e2952 — узнаваемый цвет темы), а цифра
-// читаема на плашке любого цвета и обязана следовать выбору мерчанта
-// (решение владельца 15.09, сужение исключения `counter-badge`).
-// Фолбэк 255_255_255 = прежний белый — вид без схемы не меняется.
+// h-[18px] min-w-[18px], Roboto Flex 11px.
+// ПЛАШКА и ЦИФРА — обе роль схемы «Кнопка» (--color-button-bg / --color-button-text)
+// той схемы, что выбрана у блока «Шапка» (обёртка `.color-scheme-N` вокруг
+// Header ставит page-generator.ts генерически по полю «Цветовая схема» — сам
+// компонент её не читает). Владелец 28.09: «когда в корзине товар — так же с
+// бейджом, флоу» — отменяет для flux решение 15.09 «сузить исключение
+// counter-badge» (тогда фон плашки сознательно оставили фирменным навy
+// #1e2952, поправили только цифру). Другие темы НЕ трогать — у них своё:
+// rose уже красит фон --color-button-bg (ничего не делал), bloom/satin те же
+// хардкод/фирменный фон (#e38e9f / #000000), vanilla — bg-white +
+// var(--vanilla-dark) — отдельная задача, не эта.
+// Фолбэк 30_41_82 = #1e2952 (текущий дефолт «Кнопка» flux схемы 1) — вид
+// БЕЗ настройки схемы не меняется; текст фолбэк 255_255_255 — прежний белый.
 const badgeCls =
-	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#1e2952] px-1 font-roboto-flex text-[11px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden";
+	"absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgb(var(--color-button-bg,30_41_82))] px-1 font-roboto-flex text-[11px] font-normal leading-none text-[rgb(var(--color-button-text,255_255_255))] data-[empty=true]:hidden";
 
-// Лого всегда рендерится как <img> (мерчантский logo ИЛИ дефолтный барчарт-SVG) →
-// якорь = img-ветка эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
+// Якорь лого (картинка мерчанта или название текстом) = ряд эталона h-6 (24px). isAbsoluteCenter центрирует лого в single-row.
 // «По центру» БЕЗ absolute: absolute-лого выпадало из потока и ложилось ПОВЕРХ
 // длинного меню вёрстки (пункт №4 читался сквозь лого). Вместо этого single-row
 // становится сеткой [1fr_auto_1fr]: меню слева (может переноситься), лого в
@@ -170,17 +186,11 @@ const badgeCls =
 const desktopLogoCls = `flex h-6 shrink-0 items-center hover:opacity-90${isAbsoluteCenter ? " md:order-2 md:col-start-2 md:justify-self-center" : ""}`;
 const mobileLogoCls = "flex items-center hover:opacity-80";
 
-// Десктопный flux-container эталона → носитель темы (как Footer/секции flux): 1920 + px-20/px-80.
-// PARITY_DESIGN (владелец 23-24.09: «как у верстальщиков, только стили»):
-// контейнер по актуальной вёрстке flux-theme@be32556d (src/styles/global.css:30
-// .flux-container) — 1480 и поля 1/2.5/5rem, а не носитель темы 1920/px-4/
-// md:px-20/2xl:px-80. Без признака — байт в байт прежняя строка. Признак
-// ставит sites (page-blocks designParityFlag); FluxNavItem получает его отдельным
-// пропом (mega-menu контейнер несёт literal-класс flux-container, см. компонент).
-const designParity = p.__designParity === true;
-const deskContainerBase = designParity
-	? "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20"
-	: "mx-auto w-full max-w-[1920px] px-4 md:px-20 2xl:px-80";
+// Десктопный контейнер — по актуальной вёрстке flux-theme@be32556d
+// (src/styles/global.css:30 .flux-container; владелец 23-24.09: «как у
+// верстальщиков, только стили») — 1480 и поля 1/2.5/5rem, как у секций flux
+// и контейнера mega-menu (FluxNavItem).
+const deskContainerBase = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 // py-6 = вертикальный отступ верстальщика (дефолт); inline-стиль перебивает при настройке padding.
 const deskPadCls = headerPad ? "" : "py-6";
 const twoRowContainerCls = [deskContainerBase, "hidden flex-col gap-5 md:flex", deskPadCls].filter(Boolean).join(" ");
@@ -254,7 +264,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			</span>
 		</button>
 		<a href="/" class:list={["absolute left-1/2 -translate-x-1/2", mobileLogoCls]} aria-label={siteTitle}>
-			{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+			<FluxLogo logo={logo} siteTitle={siteTitle} textCls={mobileLogoTextCls} />
 		</a>
 		<div class="flex items-center gap-3">
 			<FluxWishlistLink badgeCls={badgeCls} boxCls="size-11" iconSize="size-6" />
@@ -283,10 +293,28 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						    Поиск отсюда убран (жалоба владельца 21.09 «не должно быть поиска
 						    слева»): он переехал к остальным иконкам справа, чтобы ряд действий
 						    не разрывался. */}
-						<div class="flex items-center"></div>
+						<div class="flex items-center">
+							{isSidebar && (
+								<button
+									type="button"
+									data-burger-toggle
+									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
+									aria-label="Меню"
+									aria-expanded="false"
+									aria-controls="flux-burger"
+								>
+									<span class="burger-icon" data-icon="open">
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
+									</span>
+									<span class="burger-icon hidden" data-icon="close">
+										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+									</span>
+								</button>
+							)}
+						</div>
 						<div class="flex items-center justify-center">
 							<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-								{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+								<FluxLogo logo={logo} siteTitle={siteTitle} />
 							</a>
 						</div>
 						<div class="flex items-center justify-end gap-4">
@@ -321,6 +349,30 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 								</a>
 							)}
+						</div>
+					</div>
+					<nav
+						class:list={["flex h-6 w-full items-center justify-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
+						aria-label="Основная навигация" data-nav-inline
+						data-puck-subsection-parent={id}
+						data-puck-subsection-index="997"
+						data-puck-subsection-field="navigationLinks"
+					>
+						{nav.map((link) => (
+							<FluxNavItem
+								link={link}
+								menuType={menuType}
+								active={isActive(link)}
+								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
+							/>
+						))}
+					</nav>
+				</>
+			) : (
+				/* top-left (designer default = two-tier эталона): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
+				<>
+					<div class="flex w-full items-center justify-between">
+						<div class="flex items-center gap-3">
 							{isSidebar && (
 								<button
 									type="button"
@@ -338,33 +390,10 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									</span>
 								</button>
 							)}
-						</div>
-					</div>
-					<nav
-						class:list={["flex h-6 w-full items-center justify-center gap-8", menuSchemeClass, isSidebar && "md:!hidden"]}
-						aria-label="Основная навигация" data-nav-inline
-						data-puck-subsection-parent={id}
-						data-puck-subsection-index="997"
-						data-puck-subsection-field="navigationLinks"
-					>
-						{nav.map((link) => (
-							<FluxNavItem
-								link={link}
-								menuType={menuType}
-								active={isActive(link)}
-								designParity={designParity}
-								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
-							/>
-						))}
-					</nav>
-				</>
-			) : (
-				/* top-left (designer default = two-tier эталона): Row1=[logo LEFT + actions RIGHT], Row2=[nav LEFT] */
-				<>
-					<div class="flex w-full items-center justify-between">
 						<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
-							{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+							<FluxLogo logo={logo} siteTitle={siteTitle} />
 						</a>
+						</div>
 						<div class="flex items-center gap-4">
 							{showSearch && (
 								<button
@@ -397,23 +426,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 									<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 								</a>
 							)}
-							{isSidebar && (
-								<button
-									type="button"
-									data-burger-toggle
-									class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
-									aria-label="Меню"
-									aria-expanded="false"
-									aria-controls="flux-burger"
-								>
-									<span class="burger-icon" data-icon="open">
-										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
-									</span>
-									<span class="burger-icon hidden" data-icon="close">
-										<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
-									</span>
-								</button>
-							)}
 						</div>
 					</div>
 					<nav
@@ -428,7 +440,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 								link={link}
 								menuType={menuType}
 								active={isActive(link)}
-								designParity={designParity}
 								linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
 							/>
 						))}
@@ -439,9 +450,28 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	) : (
 		/* ── SINGLE-ROW LAYOUTS: center-left / center-absolute / top-right ── */
 		<div class={singleRowContainerCls} style={headerPadStyle}>
-			<a href="/" class:list={[desktopLogoCls, logoLeft && "flex-1"]} aria-label={siteTitle}>
-				{logo ? <img src={logo} alt={siteTitle} class={logoImgCls} /> : <img src="/icons/logo-flux.svg" alt={siteTitle} width="81" height="24" class={logoImgCls} />}
+			<div class:list={["flex items-center gap-3", logoLeft && "flex-1"]}>
+				{isSidebar && (
+					<button
+						type="button"
+						data-burger-toggle
+						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
+						aria-label="Меню"
+						aria-expanded="false"
+						aria-controls="flux-burger"
+					>
+						<span class="burger-icon" data-icon="open">
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
+						</span>
+						<span class="burger-icon hidden" data-icon="close">
+							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
+						</span>
+					</button>
+				)}
+			<a href="/" class={desktopLogoCls} aria-label={siteTitle}>
+				<FluxLogo logo={logo} siteTitle={siteTitle} />
 			</a>
+			</div>
 
 			<nav
 				class:list={[
@@ -462,7 +492,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 						link={link}
 						menuType={menuType}
 						active={isActive(link)}
-						designParity={designParity}
 						linkClass={[navLinkBase, isActive(link) ? navActiveCls : navIdleCls, megaLinkCls].filter(Boolean).join(" ")}
 					/>
 				))}
@@ -499,23 +528,6 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 					>
 						<SchemeIcon svgs={FLUX_ICON_SVGS} name="user" sizeClass="size-6" />
 					</a>
-				)}
-				{isSidebar && (
-					<button
-						type="button"
-						data-burger-toggle
-						class="flex size-11 items-center justify-center transition-opacity hover:opacity-80"
-						aria-label="Меню"
-						aria-expanded="false"
-						aria-controls="flux-burger"
-					>
-						<span class="burger-icon" data-icon="open">
-							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-burger" sizeClass="size-6" />
-						</span>
-						<span class="burger-icon hidden" data-icon="close">
-							<SchemeIcon svgs={FLUX_ICON_SVGS} name="menu-close" sizeClass="size-6" />
-						</span>
-					</button>
 				)}
 			</div>
 		</div>
@@ -593,8 +605,11 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			// высоту. overscroll-contain: прокрутка панели не утекает на страницу.
 			// Выезд за 300 мс и обратно (баг 1 документа «баги пунктов меню»:
 			// панель появлялась и пропадала за один кадр) — с той стороны, где
-			// иконка меню: на телефоне бургер слева, и панель выезжает слева; с md
-			// панель — колонка у правого края, кнопка справа, и выезд справа.
+			// иконка меню: бургер слева ВЕЗДЕ (владелец, 25.09 — тестер попросил
+			// слева и на десктопе, владелец подтвердил «да»; это отменяет правило
+			// 21.09/23.09, `59bb1a50`/`752cd8ac`, где на md бургер и панель были
+			// справа). На телефоне и с md панель — колонка у левого края, кнопка
+			// слева, выезд слева.
 			// Скрипт темы по-прежнему переключает `hidden`; переход через display: none дают
 			// `transition-discrete` и `starting:` (@starting-style) — без них
 			// display не анимируется, и панель прыгала бы. Где их не поддерживает
@@ -603,7 +618,7 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 			// за 300 мс и так же уходит: clip-path сверху вниз на том же `hidden`
 			// (пункт 2 той же пачки — раньше открывалась рывком).
 			isSidebar
-				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:left-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:translate-x-full md:[&.hidden]:translate-x-full motion-reduce:transition-none"
+				? "inset-y-0 left-0 right-0 w-full overscroll-contain px-6 pt-6 pb-8 md:right-auto md:w-[360px] transition-[translate,display] transition-discrete duration-300 ease-out starting:-translate-x-full [&.hidden]:-translate-x-full md:starting:-translate-x-full md:[&.hidden]:-translate-x-full motion-reduce:transition-none"
 				: "inset-x-0 top-[80px] bottom-0 w-full px-4 pt-4 pb-8 md:hidden [clip-path:inset(0)] transition-[clip-path,display] transition-discrete duration-300 ease-out starting:[clip-path:inset(0_0_100%_0)] [&.hidden]:[clip-path:inset(0_0_100%_0)] motion-reduce:transition-none",
 		]}
 		role="dialog"
@@ -773,8 +788,8 @@ const navIdleCls = "text-[rgb(var(--color-muted,204_204_204))] hover:text-[rgb(v
 	{/* Магазин для живого поиска шапки: `const shopId = ""` патчит сборка
 	    (patchShopIdInDist) — как у подвала и корзины. В превью конструктора id
 	    приходит глобалом __MERFY_SITE_ID__, пустая строка здесь ничего не ломает. */}
-	<script is:inline define:vars={{ shopId }}>
-		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: "https://gateway.merfy.ru/api" };
+	<script is:inline define:vars={{ shopId, apiUrl }}>
+		window.__MERFY_CONFIG__ = window.__MERFY_CONFIG__ || { shopId: shopId || "", apiUrl: apiUrl || "https://gateway.merfy.ru/api" };
 		if (shopId && !window.__MERFY_CONFIG__.shopId) window.__MERFY_CONFIG__.shopId = shopId;
 	</script>
 </div>

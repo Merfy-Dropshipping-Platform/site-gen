@@ -351,9 +351,9 @@ export function renderCardHtml(
 		${wishlistHeartHtml(p.id)}
 	</div>
 	<div class="flex flex-col gap-2">
-		<a href="${href}" class="bloom-product-name font-inter text-[16px] font-light leading-none text-[#000000] transition-opacity hover:opacity-70">${name}</a>
+		<a href="${href}" class="bloom-product-name font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))] transition-opacity hover:opacity-70">${name}</a>
 		<div class="flex flex-wrap items-baseline gap-2">
-			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[#000000]">${price}</span>
+			<span class="bloom-product-price font-inter text-[16px] font-light leading-none text-[rgb(var(--color-text,0_0_0))]">${price}</span>
 			${oldPrice}
 		</div>
 		${cta}

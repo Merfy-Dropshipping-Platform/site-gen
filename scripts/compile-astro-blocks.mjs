@@ -131,12 +131,16 @@ async function findAstroNonBlocks() {
   const locations = [
     { subdir: 'layouts', category: 'layouts' },
     { subdir: 'seo', category: 'seo' },
+    // Хром, который превью конструктора дорисовывает в СИНТЕТИЧЕСКИЙ шелл
+    // (preview.service.renderPreviewPage — страница из блоков без шелла темы).
+    // Только поимённо: остальные примитивы живут внутри блоков и тем.
+    { subdir: 'primitives', category: 'primitives', only: new Set(['CookieConsent.astro']) },
   ];
 
   for (const loc of locations) {
     const dir = path.join(basePath, loc.subdir);
     try {
-      await walkAstroFiles(dir, basePkg, loc.category, entries, '');
+      await walkAstroFiles(dir, basePkg, loc.category, entries, '', loc.only);
     } catch {
       // skip missing dir
     }
@@ -145,13 +149,14 @@ async function findAstroNonBlocks() {
   return entries;
 }
 
-async function walkAstroFiles(dir, pkg, category, entries, prefix) {
+async function walkAstroFiles(dir, pkg, category, entries, prefix, only) {
   const items = await fs.readdir(dir, { withFileTypes: true });
   for (const item of items) {
     const itemPath = path.join(dir, item.name);
     if (item.isDirectory()) {
+      if (only) continue;
       await walkAstroFiles(itemPath, pkg, category, entries, `${prefix}${item.name}__`);
-    } else if (item.name.endsWith('.astro')) {
+    } else if (item.name.endsWith('.astro') && (!only || only.has(item.name))) {
       const baseName = item.name.replace(/\.astro$/, '');
       // blockName here is used purely for output naming + manifest identity.
       const blockName = `${category}__${prefix}${baseName}`;
@@ -172,6 +177,13 @@ async function walkAstroFiles(dir, pkg, category, entries, prefix) {
  * ts.transpileModule which erases types/interfaces/as-casts but leaves
  * runtime code intact.
  */
+// Vite define-инлайны, которые astro build делает сам, а bare-Node рендер блоков — нет (spec 116):
+// адрес API тем берётся из PUBLIC_MERFY_API_URL процесса, без него — `undefined`, чтобы сработал запасной литерал `?? "…"`.
+function inlineViteEnv(code) {
+  const apiUrl = process.env.PUBLIC_MERFY_API_URL ? JSON.stringify(process.env.PUBLIC_MERFY_API_URL) : 'undefined';
+  return code.split('import.meta.env.PUBLIC_MERFY_API_URL').join(apiUrl);
+}
+
 function stripTypes(source, filename) {
   const out = ts.transpileModule(source, {
     compilerOptions: {
@@ -335,7 +347,7 @@ async function compileSiblingTs(pkg, blockName, blockDirPath, tsFileName) {
   const baseName = blockArtifactBaseName(tsFileName);
   const outName = flatArtifactName(pkg, blockName, baseName);
   const outPath = path.join(DIST_DIR, outName);
-  await fs.writeFile(outPath, rewritten, 'utf-8');
+  await fs.writeFile(outPath, inlineViteEnv(rewritten), 'utf-8');
   return outPath;
 }
 
@@ -374,7 +386,7 @@ async function compileOne(entry) {
     : `${entry.pkg}__${entry.blockName}.mjs`;
   const outPath = path.join(DIST_DIR, outName);
   await fs.mkdir(DIST_DIR, { recursive: true });
-  await fs.writeFile(outPath, rewritten, 'utf-8');
+  await fs.writeFile(outPath, inlineViteEnv(rewritten), 'utf-8');
 
   // Also compile all sibling .ts files (Hero.classes.ts, etc.) so the
   // rewritten relative imports resolve. Only for block entries — layouts/seo
@@ -416,6 +428,20 @@ async function compileTsOnlyBlock(entry) {
 }
 
 /**
+ * Runtime-модули лежат в dist плоско (`runtime__X.mjs`), поэтому импорт соседа
+ * `./X` из runtime-файла (например, `legal-links` → `./preview-click-guard`)
+ * переписывается в `./runtime__X.mjs` — тем же правилом, что блочные
+ * `../../runtime/X`. Без этого модуль падал при загрузке: «Cannot find module
+ * dist/astro-blocks/X».
+ */
+function rewriteRuntimeSiblingImports(code) {
+  return code.replace(
+    /(\b(?:from|import)\s*['"])\.\/([\w-]+)(?:\.(?:ts|js|mjs))?(['"])/g,
+    (_m, prefix, modName, suffix) => `${prefix}./runtime__${modName}.mjs${suffix}`,
+  );
+}
+
+/**
  * Compile theme-base/runtime/*.ts → dist/astro-blocks/runtime__*.mjs
  *
  * Hero/Slideshow/Gallery/etc import `../../runtime/placeholders` (shared
@@ -442,7 +468,7 @@ async function compileRuntimeFiles() {
     const baseName = f.replace(/\.ts$/, '');
     const outName = `runtime__${baseName}.mjs`;
     const outPath = path.join(DIST_DIR, outName);
-    await fs.writeFile(outPath, stripped, 'utf-8');
+    await fs.writeFile(outPath, inlineViteEnv(rewriteRuntimeSiblingImports(stripped)), 'utf-8');
     compiled.push(outName);
   }
   return compiled;

@@ -94,8 +94,7 @@ const allImages = gallery.hero
           </div>
         )}
         {showDiscountBadge && hasDiscount && gallery.hero && (
-          <div class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]"
-               style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));">{badgeText}</div>
+          <div class="merfy-badge absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]">{badgeText}</div>
         )}
       </div>
       {/* Thumbs — на mobile горизонтальная лента под main, на lg вертикальная сбоку. */}
@@ -143,8 +142,7 @@ const allImages = gallery.hero
           </div>
         )}
         {showDiscountBadge && hasDiscount && gallery.hero && (
-          <div class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]"
-               style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));">{badgeText}</div>
+          <div class="merfy-badge absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]">{badgeText}</div>
         )}
       </div>
       {/* Thumbs row (horizontal) с chevron-left/right */}
@@ -192,8 +190,7 @@ const allImages = gallery.hero
             <>
               <img src={img.src} alt={img.alt} loading="eager" class="absolute inset-0 w-full h-full object-cover block" data-product-hero-image data-media-src={img.src}/>
               {showDiscountBadge && hasDiscount && (
-                <div class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]"
-                     style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));">{badgeText}</div>
+                <div class="merfy-badge absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]">{badgeText}</div>
               )}
             </>
           ) : (
@@ -222,8 +219,7 @@ const allImages = gallery.hero
           </div>
         )}
         {showDiscountBadge && hasDiscount && gallery.hero && (
-          <div class="absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]"
-               style="background:rgb(var(--color-text)); color:rgb(var(--color-bg));">{badgeText}</div>
+          <div class="merfy-badge absolute top-3 left-3 inline-flex items-center justify-center h-6 px-1.5 rounded-[4px] text-xs [font-family:var(--font-body)]">{badgeText}</div>
         )}
       </div>
       {/* Thumbs grid 2 cols below */}

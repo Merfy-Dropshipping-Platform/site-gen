@@ -163,6 +163,10 @@ const cartContainerCls = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 				// NtCartLine его не несёт; бейдж скидки берётся из реального oldPrice.
 				// Все выбранные опции, а не только Цвет/Размер: произвольные группы
 				// («Оттенок», «Объём») иначе не показывались (баг тестера).
+				// Цвет значка скидки — merfy-badge (роль схемы «Кнопка», base.css),
+				// не --color-accent (владелец 28.09: «в корзине — так же с бейджом»;
+				// SSR-версия cart-thumb-html.ts thumbHtml уже на merfy-badge —
+				// обязано совпадать, иначе моргает цветом при перерисовке).
 				const variantPairsList = variantParts(line.variant);
 				const hasSale = typeof line.oldPrice === "number" && line.oldPrice > line.price;
 				const oldPrice = hasSale ? formatCartPrice(line.oldPrice as number) : "";
@@ -170,7 +174,7 @@ const cartContainerCls = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 					? `-${Math.round((1 - line.price / (line.oldPrice as number)) * 100)}%`
 					: "";
 				const badges = discountPercent
-					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))]">${discountPercent}</span></div>`
+					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="merfy-badge flex items-center justify-center rounded-[2px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal">${discountPercent}</span></div>`
 					: "";
 				const varInfo = variantPairsList.length
 					? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${variantPairsList

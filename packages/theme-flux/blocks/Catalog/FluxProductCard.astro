@@ -304,7 +304,9 @@ const defaultHeartSvg =
     )}
     {saleBadgeLabel && (
       <div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
-        <span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">
+        {/* Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не хардкод
+            верстальщика (оранжевый фон / белый текст, владелец 28.09). */}
+        <span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">
           {saleBadgeLabel}
         </span>
       </div>

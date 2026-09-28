@@ -50,8 +50,9 @@ function heart(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext): string {
 }
 
 function card(hit: HeaderSearchHit, ctx: HeaderSearchRenderContext, drawer: boolean): string {
+	// Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не «Акцент» (владелец 28.09).
 	const badge = hit.onSale
-		? `<span class="pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center bg-[rgb(var(--color-accent,0_0_0))] px-1.5 font-manrope text-[12px] font-medium uppercase leading-4 text-white">Скидка</span>`
+		? `<span class="merfy-badge pointer-events-none absolute left-0 top-0 inline-flex h-6 items-center px-1.5 font-manrope text-[12px] font-medium uppercase leading-4">Скидка</span>`
 		: "";
 	const photo = hit.image
 		? `<img src="${ctx.escapeHtml(hit.image)}" alt="" loading="lazy" onerror="this.onerror=null;this.remove()" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />`

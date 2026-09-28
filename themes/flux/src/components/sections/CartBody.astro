@@ -136,8 +136,13 @@ const cartContainerCls = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 				//     текст, а не приглушённый: rose даёт там muted, но у flux подпись
 				//     варианта по канону верстальщиков идёт основным цветом);
 				//   • старая цена             → --color-muted (уже было);
-				//   • значок скидки           → --color-accent, идиома самой темы
-				//     (Slideshow.astro:381 тот же `rgb(var(--color-accent,250_81_9))`).
+				//   • значок скидки           → класс merfy-badge (base.css) = роль
+				//     «Кнопка», как у карточки каталога (FluxProductCard.astro).
+				//     Было --color-accent («идиома темы», решение до 28.09) — владелец
+				//     28.09 расширил правило схемы бейджа на корзину дословно («в
+				//     корзине — так же с бейджом»); SSR-версия той же строки
+				//     (cart-thumb-html.ts thumbHtml) уже на merfy-badge — здесь
+				//     обязано совпадать, иначе бейдж моргает цветом при перерисовке.
 				// Единственный оставшийся литерал — серая плашка под превью
 				// (#F5F5F5): она законна и у rose (CartBody:131), сторож её знает.
 				//
@@ -162,7 +167,7 @@ const cartContainerCls = "mx-auto w-full max-w-[1480px] px-4 md:px-10 lg:px-20";
 					? `-${Math.round((1 - line.price / (line.oldPrice as number)) * 100)}%`
 					: "";
 				const badges = discountPercent
-					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="flex items-center justify-center rounded-[2px] bg-[rgb(var(--color-accent,250_81_9))] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal text-[rgb(var(--color-button-text,255_255_255))]">${discountPercent}</span></div>`
+					? `<div class="absolute left-1 top-1 flex flex-col items-start gap-1"><span class="merfy-badge flex items-center justify-center rounded-[2px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-normal">${discountPercent}</span></div>`
 					: "";
 				const varInfo = пары.length
 					? `<div class="flex items-center gap-1 font-roboto-flex text-[16px] font-light leading-normal text-[rgb(var(--color-text,0_0_0))]">${пары

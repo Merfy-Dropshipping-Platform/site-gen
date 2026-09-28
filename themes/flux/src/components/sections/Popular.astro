@@ -471,6 +471,7 @@ const showHeader = !isFieldHidden('heading') && (hasText(sectionTitle) || hasTex
 		resolveCollectionProducts,
 		renderCardHtml,
 		escapeHtml,
+		bindCardSwatches,
 	} from "../../lib/storefront-hydrate";
 
 	// Реальные товары (Option B, расширение прежнего hydrateGrid): первые N из
@@ -515,6 +516,8 @@ const showHeader = !isFieldHidden('heading') && (hasText(sectionTitle) || hasTex
 		}
 	};
 
+	// Квадратик цвета на карточке выбирает вариант (фото + «В корзину»).
+	bindCardSwatches();
 	hydratePopular();
 	document.addEventListener("astro:page-load", hydratePopular);
 </script>

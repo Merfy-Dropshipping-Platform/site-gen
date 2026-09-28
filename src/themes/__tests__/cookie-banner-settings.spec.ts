@@ -18,7 +18,7 @@
  *     выделение рисуется рамкой, `update-tokens` меняет тексты без
  *     перезагрузки — имена глобала и события те же, что у рантайма.
  *
- * Поведение рантайма (тексты из глобала, «Отклонить», превью) —
+ * Поведение рантайма (тексты из глобала, кнопки, превью) —
  * cookie-consent-runtime.dom.spec.ts.
  */
 import { execFileSync } from "node:child_process";
@@ -62,14 +62,14 @@ describe("1. по умолчанию — баннер 27.09", () => {
       COOKIE_BANNER_DEFAULTS.text,
     );
     expect(squash(banner.querySelector("[data-cookie-consent-accept]")!.text)).toBe(
-      COOKIE_BANNER_DEFAULTS.acceptLabel,
+      COOKIE_BANNER_DEFAULTS.primaryLabel,
     );
     expect(squash(banner.querySelector("[data-cookie-consent-decline]")!.text)).toBe(
-      COOKIE_BANNER_DEFAULTS.declineLabel,
+      COOKIE_BANNER_DEFAULTS.secondaryLabel,
     );
   });
 
-  it("1b. заголовок пуст и скрыт, «Отклонить» скрыта — как было", () => {
+  it("1b. заголовок пуст и скрыт, дополнительная кнопка пуста и скрыта — как было", () => {
     const heading = banner.querySelector("[data-cookie-consent-heading]")!;
     expect(heading.text.trim()).toBe("");
     expect(heading.hasAttribute("hidden")).toBe(true);
@@ -80,7 +80,8 @@ describe("1. по умолчанию — баннер 27.09", () => {
       enabled: true,
       colorScheme: null,
       heading: "",
-      declineEnabled: false,
+      primaryLabel: "Принять",
+      secondaryLabel: "",
       position: "bottom-left",
     });
   });
@@ -99,8 +100,8 @@ describe("2. настройки из ревизии", () => {
         colorScheme: "",
         heading: 42,
         position: "top",
-        acceptLabel: "   ",
-        declineEnabled: 1,
+        primaryLabel: 7,
+        secondaryLabel: null,
       }),
     ).toEqual(COOKIE_BANNER_DEFAULTS);
     expect(
@@ -117,7 +118,36 @@ describe("2. настройки из ревизии", () => {
       heading: "Cookie",
       text: "",
       position: "bar",
-      acceptLabel: "Принять",
+      primaryLabel: "Принять",
+    });
+  });
+
+  // Правка владельца 28.09: «убрать кнопку показать/скрыть. Работает как
+  // везде — отображает два инпута всегда, название кнопок Основная и
+  // Дополнительная». Пустая подпись = кнопки нет.
+  it("2a'. кнопки: пустая подпись — кнопки нет, как у секций", () => {
+    expect(resolveCookieBanner({ primaryLabel: "", secondaryLabel: "Нет" })).toMatchObject({
+      primaryLabel: "",
+      secondaryLabel: "Нет",
+    });
+  });
+
+  // Первая версия настроек (утро 28.09) хранила кнопки acceptLabel /
+  // declineEnabled / declineLabel. Такие ревизии читаются по старым правилам:
+  // у магазина ничего не меняется.
+  it.each([
+    ["ничего не трогали", {}, "Принять", ""],
+    ["своя «Принять»", { acceptLabel: "Ок" }, "Ок", ""],
+    ["стёртая «Принять» показывалась «Принять»", { acceptLabel: "" }, "Принять", ""],
+    ["вторая выключена, подпись есть", { declineEnabled: false, declineLabel: "Нет" }, "Принять", ""],
+    ["вторая включена со своей подписью", { declineEnabled: true, declineLabel: "Нет" }, "Принять", "Нет"],
+    ["вторая включена, подпись стёрта → «Отклонить»", { declineEnabled: true, declineLabel: "" }, "Принять", "Отклонить"],
+    ["вторая включена, подписи нет → «Отклонить»", { declineEnabled: true }, "Принять", "Отклонить"],
+    ["новые ключи главнее старых", { acceptLabel: "Ок", primaryLabel: "", declineEnabled: true, secondaryLabel: "" }, "", ""],
+  ])("2d. старая ревизия: %s", (_name, stored, primary, secondary) => {
+    expect(resolveCookieBanner(stored)).toMatchObject({
+      primaryLabel: primary,
+      secondaryLabel: secondary,
     });
   });
 
@@ -128,9 +158,8 @@ describe("2. настройки из ревизии", () => {
     expect(cookieBannerGlobal({ cookieBanner: { heading: "Привет" } })).toEqual({
       heading: "Привет",
       text: COOKIE_BANNER_DEFAULTS.text,
-      acceptLabel: "Принять",
-      declineEnabled: false,
-      declineLabel: "Отклонить",
+      primaryLabel: "Принять",
+      secondaryLabel: "",
     });
   });
 

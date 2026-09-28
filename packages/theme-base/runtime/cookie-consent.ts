@@ -22,8 +22,8 @@
  *     навигация конструктора по неизвестному адресу АВТОСОЗДАЁТ страницу.
  *
  * Настройки продавца («Настройки темы» → «Баннер», владелец 28.09):
- *   • тексты и кнопки (заголовок, текст, подписи «Принять»/«Отклонить», показ
- *     второй кнопки) рисует ЭТОТ рантайм из глобала
+ *   • тексты и кнопки (заголовок, текст, подписи кнопок «Основная» и
+ *     «Дополнительная»; пустая подпись = кнопки нет) рисует ЭТОТ рантайм из глобала
  *     `window.__MERFY_COOKIE_BANNER__` — дист темы один на все магазины, как и
  *     с политикой выше. Глобал ставят сборка и превью (`cookieBannerGlobal`);
  *     в превью конструктор меняет его без перезагрузки: агент превью на
@@ -69,16 +69,22 @@ export const COOKIE_BANNER_POSITIONS = [
 ] as const;
 export type CookieBannerPosition = (typeof COOKIE_BANNER_POSITIONS)[number];
 
-/** Всё, что продавец настраивает у баннера. В ревизии — `themeSettings.cookieBanner`. */
+/**
+ * Всё, что продавец настраивает у баннера (вид после разбора ревизии).
+ *
+ * Кнопки — как у секций («Кнопка основная / дополнительная» героя): подпись
+ * есть — кнопка есть, пустая — кнопки нет (владелец 28.09: «Работает как
+ * везде — отображает два инпута всегда»). Основная отвечает «согласен»,
+ * дополнительная — «отказ».
+ */
 export interface CookieBannerSettings {
 	enabled: boolean;
 	/** id схемы («scheme-2»); null — баннер красится как страница. */
 	colorScheme: string | null;
 	heading: string;
 	text: string;
-	acceptLabel: string;
-	declineEnabled: boolean;
-	declineLabel: string;
+	primaryLabel: string;
+	secondaryLabel: string;
 	position: CookieBannerPosition;
 }
 
@@ -94,33 +100,63 @@ export const COOKIE_BANNER_DEFAULTS: Readonly<CookieBannerSettings> = Object.fre
 	colorScheme: null,
 	heading: "",
 	text: "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.",
-	acceptLabel: "Принять",
-	declineEnabled: false,
-	declineLabel: "Отклонить",
+	primaryLabel: "Принять",
+	secondaryLabel: "",
 	position: "bottom-left",
 });
+
+/**
+ * Первая версия настроек (28.09, до правки владельца) хранила кнопки иначе:
+ * `acceptLabel` (пустая = «Принять»), `declineEnabled` + `declineLabel`
+ * (выключено = второй кнопки нет, пустая подпись = «Отклонить»). Такие
+ * ревизии уже есть — читаем их по старым правилам, чтобы у магазина ничего
+ * не поменялось. Новые ключи `primaryLabel`/`secondaryLabel`, если есть,
+ * главнее. В ревизию старые ключи больше не пишутся.
+ */
+const LEGACY_DECLINE_LABEL = "Отклонить";
+
+function nonEmpty(value: unknown): value is string {
+	return typeof value === "string" && value.trim() !== "";
+}
+
+function legacyPrimary(own: Record<string, unknown>): string | undefined {
+	return nonEmpty(own.acceptLabel) ? own.acceptLabel : undefined;
+}
+
+function legacySecondary(own: Record<string, unknown>): string | undefined {
+	if (own.declineEnabled === false) return "";
+	if (own.declineEnabled !== true) return undefined;
+	return nonEmpty(own.declineLabel) ? own.declineLabel : LEGACY_DECLINE_LABEL;
+}
+
+/** Подписи кнопок: новые ключи → старые правила → по умолчанию. */
+function buttonLabels(own: Record<string, unknown>): Pick<CookieBannerSettings, "primaryLabel" | "secondaryLabel"> {
+	const pick = (next: unknown, legacy: string | undefined, fallback: string) =>
+		typeof next === "string" ? next : (legacy ?? fallback);
+	return {
+		primaryLabel: pick(own.primaryLabel, legacyPrimary(own), COOKIE_BANNER_DEFAULTS.primaryLabel),
+		secondaryLabel: pick(own.secondaryLabel, legacySecondary(own), COOKIE_BANNER_DEFAULTS.secondaryLabel),
+	};
+}
 
 type Check<T> = (value: unknown) => value is T;
 
 const isBoolean: Check<boolean> = (v): v is boolean => typeof v === "boolean";
 const isString: Check<string> = (v): v is string => typeof v === "string";
-/** Подпись кнопки: стёртая = кнопка без текста, поэтому пустая не принимается. */
-const isLabel: Check<string> = (v): v is string => typeof v === "string" && v.trim() !== "";
 const isSchemeId: Check<string> = (v): v is string => typeof v === "string" && v !== "";
 const isPosition: Check<CookieBannerPosition> = (v): v is CookieBannerPosition =>
 	(COOKIE_BANNER_POSITIONS as readonly unknown[]).includes(v);
 
-/** Правило каждой настройки: какое значение продавца принимается. */
-const SETTING_CHECKS: { [K in keyof CookieBannerSettings]: Check<CookieBannerSettings[K]> } = {
+type PlainSetting = Exclude<keyof CookieBannerSettings, "primaryLabel" | "secondaryLabel">;
+
+/** Правило каждой настройки, кроме кнопок (их разбирает `buttonLabels`). */
+const SETTING_CHECKS: { [K in PlainSetting]: Check<CookieBannerSettings[K]> } = {
 	enabled: isBoolean,
 	colorScheme: isSchemeId as Check<string | null>,
 	// Заголовок и текст — «стёрто = пусто» (runtime/merchant-text): пустой
 	// заголовок не рисуется, стёртый текст не возвращается текстом по умолчанию.
 	heading: isString,
 	text: isString,
-	acceptLabel: isLabel,
-	declineEnabled: isBoolean,
-	declineLabel: isLabel,
 	position: isPosition,
 };
 
@@ -137,18 +173,18 @@ export function resolveCookieBanner(raw: unknown): CookieBannerSettings {
 	for (const [key, check] of Object.entries(SETTING_CHECKS)) {
 		if ((check as Check<unknown>)(own[key])) resolved[key] = own[key];
 	}
-	return resolved as unknown as CookieBannerSettings;
+	return { ...(resolved as unknown as CookieBannerSettings), ...buttonLabels(own) };
 }
 
 /** То, что рисует рантайм: тексты и кнопки. */
 export type CookieBannerContent = Pick<
 	CookieBannerSettings,
-	"heading" | "text" | "acceptLabel" | "declineEnabled" | "declineLabel"
+	"heading" | "text" | "primaryLabel" | "secondaryLabel"
 >;
 
 function contentOf(settings: CookieBannerSettings): CookieBannerContent {
-	const { heading, text, acceptLabel, declineEnabled, declineLabel } = settings;
-	return { heading, text, acceptLabel, declineEnabled, declineLabel };
+	const { heading, text, primaryLabel, secondaryLabel } = settings;
+	return { heading, text, primaryLabel, secondaryLabel };
 }
 
 /**
@@ -339,21 +375,23 @@ function linkClassOf(root: Element): string {
 	return root.querySelector(SELECTOR.policyLink)?.getAttribute("class") ?? "";
 }
 
+/** Подпись кнопки; пустая — кнопки нет (как у кнопок секций). */
+function applyButton(button: HTMLElement | null, label: string): void {
+	if (!button) return;
+	button.textContent = label;
+	button.hidden = label.trim() === "";
+}
+
 function applyContent(root: Element, content: CookieBannerContent): void {
 	const heading = root.querySelector<HTMLElement>(SELECTOR.heading);
 	const text = root.querySelector<HTMLElement>(SELECTOR.text);
-	const accept = root.querySelector<HTMLElement>(SELECTOR.accept);
-	const decline = root.querySelector<HTMLElement>(SELECTOR.decline);
 	if (heading) {
 		heading.innerHTML = formatCookieBannerText(content.heading);
 		heading.hidden = content.heading.trim() === "";
 	}
 	if (text) text.innerHTML = formatCookieBannerText(content.text, linkClassOf(root));
-	if (accept) accept.textContent = content.acceptLabel;
-	if (decline) {
-		decline.textContent = content.declineLabel;
-		decline.hidden = !content.declineEnabled;
-	}
+	applyButton(root.querySelector<HTMLElement>(SELECTOR.accept), content.primaryLabel);
+	applyButton(root.querySelector<HTMLElement>(SELECTOR.decline), content.secondaryLabel);
 }
 
 /** Привести все баннеры страницы к текущему ответу, настройкам и политике. */

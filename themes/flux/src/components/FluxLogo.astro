@@ -1,0 +1,28 @@
+---
+// Логотип шапки flux: загруженный мерчантом файл картинкой, без файла —
+// название магазина текстом (как rose/bloom/satin). Раньше без файла стоял
+// вордмарк темы /icons/logo-flux.svg («ılıl FLUX»), и у любого магазина
+// в шапке было имя шаблона. Что считать файлом мерчанта —
+// packages/theme-base/runtime/header-logo.ts. Сторож:
+// src/themes/__tests__/flux-header-logo-shop-name.spec.ts.
+//
+// Текст — шрифт заголовков темы (.font-comfortaa во flux = --font-heading,
+// Roboto Flex), прописные, как вордмарк темы; кегль — слайдер «Размер»
+// логотипа (--size-logo-width, 24px), цвет — роль «Заголовок» схемы.
+interface Props {
+	logo: string;
+	siteTitle: string;
+	/** Доп. классы текста: мобильный ряд ограничивает ширину между кнопками. */
+	textCls?: string;
+}
+const { logo, siteTitle, textCls = "" } = Astro.props;
+const imgCls = "h-[var(--size-logo-width,24px)] w-auto max-w-[160px] object-contain";
+const textBaseCls =
+	"font-comfortaa whitespace-nowrap text-[length:var(--size-logo-width,24px)] uppercase leading-tight text-[rgb(var(--color-heading,0_0_0))]";
+---
+
+{logo ? (
+	<img src={logo} alt={siteTitle} class={imgCls} />
+) : (
+	<span data-flux-logo-text class:list={[textBaseCls, textCls]}>{siteTitle}</span>
+)}

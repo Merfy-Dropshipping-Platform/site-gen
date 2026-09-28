@@ -4,6 +4,7 @@ import type { ClientProxy } from "@nestjs/microservices";
 import { firstValueFrom } from "rxjs";
 import { timeout } from "rxjs/operators";
 import type * as schemaTypes from "../db/schema";
+import { applyHeaderSiteTitles } from "./header-title";
 
 export interface FooterDataDeps {
   db: NodePgDatabase<typeof schemaTypes>;
@@ -103,6 +104,8 @@ export function privacyPolicyUrlFor(
  *  • socialColumn.socialLinks — фильтр пустых/«#» + нормализация схемы (https://);
  *  • paymentEnabled — только при подключённой кассе (billing.shop_payment_settings);
  *  • siteTitle — название магазина из админки;
+ *  • Header.siteTitle — то же название в шапку, если там стартовое название
+ *    темы или пусто (utils/header-title.ts; своё название мерчанта остаётся).
  *  • copyright.poweredBy — подпись платформы из окна «Содержимое темы».
  *
  * Общая логика build (runBuildPipeline после stageMerge) и preview-контроллера —
@@ -216,6 +219,11 @@ export async function applyFooterData(
       }
     }
 
+    // Шапка: название магазина вместо стартового названия темы (владелец
+    // 28.09: «везде вместо логотипа брать название сайта»). Здесь — потому что
+    // этот модуль зовут оба пути рендера, как и для подвала ниже.
+    const headerCount = applyHeaderSiteTitles(revisionData, siteName);
+
     const rev = revisionData as {
       pagesData?: Record<string, { content?: unknown[] }>;
       content?: unknown[];
@@ -281,7 +289,7 @@ export async function applyFooterData(
       }
     }
     logger?.log(
-      `[footer-data] site ${siteId}: ${footerCount} footer block(s), ${policyLinks.length} policy link(s), ` +
+      `[footer-data] site ${siteId}: ${footerCount} footer block(s), ${headerCount} header title(s), ${policyLinks.length} policy link(s), ` +
         `phone=${contactPhone ? "yes" : "no"}, email=${contactEmail ? "yes" : "no"}, ` +
         `extraFields=${extraContactFields.length}, payment=${paymentEnabled ? "on" : "off"}`,
     );

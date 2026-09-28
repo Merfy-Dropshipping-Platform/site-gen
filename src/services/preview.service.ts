@@ -1282,11 +1282,14 @@ function scrollSelfTo(el, mode) {
  *     { type: 'ready' }
  *     { type: 'navigate',  path: string }
  *     { type: 'select-block', blockId: string }
+ *     { type: 'select-cookie-banner' }   — нажали на баннер cookie
  *     { type: 'form-submit-blocked', formId: string }
  *     { type: 'render-error', message: string }
  *   parent → iframe:
  *     { type: 'init', siteId, themeId, pageId, data }
  *     { type: 'update-block', blockId, props }
+ *     { type: 'update-tokens', themeSettings }   — и тексты баннера cookie
+ *     { type: 'set-selection', …, cookieBanner?: boolean }
  *
  * Design notes:
  *  - postMessage origin is `*` for now; tightening it requires the parent to
@@ -1389,6 +1392,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // и мешала оценивать цвета секции под курсором.
       '[data-puck-section-hover="true"]{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
       '[data-puck-section-selected="true"]{outline:2px solid #88b0da !important;outline-offset:-2px}',
+      // Баннер cookie («Настройки темы» → «Баннер»): не секция страницы, но
+      // выделяется так же — рамка наведения, клик открывает его настройки.
+      '[data-cookie-consent]{cursor:pointer}',
+      '[data-cookie-consent]:hover{outline:2px solid #cfdff0 !important;outline-offset:-2px}',
       // NB (тот же урок, что строкой выше, но для ПОДСЕКЦИИ): z-index не ставим.
       // position:relative + z-index = контекст наложения на КАЖДОЙ обёртке
       // параметра; у соседних обёрток он такой же, при равном z-index порядок
@@ -2323,6 +2330,18 @@ const PREVIEW_NAV_AGENT_INLINE = `
     if (e.target && e.target.closest && e.target.closest('[data-merfy-pill]')) {
       return;
     }
+    // Баннер cookie: любое нажатие по нему (текст, «Принять», «Отклонить»)
+    // выделяет баннер и открывает его настройки в конструкторе, а не отвечает
+    // на баннер — рантайм баннера в превью ответы не принимает
+    // (packages/theme-base/runtime/cookie-consent.ts). Не data-puck-component-id
+    // намеренно: reconcile прячет хром, которого нет в дереве страницы.
+    var cookieBanner = e.target && e.target.closest ? e.target.closest('[data-cookie-consent]') : null;
+    if (cookieBanner) {
+      e.preventDefault();
+      e.stopPropagation();
+      post({ type: 'select-cookie-banner' });
+      return;
+    }
     // Storefront-кнопки с hard-навигацией внутри iframe конструктора дают 404
     // (origin = gateway, нет маршрутов /checkout, /cart):
     //   • «Оформить» корзины = <button data-action="checkout"> → location='/checkout'
@@ -2507,6 +2526,10 @@ const PREVIEW_NAV_AGENT_INLINE = `
           // выбрана вложенная подсекция (её точечный доскролл ниже).
           if (!subParent) scrollSelfTo(sectionEl, 'start');
         }
+      }
+      if (ev.data.cookieBanner) {
+        var bannerEl = document.querySelector('[data-cookie-consent]');
+        if (bannerEl) bannerEl.setAttribute('data-puck-section-selected', 'true');
       }
       if (subParent && (typeof subIndex === 'number' || typeof subIndex === 'string')) {
         var resolvedParent = selectedSectionEl
@@ -2770,6 +2793,15 @@ const PREVIEW_NAV_AGENT_INLINE = `
       // (add/remove/hide/show/reorder) идут единым каналом reconcile (idiomorph).
       // Конструктор их больше не шлёт (PreviewFrame.test.tsx проверяет length 0).
     } else if (ev.data.type === 'update-tokens') {
+      // Тексты и кнопки баннера cookie — глобалом рантайма баннера (вкл/выкл,
+      // схема и расположение приедут tokens.css ниже). Сразу, без init: баннеру
+      // не нужны ни тема, ни сайт. Рантайм перерисует баннер по событию.
+      var bannerSettings = ev.data.themeSettings && ev.data.themeSettings.cookieBanner;
+      // Имена — COOKIE_BANNER_GLOBAL / COOKIE_BANNER_UPDATE_EVENT рантайма баннера
+      // (литералами: тесты агента исполняют шаблон без подстановок; сверку имён
+      // держит cookie-banner-settings.spec.ts).
+      window.__MERFY_COOKIE_BANNER__ = bannerSettings && typeof bannerSettings === 'object' ? bannerSettings : null;
+      try { document.dispatchEvent(new CustomEvent('merfy:cookie-banner')); } catch (e) {}
       // Hot-replace tokens.css включён для всех тем после консолидации
       // на packages/theme-base (2026-05-10). До этого был allowlist
       // [rose, vanilla] — symmetric to update-block fix.

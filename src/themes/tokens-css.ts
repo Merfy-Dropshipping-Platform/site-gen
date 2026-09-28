@@ -23,6 +23,10 @@ import { generateGoogleFontsUrl } from '../generator/constructor-theme-bridge';
 import { CONTENT_SURFACE_CSS } from './content-surface-css';
 import { resolveCartDrawerSchemeId } from './cart-drawer-contract';
 import { SCHEME_BUTTON_CSS } from './scheme-buttons';
+import {
+  cookieBannerCss,
+  resolveCookieBanner,
+} from '../../packages/theme-base/runtime/cookie-consent';
 
 /**
  * Корни секций-страниц личного кабинета. Ровно эти четыре страницы конструктор
@@ -908,6 +912,18 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
       }}${cartDrawerPaintRule}`
     : '';
 
+  // «Настройки темы» → «Баннер» (владелец 28.09): вкл/выкл, цветовая схема и
+  // расположение баннера cookie. Тот же канал, что у схемы корзины выше:
+  // tokens.css общий для пяти тем, витрины и превью и горячо меняется в
+  // конструкторе (`update-tokens`). Правила — `cookieBannerCss` рядом с
+  // разметкой баннера (packages/theme-base/runtime/cookie-consent.ts). Продавец
+  // баннер не трогал — правил нет, баннер ровно прежний.
+  const cookieBanner = resolveCookieBanner(s.cookieBanner);
+  const cookieBannerRule = cookieBannerCss(
+    cookieBanner,
+    schemeVarsById(schemes, cookieBanner.colorScheme),
+  );
+
   // ── Поиск всегда красится Схемой 1 ────────────────────────────────────
   // Владелец, 15.09 (дословно): «Во всех темах Поиск должен брать на себя цвет
   // фона, текста, цвет текста в кнопке и цвет кнопки из Цветовой схемы 1».
@@ -1077,6 +1093,7 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
     productCardBgSelfRule,
     productCardSchemeRule,
     cartDrawerSchemeRule,
+    cookieBannerRule,
     searchScheme1Rule,
     wishlistHideRule,
     stickyFooterRule,
@@ -1109,6 +1126,22 @@ ${cartTitle ? `\n  --cart-drawer-title: ${cartTitle};` : ''}${cartCheckout ? `\n
 // ──────────────────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * Переменные схемы палитры магазина по id («scheme-2» или «2»); нет выбора или
+ * такой схемы — пусто (правило не пишется).
+ */
+function schemeVarsById(
+  schemes: Record<string, unknown>[],
+  id: string | null,
+): string {
+  if (!id) return '';
+  const wanted = schemeClassId(id);
+  const scheme = schemes.find(
+    (sc) => schemeClassId(String(sc.id ?? '')) === wanted,
+  );
+  return scheme ? schemeToVars(scheme) : '';
+}
 
 export function isPlainObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);

@@ -26,7 +26,12 @@ import {
 } from '../themes/collection-context';
 import { applyFooterData } from '../utils/footer-data';
 import { policyUrlsFor, privacyPolicyUrlFor } from '../utils/footer-data';
-import { PRIVACY_POLICY_URL_GLOBAL } from '../../packages/theme-base/runtime/cookie-consent';
+import {
+  COOKIE_BANNER_GLOBAL,
+  PRIVACY_POLICY_URL_GLOBAL,
+  cookieBannerGlobal,
+  type CookieBannerContent,
+} from '../../packages/theme-base/runtime/cookie-consent';
 import { POLICY_URLS_GLOBAL } from '../../packages/theme-base/runtime/legal-links';
 import { inlineScriptJson } from '../common/inline-script-json';
 import { googleFontHead } from '../themes/theme-manifest-loader';
@@ -171,6 +176,25 @@ export function withPrivacyPolicyGlobal(
   return html.replace(
     /<head(\s[^>]*)?>/i,
     (m) => `${m}<script>window.${PRIVACY_POLICY_URL_GLOBAL} = ${inlineScriptJson(privacyPolicyUrl)};</script>`,
+  );
+}
+
+/**
+ * Глобал текстов и кнопок баннера cookie («Настройки темы» → «Баннер»,
+ * packages/theme-base/runtime/cookie-consent.ts): только если продавец трогал
+ * баннер (`cookieBannerGlobal`). Все пути превью зовут эту функцию рядом с
+ * `withPrivacyPolicyGlobal`; сборка витрины ставит тот же глобал через
+ * `injectGlobalsIntoDist`. Правки в конструкторе приезжают без перезагрузки —
+ * агентом превью на `update-tokens`.
+ */
+export function withCookieBannerGlobal(
+  html: string,
+  banner: CookieBannerContent | null | undefined,
+): string {
+  if (!banner) return html;
+  return html.replace(
+    /<head(\s[^>]*)?>/i,
+    (m) => `${m}<script>window.${COOKIE_BANNER_GLOBAL} = ${inlineScriptJson(banner)};</script>`,
   );
 }
 
@@ -471,6 +495,10 @@ export class PreviewController {
     const privacyUrl = privacyPolicyUrlFor(policies, loaded.themeId);
     // Ссылки юридической строки «Спасибо»/чекаута — тем же правилом.
     const policyUrls = policyUrlsFor(policies, loaded.themeId);
+    // Тексты и кнопки баннера cookie из настроек темы (все пути превью).
+    const cookieBanner = cookieBannerGlobal(
+      (loaded.data as Record<string, unknown> | null)?.themeSettings,
+    );
     if (!isComplexRoute && (await this.preview.hasV2Sections(loaded.themeId))) {
       try {
         // Маршруты коллекций (`collections/preview`, `collections/<slug>`) рисуют
@@ -552,6 +580,7 @@ export class PreviewController {
                 : null,
               privacyUrl,
               policyUrls,
+              cookieBanner,
             );
             this.logger.log(
               `[preview] v2-sections page site=${siteId} route=${route || '(root)'} blocks=${v2Blocks.length}`,
@@ -756,6 +785,7 @@ export class PreviewController {
           : null,
         privacyUrl,
         policyUrls,
+        cookieBanner,
       );
       html = this.injectTokensIntoBlobPage(
         html, siteId, PreviewService.bareThemeKey(loaded.themeId!),
@@ -861,6 +891,7 @@ export class PreviewController {
       // даёт новый ключ.
       html = withPrivacyPolicyGlobal(html, privacyUrl);
       html = withPolicyUrlsGlobal(html, policyUrls);
+      html = withCookieBannerGlobal(html, cookieBanner);
       PreviewController.setCachedHtml(cacheKey, html);
       // Disable browser cache for preview iframe — Constructor вылитый
       // на свежий код мог отдавать stale HTML из browser cache (etag 304),
@@ -1344,6 +1375,7 @@ export class PreviewController {
     checkoutConfig?: CheckoutRuntimeConfig | null,
     privacyPolicyUrl?: string | null,
     policyUrls?: Readonly<Record<string, string>> | null,
+    cookieBanner?: CookieBannerContent | null,
   ): string {
     let html = withPreviewShopId(htmlIn, siteId);
     // Универсальный резолвер корня блока window.__merfyRoot (Spec 102) — ДО любого
@@ -1495,6 +1527,7 @@ export class PreviewController {
     }
     html = withPrivacyPolicyGlobal(html, privacyPolicyUrl);
     html = withPolicyUrlsGlobal(html, policyUrls);
+    html = withCookieBannerGlobal(html, cookieBanner);
     // Агент конструктора (hover/select → postMessage). На секционном пути его
     // добавляет renderV2ContentPage; блоб-путь (product/catalog/cart/checkout)
     // отдаёт built-theme HTML напрямую — без этого секции не выделялись (нет

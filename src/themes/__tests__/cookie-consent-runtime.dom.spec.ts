@@ -236,7 +236,7 @@ describe("ссылка на политику конфиденциальност�
     document.removeEventListener("click", agent, true);
   });
 
-  it("превью: «Принять» доходит до агента превью как обычная кнопка и работает", () => {
+  it("превью: «Принять» доходит до агента превью и НЕ прячет баннер (28.09: баннер настраивают)", () => {
     loadPage();
     const agent = jest.fn();
     document.addEventListener("click", agent, true);
@@ -244,8 +244,119 @@ describe("ссылка на политику конфиденциальност�
       .spyOn(window, "self", "get")
       .mockReturnValue({} as Window & typeof globalThis);
     accept().click();
-    expect(banner().hidden).toBe(true);
+    expect(banner().hidden).toBe(false);
+    expect(localStorage.getItem(KEY)).toBeNull();
     expect(agent).toHaveBeenCalledTimes(1);
     document.removeEventListener("click", agent, true);
+  });
+});
+
+/**
+ * Настройки продавца («Настройки темы» → «Баннер», владелец 28.09): тексты и
+ * кнопки рантайм рисует из глобала `__MERFY_COOKIE_BANNER__`; в превью
+ * конструктора агент меняет глобал и шлёт `merfy:cookie-banner` — баннер
+ * перерисовывается без перезагрузки. В превью баннер виден всегда.
+ */
+describe("настройки продавца — тексты и кнопки", () => {
+  const BANNER_GLOBAL = "__MERFY_COOKIE_BANNER__";
+  const setBanner = (value: unknown) => {
+    (window as unknown as Record<string, unknown>)[BANNER_GLOBAL] = value;
+  };
+  const heading = () =>
+    document.querySelector<HTMLElement>("[data-cookie-consent-heading]")!;
+  const text = () =>
+    document.querySelector<HTMLElement>("[data-cookie-consent-text]")!;
+  const decline = () =>
+    document.querySelector<HTMLButtonElement>("[data-cookie-consent-decline]")!;
+  const inPreview = () =>
+    jest
+      .spyOn(window, "self", "get")
+      .mockReturnValue({} as Window & typeof globalThis);
+
+  afterEach(() => {
+    delete (window as unknown as Record<string, unknown>)[BANNER_GLOBAL];
+  });
+
+  it("без настроек — прежний баннер: без заголовка, одна кнопка «Принять»", () => {
+    loadPage();
+    expect(heading().hidden).toBe(true);
+    expect(text().textContent).toBe(
+      "Мы используем файлы cookie, чтобы сайт работал корректно. Продолжая пользоваться сайтом, вы соглашаетесь с их использованием.",
+    );
+    expect(accept().textContent).toBe("Принять");
+    expect(decline().hidden).toBe(true);
+  });
+
+  it("заголовок, текст, подписи и вторая кнопка — из глобала", () => {
+    setBanner({
+      heading: "Мы за честность",
+      text: "Сайт хранит cookie.",
+      acceptLabel: "Хорошо",
+      declineEnabled: true,
+      declineLabel: "Нет, спасибо",
+    });
+    loadPage();
+    expect(heading().hidden).toBe(false);
+    expect(heading().textContent).toBe("Мы за честность");
+    expect(text().textContent).toBe("Сайт хранит cookie.");
+    expect(accept().textContent).toBe("Хорошо");
+    expect(decline().hidden).toBe(false);
+    expect(decline().textContent).toBe("Нет, спасибо");
+  });
+
+  it("стёртая подпись кнопки — подпись по умолчанию, стёртый текст — пусто", () => {
+    setBanner({ acceptLabel: "  ", text: "" });
+    loadPage();
+    expect(accept().textContent).toBe("Принять");
+    expect(text().textContent).toBe("");
+  });
+
+  it("жирный/курсив и ссылка [текст](адрес); чужая разметка и javascript: — текстом", () => {
+    setBanner({
+      text: '<strong>Важно:</strong> <em>читайте</em> [правила](/pages/rules), <img src=x onerror="alert(1)"> [зло](javascript:alert(1))',
+    });
+    loadPage();
+    const t = text();
+    expect(t.querySelector("strong")!.textContent).toBe("Важно:");
+    expect(t.querySelector("em")!.textContent).toBe("читайте");
+    const links = t.querySelectorAll("a");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("/pages/rules");
+    expect(links[0].textContent).toBe("правила");
+    expect(t.querySelector("img")).toBeNull();
+    expect(t.textContent).toContain('<img src=x onerror="alert(1)">');
+    expect(t.textContent).toContain("зло");
+  });
+
+  it("«Отклонить» прячет баннер и запоминает отказ", () => {
+    setBanner({ declineEnabled: true });
+    const runtime = loadPage();
+    decline().click();
+    expect(banner().hidden).toBe(true);
+    expect(localStorage.getItem(KEY)).toMatch(/^declined:/);
+    expect(runtime.cookieConsentDecision()).toBe("declined");
+  });
+
+  it("превью: баннер виден, даже если в этом браузере уже ответили", () => {
+    window.localStorage.setItem(KEY, new Date().toISOString());
+    inPreview();
+    loadPage();
+    expect(banner().hidden).toBe(false);
+  });
+
+  it("превью: новые настройки применяются по событию агента без перезагрузки", () => {
+    inPreview();
+    loadPage();
+    expect(heading().hidden).toBe(true);
+    setBanner({ heading: "Новый заголовок", declineEnabled: true });
+    document.dispatchEvent(new Event("merfy:cookie-banner"));
+    expect(heading().hidden).toBe(false);
+    expect(heading().textContent).toBe("Новый заголовок");
+    expect(decline().hidden).toBe(false);
+    // Настройки сбросили — баннер снова прежний.
+    setBanner(null);
+    document.dispatchEvent(new Event("merfy:cookie-banner"));
+    expect(heading().hidden).toBe(true);
+    expect(decline().hidden).toBe(true);
   });
 });

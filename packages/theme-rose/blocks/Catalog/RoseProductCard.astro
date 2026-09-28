@@ -134,8 +134,11 @@ const defaultHeartSvg =
     )}
     {showSaleBadge && (
       <span
-        class="absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] bg-[rgb(var(--color-accent,0_0_0))] px-2 font-manrope text-[12px] font-normal leading-none !text-white"
+        class="merfy-badge absolute left-3 top-3 z-10 flex h-6 min-w-12 items-center justify-center rounded-[4px] px-2 font-manrope text-[12px] font-normal leading-none"
       >
+        {/* Цвет — роль схемы «Кнопка» (merfy-badge, base.css), не «Акцент»
+            (другая роль схемы) и не принудительный белый текст мимо роли
+            (владелец 28.09). */}
         Скидка
       </span>
     )}

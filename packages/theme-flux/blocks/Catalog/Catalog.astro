@@ -995,8 +995,10 @@ const skeletons = Array.from({ length: skeletonCount });
     }
     return out.slice(0, 4);
   }
-  // cardSaleBadgeHtml — оранжевый «-N%» (эталон salePercent, bg #FA5109). oldPrice
-  // и price — в одной единице (проценты не зависят от копеек/рублей). Нет уценки → "".
+  // cardSaleBadgeHtml — «-N%» (цвет — роль схемы «Кнопка», класс merfy-badge
+  // из base.css; НЕ хардкод верстальщика bg #FA5109, владелец 28.09; зеркалит
+  // FluxProductCard.astro). oldPrice и price — в одной единице (проценты не
+  // зависят от копеек/рублей). Нет уценки → "".
   function cardSaleBadgeHtml(p) {
     const old = typeof p.oldPrice === "number" ? p.oldPrice : null;
     const cur = typeof p.price === "number" ? p.price : null;
@@ -1005,7 +1007,7 @@ const skeletons = Array.from({ length: skeletonCount });
     if (pct <= 0) return "";
     return (
       '<div class="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">' +
-      '<span class="inline-flex items-center justify-center rounded-[4px] bg-[#FA5109] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none text-white md:text-[14px]">-' +
+      '<span class="merfy-badge inline-flex items-center justify-center rounded-[4px] px-1.5 py-1 font-roboto-flex text-[12px] font-light leading-none md:text-[14px]">-' +
       pct + '%</span></div>'
     );
   }

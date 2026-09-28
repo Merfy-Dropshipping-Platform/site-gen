@@ -215,7 +215,6 @@ describe("матрица «тема × секция × мишень» проти
     // Состав белого списка фиксирован: новое исключение — это осознанное
     // решение, а не побочный эффект правки.
     expect(guard.allowed.map((a) => a.id).sort()).toEqual([
-      "card-badge-over-photo",
       "counter-badge",
       "error-token",
       "form-status",
@@ -240,7 +239,8 @@ describe("матрица «тема × секция × мишень» проти
     // клетки, ничего не сторожит, но однажды молча пропустит настоящий дефект.
     // Замер 15.09 (b21): search-always-scheme-1 20 · form-status 11 ·
     // error-token 9 · slide-over-photo 8 · counter-badge 5 ·
-    // card-badge-over-photo 2.
+    // card-badge-over-photo 2 (запись снята 28.09 — правка бейджа увела её
+    // покрытие в 0, см. scheme-matrix.mjs).
     const used = new Set(
       guard.cells
         .filter((c) => c.verdict === "allowed")

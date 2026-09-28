@@ -6,6 +6,26 @@
  * Шрифт и жирность текста — из «Настроек темы» (--font-body / --weight-body):
  * их ставит корню панели packages/theme-base/styles/catalog-filters.css, дети
  * наследуют — своих font-* классов у разметки панели нет.
+ *
+ * Сворачивание групп (владелец: «возможность скрывать и раскрывать список
+ * фильтров, все темы»). Заголовок каждой группы — `<button
+ * data-nt="filter-group-toggle" aria-expanded>`, список — соседний элемент
+ * `data-filter-group-body`: клик переключает aria-expanded + атрибут
+ * hidden списка. Обработчик клика — общий делегированный <script is:inline>
+ * в Catalog.astro (window.__merfyFilterGroups, рядом с __merfyFilterChips —
+ * тот же порт не гейтит его видимостью «Фильтров»/«Сортировки»: боковой блок
+ * «Коллекции» стоит рядом с этим компонентом и рисуется независимо от них,
+ * поэтому слушатель живёт там, где ГАРАНТИРОВАННО рендерится). Правило
+ * видимости `[data-filter-group-body][hidden]` — в общем
+ * packages/theme-base/styles/catalog-filters.css (Tailwind `flex` того же
+ * узла его не перебивает без этой пары атрибутов). Старт — всегда
+ * развёрнуто, состояние между заходами не хранится.
+ *
+ * ВАЖНО для Catalog.astro каждой темы: заголовок «Цвет» ищется скриптом
+ * каталога (`bindColors`) через `:scope > [data-nt="filter-group-toggle"]`
+ * (было `:scope > p` — сломалось бы конверсией title в button, чинить там же).
+ * Внутренний `<span>` с текстом группы остаётся без детей — так
+ * cloneColorFilter находит и переименовывает подпись клона (Оттенок/Размер).
  */
 import NtFilterPriceRows from "./NtFilterPriceRows.astro";
 import NtRadioField from "./NtRadioField.astro";
@@ -45,6 +65,12 @@ const titleSm = is1280 ? "text-[12px]" : "text-[16px]";
 const titlePrice = is1280 ? "text-[14px]" : "text-[16px]";
 const sortStackGap = is1280 ? "gap-1" : "gap-3";
 const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
+/** Заголовок группы — кнопка, а не <p>: та же строка классов для всех пяти
+ *  групп, только цвет текста и размер подставляются вызовом. */
+const toggleClass = (sizeCls: string) => [
+  "flex w-full cursor-pointer items-center justify-between gap-2 border-0 bg-transparent p-0 text-left leading-normal text-[rgb(var(--color-text,0_0_0))]",
+  sizeCls,
+];
 ---
 
 <aside
@@ -54,8 +80,17 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
 >
   {sortVisible && (
     <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-      <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Сортировать</p>
-      <div class:list={["flex flex-col", sortStackGap]}>
+      <button
+        type="button"
+        class:list={toggleClass(titleSm)}
+        data-nt="filter-group-toggle"
+        aria-expanded="true"
+        aria-controls={`nt-fg-sort${nameSfx}`}
+      >
+        <span>Сортировать</span>
+        <svg aria-hidden="true" viewBox="0 0 10 6" class="h-[6px] w-[10px] shrink-0 text-[rgb(var(--color-muted,153_153_153))]" data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+      </button>
+      <div class:list={["flex flex-col", sortStackGap]} data-filter-group-body id={`nt-fg-sort${nameSfx}`}>
         <NtRadioField
           name={`nt-sort-side${nameSfx}`}
           value="popularity"
@@ -88,8 +123,17 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
   {filtersVisible && (
   <>
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Наличие</p>
-    <div class:list={["flex flex-col", sortStackGap]}>
+    <button
+      type="button"
+      class:list={toggleClass(titleSm)}
+      data-nt="filter-group-toggle"
+      aria-expanded="true"
+      aria-controls={`nt-fg-stock${nameSfx}`}
+    >
+      <span>Наличие</span>
+      <svg aria-hidden="true" viewBox="0 0 10 6" class="h-[6px] w-[10px] shrink-0 text-[rgb(var(--color-muted,153_153_153))]" data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+    </button>
+    <div class:list={["flex flex-col", sortStackGap]} data-filter-group-body id={`nt-fg-stock${nameSfx}`}>
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="all" label="Все" checked density={density} />
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="in" label="В наличии" density={density} />
       <NtRadioField name={`nt-stock-side${nameSfx}`} value="out" label="Распродано" density={density} />
@@ -97,13 +141,33 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
   </div>
 
   <div class:list={["flex flex-col rounded-[8px]", sectionPad, sectionGap]}>
-    <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titlePrice]}>Стоимость</p>
-    <NtFilterPriceRows variant={is1280 ? "sidebar1280" : "sidebar"} />
+    <button
+      type="button"
+      class:list={toggleClass(titlePrice)}
+      data-nt="filter-group-toggle"
+      aria-expanded="true"
+      aria-controls={`nt-fg-price${nameSfx}`}
+    >
+      <span>Стоимость</span>
+      <svg aria-hidden="true" viewBox="0 0 10 6" class="h-[6px] w-[10px] shrink-0 text-[rgb(var(--color-muted,153_153_153))]" data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+    </button>
+    <div data-filter-group-body id={`nt-fg-price${nameSfx}`}>
+      <NtFilterPriceRows variant={is1280 ? "sidebar1280" : "sidebar"} />
+    </div>
   </div>
 
   <div class:list={["flex flex-col gap-3 rounded-[8px]", sectionPad]}>
-    <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Цвет</p>
-    <div class="flex flex-col gap-3">
+    <button
+      type="button"
+      class:list={toggleClass(titleSm)}
+      data-nt="filter-group-toggle"
+      aria-expanded="true"
+      aria-controls={`nt-fg-color${nameSfx}`}
+    >
+      <span>Цвет</span>
+      <svg aria-hidden="true" viewBox="0 0 10 6" class="h-[6px] w-[10px] shrink-0 text-[rgb(var(--color-muted,153_153_153))]" data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+    </button>
+    <div class="flex flex-col gap-3" data-filter-group-body id={`nt-fg-color${nameSfx}`}>
       <NtRadioField
         name={`nt-color-side${nameSfx}`}
         value="black"
@@ -136,8 +200,17 @@ const nameSfx = (is1280 ? "-1280" : "") + (instance ? `-${instance}` : "");
       data-collections-style="sidebar"
       style="display:none;"
     >
-      <p class:list={["leading-normal text-[rgb(var(--color-text,0_0_0))]", titleSm]}>Коллекции</p>
-      <ul data-collections-options class:list={["m-0 flex list-none flex-col p-0", sortStackGap]}></ul>
+      <button
+        type="button"
+        class:list={toggleClass(titleSm)}
+        data-nt="filter-group-toggle"
+        aria-expanded="true"
+        aria-controls={`nt-fg-collections${nameSfx}`}
+      >
+        <span>Коллекции</span>
+        <svg aria-hidden="true" viewBox="0 0 10 6" class="h-[6px] w-[10px] shrink-0 text-[rgb(var(--color-muted,153_153_153))]" data-nt="filter-group-chevron"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+      </button>
+      <ul data-collections-options data-filter-group-body id={`nt-fg-collections${nameSfx}`} class:list={["m-0 flex list-none flex-col p-0", sortStackGap]}></ul>
     </div>
   )}
   </>

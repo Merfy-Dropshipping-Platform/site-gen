@@ -3,18 +3,26 @@
  *
  * CheckoutSubmit — гейт сабмита + payload под настройки чекаута
  * (window.__MERFY_CONFIG__.checkout):
- *   contactMethod:      'email-phone' (дефолт) | 'email'
- *   customerNameMode:   'name-surname' (дефолт) | 'surname' | 'name'
- *   addressRequired:    true (дефолт) | false
+ *   requireCustomerAuth: false (дефолт) | true
+ *   contactMethod:       'email-phone' (дефолт) | 'email'
+ *   customerNameMode:    'name-surname' (дефолт) | 'surname' | 'name'
+ *   addressRequired:     true (дефолт) | false
+ *
+ * Владелец 28.09: при необязательной регистрации телефона на чекауте нет.
+ * getContactMethod() возвращает 'email-phone' (телефон обязателен) ТОЛЬКО
+ * когда requireCustomerAuth===true И contactMethod!=='email'; во всех
+ * остальных случаях — 'email' (email-only, как раньше при contactMethod='email').
  *
  * Покрывает:
- *  - contactMethod='email' → кнопка enabled без phone + phone НЕ в теле PATCH
- *    /customer + contactPhone опущен в metadata;
+ *  - requireCustomerAuth не задан/false → ВСЕГДА email-only, даже с
+ *    contactMethod='email-phone' (новое правило, дефолт изменился);
+ *  - requireCustomerAuth=true + contactMethod!=='email' → phone обязателен,
+ *    попадает в PATCH /customer и metadata.contactPhone;
+ *  - requireCustomerAuth=true + contactMethod='email' → всё равно email-only;
  *  - addressRequired=false → кнопка enabled без city/street + нет PATCH /address
  *    и /delivery/select + metadata.deliveryMethod = {type:'none',costCents:0}
  *    без deliveryAddress;
  *  - customerNameMode → корректный `name` в PATCH /customer и metadata.customerName;
- *  - дефолты (нет checkout-конфига) = текущее поведение (регресс);
  *  - применение по событию checkout:config-ready.
  * Скрипт извлекается из .astro и исполняется в jsdom (как в promo/cdek-тестах).
  */
@@ -171,13 +179,56 @@ describe('CheckoutSubmit — contactMethod gate + payload', () => {
     expect(btn.disabled).toBe(false);
   });
 
-  it('дефолт (нет конфига) → phone обязателен (регресс: disabled без phone)', () => {
+  it('дефолт (нет конфига) → email-only, кнопка enabled без phone (владелец 28.09: необязательная регистрация ⇒ телефона нет, новый дефолт)', () => {
     setConfig(undefined);
     const section = mountSubmitDom({ phone: '' });
     runScript(section);
     const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
     selectDelivery(SELF_PICKUP);
+    expect(btn.disabled).toBe(false);
+  });
+
+  it("requireCustomerAuth не задан + contactMethod='email-phone' явно → всё равно email-only, enabled без phone", () => {
+    setConfig({ contactMethod: 'email-phone' });
+    const section = mountSubmitDom({ phone: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(SELF_PICKUP);
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('requireCustomerAuth=true, contactMethod не задан (дефолт email-phone) → phone обязателен, disabled без phone', () => {
+    // Токен покупателя — изолируем от отдельного requireCustomerAuth-гейта
+    // (checkout-submit-auth-gate.dom.test.ts), disabled здесь должен объясняться ТОЛЬКО phone.
+    localStorage.setItem('merfy_customer_token', 'tok_test');
+    setConfig({ requireCustomerAuth: true });
+    const section = mountSubmitDom({ phone: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(SELF_PICKUP);
     expect(btn.disabled).toBe(true);
+  });
+
+  it("requireCustomerAuth=true + contactMethod='email-phone' явно → phone обязателен, disabled без phone", () => {
+    localStorage.setItem('merfy_customer_token', 'tok_test');
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' });
+    const section = mountSubmitDom({ phone: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(SELF_PICKUP);
+    expect(btn.disabled).toBe(true);
+  });
+
+  it("requireCustomerAuth=true + contactMethod='email' → всё равно email-only, enabled без phone", () => {
+    // Токен покупателя — изолируем ОТ гейта requireCustomerAuth (checkout-submit-auth-gate.dom.test.ts),
+    // проверяем ТОЛЬКО reакцию contactMethod-гейта на phone.
+    localStorage.setItem('merfy_customer_token', 'tok_test');
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email' });
+    const section = mountSubmitDom({ phone: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(SELF_PICKUP);
+    expect(btn.disabled).toBe(false);
   });
 
   it("contactMethod='email' → phone НЕ в теле PATCH /customer, contactPhone опущен в metadata", async () => {
@@ -219,8 +270,27 @@ describe('CheckoutSubmit — contactMethod gate + payload', () => {
     expect('contactPhone' in checkout.metadata).toBe(false);
   });
 
-  it("дефолт → phone присутствует в PATCH /customer и metadata (регресс)", async () => {
+  it("дефолт (requireCustomerAuth не задан) → email-only: phone НЕ в PATCH /customer, contactPhone опущен (владелец 28.09, смена дефолта)", async () => {
     setConfig(undefined);
+    const fetchMock = chainFetchMock();
+    (window as any).fetch = fetchMock;
+    const section = mountSubmitDom();
+    runScript(section);
+    selectDelivery(SELF_PICKUP);
+    (section.querySelector('[data-checkout-submit]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 10));
+
+    const customer = bodyOf(fetchMock, /\/customer$/);
+    expect('phone' in customer).toBe(false);
+    const checkout = bodyOf(fetchMock, /\/checkout$/);
+    expect('contactPhone' in checkout.metadata).toBe(false);
+  });
+
+  it("requireCustomerAuth=true + contactMethod='email-phone' → phone ЕСТЬ в PATCH /customer и metadata.contactPhone", async () => {
+    // Токен покупателя — иначе клик заблокирован ОТДЕЛЬНЫМ гейтом requireCustomerAuth
+    // (нет токена → canSubmit()=false независимо от phone; см. checkout-submit-auth-gate.dom.test.ts).
+    localStorage.setItem('merfy_customer_token', 'tok_test');
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' });
     const fetchMock = chainFetchMock();
     (window as any).fetch = fetchMock;
     const section = mountSubmitDom();
@@ -379,17 +449,30 @@ describe('CheckoutSubmit — применяет конфиг по событию
   });
   afterEach(cleanup);
 
-  it('phone пуст: disabled при дефолте, enabled после config-ready(contactMethod=email)', () => {
-    setConfig(undefined); // конфиг есть на init, но без checkout → email-phone
+  it('phone пуст: disabled при requireCustomerAuth=true+email-phone (на init), enabled после config-ready(requireCustomerAuth=false)', () => {
+    setConfig({ requireCustomerAuth: true, contactMethod: 'email-phone' }); // конфиг есть на init
     const section = mountSubmitDom({ phone: '' });
     runScript(section);
     const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
     selectDelivery(SELF_PICKUP);
-    expect(btn.disabled).toBe(true); // phone обязателен по дефолту
+    expect(btn.disabled).toBe(true); // регистрация обязательна → phone обязателен
 
-    (window as any).__MERFY_CONFIG__.checkout = { contactMethod: 'email' };
+    (window as any).__MERFY_CONFIG__.checkout = { requireCustomerAuth: false };
     document.dispatchEvent(new CustomEvent('checkout:config-ready'));
-    expect(btn.disabled).toBe(false); // событие пере-оценило гейт
+    expect(btn.disabled).toBe(false); // событие пере-оценило гейт: регистрация стала необязательной → email-only
+  });
+
+  it('phone пуст: enabled при дефолте (нет .checkout), disabled после config-ready(requireCustomerAuth=true)', () => {
+    setConfig(undefined); // дефолт → email-only (владелец 28.09)
+    const section = mountSubmitDom({ phone: '' });
+    runScript(section);
+    const btn = section.querySelector('[data-checkout-submit]') as HTMLButtonElement;
+    selectDelivery(SELF_PICKUP);
+    expect(btn.disabled).toBe(false); // дефолт: регистрация необязательна → phone не нужен
+
+    (window as any).__MERFY_CONFIG__.checkout = { requireCustomerAuth: true, contactMethod: 'email-phone' };
+    document.dispatchEvent(new CustomEvent('checkout:config-ready'));
+    expect(btn.disabled).toBe(true); // событие включило обязательную регистрацию → phone обязателен
   });
 });
 

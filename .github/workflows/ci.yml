@@ -1434,6 +1434,16 @@ jobs:
       # для этого адреса» — хотя адрес ни при чём. Настоящий скрипт блока в jsdom.
       - if: false
         run: pnpm exec jest --runInBand src/themes/__tests__/checkout-undeliverable-product.spec.ts
+      # Владелец 28.09: при необязательной регистрации клиента (requireCustomerAuth
+      # !== true) телефона на чекауте нет — почта остаётся. Телефон спрашивается
+      # и обязателен ТОЛЬКО когда requireCustomerAuth===true И contactMethod!=='email'.
+      # Настоящие inline-скрипты CheckoutContactForm (видимость поля) и
+      # CheckoutSubmit (гейт кнопки + payload) в jsdom. Более детальные dom-тесты
+      # для тех же двух блоков лежат в packages/theme-base/__tests__ (их гоняет
+      # отдельный именованный шаг «Тесты настроек чекаута магазина» выше), этот
+      # гард — поведенческое покрытие самого правила в src/themes/__tests__.
+      - if: false
+        run: pnpm exec jest --runInBand src/themes/__tests__/checkout-required-auth-phone-gate.spec.ts
       # Кнопка «Оформить заказ» в панели корзины (формат «Сайдбар») ведёт в
       # чекаут, а не на страницу корзины. Жалоба владельца 20.09: «это и есть
       # корзина, но в другом её формате». Разметку панели отдаёт внешний пакет

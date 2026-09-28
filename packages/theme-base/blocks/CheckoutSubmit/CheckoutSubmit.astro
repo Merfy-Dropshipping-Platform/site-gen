@@ -77,8 +77,13 @@ const schemeClass = schemeClassOf(colorScheme);
     function getCheckoutConfig() {
       return (window.__MERFY_CONFIG__ && window.__MERFY_CONFIG__.checkout) || {};
     }
+    // Владелец 28.09: при необязательной регистрации телефона нет — режим
+    // 'email-phone' (телефон обязателен) действует ТОЛЬКО когда регистрация
+    // обязательна (requireCustomerAuth===true) И явно выбран режим не 'email'.
+    // Во всех остальных случаях — 'email' (режим «только почта»).
     function getContactMethod() {
-      return getCheckoutConfig().contactMethod === 'email' ? 'email' : 'email-phone';
+      var cfg = getCheckoutConfig();
+      return (getRequireCustomerAuth() && cfg.contactMethod !== 'email') ? 'email-phone' : 'email';
     }
     function getCustomerNameMode() {
       var m = getCheckoutConfig().customerNameMode;
